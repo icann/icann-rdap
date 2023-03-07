@@ -1,0 +1,52 @@
+{
+  "rdapConformance" : [ "nro_rdap_profile_0", "rdap_level_0" ],
+  "notices" : [ {
+    "title" : "Terms of Service",
+    "description" : [ "By using the ARIN RDAP/Whois service, you are agreeing to the RDAP/Whois Terms of Use" ],
+    "links" : [ {
+      "value" : "https://rdap.arin.net/registry/entity/arin-hostmaster",
+      "rel" : "terms-of-service",
+      "type" : "text/html",
+      "href" : "https://www.arin.net/resources/registry/whois/tou/"
+    } ]
+  }, {
+    "title" : "Whois Inaccuracy Reporting",
+    "description" : [ "If you see inaccuracies in the results, please visit: " ],
+    "links" : [ {
+      "value" : "https://rdap.arin.net/registry/entity/arin-hostmaster",
+      "rel" : "inaccuracy-report",
+      "type" : "text/html",
+      "href" : "https://www.arin.net/resources/registry/whois/inaccuracy_reporting/"
+    } ]
+  }, {
+    "title" : "Copyright Notice",
+    "description" : [ "Copyright 1997-2023, American Registry for Internet Numbers, Ltd." ]
+  } ],
+  "handle" : "ARIN-HOSTMASTER",
+  "vcardArray" : [ "vcard", [ [ "version", { }, "text", "4.0" ], [ "adr", {
+    "label" : "P.O. Box 232290\nCentreville\nVA\n20120\nUnited States"
+  }, "text", [ "", "", "", "", "", "", "" ] ], [ "fn", { }, "text", "Registration Services Department" ], [ "org", { }, "text", "Registration Services Department" ], [ "kind", { }, "text", "group" ], [ "email", { }, "text", "hostmaster@arin.net" ], [ "tel", {
+    "type" : [ "work", "voice" ]
+  }, "text", "+1-703-227-0660" ] ] ],
+  "links" : [ {
+    "value" : "https://rdap.arin.net/registry/entity/arin-hostmaster",
+    "rel" : "self",
+    "type" : "application/rdap+json",
+    "href" : "https://rdap.arin.net/registry/entity/ARIN-HOSTMASTER"
+  }, {
+    "value" : "https://rdap.arin.net/registry/entity/arin-hostmaster",
+    "rel" : "alternate",
+    "type" : "application/xml",
+    "href" : "https://whois.arin.net/rest/poc/ARIN-HOSTMASTER"
+  } ],
+  "events" : [ {
+    "eventAction" : "last changed",
+    "eventDate" : "2022-08-02T15:17:32-04:00"
+  }, {
+    "eventAction" : "registration",
+    "eventDate" : "2003-04-30T12:32:56-04:00"
+  } ],
+  "status" : [ "validated" ],
+  "port43" : "whois.arin.net",
+  "objectClassName" : "entity"
+}

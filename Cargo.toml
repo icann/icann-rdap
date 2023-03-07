@@ -51,6 +51,9 @@ serde = { version = "1.0", features = [ "derive" ] }
 # json serializer
 serde_json = "1.0"
 
+# error macros
+thiserror = "1.0"
+
 # tokio async runtime
 tokio = { version = "1.21", features = [ "full" ] }
 

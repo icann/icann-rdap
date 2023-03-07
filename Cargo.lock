@@ -41,6 +41,7 @@ dependencies = [
  "buildstructor",
  "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]

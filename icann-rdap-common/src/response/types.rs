@@ -86,6 +86,17 @@ pub struct PublicId {
     pub identifier: String,
 }
 
+/// Holds those types that are common in all responses.
+#[derive(Serialize, Deserialize, Builder)]
+pub struct Common {
+    #[serde(rename = "rdapConformance")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rdap_conformance: Option<RdapConformance>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notices: Option<Notices>,
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

@@ -3,11 +3,15 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     entity::Entity,
-    types::{Events, Links, Port43, Remarks, Status},
+    types::{Common, Events, Links, Port43, Remarks, Status},
 };
 
+/// Represents an RDAP network response.
 #[derive(Serialize, Deserialize, Builder)]
 pub struct Network {
+    #[serde(flatten)]
+    pub common: Common,
+
     #[serde(rename = "objectClassName")]
     pub object_class_name: String,
 

@@ -3,14 +3,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{
-    autnum::AutNum,
+    autnum::Autnum,
     network::Network,
-    types::{Events, Links, Port43, PublicIds, Remarks, Status},
+    types::{Common, Events, Links, Port43, PublicIds, Remarks, Status},
 };
 
-/// Represents an RDAP entity.
+/// Represents an RDAP entity response.
 #[derive(Serialize, Deserialize, Builder)]
 pub struct Entity {
+    #[serde(flatten)]
+    pub common: Common,
+
     #[serde(rename = "objectClassName")]
     pub object_class_name: String,
 
@@ -52,7 +55,7 @@ pub struct Entity {
     pub entities: Option<Vec<Entity>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub autnums: Option<Vec<AutNum>>,
+    pub autnums: Option<Vec<Autnum>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub networks: Option<Vec<Network>>,

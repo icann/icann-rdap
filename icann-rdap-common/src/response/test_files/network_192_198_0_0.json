@@ -1,0 +1,384 @@
+{
+   "arin_originas0_originautnums" : [
+      53301
+   ],
+   "cidr0_cidrs" : [
+      {
+         "length" : 22,
+         "v4prefix" : "192.198.0.0"
+      }
+   ],
+   "endAddress" : "192.198.3.255",
+   "entities" : [
+      {
+         "entities" : [
+            {
+               "events" : [
+                  {
+                     "eventAction" : "last changed",
+                     "eventDate" : "2022-02-07T09:20:07-05:00"
+                  },
+                  {
+                     "eventAction" : "registration",
+                     "eventDate" : "2011-10-29T11:02:59-04:00"
+                  }
+               ],
+               "handle" : "PETSI-ARIN",
+               "links" : [
+                  {
+                     "href" : "https://rdap.arin.net/registry/entity/PETSI-ARIN",
+                     "rel" : "self",
+                     "type" : "application/rdap+json",
+                     "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+                  },
+                  {
+                     "href" : "https://whois.arin.net/rest/poc/PETSI-ARIN",
+                     "rel" : "alternate",
+                     "type" : "application/xml",
+                     "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+                  }
+               ],
+               "objectClassName" : "entity",
+               "port43" : "whois.arin.net",
+               "roles" : [
+                  "noc",
+                  "technical",
+                  "administrative",
+                  "abuse"
+               ],
+               "status" : [
+                  "validated"
+               ],
+               "vcardArray" : [
+                  "vcard",
+                  [
+                     [
+                        "version",
+                        {},
+                        "text",
+                        "4.0"
+                     ],
+                     [
+                        "adr",
+                        {
+                           "label" : "8162 Sw 81st ST\nEllendale\nMN\n56026\nUnited States"
+                        },
+                        "text",
+                        [
+                           "",
+                           "",
+                           "",
+                           "",
+                           "",
+                           "",
+                           ""
+                        ]
+                     ],
+                     [
+                        "fn",
+                        {},
+                        "text",
+                        "Daniel Petsinger"
+                     ],
+                     [
+                        "n",
+                        {},
+                        "text",
+                        [
+                           "Petsinger",
+                           "Daniel",
+                           "",
+                           "",
+                           ""
+                        ]
+                     ],
+                     [
+                        "kind",
+                        {},
+                        "text",
+                        "individual"
+                     ],
+                     [
+                        "email",
+                        {},
+                        "text",
+                        "daniel.petsinger@radiolinkinternet.com"
+                     ],
+                     [
+                        "tel",
+                        {
+                           "type" : [
+                              "work",
+                              "voice"
+                           ]
+                        },
+                        "text",
+                        "+1-507-417-4176"
+                     ]
+                  ]
+               ]
+            }
+         ],
+         "events" : [
+            {
+               "eventAction" : "last changed",
+               "eventDate" : "2017-01-28T08:32:29-05:00"
+            },
+            {
+               "eventAction" : "registration",
+               "eventDate" : "2011-11-02T07:36:05-04:00"
+            }
+         ],
+         "handle" : "DP-41",
+         "links" : [
+            {
+               "href" : "https://rdap.arin.net/registry/entity/DP-41",
+               "rel" : "self",
+               "type" : "application/rdap+json",
+               "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+            },
+            {
+               "href" : "https://whois.arin.net/rest/org/DP-41",
+               "rel" : "alternate",
+               "type" : "application/xml",
+               "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+            }
+         ],
+         "objectClassName" : "entity",
+         "port43" : "whois.arin.net",
+         "remarks" : [
+            {
+               "description" : [
+                  "http://www.radiolinkinternet.com",
+                  "Standard NOC hours are 9am to 5pm CST"
+               ],
+               "title" : "Registration Comments"
+            }
+         ],
+         "roles" : [
+            "registrant"
+         ],
+         "vcardArray" : [
+            "vcard",
+            [
+               [
+                  "version",
+                  {},
+                  "text",
+                  "4.0"
+               ],
+               [
+                  "fn",
+                  {},
+                  "text",
+                  "Radio Link Internet"
+               ],
+               [
+                  "adr",
+                  {
+                     "label" : "8162 SW 81st St\nEllendale\nMN\n56026\nUnited States"
+                  },
+                  "text",
+                  [
+                     "",
+                     "",
+                     "",
+                     "",
+                     "",
+                     "",
+                     ""
+                  ]
+               ],
+               [
+                  "kind",
+                  {},
+                  "text",
+                  "org"
+               ]
+            ]
+         ]
+      },
+      {
+         "events" : [
+            {
+               "eventAction" : "last changed",
+               "eventDate" : "2022-02-07T09:20:07-05:00"
+            },
+            {
+               "eventAction" : "registration",
+               "eventDate" : "2011-10-29T11:02:59-04:00"
+            }
+         ],
+         "handle" : "PETSI-ARIN",
+         "links" : [
+            {
+               "href" : "https://rdap.arin.net/registry/entity/PETSI-ARIN",
+               "rel" : "self",
+               "type" : "application/rdap+json",
+               "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+            },
+            {
+               "href" : "https://whois.arin.net/rest/poc/PETSI-ARIN",
+               "rel" : "alternate",
+               "type" : "application/xml",
+               "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+            }
+         ],
+         "objectClassName" : "entity",
+         "port43" : "whois.arin.net",
+         "roles" : [
+            "noc",
+            "abuse",
+            "technical"
+         ],
+         "status" : [
+            "validated"
+         ],
+         "vcardArray" : [
+            "vcard",
+            [
+               [
+                  "version",
+                  {},
+                  "text",
+                  "4.0"
+               ],
+               [
+                  "adr",
+                  {
+                     "label" : "8162 Sw 81st ST\nEllendale\nMN\n56026\nUnited States"
+                  },
+                  "text",
+                  [
+                     "",
+                     "",
+                     "",
+                     "",
+                     "",
+                     "",
+                     ""
+                  ]
+               ],
+               [
+                  "fn",
+                  {},
+                  "text",
+                  "Daniel Petsinger"
+               ],
+               [
+                  "n",
+                  {},
+                  "text",
+                  [
+                     "Petsinger",
+                     "Daniel",
+                     "",
+                     "",
+                     ""
+                  ]
+               ],
+               [
+                  "kind",
+                  {},
+                  "text",
+                  "individual"
+               ],
+               [
+                  "email",
+                  {},
+                  "text",
+                  "daniel.petsinger@radiolinkinternet.com"
+               ],
+               [
+                  "tel",
+                  {
+                     "type" : [
+                        "work",
+                        "voice"
+                     ]
+                  },
+                  "text",
+                  "+1-507-417-4176"
+               ]
+            ]
+         ]
+      }
+   ],
+   "events" : [
+      {
+         "eventAction" : "last changed",
+         "eventDate" : "2013-03-19T09:14:03-04:00"
+      },
+      {
+         "eventAction" : "registration",
+         "eventDate" : "2013-01-31T18:11:17-05:00"
+      }
+   ],
+   "handle" : "NET-192-198-0-0-1",
+   "ipVersion" : "v4",
+   "links" : [
+      {
+         "href" : "https://rdap.arin.net/registry/ip/192.198.0.0",
+         "rel" : "self",
+         "type" : "application/rdap+json",
+         "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+      },
+      {
+         "href" : "https://whois.arin.net/rest/net/NET-192-198-0-0-1",
+         "rel" : "alternate",
+         "type" : "application/xml",
+         "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+      }
+   ],
+   "name" : "RADIOLINK-ARIN-1",
+   "notices" : [
+      {
+         "description" : [
+            "By using the ARIN RDAP/Whois service, you are agreeing to the RDAP/Whois Terms of Use"
+         ],
+         "links" : [
+            {
+               "href" : "https://www.arin.net/resources/registry/whois/tou/",
+               "rel" : "terms-of-service",
+               "type" : "text/html",
+               "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+            }
+         ],
+         "title" : "Terms of Service"
+      },
+      {
+         "description" : [
+            "If you see inaccuracies in the results, please visit: "
+         ],
+         "links" : [
+            {
+               "href" : "https://www.arin.net/resources/registry/whois/inaccuracy_reporting/",
+               "rel" : "inaccuracy-report",
+               "type" : "text/html",
+               "value" : "https://rdap.arin.net/registry/ip/192.198.0.0"
+            }
+         ],
+         "title" : "Whois Inaccuracy Reporting"
+      },
+      {
+         "description" : [
+            "Copyright 1997-2023, American Registry for Internet Numbers, Ltd."
+         ],
+         "title" : "Copyright Notice"
+      }
+   ],
+   "objectClassName" : "ip network",
+   "parentHandle" : "NET-192-0-0-0-0",
+   "port43" : "whois.arin.net",
+   "rdapConformance" : [
+      "nro_rdap_profile_0",
+      "rdap_level_0",
+      "cidr0",
+      "arin_originas0"
+   ],
+   "startAddress" : "192.198.0.0",
+   "status" : [
+      "active"
+   ],
+   "type" : "DIRECT ALLOCATION"
+}

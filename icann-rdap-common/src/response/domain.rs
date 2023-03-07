@@ -5,7 +5,7 @@ use super::{
     entity::Entity,
     nameserver::Nameserver,
     network::Network,
-    types::{Events, Links, Port43, PublicIds, Remarks, Status},
+    types::{Common, Events, Links, Port43, PublicIds, Remarks, Status},
 };
 
 /// Represents an RDAP variant name.
@@ -104,9 +104,12 @@ pub struct SecureDns {
     pub key_data: Option<Vec<KeyDatum>>,
 }
 
-/// Represents an RDAP entity.
+/// Represents an RDAP domain response.
 #[derive(Serialize, Deserialize, Builder)]
 pub struct Domain {
+    #[serde(flatten)]
+    pub common: Common,
+
     #[serde(rename = "objectClassName")]
     pub object_class_name: String,
 

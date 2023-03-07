@@ -3,12 +3,15 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     entity::Entity,
-    types::{Events, Links, Port43, Remarks, Status},
+    types::{Common, Events, Links, Port43, Remarks, Status},
 };
 
-/// Represents an RDAP autnum object.
+/// Represents an RDAP autnum object response.
 #[derive(Serialize, Deserialize, Builder)]
-pub struct AutNum {
+pub struct Autnum {
+    #[serde(flatten)]
+    pub common: Common,
+
     #[serde(rename = "objectClassName")]
     pub object_class_name: String,
 
@@ -56,7 +59,7 @@ pub struct AutNum {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use super::AutNum;
+    use super::Autnum;
 
     #[test]
     fn GIVEN_autnum_WHEN_deserialize_THEN_success() {
@@ -184,7 +187,7 @@ mod tests {
         "#;
 
         // WHEN
-        let actual = serde_json::from_str::<AutNum>(expected);
+        let actual = serde_json::from_str::<Autnum>(expected);
 
         // THEN
         let actual = actual.unwrap();

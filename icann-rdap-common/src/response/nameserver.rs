@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     entity::Entity,
-    types::{Events, Links, Port43, Remarks, Status},
+    types::{Common, Events, Links, Port43, Remarks, Status},
 };
 
 /// Represents an IP address set for nameservers.
@@ -16,9 +16,12 @@ pub struct IpAddresses {
     pub v4: Option<Vec<String>>,
 }
 
-/// Represents an RDAP nameserver.
+/// Represents an RDAP nameserver response.
 #[derive(Serialize, Deserialize, Builder)]
 pub struct Nameserver {
+    #[serde(flatten)]
+    pub common: Common,
+
     #[serde(rename = "objectClassName")]
     pub object_class_name: String,
 
