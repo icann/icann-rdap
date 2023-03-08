@@ -1,0 +1,35 @@
+{
+   "description" : [
+      "Nameserver not supported"
+   ],
+   "errorCode" : 501,
+   "links" : [
+      {
+         "href" : "http://www.ripe.net/data-tools/support/documentation/terms",
+         "rel" : "copyright",
+         "value" : "http://www.ripe.net/data-tools/support/documentation/terms"
+      }
+   ],
+   "notices" : [
+      {
+         "description" : [
+            "This is the RIPE Database query service. The objects are in RDAP format."
+         ],
+         "links" : [
+            {
+               "href" : "http://www.ripe.net/db/support/db-terms-conditions.pdf",
+               "rel" : "terms-of-service",
+               "type" : "application/pdf"
+            }
+         ],
+         "title" : "Terms and Conditions"
+      }
+   ],
+   "port43" : "whois.ripe.net",
+   "rdapConformance" : [
+      "cidr0",
+      "rdap_level_0",
+      "nro_rdap_profile_0"
+   ],
+   "title" : "501 Not Implemented"
+}

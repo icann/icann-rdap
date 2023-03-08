@@ -10,7 +10,12 @@ pub type Links = Vec<Link>;
 /// Represents and RDAP link structure.
 #[derive(Serialize, Deserialize, Builder)]
 pub struct Link {
-    pub value: String,
+    /// Represents the value part of an RDAP response.
+    /// According to RFC 9083, this field is required
+    /// but many servers do not return it.
+    // TODO add this to a validation mode in the future.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
 
     pub rel: String,
 
@@ -136,8 +141,14 @@ mod tests {
         assert_eq!(actual.len(), 2);
         let actual_1 = actual.first().unwrap();
         let actual_2 = actual.last().unwrap();
-        assert_eq!(actual_1.value, "https://1.example.com/context_uri");
-        assert_eq!(actual_2.value, "https://2.example.com/context_uri");
+        assert_eq!(
+            actual_1.value.as_ref().unwrap(),
+            "https://1.example.com/context_uri"
+        );
+        assert_eq!(
+            actual_2.value.as_ref().unwrap(),
+            "https://2.example.com/context_uri"
+        );
         assert_eq!(actual_1.href, "https://1.example.com/target_uri");
         assert_eq!(actual_2.href, "https://2.example.com/target_uri");
         assert_eq!(actual_1.title.as_ref().unwrap(), "title1");

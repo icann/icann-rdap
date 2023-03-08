@@ -5,6 +5,8 @@ use self::{
     autnum::Autnum,
     domain::Domain,
     entity::Entity,
+    error::Error,
+    help::Help,
     nameserver::Nameserver,
     network::Network,
     search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
@@ -13,6 +15,8 @@ use self::{
 pub mod autnum;
 pub mod domain;
 pub mod entity;
+pub mod error;
+pub mod help;
 pub mod nameserver;
 pub mod network;
 pub mod search;
@@ -41,6 +45,12 @@ pub enum RdapResponse {
     DomainSearchResults(DomainSearchResults),
     EntitySearchResults(EntitySearchResults),
     NameserverSearchResults(NameserverSearchResults),
+
+    // Error
+    ErrorResponse(Error),
+
+    // Help
+    Help(Help),
 }
 
 impl TryFrom<Value> for RdapResponse {
@@ -106,6 +116,28 @@ impl TryFrom<Value> for RdapResponse {
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'nameserverSearchResults' is not an array".to_string(),
+                ));
+            }
+        }
+
+        // else if it has an errorCode
+        if let Some(result) = response.get("errorCode") {
+            if result.is_u64() {
+                return Ok(RdapResponse::ErrorResponse(serde_json::from_value(value)?));
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'errorCode' is not an unsigned integer".to_string(),
+                ));
+            }
+        }
+
+        // else if it has a notices then it is help response at this point
+        if let Some(result) = response.get("notices") {
+            if result.is_array() {
+                return Ok(RdapResponse::Help(serde_json::from_value(value)?));
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'notices' is not an array".to_string(),
                 ));
             }
         }
@@ -210,5 +242,31 @@ mod tests {
 
         // THEN
         assert!(matches!(actual, RdapResponse::EntitySearchResults(_)));
+    }
+
+    #[test]
+    fn GIVEN_help_response_WHEN_try_from_THEN_response_is_help() {
+        // GIVEN
+        let expected: Value =
+            serde_json::from_str(include_str!("test_files/help_nic_fr.json")).unwrap();
+
+        // WHEN
+        let actual = RdapResponse::try_from(expected).unwrap();
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::Help(_)));
+    }
+
+    #[test]
+    fn GIVEN_error_response_WHEN_try_from_THEN_response_is_error() {
+        // GIVEN
+        let expected: Value =
+            serde_json::from_str(include_str!("test_files/error_ripe_net.json")).unwrap();
+
+        // WHEN
+        let actual = RdapResponse::try_from(expected).unwrap();
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::ErrorResponse(_)));
     }
 }

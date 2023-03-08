@@ -1,0 +1,52 @@
+{
+   "notices" : [
+      {
+         "description" : [
+            "domain/XXXX",
+            "domains?name=XXXX",
+            "entity/XXXX",
+            "entities?fn=XXXX",
+            "nameserver/XXXX",
+            "nameservers?ip=XXXX",
+            "help"
+         ],
+         "links" : [
+            {
+               "href" : "https://rdap.nic.fr/help",
+               "media" : "application/json",
+               "rel" : "self",
+               "value" : "https://rdap.nic.fr/help"
+            }
+         ],
+         "title" : "RDAP queries can be made on the following types"
+      },
+      {
+         "description" : [
+            "(1) DOMAIN     : Domain queries are made based only on the domain name criterion.",
+            "                 Example: domain/example.tld",
+            "(2) ENTITY     : Registrar queries are made based only on the registrar gurid criterion (IANA ID).",
+            "                 Example: entity/9995",
+            "                 Registrar searches are made based only on the registrar name criterion.",
+            "                 Example: entities?fn=Registry%20Testing%201 for the registrar with name 'Registry Testing 1'",
+            "(3) NAMESERVER : Nameserver queries are made based only on the nameserver name criterion.",
+            "                 Example: nameserver/ns1.example.tld",
+            "                 Nameserver searches are made based only on the IP address criterion.",
+            "                 Example: nameservers?ip=198.51.100.0"
+         ],
+         "links" : [
+            {
+               "href" : "https://rdap.nic.fr/help",
+               "media" : "application/json",
+               "rel" : "self",
+               "value" : "https://rdap.nic.fr/help"
+            }
+         ],
+         "title" : "USE"
+      }
+   ],
+   "rdapConformance" : [
+      "rdap_level_0",
+      "icann_rdap_technical_implementation_guide_0",
+      "icann_rdap_response_profile_0"
+   ]
+}
