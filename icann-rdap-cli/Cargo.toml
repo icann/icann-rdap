@@ -12,3 +12,10 @@ An RDAP Command Line Interface client.
 [[bin]]
 name = "rdap"
 path = "src/main.rs"
+
+[dependencies]
+
+icann-rdap-client = { path = "../icann-rdap-client" }
+icann-rdap-common = { path = "../icann-rdap-common" }
+
+clap.workspace = true

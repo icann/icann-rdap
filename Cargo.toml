@@ -39,6 +39,9 @@ git-version = "0.3"
 # lazy static initilization
 lazy_static = "1.4"
 
+# percent encoding
+pct-str = "1.2"
+
 # regular expresions
 regex = "1.7"
 
@@ -50,6 +53,10 @@ serde = { version = "1.0", features = [ "derive" ] }
 
 # json serializer
 serde_json = "1.0"
+
+# enum utilities
+strum = "0.24"
+strum_macros = "0.24"
 
 # error macros
 thiserror = "1.0"
