@@ -11,6 +11,7 @@ An RDAP client library.
 
 [dependencies]
 buildstructor.workspace = true
+cidr-utils.workspace = true
 pct-str.workspace = true
 reqwest.workspace = true
 serde.workspace = true

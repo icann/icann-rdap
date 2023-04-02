@@ -6,4 +6,6 @@ pub mod query;
 pub enum RdapClientError {
     #[error("Query value is not valid.")]
     InvalidQueryValue,
+    #[error("Ambiquous query type.")]
+    AmbiquousQueryType,
 }

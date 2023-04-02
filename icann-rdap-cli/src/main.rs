@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use clap::{ArgGroup, Parser, ValueEnum};
+use icann_rdap_client::query::qtype::QueryType;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
@@ -116,7 +119,43 @@ enum QtypeArg {
 }
 
 pub fn main() {
-    let _cli = Cli::parse();
+    let cli = Cli::parse();
+    let query_type = query_type_from_cli(&cli);
+    println!("query type is {query_type}");
+    println!(
+        "rdap url is {}",
+        query_type.query_url("https://example.com").unwrap()
+    );
+}
+
+fn query_type_from_cli(cli: &Cli) -> QueryType {
+    if let Some(query_value) = cli.query_value.clone() {
+        if let Some(query_type) = cli.query_type {
+            match query_type {
+                QtypeArg::V4 => QueryType::IpV4Addr(query_value),
+                QtypeArg::V6 => QueryType::IpV6Addr(query_value),
+                QtypeArg::V4Cidr => QueryType::IpV4Cidr(query_value),
+                QtypeArg::V6Cidr => QueryType::IpV6Cidr(query_value),
+                QtypeArg::Autnum => QueryType::AsNumber(query_value),
+                QtypeArg::Domain => QueryType::Domain(query_value),
+                QtypeArg::Entity => QueryType::Entity(query_value),
+                QtypeArg::Ns => QueryType::Nameserver(query_value),
+                QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
+                QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
+                QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
+                QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
+                QtypeArg::DomainNsIp => QueryType::DomainNsIpSearch(query_value),
+                QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
+                QtypeArg::NsIp => QueryType::NameserverIpSearch(query_value),
+            }
+        } else {
+            QueryType::from_str(&query_value).unwrap()
+        }
+    } else if let Some(url) = cli.url.clone() {
+        QueryType::Url(url)
+    } else {
+        QueryType::Help
+    }
 }
 
 #[cfg(test)]

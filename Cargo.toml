@@ -18,6 +18,9 @@ anyhow = "1.0"
 # macros for the builder pattern
 buildstructor = "0.5"
 
+# CIDR utilities
+cidr-utils = "0.5"
+
 # command line options parser
 clap= { version = "4.0", features = [ "std", "derive", "env" ] }
 
