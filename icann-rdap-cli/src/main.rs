@@ -58,7 +58,13 @@ struct Cli {
     /// This option gets a base URL from the RDAP bootstrap registry maintained
     /// by IANA. For example, using "com" will get the base URL for the .com
     /// registry.
-    #[arg(short = 'b', long, conflicts_with = "url", required = false)]
+    #[arg(
+        short = 'b',
+        long,
+        conflicts_with = "url",
+        required = false,
+        env = "RDAP_BASE"
+    )]
     base: Option<String>,
 
     /// An RDAP base URL for a specific RDAP server.
@@ -66,8 +72,27 @@ struct Cli {
     /// Use this option to explicitly give an RDAP base URL when issuing queries.
     /// If not specified, the base URL will come from the RDAP boostrap process
     /// outline in RFC 9224.
-    #[arg(short = 'B', long, conflicts_with = "url", required = false)]
+    #[arg(
+        short = 'B',
+        long,
+        conflicts_with = "url",
+        required = false,
+        env = "RDAP_BASE_URL"
+    )]
     base_url: Option<String>,
+
+    /// Output format.
+    ///
+    /// This option determines the format of the result.
+    #[arg(
+        short = 'O',
+        long,
+        required = false,
+        env = "RDAP_OUTPUT",
+        value_enum,
+        default_value_t = OutputType::AnsiText,
+    )]
+    output: OutputType,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -118,7 +143,23 @@ enum QtypeArg {
     NsIp,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum OutputType {
+    /// Results are rendered as Markdown in the terminal using ANSI terminal capabilities.
+    AnsiText,
+
+    /// Results are rendered as Markdown in plain text.
+    Markdown,
+
+    /// Results are output as JSON.
+    Json,
+
+    /// Results are output as Pretty JSON.
+    PrettyJson,
+}
+
 pub fn main() {
+    dotenv::dotenv().ok();
     let cli = Cli::parse();
     let query_type = query_type_from_cli(&cli);
     println!("query type is {query_type}");

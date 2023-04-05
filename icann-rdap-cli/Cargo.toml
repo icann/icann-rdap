@@ -1,10 +1,8 @@
 [package]
 name = "icann-rdap-cli"
-version = "0.1.0"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-#repository = "https://github.com/rust-lang/cargo"
-readme = "README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 description = """
 An RDAP Command Line Interface client.
 """
@@ -19,3 +17,4 @@ icann-rdap-client = { path = "../icann-rdap-client" }
 icann-rdap-common = { path = "../icann-rdap-common" }
 
 clap.workspace = true
+dotenv.workspace = true

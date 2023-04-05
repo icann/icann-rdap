@@ -9,6 +9,7 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/icann/icann-rdap"
 
 [workspace.dependencies]
 
@@ -67,5 +68,3 @@ thiserror = "1.0"
 # tokio async runtime
 tokio = { version = "1.21", features = [ "full" ] }
 
-[workspace.dev-dependencies]
-serial_test = { version = "0.10.0", features = ["logging", "async"] }
