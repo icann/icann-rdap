@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -33,6 +34,7 @@ pub enum RdapResponseError {
 }
 
 /// The various types of RDAP response.
+#[derive(Serialize, Deserialize)]
 pub enum RdapResponse {
     // Object Classes
     Entity(Entity),

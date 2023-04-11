@@ -5,7 +5,7 @@ use serde_json::Value;
 use super::{
     autnum::Autnum,
     network::Network,
-    types::{Common, Events, Links, Port43, PublicIds, Remarks, Status},
+    types::{Common, Events, ObjectCommon, PublicIds, Status},
 };
 
 /// Represents an RDAP entity response.
@@ -14,11 +14,8 @@ pub struct Entity {
     #[serde(flatten)]
     pub common: Common,
 
-    #[serde(rename = "objectClassName")]
-    pub object_class_name: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    #[serde(flatten)]
+    pub object_common: ObjectCommon,
 
     #[serde(rename = "vcardArray")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -31,28 +28,12 @@ pub struct Entity {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub public_ids: Option<PublicIds>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remarks: Option<Remarks>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub links: Option<Links>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub events: Option<Events>,
-
     #[serde(rename = "asEventActor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub as_event_actor: Option<Events>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Status>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "port43")]
-    pub port_43: Option<Port43>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entities: Option<Vec<Entity>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub autnums: Option<Vec<Autnum>>,
@@ -192,14 +173,14 @@ mod tests {
 
         // THEN
         let actual = actual.unwrap();
-        assert_eq!(actual.object_class_name, "entity");
-        assert!(actual.handle.is_some());
+        assert_eq!(actual.object_common.object_class_name, "entity");
+        assert!(actual.object_common.handle.is_some());
         assert!(actual.vcard_array.is_some());
         assert!(actual.roles.is_some());
         assert!(actual.public_ids.is_some());
-        assert!(actual.remarks.is_some());
-        assert!(actual.links.is_some());
-        assert!(actual.events.is_some());
+        assert!(actual.object_common.remarks.is_some());
+        assert!(actual.object_common.links.is_some());
+        assert!(actual.object_common.events.is_some());
         assert!(actual.as_event_actor.is_some());
     }
 }

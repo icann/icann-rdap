@@ -18,3 +18,7 @@ icann-rdap-common = { path = "../icann-rdap-common" }
 
 clap.workspace = true
 dotenv.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+simplelog.workspace = true
+tokio.workspace = true

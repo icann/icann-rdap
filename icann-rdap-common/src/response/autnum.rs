@@ -1,10 +1,7 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    entity::Entity,
-    types::{Common, Events, Links, Port43, Remarks, Status},
-};
+use super::types::{Common, ObjectCommon};
 
 /// Represents an RDAP autnum object response.
 #[derive(Serialize, Deserialize, Builder)]
@@ -12,11 +9,8 @@ pub struct Autnum {
     #[serde(flatten)]
     pub common: Common,
 
-    #[serde(rename = "objectClassName")]
-    pub object_class_name: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    #[serde(flatten)]
+    pub object_common: ObjectCommon,
 
     #[serde(rename = "startAutnum")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -34,26 +28,7 @@ pub struct Autnum {
     pub autnum_type: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "port43")]
-    pub port_43: Option<Port43>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remarks: Option<Remarks>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub links: Option<Links>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub events: Option<Events>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entities: Option<Vec<Entity>>,
 }
 
 #[cfg(test)]
@@ -191,17 +166,17 @@ mod tests {
 
         // THEN
         let actual = actual.unwrap();
-        assert_eq!(actual.object_class_name, "autnum");
-        assert!(actual.handle.is_some());
+        assert_eq!(actual.object_common.object_class_name, "autnum");
+        assert!(actual.object_common.handle.is_some());
         assert!(actual.start_autnum.is_some());
         assert!(actual.end_autnum.is_some());
         assert!(actual.name.is_some());
         assert!(actual.autnum_type.is_some());
-        assert!(actual.status.is_some());
+        assert!(actual.object_common.status.is_some());
         assert!(actual.country.is_some());
-        assert!(actual.remarks.is_some());
-        assert!(actual.links.is_some());
-        assert!(actual.events.is_some());
-        assert!(actual.entities.is_some());
+        assert!(actual.object_common.remarks.is_some());
+        assert!(actual.object_common.links.is_some());
+        assert!(actual.object_common.events.is_some());
+        assert!(actual.object_common.entities.is_some());
     }
 }

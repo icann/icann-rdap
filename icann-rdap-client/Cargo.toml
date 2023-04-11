@@ -8,6 +8,9 @@ An RDAP client library.
 """
 
 [dependencies]
+
+icann-rdap-common = { path = "../icann-rdap-common" }
+
 buildstructor.workspace = true
 cidr-utils.workspace = true
 pct-str.workspace = true

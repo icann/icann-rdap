@@ -1,8 +1,14 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
+use super::entity::Entity;
+
+/// Represents an RDAP extension identifier.
+#[derive(Serialize, Deserialize)]
+pub struct Extension(pub String);
+
 /// The RDAP conformance array.
-pub type RdapConformance = Vec<String>;
+pub type RdapConformance = Vec<Extension>;
 
 /// An array of RDAP link structures.
 pub type Links = Vec<Link>;
@@ -10,14 +16,20 @@ pub type Links = Vec<Link>;
 /// Represents and RDAP link structure.
 #[derive(Serialize, Deserialize, Builder)]
 pub struct Link {
-    /// Represents the value part of an RDAP response.
+    /// Represents the value part of a link in an RDAP response.
     /// According to RFC 9083, this field is required
-    /// but many servers do not return it.
+    /// but many servers do not return it as it was
+    /// optional in RFC 7483.
     // TODO add this to a validation mode in the future.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
 
-    pub rel: String,
+    /// Represents the relationship of a link in an RDAP response.
+    /// According to RFC 9083, this field is required
+    /// but many servers do not return it as it was
+    /// optional in RFC 7483.
+    // TODO add this to a validation mode in the future.
+    pub rel: Option<String>,
 
     pub href: String,
 
@@ -36,10 +48,18 @@ pub struct Link {
 }
 
 /// An array of notices.
-pub type Notices = Vec<NoticeOrRemark>;
+pub type Notices = Vec<Notice>;
+
+/// Represents an RDAP Notice.
+#[derive(Serialize, Deserialize)]
+pub struct Notice(pub NoticeOrRemark);
 
 /// An array of remarks.
-pub type Remarks = Vec<NoticeOrRemark>;
+pub type Remarks = Vec<Remark>;
+
+/// Represents an RDAP Remark.
+#[derive(Serialize, Deserialize)]
+pub struct Remark(pub NoticeOrRemark);
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
 #[derive(Serialize, Deserialize, Builder)]
@@ -73,8 +93,12 @@ pub struct Event {
     pub links: Option<Links>,
 }
 
+/// Represents an item in an RDAP status array.
+#[derive(Serialize, Deserialize)]
+pub struct StatusValue(pub String);
+
 /// An array of status values.
-pub type Status = Vec<String>;
+pub type Status = Vec<StatusValue>;
 
 /// An RDAP port53 type.
 pub type Port43 = String;
@@ -102,10 +126,57 @@ pub struct Common {
     pub notices: Option<Notices>,
 }
 
+/// Holds those types that are common in all object classes.
+#[derive(Serialize, Deserialize, Builder)]
+pub struct ObjectCommon {
+    #[serde(rename = "objectClassName")]
+    pub object_class_name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handle: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remarks: Option<Remarks>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub links: Option<Links>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub events: Option<Events>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<Status>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "port43")]
+    pub port_43: Option<Port43>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entities: Option<Vec<Entity>>,
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+    use crate::response::types::{
+        Extension, Notice, Notices, RdapConformance, Remark, Remarks, Status, StatusValue,
+    };
+
     use super::{Event, Links, NoticeOrRemark, PublicId};
+
+    #[test]
+    fn GIVEN_rdap_conformance_WHEN_serialize_THEN_array_of_strings() {
+        // GIVEN
+        let rdap_conformance: RdapConformance =
+            vec![Extension("foo".to_string()), Extension("bar".to_string())];
+
+        // WHEN
+        let actual = serde_json::to_string(&rdap_conformance).unwrap();
+
+        // THEN
+        let expected = r#"["foo","bar"]"#;
+        assert_eq!(actual, expected);
+    }
 
     #[test]
     fn GIVEN_an_array_of_links_WHEN_deserialize_THEN_success() {
@@ -191,6 +262,54 @@ mod tests {
     }
 
     #[test]
+    fn GIVEN_notices_WHEN_serialize_THEN_array_of_notice_structs() {
+        // GIVEN
+        let notices: Notices = vec![
+            Notice(
+                NoticeOrRemark::builder()
+                    .description(vec!["foo".to_string()])
+                    .build(),
+            ),
+            Notice(
+                NoticeOrRemark::builder()
+                    .description(vec!["bar".to_string()])
+                    .build(),
+            ),
+        ];
+
+        // WHEN
+        let actual = serde_json::to_string(&notices).unwrap();
+
+        // THEN
+        let expected = r#"[{"description":["foo"]},{"description":["bar"]}]"#;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn GIVEN_remarks_WHEN_serialize_THEN_array_of_remark_structs() {
+        // GIVEN
+        let remarks: Remarks = vec![
+            Remark(
+                NoticeOrRemark::builder()
+                    .description(vec!["foo".to_string()])
+                    .build(),
+            ),
+            Remark(
+                NoticeOrRemark::builder()
+                    .description(vec!["bar".to_string()])
+                    .build(),
+            ),
+        ];
+
+        // WHEN
+        let actual = serde_json::to_string(&remarks).unwrap();
+
+        // THEN
+        let expected = r#"[{"description":["foo"]},{"description":["bar"]}]"#;
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
     fn GIVEN_an_event_WHEN_deserialize_THEN_success() {
         // GIVEN
         let expected = r#"
@@ -207,6 +326,22 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.event_actor.as_ref().unwrap();
+    }
+
+    #[test]
+    fn GIVEN_status_array_WHEN_serialize_THEN_array_of_strings() {
+        // GIVEN
+        let status: Status = vec![
+            StatusValue("foo".to_string()),
+            StatusValue("bar".to_string()),
+        ];
+
+        // WHEN
+        let actual = serde_json::to_string(&status).unwrap();
+
+        // THEN
+        let expected = r#"["foo","bar"]"#;
+        assert_eq!(actual, expected);
     }
 
     #[test]

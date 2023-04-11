@@ -1,7 +1,14 @@
 use std::str::FromStr;
 
 use clap::{ArgGroup, Parser, ValueEnum};
-use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::{
+    check::CheckType,
+    client::{create_client, ClientConfig, VERSION},
+    md::ToMd,
+    query::{qtype::QueryType, request::rdap_request},
+};
+use icann_rdap_common::response::RdapResponse;
+use simplelog::{debug, error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
@@ -92,7 +99,20 @@ struct Cli {
         value_enum,
         default_value_t = OutputType::AnsiText,
     )]
-    output: OutputType,
+    output_type: OutputType,
+
+    /// Log level.
+    ///
+    /// This option determines the level of logging.
+    #[arg(
+        short = 'L',
+        long,
+        required = false,
+        env = "RDAP_LOG",
+        value_enum,
+        default_value_t = LogLevel::Info
+    )]
+    log_level: LogLevel,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -158,15 +178,81 @@ enum OutputType {
     PrettyJson,
 }
 
-pub fn main() {
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum LogLevel {
+    /// No logging.
+    Off,
+
+    /// Log errors.
+    Error,
+
+    /// Log errors and warnings.
+    Warn,
+
+    /// Log informational messages, errors, and warnings.
+    Info,
+
+    /// Log debug messages, informational messages, errors and warnings.
+    Debug,
+
+    /// Log messages appropriate for software development.
+    Trace,
+}
+
+impl From<&LogLevel> for LevelFilter {
+    fn from(log_level: &LogLevel) -> Self {
+        match log_level {
+            LogLevel::Off => LevelFilter::Off,
+            LogLevel::Error => LevelFilter::Error,
+            LogLevel::Warn => LevelFilter::Warn,
+            LogLevel::Info => LevelFilter::Info,
+            LogLevel::Debug => LevelFilter::Debug,
+            LogLevel::Trace => LevelFilter::Trace,
+        }
+    }
+}
+
+#[tokio::main]
+pub async fn main() {
     dotenv::dotenv().ok();
     let cli = Cli::parse();
+
+    let level = LevelFilter::from(&cli.log_level);
+    TermLogger::init(
+        level,
+        Config::default(),
+        TerminalMode::Stderr,
+        ColorChoice::Auto,
+    )
+    .expect("Error instantiating log output.");
+
+    info!("ICANN RDAP {} Command Line Interface", VERSION);
+
     let query_type = query_type_from_cli(&cli);
-    println!("query type is {query_type}");
-    println!(
-        "rdap url is {}",
-        query_type.query_url("https://example.com").unwrap()
-    );
+    if let Some(query_value) = cli.query_value {
+        debug!("query type is {query_type} for value '{}'", query_value);
+    } else {
+        debug!("query is {query_type}");
+    }
+
+    let client_config = ClientConfig {
+        user_agent_suffix: "CLI".to_string(),
+    };
+    let rdap_client = create_client(&client_config);
+    if let Ok(client) = rdap_client {
+        let result = rdap_request(
+            "https://rdap-bootstrap.arin.net/bootstrap",
+            &query_type,
+            &client,
+        )
+        .await;
+        match result {
+            Ok(result) => print_response(&cli.output_type, result),
+            Err(error) => error!("{}", error),
+        }
+    } else {
+        error!("{}", rdap_client.err().unwrap())
+    }
 }
 
 fn query_type_from_cli(cli: &Cli) -> QueryType {
@@ -196,6 +282,21 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
         QueryType::Url(url)
     } else {
         QueryType::Help
+    }
+}
+
+fn print_response(output_type: &OutputType, response: RdapResponse) {
+    match output_type {
+        OutputType::AnsiText => todo!(),
+        OutputType::Markdown => println!(
+            "{}",
+            response.to_md(
+                1,
+                &[CheckType::Informational, CheckType::SpecificationCompliance]
+            )
+        ),
+        OutputType::Json => println!("{}", serde_json::to_string(&response).unwrap()),
+        OutputType::PrettyJson => println!("{}", serde_json::to_string_pretty(&response).unwrap()),
     }
 }
 

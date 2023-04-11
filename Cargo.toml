@@ -58,6 +58,9 @@ serde = { version = "1.0", features = [ "derive" ] }
 # json serializer
 serde_json = "1.0"
 
+# simple log framework
+simplelog = { version = "0.12", features = ["paris"] }
+
 # enum utilities
 strum = "0.24"
 strum_macros = "0.24"

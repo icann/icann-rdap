@@ -2,10 +2,9 @@ use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    entity::Entity,
     nameserver::Nameserver,
     network::Network,
-    types::{Common, Events, Links, Port43, PublicIds, Remarks, Status},
+    types::{Common, Events, Links, ObjectCommon, PublicIds},
 };
 
 /// Represents an RDAP variant name.
@@ -110,11 +109,8 @@ pub struct Domain {
     #[serde(flatten)]
     pub common: Common,
 
-    #[serde(rename = "objectClassName")]
-    pub object_class_name: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    #[serde(flatten)]
+    pub object_common: ObjectCommon,
 
     #[serde(rename = "ldhName")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -137,25 +133,6 @@ pub struct Domain {
     #[serde(rename = "publicIds")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub public_ids: Option<PublicIds>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remarks: Option<Remarks>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub links: Option<Links>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub events: Option<Events>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "port43")]
-    pub port_43: Option<Port43>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entities: Option<Vec<Entity>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network: Option<Network>,
@@ -449,17 +426,17 @@ mod tests {
 
         // THEN
         let actual = actual.unwrap();
-        assert_eq!(actual.object_class_name, "domain");
-        assert!(actual.handle.is_some());
+        assert_eq!(actual.object_common.object_class_name, "domain");
+        assert!(actual.object_common.handle.is_some());
         assert!(actual.ldh_name.is_some());
         assert!(actual.unicode_name.is_some());
         assert!(actual.variants.is_some());
         assert!(actual.public_ids.is_some());
-        assert!(actual.remarks.is_some());
-        assert!(actual.links.is_some());
-        assert!(actual.events.is_some());
-        assert!(actual.port_43.is_some());
-        assert!(actual.entities.is_some());
+        assert!(actual.object_common.remarks.is_some());
+        assert!(actual.object_common.links.is_some());
+        assert!(actual.object_common.events.is_some());
+        assert!(actual.object_common.port_43.is_some());
+        assert!(actual.object_common.entities.is_some());
         assert!(actual.secure_dns.is_some());
     }
 }

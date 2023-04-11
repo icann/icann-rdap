@@ -1,10 +1,7 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    entity::Entity,
-    types::{Common, Events, Links, Port43, Remarks, Status},
-};
+use super::types::{Common, ObjectCommon};
 
 /// Represents an IP address set for nameservers.
 #[derive(Serialize, Deserialize, Builder)]
@@ -22,11 +19,8 @@ pub struct Nameserver {
     #[serde(flatten)]
     pub common: Common,
 
-    #[serde(rename = "objectClassName")]
-    pub object_class_name: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    #[serde(flatten)]
+    pub object_common: ObjectCommon,
 
     #[serde(rename = "ldhName")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -39,25 +33,6 @@ pub struct Nameserver {
     #[serde(rename = "ipAddresses")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_addresses: Option<IpAddresses>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remarks: Option<Remarks>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub links: Option<Links>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub events: Option<Events>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "port43")]
-    pub port_43: Option<Port43>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entities: Option<Vec<Entity>>,
 }
 #[cfg(test)]
 #[allow(non_snake_case)]
@@ -119,14 +94,14 @@ mod tests {
 
         // THEN
         let actual = actual.unwrap();
-        assert_eq!(actual.object_class_name, "nameserver");
-        assert!(actual.handle.is_some());
+        assert_eq!(actual.object_common.object_class_name, "nameserver");
+        assert!(actual.object_common.handle.is_some());
         assert!(actual.ldh_name.is_some());
         assert!(actual.unicode_name.is_some());
         assert!(actual.ip_addresses.is_some());
-        assert!(actual.remarks.is_some());
-        assert!(actual.status.is_some());
-        assert!(actual.links.is_some());
-        assert!(actual.events.is_some());
+        assert!(actual.object_common.remarks.is_some());
+        assert!(actual.object_common.status.is_some());
+        assert!(actual.object_common.links.is_some());
+        assert!(actual.object_common.events.is_some());
     }
 }
