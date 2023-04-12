@@ -4,11 +4,12 @@ use clap::{ArgGroup, Parser, ValueEnum};
 use icann_rdap_client::{
     check::CheckType,
     client::{create_client, ClientConfig, VERSION},
-    md::ToMd,
+    md::{MdOptions, ToMd},
     query::{qtype::QueryType, request::rdap_request},
 };
 use icann_rdap_common::response::RdapResponse;
 use simplelog::{debug, error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
+use termimad::{crossterm::style::Color::*, rgb, MadSkin, StyledChar};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
@@ -287,12 +288,28 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
 
 fn print_response(output_type: &OutputType, response: RdapResponse) {
     match output_type {
-        OutputType::AnsiText => todo!(),
+        OutputType::AnsiText => {
+            let mut skin = MadSkin::default_dark();
+            skin.set_headers_fg(Yellow);
+            skin.bold.set_fg(Magenta);
+            skin.italic.set_fg(Blue);
+            skin.quote_mark.set_fg(White);
+            skin.print_text(&response.to_md(
+                1,
+                &[CheckType::Informational, CheckType::SpecificationCompliance],
+                &MdOptions::default(),
+            ))
+        }
         OutputType::Markdown => println!(
             "{}",
             response.to_md(
                 1,
-                &[CheckType::Informational, CheckType::SpecificationCompliance]
+                &[CheckType::Informational, CheckType::SpecificationCompliance],
+                &MdOptions {
+                    text_style_char: '_',
+                    style_in_justify: true,
+                    ..MdOptions::default()
+                }
             )
         ),
         OutputType::Json => println!("{}", serde_json::to_string(&response).unwrap()),

@@ -65,6 +65,9 @@ simplelog = { version = "0.12", features = ["paris"] }
 strum = "0.24"
 strum_macros = "0.24"
 
+# terminal markdown generator
+termimad = "0.20"
+
 # error macros
 thiserror = "1.0"
 
