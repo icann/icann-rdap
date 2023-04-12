@@ -1,5 +1,5 @@
 use icann_rdap_common::response::types::{
-    Common, Link, Links, NoticeOrRemark, Notices, RdapConformance, Remarks,
+    Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, RdapConformance, Remarks,
 };
 
 use super::{CheckItem, CheckType, Checks, GetChecks};
@@ -105,6 +105,33 @@ impl GetChecks for Common {
         };
         Checks {
             struct_name: "Common RDAP Response Structures",
+            items: Vec::new(),
+            sub_checks,
+        }
+    }
+}
+
+impl GetChecks for ObjectCommon {
+    fn get_checks(&self) -> Checks {
+        let mut sub_checks: Vec<Checks> = Vec::new();
+        if let Some(entities) = &self.entities {
+            entities
+                .iter()
+                .for_each(|e| sub_checks.push(e.get_checks()))
+        };
+        if let Some(links) = &self.links {
+            sub_checks.push(links.get_checks());
+        };
+        if let Some(remarks) = &self.remarks {
+            sub_checks.push(remarks.get_checks())
+        };
+        // TODO get handle
+        // TODO get object_class_name
+        // TODO get events
+        // TODO get status
+        // TODO get port43
+        Checks {
+            struct_name: "Common RDAP ObjectClass Structures",
             items: Vec::new(),
             sub_checks,
         }

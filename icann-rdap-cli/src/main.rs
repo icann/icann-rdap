@@ -9,7 +9,7 @@ use icann_rdap_client::{
 };
 use icann_rdap_common::response::RdapResponse;
 use simplelog::{debug, error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
-use termimad::{crossterm::style::Color::*, rgb, MadSkin, StyledChar};
+use termimad::{crossterm::style::Color::*, MadSkin};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]

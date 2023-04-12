@@ -5,6 +5,7 @@ use icann_rdap_common::response::RdapResponse;
 use crate::check::CheckType;
 
 pub mod domain;
+pub mod entity;
 pub mod types;
 
 pub(crate) const _CODE_INDENT: &str = "    ";
@@ -122,6 +123,7 @@ pub(crate) fn to_right_em(str: &str, width: usize, options: &MdOptions) -> Strin
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn to_right_bold(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_right(&to_bold(str, options), width, options)
@@ -138,6 +140,7 @@ pub(crate) fn to_left(str: &str, width: usize, options: &MdOptions) -> String {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn to_left_em(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_left(&to_em(str, options), width, options)
@@ -146,6 +149,7 @@ pub(crate) fn to_left_em(str: &str, width: usize, options: &MdOptions) -> String
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn to_left_bold(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_left(&to_bold(str, options), width, options)
@@ -154,6 +158,7 @@ pub(crate) fn to_left_bold(str: &str, width: usize, options: &MdOptions) -> Stri
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn to_center(str: &str, width: usize, options: &MdOptions) -> String {
     if options.no_unicode_chars {
         format!("{:^width$}", str)
@@ -162,6 +167,7 @@ pub(crate) fn to_center(str: &str, width: usize, options: &MdOptions) -> String 
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn to_center_em(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_center(&to_em(str, options), width, options)
@@ -170,6 +176,7 @@ pub(crate) fn to_center_em(str: &str, width: usize, options: &MdOptions) -> Stri
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn to_center_bold(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_center(&to_bold(str, options), width, options)

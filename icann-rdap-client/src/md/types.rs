@@ -1,4 +1,4 @@
-use icann_rdap_common::response::types::{Common, Link, Links, Notices, Remarks};
+use icann_rdap_common::response::types::{Common, Link, Links, Notices, ObjectCommon, Remarks};
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
 
 use crate::check::CheckType;
@@ -183,8 +183,11 @@ impl ToMd for Common {
         options: &MdOptions,
     ) -> String {
         let mut md = String::new();
-        md.push('\n');
-        md.push_str(HR);
+        let not_empty = self.rdap_conformance.is_some() || self.notices.is_some();
+        if not_empty {
+            md.push('\n');
+            md.push_str(HR);
+        };
         if let Some(rdap_conformance) = &self.rdap_conformance {
             md.push_str(&rdap_conformance.to_md(heading_level, check_types, options));
         };
@@ -192,7 +195,32 @@ impl ToMd for Common {
             md.push_str(&to_header("Server Notices", heading_level, options));
             md.push_str(&notices.to_md(heading_level, check_types, options));
         }
-        md.push_str(HR);
+        if not_empty {
+            md.push_str(HR);
+        };
+        md
+    }
+}
+
+impl ToMd for ObjectCommon {
+    fn to_md(
+        &self,
+        heading_level: usize,
+        check_types: &[CheckType],
+        options: &MdOptions,
+    ) -> String {
+        let mut md = String::new();
+        if let Some(remarks) = &self.remarks {
+            md.push_str(&remarks.to_md(heading_level + 1, check_types, options));
+        };
+        if let Some(links) = &self.links {
+            md.push_str(&links.to_md(heading_level + 1, check_types, options));
+        };
+        if let Some(entities) = &self.entities {
+            entities.iter().for_each(|entity| {
+                md.push_str(&entity.to_md(heading_level + 1, check_types, options))
+            });
+        }
         md
     }
 }

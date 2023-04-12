@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
 pub mod domain;
+pub mod entity;
 pub mod types;
 
 /// Describes the check types to be included in the markdown rendering.
