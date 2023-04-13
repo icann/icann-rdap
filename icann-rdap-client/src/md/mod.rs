@@ -4,8 +4,14 @@ use icann_rdap_common::response::RdapResponse;
 
 use crate::check::CheckType;
 
+pub mod autnum;
 pub mod domain;
 pub mod entity;
+pub mod error;
+pub mod help;
+pub mod nameserver;
+pub mod network;
+pub mod search;
 pub mod types;
 
 pub(crate) const _CODE_INDENT: &str = "    ";
@@ -63,16 +69,24 @@ impl ToMd for RdapResponse {
         options: &MdOptions,
     ) -> String {
         match &self {
-            RdapResponse::Entity(_) => todo!(),
+            RdapResponse::Entity(entity) => entity.to_md(heading_level, check_types, options),
             RdapResponse::Domain(domain) => domain.to_md(heading_level, check_types, options),
-            RdapResponse::Nameserver(_) => todo!(),
-            RdapResponse::Autnum(_) => todo!(),
-            RdapResponse::Network(_) => todo!(),
-            RdapResponse::DomainSearchResults(_) => todo!(),
-            RdapResponse::EntitySearchResults(_) => todo!(),
-            RdapResponse::NameserverSearchResults(_) => todo!(),
-            RdapResponse::ErrorResponse(_) => todo!(),
-            RdapResponse::Help(_) => todo!(),
+            RdapResponse::Nameserver(nameserver) => {
+                nameserver.to_md(heading_level, check_types, options)
+            }
+            RdapResponse::Autnum(autnum) => autnum.to_md(heading_level, check_types, options),
+            RdapResponse::Network(network) => network.to_md(heading_level, check_types, options),
+            RdapResponse::DomainSearchResults(results) => {
+                results.to_md(heading_level, check_types, options)
+            }
+            RdapResponse::EntitySearchResults(results) => {
+                results.to_md(heading_level, check_types, options)
+            }
+            RdapResponse::NameserverSearchResults(results) => {
+                results.to_md(heading_level, check_types, options)
+            }
+            RdapResponse::ErrorResponse(error) => error.to_md(heading_level, check_types, options),
+            RdapResponse::Help(help) => help.to_md(heading_level, check_types, options),
         }
     }
 }

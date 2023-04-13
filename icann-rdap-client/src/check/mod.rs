@@ -2,8 +2,14 @@ use icann_rdap_common::response::RdapResponse;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
+pub mod autnum;
 pub mod domain;
 pub mod entity;
+pub mod error;
+pub mod help;
+pub mod nameserver;
+pub mod network;
+pub mod search;
 pub mod types;
 
 /// Describes the check types to be included in the markdown rendering.
