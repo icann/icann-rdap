@@ -43,6 +43,12 @@ git-version = "0.3"
 # lazy static initilization
 lazy_static = "1.4"
 
+# using terminal helper
+is-terminal = "0.4"
+
+# embedded pager
+minus = {version = "5.3", features = ["dynamic_output", "search"] }
+
 # percent encoding
 pct-str = "1.2"
 

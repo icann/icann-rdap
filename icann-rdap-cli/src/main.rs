@@ -1,6 +1,7 @@
-use std::str::FromStr;
+use std::{io::ErrorKind, str::FromStr};
 
 use clap::{ArgGroup, Parser, ValueEnum};
+use error::CliError;
 use icann_rdap_client::{
     check::CheckType,
     client::{create_client, ClientConfig, VERSION},
@@ -8,8 +9,15 @@ use icann_rdap_client::{
     query::{qtype::QueryType, request::rdap_request},
 };
 use icann_rdap_common::response::RdapResponse;
-use simplelog::{debug, error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
+use is_terminal::IsTerminal;
+use reqwest::Client;
+use simplelog::{
+    error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+};
 use termimad::{crossterm::style::Color::*, MadSkin};
+use tokio::{join, task::spawn_blocking};
+
+pub mod error;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
@@ -98,9 +106,24 @@ struct Cli {
         required = false,
         env = "RDAP_OUTPUT",
         value_enum,
-        default_value_t = OutputType::AnsiText,
+        default_value_t = OutputType::Auto,
     )]
     output_type: OutputType,
+
+    /// Pager Usage.
+    ///
+    /// Determines how to handle paging output.
+    /// When using the embedded pager, all log messages will be sent to the
+    /// pager as well. Otherwise, log messages are sent to stderr.
+    #[arg(
+        short = 'P',
+        long,
+        required = false,
+        env = "RDAP_PAGING",
+        value_enum,
+        default_value_t = PagerType::Auto,
+    )]
+    page_output: PagerType,
 
     /// Log level.
     ///
@@ -177,6 +200,9 @@ enum OutputType {
 
     /// Results are output as Pretty JSON.
     PrettyJson,
+
+    /// Automatically determine the output type.
+    Auto,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -200,6 +226,18 @@ enum LogLevel {
     Trace,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum PagerType {
+    /// Use the embedded pager.
+    Embedded,
+
+    /// Use no pager.
+    None,
+
+    /// Automatically determine pager use.
+    Auto,
+}
+
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
@@ -214,46 +252,96 @@ impl From<&LogLevel> for LevelFilter {
 }
 
 #[tokio::main]
-pub async fn main() {
+pub async fn main() -> Result<(), CliError> {
     dotenv::dotenv().ok();
     let cli = Cli::parse();
 
     let level = LevelFilter::from(&cli.log_level);
-    TermLogger::init(
-        level,
-        Config::default(),
-        TerminalMode::Stderr,
-        ColorChoice::Auto,
-    )
-    .expect("Error instantiating log output.");
-
-    info!("ICANN RDAP {} Command Line Interface", VERSION);
 
     let query_type = query_type_from_cli(&cli);
-    if let Some(query_value) = cli.query_value {
-        debug!("query type is {query_type} for value '{}'", query_value);
-    } else {
-        debug!("query is {query_type}");
-    }
+
+    let use_pager = match cli.page_output {
+        PagerType::Embedded => true,
+        PagerType::None => false,
+        PagerType::Auto => std::io::stdout().is_terminal(),
+    };
+
+    let output_type = match cli.output_type {
+        OutputType::Auto => {
+            if std::io::stdout().is_terminal() {
+                OutputType::AnsiText
+            } else {
+                OutputType::Json
+            }
+        }
+        _ => cli.output_type,
+    };
 
     let client_config = ClientConfig {
         user_agent_suffix: "CLI".to_string(),
     };
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
-        let result = rdap_request(
-            "https://rdap-bootstrap.arin.net/bootstrap",
-            &query_type,
-            &client,
-        )
-        .await;
-        match result {
-            Ok(result) => print_response(&cli.output_type, result),
-            Err(error) => error!("{}", error),
+        if !use_pager {
+            TermLogger::init(
+                level,
+                Config::default(),
+                TerminalMode::Stderr,
+                ColorChoice::Auto,
+            )
+            .expect("Error instantiating log output.");
+            info!("ICANN RDAP {} Command Line Interface", VERSION);
+            if let Some(query_value) = cli.query_value {
+                info!("query type is {query_type} for value '{}'", query_value);
+            } else {
+                info!("query is {query_type}");
+            }
+            let result = do_query(
+                "https://rdap-bootstrap.arin.net/bootstrap",
+                &query_type,
+                &output_type,
+                &client,
+                &mut std::io::stdout(),
+            )
+            .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => error!("{}", error),
+            }
+        } else {
+            let pager = minus::Pager::new();
+            let mut output = BridgeWriter(pager.clone());
+
+            let exec = async {
+                WriteLogger::init(level, Config::default(), output.clone())
+                    .expect("Error instantiating log output.");
+                info!("ICANN RDAP {} Command Line Interface", VERSION);
+                if let Some(query_value) = cli.query_value {
+                    info!("query type is {query_type} for value '{}'", query_value);
+                } else {
+                    info!("query is {query_type}");
+                }
+                let result = do_query(
+                    "https://rdap-bootstrap.arin.net/bootstrap",
+                    &query_type,
+                    &output_type,
+                    &client,
+                    &mut output,
+                )
+                .await;
+                match result {
+                    Ok(_) => {}
+                    Err(error) => error!("{}", error),
+                }
+            };
+            let pager = pager.clone();
+            let (res1, _res2) = join!(spawn_blocking(move || minus::dynamic_paging(pager)), exec);
+            res1.unwrap()?;
         }
     } else {
         error!("{}", rdap_client.err().unwrap())
-    }
+    };
+    Ok(())
 }
 
 fn query_type_from_cli(cli: &Cli) -> QueryType {
@@ -286,7 +374,26 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
     }
 }
 
-fn print_response(output_type: &OutputType, response: RdapResponse) {
+async fn do_query<W: std::io::Write>(
+    base_url: &str,
+    query_type: &QueryType,
+    output_type: &OutputType,
+    client: &Client,
+    write: &mut W,
+) -> Result<(), CliError> {
+    let result = rdap_request(base_url, query_type, client).await;
+    match result {
+        Ok(result) => print_response(output_type, result, write)?,
+        Err(error) => return Err(CliError::RdapClient(error)),
+    };
+    Ok(())
+}
+
+fn print_response<W: std::io::Write>(
+    output_type: &OutputType,
+    response: RdapResponse,
+    write: &mut W,
+) -> Result<(), CliError> {
     match output_type {
         OutputType::AnsiText => {
             let mut skin = MadSkin::default_dark();
@@ -294,13 +401,17 @@ fn print_response(output_type: &OutputType, response: RdapResponse) {
             skin.bold.set_fg(Magenta);
             skin.italic.set_fg(Blue);
             skin.quote_mark.set_fg(White);
-            skin.print_text(&response.to_md(
-                1,
-                &[CheckType::Informational, CheckType::SpecificationCompliance],
-                &MdOptions::default(),
-            ))
+            skin.write_text_on(
+                write,
+                &response.to_md(
+                    1,
+                    &[CheckType::Informational, CheckType::SpecificationCompliance],
+                    &MdOptions::default(),
+                ),
+            )?;
         }
-        OutputType::Markdown => println!(
+        OutputType::Markdown => writeln!(
+            write,
             "{}",
             response.to_md(
                 1,
@@ -311,9 +422,31 @@ fn print_response(output_type: &OutputType, response: RdapResponse) {
                     ..MdOptions::default()
                 }
             )
-        ),
-        OutputType::Json => println!("{}", serde_json::to_string(&response).unwrap()),
-        OutputType::PrettyJson => println!("{}", serde_json::to_string_pretty(&response).unwrap()),
+        )?,
+        OutputType::Json => writeln!(write, "{}", serde_json::to_string(&response).unwrap())?,
+        OutputType::PrettyJson => writeln!(
+            write,
+            "{}",
+            serde_json::to_string_pretty(&response).unwrap()
+        )?,
+        OutputType::Auto => return Err(CliError::UnknownOutputType),
+    };
+    Ok(())
+}
+
+#[derive(Clone)]
+struct BridgeWriter<W: std::fmt::Write>(W);
+
+impl<W: std::fmt::Write> std::io::Write for BridgeWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .write_str(&String::from_utf8_lossy(buf))
+            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }
 
