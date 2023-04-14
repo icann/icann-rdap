@@ -13,10 +13,17 @@ icann-rdap-common = { path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr-utils.workspace = true
+lazy_static.workspace = true
 pct-str.workspace = true
+regex.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+
+# fixture testings
+rstest = "0.17.0"

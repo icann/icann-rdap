@@ -1,7 +1,9 @@
 use std::{net::IpAddr, str::FromStr};
 
 use cidr_utils::cidr::IpCidr;
+use lazy_static::lazy_static;
 use pct_str::{PctString, URIReserved};
+use regex::Regex;
 use strum_macros::Display;
 
 use crate::RdapClientError;
@@ -161,11 +163,7 @@ impl FromStr for QueryType {
         // if it looks like a domain name
         let labels: Vec<&str> = s.split('.').filter(|l| is_ldh(l)).collect();
         if labels.len() > 1 {
-            if labels
-                .first()
-                .unwrap()
-                .starts_with(|c| matches!(c, 'n' | 's'))
-            {
+            if is_nameserver(s) {
                 return Ok(QueryType::Nameserver(s.to_owned()));
             } else {
                 return Ok(QueryType::Domain(s.to_owned()));
@@ -186,10 +184,20 @@ fn is_ldh(s: &str) -> bool {
     s.contains(|c: char| c.is_alphanumeric() || c == '-')
 }
 
+fn is_nameserver(text: &str) -> bool {
+    lazy_static! {
+        static ref NS_RE: Regex =
+            Regex::new(r"(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]*\.[a-zA-Z0-9-]*\.?").unwrap();
+    }
+    NS_RE.is_match(text)
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
     use std::str::FromStr;
+
+    use rstest::rstest;
 
     use super::QueryType;
 
@@ -265,25 +273,30 @@ mod tests {
         assert!(matches!(q.unwrap(), QueryType::AsNumber(_)))
     }
 
-    #[test]
-    fn GIVEN_domain_name_WHEN_query_type_from_str_THEN_query_is_domain() {
-        // GIVEN
-        let s = "example.com";
+    #[rstest]
+    #[case("example.com")]
+    #[case("foo.example.com")]
+    #[case("snark.fail")]
+    #[case("ns.fail")]
+    fn GIVEN_domain_name_WHEN_query_type_from_str_THEN_query_is_domain(#[case] input: &str) {
+        // GIVEN case input
 
         // WHEN
-        let q = QueryType::from_str(s);
+        let q = QueryType::from_str(input);
 
         // THEN
         assert!(matches!(q.unwrap(), QueryType::Domain(_)))
     }
 
-    #[test]
-    fn GIVEN_name_server_WHEN_query_type_from_str_THEN_query_is_nameserver() {
-        // GIVEN
-        let s = "ns.example.com";
+    #[rstest]
+    #[case("ns.example.com")]
+    #[case("ns1.example.com")]
+    #[case("NS1.example.com")]
+    fn GIVEN_name_server_WHEN_query_type_from_str_THEN_query_is_nameserver(#[case] input: &str) {
+        // GIVEN case input
 
         // WHEN
-        let q = QueryType::from_str(s);
+        let q = QueryType::from_str(input);
 
         // THEN
         assert!(matches!(q.unwrap(), QueryType::Nameserver(_)))
