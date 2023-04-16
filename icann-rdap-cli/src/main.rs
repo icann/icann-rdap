@@ -4,11 +4,11 @@ use clap::{ArgGroup, Parser, ValueEnum};
 use error::CliError;
 use icann_rdap_client::{
     check::CheckType,
-    client::{create_client, ClientConfig, VERSION},
+    client::{create_client, ClientConfig},
     md::{MdOptions, ToMd},
     query::{qtype::QueryType, request::rdap_request},
 };
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::{response::RdapResponse, VERSION};
 use is_terminal::IsTerminal;
 use reqwest::Client;
 use simplelog::{

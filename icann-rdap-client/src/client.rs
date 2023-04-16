@@ -7,7 +7,7 @@ use reqwest::{
 use crate::RdapClientError;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+use icann_rdap_common::VERSION;
 
 #[derive(Builder)]
 /// Configures the HTTP client.

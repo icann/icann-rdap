@@ -1,0 +1,34 @@
+[package]
+name = "icann-rdap-srv"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = """
+An RDAP Server.
+"""
+
+[dependencies]
+
+icann-rdap-client = { path = "../icann-rdap-client" }
+icann-rdap-common = { path = "../icann-rdap-common" }
+
+axum.workspace = true
+axum-client-ip.workspace = true
+buildstructor.workspace = true
+cidr-utils.workspace = true
+clap.workspace = true
+dotenv.workspace = true
+is-terminal.workspace = true
+headers.workspace = true
+http.workspace = true
+hyper.workspace = true
+pct-str.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
