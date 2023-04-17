@@ -18,11 +18,11 @@ impl ToMd for Autnum {
                 &self.end_autnum.unwrap()
             )
         } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {}", start_autnum)
+            format!("Autonomous System {start_autnum}")
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {}", handle)
+            format!("Autonomous System {handle}")
         } else if let Some(name) = &self.name {
-            format!("Autonomous System {}", name)
+            format!("Autonomous System {name}")
         } else {
             "Autonomous System".to_string()
         };

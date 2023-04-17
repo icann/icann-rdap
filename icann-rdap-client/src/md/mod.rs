@@ -123,9 +123,9 @@ pub(crate) fn to_header(str: &str, level: usize, options: &MdOptions) -> String 
 
 pub(crate) fn to_right(str: &str, width: usize, options: &MdOptions) -> String {
     if options.no_unicode_chars {
-        format!("{:>width$}", str)
+        format!("{str:>width$}")
     } else {
-        format!("{:\u{2003}>width$}", str)
+        format!("{str:\u{2003}>width$}")
     }
 }
 
@@ -148,9 +148,9 @@ pub(crate) fn to_right_bold(str: &str, width: usize, options: &MdOptions) -> Str
 
 pub(crate) fn to_left(str: &str, width: usize, options: &MdOptions) -> String {
     if options.no_unicode_chars {
-        format!("{:<width$}", str)
+        format!("{str:<width$}")
     } else {
-        format!("{:\u{2003}<width$}", str)
+        format!("{str:\u{2003}<width$}")
     }
 }
 
@@ -175,9 +175,9 @@ pub(crate) fn to_left_bold(str: &str, width: usize, options: &MdOptions) -> Stri
 #[allow(dead_code)]
 pub(crate) fn to_center(str: &str, width: usize, options: &MdOptions) -> String {
     if options.no_unicode_chars {
-        format!("{:^width$}", str)
+        format!("{str:^width$}")
     } else {
-        format!("{:\u{2003}^width$}", str)
+        format!("{str:\u{2003}^width$}")
     }
 }
 

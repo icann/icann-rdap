@@ -12,11 +12,11 @@ impl ToMd for Nameserver {
         let mut md = String::new();
         md.push_str(&self.common.to_md(heading_level, check_types, options));
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Nameserver {}", unicode_name)
+            format!("Nameserver {unicode_name}")
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Nameserver {}", ldh_name)
+            format!("Nameserver {ldh_name}")
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Nameserver {}", handle)
+            format!("Nameserver {handle}")
         } else {
             "Domain".to_string()
         };

@@ -20,7 +20,6 @@ pub struct Link {
     /// According to RFC 9083, this field is required
     /// but many servers do not return it as it was
     /// optional in RFC 7483.
-    // TODO add this to a validation mode in the future.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
 
@@ -28,7 +27,6 @@ pub struct Link {
     /// According to RFC 9083, this field is required
     /// but many servers do not return it as it was
     /// optional in RFC 7483.
-    // TODO add this to a validation mode in the future.
     pub rel: Option<String>,
 
     pub href: String,

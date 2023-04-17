@@ -12,11 +12,11 @@ impl ToMd for Domain {
         let mut md = String::new();
         md.push_str(&self.common.to_md(heading_level, check_types, options));
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Domain {}", unicode_name)
+            format!("Domain {unicode_name}")
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Domain {}", ldh_name)
+            format!("Domain {ldh_name}")
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Domain {}", handle)
+            format!("Domain {handle}")
         } else {
             "Domain".to_string()
         };

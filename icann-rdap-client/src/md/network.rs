@@ -18,11 +18,11 @@ impl ToMd for Network {
                 &self.end_address.as_ref().unwrap()
             )
         } else if let Some(start_address) = &self.start_address {
-            format!("IP Network {}", start_address)
+            format!("IP Network {start_address}")
         } else if let Some(handle) = &self.object_common.handle {
-            format!("IP Network {}", handle)
+            format!("IP Network {handle}")
         } else if let Some(name) = &self.name {
-            format!("IP Network {}", name)
+            format!("IP Network {name}")
         } else {
             "IP Network".to_string()
         };
