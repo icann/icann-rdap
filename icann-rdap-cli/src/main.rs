@@ -5,10 +5,13 @@ use error::CliError;
 use icann_rdap_client::{
     check::CheckType,
     client::{create_client, ClientConfig},
-    md::{MdOptions, MdParams, ToMd},
-    query::{qtype::QueryType, request::rdap_request},
+    md::{MdOptions, MdParams, MetaData, SourceType, ToMd},
+    query::{
+        qtype::QueryType,
+        request::{rdap_request, ResponseData},
+    },
 };
-use icann_rdap_common::{response::RdapResponse, VERSION};
+use icann_rdap_common::VERSION;
 use is_terminal::IsTerminal;
 use reqwest::Client;
 use simplelog::{
@@ -300,6 +303,7 @@ pub async fn main() -> Result<(), CliError> {
                 "https://rdap-bootstrap.arin.net/bootstrap",
                 &query_type,
                 &output_type,
+                None,
                 &client,
                 &mut std::io::stdout(),
             )
@@ -325,6 +329,7 @@ pub async fn main() -> Result<(), CliError> {
                     "https://rdap-bootstrap.arin.net/bootstrap",
                     &query_type,
                     &output_type,
+                    None,
                     &client,
                     &mut output,
                 )
@@ -374,16 +379,45 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
     }
 }
 
-async fn do_query<W: std::io::Write>(
+async fn do_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
     output_type: &OutputType,
+    metadata: Option<&'a MetaData<'a>>,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
-    let result = rdap_request(base_url, query_type, client).await;
-    match result {
-        Ok(result) => print_response(output_type, result, write)?,
+    let response = rdap_request(base_url, query_type, client).await;
+    match response {
+        Ok(response) => {
+            let source_host = response.host.to_owned();
+            let metadata = if let Some(meta) = metadata {
+                MetaData {
+                    req_number: meta.req_number + 1,
+                    source_host: meta.source_host,
+                    source_type: icann_rdap_client::md::SourceType::UncategorizedRegistry,
+                }
+            } else {
+                let req_number = 1;
+                let source_type = match query_type {
+                    QueryType::IpV4Addr(_)
+                    | QueryType::IpV6Addr(_)
+                    | QueryType::IpV4Cidr(_)
+                    | QueryType::IpV6Cidr(_)
+                    | QueryType::AsNumber(_) => SourceType::RegionalInternetRegistry,
+                    QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
+                        SourceType::DomainRegistry
+                    }
+                    _ => SourceType::UncategorizedRegistry,
+                };
+                MetaData {
+                    req_number,
+                    source_host: &source_host,
+                    source_type,
+                }
+            };
+            print_response(output_type, &metadata, response, write)?;
+        }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
     Ok(())
@@ -391,7 +425,8 @@ async fn do_query<W: std::io::Write>(
 
 fn print_response<W: std::io::Write>(
     output_type: &OutputType,
-    response: RdapResponse,
+    metadata: &MetaData,
+    response: ResponseData,
     write: &mut W,
 ) -> Result<(), CliError> {
     match output_type {
@@ -403,24 +438,26 @@ fn print_response<W: std::io::Write>(
             skin.quote_mark.set_fg(White);
             skin.write_text_on(
                 write,
-                &response.to_md(MdParams {
+                &response.rdap.to_md(MdParams {
                     heading_level: 1,
                     check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
                     options: &MdOptions::default(),
+                    metadata,
                 }),
             )?;
         }
         OutputType::Markdown => writeln!(
             write,
             "{}",
-            response.to_md(MdParams {
+            response.rdap.to_md(MdParams {
                 heading_level: 1,
                 check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
                 options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,
                     ..MdOptions::default()
-                }
+                },
+                metadata,
             })
         )?,
         OutputType::Json => writeln!(write, "{}", serde_json::to_string(&response).unwrap())?,

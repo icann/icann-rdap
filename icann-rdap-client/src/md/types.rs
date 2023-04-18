@@ -8,7 +8,12 @@ use super::{to_em, ToMd};
 
 impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {
-        let mut md = String::from("RDAP Server Conformance:\n");
+        let mut md = String::new();
+        md.push_str(&to_header(
+            &format!("{} Capabilities", params.metadata.source_host),
+            params.heading_level + 1,
+            params.options,
+        ));
         self.iter()
             .for_each(|s| md.push_str(&format!("* {}\n", s.0)));
         self.get_checks()
@@ -115,17 +120,10 @@ impl ToMd for Remarks {
 }
 
 impl ToMd for NoticeOrRemark {
-    fn to_md(
-        &self,
-        MdParams {
-            heading_level,
-            check_types,
-            options,
-        }: MdParams,
-    ) -> String {
+    fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(title) = &self.title {
-            md.push_str(&format!("{}\n", to_bold(title, options)));
+            md.push_str(&format!("{}\n", to_bold(title, params.options)));
         };
         self.description
             .iter()
@@ -133,22 +131,18 @@ impl ToMd for NoticeOrRemark {
         self.get_checks()
             .items
             .iter()
-            .filter(|item| check_types.contains(&item.check_type))
+            .filter(|item| params.check_types.contains(&item.check_type))
             .for_each(|item| {
                 md.push_str(&format!(
                     "* {}: {}\n",
-                    to_em(&item.check_type.to_string(), options),
+                    to_em(&item.check_type.to_string(), params.options),
                     item.message
                 ))
             });
         if let Some(links) = &self.links {
-            links.iter().for_each(|link| {
-                md.push_str(&link.to_md(MdParams {
-                    heading_level,
-                    check_types,
-                    options,
-                }))
-            });
+            links
+                .iter()
+                .for_each(|link| md.push_str(&link.to_md(params)));
         }
         md.push('\n');
         md
@@ -156,34 +150,32 @@ impl ToMd for NoticeOrRemark {
 }
 
 impl ToMd for Common {
-    fn to_md(
-        &self,
-        MdParams {
-            heading_level,
-            check_types,
-            options,
-        }: MdParams,
-    ) -> String {
+    fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         let not_empty = self.rdap_conformance.is_some() || self.notices.is_some();
         if not_empty {
             md.push('\n');
             md.push_str(HR);
+            let header_text = format!(
+                "Response from {} at {}",
+                params.metadata.source_type, params.metadata.source_host
+            );
+            md.push_str(&to_header(
+                &header_text,
+                params.heading_level,
+                params.options,
+            ));
         };
         if let Some(rdap_conformance) = &self.rdap_conformance {
-            md.push_str(&rdap_conformance.to_md(MdParams {
-                heading_level,
-                check_types,
-                options,
-            }));
+            md.push_str(&rdap_conformance.to_md(params));
         };
         if let Some(notices) = &self.notices {
-            md.push_str(&to_header("Server Notices", heading_level, options));
-            md.push_str(&notices.to_md(MdParams {
-                heading_level,
-                check_types,
-                options,
-            }));
+            md.push_str(&to_header(
+                "Server Notices",
+                params.heading_level + 1,
+                params.options,
+            ));
+            md.push_str(&notices.to_md(params));
         }
         if not_empty {
             md.push_str(HR);
@@ -193,35 +185,25 @@ impl ToMd for Common {
 }
 
 impl ToMd for ObjectCommon {
-    fn to_md(
-        &self,
-        MdParams {
-            heading_level,
-            check_types,
-            options,
-        }: MdParams,
-    ) -> String {
+    fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(remarks) = &self.remarks {
             md.push_str(&remarks.to_md(MdParams {
-                heading_level: heading_level + 1,
-                check_types,
-                options,
+                heading_level: params.heading_level + 1,
+                ..params
             }));
         };
         if let Some(links) = &self.links {
             md.push_str(&links.to_md(MdParams {
-                heading_level: heading_level + 1,
-                check_types,
-                options,
+                heading_level: params.heading_level + 1,
+                ..params
             }));
         };
         if let Some(entities) = &self.entities {
             entities.iter().for_each(|entity| {
                 md.push_str(&entity.to_md(MdParams {
-                    heading_level: heading_level + 1,
-                    check_types,
-                    options,
+                    heading_level: params.heading_level + 1,
+                    ..params
                 }))
             });
         }
