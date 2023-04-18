@@ -56,37 +56,30 @@ impl MdOptions {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct MdParams<'a> {
+    pub heading_level: usize,
+    pub check_types: &'a [CheckType],
+    pub options: &'a MdOptions,
+}
+
 pub trait ToMd {
-    fn to_md(&self, heading_level: usize, check_types: &[CheckType], options: &MdOptions)
-        -> String;
+    fn to_md(&self, params: MdParams) -> String;
 }
 
 impl ToMd for RdapResponse {
-    fn to_md(
-        &self,
-        heading_level: usize,
-        check_types: &[CheckType],
-        options: &MdOptions,
-    ) -> String {
+    fn to_md(&self, params: MdParams) -> String {
         match &self {
-            RdapResponse::Entity(entity) => entity.to_md(heading_level, check_types, options),
-            RdapResponse::Domain(domain) => domain.to_md(heading_level, check_types, options),
-            RdapResponse::Nameserver(nameserver) => {
-                nameserver.to_md(heading_level, check_types, options)
-            }
-            RdapResponse::Autnum(autnum) => autnum.to_md(heading_level, check_types, options),
-            RdapResponse::Network(network) => network.to_md(heading_level, check_types, options),
-            RdapResponse::DomainSearchResults(results) => {
-                results.to_md(heading_level, check_types, options)
-            }
-            RdapResponse::EntitySearchResults(results) => {
-                results.to_md(heading_level, check_types, options)
-            }
-            RdapResponse::NameserverSearchResults(results) => {
-                results.to_md(heading_level, check_types, options)
-            }
-            RdapResponse::ErrorResponse(error) => error.to_md(heading_level, check_types, options),
-            RdapResponse::Help(help) => help.to_md(heading_level, check_types, options),
+            RdapResponse::Entity(entity) => entity.to_md(params),
+            RdapResponse::Domain(domain) => domain.to_md(params),
+            RdapResponse::Nameserver(nameserver) => nameserver.to_md(params),
+            RdapResponse::Autnum(autnum) => autnum.to_md(params),
+            RdapResponse::Network(network) => network.to_md(params),
+            RdapResponse::DomainSearchResults(results) => results.to_md(params),
+            RdapResponse::EntitySearchResults(results) => results.to_md(params),
+            RdapResponse::NameserverSearchResults(results) => results.to_md(params),
+            RdapResponse::ErrorResponse(error) => error.to_md(params),
+            RdapResponse::Help(help) => help.to_md(params),
         }
     }
 }

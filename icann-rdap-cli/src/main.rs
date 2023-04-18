@@ -5,7 +5,7 @@ use error::CliError;
 use icann_rdap_client::{
     check::CheckType,
     client::{create_client, ClientConfig},
-    md::{MdOptions, ToMd},
+    md::{MdOptions, MdParams, ToMd},
     query::{qtype::QueryType, request::rdap_request},
 };
 use icann_rdap_common::{response::RdapResponse, VERSION};
@@ -403,25 +403,25 @@ fn print_response<W: std::io::Write>(
             skin.quote_mark.set_fg(White);
             skin.write_text_on(
                 write,
-                &response.to_md(
-                    1,
-                    &[CheckType::Informational, CheckType::SpecificationCompliance],
-                    &MdOptions::default(),
-                ),
+                &response.to_md(MdParams {
+                    heading_level: 1,
+                    check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
+                    options: &MdOptions::default(),
+                }),
             )?;
         }
         OutputType::Markdown => writeln!(
             write,
             "{}",
-            response.to_md(
-                1,
-                &[CheckType::Informational, CheckType::SpecificationCompliance],
-                &MdOptions {
+            response.to_md(MdParams {
+                heading_level: 1,
+                check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
+                options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,
                     ..MdOptions::default()
                 }
-            )
+            })
         )?,
         OutputType::Json => writeln!(write, "{}", serde_json::to_string(&response).unwrap())?,
         OutputType::PrettyJson => writeln!(
