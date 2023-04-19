@@ -1,5 +1,6 @@
 use icann_rdap_common::response::types::{Common, Link, Links, Notices, ObjectCommon, Remarks};
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
+use strum::EnumMessage;
 
 use crate::check::GetChecks;
 
@@ -19,8 +20,16 @@ impl ToMd for RdapConformance {
         self.get_checks()
             .items
             .iter()
-            .filter(|item| params.check_types.contains(&item.check_type))
-            .for_each(|item| md.push_str(&format!("* _{}_: {}\n", item.check_type, item.message)));
+            .filter(|item| params.check_types.contains(&item.check_class))
+            .for_each(|item| {
+                md.push_str(&format!(
+                    "* _{}_: {}\n",
+                    item.check_class,
+                    item.check
+                        .get_message()
+                        .expect("Check has no message. Coding error.")
+                ))
+            });
         md.push('\n');
         md
     }
@@ -88,12 +97,14 @@ impl ToMd for Link {
         checks
             .items
             .iter()
-            .filter(|item| params.check_types.contains(&item.check_type))
+            .filter(|item| params.check_types.contains(&item.check_class))
             .for_each(|item| {
                 md.push_str(&format!(
                     "* {}: {}\n",
-                    to_right_em(&item.check_type.to_string(), key_width, params.options),
-                    item.message
+                    to_right_em(&item.check_class.to_string(), key_width, params.options),
+                    item.check
+                        .get_message()
+                        .expect("Check has no message. Coding error.")
                 ))
             });
         md.push('\n');
@@ -131,12 +142,14 @@ impl ToMd for NoticeOrRemark {
         self.get_checks()
             .items
             .iter()
-            .filter(|item| params.check_types.contains(&item.check_type))
+            .filter(|item| params.check_types.contains(&item.check_class))
             .for_each(|item| {
                 md.push_str(&format!(
                     "* {}: {}\n",
-                    to_em(&item.check_type.to_string(), params.options),
-                    item.message
+                    to_em(&item.check_class.to_string(), params.options),
+                    item.check
+                        .get_message()
+                        .expect("Check has no message. Coding error.")
                 ))
             });
         if let Some(links) = &self.links {

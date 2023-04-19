@@ -2,7 +2,7 @@ use icann_rdap_common::response::types::{
     Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, RdapConformance, Remarks,
 };
 
-use super::{CheckItem, CheckType, Checks, GetChecks};
+use super::{Check, CheckClass, CheckItem, Checks, GetChecks};
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self) -> Checks {
@@ -32,16 +32,14 @@ impl GetChecks for Link {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.value.is_none() {
             items.push(CheckItem {
-                check_type: CheckType::SpecificationCompliance,
-                message: "'value' property not found in Link structure as required by RFC 7083"
-                    .to_string(),
+                check_class: CheckClass::SpecificationCompliance,
+                check: Check::LinkMissingValueProperty,
             })
         };
         if self.rel.is_none() {
             items.push(CheckItem {
-                check_type: CheckType::SpecificationCompliance,
-                message: "'rel' property not found in Link structure as required by RFC 7083"
-                    .to_string(),
+                check_class: CheckClass::SpecificationCompliance,
+                check: Check::LinkMissingRelProperty,
             })
         };
         Checks {

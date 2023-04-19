@@ -1,7 +1,7 @@
 use std::io::ErrorKind;
 
 use icann_rdap_client::{
-    check::CheckType,
+    check::CheckClass,
     md::{MdOptions, MdParams, ToMd},
     query::{
         qtype::QueryType,
@@ -165,7 +165,11 @@ fn print_response<W: std::io::Write>(
                 write,
                 &response.rdap.to_md(MdParams {
                     heading_level: 1,
-                    check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
+                    root: &response.rdap,
+                    check_types: &[
+                        CheckClass::Informational,
+                        CheckClass::SpecificationCompliance,
+                    ],
                     options: &MdOptions::default(),
                     req_data,
                 }),
@@ -176,7 +180,11 @@ fn print_response<W: std::io::Write>(
             "{}",
             response.rdap.to_md(MdParams {
                 heading_level: 1,
-                check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
+                root: &response.rdap,
+                check_types: &[
+                    CheckClass::Informational,
+                    CheckClass::SpecificationCompliance
+                ],
                 options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,

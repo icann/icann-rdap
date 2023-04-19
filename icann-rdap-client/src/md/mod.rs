@@ -2,7 +2,7 @@ use std::char;
 
 use icann_rdap_common::response::RdapResponse;
 
-use crate::{check::CheckType, request::RequestData};
+use crate::{check::CheckClass, request::RequestData};
 
 pub mod autnum;
 pub mod domain;
@@ -59,7 +59,8 @@ impl MdOptions {
 #[derive(Clone, Copy)]
 pub struct MdParams<'a> {
     pub heading_level: usize,
-    pub check_types: &'a [CheckType],
+    pub root: &'a RdapResponse,
+    pub check_types: &'a [CheckClass],
     pub options: &'a MdOptions,
     pub req_data: &'a RequestData<'a>,
 }

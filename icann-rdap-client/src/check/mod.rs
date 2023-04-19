@@ -1,6 +1,6 @@
 use icann_rdap_common::response::RdapResponse;
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum_macros::{Display, EnumMessage};
 
 pub mod autnum;
 pub mod domain;
@@ -12,9 +12,9 @@ pub mod network;
 pub mod search;
 pub mod types;
 
-/// Describes the check types to be included in the markdown rendering.
+/// Describes the calls of checks.
 #[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
-pub enum CheckType {
+pub enum CheckClass {
     #[strum(serialize = "Info")]
     Informational,
     #[strum(serialize = "Spec")]
@@ -30,8 +30,8 @@ pub struct Checks<'a> {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CheckItem {
-    pub check_type: CheckType,
-    pub message: String,
+    pub check_class: CheckClass,
+    pub check: Check,
 }
 
 pub trait GetChecks {
@@ -53,4 +53,13 @@ impl GetChecks for RdapResponse {
             RdapResponse::Help(_) => todo!(),
         }
     }
+}
+
+#[derive(Debug, EnumMessage, Serialize, Deserialize)]
+pub enum Check {
+    // Links
+    #[strum(message = "'value' property not found in Link structure as required by RFC 7083")]
+    LinkMissingValueProperty,
+    #[strum(message = "'rel' property not found in Link structure as required by RFC 7083")]
+    LinkMissingRelProperty,
 }

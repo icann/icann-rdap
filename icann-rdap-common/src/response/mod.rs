@@ -11,7 +11,7 @@ use self::{
     nameserver::Nameserver,
     network::Network,
     search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
-    types::Link,
+    types::{Links, RdapConformance},
 };
 
 pub mod autnum;
@@ -149,7 +149,7 @@ impl TryFrom<Value> for RdapResponse {
 }
 
 impl RdapResponse {
-    pub fn get_links(&self) -> Option<&Vec<Link>> {
+    pub fn get_links(&self) -> Option<&Links> {
         match self {
             RdapResponse::Entity(e) => e.object_common.links.as_ref(),
             RdapResponse::Domain(d) => d.object_common.links.as_ref(),
@@ -161,6 +161,21 @@ impl RdapResponse {
             RdapResponse::NameserverSearchResults(_) => None,
             RdapResponse::ErrorResponse(_) => None,
             RdapResponse::Help(_) => None,
+        }
+    }
+
+    pub fn get_conformance(&self) -> Option<&RdapConformance> {
+        match self {
+            RdapResponse::Entity(e) => e.common.rdap_conformance.as_ref(),
+            RdapResponse::Domain(d) => d.common.rdap_conformance.as_ref(),
+            RdapResponse::Nameserver(n) => n.common.rdap_conformance.as_ref(),
+            RdapResponse::Autnum(a) => a.common.rdap_conformance.as_ref(),
+            RdapResponse::Network(n) => n.common.rdap_conformance.as_ref(),
+            RdapResponse::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            RdapResponse::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
+            RdapResponse::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            RdapResponse::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
+            RdapResponse::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
 }
