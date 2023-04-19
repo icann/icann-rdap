@@ -11,6 +11,7 @@ use self::{
     nameserver::Nameserver,
     network::Network,
     search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
+    types::Link,
 };
 
 pub mod autnum;
@@ -144,6 +145,23 @@ impl TryFrom<Value> for RdapResponse {
             }
         }
         Err(RdapResponseError::UnknownRdapResponse)
+    }
+}
+
+impl RdapResponse {
+    pub fn get_links(&self) -> Option<&Vec<Link>> {
+        match self {
+            RdapResponse::Entity(e) => e.object_common.links.as_ref(),
+            RdapResponse::Domain(d) => d.object_common.links.as_ref(),
+            RdapResponse::Nameserver(n) => n.object_common.links.as_ref(),
+            RdapResponse::Autnum(a) => a.object_common.links.as_ref(),
+            RdapResponse::Network(n) => n.object_common.links.as_ref(),
+            RdapResponse::DomainSearchResults(_) => None,
+            RdapResponse::EntitySearchResults(_) => None,
+            RdapResponse::NameserverSearchResults(_) => None,
+            RdapResponse::ErrorResponse(_) => None,
+            RdapResponse::Help(_) => None,
+        }
     }
 }
 

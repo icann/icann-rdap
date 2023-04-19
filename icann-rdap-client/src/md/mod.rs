@@ -98,7 +98,8 @@ pub trait ToMd {
 
 impl ToMd for RdapResponse {
     fn to_md(&self, params: MdParams) -> String {
-        match &self {
+        let mut md = String::new();
+        let variant_md = match &self {
             RdapResponse::Entity(entity) => entity.to_md(params),
             RdapResponse::Domain(domain) => domain.to_md(params),
             RdapResponse::Nameserver(nameserver) => nameserver.to_md(params),
@@ -109,7 +110,10 @@ impl ToMd for RdapResponse {
             RdapResponse::NameserverSearchResults(results) => results.to_md(params),
             RdapResponse::ErrorResponse(error) => error.to_md(params),
             RdapResponse::Help(help) => help.to_md(params),
-        }
+        };
+        md.push_str(&variant_md);
+        md.push_str(HR);
+        md
     }
 }
 

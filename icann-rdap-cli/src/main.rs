@@ -1,26 +1,23 @@
-use std::{io::ErrorKind, str::FromStr};
+use std::str::FromStr;
 
 use clap::{ArgGroup, Parser, ValueEnum};
 use error::CliError;
 use icann_rdap_client::{
-    check::CheckType,
     client::{create_client, ClientConfig},
-    md::{MdOptions, MdParams, MetaData, SourceType, ToMd},
-    query::{
-        qtype::QueryType,
-        request::{rdap_request, ResponseData},
-    },
+    query::qtype::QueryType,
 };
 use icann_rdap_common::VERSION;
 use is_terminal::IsTerminal;
-use reqwest::Client;
+use query::{BridgeWriter, OutputType};
 use simplelog::{
     error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
-use termimad::{crossterm::style::Color::*, MadSkin};
 use tokio::{join, task::spawn_blocking};
 
+use crate::query::do_query;
+
 pub mod error;
+pub mod query;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
@@ -109,9 +106,9 @@ struct Cli {
         required = false,
         env = "RDAP_OUTPUT",
         value_enum,
-        default_value_t = OutputType::Auto,
+        default_value_t = OtypeArg::Auto,
     )]
-    output_type: OutputType,
+    output_type: OtypeArg,
 
     /// Pager Usage.
     ///
@@ -190,8 +187,9 @@ enum QtypeArg {
     NsIp,
 }
 
+/// Represents the output type possibilities.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum OutputType {
+enum OtypeArg {
     /// Results are rendered as Markdown in the terminal using ANSI terminal capabilities.
     AnsiText,
 
@@ -270,14 +268,17 @@ pub async fn main() -> Result<(), CliError> {
     };
 
     let output_type = match cli.output_type {
-        OutputType::Auto => {
+        OtypeArg::Auto => {
             if std::io::stdout().is_terminal() {
                 OutputType::AnsiText
             } else {
                 OutputType::Json
             }
         }
-        _ => cli.output_type,
+        OtypeArg::AnsiText => OutputType::AnsiText,
+        OtypeArg::Markdown => OutputType::Markdown,
+        OtypeArg::Json => OutputType::Json,
+        OtypeArg::PrettyJson => OutputType::PrettyJson,
     };
 
     let client_config = ClientConfig {
@@ -303,7 +304,6 @@ pub async fn main() -> Result<(), CliError> {
                 "https://rdap-bootstrap.arin.net/bootstrap",
                 &query_type,
                 &output_type,
-                None,
                 &client,
                 &mut std::io::stdout(),
             )
@@ -329,7 +329,6 @@ pub async fn main() -> Result<(), CliError> {
                     "https://rdap-bootstrap.arin.net/bootstrap",
                     &query_type,
                     &output_type,
-                    None,
                     &client,
                     &mut output,
                 )
@@ -376,114 +375,6 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
         QueryType::Url(url)
     } else {
         QueryType::Help
-    }
-}
-
-async fn do_query<'a, W: std::io::Write>(
-    base_url: &str,
-    query_type: &QueryType,
-    output_type: &OutputType,
-    metadata: Option<&'a MetaData<'a>>,
-    client: &Client,
-    write: &mut W,
-) -> Result<(), CliError> {
-    let response = rdap_request(base_url, query_type, client).await;
-    match response {
-        Ok(response) => {
-            let source_host = response.host.to_owned();
-            let metadata = if let Some(meta) = metadata {
-                MetaData {
-                    req_number: meta.req_number + 1,
-                    source_host: meta.source_host,
-                    source_type: icann_rdap_client::md::SourceType::UncategorizedRegistry,
-                }
-            } else {
-                let req_number = 1;
-                let source_type = match query_type {
-                    QueryType::IpV4Addr(_)
-                    | QueryType::IpV6Addr(_)
-                    | QueryType::IpV4Cidr(_)
-                    | QueryType::IpV6Cidr(_)
-                    | QueryType::AsNumber(_) => SourceType::RegionalInternetRegistry,
-                    QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
-                        SourceType::DomainRegistry
-                    }
-                    _ => SourceType::UncategorizedRegistry,
-                };
-                MetaData {
-                    req_number,
-                    source_host: &source_host,
-                    source_type,
-                }
-            };
-            print_response(output_type, &metadata, response, write)?;
-        }
-        Err(error) => return Err(CliError::RdapClient(error)),
-    };
-    Ok(())
-}
-
-fn print_response<W: std::io::Write>(
-    output_type: &OutputType,
-    metadata: &MetaData,
-    response: ResponseData,
-    write: &mut W,
-) -> Result<(), CliError> {
-    match output_type {
-        OutputType::AnsiText => {
-            let mut skin = MadSkin::default_dark();
-            skin.set_headers_fg(Yellow);
-            skin.bold.set_fg(Magenta);
-            skin.italic.set_fg(Blue);
-            skin.quote_mark.set_fg(White);
-            skin.write_text_on(
-                write,
-                &response.rdap.to_md(MdParams {
-                    heading_level: 1,
-                    check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
-                    options: &MdOptions::default(),
-                    metadata,
-                }),
-            )?;
-        }
-        OutputType::Markdown => writeln!(
-            write,
-            "{}",
-            response.rdap.to_md(MdParams {
-                heading_level: 1,
-                check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
-                options: &MdOptions {
-                    text_style_char: '_',
-                    style_in_justify: true,
-                    ..MdOptions::default()
-                },
-                metadata,
-            })
-        )?,
-        OutputType::Json => writeln!(write, "{}", serde_json::to_string(&response).unwrap())?,
-        OutputType::PrettyJson => writeln!(
-            write,
-            "{}",
-            serde_json::to_string_pretty(&response).unwrap()
-        )?,
-        OutputType::Auto => return Err(CliError::UnknownOutputType),
-    };
-    Ok(())
-}
-
-#[derive(Clone)]
-struct BridgeWriter<W: std::fmt::Write>(W);
-
-impl<W: std::fmt::Write> std::io::Write for BridgeWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0
-            .write_str(&String::from_utf8_lossy(buf))
-            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
     }
 }
 
