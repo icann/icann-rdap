@@ -10,7 +10,7 @@ impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         md.push_str(&to_header(
-            &format!("{} Capabilities", params.metadata.source_host),
+            &format!("{} Capabilities", params.req_data.source_host),
             params.heading_level + 1,
             params.options,
         ));
@@ -158,7 +158,7 @@ impl ToMd for Common {
             md.push_str(HR);
             let header_text = format!(
                 "Response from {} at {}",
-                params.metadata.source_type, params.metadata.source_host
+                params.req_data.source_type, params.req_data.source_host
             );
             md.push_str(&to_header(
                 &header_text,

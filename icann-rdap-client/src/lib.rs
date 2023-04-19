@@ -8,6 +8,7 @@ pub mod check;
 pub mod client;
 pub mod md;
 pub mod query;
+pub mod request;
 
 #[derive(Error, Debug)]
 pub enum RdapClientError {

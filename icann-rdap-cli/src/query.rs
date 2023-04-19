@@ -2,14 +2,16 @@ use std::io::ErrorKind;
 
 use icann_rdap_client::{
     check::CheckType,
-    md::{MdOptions, MdParams, MetaData, ToMd},
+    md::{MdOptions, MdParams, ToMd},
     query::{
         qtype::QueryType,
         request::{rdap_request, ResponseData},
     },
+    request::{RequestData, SourceType},
 };
 use icann_rdap_common::response::RdapResponse;
 use reqwest::Client;
+use simplelog::info;
 use termimad::{crossterm::style::Color::*, MadSkin};
 
 use crate::error::CliError;
@@ -62,24 +64,25 @@ async fn do_domain_query<'a, W: std::io::Write>(
     match response {
         Ok(response) => {
             let source_host = response.host.to_owned();
-            let metadata = MetaData {
+            let req_data = RequestData {
                 req_number: 1,
                 source_host: &source_host,
-                source_type: icann_rdap_client::md::SourceType::DomainRegistry,
+                source_type: SourceType::DomainRegistry,
             };
-            print_response(output_type, &metadata, &response, write)?;
+            print_response(output_type, &req_data, &response, write)?;
             if let Some(url) = get_related_link(&response.rdap).first() {
+                info!("Querying domain name from registrar.");
                 let query_type = QueryType::Url(url.to_string());
                 let registrar_response = rdap_request(base_url, &query_type, client).await;
                 match registrar_response {
                     Ok(registrar_response) => {
                         let source_host = registrar_response.host.to_owned();
-                        let metadata = MetaData {
+                        let req_data = RequestData {
                             req_number: 2,
                             source_host: &source_host,
-                            source_type: icann_rdap_client::md::SourceType::DomainRegistrar,
+                            source_type: SourceType::DomainRegistrar,
                         };
-                        print_response(output_type, &metadata, &registrar_response, write)?;
+                        print_response(output_type, &req_data, &registrar_response, write)?;
                     }
                     Err(error) => return Err(CliError::RdapClient(error)),
                 }
@@ -101,12 +104,12 @@ async fn do_inr_query<'a, W: std::io::Write>(
     match response {
         Ok(response) => {
             let source_host = response.host.to_owned();
-            let metadata = MetaData {
+            let req_data = RequestData {
                 req_number: 1,
                 source_host: &source_host,
-                source_type: icann_rdap_client::md::SourceType::UncategorizedRegistry,
+                source_type: SourceType::UncategorizedRegistry,
             };
-            print_response(output_type, &metadata, &response, write)?;
+            print_response(output_type, &req_data, &response, write)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -117,7 +120,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
     output_type: &OutputType,
-    metadata: Option<&'a MetaData<'a>>,
+    req_data: Option<&'a RequestData<'a>>,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
@@ -125,20 +128,20 @@ async fn do_basic_query<'a, W: std::io::Write>(
     match response {
         Ok(response) => {
             let source_host = response.host.to_owned();
-            let metadata = if let Some(meta) = metadata {
-                MetaData {
+            let req_data = if let Some(meta) = req_data {
+                RequestData {
                     req_number: meta.req_number + 1,
                     source_host: meta.source_host,
-                    source_type: icann_rdap_client::md::SourceType::UncategorizedRegistry,
+                    source_type: SourceType::UncategorizedRegistry,
                 }
             } else {
-                MetaData {
+                RequestData {
                     req_number: 1,
                     source_host: &source_host,
-                    source_type: icann_rdap_client::md::SourceType::UncategorizedRegistry,
+                    source_type: SourceType::UncategorizedRegistry,
                 }
             };
-            print_response(output_type, &metadata, &response, write)?;
+            print_response(output_type, &req_data, &response, write)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -147,7 +150,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
 
 fn print_response<W: std::io::Write>(
     output_type: &OutputType,
-    metadata: &MetaData,
+    req_data: &RequestData,
     response: &ResponseData,
     write: &mut W,
 ) -> Result<(), CliError> {
@@ -164,7 +167,7 @@ fn print_response<W: std::io::Write>(
                     heading_level: 1,
                     check_types: &[CheckType::Informational, CheckType::SpecificationCompliance],
                     options: &MdOptions::default(),
-                    metadata,
+                    req_data,
                 }),
             )?;
         }
@@ -179,7 +182,7 @@ fn print_response<W: std::io::Write>(
                     style_in_justify: true,
                     ..MdOptions::default()
                 },
-                metadata,
+                req_data,
             })
         )?,
         OutputType::Json => writeln!(write, "{}", serde_json::to_string(&response).unwrap())?,
