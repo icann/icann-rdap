@@ -9,7 +9,7 @@ use icann_rdap_client::{
     },
     request::{RequestData, SourceType},
 };
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::{media_types::RDAP_MEDIA_TYPE, response::RdapResponse};
 use reqwest::Client;
 use simplelog::info;
 use termimad::{crossterm::style::Color::*, MadSkin};
@@ -166,10 +166,8 @@ fn print_response<W: std::io::Write>(
                 &response.rdap.to_md(MdParams {
                     heading_level: 1,
                     root: &response.rdap,
-                    check_types: &[
-                        CheckClass::Informational,
-                        CheckClass::SpecificationCompliance,
-                    ],
+                    parent_type: Some(response.rdap.get_type()),
+                    check_types: &[CheckClass::Informational, CheckClass::SpecificationError],
                     options: &MdOptions::default(),
                     req_data,
                 }),
@@ -181,10 +179,8 @@ fn print_response<W: std::io::Write>(
             response.rdap.to_md(MdParams {
                 heading_level: 1,
                 root: &response.rdap,
-                check_types: &[
-                    CheckClass::Informational,
-                    CheckClass::SpecificationCompliance
-                ],
+                parent_type: Some(response.rdap.get_type()),
+                check_types: &[CheckClass::Informational, CheckClass::SpecificationError],
                 options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,
@@ -225,7 +221,12 @@ fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
             .iter()
             .filter(|l| {
                 if let Some(rel) = &l.rel {
-                    rel.eq_ignore_ascii_case("related")
+                    if let Some(media_type) = &l.media_type {
+                        rel.eq_ignore_ascii_case("related")
+                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                    } else {
+                        false
+                    }
                 } else {
                     false
                 }

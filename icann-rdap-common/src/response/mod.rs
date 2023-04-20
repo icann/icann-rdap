@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -149,6 +151,20 @@ impl TryFrom<Value> for RdapResponse {
 }
 
 impl RdapResponse {
+    pub fn get_type(&self) -> TypeId {
+        match self {
+            RdapResponse::Entity(_) => TypeId::of::<Entity>(),
+            RdapResponse::Domain(_) => TypeId::of::<Domain>(),
+            RdapResponse::Nameserver(_) => TypeId::of::<Nameserver>(),
+            RdapResponse::Autnum(_) => TypeId::of::<Autnum>(),
+            RdapResponse::Network(_) => TypeId::of::<Network>(),
+            RdapResponse::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
+            RdapResponse::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
+            RdapResponse::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
+            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Error>(),
+            RdapResponse::Help(_) => TypeId::of::<Help>(),
+        }
+    }
     pub fn get_links(&self) -> Option<&Links> {
         match self {
             RdapResponse::Entity(e) => e.object_common.links.as_ref(),

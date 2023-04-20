@@ -1,8 +1,10 @@
+use std::any::TypeId;
+
 use icann_rdap_common::response::types::{Common, Link, Links, Notices, ObjectCommon, Remarks};
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
 use strum::EnumMessage;
 
-use crate::check::GetChecks;
+use crate::check::{CheckParams, GetChecks};
 
 use super::{to_bold, to_header, to_right, to_right_em, MdParams, HR};
 use super::{to_em, ToMd};
@@ -17,14 +19,14 @@ impl ToMd for RdapConformance {
         ));
         self.iter()
             .for_each(|s| md.push_str(&format!("* {}\n", s.0)));
-        self.get_checks()
+        self.get_checks(CheckParams::from_md_no_parent(params))
             .items
             .iter()
             .filter(|item| params.check_types.contains(&item.check_class))
             .for_each(|item| {
                 md.push_str(&format!(
-                    "* _{}_: {}\n",
-                    item.check_class,
+                    "* {}: {}\n", // TODO fix!
+                    to_em(&item.check_class.to_string(), params.options),
                     item.check
                         .get_message()
                         .expect("Check has no message. Coding error.")
@@ -93,7 +95,7 @@ impl ToMd for Link {
                 media_type
             ));
         };
-        let checks = self.get_checks();
+        let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
         checks
             .items
             .iter()
@@ -139,7 +141,7 @@ impl ToMd for NoticeOrRemark {
         self.description
             .iter()
             .for_each(|s| md.push_str(&format!("> {s}\n")));
-        self.get_checks()
+        self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
             .iter()
             .filter(|item| params.check_types.contains(&item.check_class))

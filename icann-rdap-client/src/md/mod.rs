@@ -1,4 +1,4 @@
-use std::char;
+use std::{any::TypeId, char};
 
 use icann_rdap_common::response::RdapResponse;
 
@@ -60,9 +60,23 @@ impl MdOptions {
 pub struct MdParams<'a> {
     pub heading_level: usize,
     pub root: &'a RdapResponse,
+    pub parent_type: Option<TypeId>,
     pub check_types: &'a [CheckClass],
     pub options: &'a MdOptions,
     pub req_data: &'a RequestData<'a>,
+}
+
+impl<'a> MdParams<'a> {
+    pub fn from_parent(&self, parent_type: TypeId) -> Self {
+        MdParams {
+            parent_type: Some(parent_type),
+            heading_level: self.heading_level,
+            root: self.root,
+            check_types: self.check_types,
+            options: self.options,
+            req_data: self.req_data,
+        }
+    }
 }
 
 pub trait ToMd {

@@ -1,3 +1,4 @@
+pub mod media_types;
 pub mod response;
 
 #[cfg(not(target_arch = "wasm32"))]
