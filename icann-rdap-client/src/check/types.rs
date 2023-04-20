@@ -1,8 +1,19 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::types::{
-    Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, RdapConformance, Remarks,
+use icann_rdap_common::{
+    media_types::RDAP_MEDIA_TYPE,
+    response::{
+        autnum::Autnum,
+        domain::Domain,
+        entity::Entity,
+        nameserver::Nameserver,
+        network::Network,
+        types::{
+            Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, RdapConformance, Remarks,
+        },
+    },
 };
+use lazy_static::lazy_static;
 
 use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks};
 
@@ -40,8 +51,18 @@ impl GetChecks for Links {
     }
 }
 
+lazy_static! {
+    static ref RELATED_LINK_PARENTS: Vec<TypeId> = vec![
+        TypeId::of::<Domain>(),
+        TypeId::of::<Entity>(),
+        TypeId::of::<Autnum>(),
+        TypeId::of::<Network>(),
+        TypeId::of::<Nameserver>(),
+    ];
+}
+
 impl GetChecks for Link {
-    fn get_checks(&self, _params: CheckParams) -> Checks {
+    fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.value.is_none() {
             items.push(CheckItem {
@@ -49,12 +70,32 @@ impl GetChecks for Link {
                 check: Check::LinkMissingValueProperty,
             })
         };
-        if self.rel.is_none() {
+        if let Some(rel) = &self.rel {
+            if rel.eq_ignore_ascii_case("related") {
+                if let Some(media_type) = &self.media_type {
+                    if !media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE) {
+                        if let Some(parent_type) = params.parent_type {
+                            if RELATED_LINK_PARENTS.contains(&parent_type) {
+                                items.push(CheckItem {
+                                    check_class: CheckClass::SpecificationWarning,
+                                    check: Check::RelatedLinkIsNotRdap,
+                                })
+                            }
+                        }
+                    }
+                } else {
+                    items.push(CheckItem {
+                        check_class: CheckClass::SpecificationWarning,
+                        check: Check::RelatedLinkHasNoType,
+                    })
+                }
+            }
+        } else {
             items.push(CheckItem {
                 check_class: CheckClass::SpecificationError,
                 check: Check::LinkMissingRelProperty,
             })
-        };
+        }
         Checks {
             struct_name: "Link",
             items,

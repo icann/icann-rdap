@@ -105,4 +105,8 @@ pub enum Check {
     LinkMissingValueProperty,
     #[strum(message = "'rel' property not found in Link structure as required by RFC 7083")]
     LinkMissingRelProperty,
+    #[strum(message = "ambguous follow because related link has no 'type' property")]
+    RelatedLinkHasNoType,
+    #[strum(message = "ambguous follow because related link does not have RDAP media type")]
+    RelatedLinkIsNotRdap,
 }
