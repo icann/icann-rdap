@@ -20,13 +20,11 @@ use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks, GetSub
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items = Vec::new();
-        if let Some(parent_type) = params.parent_type {
-            if parent_type != params.root.get_type() {
-                items.push(CheckItem {
-                    check_class: CheckClass::SpecificationError,
-                    check: Check::InvalidRdapConformanceParent,
-                })
-            };
+        if params.parent_type != params.root.get_type() {
+            items.push(CheckItem {
+                check_class: CheckClass::SpecificationError,
+                check: Check::InvalidRdapConformanceParent,
+            })
         };
         Checks {
             struct_name: "RDAP Conformance",
@@ -73,15 +71,13 @@ impl GetChecks for Link {
         if let Some(rel) = &self.rel {
             if rel.eq("related") {
                 if let Some(media_type) = &self.media_type {
-                    if !media_type.eq(RDAP_MEDIA_TYPE) {
-                        if let Some(parent_type) = params.parent_type {
-                            if RELATED_AND_SELF_LINK_PARENTS.contains(&parent_type) {
-                                items.push(CheckItem {
-                                    check_class: CheckClass::SpecificationWarning,
-                                    check: Check::RelatedLinkIsNotRdap,
-                                })
-                            }
-                        }
+                    if !media_type.eq(RDAP_MEDIA_TYPE)
+                        && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
+                    {
+                        items.push(CheckItem {
+                            check_class: CheckClass::SpecificationWarning,
+                            check: Check::RelatedLinkIsNotRdap,
+                        })
                     }
                 } else {
                     items.push(CheckItem {
@@ -103,13 +99,11 @@ impl GetChecks for Link {
                         check: Check::SelfLinkHasNoType,
                     })
                 }
-            } else if let Some(parent_type) = params.parent_type {
-                if RELATED_AND_SELF_LINK_PARENTS.contains(&parent_type) {
-                    items.push(CheckItem {
-                        check_class: CheckClass::SpecificationWarning,
-                        check: Check::ObjectClassHasNoSelfLink,
-                    })
-                }
+            } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) {
+                items.push(CheckItem {
+                    check_class: CheckClass::SpecificationWarning,
+                    check: Check::ObjectClassHasNoSelfLink,
+                })
             }
         } else {
             items.push(CheckItem {
@@ -251,7 +245,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -285,7 +279,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -322,7 +316,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -360,7 +354,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -397,7 +391,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -435,7 +429,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -473,7 +467,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -502,7 +496,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN
@@ -547,7 +541,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams {
             do_subchecks: true,
             root: &rdap,
-            parent_type: Some(rdap.get_type()),
+            parent_type: rdap.get_type(),
         });
 
         // THEN

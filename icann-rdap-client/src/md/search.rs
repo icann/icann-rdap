@@ -14,7 +14,7 @@ impl ToMd for DomainSearchResults {
         self.results.iter().for_each(|result| {
             md.push_str(&result.to_md(MdParams {
                 heading_level: params.heading_level + 1,
-                parent_type: Some(typeid),
+                parent_type: typeid,
                 ..params
             }))
         });
@@ -31,7 +31,7 @@ impl ToMd for NameserverSearchResults {
         self.results.iter().for_each(|result| {
             md.push_str(&result.to_md(MdParams {
                 heading_level: params.heading_level + 1,
-                parent_type: Some(typeid),
+                parent_type: typeid,
                 ..params
             }))
         });
@@ -48,7 +48,7 @@ impl ToMd for EntitySearchResults {
         self.results.iter().for_each(|result| {
             md.push_str(&result.to_md(MdParams {
                 heading_level: params.heading_level + 1,
-                parent_type: Some(typeid),
+                parent_type: typeid,
                 ..params
             }))
         });

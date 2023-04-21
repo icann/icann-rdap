@@ -64,7 +64,7 @@ pub trait GetChecks {
 pub struct CheckParams<'a> {
     pub do_subchecks: bool,
     pub root: &'a RdapResponse,
-    pub parent_type: Option<TypeId>, // TODO remove option
+    pub parent_type: TypeId,
 }
 
 impl<'a> CheckParams<'a> {
@@ -72,7 +72,7 @@ impl<'a> CheckParams<'a> {
         CheckParams {
             do_subchecks: self.do_subchecks,
             root: self.root,
-            parent_type: Some(parent_type),
+            parent_type,
         }
     }
 
@@ -80,7 +80,7 @@ impl<'a> CheckParams<'a> {
         CheckParams {
             do_subchecks: false,
             root: md_params.root,
-            parent_type: Some(parent_type),
+            parent_type,
         }
     }
 

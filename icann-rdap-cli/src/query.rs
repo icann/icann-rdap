@@ -166,7 +166,7 @@ fn print_response<W: std::io::Write>(
                 &response.rdap.to_md(MdParams {
                     heading_level: 1,
                     root: &response.rdap,
-                    parent_type: Some(response.rdap.get_type()),
+                    parent_type: response.rdap.get_type(),
                     check_types: &[CheckClass::Informational, CheckClass::SpecificationError],
                     options: &MdOptions::default(),
                     req_data,
@@ -179,7 +179,7 @@ fn print_response<W: std::io::Write>(
             response.rdap.to_md(MdParams {
                 heading_level: 1,
                 root: &response.rdap,
-                parent_type: Some(response.rdap.get_type()),
+                parent_type: response.rdap.get_type(),
                 check_types: &[CheckClass::Informational, CheckClass::SpecificationError],
                 options: &MdOptions {
                     text_style_char: '_',

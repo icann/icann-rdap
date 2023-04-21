@@ -60,7 +60,7 @@ impl MdOptions {
 pub struct MdParams<'a> {
     pub heading_level: usize,
     pub root: &'a RdapResponse,
-    pub parent_type: Option<TypeId>,
+    pub parent_type: TypeId,
     pub check_types: &'a [CheckClass],
     pub options: &'a MdOptions,
     pub req_data: &'a RequestData<'a>,
@@ -69,7 +69,7 @@ pub struct MdParams<'a> {
 impl<'a> MdParams<'a> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
         MdParams {
-            parent_type: Some(parent_type),
+            parent_type,
             heading_level: self.heading_level,
             root: self.root,
             check_types: self.check_types,
