@@ -167,7 +167,11 @@ fn print_response<W: std::io::Write>(
                     heading_level: 1,
                     root: &response.rdap,
                     parent_type: response.rdap.get_type(),
-                    check_types: &[CheckClass::Informational, CheckClass::SpecificationError],
+                    check_types: &[
+                        CheckClass::Informational,
+                        CheckClass::SpecificationWarning,
+                        CheckClass::SpecificationError,
+                    ],
                     options: &MdOptions::default(),
                     req_data,
                 }),
@@ -180,7 +184,11 @@ fn print_response<W: std::io::Write>(
                 heading_level: 1,
                 root: &response.rdap,
                 parent_type: response.rdap.get_type(),
-                check_types: &[CheckClass::Informational, CheckClass::SpecificationError],
+                check_types: &[
+                    CheckClass::Informational,
+                    CheckClass::SpecificationWarning,
+                    CheckClass::SpecificationError
+                ],
                 options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,

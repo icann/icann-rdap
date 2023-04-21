@@ -5,7 +5,7 @@ use icann_rdap_common::response::types::{Common, Link, Links, Notices, ObjectCom
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
 use strum::EnumMessage;
 
-use crate::check::{CheckParams, GetChecks, CHECK_CLASS_LEN};
+use crate::check::{CheckParams, GetChecks, GetSubChecks, CHECK_CLASS_LEN};
 
 use super::{to_bold, to_header, to_right, to_right_em, MdParams, HR};
 use super::{to_em, ToMd};
@@ -215,6 +215,31 @@ impl ToMd for ObjectCommon {
                 heading_level: params.heading_level + 1,
                 ..params
             }));
+        } else {
+            let link_checks = self.get_sub_checks(CheckParams::from_md_no_parent(params));
+            if !link_checks.is_empty() {
+                md.push('\n');
+                link_checks.iter().for_each(|check| {
+                    check
+                        .items
+                        .iter()
+                        .filter(|item| params.check_types.contains(&item.check_class))
+                        .for_each(|item| {
+                            md.push_str(&format!(
+                                "* {}: {}\n",
+                                to_right_em(
+                                    &item.check_class.to_string(),
+                                    *CHECK_CLASS_LEN,
+                                    params.options
+                                ),
+                                item.check
+                                    .get_message()
+                                    .expect("Check has no message. Coding error.")
+                            ))
+                        })
+                });
+                md.push('\n');
+            }
         };
         if let Some(entities) = &self.entities {
             entities.iter().for_each(|entity| {
