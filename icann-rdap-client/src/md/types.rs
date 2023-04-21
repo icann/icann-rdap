@@ -142,7 +142,7 @@ impl ToMd for NoticeOrRemark {
         };
         self.description
             .iter()
-            .for_each(|s| md.push_str(&format!("> {s}\n")));
+            .for_each(|s| md.push_str(&format!("{s}\n")));
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
             .iter()
