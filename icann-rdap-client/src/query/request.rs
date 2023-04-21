@@ -46,7 +46,7 @@ pub async fn rdap_request(
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ResponseData {
     pub rdap: RdapResponse,
     pub content_length: Option<u64>,

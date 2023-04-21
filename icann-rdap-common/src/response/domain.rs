@@ -8,7 +8,7 @@ use super::{
 };
 
 /// Represents an RDAP variant name.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct VariantName {
     #[serde(rename = "ldhName")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -20,7 +20,7 @@ pub struct VariantName {
 }
 
 /// Represents an RDAP IDN variant.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Variant {
     #[serde(rename = "objectClassName")]
     pub relation: Option<Vec<String>>,
@@ -34,7 +34,7 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct DsDatum {
     #[serde(rename = "keyTag")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -57,7 +57,7 @@ pub struct DsDatum {
     pub events: Option<Events>,
 }
 
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct KeyDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub flags: Option<u16>,
@@ -80,7 +80,7 @@ pub struct KeyDatum {
 }
 
 /// Represents the DNSSEC information of a domain.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct SecureDns {
     #[serde(rename = "zoneSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -104,7 +104,7 @@ pub struct SecureDns {
 }
 
 /// Represents an RDAP domain response.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Domain {
     #[serde(flatten)]
     pub common: Common,

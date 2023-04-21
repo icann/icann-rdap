@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::types::{Common, ObjectCommon};
 
 /// Represents an RDAP network response.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Network {
     #[serde(flatten)]
     pub common: Common,

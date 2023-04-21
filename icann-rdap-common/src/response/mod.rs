@@ -37,7 +37,7 @@ pub enum RdapResponseError {
 }
 
 /// The various types of RDAP response.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum RdapResponse {
     // Object Classes
     Entity(Entity),

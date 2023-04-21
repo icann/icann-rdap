@@ -1,13 +1,13 @@
 use std::io::ErrorKind;
 
 use icann_rdap_client::{
-    check::CheckClass,
+    check::{CheckClass, CheckParams, GetChecks},
     md::{MdOptions, MdParams, ToMd},
     query::{
         qtype::QueryType,
         request::{rdap_request, ResponseData},
     },
-    request::{RequestData, SourceType},
+    request::{RequestData, RequestResponse, RequestResponses, SourceType},
 };
 use icann_rdap_common::{media_types::RDAP_MEDIA_TYPE, response::RdapResponse};
 use reqwest::Client;
@@ -60,6 +60,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
+    let mut transactions = RequestResponses::new();
     let response = rdap_request(base_url, query_type, client).await;
     match response {
         Ok(response) => {
@@ -69,24 +70,28 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            print_response(output_type, &req_data, &response, write)?;
+            transactions = do_output(output_type, &req_data, &response, write, transactions)?;
+            let regr_source_host;
+            let regr_req_data: RequestData;
             if let Some(url) = get_related_link(&response.rdap).first() {
                 info!("Querying domain name from registrar.");
                 let query_type = QueryType::Url(url.to_string());
                 let registrar_response = rdap_request(base_url, &query_type, client).await;
                 match registrar_response {
                     Ok(registrar_response) => {
-                        let source_host = registrar_response.host.to_owned();
-                        let req_data = RequestData {
+                        regr_source_host = registrar_response.host;
+                        regr_req_data = RequestData {
                             req_number: 2,
-                            source_host: &source_host,
+                            source_host: &regr_source_host,
                             source_type: SourceType::DomainRegistrar,
                         };
-                        print_response(output_type, &req_data, &registrar_response, write)?;
+                        transactions =
+                            do_output(output_type, &regr_req_data, &response, write, transactions)?;
                     }
                     Err(error) => return Err(CliError::RdapClient(error)),
                 }
             }
+            do_final_output(output_type, write, transactions)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -100,6 +105,7 @@ async fn do_inr_query<'a, W: std::io::Write>(
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
+    let mut transactions = RequestResponses::new();
     let response = rdap_request(base_url, query_type, client).await;
     match response {
         Ok(response) => {
@@ -109,7 +115,8 @@ async fn do_inr_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::UncategorizedRegistry,
             };
-            print_response(output_type, &req_data, &response, write)?;
+            transactions = do_output(output_type, &req_data, &response, write, transactions)?;
+            do_final_output(output_type, write, transactions)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -124,6 +131,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
+    let mut transactions = RequestResponses::new();
     let response = rdap_request(base_url, query_type, client).await;
     match response {
         Ok(response) => {
@@ -141,19 +149,21 @@ async fn do_basic_query<'a, W: std::io::Write>(
                     source_type: SourceType::UncategorizedRegistry,
                 }
             };
-            print_response(output_type, &req_data, &response, write)?;
+            transactions = do_output(output_type, &req_data, &response, write, transactions)?;
+            do_final_output(output_type, write, transactions)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
     Ok(())
 }
 
-fn print_response<W: std::io::Write>(
+fn do_output<'a, W: std::io::Write>(
     output_type: &OutputType,
-    req_data: &RequestData,
-    response: &ResponseData,
+    req_data: &'a RequestData,
+    response: &'a ResponseData,
     write: &mut W,
-) -> Result<(), CliError> {
+    mut transactions: RequestResponses<'a>,
+) -> Result<RequestResponses<'a>, CliError> {
     match output_type {
         OutputType::AnsiText => {
             let mut skin = MadSkin::default_dark();
@@ -197,12 +207,35 @@ fn print_response<W: std::io::Write>(
                 req_data,
             })
         )?,
-        OutputType::Json => writeln!(write, "{}", serde_json::to_string(&response).unwrap())?,
+        _ => {} // do nothing
+    };
+    let checks = response.rdap.get_checks(CheckParams {
+        do_subchecks: true,
+        root: &response.rdap,
+        parent_type: response.rdap.get_type(),
+    });
+    let req_res = RequestResponse {
+        checks,
+        req_data,
+        res_data: response,
+    };
+    transactions.push(req_res);
+    Ok(transactions)
+}
+
+fn do_final_output<W: std::io::Write>(
+    output_type: &OutputType,
+    write: &mut W,
+    transactions: RequestResponses<'_>,
+) -> Result<(), CliError> {
+    match output_type {
+        OutputType::Json => writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?,
         OutputType::PrettyJson => writeln!(
             write,
             "{}",
-            serde_json::to_string_pretty(&response).unwrap()
+            serde_json::to_string_pretty(&transactions).unwrap()
         )?,
+        _ => {} // do nothing
     };
     Ok(())
 }

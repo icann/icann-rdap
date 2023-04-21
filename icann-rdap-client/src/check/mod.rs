@@ -25,7 +25,7 @@ lazy_static! {
 }
 
 /// Describes the calls of checks.
-#[derive(EnumIter, Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(EnumIter, Debug, Display, PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum CheckClass {
     #[strum(serialize = "Info")]
     Informational,
@@ -35,7 +35,7 @@ pub enum CheckClass {
     SpecificationError,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Checks<'a> {
     pub struct_name: &'a str,
     pub items: Vec<CheckItem>,
@@ -50,7 +50,7 @@ impl<'a> Checks<'a> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckItem {
     pub check_class: CheckClass,
     pub check: Check,
@@ -114,7 +114,7 @@ pub trait GetSubChecks {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
 
-#[derive(Debug, EnumMessage, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, EnumMessage, Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub enum Check {
     // RDAP Conformance
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]

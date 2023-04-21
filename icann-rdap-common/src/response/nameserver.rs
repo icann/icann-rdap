@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::types::{Common, ObjectCommon};
 
 /// Represents an IP address set for nameservers.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct IpAddresses {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub v6: Option<Vec<String>>,
@@ -14,7 +14,7 @@ pub struct IpAddresses {
 }
 
 /// Represents an RDAP nameserver response.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Nameserver {
     #[serde(flatten)]
     pub common: Common,

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::types::Common;
 
 /// Represents an RDAP error response.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Error {
     #[serde(flatten)]
     pub common: Common,

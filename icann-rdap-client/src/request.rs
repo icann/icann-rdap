@@ -1,6 +1,9 @@
+use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
-#[derive(Display)]
+use crate::{check::Checks, query::request::ResponseData};
+
+#[derive(Serialize, Deserialize, Display, Clone, Copy)]
 pub enum SourceType {
     #[strum(serialize = "Domain Registry")]
     DomainRegistry,
@@ -15,6 +18,7 @@ pub enum SourceType {
 }
 
 /// Represents meta data about the request.
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct RequestData<'a> {
     /// The request number. That is, request 1, request 2, etc...
     pub req_number: usize,
@@ -26,3 +30,12 @@ pub struct RequestData<'a> {
     /// Represents the type of source.
     pub source_type: SourceType,
 }
+
+#[derive(Clone, Serialize)]
+pub struct RequestResponse<'a> {
+    pub req_data: &'a RequestData<'a>,
+    pub res_data: &'a ResponseData,
+    pub checks: Checks<'a>,
+}
+
+pub type RequestResponses<'a> = Vec<RequestResponse<'a>>;

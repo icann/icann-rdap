@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::entity::Entity;
 
 /// Represents an RDAP extension identifier.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Extension(pub String);
 
 /// The RDAP conformance array.
@@ -14,7 +14,7 @@ pub type RdapConformance = Vec<Extension>;
 pub type Links = Vec<Link>;
 
 /// Represents and RDAP link structure.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Link {
     /// Represents the value part of a link in an RDAP response.
     /// According to RFC 9083, this field is required
@@ -49,18 +49,18 @@ pub struct Link {
 pub type Notices = Vec<Notice>;
 
 /// Represents an RDAP Notice.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Notice(pub NoticeOrRemark);
 
 /// An array of remarks.
 pub type Remarks = Vec<Remark>;
 
 /// Represents an RDAP Remark.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Remark(pub NoticeOrRemark);
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
@@ -75,7 +75,7 @@ pub struct NoticeOrRemark {
 pub type Events = Vec<Event>;
 
 /// Represents an RDAP event.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Event {
     #[serde(rename = "eventAction")]
     pub event_action: String,
@@ -92,7 +92,7 @@ pub struct Event {
 }
 
 /// Represents an item in an RDAP status array.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct StatusValue(pub String);
 
 /// An array of status values.
@@ -105,7 +105,7 @@ pub type Port43 = String;
 pub type PublicIds = Vec<PublicId>;
 
 /// An RDAP Public ID.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct PublicId {
     #[serde(rename = "type")]
     pub id_type: String,
@@ -114,7 +114,7 @@ pub struct PublicId {
 }
 
 /// Holds those types that are common in all responses.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Common {
     #[serde(rename = "rdapConformance")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -125,7 +125,7 @@ pub struct Common {
 }
 
 /// Holds those types that are common in all object classes.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct ObjectCommon {
     #[serde(rename = "objectClassName")]
     pub object_class_name: String,

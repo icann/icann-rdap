@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::types::{Common, ObjectCommon};
 
 /// Represents an RDAP autnum object response.
-#[derive(Serialize, Deserialize, Builder)]
+#[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Autnum {
     #[serde(flatten)]
     pub common: Common,
