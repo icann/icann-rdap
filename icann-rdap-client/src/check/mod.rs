@@ -64,7 +64,7 @@ pub trait GetChecks {
 pub struct CheckParams<'a> {
     pub do_subchecks: bool,
     pub root: &'a RdapResponse,
-    pub parent_type: Option<TypeId>,
+    pub parent_type: Option<TypeId>, // TODO remove option
 }
 
 impl<'a> CheckParams<'a> {
@@ -121,12 +121,18 @@ pub enum Check {
     InvalidRdapConformanceParent,
 
     // Links
-    #[strum(message = "'value' property not found in Link structure as required by RFC 7083")]
+    #[strum(message = "'value' property not found in Link structure as required by RFC 9083")]
     LinkMissingValueProperty,
-    #[strum(message = "'rel' property not found in Link structure as required by RFC 7083")]
+    #[strum(message = "'rel' property not found in Link structure as required by RFC 9083")]
     LinkMissingRelProperty,
     #[strum(message = "ambguous follow because related link has no 'type' property")]
     RelatedLinkHasNoType,
     #[strum(message = "ambguous follow because related link does not have RDAP media type")]
     RelatedLinkIsNotRdap,
+    #[strum(message = "self link has no 'type' property")]
+    SelfLinkHasNoType,
+    #[strum(message = "self link does not have RDAP media type")]
+    SelfLinkIsNotRdap,
+    #[strum(message = "RFC 9083 recommends self links for all object classes")]
+    ObjectClassHasNoSelfLink,
 }

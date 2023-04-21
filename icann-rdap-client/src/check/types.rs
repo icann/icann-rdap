@@ -52,7 +52,7 @@ impl GetChecks for Links {
 }
 
 lazy_static! {
-    static ref RELATED_LINK_PARENTS: Vec<TypeId> = vec![
+    static ref RELATED_AND_SELF_LINK_PARENTS: Vec<TypeId> = vec![
         TypeId::of::<Domain>(),
         TypeId::of::<Entity>(),
         TypeId::of::<Autnum>(),
@@ -71,11 +71,11 @@ impl GetChecks for Link {
             })
         };
         if let Some(rel) = &self.rel {
-            if rel.eq_ignore_ascii_case("related") {
+            if rel.eq("related") {
                 if let Some(media_type) = &self.media_type {
-                    if !media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE) {
+                    if !media_type.eq(RDAP_MEDIA_TYPE) {
                         if let Some(parent_type) = params.parent_type {
-                            if RELATED_LINK_PARENTS.contains(&parent_type) {
+                            if RELATED_AND_SELF_LINK_PARENTS.contains(&parent_type) {
                                 items.push(CheckItem {
                                     check_class: CheckClass::SpecificationWarning,
                                     check: Check::RelatedLinkIsNotRdap,
@@ -87,6 +87,27 @@ impl GetChecks for Link {
                     items.push(CheckItem {
                         check_class: CheckClass::SpecificationWarning,
                         check: Check::RelatedLinkHasNoType,
+                    })
+                }
+            } else if rel.eq("self") {
+                if let Some(media_type) = &self.media_type {
+                    if !media_type.eq(RDAP_MEDIA_TYPE) {
+                        items.push(CheckItem {
+                            check_class: CheckClass::SpecificationWarning,
+                            check: Check::SelfLinkIsNotRdap,
+                        })
+                    }
+                } else {
+                    items.push(CheckItem {
+                        check_class: CheckClass::SpecificationWarning,
+                        check: Check::SelfLinkHasNoType,
+                    })
+                }
+            } else if let Some(parent_type) = params.parent_type {
+                if RELATED_AND_SELF_LINK_PARENTS.contains(&parent_type) {
+                    items.push(CheckItem {
+                        check_class: CheckClass::SpecificationWarning,
+                        check: Check::ObjectClassHasNoSelfLink,
                     })
                 }
             }
@@ -178,6 +199,15 @@ impl GetSubChecks for ObjectCommon {
         };
         if let Some(links) = &self.links {
             sub_checks.push(links.get_checks(params));
+        } else {
+            sub_checks.push(Checks {
+                struct_name: "Links",
+                items: vec![CheckItem {
+                    check_class: CheckClass::SpecificationWarning,
+                    check: Check::ObjectClassHasNoSelfLink,
+                }],
+                sub_checks: Vec::new(),
+            })
         };
         if let Some(remarks) = &self.remarks {
             sub_checks.push(remarks.get_checks(params))
@@ -342,6 +372,146 @@ mod tests {
             .items
             .iter()
             .find(|c| c.check == Check::RelatedLinkIsNotRdap)
+            .expect("link missing check");
+    }
+
+    #[test]
+    fn GIVEN_self_link_with_no_type_property_WHEN_checked_THEN_self_link_has_no_type() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::builder()
+                        .object_class_name("domain")
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("self")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: Some(rdap.get_type()),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .sub("Link")
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::SelfLinkHasNoType)
+            .expect("link missing check");
+    }
+
+    #[test]
+    fn GIVEN_self_link_with_non_rdap_type_WHEN_checked_THEN_self_link_not_rdap() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::builder()
+                        .object_class_name("domain")
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("self")
+                            .media_type("foo")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: Some(rdap.get_type()),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .sub("Link")
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::SelfLinkIsNotRdap)
+            .expect("link missing check");
+    }
+
+    #[test]
+    fn GIVEN_domain_with_no_self_link_WHEN_checked_THEN_object_classes_should_have_self_link() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::builder()
+                        .object_class_name("domain")
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("no_self")
+                            .media_type("foo")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: Some(rdap.get_type()),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .sub("Link")
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::ObjectClassHasNoSelfLink)
+            .expect("link missing check");
+    }
+
+    #[test]
+    fn GIVEN_domain_with_no_links_WHEN_checked_THEN_object_classes_should_have_self_link() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(ObjectCommon::builder().object_class_name("domain").build())
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: Some(rdap.get_type()),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::ObjectClassHasNoSelfLink)
             .expect("link missing check");
     }
 
