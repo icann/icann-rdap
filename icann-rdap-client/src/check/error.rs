@@ -2,14 +2,14 @@ use std::any::TypeId;
 
 use icann_rdap_common::response::error::Error;
 
-use super::{CheckParams, Checks, GetChecks};
+use super::{CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Error {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = if params.do_subchecks {
-            let sub_checks: Vec<Checks> = vec![self
+            let sub_checks: Vec<Checks> = self
                 .common
-                .get_checks(params.from_parent(TypeId::of::<Error>()))];
+                .get_sub_checks(params.from_parent(TypeId::of::<Error>()));
             sub_checks
         } else {
             Vec::new()

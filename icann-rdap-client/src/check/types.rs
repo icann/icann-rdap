@@ -15,7 +15,7 @@ use icann_rdap_common::{
 };
 use lazy_static::lazy_static;
 
-use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks};
+use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
@@ -153,8 +153,8 @@ impl GetChecks for NoticeOrRemark {
     }
 }
 
-impl GetChecks for Common {
-    fn get_checks(&self, params: CheckParams) -> Checks {
+impl GetSubChecks for Common {
+    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = Vec::new();
         if params.do_subchecks {
             if let Some(rdap_conformance) = &self.rdap_conformance {
@@ -164,16 +164,12 @@ impl GetChecks for Common {
                 sub_checks.push(notices.get_checks(params))
             };
         };
-        Checks {
-            struct_name: "Common RDAP Response Structures",
-            items: Vec::new(),
-            sub_checks,
-        }
+        sub_checks
     }
 }
 
-impl GetChecks for ObjectCommon {
-    fn get_checks(&self, params: CheckParams) -> Checks {
+impl GetSubChecks for ObjectCommon {
+    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = Vec::new();
         if let Some(entities) = &self.entities {
             entities
@@ -191,10 +187,52 @@ impl GetChecks for ObjectCommon {
         // TODO get events
         // TODO get status
         // TODO get port43
-        Checks {
-            struct_name: "Common RDAP ObjectClass Structures",
-            items: Vec::new(),
-            sub_checks,
-        }
+        sub_checks
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use icann_rdap_common::response::{
+        domain::Domain,
+        types::{Common, Link, ObjectCommon},
+        RdapResponse,
+    };
+
+    use crate::check::{Check, CheckParams, GetChecks};
+
+    #[test]
+    fn GIVEN_link_with_no_rel_property_WHEN_checked_THEN_link_missing_rel_property() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::builder()
+                        .object_class_name("domain")
+                        .links(vec![Link::builder().href("https://foo").build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: Some(rdap.get_type()),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .sub("Link")
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::LinkMissingRelProperty)
+            .expect("link rel missing check");
     }
 }

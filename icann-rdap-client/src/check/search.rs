@@ -4,14 +4,14 @@ use icann_rdap_common::response::search::{
     DomainSearchResults, EntitySearchResults, NameserverSearchResults,
 };
 
-use super::{CheckParams, Checks, GetChecks};
+use super::{CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for DomainSearchResults {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks: Vec<Checks> = if params.do_subchecks {
-            let mut sub_checks = vec![self
+            let mut sub_checks = self
                 .common
-                .get_checks(params.from_parent(TypeId::of::<DomainSearchResults>()))];
+                .get_sub_checks(params.from_parent(TypeId::of::<DomainSearchResults>()));
             self.results.iter().for_each(|result| {
                 sub_checks.push(
                     result.get_checks(params.from_parent(TypeId::of::<DomainSearchResults>())),
@@ -32,9 +32,9 @@ impl GetChecks for DomainSearchResults {
 impl GetChecks for NameserverSearchResults {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks: Vec<Checks> = if params.do_subchecks {
-            let mut sub_checks: Vec<Checks> = vec![self
+            let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_checks(params.from_parent(TypeId::of::<NameserverSearchResults>()))];
+                .get_sub_checks(params.from_parent(TypeId::of::<NameserverSearchResults>()));
             self.results.iter().for_each(|result| {
                 sub_checks.push(
                     result.get_checks(params.from_parent(TypeId::of::<NameserverSearchResults>())),
@@ -55,9 +55,9 @@ impl GetChecks for NameserverSearchResults {
 impl GetChecks for EntitySearchResults {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks: Vec<Checks> = if params.do_subchecks {
-            let mut sub_checks: Vec<Checks> = vec![self
+            let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_checks(params.from_parent(TypeId::of::<EntitySearchResults>()))];
+                .get_sub_checks(params.from_parent(TypeId::of::<EntitySearchResults>()));
             self.results.iter().for_each(|result| {
                 sub_checks.push(
                     result.get_checks(params.from_parent(TypeId::of::<EntitySearchResults>())),

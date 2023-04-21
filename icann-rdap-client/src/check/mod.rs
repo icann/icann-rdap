@@ -42,6 +42,14 @@ pub struct Checks<'a> {
     pub sub_checks: Vec<Checks<'a>>,
 }
 
+impl<'a> Checks<'a> {
+    pub fn sub(&self, struct_name: &str) -> Option<&Self> {
+        self.sub_checks
+            .iter()
+            .find(|check| check.struct_name.eq_ignore_ascii_case(struct_name))
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CheckItem {
     pub check_class: CheckClass,
@@ -102,7 +110,11 @@ impl GetChecks for RdapResponse {
     }
 }
 
-#[derive(Debug, EnumMessage, Serialize, Deserialize)]
+pub trait GetSubChecks {
+    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
+}
+
+#[derive(Debug, EnumMessage, Serialize, Deserialize, PartialEq)]
 pub enum Check {
     // RDAP Conformance
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
