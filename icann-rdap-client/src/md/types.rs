@@ -1,10 +1,11 @@
 use std::any::TypeId;
+use std::cmp::max;
 
 use icann_rdap_common::response::types::{Common, Link, Links, Notices, ObjectCommon, Remarks};
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
 use strum::EnumMessage;
 
-use crate::check::{CheckParams, GetChecks};
+use crate::check::{CheckParams, GetChecks, CHECK_CLASS_LEN};
 
 use super::{to_bold, to_header, to_right, to_right_em, MdParams, HR};
 use super::{to_em, ToMd};
@@ -49,7 +50,8 @@ impl ToMd for Links {
 impl ToMd for Link {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
-        let key_width = 8;
+        // the max of the values in RDAP link is 'hreflang' which 8
+        let key_width = max(8, *CHECK_CLASS_LEN);
         if let Some(title) = &self.title {
             md.push_str(&format!("Link: {title}\n"));
         } else {

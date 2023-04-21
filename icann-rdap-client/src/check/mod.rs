@@ -1,8 +1,10 @@
 use std::any::TypeId;
 
 use icann_rdap_common::response::RdapResponse;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumMessage};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter, EnumMessage};
 
 use crate::md::MdParams;
 
@@ -16,14 +18,20 @@ pub mod network;
 pub mod search;
 pub mod types;
 
+lazy_static! {
+    pub static ref CHECK_CLASS_LEN: usize = CheckClass::iter()
+        .max_by_key(|x| x.to_string().len())
+        .map_or(8, |x| x.to_string().len());
+}
+
 /// Describes the calls of checks.
-#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(EnumIter, Debug, Display, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CheckClass {
     #[strum(serialize = "Info")]
     Informational,
-    #[strum(serialize = "SWrn")]
+    #[strum(serialize = "SpecWarn")]
     SpecificationWarning,
-    #[strum(serialize = "SErr")]
+    #[strum(serialize = "SpecErr")]
     SpecificationError,
 }
 
