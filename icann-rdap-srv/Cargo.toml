@@ -18,6 +18,7 @@ buildstructor.workspace = true
 cidr-utils.workspace = true
 clap.workspace = true
 dotenv.workspace = true
+envmnt.workspace = true
 is-terminal.workspace = true
 headers.workspace = true
 http.workspace = true

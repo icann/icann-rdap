@@ -15,6 +15,7 @@ use tower_http::{
 use crate::{
     config::{ListenConfig, ServiceConfig},
     error::RdapServerError,
+    rdap::router::rdap_router,
 };
 
 /// Holds information on the server listening.
@@ -57,6 +58,7 @@ fn app_router() -> Router {
 
     let state = AppState {};
     Router::new()
+        .nest("/rdap", rdap_router())
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|error: BoxError| async move {
@@ -83,4 +85,4 @@ fn app_router() -> Router {
 }
 
 #[derive(Clone)]
-struct AppState {}
+pub struct AppState {}

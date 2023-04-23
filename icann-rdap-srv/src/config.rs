@@ -9,7 +9,7 @@ pub struct ListenConfig {
 
     /// If specified, determines the port number the server will bind to.
     /// If unspecified, the server let's the OS determine the port.
-    pub port: Option<u32>,
+    pub port: Option<u16>,
 }
 
 /// RDAP service configuration.

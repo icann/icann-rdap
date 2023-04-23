@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use thiserror::Error;
 
 /// Errors from the RDAP Server.
@@ -7,4 +9,8 @@ pub enum RdapServerError {
     Hyper(#[from] hyper::Error),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    EnvVar(#[from] std::env::VarError),
+    #[error(transparent)]
+    IntEnvVar(#[from] ParseIntError),
 }
