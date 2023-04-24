@@ -1,0 +1,4 @@
+Copyright (C) 2023 Internet Corporation for Assigned Names and Numbers
+This software is dual licensed using Apache License 2.0 and MIT License.
+Information on this software may be found at https://github.com/icann/icann-rdap
+Information on ICANN's RDAP program may be found at https://www.icann.org/rdap

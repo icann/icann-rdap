@@ -16,8 +16,12 @@ use tokio::{join, task::spawn_blocking};
 
 use crate::query::do_query;
 
+pub mod dirs;
 pub mod error;
 pub mod query;
+
+const BEFORE_LONG_HELP: &str = include_str!("before_long_help.txt");
+const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about)]
@@ -30,8 +34,8 @@ pub mod query;
             ArgGroup::new("base_specify")
                 .args(["base", "base_url"]),
         ))]
-/// An RDAP client.
-///
+#[command(before_long_help(BEFORE_LONG_HELP))]
+#[command(after_long_help(AFTER_LONG_HELP))]
 /// This program queries network registry information from domain name registries and registrars
 /// and Internet number registries (i.e. Regional Internet Registries) using the Registry Data
 /// Access Protocol (RDAP).
@@ -254,7 +258,8 @@ impl From<&LogLevel> for LevelFilter {
 
 #[tokio::main]
 pub async fn main() -> Result<(), CliError> {
-    dotenv::dotenv().ok();
+    dirs::init()?;
+    dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
 
     let level = LevelFilter::from(&cli.log_level);
