@@ -24,7 +24,7 @@ jobs:
     - name: Check wasm32
       run: cargo check --target wasm32-unknown-unknown -p icann-rdap-client
 
-  build-linux:
+  build:
     name: Release build
     needs: [test-build]
     if: startsWith(github.ref, 'refs/tags/')
@@ -51,6 +51,11 @@ jobs:
             OS: windows-latest
     runs-on: ${{ matrix.OS }}
     steps:
+      - name: Install OpenSSL Lib
+        if: ${{ matrix.OS == 'ubuntu-latest' }} 
+        run: |
+          sudo apt update
+          sudo apt install pkg-config libssl-dev
       - name: Checkout
         uses: actions/checkout@v1
       - name: Install rust
