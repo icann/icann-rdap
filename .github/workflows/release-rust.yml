@@ -51,11 +51,6 @@ jobs:
             OS: windows-latest
     runs-on: ${{ matrix.OS }}
     steps:
-      - name: Install OpenSSL Lib
-        if: ${{ matrix.OS == 'ubuntu-latest' }} 
-        run: |
-          sudo apt update
-          sudo apt install pkg-config libssl-dev
       - name: Checkout
         uses: actions/checkout@v1
       - name: Install rust
@@ -69,7 +64,7 @@ jobs:
       - name: Build target
         uses: actions-rs/cargo@v1
         with:
-          use-cross: false
+          use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
 
