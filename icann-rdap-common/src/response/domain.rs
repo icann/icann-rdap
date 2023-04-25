@@ -22,7 +22,6 @@ pub struct VariantName {
 /// Represents an RDAP IDN variant.
 #[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct Variant {
-    #[serde(rename = "objectClassName")]
     pub relation: Option<Vec<String>>,
 
     #[serde(rename = "idnTable")]

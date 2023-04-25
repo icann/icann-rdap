@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::response::domain::Domain;
 
-use super::{CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Domain {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -19,9 +19,26 @@ impl GetChecks for Domain {
         } else {
             Vec::new()
         };
+
+        let mut items = Vec::new();
+        if let Some(variants) = &self.variants {
+            let empty_count = variants
+                .iter()
+                .filter(|v| {
+                    v.relation.is_none() && v.idn_table.is_none() && v.variant_names.is_none()
+                })
+                .count();
+            if empty_count != 0 {
+                items.push(CheckItem {
+                    check_class: super::CheckClass::SpecificationWarning,
+                    check: Check::EmptyDomainVariant,
+                });
+            };
+        };
+
         Checks {
             struct_name: "Domain",
-            items: Vec::new(),
+            items,
             sub_checks,
         }
     }

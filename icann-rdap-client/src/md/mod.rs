@@ -1,8 +1,12 @@
 use std::{any::TypeId, char, cmp::max};
 
 use icann_rdap_common::response::RdapResponse;
+use strum::EnumMessage;
 
-use crate::{check::CheckClass, request::RequestData};
+use crate::{
+    check::{CheckClass, Checks, CHECK_CLASS_LEN},
+    request::RequestData,
+};
 
 pub mod autnum;
 pub mod domain;
@@ -303,4 +307,26 @@ impl ToMd for SimpleTable {
 
         md
     }
+}
+
+pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
+    let mut md = String::new();
+    checks
+        .items
+        .iter()
+        .filter(|item| params.check_types.contains(&item.check_class))
+        .for_each(|item| {
+            md.push_str(&format!(
+                "* {}: {}\n",
+                to_right_em(
+                    &item.check_class.to_string(),
+                    *CHECK_CLASS_LEN,
+                    params.options
+                ),
+                item.check
+                    .get_message()
+                    .expect("Check has no message. Coding error.")
+            ))
+        });
+    md
 }

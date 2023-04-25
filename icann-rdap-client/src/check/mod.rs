@@ -135,4 +135,8 @@ pub enum Check {
     SelfLinkIsNotRdap,
     #[strum(message = "RFC 9083 recommends self links for all object classes")]
     ObjectClassHasNoSelfLink,
+
+    // Variants
+    #[strum(message = "empty domain variant is ambiguous")]
+    EmptyDomainVariant,
 }

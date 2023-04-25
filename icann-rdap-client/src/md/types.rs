@@ -7,7 +7,7 @@ use strum::EnumMessage;
 
 use crate::check::{CheckParams, GetChecks, GetSubChecks, CHECK_CLASS_LEN};
 
-use super::{to_bold, to_header, to_right, to_right_em, MdParams, SimpleTable, HR};
+use super::{checks_ul, to_bold, to_header, to_right, to_right_em, MdParams, SimpleTable, HR};
 use super::{to_em, ToMd};
 
 impl ToMd for RdapConformance {
@@ -98,19 +98,7 @@ impl ToMd for Link {
             ));
         };
         let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
-        checks
-            .items
-            .iter()
-            .filter(|item| params.check_types.contains(&item.check_class))
-            .for_each(|item| {
-                md.push_str(&format!(
-                    "* {}: {}\n",
-                    to_right_em(&item.check_class.to_string(), key_width, params.options),
-                    item.check
-                        .get_message()
-                        .expect("Check has no message. Coding error.")
-                ))
-            });
+        md.push_str(&checks_ul(&checks, params));
         md.push('\n');
         md
     }
