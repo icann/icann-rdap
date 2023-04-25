@@ -12,7 +12,7 @@ use icann_rdap_client::{
 use icann_rdap_common::{media_types::RDAP_MEDIA_TYPE, response::RdapResponse};
 use reqwest::Client;
 use simplelog::info;
-use termimad::{crossterm::style::Color::*, MadSkin};
+use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
 use crate::error::CliError;
 
@@ -171,6 +171,8 @@ fn do_output<'a, W: std::io::Write>(
             skin.bold.set_fg(DarkBlue);
             skin.italic.set_fg(Red);
             skin.quote_mark.set_fg(White);
+            skin.table.set_fg(Magenta);
+            skin.table.align = Alignment::Center;
             skin.write_text_on(
                 write,
                 &response.rdap.to_md(MdParams {

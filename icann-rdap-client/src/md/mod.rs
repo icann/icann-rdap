@@ -1,4 +1,4 @@
-use std::{any::TypeId, char};
+use std::{any::TypeId, char, cmp::max};
 
 use icann_rdap_common::response::RdapResponse;
 
@@ -150,7 +150,6 @@ pub(crate) fn to_right_em(str: &str, width: usize, options: &MdOptions) -> Strin
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_right_bold(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_right(&to_bold(str, options), width, options)
@@ -209,5 +208,99 @@ pub(crate) fn to_center_bold(str: &str, width: usize, options: &MdOptions) -> St
         to_center(&to_bold(str, options), width, options)
     } else {
         to_bold(&to_center(str, width, options), options)
+    }
+}
+
+pub(crate) struct SimpleTable {
+    pub name: Option<String>,
+    pub rows: Vec<(String, String)>,
+}
+
+#[allow(dead_code)]
+impl SimpleTable {
+    pub(crate) fn new(name: impl ToString) -> Self {
+        SimpleTable {
+            name: Some(name.to_string()),
+            rows: Vec::new(),
+        }
+    }
+
+    pub(crate) fn noname() -> Self {
+        SimpleTable {
+            name: None,
+            rows: Vec::new(),
+        }
+    }
+
+    pub(crate) fn row(mut self, name: &impl ToString, value: &impl ToString) -> Self {
+        self.rows.push((name.to_string(), value.to_string()));
+        self
+    }
+
+    pub(crate) fn row_ul(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
+        value.iter().enumerate().for_each(|(i, v)| {
+            if i == 0 {
+                self.rows
+                    .push((name.to_string(), format!("* {}", v.to_string())))
+            } else {
+                self.rows
+                    .push((String::default(), format!("* {}", v.to_string())))
+            }
+        });
+        self
+    }
+
+    pub(crate) fn and_row(mut self, name: &impl ToString, value: &Option<String>) -> Self {
+        self.rows.push((
+            name.to_string(),
+            value.as_deref().unwrap_or_default().to_string(),
+        ));
+        self
+    }
+
+    pub(crate) fn and_row_ul(
+        self,
+        name: &impl ToString,
+        value: Option<Vec<&impl ToString>>,
+    ) -> Self {
+        if let Some(value) = value {
+            self.row_ul(name, value)
+        } else {
+            self.row(name, &String::default())
+        }
+    }
+}
+
+impl ToMd for SimpleTable {
+    fn to_md(&self, params: MdParams) -> String {
+        let mut md = String::new();
+
+        let mut col_type_width = max(self.name.as_deref().unwrap_or_default().len(), 1);
+        col_type_width = max(
+            self.rows.iter().map(|row| row.0.len()).sum(),
+            col_type_width,
+        );
+
+        // table name
+        if let Some(name) = &self.name {
+            md.push_str(&format!(
+                "|:-:|\n|{}|\n",
+                to_right_bold(name, col_type_width, params.options)
+            ));
+        };
+
+        md.push_str("|-:|:-|\n");
+
+        self.rows.iter().for_each(|row| {
+            md.push_str(&format!(
+                "|{}|{}\n",
+                to_right(&row.0, col_type_width, params.options),
+                row.1
+            ))
+        });
+
+        md.push_str("|\n\n");
+
+        md
     }
 }

@@ -7,7 +7,7 @@ use strum::EnumMessage;
 
 use crate::check::{CheckParams, GetChecks, GetSubChecks, CHECK_CLASS_LEN};
 
-use super::{to_bold, to_header, to_right, to_right_em, MdParams, HR};
+use super::{to_bold, to_header, to_right, to_right_em, MdParams, SimpleTable, HR};
 use super::{to_em, ToMd};
 
 impl ToMd for RdapConformance {
@@ -204,12 +204,29 @@ impl ToMd for Common {
 impl ToMd for ObjectCommon {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
+
+        // events
+        if let Some(events) = &self.events {
+            let mut table = SimpleTable::new("Events");
+            for event in events {
+                let mut ul: Vec<&String> = vec![&event.event_date];
+                if let Some(event_actor) = &event.event_actor {
+                    ul.push(event_actor);
+                }
+                table = table.row_ul(&event.event_action, ul);
+            }
+            md.push_str(&table.to_md(params));
+        }
+
+        // remarks
         if let Some(remarks) = &self.remarks {
             md.push_str(&remarks.to_md(MdParams {
                 heading_level: params.heading_level + 1,
                 ..params
             }));
         };
+
+        // links
         if let Some(links) = &self.links {
             md.push_str(&links.to_md(MdParams {
                 heading_level: params.heading_level + 1,
@@ -241,6 +258,8 @@ impl ToMd for ObjectCommon {
                 md.push('\n');
             }
         };
+
+        // entities
         if let Some(entities) = &self.entities {
             entities.iter().for_each(|entity| {
                 md.push_str(&entity.to_md(MdParams {
