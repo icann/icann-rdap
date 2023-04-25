@@ -9,8 +9,9 @@ use icann_rdap_client::{
 use icann_rdap_common::VERSION;
 use is_terminal::IsTerminal;
 use query::{BridgeWriter, OutputType};
+use reqwest::Client;
 use simplelog::{
-    error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+    error, info, warn, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 use tokio::{join, task::spawn_blocking};
 
@@ -299,58 +300,67 @@ pub async fn main() -> Result<(), CliError> {
                 ColorChoice::Auto,
             )
             .expect("Error instantiating log output.");
-            info!("ICANN RDAP {} Command Line Interface", VERSION);
-            if let Some(query_value) = cli.query_value {
-                info!("query type is {query_type} for value '{}'", query_value);
-            } else {
-                info!("query is {query_type}");
-            }
-            let result = do_query(
-                "https://rdap-bootstrap.arin.net/bootstrap",
+            let output = &mut std::io::stdout();
+            let res1 = join!(exec(
+                cli.query_value,
                 &query_type,
                 &output_type,
                 &client,
-                &mut std::io::stdout(),
-            )
-            .await;
-            match result {
-                Ok(_) => {}
-                Err(error) => error!("{}", error),
-            }
+                output,
+            ));
+            res1.0?;
         } else {
             let pager = minus::Pager::new();
-            let mut output = BridgeWriter(pager.clone());
+            let output = BridgeWriter(pager.clone());
 
-            let exec = async {
-                WriteLogger::init(level, Config::default(), output.clone())
-                    .expect("Error instantiating log output.");
-                info!("ICANN RDAP {} Command Line Interface", VERSION);
-                if let Some(query_value) = cli.query_value {
-                    info!("query type is {query_type} for value '{}'", query_value);
-                } else {
-                    info!("query is {query_type}");
-                }
-                let result = do_query(
-                    "https://rdap-bootstrap.arin.net/bootstrap",
-                    &query_type,
-                    &output_type,
-                    &client,
-                    &mut output,
-                )
-                .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => error!("{}", error),
-                }
-            };
+            WriteLogger::init(level, Config::default(), output.clone())
+                .expect("Error instantiating log output.");
             let pager = pager.clone();
-            let (res1, _res2) = join!(spawn_blocking(move || minus::dynamic_paging(pager)), exec);
+            let (res1, res2) = join!(
+                spawn_blocking(move || minus::dynamic_paging(pager)),
+                exec(cli.query_value, &query_type, &output_type, &client, output)
+            );
             res1.unwrap()?;
+            res2?;
         }
     } else {
         error!("{}", rdap_client.err().unwrap())
     };
     Ok(())
+}
+
+async fn exec<W: std::io::Write>(
+    query_value: Option<String>,
+    query_type: &QueryType,
+    output_type: &OutputType,
+    client: &Client,
+    mut output: W,
+) -> Result<(), CliError> {
+    info!("ICANN RDAP {} Command Line Interface", VERSION);
+
+    #[cfg(debug_assertions)]
+    warn!("This is a development build of this software.");
+
+    if let Some(query_value) = query_value {
+        info!("query type is {query_type} for value '{}'", query_value);
+    } else {
+        info!("query is {query_type}");
+    }
+    let result = do_query(
+        "https://rdap-bootstrap.arin.net/bootstrap",
+        query_type,
+        output_type,
+        client,
+        &mut output,
+    )
+    .await;
+    match result {
+        Ok(_) => Ok(()),
+        Err(error) => {
+            error!("{}", error);
+            Err(error)
+        }
+    }
 }
 
 fn query_type_from_cli(cli: &Cli) -> QueryType {
