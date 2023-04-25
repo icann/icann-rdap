@@ -768,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "clap",
  "directories",
@@ -789,7 +789,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "buildstructor",
  "cidr-utils",
@@ -808,7 +808,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "buildstructor",
  "serde",
@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "axum",
  "axum-client-ip",
