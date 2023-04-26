@@ -13,6 +13,8 @@ icann-rdap-common = { path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr-utils.workspace = true
+chrono.workspace = true
+const_format.workspace = true
 lazy_static.workspace = true
 pct-str.workspace = true
 regex.workspace = true

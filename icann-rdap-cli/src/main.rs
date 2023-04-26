@@ -11,11 +11,14 @@ use is_terminal::IsTerminal;
 use query::{BridgeWriter, OutputType};
 use reqwest::Client;
 use simplelog::{
-    error, info, warn, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
+    error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
 use tokio::{join, task::spawn_blocking};
 
 use crate::query::do_query;
+
+#[cfg(debug_assertions)]
+use simplelog::warn;
 
 pub mod dirs;
 pub mod error;
@@ -25,7 +28,7 @@ const BEFORE_LONG_HELP: &str = include_str!("before_long_help.txt");
 const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about)]
+#[command(author, version = VERSION, about, long_about)]
 #[command(group(
             ArgGroup::new("input")
                 .required(true)

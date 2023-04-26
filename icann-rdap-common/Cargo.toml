@@ -8,6 +8,8 @@ Common RDAP data structures.
 """
 
 [dependencies]
+chrono.workspace = true
+const_format.workspace = true
 buildstructor.workspace = true
 serde.workspace = true
 serde_json.workspace = true

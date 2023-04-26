@@ -17,6 +17,8 @@ icann-rdap-client = { path = "../icann-rdap-client" }
 icann-rdap-common = { path = "../icann-rdap-common" }
 
 clap.workspace = true
+chrono.workspace = true
+const_format.workspace = true
 directories.workspace = true
 dotenv.workspace = true
 is-terminal.workspace = true
