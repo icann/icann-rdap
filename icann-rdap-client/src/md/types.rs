@@ -7,7 +7,10 @@ use strum::EnumMessage;
 
 use crate::check::{CheckParams, GetChecks, GetSubChecks, CHECK_CLASS_LEN};
 
-use super::{checks_ul, to_bold, to_header, to_right, to_right_em, MdParams, SimpleTable, HR};
+use super::{
+    checks_ul, format_date_time, make_all_title_case, to_bold, to_header, to_right, to_right_em,
+    MdParams, SimpleTable, HR,
+};
 use super::{to_em, ToMd};
 
 impl ToMd for RdapConformance {
@@ -197,11 +200,12 @@ impl ToMd for ObjectCommon {
         if let Some(events) = &self.events {
             let mut table = SimpleTable::new("Events");
             for event in events {
-                let mut ul: Vec<&String> = vec![&event.event_date];
+                let event_date = format_date_time(&event.event_date, params).unwrap_or_default();
+                let mut ul: Vec<&String> = vec![&event_date];
                 if let Some(event_actor) = &event.event_actor {
                     ul.push(event_actor);
                 }
-                table = table.row_ul(&event.event_action, ul);
+                table = table.row_ul(&make_all_title_case(&event.event_action), ul);
             }
             md.push_str(&table.to_md(params));
         }

@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use chrono::DateTime;
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
     response::{
@@ -186,11 +187,15 @@ impl GetSubChecks for Common {
 impl GetSubChecks for ObjectCommon {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = Vec::new();
+
+        // entities
         if let Some(entities) = &self.entities {
             entities
                 .iter()
                 .for_each(|e| sub_checks.push(e.get_checks(params)))
         };
+
+        // links
         if let Some(links) = &self.links {
             sub_checks.push(links.get_checks(params));
         } else {
@@ -203,11 +208,30 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks: Vec::new(),
             })
         };
+
+        // remarks
         if let Some(remarks) = &self.remarks {
             sub_checks.push(remarks.get_checks(params))
         };
+
+        // events
+        if let Some(events) = &self.events {
+            events.iter().for_each(|e| {
+                let date = DateTime::parse_from_rfc3339(&e.event_date);
+                if date.is_err() {
+                    sub_checks.push(Checks {
+                        struct_name: "Links",
+                        items: vec![CheckItem {
+                            check_class: CheckClass::SpecificationError,
+                            check: Check::EventDateIsNotRfc3339,
+                        }],
+                        sub_checks: Vec::new(),
+                    })
+                }
+            });
+        }
+
         // TODO get handle
-        // TODO get events
         // TODO get status
         // TODO get port43
         sub_checks

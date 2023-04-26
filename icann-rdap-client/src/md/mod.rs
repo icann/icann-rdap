@@ -1,5 +1,6 @@
 use std::{any::TypeId, char, cmp::max};
 
+use chrono::DateTime;
 use icann_rdap_common::response::RdapResponse;
 use strum::EnumMessage;
 
@@ -340,7 +341,6 @@ pub(crate) fn make_title_case(s: impl ToString) -> String {
                 c.make_ascii_uppercase();
                 c
             } else {
-                c.make_ascii_lowercase();
                 c
             }
         })
@@ -365,6 +365,11 @@ pub(crate) fn make_title_case_list(list: &[impl ToString]) -> String {
     make_list_all_title_case(list).join(", ")
 }
 
+pub(crate) fn format_date_time(s: impl ToString, _params: MdParams) -> Option<String> {
+    let date = DateTime::parse_from_rfc3339(&s.to_string()).ok()?;
+    Some(date.format("%a, %v %X %Z").to_string())
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
@@ -378,8 +383,8 @@ mod tests {
 
     #[rstest]
     #[case("foo", "Foo")]
-    #[case("FOO", "Foo")]
-    fn GIVEN_word_WHEN_make_title_case_THEN_only_first_char_is_upper(
+    #[case("FOO", "FOO")]
+    fn GIVEN_word_WHEN_make_title_case_THEN_first_char_is_upper(
         #[case] word: &str,
         #[case] expected: &str,
     ) {
@@ -395,8 +400,8 @@ mod tests {
     #[rstest]
     #[case("foo bar", "Foo Bar")]
     #[case("foo  bar", "Foo Bar")]
-    #[case("foO  baR", "Foo Bar")]
-    fn GIVEN_sentence_WHEN_make_all_title_case_THEN_only_first_chars_is_upper(
+    #[case("foO  baR", "FoO BaR")]
+    fn GIVEN_sentence_WHEN_make_all_title_case_THEN_first_chars_is_upper(
         #[case] sentence: &str,
         #[case] expected: &str,
     ) {
@@ -418,7 +423,7 @@ mod tests {
         let actual = make_list_all_title_case(&v);
 
         // THEN
-        assert_eq!(actual, vec!["Foo Bar".to_string(), "Foo Bar".to_string()])
+        assert_eq!(actual, vec!["Foo Bar".to_string(), "FoO BaR".to_string()])
     }
 
     #[test]

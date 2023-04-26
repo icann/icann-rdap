@@ -139,4 +139,8 @@ pub enum Check {
     // Variants
     #[strum(message = "empty domain variant is ambiguous")]
     EmptyDomainVariant,
+
+    // Events
+    #[strum(message = "event date is not RFC 3339 compliant")]
+    EventDateIsNotRfc3339,
 }
