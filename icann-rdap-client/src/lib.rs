@@ -1,3 +1,4 @@
+#![allow(dead_code)] // TODO remove this at some point
 use std::fmt::Display;
 
 use icann_rdap_common::response::RdapResponseError;

@@ -4,7 +4,9 @@ use icann_rdap_common::response::domain::{Domain, Variant};
 
 use crate::check::{CheckParams, GetChecks};
 
-use super::{checks_ul, to_header, to_right_bold, MdParams, SimpleTable, ToMd};
+use super::{
+    checks_ul, make_title_case_list, to_header, to_right_bold, MdParams, SimpleTable, ToMd,
+};
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {
@@ -58,7 +60,7 @@ fn do_variants(variants: &[Variant], params: MdParams) -> String {
     variants.iter().for_each(|v| {
         md.push_str(&format!(
             "|{}|{}|{}|",
-            v.relation.as_deref().unwrap_or_default().join(", "),
+            make_title_case_list(v.relation.as_deref().unwrap_or_default()),
             v.idn_table.as_deref().unwrap_or_default(),
             v.variant_names
                 .as_deref()

@@ -170,7 +170,6 @@ pub(crate) fn to_left(str: &str, width: usize, options: &MdOptions) -> String {
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_left_em(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_left(&to_em(str, options), width, options)
@@ -179,7 +178,6 @@ pub(crate) fn to_left_em(str: &str, width: usize, options: &MdOptions) -> String
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_left_bold(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_left(&to_bold(str, options), width, options)
@@ -188,7 +186,6 @@ pub(crate) fn to_left_bold(str: &str, width: usize, options: &MdOptions) -> Stri
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_center(str: &str, width: usize, options: &MdOptions) -> String {
     if options.no_unicode_chars {
         format!("{str:^width$}")
@@ -197,7 +194,6 @@ pub(crate) fn to_center(str: &str, width: usize, options: &MdOptions) -> String 
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_center_em(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_center(&to_em(str, options), width, options)
@@ -206,7 +202,6 @@ pub(crate) fn to_center_em(str: &str, width: usize, options: &MdOptions) -> Stri
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn to_center_bold(str: &str, width: usize, options: &MdOptions) -> String {
     if options.style_in_justify {
         to_center(&to_bold(str, options), width, options)
@@ -220,7 +215,6 @@ pub(crate) struct SimpleTable {
     pub rows: Vec<(String, String)>,
 }
 
-#[allow(dead_code)]
 impl SimpleTable {
     pub(crate) fn new(name: impl ToString) -> Self {
         SimpleTable {
@@ -329,4 +323,106 @@ pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
             ))
         });
     md
+}
+
+pub(crate) fn make_title_case(s: impl ToString) -> String {
+    s.to_string()
+        .char_indices()
+        .map(|(i, mut c)| {
+            if i == 0 {
+                c.make_ascii_uppercase();
+                c
+            } else {
+                c.make_ascii_lowercase();
+                c
+            }
+        })
+        .collect::<String>()
+}
+
+pub(crate) fn make_all_title_case(s: impl ToString) -> String {
+    s.to_string()
+        .split_whitespace()
+        .map(make_title_case)
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
+pub(crate) fn make_list_all_title_case(list: &[impl ToString]) -> Vec<String> {
+    list.iter()
+        .map(|s| make_all_title_case(s.to_string()))
+        .collect::<Vec<String>>()
+}
+
+pub(crate) fn make_title_case_list(list: &[impl ToString]) -> String {
+    make_list_all_title_case(list).join(", ")
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::md::make_title_case_list;
+
+    use super::make_all_title_case;
+    use super::make_list_all_title_case;
+    use super::make_title_case;
+
+    #[rstest]
+    #[case("foo", "Foo")]
+    #[case("FOO", "Foo")]
+    fn GIVEN_word_WHEN_make_title_case_THEN_only_first_char_is_upper(
+        #[case] word: &str,
+        #[case] expected: &str,
+    ) {
+        // GIVEN in arguments
+
+        // WHEN
+        let actual = make_title_case(word);
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("foo bar", "Foo Bar")]
+    #[case("foo  bar", "Foo Bar")]
+    #[case("foO  baR", "Foo Bar")]
+    fn GIVEN_sentence_WHEN_make_all_title_case_THEN_only_first_chars_is_upper(
+        #[case] sentence: &str,
+        #[case] expected: &str,
+    ) {
+        // GIVEN in arguments
+
+        // WHEN
+        let actual = make_all_title_case(sentence);
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn GIVEN_list_of_sentences_WHEN_make_list_all_title_case_THEN_each_sentence_all_title_cased() {
+        // GIVEN
+        let v = vec!["foo bar", "foO baR"];
+
+        // WHEN
+        let actual = make_list_all_title_case(&v);
+
+        // THEN
+        assert_eq!(actual, vec!["Foo Bar".to_string(), "Foo Bar".to_string()])
+    }
+
+    #[test]
+    fn GIVEN_list_WHEN_make_title_case_list_THEN_comma_separated_title_cased() {
+        // GIVEN
+        let list = vec!["foo bar", "bizz buzz"];
+
+        // WHEN
+        let actual = make_title_case_list(&list);
+
+        // THEN
+        assert_eq!(actual, "Foo Bar, Bizz Buzz");
+    }
 }
