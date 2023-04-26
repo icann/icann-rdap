@@ -17,6 +17,7 @@ pub mod help;
 pub mod nameserver;
 pub mod network;
 pub mod search;
+pub mod table;
 pub mod types;
 
 pub(crate) const _CODE_INDENT: &str = "    ";

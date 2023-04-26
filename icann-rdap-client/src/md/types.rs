@@ -8,8 +8,8 @@ use strum::EnumMessage;
 use crate::check::{CheckParams, GetChecks, GetSubChecks, CHECK_CLASS_LEN};
 
 use super::{
-    checks_ul, format_date_time, make_all_title_case, to_bold, to_header, to_right, to_right_em,
-    MdParams, SimpleTable, HR,
+    checks_ul, format_date_time, make_all_title_case, make_title_case, to_bold, to_header,
+    to_right, to_right_em, MdParams, SimpleTable, HR,
 };
 use super::{to_em, ToMd};
 
@@ -17,7 +17,10 @@ impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         md.push_str(&to_header(
-            &format!("{} Capabilities", params.req_data.source_host),
+            &format!(
+                "{} Conformance Claims",
+                make_title_case(params.req_data.source_host)
+            ),
             params.heading_level + 1,
             params.options,
         ));
@@ -166,7 +169,8 @@ impl ToMd for Common {
             md.push_str(HR);
             let header_text = format!(
                 "Response from {} at {}",
-                params.req_data.source_type, params.req_data.source_host
+                params.req_data.source_type,
+                make_title_case(params.req_data.source_host)
             );
             md.push_str(&to_header(
                 &header_text,

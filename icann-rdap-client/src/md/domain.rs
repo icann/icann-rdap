@@ -30,12 +30,14 @@ impl ToMd for Domain {
             params.options,
         ));
 
-        let identifiers = SimpleTable::new("Indentifiers")
+        // identifiers
+        let identifiers = SimpleTable::new("Identifiers")
             .and_row(&"LDH Name", &self.ldh_name)
             .and_row(&"Unicode Name", &self.unicode_name)
             .and_row(&"Handle", &self.object_common.handle);
         md.push_str(&identifiers.to_md(params));
 
+        // variants
         if let Some(variants) = &self.variants {
             md.push_str(&do_variants(variants, params))
         }
@@ -45,6 +47,13 @@ impl ToMd for Domain {
 
         // Common Object
         md.push_str(&self.object_common.to_md(params.from_parent(typeid)));
+
+        // nameservers
+        if let Some(nameservers) = &self.nameservers {
+            nameservers
+                .iter()
+                .for_each(|ns| md.push_str(&ns.to_md(params.next_level())));
+        }
         md.push('\n');
         md
     }
