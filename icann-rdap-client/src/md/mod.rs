@@ -81,6 +81,13 @@ impl<'a> MdParams<'a> {
             req_data: self.req_data,
         }
     }
+
+    pub fn next_level(&self) -> Self {
+        MdParams {
+            heading_level: self.heading_level + 1,
+            ..*self
+        }
+    }
 }
 
 pub trait ToMd {

@@ -208,18 +208,12 @@ impl ToMd for ObjectCommon {
 
         // remarks
         if let Some(remarks) = &self.remarks {
-            md.push_str(&remarks.to_md(MdParams {
-                heading_level: params.heading_level + 1,
-                ..params
-            }));
+            md.push_str(&remarks.to_md(params.next_level()));
         };
 
         // links
         if let Some(links) = &self.links {
-            md.push_str(&links.to_md(MdParams {
-                heading_level: params.heading_level + 1,
-                ..params
-            }));
+            md.push_str(&links.to_md(params.next_level()));
         } else {
             let link_checks = self.get_sub_checks(CheckParams::from_md_no_parent(params));
             if !link_checks.is_empty() {
@@ -249,12 +243,9 @@ impl ToMd for ObjectCommon {
 
         // entities
         if let Some(entities) = &self.entities {
-            entities.iter().for_each(|entity| {
-                md.push_str(&entity.to_md(MdParams {
-                    heading_level: params.heading_level + 1,
-                    ..params
-                }))
-            });
+            entities
+                .iter()
+                .for_each(|entity| md.push_str(&entity.to_md(params.next_level())));
         }
         md
     }
