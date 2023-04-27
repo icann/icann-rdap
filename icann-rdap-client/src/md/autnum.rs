@@ -29,7 +29,18 @@ impl ToMd for Autnum {
             params.heading_level,
             params.options,
         ));
-        md.push_str(&self.object_common.to_md(params.from_parent(typeid)));
+
+        // remarks
+        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
+
+        // entities
+        md.push_str(
+            &self
+                .object_common
+                .entities
+                .to_md(params.from_parent(typeid)),
+        );
+
         md.push('\n');
         md
     }

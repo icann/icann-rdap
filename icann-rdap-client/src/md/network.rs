@@ -1,9 +1,12 @@
+use std::any::TypeId;
+
 use icann_rdap_common::response::network::Network;
 
 use super::{to_header, MdParams, ToMd};
 
 impl ToMd for Network {
     fn to_md(&self, params: MdParams) -> String {
+        let typeid = TypeId::of::<Network>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params));
         let header_text = if self.start_address.is_some() && self.end_address.is_some() {
@@ -26,7 +29,17 @@ impl ToMd for Network {
             params.heading_level,
             params.options,
         ));
-        md.push_str(&self.object_common.to_md(params));
+
+        // remarks
+        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
+
+        // entities
+        md.push_str(
+            &self
+                .object_common
+                .entities
+                .to_md(params.from_parent(typeid)),
+        );
         md.push('\n');
         md
     }

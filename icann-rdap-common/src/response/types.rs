@@ -27,6 +27,7 @@ pub struct Link {
     /// According to RFC 9083, this field is required
     /// but many servers do not return it as it was
     /// optional in RFC 7483.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rel: Option<String>,
 
     pub href: String,

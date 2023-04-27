@@ -22,9 +22,30 @@ impl ToMd for Entity {
             params.options,
         ));
 
-        // common object
-        md.push_str(&self.object_common.to_md(params.from_parent(typeid)));
+        // remarks
+        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
+
+        // entities
+        md.push_str(
+            &self
+                .object_common
+                .entities
+                .to_md(params.from_parent(typeid)),
+        );
+
         md.push('\n');
+        md
+    }
+}
+
+impl ToMd for Option<Vec<Entity>> {
+    fn to_md(&self, params: MdParams) -> String {
+        let mut md = String::new();
+        if let Some(entities) = &self {
+            entities
+                .iter()
+                .for_each(|entity| md.push_str(&entity.to_md(params.next_level())));
+        }
         md
     }
 }

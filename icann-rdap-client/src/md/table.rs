@@ -1,6 +1,10 @@
 use std::cmp::max;
 
-use super::{to_center_bold, to_right, ToMd};
+use super::{to_center_bold, to_right, MdParams, ToMd};
+
+pub(crate) trait ToMpTable {
+    fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
+}
 
 pub(crate) struct MultiPartTable {
     rows: Vec<Row>,

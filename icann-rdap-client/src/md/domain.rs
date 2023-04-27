@@ -2,10 +2,14 @@ use std::any::TypeId;
 
 use icann_rdap_common::response::domain::{Domain, Variant};
 
-use crate::check::{CheckParams, GetChecks};
+use crate::check::{CheckParams, GetChecks, GetSubChecks};
 
 use super::{
-    checks_ul, make_title_case_list, to_header, to_right_bold, MdParams, SimpleTable, ToMd,
+    make_title_case_list,
+    table::{MultiPartTable, ToMpTable},
+    to_header, to_right_bold,
+    types::checks_to_table,
+    MdParams, ToMd,
 };
 
 impl ToMd for Domain {
@@ -30,23 +34,43 @@ impl ToMd for Domain {
             params.options,
         ));
 
-        // identifiers
-        let identifiers = SimpleTable::new("Identifiers")
-            .and_row(&"LDH Name", &self.ldh_name)
-            .and_row(&"Unicode Name", &self.unicode_name)
-            .and_row(&"Handle", &self.object_common.handle);
-        md.push_str(&identifiers.to_md(params));
+        // multipart data
+        let mut table = MultiPartTable::new();
 
-        // variants
+        // identifiers
+        table = table
+            .header(&"Identifiers")
+            .and_data(&"LDH Name", &self.ldh_name)
+            .and_data(&"Unicode Name", &self.unicode_name)
+            .and_data(&"Handle", &self.object_common.handle);
+
+        // common object stuff
+        table = self.object_common.add_to_mptable(table, params);
+
+        // checks
+        let check_params = CheckParams::from_md(params, typeid);
+        let mut checks = self.object_common.get_sub_checks(check_params);
+        checks.push(self.get_checks(check_params));
+        table = checks_to_table(checks, table, params);
+
+        // render table
+        md.push_str(&table.to_md(params));
+
+        // variants require a custom table
         if let Some(variants) = &self.variants {
             md.push_str(&do_variants(variants, params))
         }
 
-        let checks = self.get_checks(CheckParams::from_md(params, typeid));
-        md.push_str(&checks_ul(&checks, params));
+        // remarks
+        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
 
-        // Common Object
-        md.push_str(&self.object_common.to_md(params.from_parent(typeid)));
+        // entities
+        md.push_str(
+            &self
+                .object_common
+                .entities
+                .to_md(params.from_parent(typeid)),
+        );
 
         // nameservers
         if let Some(nameservers) = &self.nameservers {
