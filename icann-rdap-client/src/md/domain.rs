@@ -5,9 +5,9 @@ use icann_rdap_common::response::domain::{Domain, Variant};
 use crate::check::{CheckParams, GetChecks, GetSubChecks};
 
 use super::{
-    make_title_case_list,
+    string::StringListUtil,
+    string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    to_header, to_right_bold,
     types::checks_to_table,
     MdParams, ToMd,
 };
@@ -28,11 +28,7 @@ impl ToMd for Domain {
         } else {
             "Domain".to_string()
         };
-        md.push_str(&to_header(
-            &header_text,
-            params.heading_level,
-            params.options,
-        ));
+        md.push_str(&header_text.to_header(params.heading_level, params.options));
 
         // multipart data
         let mut table = MultiPartTable::new();
@@ -87,13 +83,16 @@ fn do_variants(variants: &[Variant], params: MdParams) -> String {
     let mut md = String::new();
     md.push_str(&format!(
         "|:-:|\n|{}|\n",
-        to_right_bold("Domain Variants", 8, params.options)
+        "Domain Variants".to_right_bold(8, params.options)
     ));
     md.push_str("|:-:|:-:|:-:|\n|Relations|IDN Table|Variant Names|\n");
     variants.iter().for_each(|v| {
         md.push_str(&format!(
             "|{}|{}|{}|",
-            make_title_case_list(v.relation.as_deref().unwrap_or_default()),
+            v.relation
+                .as_deref()
+                .unwrap_or_default()
+                .make_title_case_list(),
             v.idn_table.as_deref().unwrap_or_default(),
             v.variant_names
                 .as_deref()

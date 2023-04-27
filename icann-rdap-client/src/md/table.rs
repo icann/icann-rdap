@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use super::{to_center_bold, to_right, MdParams, ToMd};
+use super::{string::StringUtil, MdParams, ToMd};
 
 pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
@@ -92,7 +92,7 @@ impl ToMd for MultiPartTable {
                     Row::Header(name) => {
                         md.push_str(&format!(
                             "|:-:|\n|{}|\n",
-                            to_center_bold(name, col_type_width, params.options)
+                            name.to_center_bold(col_type_width, params.options)
                         ));
                         true
                     }
@@ -102,7 +102,7 @@ impl ToMd for MultiPartTable {
                         };
                         md.push_str(&format!(
                             "|{}|{}|\n",
-                            to_right(name, col_type_width, params.options),
+                            name.to_right(col_type_width, params.options),
                             value
                         ));
                         false

@@ -5,8 +5,8 @@ use icann_rdap_common::response::nameserver::Nameserver;
 use crate::check::{CheckParams, GetChecks, GetSubChecks};
 
 use super::{
+    string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    to_header,
     types::checks_to_table,
     MdParams, ToMd,
 };
@@ -29,11 +29,7 @@ impl ToMd for Nameserver {
         } else {
             "Domain".to_string()
         };
-        md.push_str(&to_header(
-            &header_text,
-            params.heading_level,
-            params.options,
-        ));
+        md.push_str(&header_text.to_header(params.heading_level, params.options));
 
         // multipart data
         let mut table = MultiPartTable::new();

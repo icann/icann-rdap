@@ -9,34 +9,37 @@ use strum::EnumMessage;
 
 use crate::check::{CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN};
 
+use super::string::StringUtil;
 use super::table::{MultiPartTable, ToMpTable};
-use super::{
-    checks_ul, format_date_time, make_all_title_case, make_title_case, to_bold, to_header,
-    to_right, to_right_em, MdParams, HR,
-};
-use super::{to_em, ToMd};
+use super::ToMd;
+use super::{checks_ul, MdParams, HR};
 
 impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
-        md.push_str(&to_header(
+        md.push_str(
             &format!(
                 "{} Conformance Claims",
-                make_title_case(params.req_data.source_host)
-            ),
-            params.heading_level + 1,
-            params.options,
-        ));
-        self.iter()
-            .for_each(|s| md.push_str(&format!("* {}\n", s.0)));
+                params.req_data.source_host.to_title_case()
+            )
+            .to_header(params.heading_level + 1, params.options),
+        );
+        self.iter().for_each(|s| {
+            md.push_str(&format!(
+                "* {}\n",
+                s.0.replace('_', " ")
+                    .to_cap_acronyms()
+                    .to_words_title_case()
+            ))
+        });
         self.get_checks(CheckParams::from_md_no_parent(params))
             .items
             .iter()
             .filter(|item| params.check_types.contains(&item.check_class))
             .for_each(|item| {
                 md.push_str(&format!(
-                    "* {}: {}\n", // TODO fix!
-                    to_em(&item.check_class.to_string(), params.options),
+                    "* {}: {}\n",
+                    item.check_class.to_string().to_em(params.options),
                     item.check
                         .get_message()
                         .expect("Check has no message. Coding error.")
@@ -68,41 +71,41 @@ impl ToMd for Link {
         };
         md.push_str(&format!(
             "* {}: {}\n",
-            to_right("href", key_width, params.options),
+            "href".to_right(key_width, params.options),
             self.href
         ));
         if let Some(rel) = &self.rel {
             md.push_str(&format!(
                 "* {}: {}\n",
-                to_right("rel", key_width, params.options),
+                "rel".to_right(key_width, params.options),
                 rel
             ));
         };
         if let Some(value) = &self.value {
             md.push_str(&format!(
                 "* {}: {}\n",
-                to_right("value", key_width, params.options),
+                "value".to_right(key_width, params.options),
                 value
             ));
         };
         if let Some(hreflang) = &self.hreflang {
             md.push_str(&format!(
                 "* {}: {}\n",
-                to_right("hreflang", key_width, params.options),
+                "hreflang".to_right(key_width, params.options),
                 hreflang.join(", ")
             ));
         };
         if let Some(media) = &self.media {
             md.push_str(&format!(
                 "* {}: {}\n",
-                to_right("media", key_width, params.options),
+                "media".to_right(key_width, params.options),
                 media
             ));
         };
         if let Some(media_type) = &self.media_type {
             md.push_str(&format!(
                 "* {}: {}\n",
-                to_right("type", key_width, params.options),
+                "type".to_right(key_width, params.options),
                 media_type
             ));
         };
@@ -145,7 +148,7 @@ impl ToMd for NoticeOrRemark {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(title) = &self.title {
-            md.push_str(&format!("{}\n", to_bold(title, params.options)));
+            md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         self.description
             .iter()
@@ -157,7 +160,7 @@ impl ToMd for NoticeOrRemark {
             .for_each(|item| {
                 md.push_str(&format!(
                     "* {}: {}\n",
-                    to_em(&item.check_class.to_string(), params.options),
+                    &item.check_class.to_string().to_em(params.options),
                     item.check
                         .get_message()
                         .expect("Check has no message. Coding error.")
@@ -183,23 +186,15 @@ impl ToMd for Common {
             let header_text = format!(
                 "Response from {} at {}",
                 params.req_data.source_type,
-                make_title_case(params.req_data.source_host)
+                params.req_data.source_host.to_title_case()
             );
-            md.push_str(&to_header(
-                &header_text,
-                params.heading_level,
-                params.options,
-            ));
+            md.push_str(&header_text.to_header(params.heading_level, params.options));
         };
         if let Some(rdap_conformance) = &self.rdap_conformance {
             md.push_str(&rdap_conformance.to_md(params));
         };
         if let Some(notices) = &self.notices {
-            md.push_str(&to_header(
-                "Server Notices",
-                params.heading_level + 1,
-                params.options,
-            ));
+            md.push_str(&"Server Notices".to_header(params.heading_level + 1, params.options));
             md.push_str(&notices.to_md(params));
         }
         if not_empty {
@@ -234,12 +229,16 @@ pub(crate) fn events_to_table(
 ) -> MultiPartTable {
     table = table.header(&header_name.to_string());
     for event in events {
-        let event_date = format_date_time(&event.event_date, params).unwrap_or_default();
-        let mut ul: Vec<&String> = vec![&event_date];
+        let event_date = &event
+            .event_date
+            .to_owned()
+            .format_date_time(params)
+            .unwrap_or_default();
+        let mut ul: Vec<&String> = vec![event_date];
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);
         }
-        table = table.data_ul(&make_all_title_case(&event.event_action), ul);
+        table = table.data_ul(&event.event_action.to_owned().to_words_title_case(), ul);
     }
     table
 }
@@ -254,7 +253,11 @@ pub(crate) fn links_to_table(
         if let Some(title) = &link.title {
             table = table.data(&"Title", &title.trim());
         };
-        let rel = make_title_case(link.rel.as_ref().unwrap_or(&"Link".to_string()));
+        let rel = link
+            .rel
+            .as_ref()
+            .unwrap_or(&"Link".to_string())
+            .to_title_case();
         let mut ul: Vec<&String> = vec![&link.href];
         if let Some(media_type) = &link.media_type {
             ul.push(media_type)
@@ -299,7 +302,9 @@ pub(crate) fn checks_to_table(
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
         table = table.data_ul(
-            &to_right_em(&class.to_string(), *CHECK_CLASS_LEN, params.options),
+            &&class
+                .to_string()
+                .to_right_em(*CHECK_CLASS_LEN, params.options),
             ul.iter().collect(),
         );
 
@@ -311,7 +316,9 @@ pub(crate) fn checks_to_table(
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
         table = table.data_ul(
-            &to_right_em(&class.to_string(), *CHECK_CLASS_LEN, params.options),
+            &class
+                .to_string()
+                .to_right_em(*CHECK_CLASS_LEN, params.options),
             ul.iter().collect(),
         );
 
@@ -323,7 +330,9 @@ pub(crate) fn checks_to_table(
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
         table = table.data_ul(
-            &to_right_em(&class.to_string(), *CHECK_CLASS_LEN, params.options),
+            &&class
+                .to_string()
+                .to_right_em(*CHECK_CLASS_LEN, params.options),
             ul.iter().collect(),
         );
     }

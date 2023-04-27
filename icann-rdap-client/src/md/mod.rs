@@ -1,6 +1,5 @@
 use std::{any::TypeId, char};
 
-use chrono::DateTime;
 use icann_rdap_common::response::RdapResponse;
 use strum::EnumMessage;
 
@@ -8,6 +7,8 @@ use crate::{
     check::{CheckClass, Checks, CHECK_CLASS_LEN},
     request::RequestData,
 };
+
+use self::string::StringUtil;
 
 pub mod autnum;
 pub mod domain;
@@ -17,6 +18,7 @@ pub mod help;
 pub mod nameserver;
 pub mod network;
 pub mod search;
+pub mod string;
 pub mod table;
 pub mod types;
 
@@ -117,108 +119,6 @@ impl ToMd for RdapResponse {
     }
 }
 
-pub(crate) fn to_em(str: &str, options: &MdOptions) -> String {
-    format!(
-        "{}{str}{}",
-        options.text_style_char, options.text_style_char
-    )
-}
-
-pub(crate) fn to_bold(str: &str, options: &MdOptions) -> String {
-    format!(
-        "{}{}{str}{}{}",
-        options.text_style_char,
-        options.text_style_char,
-        options.text_style_char,
-        options.text_style_char
-    )
-}
-
-pub(crate) fn to_header(str: &str, level: usize, options: &MdOptions) -> String {
-    if options.hash_headers {
-        format!("{} {str}\n\n", "#".repeat(level))
-    } else {
-        let line = if level == 1 {
-            "=".repeat(str.len())
-        } else {
-            "-".repeat(str.len())
-        };
-        format!("{str}\n{line}\n\n")
-    }
-}
-
-pub(crate) fn to_right(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.no_unicode_chars {
-        format!("{str:>width$}")
-    } else {
-        format!("{str:\u{2003}>width$}")
-    }
-}
-
-pub(crate) fn to_right_em(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.style_in_justify {
-        to_right(&to_em(str, options), width, options)
-    } else {
-        to_em(&to_right(str, width, options), options)
-    }
-}
-
-pub(crate) fn to_right_bold(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.style_in_justify {
-        to_right(&to_bold(str, options), width, options)
-    } else {
-        to_bold(&to_right(str, width, options), options)
-    }
-}
-
-pub(crate) fn to_left(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.no_unicode_chars {
-        format!("{str:<width$}")
-    } else {
-        format!("{str:\u{2003}<width$}")
-    }
-}
-
-pub(crate) fn to_left_em(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.style_in_justify {
-        to_left(&to_em(str, options), width, options)
-    } else {
-        to_em(&to_left(str, width, options), options)
-    }
-}
-
-pub(crate) fn to_left_bold(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.style_in_justify {
-        to_left(&to_bold(str, options), width, options)
-    } else {
-        to_bold(&to_left(str, width, options), options)
-    }
-}
-
-pub(crate) fn to_center(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.no_unicode_chars {
-        format!("{str:^width$}")
-    } else {
-        format!("{str:\u{2003}^width$}")
-    }
-}
-
-pub(crate) fn to_center_em(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.style_in_justify {
-        to_center(&to_em(str, options), width, options)
-    } else {
-        to_em(&to_center(str, width, options), options)
-    }
-}
-
-pub(crate) fn to_center_bold(str: &str, width: usize, options: &MdOptions) -> String {
-    if options.style_in_justify {
-        to_center(&to_bold(str, options), width, options)
-    } else {
-        to_bold(&to_center(str, width, options), options)
-    }
-}
-
 pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
     let mut md = String::new();
     checks
@@ -228,121 +128,14 @@ pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
         .for_each(|item| {
             md.push_str(&format!(
                 "* {}: {}\n",
-                to_right_em(
-                    &item.check_class.to_string(),
-                    *CHECK_CLASS_LEN,
-                    params.options
-                ),
+                &item
+                    .check_class
+                    .to_string()
+                    .to_right_em(*CHECK_CLASS_LEN, params.options),
                 item.check
                     .get_message()
                     .expect("Check has no message. Coding error.")
             ))
         });
     md
-}
-
-pub(crate) fn make_title_case(s: impl ToString) -> String {
-    s.to_string()
-        .char_indices()
-        .map(|(i, mut c)| {
-            if i == 0 {
-                c.make_ascii_uppercase();
-                c
-            } else {
-                c
-            }
-        })
-        .collect::<String>()
-}
-
-pub(crate) fn make_all_title_case(s: impl ToString) -> String {
-    s.to_string()
-        .split_whitespace()
-        .map(make_title_case)
-        .collect::<Vec<String>>()
-        .join(" ")
-}
-
-pub(crate) fn make_list_all_title_case(list: &[impl ToString]) -> Vec<String> {
-    list.iter()
-        .map(|s| make_all_title_case(s.to_string()))
-        .collect::<Vec<String>>()
-}
-
-pub(crate) fn make_title_case_list(list: &[impl ToString]) -> String {
-    make_list_all_title_case(list).join(", ")
-}
-
-pub(crate) fn format_date_time(s: impl ToString, _params: MdParams) -> Option<String> {
-    let date = DateTime::parse_from_rfc3339(&s.to_string()).ok()?;
-    Some(date.format("%a, %v %X %Z").to_string())
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-mod tests {
-    use rstest::rstest;
-
-    use crate::md::make_title_case_list;
-
-    use super::make_all_title_case;
-    use super::make_list_all_title_case;
-    use super::make_title_case;
-
-    #[rstest]
-    #[case("foo", "Foo")]
-    #[case("FOO", "FOO")]
-    fn GIVEN_word_WHEN_make_title_case_THEN_first_char_is_upper(
-        #[case] word: &str,
-        #[case] expected: &str,
-    ) {
-        // GIVEN in arguments
-
-        // WHEN
-        let actual = make_title_case(word);
-
-        // THEN
-        assert_eq!(actual, expected);
-    }
-
-    #[rstest]
-    #[case("foo bar", "Foo Bar")]
-    #[case("foo  bar", "Foo Bar")]
-    #[case("foO  baR", "FoO BaR")]
-    fn GIVEN_sentence_WHEN_make_all_title_case_THEN_first_chars_is_upper(
-        #[case] sentence: &str,
-        #[case] expected: &str,
-    ) {
-        // GIVEN in arguments
-
-        // WHEN
-        let actual = make_all_title_case(sentence);
-
-        // THEN
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn GIVEN_list_of_sentences_WHEN_make_list_all_title_case_THEN_each_sentence_all_title_cased() {
-        // GIVEN
-        let v = vec!["foo bar", "foO baR"];
-
-        // WHEN
-        let actual = make_list_all_title_case(&v);
-
-        // THEN
-        assert_eq!(actual, vec!["Foo Bar".to_string(), "FoO BaR".to_string()])
-    }
-
-    #[test]
-    fn GIVEN_list_WHEN_make_title_case_list_THEN_comma_separated_title_cased() {
-        // GIVEN
-        let list = vec!["foo bar", "bizz buzz"];
-
-        // WHEN
-        let actual = make_title_case_list(&list);
-
-        // THEN
-        assert_eq!(actual, "Foo Bar, Bizz Buzz");
-    }
 }
