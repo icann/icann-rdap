@@ -168,9 +168,16 @@ fn do_output<'a, W: std::io::Write>(
         OutputType::AnsiText => {
             let mut skin = MadSkin::default_dark();
             skin.set_headers_fg(Yellow);
+            skin.headers[1].align = Alignment::Center;
+            skin.headers[2].align = Alignment::Center;
+            skin.headers[3].align = Alignment::Center;
+            skin.headers[4].compound_style.set_fg(Green);
+            skin.headers[5].compound_style.set_fg(Magenta);
+            skin.headers[6].compound_style.set_fg(Cyan);
+            skin.headers[7].compound_style.set_fg(Red);
             skin.bold.set_fg(DarkBlue);
             skin.italic.set_fg(Red);
-            skin.quote_mark.set_fg(White);
+            skin.quote_mark.set_fg(DarkBlue);
             skin.table.set_fg(Magenta);
             skin.table.align = Alignment::Center;
             skin.write_text_on(

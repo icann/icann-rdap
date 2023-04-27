@@ -114,7 +114,6 @@ impl ToMd for RdapResponse {
             RdapResponse::Help(help) => help.to_md(params),
         };
         md.push_str(&variant_md);
-        md.push_str(HR);
         md
     }
 }

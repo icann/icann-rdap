@@ -22,7 +22,7 @@ impl ToMd for RdapConformance {
                 "{} Conformance Claims",
                 params.req_data.source_host.to_title_case()
             )
-            .to_header(params.heading_level + 1, params.options),
+            .to_header(5, params.options),
         );
         self.iter().for_each(|s| {
             md.push_str(&format!(
@@ -152,7 +152,7 @@ impl ToMd for NoticeOrRemark {
         };
         self.description
             .iter()
-            .for_each(|s| md.push_str(&format!("{s}\n")));
+            .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
             .iter()
@@ -194,7 +194,7 @@ impl ToMd for Common {
             md.push_str(&rdap_conformance.to_md(params));
         };
         if let Some(notices) = &self.notices {
-            md.push_str(&"Server Notices".to_header(params.heading_level + 1, params.options));
+            md.push_str(&"Server Notices".to_header(5, params.options));
             md.push_str(&notices.to_md(params));
         }
         if not_empty {

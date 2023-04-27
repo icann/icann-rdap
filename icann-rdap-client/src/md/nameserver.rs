@@ -8,7 +8,7 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
-    MdParams, ToMd,
+    MdParams, ToMd, HR,
 };
 
 impl ToMd for Nameserver {
@@ -63,6 +63,9 @@ impl ToMd for Nameserver {
 
         // remarks
         md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
+
+        // only other object classes from here
+        md.push_str(HR);
 
         // entities
         md.push_str(
