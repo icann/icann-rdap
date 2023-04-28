@@ -1,5 +1,4 @@
 use std::any::TypeId;
-use std::cmp::max;
 
 use icann_rdap_common::response::types::{
     Common, Event, Link, Links, Notices, ObjectCommon, Remarks,
@@ -62,53 +61,29 @@ impl ToMd for Links {
 impl ToMd for Link {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
-        // the max of the values in RDAP link is 'hreflang' which 8
-        let key_width = max(8, *CHECK_CLASS_LEN);
         if let Some(title) = &self.title {
-            md.push_str(&format!("Link: {title}\n"));
+            md.push_str(&format!("* {title}: "));
         } else {
-            md.push_str("Link:\n")
+            md.push_str("* Link: ")
         };
-        md.push_str(&format!(
-            "* {}: {}\n",
-            "href".to_right(key_width, params.options),
-            self.href
-        ));
         if let Some(rel) = &self.rel {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                "rel".to_right(key_width, params.options),
-                rel
-            ));
+            md.push_str(&format!("[{rel}] "));
         };
-        if let Some(value) = &self.value {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                "value".to_right(key_width, params.options),
-                value
-            ));
-        };
-        if let Some(hreflang) = &self.hreflang {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                "hreflang".to_right(key_width, params.options),
-                hreflang.join(", ")
-            ));
+        md.push_str(&self.href.to_owned().to_inline(params.options));
+        md.push(' ');
+        if let Some(media_type) = &self.media_type {
+            md.push_str(&format!("of type '{media_type}' "));
         };
         if let Some(media) = &self.media {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                "media".to_right(key_width, params.options),
-                media
-            ));
+            md.push_str(&format!("to be used with {media} ",));
         };
-        if let Some(media_type) = &self.media_type {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                "type".to_right(key_width, params.options),
-                media_type
-            ));
+        if let Some(value) = &self.value {
+            md.push_str(&format!("for {value} ",));
         };
+        if let Some(hreflang) = &self.hreflang {
+            md.push_str(&format!("in languages {}", hreflang.join(", ")));
+        };
+        md.push('\n');
         let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
         md.push_str(&checks_ul(&checks, params));
         md.push('\n');
