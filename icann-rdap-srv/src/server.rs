@@ -6,6 +6,7 @@ use std::{
 use axum::{error_handling::HandleErrorLayer, Router};
 use http::{Method, StatusCode};
 use icann_rdap_common::VERSION;
+use sqlx::PgPool;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -13,9 +14,10 @@ use tower_http::{
 };
 
 use crate::{
-    config::{ListenConfig, ServiceConfig},
+    config::{ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
+    storage::{mem::Mem, pg::Pg, StorageOperations},
 };
 
 /// Holds information on the server listening.
@@ -39,11 +41,15 @@ impl Listener {
         })
     }
 
-    pub async fn start_server(self, _config: &ServiceConfig) -> Result<(), RdapServerError> {
+    pub async fn start_server(self, config: &ServiceConfig) -> Result<(), RdapServerError> {
         tracing_subscriber::fmt::init();
         tracing::info!("dialtone version {}", VERSION);
 
-        let app = app_router();
+        let app = match &config.storage_type {
+            StorageType::Memory => app_router(AppState::new_mem().await),
+            StorageType::Postgres { db_url } => app_router(AppState::new_pg(db_url).await),
+        };
+
         tracing::debug!("listening on {}", self.local_addr);
         axum::Server::from_tcp(self.tcp_listener)?
             .serve(app.into_make_service_with_connect_info::<SocketAddr>())
@@ -52,11 +58,10 @@ impl Listener {
     }
 }
 
-fn app_router() -> Router {
+fn app_router<T: StorageOperations + Clone + Send + Sync + 'static>(state: AppState<T>) -> Router {
     #[cfg(debug_assertions)]
     tracing::warn!("Server is running in development mode");
 
-    let state = AppState {};
     Router::new()
         .nest("/rdap", rdap_router())
         .layer(
@@ -85,4 +90,22 @@ fn app_router() -> Router {
 }
 
 #[derive(Clone)]
-pub struct AppState {}
+pub struct AppState<T: StorageOperations + Clone + Send + Sync + 'static> {
+    pub storage: T,
+}
+
+impl AppState<Pg> {
+    pub async fn new_pg(db_url: &str) -> Self {
+        Self {
+            storage: Pg::new(PgPool::connect(db_url).await.unwrap()),
+        }
+    }
+}
+
+impl AppState<Mem> {
+    pub async fn new_mem() -> Self {
+        Self {
+            storage: Mem::new(),
+        }
+    }
+}

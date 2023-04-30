@@ -14,19 +14,25 @@ icann-rdap-common = { path = "../icann-rdap-common" }
 
 axum.workspace = true
 axum-client-ip.workspace = true
+btree-range-map.workspace = true
 buildstructor.workspace = true
 cidr-utils.workspace = true
 clap.workspace = true
 dotenv.workspace = true
 envmnt.workspace = true
+ipnet.workspace = true
 is-terminal.workspace = true
 headers.workspace = true
 http.workspace = true
 hyper.workspace = true
 pct-str.workspace = true
+prefix-trie.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
+sqlx.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tower.workspace = true

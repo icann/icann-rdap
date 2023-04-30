@@ -1,9 +1,9 @@
 use axum::{response::IntoResponse, routing::get, Router};
 use http::StatusCode;
 
-use crate::server::AppState;
+use crate::{server::AppState, storage::StorageOperations};
 
-pub fn rdap_router() -> Router<AppState> {
+pub fn rdap_router<T: StorageOperations + Clone + Send + Sync + 'static>() -> Router<AppState<T>> {
     Router::new()
         .route("/domain/:domain", get(not_implemented))
         .route("/ip/:ipaddr", get(not_implemented))

@@ -13,4 +13,6 @@ pub enum RdapServerError {
     EnvVar(#[from] std::env::VarError),
     #[error(transparent)]
     IntEnvVar(#[from] ParseIntError),
+    #[error["configuration error: {0}"]]
+    Config(String),
 }

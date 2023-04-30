@@ -1,4 +1,5 @@
 use buildstructor::Builder;
+use strum_macros::Display;
 
 /// RDAP server listening configuration.
 #[derive(Debug, Builder)]
@@ -12,6 +13,19 @@ pub struct ListenConfig {
     pub port: Option<u16>,
 }
 
+/// Determines the storage type.
+#[derive(Debug, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum StorageType {
+    /// Uses in-memory storage.
+    Memory,
+
+    /// Uses a PostgreSQL database.
+    Postgres { db_url: String },
+}
+
 /// RDAP service configuration.
 #[derive(Debug, Builder)]
-pub struct ServiceConfig {}
+pub struct ServiceConfig {
+    pub storage_type: StorageType,
+}
