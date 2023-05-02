@@ -15,4 +15,6 @@ pub enum RdapServerError {
     IntEnvVar(#[from] ParseIntError),
     #[error["configuration error: {0}"]]
     Config(String),
+    #[error(transparent)]
+    SqlDb(#[from] sqlx::Error),
 }

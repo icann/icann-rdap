@@ -46,8 +46,8 @@ impl Listener {
         tracing::info!("dialtone version {}", VERSION);
 
         let app = match &config.storage_type {
-            StorageType::Memory => app_router(AppState::new_mem().await),
-            StorageType::Postgres { db_url } => app_router(AppState::new_pg(db_url).await),
+            StorageType::Memory => app_router(AppState::new_mem().await?),
+            StorageType::Postgres { db_url } => app_router(AppState::new_pg(db_url).await?),
         };
 
         tracing::debug!("listening on {}", self.local_addr);
@@ -95,17 +95,17 @@ pub struct AppState<T: StorageOperations + Clone + Send + Sync + 'static> {
 }
 
 impl AppState<Pg> {
-    pub async fn new_pg(db_url: &str) -> Self {
-        Self {
-            storage: Pg::new(PgPool::connect(db_url).await.unwrap()),
-        }
+    pub async fn new_pg(db_url: &str) -> Result<Self, RdapServerError> {
+        let storage = Pg::new(PgPool::connect(db_url).await.unwrap());
+        storage.init().await?;
+        Ok(Self { storage })
     }
 }
 
 impl AppState<Mem> {
-    pub async fn new_mem() -> Self {
-        Self {
-            storage: Mem::new(),
-        }
+    pub async fn new_mem() -> Result<Self, RdapServerError> {
+        let storage = Mem::new();
+        storage.init().await?;
+        Ok(Self { storage })
     }
 }

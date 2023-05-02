@@ -17,6 +17,9 @@ repository = "https://github.com/icann/icann-rdap"
 # easy error handling
 anyhow = "1.0"
 
+# async traits
+async-trait = "0.1"
+
 # axum (web server)
 axum = { version = "0.6", features = ["headers"] }
 
@@ -82,6 +85,9 @@ minus = {version = "5.3", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "1.2"
+
+# eventually consistent shared data
+pinboard = "2.2.0"
 
 # ip address trie
 prefix-trie = "0.2.4"
