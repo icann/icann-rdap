@@ -3,8 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, error::Error, nameserver::Nameserver,
-    network::Network, types::Common, RdapResponse,
+    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
 use ipnet::{Ipv4Net, Ipv6Net};
 use pinboard::NonEmptyPinboard;
@@ -12,6 +11,7 @@ use prefix_trie::PrefixMap;
 
 use crate::{
     error::RdapServerError,
+    rdap::response::{ArcRdapResponse, RdapServerResponse, NOT_FOUND},
     storage::{StorageOperations, TransactionHandle},
 };
 
@@ -19,12 +19,12 @@ use super::{config::MemConfig, tx::Transaction};
 
 #[derive(Clone)]
 pub struct Mem {
-    pub(crate) autnums: Arc<NonEmptyPinboard<RangeMap<u32, Autnum>>>,
-    pub(crate) ip4: Arc<NonEmptyPinboard<PrefixMap<Ipv4Net, Network>>>,
-    pub(crate) ip6: Arc<NonEmptyPinboard<PrefixMap<Ipv6Net, Network>>>,
-    pub(crate) domains: Arc<NonEmptyPinboard<HashMap<String, Domain>>>,
-    pub(crate) nameservers: Arc<NonEmptyPinboard<HashMap<String, Nameserver>>>,
-    pub(crate) entities: Arc<NonEmptyPinboard<HashMap<String, Entity>>>,
+    pub(crate) autnums: Arc<NonEmptyPinboard<RangeMap<u32, Arc<Autnum>>>>,
+    pub(crate) ip4: Arc<NonEmptyPinboard<PrefixMap<Ipv4Net, Arc<Network>>>>,
+    pub(crate) ip6: Arc<NonEmptyPinboard<PrefixMap<Ipv6Net, Arc<Network>>>>,
+    pub(crate) domains: Arc<NonEmptyPinboard<HashMap<String, Arc<Domain>>>>,
+    pub(crate) nameservers: Arc<NonEmptyPinboard<HashMap<String, Arc<Nameserver>>>>,
+    pub(crate) entities: Arc<NonEmptyPinboard<HashMap<String, Arc<Entity>>>>,
 }
 
 impl Mem {
@@ -53,38 +53,36 @@ impl Default for Mem {
 #[async_trait]
 impl StorageOperations for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
-        todo!()
+        // TODO read mirror directory
+        Ok(())
     }
 
     async fn new_transaction(&self) -> Result<Box<dyn TransactionHandle>, RdapServerError> {
         Ok(Box::new(Transaction::new(self)))
     }
 
-    async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapServerResponse, RdapServerError> {
         let domains = self.domains.get_ref();
         let result = domains.get(ldh);
         match result {
-            Some(domain) => Ok(RdapResponse::Domain(domain.clone())),
-            None => Ok(RdapResponse::ErrorResponse(
-                Error::builder()
-                    .error_code(404)
-                    .common(Common::builder().build())
-                    .build(),
-            )),
+            Some(domain) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Domain(
+                domain.clone(),
+            ))),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 
-    async fn get_entity_by_handle(&self, handle: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn get_entity_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
         let entities = self.entities.get_ref();
         let result = entities.get(handle);
         match result {
-            Some(entity) => Ok(RdapResponse::Entity(entity.clone())),
-            None => Ok(RdapResponse::ErrorResponse(
-                Error::builder()
-                    .error_code(404)
-                    .common(Common::builder().build())
-                    .build(),
-            )),
+            Some(entity) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Entity(
+                entity.clone(),
+            ))),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 }

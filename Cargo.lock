@@ -1130,6 +1130,7 @@ dependencies = [
  "icann-rdap-common",
  "ipnet",
  "is-terminal",
+ "lazy_static",
  "pct-str",
  "pinboard",
  "prefix-trie",

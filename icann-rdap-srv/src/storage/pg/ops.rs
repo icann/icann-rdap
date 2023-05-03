@@ -1,10 +1,10 @@
 use async_trait::async_trait;
-use icann_rdap_common::response::RdapResponse;
 use sqlx::{query, PgPool};
 use tracing::{debug, info};
 
 use crate::{
     error::RdapServerError,
+    rdap::response::RdapServerResponse,
     storage::{StorageOperations, TransactionHandle},
 };
 
@@ -35,11 +35,14 @@ impl StorageOperations for Pg {
         Ok(Box::new(Transaction::new(&self.pg_pool).await?))
     }
 
-    async fn get_domain_by_ldh(&self, _ldh: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn get_domain_by_ldh(&self, _ldh: &str) -> Result<RdapServerResponse, RdapServerError> {
         todo!()
     }
 
-    async fn get_entity_by_handle(&self, _handle: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn get_entity_by_handle(
+        &self,
+        _handle: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
         todo!()
     }
 }

@@ -10,7 +10,7 @@ pub struct Error {
     pub common: Common,
 
     #[serde(rename = "errorCode")]
-    pub error_code: u64,
+    pub error_code: u16,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,

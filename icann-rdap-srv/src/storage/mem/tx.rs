@@ -14,12 +14,12 @@ use super::ops::Mem;
 
 pub struct Transaction {
     mem: Mem,
-    autnums: RangeMap<u32, Autnum>,
-    ip4: PrefixMap<Ipv4Net, Network>,
-    ip6: PrefixMap<Ipv6Net, Network>,
-    domains: HashMap<String, Domain>,
-    nameservers: HashMap<String, Nameserver>,
-    entities: HashMap<String, Entity>,
+    autnums: RangeMap<u32, Arc<Autnum>>,
+    ip4: PrefixMap<Ipv4Net, Arc<Network>>,
+    ip6: PrefixMap<Ipv6Net, Arc<Network>>,
+    domains: HashMap<String, Arc<Domain>>,
+    nameservers: HashMap<String, Arc<Nameserver>>,
+    entities: HashMap<String, Arc<Entity>>,
 }
 
 impl Transaction {
@@ -44,7 +44,8 @@ impl TransactionHandle for Transaction {
             .handle
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
-        self.entities.insert(handle.to_owned(), entity.clone());
+        self.entities
+            .insert(handle.to_owned(), Arc::new(entity.clone()));
         Ok(())
     }
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
@@ -52,7 +53,8 @@ impl TransactionHandle for Transaction {
             .ldh_name
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
-        self.domains.insert(ldh_name.to_owned(), domain.clone());
+        self.domains
+            .insert(ldh_name.to_owned(), Arc::new(domain.clone()));
         Ok(())
     }
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
