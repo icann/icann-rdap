@@ -1,6 +1,8 @@
 use buildstructor::Builder;
 use strum_macros::Display;
 
+use crate::storage::{mem::config::MemConfig, pg::config::PgConfig};
+
 /// RDAP server listening configuration.
 #[derive(Debug, Builder)]
 pub struct ListenConfig {
@@ -18,10 +20,10 @@ pub struct ListenConfig {
 #[strum(serialize_all = "lowercase")]
 pub enum StorageType {
     /// Uses in-memory storage.
-    Memory,
+    Memory(MemConfig),
 
     /// Uses a PostgreSQL database.
-    Postgres { db_url: String },
+    Postgres(PgConfig),
 }
 
 /// RDAP service configuration.

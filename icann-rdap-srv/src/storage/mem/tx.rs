@@ -38,6 +38,15 @@ impl Transaction {
 
 #[async_trait]
 impl TransactionHandle for Transaction {
+    async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError> {
+        let handle = entity
+            .object_common
+            .handle
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
+        self.entities.insert(handle.to_owned(), entity.clone());
+        Ok(())
+    }
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
         let ldh_name = domain
             .ldh_name

@@ -15,7 +15,7 @@ use crate::{
     storage::{StorageOperations, TransactionHandle},
 };
 
-use super::tx::Transaction;
+use super::{config::MemConfig, tx::Transaction};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -28,7 +28,7 @@ pub struct Mem {
 }
 
 impl Mem {
-    pub fn new() -> Self {
+    pub fn new(_config: MemConfig) -> Self {
         Self {
             autnums: Arc::new(NonEmptyPinboard::new(RangeMap::new())),
             ip4: Arc::new(NonEmptyPinboard::new(PrefixMap::new())),
@@ -42,7 +42,11 @@ impl Mem {
 
 impl Default for Mem {
     fn default() -> Self {
-        Self::new()
+        Mem::new(
+            MemConfig::builder()
+                .mirror_dir("/tmp/rdap-srv/mirror")
+                .build(),
+        )
     }
 }
 
@@ -61,6 +65,20 @@ impl StorageOperations for Mem {
         let result = domains.get(ldh);
         match result {
             Some(domain) => Ok(RdapResponse::Domain(domain.clone())),
+            None => Ok(RdapResponse::ErrorResponse(
+                Error::builder()
+                    .error_code(404)
+                    .common(Common::builder().build())
+                    .build(),
+            )),
+        }
+    }
+
+    async fn get_entity_by_handle(&self, handle: &str) -> Result<RdapResponse, RdapServerError> {
+        let entities = self.entities.get_ref();
+        let result = entities.get(handle);
+        match result {
+            Some(entity) => Ok(RdapResponse::Entity(entity.clone())),
             None => Ok(RdapResponse::ErrorResponse(
                 Error::builder()
                     .error_code(404)

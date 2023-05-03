@@ -1,6 +1,5 @@
 #![allow(dead_code)] // TODO remove
 
-use super::{StorageOperations, TransactionHandle};
-
+pub mod config;
 pub mod ops;
 pub mod tx;

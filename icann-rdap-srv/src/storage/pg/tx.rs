@@ -1,10 +1,8 @@
 use async_trait::async_trait;
-use icann_rdap_common::response::domain::Domain;
+use icann_rdap_common::response::{domain::Domain, entity::Entity};
 use sqlx::{PgPool, Postgres};
 
-use crate::error::RdapServerError;
-
-use super::TransactionHandle;
+use crate::{error::RdapServerError, storage::TransactionHandle};
 
 pub struct Transaction<'a> {
     db_tx: sqlx::Transaction<'a, Postgres>,
@@ -19,6 +17,9 @@ impl<'a> Transaction<'a> {
 
 #[async_trait]
 impl<'a> TransactionHandle for Transaction<'a> {
+    async fn add_entity(&mut self, _entity: &Entity) -> Result<(), RdapServerError> {
+        todo!()
+    }
     async fn add_domain(&mut self, _domain: &Domain) -> Result<(), RdapServerError> {
         // TODO actually complete this
         // this is just here to make sure something will compile

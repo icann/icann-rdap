@@ -6,7 +6,6 @@ use std::{
 use axum::{error_handling::HandleErrorLayer, Router};
 use http::{Method, StatusCode};
 use icann_rdap_common::VERSION;
-use sqlx::PgPool;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -17,7 +16,11 @@ use crate::{
     config::{ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
-    storage::{mem::ops::Mem, pg::ops::Pg, StorageOperations},
+    storage::{
+        mem::{config::MemConfig, ops::Mem},
+        pg::{config::PgConfig, ops::Pg},
+        StorageOperations,
+    },
 };
 
 /// Holds information on the server listening.
@@ -46,8 +49,8 @@ impl Listener {
         tracing::info!("dialtone version {}", VERSION);
 
         let app = match &config.storage_type {
-            StorageType::Memory => app_router(AppState::new_mem().await?),
-            StorageType::Postgres { db_url } => app_router(AppState::new_pg(db_url).await?),
+            StorageType::Memory(config) => app_router(AppState::new_mem(config.clone()).await?),
+            StorageType::Postgres(config) => app_router(AppState::new_pg(config.clone()).await?),
         };
 
         tracing::debug!("listening on {}", self.local_addr);
@@ -95,16 +98,16 @@ pub struct AppState<T: StorageOperations + Clone + Send + Sync + 'static> {
 }
 
 impl AppState<Pg> {
-    pub async fn new_pg(db_url: &str) -> Result<Self, RdapServerError> {
-        let storage = Pg::new(PgPool::connect(db_url).await.unwrap());
+    pub async fn new_pg(config: PgConfig) -> Result<Self, RdapServerError> {
+        let storage = Pg::new(config).await?;
         storage.init().await?;
         Ok(Self { storage })
     }
 }
 
 impl AppState<Mem> {
-    pub async fn new_mem() -> Result<Self, RdapServerError> {
-        let storage = Mem::new();
+    pub async fn new_mem(config: MemConfig) -> Result<Self, RdapServerError> {
+        let storage = Mem::new(config);
         storage.init().await?;
         Ok(Self { storage })
     }
