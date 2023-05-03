@@ -17,7 +17,7 @@ use crate::{
     config::{ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
-    storage::{mem::Mem, pg::Pg, StorageOperations},
+    storage::{mem::ops::Mem, pg::ops::Pg, StorageOperations},
 };
 
 /// Holds information on the server listening.

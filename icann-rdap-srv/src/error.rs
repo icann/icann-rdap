@@ -17,4 +17,6 @@ pub enum RdapServerError {
     Config(String),
     #[error(transparent)]
     SqlDb(#[from] sqlx::Error),
+    #[error("index data for {0} is missing or empty")]
+    EmptyIndexData(String),
 }
