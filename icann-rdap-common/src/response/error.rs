@@ -18,3 +18,16 @@ pub struct Error {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<Vec<String>>,
 }
+
+#[buildstructor::buildstructor]
+impl Error {
+    #[builder(entry = "basic")]
+    pub fn new_error_code(error_code: u16) -> Self {
+        Self {
+            common: Common::builder().build(),
+            error_code,
+            title: None,
+            description: None,
+        }
+    }
+}

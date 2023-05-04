@@ -31,6 +31,22 @@ pub struct Autnum {
     pub country: Option<String>,
 }
 
+#[buildstructor::buildstructor]
+impl Autnum {
+    #[builder(entry = "basic")]
+    pub fn new_autnum(autnum: u32) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder().object_class_name("autnum").build(),
+            start_autnum: Some(autnum),
+            end_autnum: Some(autnum),
+            name: None,
+            autnum_type: None,
+            country: None,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

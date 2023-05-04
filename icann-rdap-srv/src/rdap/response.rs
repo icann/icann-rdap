@@ -97,12 +97,7 @@ mod tests {
 
     use axum::response::IntoResponse;
     use http::StatusCode;
-    use icann_rdap_common::response::{
-        domain::Domain,
-        error::Error,
-        types::{Common, ObjectCommon},
-        RdapResponse,
-    };
+    use icann_rdap_common::response::{domain::Domain, error::Error, RdapResponse};
 
     use crate::rdap::response::{NOT_FOUND, NOT_IMPLEMENTED};
 
@@ -112,10 +107,7 @@ mod tests {
     fn GIVEN_non_error_WHEN_exec_response_THEN_status_code_is_200() {
         // GIVEN
         let domain = RdapServerResponse::NoRef(RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(ObjectCommon::builder().object_class_name("domain").build())
-                .build(),
+            Domain::basic().ldh_name("foo.example").build(),
         ));
 
         // WHEN
@@ -151,10 +143,7 @@ mod tests {
     fn GIVEN_arc_response_WHEN_serialized_THEN_properly_flattened() {
         // GIVEN
         let given = RdapServerResponse::Arc(ArcRdapResponse::ErrorResponse(Arc::new(
-            Error::builder()
-                .error_code(501)
-                .common(Common::builder().build())
-                .build(),
+            Error::basic().error_code(501).build(),
         )));
 
         // WHEN
@@ -168,10 +157,7 @@ mod tests {
     fn GIVEN_no_ref_response_WHEN_serialized_THEN_properly_flattened() {
         // GIVEN
         let given = RdapServerResponse::NoRef(RdapResponse::ErrorResponse(
-            Error::builder()
-                .error_code(501)
-                .common(Common::builder().build())
-                .build(),
+            Error::basic().error_code(501).build(),
         ));
 
         // WHEN

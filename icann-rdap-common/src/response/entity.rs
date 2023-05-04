@@ -42,6 +42,27 @@ pub struct Entity {
     pub networks: Option<Vec<Network>>,
 }
 
+#[buildstructor::buildstructor]
+impl Entity {
+    #[builder(entry = "basic")]
+    pub fn new_handle<T: Into<String>>(handle: T) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder()
+                .object_class_name("entity")
+                .handle(handle.into())
+                .build(),
+            vcard_array: None,
+            roles: None,
+            public_ids: None,
+            as_event_actor: None,
+            status: None,
+            autnums: None,
+            networks: None,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

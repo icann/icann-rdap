@@ -1,4 +1,5 @@
 use buildstructor::Builder;
+use cidr_utils::cidr::IpCidr;
 use serde::{Deserialize, Serialize};
 
 use super::types::{Common, ObjectCommon};
@@ -37,6 +38,29 @@ pub struct Network {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+}
+
+#[buildstructor::buildstructor]
+impl Network {
+    #[builder(entry = "basic")]
+    pub fn new_network(cidr: IpCidr) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder()
+                .object_class_name("ip network")
+                .build(),
+            start_address: Some(cidr.first_as_ip_addr().to_string()),
+            end_address: Some(cidr.last_as_ip_addr().to_string()),
+            ip_version: match cidr {
+                IpCidr::V4(_) => Some("v4".to_string()),
+                IpCidr::V6(_) => Some("v6".to_string()),
+            },
+            name: None,
+            network_type: None,
+            parent_handle: None,
+            country: None,
+        }
+    }
 }
 
 #[cfg(test)]

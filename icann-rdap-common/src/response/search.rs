@@ -13,6 +13,17 @@ pub struct DomainSearchResults {
     pub results: Vec<Domain>,
 }
 
+#[buildstructor::buildstructor]
+impl DomainSearchResults {
+    #[builder(entry = "basic")]
+    pub fn new_empty() -> Self {
+        Self {
+            common: Common::builder().build(),
+            results: Vec::new(),
+        }
+    }
+}
+
 /// Represents RDAP nameserver search results.
 #[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct NameserverSearchResults {
@@ -23,6 +34,17 @@ pub struct NameserverSearchResults {
     pub results: Vec<Nameserver>,
 }
 
+#[buildstructor::buildstructor]
+impl NameserverSearchResults {
+    #[builder(entry = "basic")]
+    pub fn new_empty() -> Self {
+        Self {
+            common: Common::builder().build(),
+            results: Vec::new(),
+        }
+    }
+}
+
 /// Represents RDAP entity search results.
 #[derive(Serialize, Deserialize, Builder, Clone)]
 pub struct EntitySearchResults {
@@ -31,4 +53,15 @@ pub struct EntitySearchResults {
 
     #[serde(rename = "entitySearchResults")]
     pub results: Vec<Entity>,
+}
+
+#[buildstructor::buildstructor]
+impl EntitySearchResults {
+    #[builder(entry = "basic")]
+    pub fn new_empty() -> Self {
+        Self {
+            common: Common::builder().build(),
+            results: Vec::new(),
+        }
+    }
 }

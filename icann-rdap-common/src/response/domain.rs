@@ -137,6 +137,24 @@ pub struct Domain {
     pub network: Option<Network>,
 }
 
+#[buildstructor::buildstructor]
+impl Domain {
+    #[builder(entry = "basic")]
+    pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder().object_class_name("domain").build(),
+            ldh_name: Some(ldh_name.into()),
+            unicode_name: None,
+            variants: None,
+            secure_dns: None,
+            nameservers: None,
+            public_ids: None,
+            network: None,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

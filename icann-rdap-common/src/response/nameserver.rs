@@ -34,6 +34,23 @@ pub struct Nameserver {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_addresses: Option<IpAddresses>,
 }
+
+#[buildstructor::buildstructor]
+impl Nameserver {
+    #[builder(entry = "basic")]
+    pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder()
+                .object_class_name("nameserver")
+                .build(),
+            ldh_name: Some(ldh_name.into()),
+            unicode_name: None,
+            ip_addresses: None,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

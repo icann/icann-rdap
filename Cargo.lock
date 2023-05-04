@@ -1104,6 +1104,7 @@ version = "0.0.5"
 dependencies = [
  "buildstructor",
  "chrono",
+ "cidr-utils",
  "const_format",
  "serde",
  "serde_json",
