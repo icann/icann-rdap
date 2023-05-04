@@ -9,7 +9,7 @@ use super::{
 };
 
 /// Represents an RDAP entity response.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
     #[serde(flatten)]
     pub common: Common,

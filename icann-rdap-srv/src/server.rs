@@ -32,7 +32,6 @@ pub struct Listener {
 /// Starts the RDAP service.
 impl Listener {
     pub fn listen(config: &ListenConfig) -> Result<Self, RdapServerError> {
-        tracing_subscriber::fmt::init();
         tracing::info!("dialtone version {}", VERSION);
 
         #[cfg(debug_assertions)]

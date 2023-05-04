@@ -75,7 +75,7 @@ http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
 
 # for use prefixmap
-ipnet = "2.7.2"
+ipnet = { version = "2.7", features = ["json"] }
 
 # using terminal helper
 is-terminal = "0.4"

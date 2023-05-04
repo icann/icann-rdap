@@ -19,4 +19,8 @@ pub enum RdapServerError {
     SqlDb(#[from] sqlx::Error),
     #[error("index data for {0} is missing or empty")]
     EmptyIndexData(String),
+    #[error("file at {0} is not JSON")]
+    NonJsonFile(String),
+    #[error("json file at {0} is valid JSON but is not RDAP")]
+    NonRdapJsonFile(String),
 }
