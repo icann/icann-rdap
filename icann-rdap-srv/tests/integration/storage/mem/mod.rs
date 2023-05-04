@@ -7,14 +7,14 @@ use icann_rdap_common::response::{
 };
 use icann_rdap_srv::{
     rdap::response::{ArcRdapResponse, RdapServerResponse},
-    storage::{mem::ops::Mem, StorageOperations},
+    storage::{mem::ops::Mem, StoreOps},
 };
 
 #[tokio::test]
 async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_domain_returned() {
     // GIVEN
     let mem = Mem::default();
-    let mut tx = mem.new_transaction().await.expect("new transaction");
+    let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_domain(
         &Domain::builder()
             .common(Common::builder().build())
@@ -64,7 +64,7 @@ async fn GIVEN_no_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_404_returned() {
 async fn GIVEN_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_entity_returned() {
     // GIVEN
     let mem = Mem::default();
-    let mut tx = mem.new_transaction().await.expect("new transaction");
+    let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_entity(
         &Entity::builder()
             .common(Common::builder().build())

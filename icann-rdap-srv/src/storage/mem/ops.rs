@@ -12,10 +12,10 @@ use prefix_trie::PrefixMap;
 use crate::{
     error::RdapServerError,
     rdap::response::{ArcRdapResponse, RdapServerResponse, NOT_FOUND},
-    storage::{StorageOperations, TransactionHandle},
+    storage::{StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, tx::Transaction};
+use super::{config::MemConfig, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -44,21 +44,21 @@ impl Default for Mem {
     fn default() -> Self {
         Mem::new(
             MemConfig::builder()
-                .mirror_dir("/tmp/rdap-srv/mirror")
+                .state_dir("/tmp/rdap-srv/state")
                 .build(),
         )
     }
 }
 
 #[async_trait]
-impl StorageOperations for Mem {
+impl StoreOps for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
         // TODO read mirror directory
         Ok(())
     }
 
-    async fn new_transaction(&self) -> Result<Box<dyn TransactionHandle>, RdapServerError> {
-        Ok(Box::new(Transaction::new(self)))
+    async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
+        Ok(Box::new(MemTx::new(self)))
     }
 
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapServerResponse, RdapServerError> {

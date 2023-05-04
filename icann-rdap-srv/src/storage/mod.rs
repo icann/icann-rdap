@@ -7,12 +7,12 @@ pub mod mem;
 pub mod pg;
 
 #[async_trait]
-pub trait StorageOperations {
+pub trait StoreOps {
     /// Initializes the backend storage
     async fn init(&self) -> Result<(), RdapServerError>;
 
     /// Gets a new transaction.
-    async fn new_transaction(&self) -> Result<Box<dyn TransactionHandle>, RdapServerError>;
+    async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError>;
 
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapServerResponse, RdapServerError>;
 
@@ -26,7 +26,7 @@ pub trait StorageOperations {
 /// The implementation of the transaction
 /// are dependent on the storage type.
 #[async_trait]
-pub trait TransactionHandle {
+pub trait TxHandle {
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError>;
     async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError>;
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError>;

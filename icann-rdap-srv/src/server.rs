@@ -19,7 +19,7 @@ use crate::{
     storage::{
         mem::{config::MemConfig, ops::Mem},
         pg::{config::PgConfig, ops::Pg},
-        StorageOperations,
+        StoreOps,
     },
 };
 
@@ -32,11 +32,21 @@ pub struct Listener {
 /// Starts the RDAP service.
 impl Listener {
     pub fn listen(config: &ListenConfig) -> Result<Self, RdapServerError> {
-        let listener = TcpListener::bind(format!(
+        tracing_subscriber::fmt::init();
+        tracing::info!("dialtone version {}", VERSION);
+
+        #[cfg(debug_assertions)]
+        tracing::warn!("Server is running in development mode");
+
+        let binding = format!(
             "{}:{}",
             config.ip_addr.as_ref().unwrap_or(&"[::]".to_string()),
             config.port.as_ref().unwrap_or(&0)
-        ))?;
+        );
+
+        tracing::debug!("tcp binding to {}", binding);
+
+        let listener = TcpListener::bind(binding)?;
         let local_addr = listener.local_addr()?;
         Ok(Self {
             local_addr,
@@ -45,13 +55,23 @@ impl Listener {
     }
 
     pub async fn start_server(self, config: &ServiceConfig) -> Result<(), RdapServerError> {
-        tracing_subscriber::fmt::init();
-        tracing::info!("dialtone version {}", VERSION);
+        match &config.storage_type {
+            StorageType::Memory(config) => {
+                self.start_with_state(AppState::new_mem(config.clone()).await?)
+                    .await
+            }
+            StorageType::Postgres(config) => {
+                self.start_with_state(AppState::new_pg(config.clone()).await?)
+                    .await
+            }
+        }
+    }
 
-        let app = match &config.storage_type {
-            StorageType::Memory(config) => app_router(AppState::new_mem(config.clone()).await?),
-            StorageType::Postgres(config) => app_router(AppState::new_pg(config.clone()).await?),
-        };
+    pub async fn start_with_state<T>(self, app_state: AppState<T>) -> Result<(), RdapServerError>
+    where
+        T: StoreOps + Clone + Send + Sync + 'static,
+    {
+        let app = app_router(app_state);
 
         tracing::debug!("listening on {}", self.local_addr);
         axum::Server::from_tcp(self.tcp_listener)?
@@ -61,10 +81,10 @@ impl Listener {
     }
 }
 
-fn app_router<T: StorageOperations + Clone + Send + Sync + 'static>(state: AppState<T>) -> Router {
-    #[cfg(debug_assertions)]
-    tracing::warn!("Server is running in development mode");
-
+fn app_router<T>(state: AppState<T>) -> Router
+where
+    T: StoreOps + Clone + Send + Sync + 'static,
+{
     Router::new()
         .nest("/rdap", rdap_router())
         .layer(
@@ -93,7 +113,7 @@ fn app_router<T: StorageOperations + Clone + Send + Sync + 'static>(state: AppSt
 }
 
 #[derive(Clone)]
-pub struct AppState<T: StorageOperations + Clone + Send + Sync + 'static> {
+pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
 }
 

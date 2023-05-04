@@ -5,10 +5,10 @@ use tracing::{debug, info};
 use crate::{
     error::RdapServerError,
     rdap::response::RdapServerResponse,
-    storage::{StorageOperations, TransactionHandle},
+    storage::{StoreOps, TxHandle},
 };
 
-use super::{config::PgConfig, tx::Transaction};
+use super::{config::PgConfig, tx::PgTx};
 
 #[derive(Clone)]
 pub struct Pg {
@@ -23,7 +23,7 @@ impl Pg {
 }
 
 #[async_trait]
-impl StorageOperations for Pg {
+impl StoreOps for Pg {
     async fn init(&self) -> Result<(), RdapServerError> {
         debug!("Testing database connection.");
         let mut conn = self.pg_pool.acquire().await?;
@@ -31,8 +31,8 @@ impl StorageOperations for Pg {
         info!("Database connection test is successful.");
         Ok(())
     }
-    async fn new_transaction(&self) -> Result<Box<dyn TransactionHandle>, RdapServerError> {
-        Ok(Box::new(Transaction::new(&self.pg_pool).await?))
+    async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
+        Ok(Box::new(PgTx::new(&self.pg_pool).await?))
     }
 
     async fn get_domain_by_ldh(&self, _ldh: &str) -> Result<RdapServerResponse, RdapServerError> {

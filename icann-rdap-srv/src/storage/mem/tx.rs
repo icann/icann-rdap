@@ -8,11 +8,11 @@ use icann_rdap_common::response::{
 use ipnet::{Ipv4Net, Ipv6Net};
 use prefix_trie::PrefixMap;
 
-use crate::{error::RdapServerError, storage::TransactionHandle};
+use crate::{error::RdapServerError, storage::TxHandle};
 
 use super::ops::Mem;
 
-pub struct Transaction {
+pub struct MemTx {
     mem: Mem,
     autnums: RangeMap<u32, Arc<Autnum>>,
     ip4: PrefixMap<Ipv4Net, Arc<Network>>,
@@ -22,7 +22,7 @@ pub struct Transaction {
     entities: HashMap<String, Arc<Entity>>,
 }
 
-impl Transaction {
+impl MemTx {
     pub fn new(mem: &Mem) -> Self {
         Self {
             mem: mem.clone(),
@@ -37,7 +37,7 @@ impl Transaction {
 }
 
 #[async_trait]
-impl TransactionHandle for Transaction {
+impl TxHandle for MemTx {
     async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError> {
         let handle = entity
             .object_common

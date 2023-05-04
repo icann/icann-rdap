@@ -2,21 +2,21 @@ use async_trait::async_trait;
 use icann_rdap_common::response::{domain::Domain, entity::Entity};
 use sqlx::{PgPool, Postgres};
 
-use crate::{error::RdapServerError, storage::TransactionHandle};
+use crate::{error::RdapServerError, storage::TxHandle};
 
-pub struct Transaction<'a> {
+pub struct PgTx<'a> {
     db_tx: sqlx::Transaction<'a, Postgres>,
 }
 
-impl<'a> Transaction<'a> {
-    pub async fn new(pg_pool: &PgPool) -> Result<Transaction<'a>, RdapServerError> {
+impl<'a> PgTx<'a> {
+    pub async fn new(pg_pool: &PgPool) -> Result<PgTx<'a>, RdapServerError> {
         let db_tx = pg_pool.begin().await?;
-        Ok(Transaction { db_tx })
+        Ok(PgTx { db_tx })
     }
 }
 
 #[async_trait]
-impl<'a> TransactionHandle for Transaction<'a> {
+impl<'a> TxHandle for PgTx<'a> {
     async fn add_entity(&mut self, _entity: &Entity) -> Result<(), RdapServerError> {
         todo!()
     }

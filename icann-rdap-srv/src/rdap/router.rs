@@ -1,10 +1,10 @@
 use axum::{response::IntoResponse, routing::get, Router};
 
-use crate::{server::AppState, storage::StorageOperations};
+use crate::{server::AppState, storage::StoreOps};
 
 use super::response::NOT_IMPLEMENTED;
 
-pub fn rdap_router<T: StorageOperations + Clone + Send + Sync + 'static>() -> Router<AppState<T>> {
+pub fn rdap_router<T: StoreOps + Clone + Send + Sync + 'static>() -> Router<AppState<T>> {
     Router::new()
         .route("/domain/:domain", get(not_implemented))
         .route("/ip/:ipaddr", get(not_implemented))
