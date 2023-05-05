@@ -26,7 +26,7 @@ pub trait StoreOps {
 /// The implementation of the transaction
 /// are dependent on the storage type.
 #[async_trait]
-pub trait TxHandle {
+pub trait TxHandle: Send {
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError>;
     async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError>;
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError>;

@@ -15,7 +15,7 @@ use crate::{
     storage::{StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, tx::MemTx};
+use super::{config::MemConfig, state::load_state, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -25,10 +25,11 @@ pub struct Mem {
     pub(crate) domains: Arc<NonEmptyPinboard<HashMap<String, Arc<Domain>>>>,
     pub(crate) nameservers: Arc<NonEmptyPinboard<HashMap<String, Arc<Nameserver>>>>,
     pub(crate) entities: Arc<NonEmptyPinboard<HashMap<String, Arc<Entity>>>>,
+    pub(crate) config: MemConfig,
 }
 
 impl Mem {
-    pub fn new(_config: MemConfig) -> Self {
+    pub fn new(config: MemConfig) -> Self {
         Self {
             autnums: Arc::new(NonEmptyPinboard::new(RangeMap::new())),
             ip4: Arc::new(NonEmptyPinboard::new(PrefixMap::new())),
@@ -36,6 +37,7 @@ impl Mem {
             domains: Arc::new(NonEmptyPinboard::new(HashMap::new())),
             nameservers: Arc::new(NonEmptyPinboard::new(HashMap::new())),
             entities: Arc::new(NonEmptyPinboard::new(HashMap::new())),
+            config,
         }
     }
 }
@@ -53,7 +55,7 @@ impl Default for Mem {
 #[async_trait]
 impl StoreOps for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
-        // TODO read mirror directory
+        load_state(self).await?;
         Ok(())
     }
 

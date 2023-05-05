@@ -8,14 +8,14 @@ use icann_rdap_common::response::{
 use ipnet::IpNet;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::debug;
+use tracing::{debug, info, warn};
 
 use crate::{
     error::RdapServerError,
     storage::{StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, ops::Mem};
+use super::ops::Mem;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
@@ -78,17 +78,32 @@ struct NetworkId {
     ipnet: IpNet,
 }
 
-async fn load_state(mem: &Mem, config: &MemConfig) -> Result<(), RdapServerError> {
+pub(crate) async fn load_state(mem: &Mem) -> Result<(), RdapServerError> {
+    let mut json_count: usize = 0;
+    let mut template_count: usize = 0;
     let mut tx = mem.new_tx().await?;
-    let path = PathBuf::from(&config.state_dir);
+    let path = PathBuf::from(&mem.config.state_dir);
+    if !path.exists() || !path.is_dir() {
+        warn!(
+            "Directory {} does not exist or is not a directory. Server has no content to serve.",
+            path.to_string_lossy()
+        );
+        return Ok(());
+    }
     for entry in std::fs::read_dir(path)? {
         let entry = entry?.path();
         let contents = fs::read_to_string(&entry)?;
         if entry.extension().map_or(false, |ext| ext == "template") {
             load_rdap_template(&contents, &entry.to_string_lossy(), &mut tx).await?;
+            template_count += 1;
         } else if entry.extension().map_or(false, |ext| ext == "json") {
             load_rdap(&contents, &entry.to_string_lossy(), &mut tx).await?;
+            json_count += 1;
         }
+    }
+    info!("{json_count} RDAP JSON files loaded. {template_count} RDAP template files loaded.");
+    if json_count == 0 && template_count == 0 {
+        warn!("No state loaded. Server has no content to serve.");
     }
     tx.commit().await?;
     Ok(())
