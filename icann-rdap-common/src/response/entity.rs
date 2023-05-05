@@ -9,7 +9,7 @@ use super::{
 };
 
 /// Represents an RDAP entity response.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
     #[serde(flatten)]
     pub common: Common,
@@ -40,6 +40,27 @@ pub struct Entity {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub networks: Option<Vec<Network>>,
+}
+
+#[buildstructor::buildstructor]
+impl Entity {
+    #[builder(entry = "basic")]
+    pub fn new_handle<T: Into<String>>(handle: T) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder()
+                .object_class_name("entity")
+                .handle(handle.into())
+                .build(),
+            vcard_array: None,
+            roles: None,
+            public_ids: None,
+            as_event_actor: None,
+            status: None,
+            autnums: None,
+            networks: None,
+        }
+    }
 }
 
 #[cfg(test)]

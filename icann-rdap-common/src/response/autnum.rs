@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::types::{Common, ObjectCommon};
 
 /// Represents an RDAP autnum object response.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Autnum {
     #[serde(flatten)]
     pub common: Common,
@@ -29,6 +29,22 @@ pub struct Autnum {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+}
+
+#[buildstructor::buildstructor]
+impl Autnum {
+    #[builder(entry = "basic")]
+    pub fn new_autnum(autnum: u32) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder().object_class_name("autnum").build(),
+            start_autnum: Some(autnum),
+            end_autnum: Some(autnum),
+            name: None,
+            autnum_type: None,
+            country: None,
+        }
+    }
 }
 
 #[cfg(test)]

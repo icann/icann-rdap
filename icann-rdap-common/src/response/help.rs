@@ -9,3 +9,13 @@ pub struct Help {
     #[serde(flatten)]
     pub common: Common,
 }
+
+#[buildstructor::buildstructor]
+impl Help {
+    #[builder(entry = "basic")]
+    pub fn new_basic() -> Self {
+        Self {
+            common: Common::builder().build(),
+        }
+    }
+}

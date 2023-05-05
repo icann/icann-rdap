@@ -8,7 +8,7 @@ use super::{
 };
 
 /// Represents an RDAP variant name.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct VariantName {
     #[serde(rename = "ldhName")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -20,7 +20,7 @@ pub struct VariantName {
 }
 
 /// Represents an RDAP IDN variant.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Variant {
     pub relation: Option<Vec<String>>,
 
@@ -33,7 +33,7 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct DsDatum {
     #[serde(rename = "keyTag")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -56,7 +56,7 @@ pub struct DsDatum {
     pub events: Option<Events>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct KeyDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub flags: Option<u16>,
@@ -79,7 +79,7 @@ pub struct KeyDatum {
 }
 
 /// Represents the DNSSEC information of a domain.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct SecureDns {
     #[serde(rename = "zoneSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -103,7 +103,7 @@ pub struct SecureDns {
 }
 
 /// Represents an RDAP domain response.
-#[derive(Serialize, Deserialize, Builder, Clone)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     #[serde(flatten)]
     pub common: Common,
@@ -135,6 +135,24 @@ pub struct Domain {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network: Option<Network>,
+}
+
+#[buildstructor::buildstructor]
+impl Domain {
+    #[builder(entry = "basic")]
+    pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder().object_class_name("domain").build(),
+            ldh_name: Some(ldh_name.into()),
+            unicode_name: None,
+            variants: None,
+            secure_dns: None,
+            nameservers: None,
+            public_ids: None,
+            network: None,
+        }
+    }
 }
 
 #[cfg(test)]

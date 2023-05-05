@@ -17,11 +17,17 @@ repository = "https://github.com/icann/icann-rdap"
 # easy error handling
 anyhow = "1.0"
 
+# async traits
+async-trait = "0.1"
+
 # axum (web server)
 axum = { version = "0.6", features = ["headers"] }
 
 # client IP address extractor
 axum-client-ip = "0.3.0"
+
+# b-tree with ranges
+btree-range-map = "0.5.1"
 
 # macros for the builder pattern
 buildstructor = "0.5"
@@ -68,6 +74,9 @@ http = "0.2"
 # hyper (http implementation used by axum)
 hyper = { version = "0.14", features = ["full"] }
 
+# for use prefixmap
+ipnet = { version = "2.7", features = ["json"] }
+
 # using terminal helper
 is-terminal = "0.4"
 
@@ -76,6 +85,12 @@ minus = {version = "5.3", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "1.2"
+
+# eventually consistent shared data
+pinboard = "2.2.0"
+
+# ip address trie
+prefix-trie = "0.2.4"
 
 # regular expresions
 regex = "1.7"
@@ -91,6 +106,16 @@ serde_json = "1.0"
 
 # simple log framework
 simplelog = { version = "0.12", features = ["paris"] }
+
+# sqlx (async db)
+sqlx = { version = "0.6", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "chrono",
+    "macros",
+    "json",
+    "offline",
+] }
 
 # enum utilities
 strum = "0.24"

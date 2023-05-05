@@ -1,9 +1,10 @@
 use axum::{response::IntoResponse, routing::get, Router};
-use http::StatusCode;
 
-use crate::server::AppState;
+use crate::{server::AppState, storage::StoreOps};
 
-pub fn rdap_router() -> Router<AppState> {
+use super::response::NOT_IMPLEMENTED;
+
+pub fn rdap_router<T: StoreOps + Clone + Send + Sync + 'static>() -> Router<AppState<T>> {
     Router::new()
         .route("/domain/:domain", get(not_implemented))
         .route("/ip/:ipaddr", get(not_implemented))
@@ -17,9 +18,5 @@ pub fn rdap_router() -> Router<AppState> {
 }
 
 async fn not_implemented() -> impl IntoResponse {
-    (
-        StatusCode::NOT_IMPLEMENTED,
-        [("content-type", r#"application/rdap"#)],
-        r#"{"errorCode":501,"title": "This RDAP query is not yet implemented."}"#,
-    )
+    NOT_IMPLEMENTED.response()
 }
