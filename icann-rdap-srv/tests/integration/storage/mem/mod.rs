@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+mod state;
+
 use icann_rdap_common::response::{domain::Domain, entity::Entity};
 use icann_rdap_srv::{
     rdap::response::{ArcRdapResponse, RdapServerResponse},

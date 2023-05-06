@@ -19,7 +19,7 @@ use super::ops::Mem;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
-enum Template {
+pub enum Template {
     Domain {
         domain: Domain,
         ids: Vec<DomainId>,
@@ -43,7 +43,7 @@ enum Template {
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
-struct DomainId {
+pub struct DomainId {
     #[serde(rename = "ldhName")]
     ldh_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,12 +52,12 @@ struct DomainId {
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
-struct EntityId {
+pub struct EntityId {
     handle: String,
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
-struct NameserverId {
+pub struct NameserverId {
     #[serde(rename = "ldhName")]
     ldh_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -66,7 +66,7 @@ struct NameserverId {
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
-struct AutnumId {
+pub struct AutnumId {
     #[serde(rename = "startAutnum")]
     start_autnum: u32,
     #[serde(rename = "endAutnum")]
@@ -74,7 +74,7 @@ struct AutnumId {
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
-struct NetworkId {
+pub struct NetworkId {
     ipnet: IpNet,
 }
 

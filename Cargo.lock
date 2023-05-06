@@ -1160,6 +1160,7 @@ dependencies = [
  "sqlx",
  "strum",
  "strum_macros",
+ "test_dir",
  "thiserror",
  "tokio",
  "tower",
@@ -2436,6 +2437,15 @@ dependencies = [
  "minimad",
  "thiserror",
  "unicode-width",
+]
+
+[[package]]
+name = "test_dir"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fc19daf9fc57fadcf740c4abaaa0cd08d9ce22a2a0629aaf6cbd9ae4b80683a"
+dependencies = [
+ "rand",
 ]
 
 [[package]]
