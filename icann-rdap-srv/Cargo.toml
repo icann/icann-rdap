@@ -14,6 +14,7 @@ icann-rdap-common = { path = "../icann-rdap-common" }
 
 async-trait.workspace = true
 axum.workspace = true
+axum-macros.workspace = true
 axum-client-ip.workspace = true
 btree-range-map.workspace = true
 buildstructor.workspace = true

@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use axum::{response::IntoResponse, Json};
+use axum::{
+    response::{IntoResponse, Response},
+    Json,
+};
 use http::StatusCode;
 use icann_rdap_common::response::{
     autnum::Autnum,
@@ -32,7 +35,16 @@ lazy_static! {
                 .common(Common::builder().build())
                 .build()
         )));
+    pub static ref BAD_REQUEST: RdapServerResponse =
+        RdapServerResponse::Arc(ArcRdapResponse::ErrorResponse(Arc::new(
+            Error::builder()
+                .error_code(400)
+                .common(Common::builder().build())
+                .build()
+        )));
 }
+
+pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", r#"application/rdap"#)];
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]
@@ -42,8 +54,8 @@ pub enum RdapServerResponse {
 }
 
 impl RdapServerResponse {
-    pub(crate) fn response(&self) -> impl IntoResponse + '_ {
-        let status_code = match self {
+    pub(crate) fn status_code(&self) -> StatusCode {
+        match self {
             RdapServerResponse::NoRef(rdap) => {
                 if let RdapResponse::ErrorResponse(rdap_error) = rdap {
                     StatusCode::from_u16(rdap_error.error_code).unwrap()
@@ -58,12 +70,12 @@ impl RdapServerResponse {
                     StatusCode::OK
                 }
             }
-        };
-        (
-            status_code,
-            [("content-type", r#"application/rdap"#)],
-            Json(self),
-        )
+        }
+    }
+
+    pub(crate) fn response(&self) -> Response {
+        let status_code = self.status_code();
+        (status_code, RDAP_HEADERS, Json(self)).into_response()
     }
 }
 

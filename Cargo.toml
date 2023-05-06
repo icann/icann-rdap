@@ -22,6 +22,7 @@ async-trait = "0.1"
 
 # axum (web server)
 axum = { version = "0.6", features = ["headers"] }
+axum-macros = "0.3"
 
 # client IP address extractor
 axum-client-ip = "0.3.0"

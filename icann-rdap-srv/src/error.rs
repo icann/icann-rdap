@@ -1,6 +1,14 @@
-use std::num::ParseIntError;
+use std::{num::ParseIntError, sync::Arc};
 
+use axum::{
+    response::{IntoResponse, Response},
+    Json,
+};
+use http::StatusCode;
+use icann_rdap_common::response::types::Common;
 use thiserror::Error;
+
+use crate::rdap::response::{ArcRdapResponse, RdapServerResponse};
 
 /// Errors from the RDAP Server.
 #[derive(Debug, Error)]
@@ -23,4 +31,21 @@ pub enum RdapServerError {
     NonJsonFile(String),
     #[error("json file at {0} is valid JSON but is not RDAP")]
     NonRdapJsonFile(String),
+}
+
+impl IntoResponse for RdapServerError {
+    fn into_response(self) -> Response {
+        let response = RdapServerResponse::Arc(ArcRdapResponse::ErrorResponse(Arc::new(
+            icann_rdap_common::response::error::Error::builder()
+                .error_code(500)
+                .common(Common::builder().build())
+                .build(),
+        )));
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            [("content-type", r#"application/rdap"#)],
+            Json(response),
+        )
+            .into_response()
+    }
 }

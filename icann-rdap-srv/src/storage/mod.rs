@@ -6,8 +6,10 @@ use crate::{error::RdapServerError, rdap::response::RdapServerResponse};
 pub mod mem;
 pub mod pg;
 
+pub type DynStoreOps = dyn StoreOps + Send + Sync;
+
 #[async_trait]
-pub trait StoreOps {
+pub trait StoreOps: Send + Sync {
     /// Initializes the backend storage
     async fn init(&self) -> Result<(), RdapServerError>;
 

@@ -1,8 +1,10 @@
 use std::{
     net::{SocketAddr, TcpListener},
+    sync::Arc,
     time::Duration,
 };
 
+use async_trait::async_trait;
 use axum::{error_handling::HandleErrorLayer, Router};
 use http::{Method, StatusCode};
 use icann_rdap_common::VERSION;
@@ -54,23 +56,22 @@ impl Listener {
     }
 
     pub async fn start_server(self, config: &ServiceConfig) -> Result<(), RdapServerError> {
-        match &config.storage_type {
-            StorageType::Memory(config) => {
-                self.start_with_state(AppState::new_mem(config.clone()).await?)
-                    .await
-            }
-            StorageType::Postgres(config) => {
-                self.start_with_state(AppState::new_pg(config.clone()).await?)
-                    .await
-            }
-        }
+        if let StorageType::Memory(config) = &config.storage_type {
+            let app_state = AppState::new_mem(config.clone()).await?;
+            self.start_with_state(app_state).await?;
+        } else if let StorageType::Postgres(config) = &config.storage_type {
+            let app_state = AppState::new_pg(config.clone()).await?;
+            self.start_with_state(app_state).await?;
+        };
+        Ok(())
     }
 
     pub async fn start_with_state<T>(self, app_state: AppState<T>) -> Result<(), RdapServerError>
     where
         T: StoreOps + Clone + Send + Sync + 'static,
+        AppState<T>: StoreState,
     {
-        let app = app_router(app_state);
+        let app = app_router::<T>(app_state);
 
         tracing::debug!("listening on {}", self.local_addr);
         axum::Server::from_tcp(self.tcp_listener)?
@@ -83,7 +84,9 @@ impl Listener {
 fn app_router<T>(state: AppState<T>) -> Router
 where
     T: StoreOps + Clone + Send + Sync + 'static,
+    AppState<T>: StoreState,
 {
+    let state = Arc::new(state) as DynStoreState;
     Router::new()
         .nest("/rdap", rdap_router())
         .layer(
@@ -111,23 +114,44 @@ where
         .with_state(state)
 }
 
+pub(crate) type DynStoreState = Arc<dyn StoreState + Send + Sync>;
+
+#[async_trait]
+pub trait StoreState {
+    async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError>;
+}
+
 #[derive(Clone)]
 pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
 }
 
-impl AppState<Pg> {
-    pub async fn new_pg(config: PgConfig) -> Result<Self, RdapServerError> {
-        let storage = Pg::new(config).await?;
+impl AppState<Mem> {
+    pub async fn new_mem(config: MemConfig) -> Result<AppState<Mem>, RdapServerError> {
+        let storage = Mem::new(config);
         storage.init().await?;
-        Ok(Self { storage })
+        Ok(AppState::<Mem> { storage })
     }
 }
 
-impl AppState<Mem> {
-    pub async fn new_mem(config: MemConfig) -> Result<Self, RdapServerError> {
-        let storage = Mem::new(config);
+impl AppState<Pg> {
+    pub async fn new_pg(config: PgConfig) -> Result<AppState<Pg>, RdapServerError> {
+        let storage = Pg::new(config).await?;
         storage.init().await?;
-        Ok(Self { storage })
+        Ok(AppState::<Pg> { storage })
+    }
+}
+
+#[async_trait]
+impl StoreState for AppState<Pg> {
+    async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError> {
+        Ok(&self.storage)
+    }
+}
+
+#[async_trait]
+impl StoreState for AppState<Mem> {
+    async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError> {
+        Ok(&self.storage)
     }
 }
