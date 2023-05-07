@@ -78,6 +78,30 @@ pub struct NetworkId {
     ipnet: IpNet,
 }
 
+/// Loads files from the state directory into memory.
+///
+/// There are 2 types of files that will be selected. Files ending with a `.json` extension
+/// are considered to be JSON files holding one RDAP response each.
+///
+/// Files ending with a `.template` extension are a means to quickly create RDAP objects using
+/// a template. Templates follow a pattern of a set of IDs paired with an RDAP object:
+///
+/// ```
+/// {
+///   "domain":
+///     {
+///       "objectClassName":"domain",
+///       "ldhName":"example"
+///     },
+///   "ids":
+///     [
+///       {"ldhName":"bar.example"},
+///       {"ldhName":"foo.example"}
+///     ]
+/// }
+/// ```
+/// In this example, 2 domains will be created for "foo.example" and "bar.exaple" using
+/// the template.
 pub(crate) async fn load_state(mem: &Mem) -> Result<(), RdapServerError> {
     let mut json_count: usize = 0;
     let mut template_count: usize = 0;
@@ -109,6 +133,7 @@ pub(crate) async fn load_state(mem: &Mem) -> Result<(), RdapServerError> {
     Ok(())
 }
 
+/// Loads the RDAP JSON files and puts them in memory.
 async fn load_rdap(
     contents: &str,
     path_name: &str,
@@ -133,6 +158,8 @@ async fn load_rdap(
     Ok(())
 }
 
+/// Loads the template files, creates RDAP objects from the templates, and puts them
+/// into memory.
 async fn load_rdap_template(
     contents: &str,
     path_name: &str,
