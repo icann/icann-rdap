@@ -12,6 +12,7 @@ pub(crate) async fn domain_by_name(
     Path(domain_name): Path<String>,
     state: State<DynStoreState>,
 ) -> Result<Response, RdapServerError> {
+    // TODO add tracing span
     // TODO verify it looks like a domain name and return BAD REQUEST if it does not.
     let storage = state.get_storage().await?;
     let domain = storage.get_domain_by_ldh(&domain_name).await?;

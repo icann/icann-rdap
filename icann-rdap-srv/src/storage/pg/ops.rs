@@ -45,4 +45,11 @@ impl StoreOps for Pg {
     ) -> Result<RdapServerResponse, RdapServerError> {
         todo!()
     }
+
+    async fn get_nameserver_by_ldh(
+        &self,
+        _ldh: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
+        todo!()
+    }
 }

@@ -86,7 +86,7 @@ pub struct NetworkId {
 /// Files ending with a `.template` extension are a means to quickly create RDAP objects using
 /// a template. Templates follow a pattern of a set of IDs paired with an RDAP object:
 ///
-/// ```
+/// ```json
 /// {
 ///   "domain":
 ///     {
@@ -147,6 +147,7 @@ async fn load_rdap(
             match rdap {
                 RdapResponse::Entity(entity) => tx.add_entity(&entity).await,
                 RdapResponse::Domain(domain) => tx.add_domain(&domain).await,
+                RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await,
                 _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
             }?;
         } else {
@@ -186,6 +187,17 @@ async fn load_rdap_template(
                     let mut entity = entity.clone();
                     entity.object_common.handle = Some(id.handle);
                     tx.add_entity(&entity).await?;
+                }
+            }
+            Template::Nameserver { nameserver, ids } => {
+                for id in ids {
+                    debug!("adding nameserver from template for {id:?}");
+                    let mut nameserver = nameserver.clone();
+                    nameserver.ldh_name = Some(id.ldh_name);
+                    if let Some(unicode_name) = id.unicode_name {
+                        nameserver.unicode_name = Some(unicode_name);
+                    };
+                    tx.add_nameserver(&nameserver).await?;
                 }
             }
             _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),

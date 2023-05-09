@@ -87,4 +87,17 @@ impl StoreOps for Mem {
             None => Ok(NOT_FOUND.clone()),
         }
     }
+    async fn get_nameserver_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
+        let nameservers = self.nameservers.get_ref();
+        let result = nameservers.get(ldh);
+        match result {
+            Some(nameserver) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Nameserver(
+                nameserver.clone(),
+            ))),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
 }

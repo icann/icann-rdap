@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use icann_rdap_common::response::{domain::Domain, entity::Entity};
+use icann_rdap_common::response::{domain::Domain, entity::Entity, nameserver::Nameserver};
 use sqlx::{PgPool, Postgres};
 
 use crate::{error::RdapServerError, storage::TxHandle};
@@ -27,6 +27,9 @@ impl<'a> TxHandle for PgTx<'a> {
             .execute(&mut self.db_tx)
             .await?;
         Ok(())
+    }
+    async fn add_nameserver(&mut self, _nameserver: &Nameserver) -> Result<(), RdapServerError> {
+        todo!()
     }
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
         self.db_tx.commit().await?;

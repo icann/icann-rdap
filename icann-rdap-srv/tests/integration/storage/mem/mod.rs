@@ -2,7 +2,7 @@
 
 mod state;
 
-use icann_rdap_common::response::{domain::Domain, entity::Entity};
+use icann_rdap_common::response::{domain::Domain, entity::Entity, nameserver::Nameserver};
 use icann_rdap_srv::{
     rdap::response::{ArcRdapResponse, RdapServerResponse},
     storage::{mem::ops::Mem, StoreOps},
@@ -92,6 +92,50 @@ async fn GIVEN_no_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_404_returned()
         .get_entity_by_handle("foo")
         .await
         .expect("getting entity by handle");
+
+    // THEN
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
+    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    assert_eq!(error.error_code, 404)
+}
+
+#[tokio::test]
+async fn GIVEN_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_nameserver_returned() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_nameserver(&Nameserver::basic().ldh_name("ns.foo.example").build())
+        .await
+        .expect("add nameserver in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .get_nameserver_by_ldh("ns.foo.example")
+        .await
+        .expect("getting nameserver by ldh");
+
+    // THEN
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::Nameserver(_)));
+    let ArcRdapResponse::Nameserver(nameserver) = response else { panic!() };
+    assert_eq!(
+        nameserver.ldh_name.as_ref().expect("ldhName is none"),
+        "ns.foo.example"
+    )
+}
+
+#[tokio::test]
+async fn GIVEN_no_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_404_returned() {
+    // GIVEN
+    let mem = Mem::default();
+
+    // WHEN
+    let actual = mem
+        .get_nameserver_by_ldh("ns.foo.example")
+        .await
+        .expect("getting nameserver by ldh");
 
     // THEN
     let RdapServerResponse::Arc(response) = actual else { panic!() };

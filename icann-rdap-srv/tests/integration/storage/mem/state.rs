@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{domain::Domain, entity::Entity};
+use icann_rdap_common::response::{domain::Domain, entity::Entity, nameserver::Nameserver};
 use icann_rdap_srv::{
     rdap::response::{ArcRdapResponse, RdapServerResponse},
     storage::{
         mem::{
             config::MemConfig,
             ops::Mem,
-            state::{DomainId, EntityId, Template},
+            state::{DomainId, EntityId, NameserverId, Template},
         },
         StoreOps,
     },
@@ -167,5 +167,79 @@ async fn GIVEN_state_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_lo
                 .expect("handle is none"),
             handle
         )
+    }
+}
+
+#[tokio::test]
+async fn GIVEN_state_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded() {
+    // GIVEN
+    let ldh_name = "ns.foo.example";
+    let temp = TestDir::temp();
+    let nameserver = Nameserver::basic().ldh_name(ldh_name).build();
+    let nameserver_file = temp.path("ns_foo_example.json");
+    std::fs::write(
+        nameserver_file,
+        serde_json::to_string(&nameserver).expect("serializing nameserver"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem_config = MemConfig::builder()
+        .state_dir(temp.root().to_string_lossy())
+        .build();
+    let mem = Mem::new(mem_config);
+    mem.init().await.expect("initialzing memeory");
+
+    // THEN
+    let actual = mem
+        .get_nameserver_by_ldh(ldh_name)
+        .await
+        .expect("getting nameserver by ldh");
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::Nameserver(_)));
+    let ArcRdapResponse::Nameserver(nameserver) = response else { panic!() };
+    assert_eq!(
+        nameserver.ldh_name.as_ref().expect("ldhName is none"),
+        ldh_name
+    )
+}
+
+#[tokio::test]
+async fn GIVEN_state_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_are_loaded() {
+    // GIVEN
+    let ldh1 = "ns.foo.example";
+    let ldh2 = "ns.bar.example";
+    let temp = TestDir::temp();
+    let template = Template::Nameserver {
+        nameserver: Nameserver::basic().ldh_name("example").build(),
+        ids: vec![
+            NameserverId::builder().ldh_name(ldh1).build(),
+            NameserverId::builder().ldh_name(ldh2).build(),
+        ],
+    };
+    let template_file = temp.path("example.template");
+    std::fs::write(
+        template_file,
+        serde_json::to_string(&template).expect("serializing template"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem_config = MemConfig::builder()
+        .state_dir(temp.root().to_string_lossy())
+        .build();
+    let mem = Mem::new(mem_config);
+    mem.init().await.expect("initialzing memeory");
+
+    // THEN
+    for ldh in [ldh1, ldh2] {
+        let actual = mem
+            .get_nameserver_by_ldh(ldh)
+            .await
+            .expect("getting nameserver by ldh");
+        let RdapServerResponse::Arc(response) = actual else { panic!() };
+        assert!(matches!(response, ArcRdapResponse::Nameserver(_)));
+        let ArcRdapResponse::Nameserver(nameserver) = response else { panic!() };
+        assert_eq!(nameserver.ldh_name.as_ref().expect("ldhName is none"), ldh)
     }
 }

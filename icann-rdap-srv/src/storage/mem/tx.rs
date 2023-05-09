@@ -57,6 +57,15 @@ impl TxHandle for MemTx {
             .insert(ldh_name.to_owned(), Arc::new(domain.clone()));
         Ok(())
     }
+    async fn add_nameserver(&mut self, nameserver: &Nameserver) -> Result<(), RdapServerError> {
+        let ldh_name = nameserver
+            .ldh_name
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
+        self.nameservers
+            .insert(ldh_name.to_owned(), Arc::new(nameserver.clone()));
+        Ok(())
+    }
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
         self.mem.autnums.set(self.autnums);
         self.mem.ip4.set(self.ip4);
