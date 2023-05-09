@@ -2,7 +2,9 @@
 
 mod state;
 
-use icann_rdap_common::response::{domain::Domain, entity::Entity, nameserver::Nameserver};
+use icann_rdap_common::response::{
+    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver,
+};
 use icann_rdap_srv::{
     rdap::response::{ArcRdapResponse, RdapServerResponse},
     storage::{mem::ops::Mem, StoreOps},
@@ -134,6 +136,88 @@ async fn GIVEN_no_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_404_retur
     // WHEN
     let actual = mem
         .get_nameserver_by_ldh("ns.foo.example")
+        .await
+        .expect("getting nameserver by ldh");
+
+    // THEN
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
+    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    assert_eq!(error.error_code, 404)
+}
+
+#[tokio::test]
+async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_returned() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_autnum(
+        &Autnum::basic_nums()
+            .start_autnum(700)
+            .end_autnum(710)
+            .build(),
+    )
+    .await
+    .expect("add autnum in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .get_autnum_by_num(700)
+        .await
+        .expect("getting autnum by num");
+
+    // THEN
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::Autnum(_)));
+    let ArcRdapResponse::Autnum(autnum) = response else { panic!() };
+    assert_eq!(
+        *autnum.start_autnum.as_ref().expect("startNum is none"),
+        700
+    );
+    assert_eq!(*autnum.end_autnum.as_ref().expect("startNum is none"), 710);
+}
+
+#[tokio::test]
+async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_returned() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_autnum(
+        &Autnum::basic_nums()
+            .start_autnum(700)
+            .end_autnum(710)
+            .build(),
+    )
+    .await
+    .expect("add autnum in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .get_autnum_by_num(710)
+        .await
+        .expect("getting autnum by num");
+
+    // THEN
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::Autnum(_)));
+    let ArcRdapResponse::Autnum(autnum) = response else { panic!() };
+    assert_eq!(
+        *autnum.start_autnum.as_ref().expect("startNum is none"),
+        700
+    );
+    assert_eq!(*autnum.end_autnum.as_ref().expect("startNum is none"), 710);
+}
+
+#[tokio::test]
+async fn GIVEN_no_autnum_in_mem_WHEN_lookup_autnum_by_num_THEN_404_returned() {
+    // GIVEN
+    let mem = Mem::default();
+
+    // WHEN
+    let actual = mem
+        .get_autnum_by_num(700)
         .await
         .expect("getting nameserver by ldh");
 

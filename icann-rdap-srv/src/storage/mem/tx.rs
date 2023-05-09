@@ -48,6 +48,7 @@ impl TxHandle for MemTx {
             .insert(handle.to_owned(), Arc::new(entity.clone()));
         Ok(())
     }
+
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
         let ldh_name = domain
             .ldh_name
@@ -57,6 +58,7 @@ impl TxHandle for MemTx {
             .insert(ldh_name.to_owned(), Arc::new(domain.clone()));
         Ok(())
     }
+
     async fn add_nameserver(&mut self, nameserver: &Nameserver) -> Result<(), RdapServerError> {
         let ldh_name = nameserver
             .ldh_name
@@ -66,6 +68,21 @@ impl TxHandle for MemTx {
             .insert(ldh_name.to_owned(), Arc::new(nameserver.clone()));
         Ok(())
     }
+
+    async fn add_autnum(&mut self, autnum: &Autnum) -> Result<(), RdapServerError> {
+        let start_num = autnum
+            .start_autnum
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("startNum".to_string()))?;
+        let end_num = autnum
+            .end_autnum
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
+        self.autnums
+            .insert((*start_num)..=(*end_num), Arc::new(autnum.clone()));
+        Ok(())
+    }
+
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
         self.mem.autnums.set(self.autnums);
         self.mem.ip4.set(self.ip4);
@@ -75,6 +92,7 @@ impl TxHandle for MemTx {
         self.mem.entities.set(self.entities);
         Ok(())
     }
+
     async fn rollback(self: Box<Self>) -> Result<(), RdapServerError> {
         // Nothing to do.
         Ok(())

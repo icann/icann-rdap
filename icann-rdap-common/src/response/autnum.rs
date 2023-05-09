@@ -45,6 +45,19 @@ impl Autnum {
             country: None,
         }
     }
+
+    #[builder(entry = "basic_nums")]
+    pub fn new_autnum_nums(start_autnum: u32, end_autnum: u32) -> Self {
+        Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::builder().object_class_name("autnum").build(),
+            start_autnum: Some(start_autnum),
+            end_autnum: Some(end_autnum),
+            name: None,
+            autnum_type: None,
+            country: None,
+        }
+    }
 }
 
 #[cfg(test)]

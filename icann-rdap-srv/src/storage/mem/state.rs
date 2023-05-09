@@ -148,6 +148,7 @@ async fn load_rdap(
                 RdapResponse::Entity(entity) => tx.add_entity(&entity).await,
                 RdapResponse::Domain(domain) => tx.add_domain(&domain).await,
                 RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await,
+                RdapResponse::Autnum(autnum) => tx.add_autnum(&autnum).await,
                 _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
             }?;
         } else {
@@ -198,6 +199,15 @@ async fn load_rdap_template(
                         nameserver.unicode_name = Some(unicode_name);
                     };
                     tx.add_nameserver(&nameserver).await?;
+                }
+            }
+            Template::Autnum { autnum, ids } => {
+                for id in ids {
+                    debug!("adding autnum from template for {id:?}");
+                    let mut autnum = autnum.clone();
+                    autnum.start_autnum = Some(id.start_autnum);
+                    autnum.end_autnum = Some(id.end_autnum);
+                    tx.add_autnum(&autnum).await?;
                 }
             }
             _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),

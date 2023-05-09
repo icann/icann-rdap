@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-use icann_rdap_common::response::{domain::Domain, entity::Entity, nameserver::Nameserver};
+use icann_rdap_common::response::{
+    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver,
+};
 
 use crate::{error::RdapServerError, rdap::response::RdapServerResponse};
 
@@ -29,6 +31,9 @@ pub trait StoreOps: Send + Sync {
     /// Get a nameserver from storage using the 'ldhName' as the key.
     async fn get_nameserver_by_ldh(&self, ldh: &str)
         -> Result<RdapServerResponse, RdapServerError>;
+
+    /// Get an autnum from storage using an autonomous system numbers as the key.
+    async fn get_autnum_by_num(&self, num: u32) -> Result<RdapServerResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -44,6 +49,9 @@ pub trait TxHandle: Send {
 
     /// Add a nameserver to storage.
     async fn add_nameserver(&mut self, nameserver: &Nameserver) -> Result<(), RdapServerError>;
+
+    /// Add a nameserver to storage.
+    async fn add_autnum(&mut self, autnum: &Autnum) -> Result<(), RdapServerError>;
 
     /// Commit the transaction.
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError>;

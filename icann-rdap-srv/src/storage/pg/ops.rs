@@ -31,6 +31,7 @@ impl StoreOps for Pg {
         info!("Database connection test is successful.");
         Ok(())
     }
+
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
         Ok(Box::new(PgTx::new(&self.pg_pool).await?))
     }
@@ -50,6 +51,10 @@ impl StoreOps for Pg {
         &self,
         _ldh: &str,
     ) -> Result<RdapServerResponse, RdapServerError> {
+        todo!()
+    }
+
+    async fn get_autnum_by_num(&self, _num: u32) -> Result<RdapServerResponse, RdapServerError> {
         todo!()
     }
 }

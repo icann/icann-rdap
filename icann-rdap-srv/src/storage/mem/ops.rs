@@ -100,4 +100,15 @@ impl StoreOps for Mem {
             None => Ok(NOT_FOUND.clone()),
         }
     }
+
+    async fn get_autnum_by_num(&self, num: u32) -> Result<RdapServerResponse, RdapServerError> {
+        let autnums = self.autnums.get_ref();
+        let result = autnums.get(num);
+        match result {
+            Some(autnum) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Autnum(
+                autnum.clone(),
+            ))),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
 }
