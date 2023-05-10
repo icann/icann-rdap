@@ -45,4 +45,9 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [dev-dependencies]
+
+# fixture testings
+rstest = "0.17.0"
+
+# test directories
 test_dir = "0.2.0"

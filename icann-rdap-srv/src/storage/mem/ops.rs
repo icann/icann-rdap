@@ -1,11 +1,11 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
-use ipnet::{Ipv4Net, Ipv6Net};
+use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use pinboard::NonEmptyPinboard;
 use prefix_trie::PrefixMap;
 
@@ -109,6 +109,63 @@ impl StoreOps for Mem {
                 autnum.clone(),
             ))),
             None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn get_network_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
+        let addr = ipaddr.parse::<IpAddr>()?;
+        match addr {
+            IpAddr::V4(v4) => {
+                let slash32 = Ipv4Net::new(v4, 32)?;
+                let ip4s = self.ip4.get_ref();
+                let result = ip4s.get_lpm(&slash32);
+                match result {
+                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
+                        network.1.clone(),
+                    ))),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+            IpAddr::V6(v6) => {
+                let slash128 = Ipv6Net::new(v6, 128)?;
+                let ip6s = self.ip6.get_ref();
+                let result = ip6s.get_lpm(&slash128);
+                match result {
+                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
+                        network.1.clone(),
+                    ))),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+        }
+    }
+
+    async fn get_network_by_cidr(&self, cidr: &str) -> Result<RdapServerResponse, RdapServerError> {
+        let net = IpNet::from_str(cidr)?;
+        match net {
+            IpNet::V4(ipv4net) => {
+                let ip4s = self.ip4.get_ref();
+                let result = ip4s.get_lpm(&ipv4net);
+                match result {
+                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
+                        network.1.clone(),
+                    ))),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+            IpNet::V6(ipv6net) => {
+                let ip6s = self.ip6.get_ref();
+                let result = ip6s.get_lpm(&ipv6net);
+                match result {
+                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
+                        network.1.clone(),
+                    ))),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
         }
     }
 }

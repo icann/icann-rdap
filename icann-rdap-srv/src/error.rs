@@ -1,4 +1,4 @@
-use std::{num::ParseIntError, sync::Arc};
+use std::{net::AddrParseError, num::ParseIntError, sync::Arc};
 
 use axum::{
     response::{IntoResponse, Response},
@@ -6,6 +6,7 @@ use axum::{
 };
 use http::StatusCode;
 use icann_rdap_common::response::types::Common;
+use ipnet::PrefixLenError;
 use thiserror::Error;
 
 use crate::rdap::response::{ArcRdapResponse, RdapServerResponse};
@@ -31,6 +32,12 @@ pub enum RdapServerError {
     NonJsonFile(String),
     #[error("json file at {0} is valid JSON but is not RDAP")]
     NonRdapJsonFile(String),
+    #[error(transparent)]
+    AddrParse(#[from] AddrParseError),
+    #[error(transparent)]
+    PrefixLength(#[from] PrefixLenError),
+    #[error(transparent)]
+    CidrParse(#[from] ipnet::AddrParseError),
 }
 
 impl IntoResponse for RdapServerError {

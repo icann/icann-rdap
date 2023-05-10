@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver,
+    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
 use sqlx::{PgPool, Postgres};
 
@@ -37,6 +37,10 @@ impl<'a> TxHandle for PgTx<'a> {
     }
 
     async fn add_autnum(&mut self, _autnum: &Autnum) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
+    async fn add_network(&mut self, _network: &Network) -> Result<(), RdapServerError> {
         todo!()
     }
 

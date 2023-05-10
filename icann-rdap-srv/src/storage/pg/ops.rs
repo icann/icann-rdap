@@ -57,4 +57,17 @@ impl StoreOps for Pg {
     async fn get_autnum_by_num(&self, _num: u32) -> Result<RdapServerResponse, RdapServerError> {
         todo!()
     }
+
+    async fn get_network_by_ipaddr(
+        &self,
+        _ipaddr: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
+        todo!()
+    }
+    async fn get_network_by_cidr(
+        &self,
+        _cidr: &str,
+    ) -> Result<RdapServerResponse, RdapServerError> {
+        todo!()
+    }
 }

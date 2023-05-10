@@ -5,7 +5,7 @@ use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
-use ipnet::{Ipv4Net, Ipv6Net};
+use ipnet::{Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
 
 use crate::{error::RdapServerError, storage::TxHandle};
@@ -80,6 +80,34 @@ impl TxHandle for MemTx {
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
         self.autnums
             .insert((*start_num)..=(*end_num), Arc::new(autnum.clone()));
+        Ok(())
+    }
+
+    async fn add_network(&mut self, network: &Network) -> Result<(), RdapServerError> {
+        let start_addr = network
+            .start_address
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("startAddress".to_string()))?;
+        let end_addr = network
+            .end_address
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("endAddress".to_string()))?;
+        let ip_type = network
+            .ip_version
+            .as_ref()
+            .ok_or_else(|| RdapServerError::EmptyIndexData("ipVersion".to_string()))?;
+        let is_v4 = ip_type.eq_ignore_ascii_case("v4");
+        if is_v4 {
+            let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
+            for net in subnets {
+                self.ip4.insert(net, Arc::new(network.clone()));
+            }
+        } else {
+            let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
+            for net in subnets {
+                self.ip6.insert(net, Arc::new(network.clone()));
+            }
+        };
         Ok(())
     }
 

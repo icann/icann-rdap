@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
+use cidr_utils::cidr::IpCidr;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver,
+    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
 use icann_rdap_srv::{
     rdap::response::{ArcRdapResponse, RdapServerResponse},
@@ -9,7 +10,9 @@ use icann_rdap_srv::{
         mem::{
             config::MemConfig,
             ops::Mem,
-            state::{AutnumId, DomainId, EntityId, NameserverId, Template},
+            state::{
+                AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType, Template,
+            },
         },
         StoreOps,
     },
@@ -325,6 +328,158 @@ async fn GIVEN_state_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_loa
         assert_eq!(
             *autnum.start_autnum.as_ref().expect("startAutnum is none"),
             num
+        )
+    }
+}
+
+#[tokio::test]
+async fn GIVEN_state_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
+    // GIVEN
+    let temp = TestDir::temp();
+    let network = Network::basic()
+        .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
+        .build();
+    let net_file = temp.path("ten_net.json");
+    std::fs::write(
+        net_file,
+        serde_json::to_string(&network).expect("serializing network"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem_config = MemConfig::builder()
+        .state_dir(temp.root().to_string_lossy())
+        .build();
+    let mem = Mem::new(mem_config);
+    mem.init().await.expect("initialzing memeory");
+
+    // THEN
+    let actual = mem
+        .get_network_by_ipaddr("10.0.0.0")
+        .await
+        .expect("getting autnum by num");
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::Network(_)));
+    let ArcRdapResponse::Network(network) = response else { panic!() };
+    assert_eq!(
+        *network
+            .start_address
+            .as_ref()
+            .expect("startAddress is none"),
+        "10.0.0.0"
+    )
+}
+
+#[tokio::test]
+async fn GIVEN_state_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_networks_are_loaded() {
+    // GIVEN
+    let cidr1 = "10.0.0.0/24";
+    let cidr2 = "10.0.1.0/24";
+    let start1 = "10.0.0.0";
+    let start2 = "10.0.1.0";
+    let temp = TestDir::temp();
+    let template = Template::Network {
+        network: Network::basic()
+            .cidr(IpCidr::from_str("1.1.1.1/32").expect("parsing cidr"))
+            .build(),
+        ids: vec![
+            NetworkId::builder()
+                .network_id(NetworkIdType::Cidr(cidr1.parse().expect("parsing cidr")))
+                .build(),
+            NetworkId::builder()
+                .network_id(NetworkIdType::Cidr(cidr2.parse().expect("parsing cidr")))
+                .build(),
+        ],
+    };
+    let template_file = temp.path("example.template");
+    std::fs::write(
+        template_file,
+        serde_json::to_string(&template).expect("serializing template"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem_config = MemConfig::builder()
+        .state_dir(temp.root().to_string_lossy())
+        .build();
+    let mem = Mem::new(mem_config);
+    mem.init().await.expect("initialzing memeory");
+
+    // THEN
+    for (cidr, start) in [(cidr1, start1), (cidr2, start2)] {
+        let actual = mem
+            .get_network_by_cidr(cidr)
+            .await
+            .expect("getting cidr by num");
+        let RdapServerResponse::Arc(response) = actual else { panic!() };
+        assert!(matches!(response, ArcRdapResponse::Network(_)));
+        let ArcRdapResponse::Network(network) = response else { panic!() };
+        assert_eq!(
+            *network
+                .start_address
+                .as_ref()
+                .expect("startAddress is none"),
+            start
+        )
+    }
+}
+
+#[tokio::test]
+async fn GIVEN_state_dir_with_network_template_with_range_WHEN_mem_init_THEN_networks_are_loaded() {
+    // GIVEN
+    let start1 = "10.0.0.0";
+    let start2 = "10.0.1.0";
+    let end1 = "10.0.0.255";
+    let end2 = "10.0.1.255";
+    let temp = TestDir::temp();
+    let template = Template::Network {
+        network: Network::basic()
+            .cidr(IpCidr::from_str("1.1.1.1/32").expect("parsing cidr"))
+            .build(),
+        ids: vec![
+            NetworkId::builder()
+                .network_id(NetworkIdType::Range {
+                    start_address: start1.to_string(),
+                    end_address: end1.to_string(),
+                })
+                .build(),
+            NetworkId::builder()
+                .network_id(NetworkIdType::Range {
+                    start_address: start2.to_string(),
+                    end_address: end2.to_string(),
+                })
+                .build(),
+        ],
+    };
+    let template_file = temp.path("example.template");
+    std::fs::write(
+        template_file,
+        serde_json::to_string(&template).expect("serializing template"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem_config = MemConfig::builder()
+        .state_dir(temp.root().to_string_lossy())
+        .build();
+    let mem = Mem::new(mem_config);
+    mem.init().await.expect("initialzing memeory");
+
+    // THEN
+    for (start, end) in [(start1, end1), (start2, end2)] {
+        let actual = mem
+            .get_network_by_ipaddr(end)
+            .await
+            .expect("getting cidr by addr");
+        let RdapServerResponse::Arc(response) = actual else { panic!() };
+        assert!(matches!(response, ArcRdapResponse::Network(_)));
+        let ArcRdapResponse::Network(network) = response else { panic!() };
+        assert_eq!(
+            *network
+                .start_address
+                .as_ref()
+                .expect("startAddress is none"),
+            start
         )
     }
 }

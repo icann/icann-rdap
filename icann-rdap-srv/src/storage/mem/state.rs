@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{fs, net::IpAddr, path::PathBuf};
 
 use buildstructor::Builder;
 use icann_rdap_common::response::{
@@ -75,7 +75,20 @@ pub struct AutnumId {
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct NetworkId {
-    ipnet: IpNet,
+    #[serde(rename = "networkId")]
+    network_id: NetworkIdType,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum NetworkIdType {
+    Cidr(IpNet),
+    Range {
+        #[serde(rename = "startAddress")]
+        start_address: String,
+        #[serde(rename = "endAddress")]
+        end_address: String,
+    },
 }
 
 /// Loads files from the state directory into memory.
@@ -149,6 +162,7 @@ async fn load_rdap(
                 RdapResponse::Domain(domain) => tx.add_domain(&domain).await,
                 RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await,
                 RdapResponse::Autnum(autnum) => tx.add_autnum(&autnum).await,
+                RdapResponse::Network(network) => tx.add_network(&network).await,
                 _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
             }?;
         } else {
@@ -210,7 +224,40 @@ async fn load_rdap_template(
                     tx.add_autnum(&autnum).await?;
                 }
             }
-            _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
+            Template::Network { network, ids } => {
+                for id in ids {
+                    debug!("adding network from template for {id:?}");
+                    let mut network = network.clone();
+                    match id.network_id {
+                        NetworkIdType::Cidr(cidr) => match cidr {
+                            IpNet::V4(v4) => {
+                                network.start_address = Some(v4.network().to_string());
+                                network.end_address = Some(v4.broadcast().to_string());
+                                network.ip_version = Some("v4".to_string());
+                            }
+                            IpNet::V6(v6) => {
+                                network.start_address = Some(v6.network().to_string());
+                                network.end_address = Some(v6.broadcast().to_string());
+                                network.ip_version = Some("v6".to_string());
+                            }
+                        },
+                        NetworkIdType::Range {
+                            start_address,
+                            end_address,
+                        } => {
+                            let addr: IpAddr = start_address.parse()?;
+                            if addr.is_ipv4() {
+                                network.ip_version = Some("v4".to_string());
+                            } else {
+                                network.ip_version = Some("v6".to_string());
+                            }
+                            network.start_address = Some(start_address);
+                            network.end_address = Some(end_address);
+                        }
+                    }
+                    tx.add_network(&network).await?;
+                }
+            }
         };
     } else {
         return Err(RdapServerError::NonJsonFile(path_name.to_owned()));
@@ -221,12 +268,13 @@ async fn load_rdap_template(
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+    use cidr_utils::cidr::IpCidr;
     use icann_rdap_common::response::domain::Domain;
 
     use super::*;
 
     #[test]
-    fn GIVEN_template_WHEN_serialize_THEN_success() {
+    fn GIVEN_template_domain_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Domain {
             domain: Domain::basic().ldh_name("foo.example").build(),
@@ -244,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_text_WHEN_deserialize_THEN_success() {
+    fn GIVEN_template_domain_text_WHEN_deserialize_THEN_success() {
         // GIVEN
         let json_text = r#"{"domain":{"objectClassName":"domain","ldhName":"foo.example"},"ids":[{"ldhName":"bar.example"}]}"#;
 
@@ -255,6 +303,100 @@ mod tests {
         let expected = Template::Domain {
             domain: Domain::basic().ldh_name("foo.example").build(),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
+        };
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn GIVEN_template_network_with_cidr_WHEN_serialize_THEN_success() {
+        // GIVEN
+        let template = Template::Network {
+            network: Network::basic()
+                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
+                .build(),
+            ids: vec![NetworkId::builder()
+                .network_id(NetworkIdType::Cidr(
+                    "10.0.0.0/24".parse().expect("ipnet parsing"),
+                ))
+                .build()],
+        };
+
+        // WHEN
+        let actual = serde_json::to_string(&template).expect("serializing template");
+
+        // THEN
+        assert_eq!(
+            actual,
+            r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":"10.0.0.0/24"}]}"#
+        );
+    }
+
+    #[test]
+    fn GIVEN_template_network_with_start_and_end_WHEN_serialize_THEN_success() {
+        // GIVEN
+        let template = Template::Network {
+            network: Network::basic()
+                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
+                .build(),
+            ids: vec![NetworkId::builder()
+                .network_id(NetworkIdType::Range {
+                    start_address: "10.0.0.0".to_string(),
+                    end_address: "10.0.0.255".to_string(),
+                })
+                .build()],
+        };
+
+        // WHEN
+        let actual = serde_json::to_string(&template).expect("serializing template");
+
+        // THEN
+        assert_eq!(
+            actual,
+            r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#
+        );
+    }
+
+    #[test]
+    fn GIVEN_template_network_with_cidr_text_WHEN_deserialize_THEN_success() {
+        // GIVEN
+        let text = r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":"10.0.0.0/24"}]}"#;
+
+        // WHEN
+        let actual: Template = serde_json::from_str(text).expect("deserialize network template");
+
+        // THEN
+        let expected = Template::Network {
+            network: Network::basic()
+                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
+                .build(),
+            ids: vec![NetworkId::builder()
+                .network_id(NetworkIdType::Cidr(
+                    "10.0.0.0/24".parse().expect("ipnet parsing"),
+                ))
+                .build()],
+        };
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn GIVEN_template_network_with_range_text_WHEN_deserialize_THEN_success() {
+        // GIVEN
+        let text = r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#;
+
+        // WHEN
+        let actual: Template = serde_json::from_str(text).expect("deserialize network template");
+
+        // THEN
+        let expected = Template::Network {
+            network: Network::basic()
+                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
+                .build(),
+            ids: vec![NetworkId::builder()
+                .network_id(NetworkIdType::Range {
+                    start_address: "10.0.0.0".to_string(),
+                    end_address: "10.0.0.255".to_string(),
+                })
+                .build()],
         };
         assert_eq!(actual, expected);
     }
