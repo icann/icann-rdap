@@ -117,7 +117,7 @@ where
 pub(crate) type DynStoreState = Arc<dyn StoreState + Send + Sync>;
 
 #[async_trait]
-pub trait StoreState {
+pub trait StoreState: std::fmt::Debug {
     async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError>;
 }
 
@@ -134,11 +134,23 @@ impl AppState<Mem> {
     }
 }
 
+impl std::fmt::Debug for AppState<Mem> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppState<Mem>").finish()
+    }
+}
+
 impl AppState<Pg> {
     pub async fn new_pg(config: PgConfig) -> Result<AppState<Pg>, RdapServerError> {
         let storage = Pg::new(config).await?;
         storage.init().await?;
         Ok(AppState::<Pg> { storage })
+    }
+}
+
+impl std::fmt::Debug for AppState<Pg> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AppState<Pg>").finish()
     }
 }
 
