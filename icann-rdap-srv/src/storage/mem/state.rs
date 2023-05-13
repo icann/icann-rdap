@@ -1,4 +1,8 @@
-use std::{net::IpAddr, path::PathBuf};
+use std::{
+    net::IpAddr,
+    path::PathBuf,
+    time::{Duration, SystemTime},
+};
 
 use buildstructor::Builder;
 use icann_rdap_common::response::{
@@ -8,6 +12,7 @@ use icann_rdap_common::response::{
 use ipnet::IpNet;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tokio::time::sleep;
 use tracing::{debug, info, warn};
 
 use crate::{
@@ -115,10 +120,14 @@ pub enum NetworkIdType {
 /// ```
 /// In this example, 2 domains will be created for "foo.example" and "bar.exaple" using
 /// the template.
-pub(crate) async fn load_state(mem: &Mem) -> Result<(), RdapServerError> {
+pub(crate) async fn load_state(mem: &Mem, truncate: bool) -> Result<(), RdapServerError> {
     let mut json_count: usize = 0;
     let mut template_count: usize = 0;
-    let mut tx = mem.new_tx().await?;
+    let mut tx = if truncate {
+        mem.new_truncate_tx().await?
+    } else {
+        mem.new_tx().await?
+    };
     let path = PathBuf::from(&mem.config.state_dir);
     if !path.exists() || !path.is_dir() {
         warn!(
@@ -266,6 +275,35 @@ async fn load_rdap_template(
         return Err(RdapServerError::NonJsonFile(path_name.to_owned()));
     }
     Ok(())
+}
+
+pub(crate) async fn reload_state(mem: Mem) -> Result<(), RdapServerError> {
+    let update_path = PathBuf::from(&mem.config.state_dir);
+    let update_path = update_path.join("update");
+    let reload_path = PathBuf::from(&mem.config.state_dir);
+    let reload_path = reload_path.join("reload");
+    let mut last_time = SystemTime::now();
+    loop {
+        sleep(Duration::from_millis(1000)).await;
+        let update_meta = tokio::fs::metadata(&update_path).await;
+        if update_meta.is_ok() {
+            let modified = update_meta.unwrap().modified()?;
+            if modified > last_time {
+                last_time = modified;
+                info!("State being updated.");
+                load_state(&mem, false).await?;
+            }
+        };
+        let reload_meta = tokio::fs::metadata(&reload_path).await;
+        if reload_meta.is_ok() {
+            let modified = reload_meta.unwrap().modified()?;
+            if modified > last_time {
+                last_time = modified;
+                info!("State being reloaded.");
+                load_state(&mem, true).await?;
+            }
+        };
+    }
 }
 
 #[cfg(test)]

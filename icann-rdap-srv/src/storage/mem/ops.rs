@@ -15,7 +15,11 @@ use crate::{
     storage::{StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, state::load_state, tx::MemTx};
+use super::{
+    config::MemConfig,
+    state::{load_state, reload_state},
+    tx::MemTx,
+};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -55,7 +59,10 @@ impl Default for Mem {
 #[async_trait]
 impl StoreOps for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
-        load_state(self).await?;
+        load_state(self, false).await?;
+        if self.config.auto_reload.unwrap_or(false) {
+            tokio::spawn(reload_state(self.clone()));
+        }
         Ok(())
     }
 

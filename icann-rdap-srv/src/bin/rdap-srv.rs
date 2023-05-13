@@ -36,7 +36,12 @@ async fn main() -> Result<(), RdapServerError> {
     let storage = get_or(STORAGE, "memory");
     let storage_type = if storage == "memory" {
         let mirror_dir = get_or(STATE_DIR, "/tmp/rdap-srv/state");
-        StorageType::Memory(MemConfig::builder().state_dir(mirror_dir).build())
+        StorageType::Memory(
+            MemConfig::builder()
+                .state_dir(mirror_dir)
+                .auto_reload(true)
+                .build(),
+        )
     } else if storage == "postgres" {
         let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
         StorageType::Postgres(PgConfig::builder().db_url(db_url).build())
