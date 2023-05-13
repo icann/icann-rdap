@@ -1,4 +1,4 @@
-use std::{fs, net::IpAddr, path::PathBuf};
+use std::{net::IpAddr, path::PathBuf};
 
 use buildstructor::Builder;
 use icann_rdap_common::response::{
@@ -127,9 +127,11 @@ pub(crate) async fn load_state(mem: &Mem) -> Result<(), RdapServerError> {
         );
         return Ok(());
     }
-    for entry in std::fs::read_dir(path)? {
-        let entry = entry?.path();
-        let contents = fs::read_to_string(&entry)?;
+
+    let mut entries = tokio::fs::read_dir(path).await?;
+    while let Some(entry) = entries.next_entry().await? {
+        let entry = entry.path();
+        let contents = tokio::fs::read_to_string(&entry).await?;
         if entry.extension().map_or(false, |ext| ext == "template") {
             load_rdap_template(&contents, &entry.to_string_lossy(), &mut tx).await?;
             template_count += 1;
@@ -138,6 +140,7 @@ pub(crate) async fn load_state(mem: &Mem) -> Result<(), RdapServerError> {
             json_count += 1;
         }
     }
+
     info!("{json_count} RDAP JSON files loaded. {template_count} RDAP template files loaded.");
     if json_count == 0 && template_count == 0 {
         warn!("No state loaded. Server has no content to serve.");
