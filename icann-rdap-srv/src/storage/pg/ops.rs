@@ -36,6 +36,10 @@ impl StoreOps for Pg {
         Ok(Box::new(PgTx::new(&self.pg_pool).await?))
     }
 
+    async fn new_truncate_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
+        Ok(Box::new(PgTx::new_truncate(&self.pg_pool).await?))
+    }
+
     async fn get_domain_by_ldh(&self, _ldh: &str) -> Result<RdapServerResponse, RdapServerError> {
         todo!()
     }

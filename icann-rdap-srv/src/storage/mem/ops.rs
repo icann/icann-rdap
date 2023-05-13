@@ -63,6 +63,10 @@ impl StoreOps for Mem {
         Ok(Box::new(MemTx::new(self)))
     }
 
+    async fn new_truncate_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
+        Ok(Box::new(MemTx::new_truncate(self)))
+    }
+
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapServerResponse, RdapServerError> {
         let domains = self.domains.get_ref();
         let result = domains.get(ldh);

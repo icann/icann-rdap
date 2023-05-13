@@ -18,6 +18,31 @@ use icann_rdap_srv::{
 use rstest::rstest;
 
 #[tokio::test]
+async fn GIVEN_domain_in_mem_WHEN_new_truncate_tx_THEN_no_domain_in_mem() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let tx = mem.new_truncate_tx().await.expect("new truncate tx");
+    tx.commit().await.expect("tx commit");
+
+    // THEN
+    let actual = mem
+        .get_domain_by_ldh("foo.example")
+        .await
+        .expect("getting domain by ldh");
+    let RdapServerResponse::Arc(response) = actual else { panic!() };
+    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
+    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    assert_eq!(error.error_code, 404)
+}
+
+#[tokio::test]
 async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_domain_returned() {
     // GIVEN
     let mem = Mem::default();

@@ -15,6 +15,14 @@ impl<'a> PgTx<'a> {
         let db_tx = pg_pool.begin().await?;
         Ok(PgTx { db_tx })
     }
+
+    pub async fn new_truncate(pg_pool: &PgPool) -> Result<PgTx<'a>, RdapServerError> {
+        let mut db_tx = pg_pool.begin().await?;
+        // TODO actually complete this
+        // this is just here to make sure something will compile
+        sqlx::query("truncate domain").execute(&mut db_tx).await?;
+        Ok(PgTx { db_tx })
+    }
 }
 
 #[async_trait]

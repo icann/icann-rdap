@@ -34,6 +34,18 @@ impl MemTx {
             entities: Arc::clone(&mem.entities).get_ref().clone(),
         }
     }
+
+    pub fn new_truncate(mem: &Mem) -> Self {
+        Self {
+            mem: mem.clone(),
+            autnums: RangeMap::new(),
+            ip4: PrefixMap::new(),
+            ip6: PrefixMap::new(),
+            domains: HashMap::new(),
+            nameservers: HashMap::new(),
+            entities: HashMap::new(),
+        }
+    }
 }
 
 #[async_trait]

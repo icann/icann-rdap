@@ -19,6 +19,9 @@ pub trait StoreOps: Send + Sync {
     /// Gets a new transaction.
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError>;
 
+    /// Gets a new transaction in which all the previous data has been truncated (cleared).
+    async fn new_truncate_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError>;
+
     /// Get a domain from storage using the 'ldhName' as the key.
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapServerResponse, RdapServerError>;
 
