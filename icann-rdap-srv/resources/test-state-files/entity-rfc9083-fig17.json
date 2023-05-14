@@ -1,0 +1,73 @@
+{
+  "objectClassName" : "entity",
+  "handle":"fig17",
+  "vcardArray":[
+    "vcard",
+    [
+      ["version", {}, "text", "4.0"],
+      ["fn", {}, "text", "Joe User"],
+      ["kind", {}, "text", "individual"],
+      ["lang", {
+        "pref":"1"
+      }, "language-tag", "fr"],
+      ["lang", {
+        "pref":"2"
+      }, "language-tag", "en"],
+      ["org", {
+        "type":"work"
+      }, "text", "Example"],
+      ["title", {}, "text", "Research Scientist"],
+      ["role", {}, "text", "Project Lead"],
+      ["adr",
+        { "type":"work" },
+        "text",
+        [
+          "",
+          "Suite 1234",
+          "4321 Rue Somewhere",
+          "Quebec",
+          "QC",
+          "G1V 2M2",
+          "Canada"
+        ]
+      ],
+      ["tel",
+        { "type":["work", "voice"], "pref":"1" },
+        "uri", "tel:+1-555-555-1234;ext=102"
+      ],
+      ["email",
+        { "type":"work" },
+        "text", "joe.user@example.com"
+      ]
+    ]
+  ],
+  "status":[ "validated", "locked" ],
+  "remarks":[
+    {
+      "description":[
+        "She sells sea shells down by the sea shore.",
+        "Originally written by Terry Sullivan."
+      ]
+    }
+  ],
+  "links":[
+    {
+      "value":"https://example.com/entity/XXXX",
+      "rel":"self",
+      "href":"https://example.com/entity/XXXX",
+      "type":"application/rdap+json"
+    }
+  ],
+  "port43":"whois.example.net",
+  "events":[
+    {
+      "eventAction":"registration",
+      "eventDate":"1990-12-31T23:59:59Z"
+    },
+    {
+      "eventAction":"last changed",
+      "eventDate":"1991-12-31T23:59:59Z",
+      "eventActor":"joe@example.com"
+    }
+  ]
+}

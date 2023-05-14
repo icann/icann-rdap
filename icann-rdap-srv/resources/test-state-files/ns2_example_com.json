@@ -1,0 +1,5 @@
+{
+  "objectClassName" : "nameserver",
+  "ldhName" : "ns2.example.com",
+  "ipAddresses" : { "v6" : [ "2001:db8::123", "2001:db8::124" ] }
+}

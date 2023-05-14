@@ -290,6 +290,11 @@ pub async fn main() -> Result<(), CliError> {
         OtypeArg::PrettyJson => OutputType::PrettyJson,
     };
 
+    // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.
+    let base_url = cli
+        .base_url
+        .unwrap_or_else(|| "https://rdap-bootstrap.arin.net/bootstrap".to_string());
+
     let client_config = ClientConfig {
         user_agent_suffix: "CLI".to_string(),
     };
@@ -305,6 +310,7 @@ pub async fn main() -> Result<(), CliError> {
             .expect("Error instantiating log output.");
             let output = &mut std::io::stdout();
             let res1 = join!(exec(
+                &base_url,
                 cli.query_value,
                 &query_type,
                 &output_type,
@@ -321,7 +327,14 @@ pub async fn main() -> Result<(), CliError> {
             let pager = pager.clone();
             let (res1, res2) = join!(
                 spawn_blocking(move || minus::dynamic_paging(pager)),
-                exec(cli.query_value, &query_type, &output_type, &client, output)
+                exec(
+                    &base_url,
+                    cli.query_value,
+                    &query_type,
+                    &output_type,
+                    &client,
+                    output
+                )
             );
             res1.unwrap()?;
             res2?;
@@ -333,6 +346,7 @@ pub async fn main() -> Result<(), CliError> {
 }
 
 async fn exec<W: std::io::Write>(
+    base_url: &str,
     query_value: Option<String>,
     query_type: &QueryType,
     output_type: &OutputType,
@@ -349,14 +363,7 @@ async fn exec<W: std::io::Write>(
     } else {
         info!("query is {query_type}");
     }
-    let result = do_query(
-        "https://rdap-bootstrap.arin.net/bootstrap",
-        query_type,
-        output_type,
-        client,
-        &mut output,
-    )
-    .await;
+    let result = do_query(base_url, query_type, output_type, client, &mut output).await;
     match result {
         Ok(_) => Ok(()),
         Err(error) => {

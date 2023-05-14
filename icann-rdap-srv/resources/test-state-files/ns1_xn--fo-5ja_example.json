@@ -1,0 +1,44 @@
+{
+  "objectClassName" : "nameserver",
+  "handle" : "XXXX",
+  "ldhName" : "ns1.xn--fo-5ja.example",
+  "unicodeName" : "ns.fóo.example",
+  "status" : [ "active" ],
+  "ipAddresses" :
+  {
+    "v4": [ "192.0.2.1", "192.0.2.2" ],
+    "v6": [ "2001:db8::123" ]
+  },
+  "remarks" :
+  [
+    {
+      "description" :
+      [
+        "She sells sea shells down by the sea shore.",
+        "Originally written by Terry Sullivan."
+      ]
+    }
+  ],
+  "links" :
+  [
+    {
+      "value" : "https://example.net/nameserver/ns1.xn--fo-5ja.example",
+      "rel" : "self",
+      "href" : "https://example.net/nameserver/ns1.xn--fo-5ja.example",
+      "type" : "application/rdap+json"
+    }
+  ],
+  "port43" : "whois.example.net",
+  "events" :
+  [
+    {
+      "eventAction" : "registration",
+      "eventDate" : "1990-12-31T23:59:59Z"
+    },
+    {
+      "eventAction" : "last changed",
+      "eventDate" : "1991-12-31T23:59:59Z",
+      "eventActor" : "joe@example.com"
+    }
+  ]
+}
