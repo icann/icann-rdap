@@ -36,10 +36,15 @@ pub(crate) enum OutputType {
     JsonExtra,
 }
 
+pub(crate) struct OutputParams {
+    pub output_type: OutputType,
+    pub check_types: Vec<CheckClass>,
+}
+
 pub(crate) async fn do_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_type: &OutputType,
+    output_params: &OutputParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
@@ -49,19 +54,19 @@ pub(crate) async fn do_query<'a, W: std::io::Write>(
         | QueryType::IpV4Cidr(_)
         | QueryType::IpV6Cidr(_)
         | QueryType::AsNumber(_) => {
-            do_inr_query(base_url, query_type, output_type, client, write).await
+            do_inr_query(base_url, query_type, output_params, client, write).await
         }
         QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
-            do_domain_query(base_url, query_type, output_type, client, write).await
+            do_domain_query(base_url, query_type, output_params, client, write).await
         }
-        _ => do_basic_query(base_url, query_type, output_type, None, client, write).await,
+        _ => do_basic_query(base_url, query_type, output_params, None, client, write).await,
     }
 }
 
 async fn do_domain_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_type: &OutputType,
+    output_params: &OutputParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
@@ -75,7 +80,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            transactions = do_output(output_type, &req_data, &response, write, transactions)?;
+            transactions = do_output(output_params, &req_data, &response, write, transactions)?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if let Some(url) = get_related_link(&response.rdap).first() {
@@ -90,13 +95,18 @@ async fn do_domain_query<'a, W: std::io::Write>(
                             source_host: &regr_source_host,
                             source_type: SourceType::DomainRegistrar,
                         };
-                        transactions =
-                            do_output(output_type, &regr_req_data, &response, write, transactions)?;
+                        transactions = do_output(
+                            output_params,
+                            &regr_req_data,
+                            &response,
+                            write,
+                            transactions,
+                        )?;
                     }
                     Err(error) => return Err(CliError::RdapClient(error)),
                 }
             }
-            do_final_output(output_type, write, transactions)?;
+            do_final_output(output_params, write, transactions)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -106,7 +116,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
 async fn do_inr_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_type: &OutputType,
+    output_params: &OutputParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
@@ -120,8 +130,8 @@ async fn do_inr_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::UncategorizedRegistry,
             };
-            transactions = do_output(output_type, &req_data, &response, write, transactions)?;
-            do_final_output(output_type, write, transactions)?;
+            transactions = do_output(output_params, &req_data, &response, write, transactions)?;
+            do_final_output(output_params, write, transactions)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -131,7 +141,7 @@ async fn do_inr_query<'a, W: std::io::Write>(
 async fn do_basic_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_type: &OutputType,
+    output_params: &OutputParams,
     req_data: Option<&'a RequestData<'a>>,
     client: &Client,
     write: &mut W,
@@ -154,8 +164,8 @@ async fn do_basic_query<'a, W: std::io::Write>(
                     source_type: SourceType::UncategorizedRegistry,
                 }
             };
-            transactions = do_output(output_type, &req_data, &response, write, transactions)?;
-            do_final_output(output_type, write, transactions)?;
+            transactions = do_output(output_params, &req_data, &response, write, transactions)?;
+            do_final_output(output_params, write, transactions)?;
         }
         Err(error) => return Err(CliError::RdapClient(error)),
     };
@@ -163,13 +173,13 @@ async fn do_basic_query<'a, W: std::io::Write>(
 }
 
 fn do_output<'a, W: std::io::Write>(
-    output_type: &OutputType,
+    output_params: &OutputParams,
     req_data: &'a RequestData,
     response: &'a ResponseData,
     write: &mut W,
     mut transactions: RequestResponses<'a>,
 ) -> Result<RequestResponses<'a>, CliError> {
-    match output_type {
+    match output_params.output_type {
         OutputType::AnsiText => {
             let mut skin = MadSkin::default_dark();
             skin.set_headers_fg(Yellow);
@@ -192,11 +202,7 @@ fn do_output<'a, W: std::io::Write>(
                     heading_level: 1,
                     root: &response.rdap,
                     parent_type: response.rdap.get_type(),
-                    check_types: &[
-                        CheckClass::Informational,
-                        CheckClass::SpecificationWarning,
-                        CheckClass::SpecificationError,
-                    ],
+                    check_types: &output_params.check_types,
                     options: &MdOptions::default(),
                     req_data,
                 }),
@@ -209,11 +215,7 @@ fn do_output<'a, W: std::io::Write>(
                 heading_level: 1,
                 root: &response.rdap,
                 parent_type: response.rdap.get_type(),
-                check_types: &[
-                    CheckClass::Informational,
-                    CheckClass::SpecificationWarning,
-                    CheckClass::SpecificationError
-                ],
+                check_types: &output_params.check_types,
                 options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,
@@ -239,11 +241,11 @@ fn do_output<'a, W: std::io::Write>(
 }
 
 fn do_final_output<W: std::io::Write>(
-    output_type: &OutputType,
+    output_params: &OutputParams,
     write: &mut W,
     transactions: RequestResponses<'_>,
 ) -> Result<(), CliError> {
-    match output_type {
+    match output_params.output_type {
         OutputType::Json => {
             for req_res in transactions {
                 writeln!(

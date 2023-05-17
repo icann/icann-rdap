@@ -1,5 +1,7 @@
+use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
+use query::OutputParams;
 use std::str::FromStr;
 
 use clap::{ArgGroup, Parser, ValueEnum};
@@ -117,6 +119,16 @@ struct Cli {
     )]
     output_type: OtypeArg,
 
+    /// Check type.
+    ///
+    /// Specifies the type of checks to conduct on the RDAP
+    /// responses. These are RDAP specific checks and not
+    /// JSON validation which is done automatically. This
+    /// argument may be specified multiple times to include
+    /// multiple check types.
+    #[arg(short = 'C', long, required = false, value_enum)]
+    check_type: Vec<CheckTypeArg>,
+
     /// Pager Usage.
     ///
     /// Determines how to handle paging output.
@@ -217,6 +229,18 @@ enum OtypeArg {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum CheckTypeArg {
+    /// Informational items.
+    Info,
+
+    /// Checks for specification warnings.
+    SpecWarn,
+
+    /// Checks for specficiation errors.
+    SpecError,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum LogLevel {
     /// No logging.
     Off,
@@ -293,6 +317,28 @@ pub async fn main() -> anyhow::Result<()> {
         OtypeArg::JsonExtra => OutputType::JsonExtra,
     };
 
+    let check_types = if cli.check_type.is_empty() {
+        vec![
+            CheckClass::Informational,
+            CheckClass::SpecificationWarning,
+            CheckClass::SpecificationError,
+        ]
+    } else {
+        cli.check_type
+            .iter()
+            .map(|c| match c {
+                CheckTypeArg::Info => CheckClass::Informational,
+                CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
+                CheckTypeArg::SpecError => CheckClass::SpecificationError,
+            })
+            .collect::<Vec<CheckClass>>()
+    };
+
+    let output_params = OutputParams {
+        output_type,
+        check_types,
+    };
+
     // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.
     let base_url = cli
         .base_url
@@ -316,7 +362,7 @@ pub async fn main() -> anyhow::Result<()> {
                 &base_url,
                 cli.query_value,
                 &query_type,
-                &output_type,
+                &output_params,
                 &client,
                 output,
             ));
@@ -334,7 +380,7 @@ pub async fn main() -> anyhow::Result<()> {
                     &base_url,
                     cli.query_value,
                     &query_type,
-                    &output_type,
+                    &output_params,
                     &client,
                     output
                 )
@@ -352,7 +398,7 @@ async fn exec<W: std::io::Write>(
     base_url: &str,
     query_value: Option<String>,
     query_type: &QueryType,
-    output_type: &OutputType,
+    output_params: &OutputParams,
     client: &Client,
     mut output: W,
 ) -> Result<(), CliError> {
@@ -366,7 +412,7 @@ async fn exec<W: std::io::Write>(
     } else {
         info!("query is {query_type}");
     }
-    let result = do_query(base_url, query_type, output_type, client, &mut output).await;
+    let result = do_query(base_url, query_type, output_params, client, &mut output).await;
     match result {
         Ok(_) => Ok(()),
         Err(error) => {
