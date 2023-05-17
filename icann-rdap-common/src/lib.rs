@@ -1,5 +1,6 @@
 pub mod check;
 pub mod client;
+pub mod iana;
 pub mod media_types;
 pub mod response;
 
