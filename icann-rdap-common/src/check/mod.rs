@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumMessage};
 
-// use crate::md::MdParams;
-
 pub mod autnum;
 pub mod domain;
 pub mod entity;
@@ -77,22 +75,6 @@ impl<'a> CheckParams<'a> {
             parent_type,
         }
     }
-
-    // pub fn from_md(md_params: MdParams<'a>, parent_type: TypeId) -> Self {
-    //     CheckParams {
-    //         do_subchecks: false,
-    //         root: md_params.root,
-    //         parent_type,
-    //     }
-    // }
-
-    // pub fn from_md_no_parent(md_params: MdParams<'a>) -> Self {
-    //     CheckParams {
-    //         do_subchecks: false,
-    //         root: md_params.root,
-    //         parent_type: md_params.parent_type,
-    //     }
-    // }
 }
 
 impl GetChecks for RdapResponse {
