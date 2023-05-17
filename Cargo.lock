@@ -32,6 +32,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.71"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
+
+[[package]]
 name = "async-trait"
 version = "0.1.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1076,6 +1082,7 @@ dependencies = [
 name = "icann-rdap-cli"
 version = "0.0.5"
 dependencies = [
+ "anyhow",
  "chrono",
  "clap",
  "const_format",

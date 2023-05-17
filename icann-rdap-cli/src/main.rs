@@ -263,7 +263,7 @@ impl From<&LogLevel> for LevelFilter {
 }
 
 #[tokio::main]
-pub async fn main() -> Result<(), CliError> {
+pub async fn main() -> anyhow::Result<()> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();

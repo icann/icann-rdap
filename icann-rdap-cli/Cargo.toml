@@ -16,6 +16,7 @@ path = "src/main.rs"
 icann-rdap-client = { path = "../icann-rdap-client" }
 icann-rdap-common = { path = "../icann-rdap-common" }
 
+anyhow.workspace = true
 clap.workspace = true
 chrono.workspace = true
 const_format.workspace = true
