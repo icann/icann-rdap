@@ -51,7 +51,7 @@ Start the server:
 
 Query the server with the client:
 
-    target/release/rdap -B http://localhost:3000 xn--fo-5ja.example
+    target/release/rdap -B http://localhost:3000/rdap xn--fo-5ja.example
 
 Profit!
 

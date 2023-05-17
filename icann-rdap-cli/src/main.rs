@@ -1,11 +1,10 @@
+use icann_rdap_common::client::create_client;
+use icann_rdap_common::client::ClientConfig;
 use std::str::FromStr;
 
 use clap::{ArgGroup, Parser, ValueEnum};
 use error::CliError;
-use icann_rdap_client::{
-    client::{create_client, ClientConfig},
-    query::qtype::QueryType,
-};
+use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::VERSION;
 use is_terminal::IsTerminal;
 use query::{BridgeWriter, OutputType};

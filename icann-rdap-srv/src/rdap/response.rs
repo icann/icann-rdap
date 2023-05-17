@@ -5,17 +5,20 @@ use axum::{
     Json,
 };
 use http::StatusCode;
-use icann_rdap_common::response::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    error::Error,
-    help::Help,
-    nameserver::Nameserver,
-    network::Network,
-    search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
-    types::Common,
-    RdapResponse,
+use icann_rdap_common::{
+    media_types::RDAP_MEDIA_TYPE,
+    response::{
+        autnum::Autnum,
+        domain::Domain,
+        entity::Entity,
+        error::Error,
+        help::Help,
+        nameserver::Nameserver,
+        network::Network,
+        search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
+        types::Common,
+        RdapResponse,
+    },
 };
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -44,7 +47,7 @@ lazy_static! {
         )));
 }
 
-pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", r#"application/rdap"#)];
+pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]

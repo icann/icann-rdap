@@ -1,13 +1,17 @@
 use buildstructor::Builder;
+use lazy_static::lazy_static;
 use reqwest::{
     header::{self, HeaderValue},
     Client,
 };
 
-use crate::RdapClientError;
-
+use crate::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
 #[cfg(not(target_arch = "wasm32"))]
-use icann_rdap_common::VERSION;
+use crate::VERSION;
+
+lazy_static! {
+    static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
+}
 
 #[derive(Builder)]
 /// Configures the HTTP client.
@@ -30,11 +34,11 @@ impl Default for ClientConfig {
 /// uses cases creating only one client per process is
 /// necessary.
 #[allow(unused_variables)] // for config and wasm32
-pub fn create_client(config: &ClientConfig) -> Result<Client, RdapClientError> {
+pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,
-        HeaderValue::from_static("application/rdap+json, application/json"),
+        HeaderValue::from_static(&ACCEPT_HEADER_VALUES),
     );
     let client = reqwest::Client::builder();
 

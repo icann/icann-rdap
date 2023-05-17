@@ -1125,6 +1125,7 @@ dependencies = [
  "cidr-utils",
  "const_format",
  "lazy_static",
+ "reqwest",
  "serde",
  "serde_json",
  "strum",
