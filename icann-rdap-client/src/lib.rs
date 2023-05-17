@@ -5,7 +5,6 @@ use icann_rdap_common::response::RdapResponseError;
 use reqwest::Url;
 use thiserror::Error;
 
-pub mod check;
 pub mod client;
 pub mod md;
 pub mod query;

@@ -1,7 +1,9 @@
+use icann_rdap_common::check::CheckClass;
+use icann_rdap_common::check::CheckParams;
+use icann_rdap_common::check::GetChecks;
 use std::io::ErrorKind;
 
 use icann_rdap_client::{
-    check::{CheckClass, CheckParams, GetChecks},
     md::{MdOptions, MdParams, ToMd},
     query::{
         qtype::QueryType,

@@ -1,8 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::search::{
-    DomainSearchResults, EntitySearchResults, NameserverSearchResults,
-};
+use crate::response::search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults};
 
 use super::{CheckParams, Checks, GetChecks, GetSubChecks};
 

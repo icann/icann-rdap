@@ -1,12 +1,10 @@
+use crate::request::RequestData;
 use std::{any::TypeId, char};
 
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::{check::CheckParams, response::RdapResponse};
 use strum::EnumMessage;
 
-use crate::{
-    check::{CheckClass, Checks, CHECK_CLASS_LEN},
-    request::RequestData,
-};
+use icann_rdap_common::check::{CheckClass, Checks, CHECK_CLASS_LEN};
 
 use self::string::StringUtil;
 
@@ -137,4 +135,27 @@ pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
             ))
         });
     md
+}
+
+pub(crate) trait FromMd<'a> {
+    fn from_md(md_params: MdParams<'a>, parent_type: TypeId) -> Self;
+    fn from_md_no_parent(md_params: MdParams<'a>) -> Self;
+}
+
+impl<'a> FromMd<'a> for CheckParams<'a> {
+    fn from_md(md_params: MdParams<'a>, parent_type: TypeId) -> Self {
+        CheckParams {
+            do_subchecks: false,
+            root: md_params.root,
+            parent_type,
+        }
+    }
+
+    fn from_md_no_parent(md_params: MdParams<'a>) -> Self {
+        CheckParams {
+            do_subchecks: false,
+            root: md_params.root,
+            parent_type: md_params.parent_type,
+        }
+    }
 }

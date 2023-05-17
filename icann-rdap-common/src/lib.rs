@@ -1,3 +1,4 @@
+pub mod check;
 pub mod media_types;
 pub mod response;
 

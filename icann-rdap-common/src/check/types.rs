@@ -1,7 +1,6 @@
 use std::any::TypeId;
 
-use chrono::DateTime;
-use icann_rdap_common::{
+use crate::{
     media_types::RDAP_MEDIA_TYPE,
     response::{
         autnum::Autnum,
@@ -14,6 +13,7 @@ use icann_rdap_common::{
         },
     },
 };
+use chrono::DateTime;
 use lazy_static::lazy_static;
 
 use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
@@ -241,7 +241,7 @@ impl GetSubChecks for ObjectCommon {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{
+    use crate::response::{
         domain::Domain,
         entity::Entity,
         types::{Common, Extension, Link, ObjectCommon},

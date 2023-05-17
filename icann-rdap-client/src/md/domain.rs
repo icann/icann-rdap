@@ -2,8 +2,9 @@ use std::any::TypeId;
 
 use icann_rdap_common::response::domain::{Domain, Variant};
 
-use crate::check::{CheckParams, GetChecks, GetSubChecks};
+use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
+use super::FromMd;
 use super::{
     string::StringListUtil,
     string::StringUtil,

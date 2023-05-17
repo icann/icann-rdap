@@ -1,7 +1,8 @@
+use icann_rdap_common::check::Checks;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
-use crate::{check::Checks, query::request::ResponseData};
+use crate::query::request::ResponseData;
 
 #[derive(Serialize, Deserialize, Display, Clone, Copy)]
 pub enum SourceType {

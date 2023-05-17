@@ -1,21 +1,21 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::error::Error;
+use crate::response::help::Help;
 
 use super::{CheckParams, Checks, GetChecks, GetSubChecks};
 
-impl GetChecks for Error {
+impl GetChecks for Help {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = if params.do_subchecks {
             let sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Error>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Help>()));
             sub_checks
         } else {
             Vec::new()
         };
         Checks {
-            struct_name: "Error",
+            struct_name: "Help",
             items: Vec::new(),
             sub_checks,
         }

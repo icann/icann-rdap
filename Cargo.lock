@@ -1124,8 +1124,11 @@ dependencies = [
  "chrono",
  "cidr-utils",
  "const_format",
+ "lazy_static",
  "serde",
  "serde_json",
+ "strum",
+ "strum_macros",
  "thiserror",
 ]
 

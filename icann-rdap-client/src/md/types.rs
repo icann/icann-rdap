@@ -6,12 +6,14 @@ use icann_rdap_common::response::types::{
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
 use strum::EnumMessage;
 
-use crate::check::{CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN};
+use icann_rdap_common::check::{
+    CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN,
+};
 
 use super::string::StringUtil;
 use super::table::{MultiPartTable, ToMpTable};
-use super::ToMd;
 use super::{checks_ul, MdParams, HR};
+use super::{FromMd, ToMd};
 
 impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {

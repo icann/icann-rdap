@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::domain::Domain;
+use crate::response::domain::Domain;
 
 use super::{Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
