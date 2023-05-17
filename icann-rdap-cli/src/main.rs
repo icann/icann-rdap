@@ -203,11 +203,14 @@ enum OtypeArg {
     /// Results are rendered as Markdown in plain text.
     Markdown,
 
-    /// Results are output as JSON.
+    /// Results are output as RDAP JSON.
     Json,
 
-    /// Results are output as Pretty JSON.
+    /// Results are output as Pretty RDAP JSON.
     PrettyJson,
+
+    /// RDAP JSON with extra information.
+    JsonExtra,
 
     /// Automatically determine the output type.
     Auto,
@@ -287,6 +290,7 @@ pub async fn main() -> Result<(), CliError> {
         OtypeArg::Markdown => OutputType::Markdown,
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
+        OtypeArg::JsonExtra => OutputType::JsonExtra,
     };
 
     // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.

@@ -26,11 +26,14 @@ pub(crate) enum OutputType {
     /// Results are rendered as Markdown in plain text.
     Markdown,
 
-    /// Results are output as JSON.
+    /// Results are output as RDAP JSON.
     Json,
 
-    /// Results are output as Pretty JSON.
+    /// Results are output as Pretty RDAP JSON.
     PrettyJson,
+
+    /// RDAP JSON with extra information.
+    JsonExtra,
 }
 
 pub(crate) async fn do_query<'a, W: std::io::Write>(
@@ -241,12 +244,27 @@ fn do_final_output<W: std::io::Write>(
     transactions: RequestResponses<'_>,
 ) -> Result<(), CliError> {
     match output_type {
-        OutputType::Json => writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?,
-        OutputType::PrettyJson => writeln!(
-            write,
-            "{}",
-            serde_json::to_string_pretty(&transactions).unwrap()
-        )?,
+        OutputType::Json => {
+            for req_res in transactions {
+                writeln!(
+                    write,
+                    "{}",
+                    serde_json::to_string(&req_res.res_data.rdap).unwrap()
+                )?;
+            }
+        }
+        OutputType::PrettyJson => {
+            for req_res in transactions {
+                writeln!(
+                    write,
+                    "{}",
+                    serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
+                )?;
+            }
+        }
+        OutputType::JsonExtra => {
+            writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
+        }
         _ => {} // do nothing
     };
     Ok(())
