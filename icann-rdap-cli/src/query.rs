@@ -1,6 +1,8 @@
+use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::GetChecks;
+use simplelog::error;
 use std::io::ErrorKind;
 
 use icann_rdap_client::{
@@ -39,6 +41,7 @@ pub(crate) enum OutputType {
 pub(crate) struct OutputParams {
     pub output_type: OutputType,
     pub check_types: Vec<CheckClass>,
+    pub error_on_checks: bool,
 }
 
 pub(crate) async fn do_query<'a, W: std::io::Write>(
@@ -247,7 +250,7 @@ fn do_final_output<W: std::io::Write>(
 ) -> Result<(), CliError> {
     match output_params.output_type {
         OutputType::Json => {
-            for req_res in transactions {
+            for req_res in &transactions {
                 writeln!(
                     write,
                     "{}",
@@ -256,7 +259,7 @@ fn do_final_output<W: std::io::Write>(
             }
         }
         OutputType::PrettyJson => {
-            for req_res in transactions {
+            for req_res in &transactions {
                 writeln!(
                     write,
                     "{}",
@@ -269,6 +272,34 @@ fn do_final_output<W: std::io::Write>(
         }
         _ => {} // do nothing
     };
+
+    let mut checks_found = false;
+    // we don't want to error on informational
+    let error_check_types: Vec<CheckClass> = output_params
+        .check_types
+        .iter()
+        .filter(|ct| *ct != &CheckClass::Informational)
+        .copied()
+        .collect();
+    for req_res in &transactions {
+        let found = traverse_checks(
+            &req_res.checks,
+            &error_check_types,
+            None,
+            &mut |struct_tree, check_item| {
+                if output_params.error_on_checks {
+                    error!("{struct_tree} -> {check_item}")
+                }
+            },
+        );
+        if found {
+            checks_found = true
+        }
+    }
+    if checks_found && output_params.error_on_checks {
+        return Err(CliError::ErrorOnChecks);
+    }
+
     Ok(())
 }
 

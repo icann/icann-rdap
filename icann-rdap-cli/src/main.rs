@@ -129,6 +129,14 @@ struct Cli {
     #[arg(short = 'C', long, required = false, value_enum)]
     check_type: Vec<CheckTypeArg>,
 
+    /// Error if RDAP checks found.
+    ///
+    /// The program will log error messages for non-info
+    /// checks found in the RDAP response(s) and exit with a
+    /// non-zero status.
+    #[arg(long)]
+    error_on_checks: bool,
+
     /// Pager Usage.
     ///
     /// Determines how to handle paging output.
@@ -337,6 +345,7 @@ pub async fn main() -> anyhow::Result<()> {
     let output_params = OutputParams {
         output_type,
         check_types,
+        error_on_checks: cli.error_on_checks,
     };
 
     // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.

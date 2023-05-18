@@ -14,4 +14,6 @@ pub enum CliError {
     Minus(#[from] MinusError),
     #[error("Unknown output type")]
     UnknownOutputType,
+    #[error("RDAP response failed checks.")]
+    ErrorOnChecks,
 }

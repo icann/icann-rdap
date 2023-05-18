@@ -3,7 +3,7 @@ use std::any::TypeId;
 use crate::response::RdapResponse;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
+use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage};
 
 pub mod autnum;
@@ -56,6 +56,18 @@ pub struct CheckItem {
     pub check: Check,
 }
 
+impl std::fmt::Display for CheckItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{} : {}",
+            self.check_class,
+            self.check
+                .get_message()
+                .unwrap_or("[Check has no description]"),
+        ))
+    }
+}
+
 pub trait GetChecks {
     fn get_checks(&self, params: CheckParams) -> Checks;
 }
@@ -98,6 +110,35 @@ pub trait GetSubChecks {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
 
+pub fn traverse_checks<F>(
+    checks: &Checks<'_>,
+    classes: &[CheckClass],
+    parent_tree: Option<String>,
+    f: &mut F,
+) -> bool
+where
+    F: FnMut(&str, &CheckItem),
+{
+    let mut found = false;
+    let struct_tree = format!(
+        "{}/{}",
+        parent_tree.unwrap_or_else(|| "[ROOT]".to_string()),
+        checks.struct_name
+    );
+    for item in &checks.items {
+        if classes.contains(&item.check_class) {
+            f(&struct_tree, item);
+            found = true;
+        }
+    }
+    for sub_checks in &checks.sub_checks {
+        if traverse_checks(sub_checks, classes, Some(struct_tree.clone()), f) {
+            found = true
+        }
+    }
+    found
+}
+
 #[derive(
     Debug, EnumMessage, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord, Clone, Copy,
 )]
@@ -129,4 +170,148 @@ pub enum Check {
     // Events
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use super::{traverse_checks, Check, CheckClass, CheckItem, Checks};
+
+    #[test]
+    fn GIVEN_info_checks_WHEN_traversed_for_info_THEN_found() {
+        // GIVEN
+        let checks = Checks {
+            struct_name: "foo",
+            items: vec![CheckItem {
+                check_class: CheckClass::Informational,
+                check: Check::EmptyDomainVariant,
+            }],
+            sub_checks: vec![],
+        };
+
+        // WHEN
+        let found = traverse_checks(
+            &checks,
+            &[CheckClass::Informational],
+            None,
+            &mut |struct_tree, check_item| println!("{struct_tree} -> {check_item}"),
+        );
+
+        // THEN
+        assert!(found);
+    }
+
+    #[test]
+    fn GIVEN_specwarn_checks_WHEN_traversed_for_info_THEN_not_found() {
+        // GIVEN
+        let checks = Checks {
+            struct_name: "foo",
+            items: vec![CheckItem {
+                check_class: CheckClass::SpecificationWarning,
+                check: Check::EmptyDomainVariant,
+            }],
+            sub_checks: vec![],
+        };
+
+        // WHEN
+        let found = traverse_checks(
+            &checks,
+            &[CheckClass::Informational],
+            None,
+            &mut |struct_tree, check_item| println!("{struct_tree} -> {check_item}"),
+        );
+
+        // THEN
+        assert!(!found);
+    }
+
+    #[test]
+    fn GIVEN_info_subchecks_WHEN_traversed_for_info_THEN_found() {
+        // GIVEN
+        let checks = Checks {
+            struct_name: "foo",
+            items: vec![],
+            sub_checks: vec![Checks {
+                struct_name: "bar",
+                items: vec![CheckItem {
+                    check_class: CheckClass::Informational,
+                    check: Check::EmptyDomainVariant,
+                }],
+                sub_checks: vec![],
+            }],
+        };
+
+        // WHEN
+        let found = traverse_checks(
+            &checks,
+            &[CheckClass::Informational],
+            None,
+            &mut |struct_tree, check_item| println!("{struct_tree} -> {check_item}"),
+        );
+
+        // THEN
+        assert!(found);
+    }
+
+    #[test]
+    fn GIVEN_specwarn_subchecks_WHEN_traversed_for_info_THEN_not_found() {
+        // GIVEN
+        let checks = Checks {
+            struct_name: "foo",
+            items: vec![],
+            sub_checks: vec![Checks {
+                struct_name: "bar",
+                items: vec![CheckItem {
+                    check_class: CheckClass::SpecificationWarning,
+                    check: Check::EmptyDomainVariant,
+                }],
+                sub_checks: vec![],
+            }],
+        };
+
+        // WHEN
+        let found = traverse_checks(
+            &checks,
+            &[CheckClass::Informational],
+            None,
+            &mut |struct_tree, check_item| println!("{struct_tree} -> {check_item}"),
+        );
+
+        // THEN
+        assert!(!found);
+    }
+
+    #[test]
+    fn GIVEN_checks_and_subchecks_WHEN_traversed_THEN_tree_structure_shows_tree() {
+        // GIVEN
+        let checks = Checks {
+            struct_name: "foo",
+            items: vec![CheckItem {
+                check_class: CheckClass::Informational,
+                check: Check::InvalidRdapConformanceParent,
+            }],
+            sub_checks: vec![Checks {
+                struct_name: "bar",
+                items: vec![CheckItem {
+                    check_class: CheckClass::Informational,
+                    check: Check::EmptyDomainVariant,
+                }],
+                sub_checks: vec![],
+            }],
+        };
+
+        // WHEN
+        let mut structs: Vec<String> = vec![];
+        let found = traverse_checks(
+            &checks,
+            &[CheckClass::Informational],
+            None,
+            &mut |struct_tree, _check_item| structs.push(struct_tree.to_string()),
+        );
+
+        // THEN
+        assert!(found);
+        assert!(structs.contains(&"[ROOT]/foo".to_string()));
+        assert!(structs.contains(&"[ROOT]/foo/bar".to_string()));
+    }
 }
