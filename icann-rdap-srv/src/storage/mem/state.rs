@@ -22,6 +22,9 @@ use crate::{
 
 use super::ops::Mem;
 
+pub const UPDATE: &str = "update";
+pub const RELOAD: &str = "reload";
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum Template {
@@ -50,38 +53,38 @@ pub enum Template {
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct DomainId {
     #[serde(rename = "ldhName")]
-    ldh_name: String,
+    pub ldh_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "unicodeName")]
-    unicode_name: Option<String>,
+    pub unicode_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct EntityId {
-    handle: String,
+    pub handle: String,
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct NameserverId {
     #[serde(rename = "ldhName")]
-    ldh_name: String,
+    pub ldh_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "unicodeName")]
-    unicode_name: Option<String>,
+    pub unicode_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct AutnumId {
     #[serde(rename = "startAutnum")]
-    start_autnum: u32,
+    pub start_autnum: u32,
     #[serde(rename = "endAutnum")]
-    end_autnum: u32,
+    pub end_autnum: u32,
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct NetworkId {
     #[serde(rename = "networkId")]
-    network_id: NetworkIdType,
+    pub network_id: NetworkIdType,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -279,9 +282,9 @@ async fn load_rdap_template(
 
 pub(crate) async fn reload_state(mem: Mem) -> Result<(), RdapServerError> {
     let update_path = PathBuf::from(&mem.config.state_dir);
-    let update_path = update_path.join("update");
+    let update_path = update_path.join(UPDATE);
     let reload_path = PathBuf::from(&mem.config.state_dir);
-    let reload_path = reload_path.join("reload");
+    let reload_path = reload_path.join(RELOAD);
     let mut last_time = SystemTime::now();
     loop {
         sleep(Duration::from_millis(1000)).await;

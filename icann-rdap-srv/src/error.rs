@@ -38,6 +38,8 @@ pub enum RdapServerError {
     PrefixLength(#[from] PrefixLenError),
     #[error(transparent)]
     CidrParse(#[from] ipnet::AddrParseError),
+    #[error("RDAP objects do not pass checks.")]
+    ErrorOnChecks,
 }
 
 impl IntoResponse for RdapServerError {
