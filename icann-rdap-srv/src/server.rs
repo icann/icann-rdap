@@ -34,7 +34,7 @@ pub struct Listener {
 /// Starts the RDAP service.
 impl Listener {
     pub fn listen(config: &ListenConfig) -> Result<Self, RdapServerError> {
-        tracing::info!("dialtone version {}", VERSION);
+        tracing::info!("rdap-srv version {}", VERSION);
 
         #[cfg(debug_assertions)]
         tracing::warn!("Server is running in development mode");
@@ -53,6 +53,22 @@ impl Listener {
             local_addr,
             tcp_listener: listener,
         })
+    }
+
+    pub fn rdap_base(&self) -> String {
+        if self.local_addr.is_ipv4() {
+            format!(
+                "http://{}:{}/rdap",
+                self.local_addr.ip(),
+                self.local_addr.port()
+            )
+        } else {
+            format!(
+                "http://[{}]:{}/rdap",
+                self.local_addr.ip(),
+                self.local_addr.port()
+            )
+        }
     }
 
     pub async fn start_server(self, config: &ServiceConfig) -> Result<(), RdapServerError> {

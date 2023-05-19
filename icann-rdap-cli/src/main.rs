@@ -134,7 +134,7 @@ struct Cli {
     /// The program will log error messages for non-info
     /// checks found in the RDAP response(s) and exit with a
     /// non-zero status.
-    #[arg(long)]
+    #[arg(long, env = "RDAP_ERROR_ON_CHECK")]
     error_on_checks: bool,
 
     /// Pager Usage.

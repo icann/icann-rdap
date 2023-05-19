@@ -4,7 +4,7 @@ use strum_macros::Display;
 use crate::storage::{mem::config::MemConfig, pg::config::PgConfig};
 
 /// RDAP server listening configuration.
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Default)]
 pub struct ListenConfig {
     /// If specified, determines the IP address of the interface to bind to.
     /// If unspecified, the server will bind all interfaces.

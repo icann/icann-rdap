@@ -32,3 +32,22 @@ simplelog.workspace = true
 termimad.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+
+icann-rdap-srv = { path = "../icann-rdap-srv" }
+
+# cli assertions
+assert_cmd = "2.0.11"
+
+# CIDR utilities
+cidr-utils = "0.5"
+
+# fixture testings
+rstest = "0.17.0"
+
+# test directories
+test_dir = "0.2.0"
+
+# tracing
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
