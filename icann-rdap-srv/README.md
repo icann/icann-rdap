@@ -40,14 +40,14 @@ in the `target/release` directory.
 
 Create directory in /tmp:
 
-    mkdir -p /tmp/rdap-srv/state
+    mkdir -p /tmp/rdap-srv/data
 
-Copy the files from icann-rdap-srv/resources/test-state-files and place them in the directory
+Copy the files from icann-rdap-srv/resources/test-data-files and place them in the directory
 created above.
 
 Start the server:
 
-    RDAP_SRV_LOG=debug RDAP_SRV_STATE_DIR=/tmp/rdap-srv/state target/release/rdap-srv
+    RDAP_SRV_LOG=debug RDAP_SRV_DATA_DIR=/tmp/rdap-srv/data target/release/rdap-srv
 
 Query the server with the client:
 
@@ -66,11 +66,11 @@ placed in a `.env` in the current directory.
 * "RDAP_SRV_LISTEN_PORT" - the port to listen on. Defaults to 3000.
 * "RDAP_SRV_STORAGE" - either "mem" or "pg", but "pg" doesn't do anything.
 * "RDAP_SRV_DB_URL" - database URL when using "pg" storage.
-* "RDAP_SRV_STATE_DIR" - the directory containing the files used my memory storage.
+* "RDAP_SRV_DATA_DIR" - the directory containing the files used for storage.
 
 ## Memory Storage
 
-The state for the memory storage is specified by the "RDAP_SRV_STATE_DIR" environment variable.
+The data for the memory storage is specified by the "RDAP_SRV_DATA_DIR" environment variable.
 Files in this directory are either valid RDAP JSON files, or template files containing valid
 RDAP JSON. Files ending in `.json` are considered to be RDAP JSON, and files ending in `.template`
 are considered to be template files.
@@ -102,8 +102,8 @@ The IDs array differs for every object class:
 * ip: either `{"networkId": {"startAddress": "xxx.xxx.xxx.xxx", "endAddress": "xxx.xxx.xxx.xxx"}}` or `{"networkId": "xxx.xxx.xxx.xxx/yyy"}`
 
 Memory storage supports hot reloading. This can be done by "touching" either the file
-named "update" or "reload" in the state directory. The "update" file triggers an update
-but does not remove any previous data unless that data exists in the state directory files.
+named "update" or "reload" in the data directory. The "update" file triggers an update
+but does not remove any previous data unless that data exists in the data directory files.
 The "reload" file triggers a full reload, removing all previous data and replacing it with
-the data from the files in the state directory.
+the data from the files in the data directory.
 

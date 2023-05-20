@@ -19,6 +19,7 @@ use crate::{
     error::RdapServerError,
     rdap::router::rdap_router,
     storage::{
+        data::{load_data, reload_data},
         mem::{config::MemConfig, ops::Mem},
         pg::{config::PgConfig, ops::Pg},
         StoreOps,
@@ -71,12 +72,12 @@ impl Listener {
         }
     }
 
-    pub async fn start_server(self, config: &ServiceConfig) -> Result<(), RdapServerError> {
-        if let StorageType::Memory(config) = &config.storage_type {
-            let app_state = AppState::new_mem(config.clone()).await?;
+    pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
+        if let StorageType::Memory(config) = &service_config.storage_type {
+            let app_state = AppState::new_mem(config.clone(), service_config).await?;
             self.start_with_state(app_state).await?;
-        } else if let StorageType::Postgres(config) = &config.storage_type {
-            let app_state = AppState::new_pg(config.clone()).await?;
+        } else if let StorageType::Postgres(config) = &service_config.storage_type {
+            let app_state = AppState::new_pg(config.clone(), service_config).await?;
             self.start_with_state(app_state).await?;
         };
         Ok(())
@@ -95,6 +96,17 @@ impl Listener {
             .await?;
         Ok(())
     }
+}
+
+async fn init_data(
+    store: Box<dyn StoreOps>,
+    config: &ServiceConfig,
+) -> Result<(), RdapServerError> {
+    load_data(config, &*store, false).await?;
+    if config.auto_reload {
+        tokio::spawn(reload_data(store, config.clone()));
+    }
+    Ok(())
 }
 
 fn app_router<T>(state: AppState<T>) -> Router
@@ -143,9 +155,13 @@ pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
 }
 
 impl AppState<Mem> {
-    pub async fn new_mem(config: MemConfig) -> Result<AppState<Mem>, RdapServerError> {
+    pub async fn new_mem(
+        config: MemConfig,
+        service_config: &ServiceConfig,
+    ) -> Result<AppState<Mem>, RdapServerError> {
         let storage = Mem::new(config);
         storage.init().await?;
+        init_data(Box::new(storage.clone()), service_config).await?;
         Ok(AppState::<Mem> { storage })
     }
 }
@@ -157,9 +173,13 @@ impl std::fmt::Debug for AppState<Mem> {
 }
 
 impl AppState<Pg> {
-    pub async fn new_pg(config: PgConfig) -> Result<AppState<Pg>, RdapServerError> {
+    pub async fn new_pg(
+        config: PgConfig,
+        service_config: &ServiceConfig,
+    ) -> Result<AppState<Pg>, RdapServerError> {
         let storage = Pg::new(config).await?;
         storage.init().await?;
+        init_data(Box::new(storage.clone()), service_config).await?;
         Ok(AppState::<Pg> { storage })
     }
 }

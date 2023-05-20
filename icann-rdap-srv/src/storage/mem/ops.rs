@@ -15,11 +15,7 @@ use crate::{
     storage::{StoreOps, TxHandle},
 };
 
-use super::{
-    config::MemConfig,
-    state::{load_state, reload_state},
-    tx::MemTx,
-};
+use super::{config::MemConfig, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -48,21 +44,13 @@ impl Mem {
 
 impl Default for Mem {
     fn default() -> Self {
-        Mem::new(
-            MemConfig::builder()
-                .state_dir("/tmp/rdap-srv/state")
-                .build(),
-        )
+        Mem::new(MemConfig::builder().build())
     }
 }
 
 #[async_trait]
 impl StoreOps for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
-        load_state(self, false).await?;
-        if self.config.auto_reload.unwrap_or(false) {
-            tokio::spawn(reload_state(self.clone()));
-        }
         Ok(())
     }
 

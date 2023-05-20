@@ -5,22 +5,39 @@ use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
 use icann_rdap_srv::{
+    config::{ServiceConfig, StorageType},
     rdap::response::{ArcRdapResponse, RdapServerResponse},
     storage::{
-        mem::{
-            config::MemConfig,
-            ops::Mem,
-            state::{
-                AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType, Template,
-            },
+        data::{
+            load_data, AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType,
+            Template,
         },
+        mem::{config::MemConfig, ops::Mem},
         StoreOps,
     },
 };
 use test_dir::{DirBuilder, TestDir};
 
+async fn new_and_init_mem(data_dir: String) -> Mem {
+    let mem_config = MemConfig::builder().build();
+    let mem = Mem::new(mem_config.clone());
+    mem.init().await.expect("initialzing memeory");
+    load_data(
+        &ServiceConfig::builder()
+            .data_dir(data_dir)
+            .auto_reload(false)
+            .storage_type(StorageType::Memory(mem_config))
+            .build(),
+        &mem,
+        false,
+    )
+    .await
+    .expect("loading data");
+    mem
+}
+
 #[tokio::test]
-async fn GIVEN_state_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
+async fn GIVEN_data_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
     // GIVEN
     let ldh_name = "foo.example";
     let temp = TestDir::temp();
@@ -33,11 +50,7 @@ async fn GIVEN_state_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     let actual = mem
@@ -51,7 +64,7 @@ async fn GIVEN_state_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_loaded() {
+async fn GIVEN_data_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_loaded() {
     // GIVEN
     let ldh1 = "foo.example";
     let ldh2 = "bar.example";
@@ -71,11 +84,7 @@ async fn GIVEN_state_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_loa
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     for ldh in [ldh1, ldh2] {
@@ -91,7 +100,7 @@ async fn GIVEN_state_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_loa
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
+async fn GIVEN_data_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
     // GIVEN
     let handle = "foo.example";
     let temp = TestDir::temp();
@@ -104,11 +113,7 @@ async fn GIVEN_state_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     let actual = mem
@@ -129,7 +134,7 @@ async fn GIVEN_state_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loaded() {
+async fn GIVEN_data_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loaded() {
     // GIVEN
     let handle1 = "foo";
     let handle2 = "bar";
@@ -149,11 +154,7 @@ async fn GIVEN_state_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_lo
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     for handle in [handle1, handle2] {
@@ -176,7 +177,7 @@ async fn GIVEN_state_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_lo
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded() {
+async fn GIVEN_data_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded() {
     // GIVEN
     let ldh_name = "ns.foo.example";
     let temp = TestDir::temp();
@@ -189,11 +190,7 @@ async fn GIVEN_state_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     let actual = mem
@@ -210,7 +207,7 @@ async fn GIVEN_state_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_are_loaded() {
+async fn GIVEN_data_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_are_loaded() {
     // GIVEN
     let ldh1 = "ns.foo.example";
     let ldh2 = "ns.bar.example";
@@ -230,11 +227,7 @@ async fn GIVEN_state_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     for ldh in [ldh1, ldh2] {
@@ -250,7 +243,7 @@ async fn GIVEN_state_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
+async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     // GIVEN
     let num = 700u32;
     let temp = TestDir::temp();
@@ -263,11 +256,7 @@ async fn GIVEN_state_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     let actual = mem
@@ -284,7 +273,7 @@ async fn GIVEN_state_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_loaded() {
+async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_loaded() {
     // GIVEN
     let num1 = 700u32;
     let num2 = 800u32;
@@ -310,11 +299,7 @@ async fn GIVEN_state_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_loa
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     for num in [num1, num2] {
@@ -333,7 +318,7 @@ async fn GIVEN_state_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_loa
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
+async fn GIVEN_data_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
     let network = Network::basic()
@@ -347,11 +332,7 @@ async fn GIVEN_state_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     let actual = mem
@@ -371,7 +352,7 @@ async fn GIVEN_state_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_networks_are_loaded() {
+async fn GIVEN_data_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_networks_are_loaded() {
     // GIVEN
     let cidr1 = "10.0.0.0/24";
     let cidr2 = "10.0.1.0/24";
@@ -399,11 +380,7 @@ async fn GIVEN_state_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netw
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     for (cidr, start) in [(cidr1, start1), (cidr2, start2)] {
@@ -425,7 +402,7 @@ async fn GIVEN_state_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netw
 }
 
 #[tokio::test]
-async fn GIVEN_state_dir_with_network_template_with_range_WHEN_mem_init_THEN_networks_are_loaded() {
+async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_networks_are_loaded() {
     // GIVEN
     let start1 = "10.0.0.0";
     let start2 = "10.0.1.0";
@@ -459,11 +436,7 @@ async fn GIVEN_state_dir_with_network_template_with_range_WHEN_mem_init_THEN_net
     .expect("writing file");
 
     // WHEN
-    let mem_config = MemConfig::builder()
-        .state_dir(temp.root().to_string_lossy())
-        .build();
-    let mem = Mem::new(mem_config);
-    mem.init().await.expect("initialzing memeory");
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
 
     // THEN
     for (start, end) in [(start1, end1), (start2, end2)] {

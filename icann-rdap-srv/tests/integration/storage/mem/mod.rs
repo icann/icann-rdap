@@ -1,7 +1,5 @@
 #![allow(non_snake_case)]
 
-mod state;
-
 use cidr_utils::cidr::IpCidr;
 use icann_rdap_common::response::{
     autnum::Autnum,

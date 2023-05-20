@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use envmnt::errors::EnvmntError;
 use http::StatusCode;
 use icann_rdap_common::response::types::Common;
 use ipnet::PrefixLenError;
@@ -40,6 +41,8 @@ pub enum RdapServerError {
     CidrParse(#[from] ipnet::AddrParseError),
     #[error("RDAP objects do not pass checks.")]
     ErrorOnChecks,
+    #[error(transparent)]
+    Envmnt(#[from] EnvmntError),
 }
 
 impl IntoResponse for RdapServerError {

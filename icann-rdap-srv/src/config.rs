@@ -13,14 +13,27 @@ pub const LISTEN_ADDR: &str = "RDAP_SRV_LISTEN_ADDR";
 pub const LISTEN_PORT: &str = "RDAP_SRV_LISTEN_PORT";
 pub const STORAGE: &str = "RDAP_SRV_STORAGE";
 pub const DB_URL: &str = "RDAP_SRV_DB_URL";
-pub const STATE_DIR: &str = "RDAP_SRV_STATE_DIR";
+pub const DATA_DIR: &str = "RDAP_SRV_DATA_DIR";
+pub const AUTO_RELOAD: &str = "RDAP_SRV_AUTO_RELOAD";
 
 pub fn debug_config_vars() {
-    let var_list = [LOG, LISTEN_ADDR, LISTEN_PORT, STORAGE, DB_URL, STATE_DIR];
+    let var_list = [
+        LOG,
+        LISTEN_ADDR,
+        LISTEN_PORT,
+        STORAGE,
+        DB_URL,
+        DATA_DIR,
+        AUTO_RELOAD,
+    ];
     envmnt::vars()
         .iter()
         .filter(|(k, _)| var_list.contains(&k.as_str()))
         .for_each(|(k, v)| debug!("environment variable {k} = {v}"));
+}
+
+pub fn data_dir() -> String {
+    get_or(DATA_DIR, "/tmp/rdap-srv/data")
 }
 
 /// RDAP server listening configuration.
@@ -36,7 +49,7 @@ pub struct ListenConfig {
 }
 
 /// Determines the storage type.
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone)]
 #[strum(serialize_all = "lowercase")]
 pub enum StorageType {
     /// Uses in-memory storage.
@@ -50,13 +63,7 @@ impl StorageType {
     pub fn new_from_env() -> Result<Self, RdapServerError> {
         let storage = get_or(STORAGE, "memory");
         let storage_type = if storage == "memory" {
-            let mirror_dir = get_or(STATE_DIR, "/tmp/rdap-srv/state");
-            StorageType::Memory(
-                MemConfig::builder()
-                    .state_dir(mirror_dir)
-                    .auto_reload(true)
-                    .build(),
-            )
+            StorageType::Memory(MemConfig::builder().build())
         } else if storage == "postgres" {
             let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
             StorageType::Postgres(PgConfig::builder().db_url(db_url).build())
@@ -70,7 +77,9 @@ impl StorageType {
 }
 
 /// RDAP service configuration.
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Clone)]
 pub struct ServiceConfig {
     pub storage_type: StorageType,
+    pub data_dir: String,
+    pub auto_reload: bool,
 }

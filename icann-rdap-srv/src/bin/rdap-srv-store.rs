@@ -7,9 +7,9 @@ use icann_rdap_common::{
     VERSION,
 };
 use icann_rdap_srv::{
-    config::{debug_config_vars, StorageType, LOG},
+    config::{data_dir, debug_config_vars, LOG},
     error::RdapServerError,
-    storage::mem::state::{NetworkIdType, Template, RELOAD, UPDATE},
+    storage::data::{trigger_reload, trigger_update, NetworkIdType, Template},
 };
 use ipnet::IpNet;
 use serde_json::Value;
@@ -25,7 +25,7 @@ use tracing_subscriber::{
 struct Cli {
     /// Directory containg RDAP JSON files.
     #[arg()]
-    directory: String,
+    directory: Option<String>,
 
     /// Check type.
     ///
@@ -38,11 +38,16 @@ struct Cli {
     #[arg(short = 'C', long, required = false, value_enum)]
     check_type: Vec<CheckTypeArg>,
 
-    /// Reload memory.
+    /// Update storage.
     ///
-    /// If true, memory is completely reloaded. Otherwise,
-    /// memory is just updated.
-    #[arg(long, required = false)]
+    /// If true, storage is updated.
+    #[arg(long, required = false, conflicts_with = "reload")]
+    update: bool,
+
+    /// Reload storage.
+    ///
+    /// If true, storage is completely reloaded.
+    #[arg(long, required = false, conflicts_with = "update")]
     reload: bool,
 }
 
@@ -81,71 +86,72 @@ async fn main() -> Result<(), RdapServerError> {
             .collect::<Vec<CheckClass>>()
     };
 
-    let storage_type = StorageType::new_from_env()?;
-    if let StorageType::Memory(config) = storage_type {
-        // validate all files
-        let src_path = PathBuf::from(&cli.directory);
-        if !src_path.exists() || !src_path.is_dir() {
-            error!(
-                "Source Directory {} does not exist or is not a directory.",
-                src_path.to_string_lossy()
-            );
-            return Err(RdapServerError::Config(
-                "Source directory does not exist or is not a directory.".to_string(),
-            ));
-        };
+    let data_dir = data_dir();
 
-        let mut entries = tokio::fs::read_dir(src_path.clone()).await?;
-        let mut errors_found = false;
-        while let Some(entry) = entries.next_entry().await? {
-            let entry = entry.path();
-            let contents = tokio::fs::read_to_string(&entry).await?;
-            if entry.extension().map_or(false, |ext| ext == "template") {
-                errors_found |=
-                    verify_rdap_template(&contents, &entry.to_string_lossy(), &check_types)?;
-            } else if entry.extension().map_or(false, |ext| ext == "json") {
-                errors_found |= verify_rdap(&contents, &entry.to_string_lossy(), &check_types)?;
-            }
-        }
-        if errors_found {
-            return Err(RdapServerError::ErrorOnChecks);
-        }
-
-        // if all files validate, then move them
-        let dest_path = PathBuf::from(&config.state_dir);
-        if !dest_path.exists() || !dest_path.is_dir() {
-            warn!(
-                "Destination Directory {} does not exist or is not a directory.",
-                dest_path.to_string_lossy()
-            );
-            return Err(RdapServerError::Config(
-                "Destination directory does not exist or is not a directory.".to_string(),
-            ));
-        };
-        let mut entries = tokio::fs::read_dir(src_path).await?;
-        while let Some(entry) = entries.next_entry().await? {
-            let source = entry.path();
-            let mut dest = dest_path.clone();
-            dest.push(source.file_name().expect("cannot get source file name"));
-            tokio::fs::copy(source, dest).await?;
-        }
-
-        // signal update or reload
-        if cli.reload {
-            let reload_path = PathBuf::from(&config.state_dir);
-            let reload_path = reload_path.join(RELOAD);
-            tokio::fs::File::create(reload_path).await?;
-        } else {
-            let update_path = PathBuf::from(&config.state_dir);
-            let update_path = update_path.join(UPDATE);
-            tokio::fs::File::create(update_path).await?;
-        };
-    } else {
-        return Err(RdapServerError::Config(
-            "Only memory storage is supported for this command.".to_string(),
-        ));
+    if let Some(directory) = cli.directory {
+        do_validate_then_move(&directory, &check_types, &data_dir).await?;
     }
 
+    // signal update or reload
+    if cli.reload {
+        trigger_reload(&data_dir).await?;
+    } else if cli.update {
+        trigger_update(&data_dir).await?;
+    };
+
+    Ok(())
+}
+
+async fn do_validate_then_move(
+    directory: &str,
+    check_types: &[CheckClass],
+    data_dir: &str,
+) -> Result<(), RdapServerError> {
+    // validate files
+    let src_path = PathBuf::from(directory);
+    if !src_path.exists() || !src_path.is_dir() {
+        error!(
+            "Source Directory {} does not exist or is not a directory.",
+            src_path.to_string_lossy()
+        );
+        return Err(RdapServerError::Config(
+            "Source directory does not exist or is not a directory.".to_string(),
+        ));
+    };
+
+    let mut entries = tokio::fs::read_dir(src_path.clone()).await?;
+    let mut errors_found = false;
+    while let Some(entry) = entries.next_entry().await? {
+        let entry = entry.path();
+        let contents = tokio::fs::read_to_string(&entry).await?;
+        if entry.extension().map_or(false, |ext| ext == "template") {
+            errors_found |= verify_rdap_template(&contents, &entry.to_string_lossy(), check_types)?;
+        } else if entry.extension().map_or(false, |ext| ext == "json") {
+            errors_found |= verify_rdap(&contents, &entry.to_string_lossy(), check_types)?;
+        }
+    }
+    if errors_found {
+        return Err(RdapServerError::ErrorOnChecks);
+    }
+
+    // if all files validate, then move them
+    let dest_path = PathBuf::from(&data_dir);
+    if !dest_path.exists() || !dest_path.is_dir() {
+        warn!(
+            "Destination Directory {} does not exist or is not a directory.",
+            dest_path.to_string_lossy()
+        );
+        return Err(RdapServerError::Config(
+            "Destination directory does not exist or is not a directory.".to_string(),
+        ));
+    };
+    let mut entries = tokio::fs::read_dir(src_path).await?;
+    while let Some(entry) = entries.next_entry().await? {
+        let source = entry.path();
+        let mut dest = dest_path.clone();
+        dest.push(source.file_name().expect("cannot get source file name"));
+        tokio::fs::copy(source, dest).await?;
+    }
     Ok(())
 }
 
@@ -156,7 +162,7 @@ fn verify_rdap(
     check_types: &[CheckClass],
 ) -> Result<bool, RdapServerError> {
     let mut errors_found = false;
-    debug!("loading {path_name} into memory");
+    debug!("verifying {path_name}");
     let json = serde_json::from_str::<Value>(contents);
     if let Ok(value) = json {
         let rdap = RdapResponse::try_from(value);
@@ -213,7 +219,7 @@ fn verify_rdap_template(
             }
             Template::Entity { entity, ids } => {
                 for id in ids {
-                    debug!("adding entity from template for {id:?}");
+                    debug!("verifying entity from template for {id:?}");
                     let mut entity = entity.clone();
                     entity.object_common.handle = Some(id.handle);
                     errors_found |= check_rdap(RdapResponse::Entity(entity), check_types);
@@ -221,7 +227,7 @@ fn verify_rdap_template(
             }
             Template::Nameserver { nameserver, ids } => {
                 for id in ids {
-                    debug!("adding nameserver from template for {id:?}");
+                    debug!("verifying dding nameserver from template for {id:?}");
                     let mut nameserver = nameserver.clone();
                     nameserver.ldh_name = Some(id.ldh_name);
                     if let Some(unicode_name) = id.unicode_name {
@@ -232,7 +238,7 @@ fn verify_rdap_template(
             }
             Template::Autnum { autnum, ids } => {
                 for id in ids {
-                    debug!("adding autnum from template for {id:?}");
+                    debug!("verifying autnum from template for {id:?}");
                     let mut autnum = autnum.clone();
                     autnum.start_autnum = Some(id.start_autnum);
                     autnum.end_autnum = Some(id.end_autnum);
@@ -241,7 +247,7 @@ fn verify_rdap_template(
             }
             Template::Network { network, ids } => {
                 for id in ids {
-                    debug!("adding network from template for {id:?}");
+                    debug!("verifying network from template for {id:?}");
                     let mut network = network.clone();
                     match id.network_id {
                         NetworkIdType::Cidr(cidr) => match cidr {

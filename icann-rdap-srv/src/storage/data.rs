@@ -16,11 +16,10 @@ use tokio::time::sleep;
 use tracing::{debug, info, warn};
 
 use crate::{
+    config::ServiceConfig,
     error::RdapServerError,
     storage::{StoreOps, TxHandle},
 };
-
-use super::ops::Mem;
 
 pub const UPDATE: &str = "update";
 pub const RELOAD: &str = "reload";
@@ -99,7 +98,7 @@ pub enum NetworkIdType {
     },
 }
 
-/// Loads files from the state directory into memory.
+/// Loads files from the data directory into memory.
 ///
 /// There are 2 types of files that will be selected. Files ending with a `.json` extension
 /// are considered to be JSON files holding one RDAP response each.
@@ -123,15 +122,19 @@ pub enum NetworkIdType {
 /// ```
 /// In this example, 2 domains will be created for "foo.example" and "bar.exaple" using
 /// the template.
-pub(crate) async fn load_state(mem: &Mem, truncate: bool) -> Result<(), RdapServerError> {
+pub async fn load_data(
+    config: &ServiceConfig,
+    store: &dyn StoreOps,
+    truncate: bool,
+) -> Result<(), RdapServerError> {
     let mut json_count: usize = 0;
     let mut template_count: usize = 0;
     let mut tx = if truncate {
-        mem.new_truncate_tx().await?
+        store.new_truncate_tx().await?
     } else {
-        mem.new_tx().await?
+        store.new_tx().await?
     };
-    let path = PathBuf::from(&mem.config.state_dir);
+    let path = PathBuf::from(&config.data_dir);
     if !path.exists() || !path.is_dir() {
         warn!(
             "Directory {} does not exist or is not a directory. Server has no content to serve.",
@@ -155,19 +158,19 @@ pub(crate) async fn load_state(mem: &Mem, truncate: bool) -> Result<(), RdapServ
 
     info!("{json_count} RDAP JSON files loaded. {template_count} RDAP template files loaded.");
     if json_count == 0 && template_count == 0 {
-        warn!("No state loaded. Server has no content to serve.");
+        warn!("No data loaded. Server has no content to serve.");
     }
     tx.commit().await?;
     Ok(())
 }
 
-/// Loads the RDAP JSON files and puts them in memory.
+/// Loads the RDAP JSON files and puts them in storage.
 async fn load_rdap(
     contents: &str,
     path_name: &str,
     tx: &mut Box<dyn TxHandle>,
 ) -> Result<(), RdapServerError> {
-    debug!("loading {path_name} into memory");
+    debug!("loading {path_name} into storage");
     let json = serde_json::from_str::<Value>(contents);
     if let Ok(value) = json {
         let rdap = RdapResponse::try_from(value);
@@ -190,7 +193,7 @@ async fn load_rdap(
 }
 
 /// Loads the template files, creates RDAP objects from the templates, and puts them
-/// into memory.
+/// into storage.
 async fn load_rdap_template(
     contents: &str,
     path_name: &str,
@@ -280,10 +283,13 @@ async fn load_rdap_template(
     Ok(())
 }
 
-pub(crate) async fn reload_state(mem: Mem) -> Result<(), RdapServerError> {
-    let update_path = PathBuf::from(&mem.config.state_dir);
+pub(crate) async fn reload_data(
+    store: Box<dyn StoreOps>,
+    config: ServiceConfig,
+) -> Result<(), RdapServerError> {
+    let update_path = PathBuf::from(&config.data_dir);
     let update_path = update_path.join(UPDATE);
-    let reload_path = PathBuf::from(&mem.config.state_dir);
+    let reload_path = PathBuf::from(&config.data_dir);
     let reload_path = reload_path.join(RELOAD);
     let mut last_time = SystemTime::now();
     loop {
@@ -293,8 +299,8 @@ pub(crate) async fn reload_state(mem: Mem) -> Result<(), RdapServerError> {
             let modified = update_meta.unwrap().modified()?;
             if modified > last_time {
                 last_time = modified;
-                info!("State being updated.");
-                load_state(&mem, false).await?;
+                info!("Data being updated.");
+                load_data(&config, &*store, false).await?;
             }
         };
         let reload_meta = tokio::fs::metadata(&reload_path).await;
@@ -302,11 +308,25 @@ pub(crate) async fn reload_state(mem: Mem) -> Result<(), RdapServerError> {
             let modified = reload_meta.unwrap().modified()?;
             if modified > last_time {
                 last_time = modified;
-                info!("State being reloaded.");
-                load_state(&mem, true).await?;
+                info!("Data being reloaded.");
+                load_data(&config, &*store, true).await?;
             }
         };
     }
+}
+
+pub async fn trigger_reload(data_dir: &str) -> Result<(), RdapServerError> {
+    let reload_path = PathBuf::from(&data_dir);
+    let reload_path = reload_path.join(RELOAD);
+    tokio::fs::File::create(reload_path).await?;
+    Ok(())
+}
+
+pub async fn trigger_update(data_dir: &str) -> Result<(), RdapServerError> {
+    let update_path = PathBuf::from(&data_dir);
+    let update_path = update_path.join(UPDATE);
+    tokio::fs::File::create(update_path).await?;
+    Ok(())
 }
 
 #[cfg(test)]

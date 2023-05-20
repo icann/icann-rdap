@@ -5,6 +5,7 @@ use icann_rdap_common::response::{
 
 use crate::{error::RdapServerError, rdap::response::RdapServerResponse};
 
+pub mod data;
 pub mod mem;
 pub mod pg;
 
