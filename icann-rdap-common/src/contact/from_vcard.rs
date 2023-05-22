@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use super::{Contact, Email, Lang};
+use super::{Contact, Email, Lang, Phone, PostalAddress};
 
 impl Contact {
     pub fn from_vcard(vcard_array: &[Value]) -> Option<Contact> {
@@ -21,6 +21,8 @@ impl Contact {
             .and_organization_names(vcard.find_properties("org").get_texts())
             .and_langs(vcard.find_properties("lang").get_langs())
             .and_emails(vcard.find_properties("email").get_emails())
+            .and_phones(vcard.find_properties("tel").get_phones())
+            .and_postal_addresses(vcard.find_properties("adr").get_postal_addresses())
             .build();
 
         Some(contact)
@@ -84,6 +86,13 @@ impl<'a> GetText<'a> for Option<&'a Vec<Value>> {
     }
 }
 
+impl<'a> GetText<'a> for &'a Vec<Value> {
+    fn get_text(self) -> Option<String> {
+        let Some(fourth) = self.get(3) else {return None};
+        fourth.as_str().map(|s| s.to_owned())
+    }
+}
+
 trait GetTexts<'a> {
     fn get_texts(self) -> Option<Vec<String>>;
 }
@@ -92,7 +101,7 @@ impl<'a> GetTexts<'a> for &'a [&'a Vec<Value>] {
     fn get_texts(self) -> Option<Vec<String>> {
         let texts = self
             .iter()
-            .filter_map(|prop| Some(*prop).get_text())
+            .filter_map(|prop| (*prop).get_text())
             .collect::<Vec<String>>();
         (!texts.is_empty()).then_some(texts)
     }
@@ -111,7 +120,20 @@ impl<'a> GetPreference<'a> for &'a Vec<Value> {
     }
 }
 
-const CONTEXTS: [&str; 5] = ["home", "work", "office", "private", "mobile"];
+trait GetLabel<'a> {
+    fn get_label(self) -> Option<String>;
+}
+
+impl<'a> GetLabel<'a> for &'a Vec<Value> {
+    fn get_label(self) -> Option<String> {
+        let Some(second) = self.get(1) else {return None};
+        let Some(second) = second.as_object() else {return None};
+        let Some(label) = second.get("label") else {return None};
+        label.as_str().map(|s| s.to_owned())
+    }
+}
+
+const CONTEXTS: [&str; 6] = ["home", "work", "office", "private", "mobile", "cell"];
 
 trait GetContexts<'a> {
     fn get_contexts(self) -> Option<Vec<String>>;
@@ -141,6 +163,34 @@ impl<'a> GetContexts<'a> for &'a Vec<Value> {
     }
 }
 
+trait GetFeatures<'a> {
+    fn get_features(self) -> Option<Vec<String>>;
+}
+
+impl<'a> GetFeatures<'a> for &'a Vec<Value> {
+    fn get_features(self) -> Option<Vec<String>> {
+        let Some(second) = self.get(1) else {return None};
+        let Some(second) = second.as_object() else {return None};
+        let Some(features) = second.get("type") else {return None};
+        if let Some(feature) = features.as_str() {
+            let feature = feature.to_lowercase();
+            if !CONTEXTS.contains(&feature.as_str()) {
+                return Some(vec![feature]);
+            } else {
+                return None;
+            }
+        };
+        let Some(features) = features.as_array() else {return None};
+        let features = features
+            .iter()
+            .filter_map(|v| v.as_str())
+            .map(|s| s.to_lowercase())
+            .filter(|s| !CONTEXTS.contains(&s.as_str()))
+            .collect::<Vec<String>>();
+        (!features.is_empty()).then_some(features)
+    }
+}
+
 trait GetLangs<'a> {
     fn get_langs(self) -> Option<Vec<Lang>>;
 }
@@ -150,7 +200,7 @@ impl<'a> GetLangs<'a> for &'a [&'a Vec<Value>] {
         let langs = self
             .iter()
             .filter_map(|prop| {
-                let Some(tag) = Some(*prop).get_text() else {return None};
+                let Some(tag) = (*prop).get_text() else {return None};
                 let lang = Lang::builder()
                     .tag(tag)
                     .and_preference((*prop).get_preference())
@@ -171,7 +221,7 @@ impl<'a> GetEmails<'a> for &'a [&'a Vec<Value>] {
         let emails = self
             .iter()
             .filter_map(|prop| {
-                let Some(addr) = Some(*prop).get_text() else {return None};
+                let Some(addr) = (*prop).get_text() else {return None};
                 let email = Email::builder()
                     .email(addr)
                     .and_contexts((*prop).get_contexts())
@@ -181,6 +231,96 @@ impl<'a> GetEmails<'a> for &'a [&'a Vec<Value>] {
             })
             .collect::<Vec<Email>>();
         (!emails.is_empty()).then_some(emails)
+    }
+}
+
+trait GetPhones<'a> {
+    fn get_phones(self) -> Option<Vec<Phone>>;
+}
+
+impl<'a> GetPhones<'a> for &'a [&'a Vec<Value>] {
+    fn get_phones(self) -> Option<Vec<Phone>> {
+        let phones = self
+            .iter()
+            .filter_map(|prop| {
+                let Some(number) = (*prop).get_text() else {return None};
+                let phone = Phone::builder()
+                    .phone(number)
+                    .and_features((*prop).get_features())
+                    .and_contexts((*prop).get_contexts())
+                    .and_preference((*prop).get_preference())
+                    .build();
+                Some(phone)
+            })
+            .collect::<Vec<Phone>>();
+        (!phones.is_empty()).then_some(phones)
+    }
+}
+
+trait GetPostalAddresses<'a> {
+    fn get_postal_addresses(self) -> Option<Vec<PostalAddress>>;
+}
+
+impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
+    fn get_postal_addresses(self) -> Option<Vec<PostalAddress>> {
+        let addrs = self
+            .iter()
+            .map(|prop| {
+                let mut postal_code: Option<String> = None;
+                let mut country_code: Option<String> = None;
+                let mut country_name: Option<String> = None;
+                let mut region_code: Option<String> = None;
+                let mut region_name: Option<String> = None;
+                let mut locality: Option<String> = None;
+                let mut street_parts: Vec<String> = Vec::new();
+                if let Some(fourth) = prop.get(3) {
+                    if let Some(addr) = fourth.as_array() {
+                        let mut iter = addr
+                            .iter()
+                            .rev()
+                            .filter_map(|i| i.as_str())
+                            .filter(|i| !i.is_empty());
+                        if let Some(e) = iter.next() {
+                            if e.len() == 2 && e.to_uppercase() == e {
+                                country_code = Some(e.to_string())
+                            } else {
+                                country_name = Some(e.to_string())
+                            }
+                        };
+                        if let Some(e) = iter.next() {
+                            postal_code = Some(e.to_string());
+                        };
+                        if let Some(e) = iter.next() {
+                            if e.len() == 2 && e.to_uppercase() == e {
+                                region_code = Some(e.to_string())
+                            } else {
+                                region_name = Some(e.to_string())
+                            }
+                        };
+                        if let Some(e) = iter.next() {
+                            locality = Some(e.to_string());
+                        };
+                        for e in iter {
+                            street_parts.insert(0, e.to_string());
+                        }
+                    }
+                };
+                let street_parts = (!street_parts.is_empty()).then_some(street_parts);
+                PostalAddress::builder()
+                    .and_full_address((*prop).get_label())
+                    .and_contexts((*prop).get_contexts())
+                    .and_preference((*prop).get_preference())
+                    .and_country_code(country_code)
+                    .and_country_name(country_name)
+                    .and_postal_code(postal_code)
+                    .and_region_name(region_name)
+                    .and_region_code(region_code)
+                    .and_locality(locality)
+                    .and_street_parts(street_parts)
+                    .build()
+            })
+            .collect::<Vec<PostalAddress>>();
+        (!addrs.is_empty()).then_some(addrs)
     }
 }
 
@@ -278,8 +418,14 @@ mod tests {
         // THEN
         let actual = actual.expect("parsing vcard");
         let actual = Contact::from_vcard(&actual).expect("vcard not found");
+
+        // full name
         assert_eq!(actual.full_name.expect("full_name not found"), "Joe User");
+
+        // kind
         assert_eq!(actual.kind.expect("kind not found"), "individual");
+
+        // titles
         assert_eq!(
             actual
                 .titles
@@ -288,6 +434,8 @@ mod tests {
                 .expect("titles empty"),
             "Research Scientist"
         );
+
+        // organization names
         assert_eq!(
             actual
                 .organization_names
@@ -296,13 +444,19 @@ mod tests {
                 .expect("organization_names empty"),
             "Example"
         );
+
+        // nick names
         assert!(actual.nick_names.is_none());
+
+        // langs
         let Some(langs) = actual.langs else {panic!("langs not found")};
         assert_eq!(langs.len(), 2);
         assert_eq!(langs.get(0).expect("first lang").tag, "fr");
         assert_eq!(langs.get(0).expect("first lang").preference, Some(1));
         assert_eq!(langs.get(1).expect("second lang").tag, "en");
         assert_eq!(langs.get(1).expect("second lang").preference, Some(2));
+
+        // emails
         let Some(emails) = actual.emails else {panic!("emails not found")};
         let Some(email) = emails.first() else {panic!("no email found")};
         assert_eq!(email.email, "joe.user@example.com");
@@ -311,5 +465,62 @@ mod tests {
             .as_ref()
             .expect("contexts not found")
             .contains(&"work".to_string()));
+
+        // phones
+        let Some(phones) = actual.phones else {panic!("no phones found")};
+        let Some(phone) = phones.first() else {panic!("no first phone")};
+        assert_eq!(phone.phone, "tel:+1-555-555-1234;ext=102");
+        assert!(phone
+            .contexts
+            .as_ref()
+            .expect("no contexts")
+            .contains(&"work".to_string()));
+        assert!(phone
+            .features
+            .as_ref()
+            .expect("no features")
+            .contains(&"voice".to_string()));
+        let Some(phone) = phones.last() else {panic!("no last phone")};
+        assert_eq!(phone.phone, "tel:+1-555-555-4321");
+        assert!(phone
+            .contexts
+            .as_ref()
+            .expect("no contexts")
+            .contains(&"cell".to_string()));
+        assert!(phone
+            .features
+            .as_ref()
+            .expect("no features")
+            .contains(&"video".to_string()));
+
+        // postal addresses
+        let Some(addresses) = actual.postal_addresses else {panic!("no postal addresses")};
+        let Some(addr) = addresses.first() else {panic!("first address not found")};
+        assert!(addr
+            .contexts
+            .as_ref()
+            .expect("no contexts")
+            .contains(&"work".to_string()));
+        let Some(street_parts) = &addr.street_parts else {panic!("no street parts")};
+        assert_eq!(street_parts.get(0).expect("street part 0"), "Suite 1234");
+        assert_eq!(
+            street_parts.get(1).expect("street part 1"),
+            "4321 Rue Somewhere"
+        );
+        assert_eq!(addr.country_name.as_ref().expect("country name"), "Canada");
+        assert!(addr.country_code.is_none());
+        assert_eq!(addr.region_code.as_ref().expect("region code"), "QC");
+        assert!(addr.region_name.is_none());
+        assert_eq!(addr.postal_code.as_ref().expect("postal code"), "G1V 2M2");
+        let Some(addr) = addresses.last() else {panic!("last address not found")};
+        assert!(addr
+            .contexts
+            .as_ref()
+            .expect("no contexts")
+            .contains(&"home".to_string()));
+        assert_eq!(
+            addr.full_address.as_ref().expect("full address not foudn"),
+            "123 Maple Ave\nSuite 90001\nVancouver\nBC\n1239\n"
+        );
     }
 }
