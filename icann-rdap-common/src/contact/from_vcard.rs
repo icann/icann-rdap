@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use super::Contact;
+use super::{Contact, Email, Lang};
 
 impl Contact {
     pub fn from_vcard(vcard_array: &[Value]) -> Option<Contact> {
@@ -19,6 +19,8 @@ impl Contact {
             .and_titles(vcard.find_properties("title").get_texts())
             .and_nick_names(vcard.find_properties("nickname").get_texts())
             .and_organization_names(vcard.find_properties("org").get_texts())
+            .and_langs(vcard.find_properties("lang").get_langs())
+            .and_emails(vcard.find_properties("email").get_emails())
             .build();
 
         Some(contact)
@@ -93,6 +95,92 @@ impl<'a> GetTexts<'a> for &'a [&'a Vec<Value>] {
             .filter_map(|prop| Some(*prop).get_text())
             .collect::<Vec<String>>();
         (!texts.is_empty()).then_some(texts)
+    }
+}
+
+trait GetPreference<'a> {
+    fn get_preference(self) -> Option<u64>;
+}
+
+impl<'a> GetPreference<'a> for &'a Vec<Value> {
+    fn get_preference(self) -> Option<u64> {
+        let Some(second) = self.get(1) else {return None};
+        let Some(second) = second.as_object() else {return None};
+        let Some(preference) = second.get("pref") else {return None};
+        preference.as_str().and_then(|s| s.parse().ok())
+    }
+}
+
+const CONTEXTS: [&str; 5] = ["home", "work", "office", "private", "mobile"];
+
+trait GetContexts<'a> {
+    fn get_contexts(self) -> Option<Vec<String>>;
+}
+
+impl<'a> GetContexts<'a> for &'a Vec<Value> {
+    fn get_contexts(self) -> Option<Vec<String>> {
+        let Some(second) = self.get(1) else {return None};
+        let Some(second) = second.as_object() else {return None};
+        let Some(contexts) = second.get("type") else {return None};
+        if let Some(context) = contexts.as_str() {
+            let context = context.to_lowercase();
+            if CONTEXTS.contains(&context.as_str()) {
+                return Some(vec![context]);
+            } else {
+                return None;
+            }
+        };
+        let Some(contexts) = contexts.as_array() else {return None};
+        let contexts = contexts
+            .iter()
+            .filter_map(|v| v.as_str())
+            .map(|s| s.to_lowercase())
+            .filter(|s| CONTEXTS.contains(&s.as_str()))
+            .collect::<Vec<String>>();
+        (!contexts.is_empty()).then_some(contexts)
+    }
+}
+
+trait GetLangs<'a> {
+    fn get_langs(self) -> Option<Vec<Lang>>;
+}
+
+impl<'a> GetLangs<'a> for &'a [&'a Vec<Value>] {
+    fn get_langs(self) -> Option<Vec<Lang>> {
+        let langs = self
+            .iter()
+            .filter_map(|prop| {
+                let Some(tag) = Some(*prop).get_text() else {return None};
+                let lang = Lang::builder()
+                    .tag(tag)
+                    .and_preference((*prop).get_preference())
+                    .build();
+                Some(lang)
+            })
+            .collect::<Vec<Lang>>();
+        (!langs.is_empty()).then_some(langs)
+    }
+}
+
+trait GetEmails<'a> {
+    fn get_emails(self) -> Option<Vec<Email>>;
+}
+
+impl<'a> GetEmails<'a> for &'a [&'a Vec<Value>] {
+    fn get_emails(self) -> Option<Vec<Email>> {
+        let emails = self
+            .iter()
+            .filter_map(|prop| {
+                let Some(addr) = Some(*prop).get_text() else {return None};
+                let email = Email::builder()
+                    .email(addr)
+                    .and_contexts((*prop).get_contexts())
+                    .and_preference((*prop).get_preference())
+                    .build();
+                Some(email)
+            })
+            .collect::<Vec<Email>>();
+        (!emails.is_empty()).then_some(emails)
     }
 }
 
@@ -209,5 +297,19 @@ mod tests {
             "Example"
         );
         assert!(actual.nick_names.is_none());
+        let Some(langs) = actual.langs else {panic!("langs not found")};
+        assert_eq!(langs.len(), 2);
+        assert_eq!(langs.get(0).expect("first lang").tag, "fr");
+        assert_eq!(langs.get(0).expect("first lang").preference, Some(1));
+        assert_eq!(langs.get(1).expect("second lang").tag, "en");
+        assert_eq!(langs.get(1).expect("second lang").preference, Some(2));
+        let Some(emails) = actual.emails else {panic!("emails not found")};
+        let Some(email) = emails.first() else {panic!("no email found")};
+        assert_eq!(email.email, "joe.user@example.com");
+        assert!(email
+            .contexts
+            .as_ref()
+            .expect("contexts not found")
+            .contains(&"work".to_string()));
     }
 }
