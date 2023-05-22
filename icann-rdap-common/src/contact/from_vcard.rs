@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use super::{Contact, Email, Lang, Phone, PostalAddress};
+use super::{Contact, Email, Lang, NameParts, Phone, PostalAddress};
 
 impl Contact {
     pub fn from_vcard(vcard_array: &[Value]) -> Option<Contact> {
@@ -23,6 +23,7 @@ impl Contact {
             .and_emails(vcard.find_properties("email").get_emails())
             .and_phones(vcard.find_properties("tel").get_phones())
             .and_postal_addresses(vcard.find_properties("adr").get_postal_addresses())
+            .and_name_parts(vcard.find_property("n").get_name_parts())
             .build();
 
         Some(contact)
@@ -324,12 +325,82 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
     }
 }
 
+trait GetNameParts<'a> {
+    fn get_name_parts(self) -> Option<NameParts>;
+}
+
+impl<'a> GetNameParts<'a> for Option<&'a Vec<Value>> {
+    fn get_name_parts(self) -> Option<NameParts> {
+        let Some(values) = self else {return None};
+        let Some(fourth) = values.get(3) else {return None};
+        let Some(parts) = fourth.as_array() else {return None};
+        let mut iter = parts.iter().filter(|p| p.is_string() || p.is_array());
+        let mut prefixes: Option<Vec<String>> = None;
+        let mut surnames: Option<Vec<String>> = None;
+        let mut given_names: Option<Vec<String>> = None;
+        let mut middle_names: Option<Vec<String>> = None;
+        let mut suffixes: Option<Vec<String>> = None;
+        if let Some(e) = iter.next() {
+            surnames = get_string_or_vec(e);
+        };
+        if let Some(e) = iter.next() {
+            given_names = get_string_or_vec(e);
+        };
+        if let Some(e) = iter.next() {
+            middle_names = get_string_or_vec(e);
+        };
+        if let Some(e) = iter.next() {
+            prefixes = get_string_or_vec(e);
+        };
+        if let Some(e) = iter.next() {
+            suffixes = get_string_or_vec(e);
+        };
+        let name_parts = NameParts::builder()
+            .and_surnames(surnames)
+            .and_prefixes(prefixes)
+            .and_given_names(given_names)
+            .and_middle_names(middle_names)
+            .and_suffixes(suffixes)
+            .build();
+        if name_parts.surnames.is_none()
+            && name_parts.given_names.is_none()
+            && name_parts.middle_names.is_none()
+            && name_parts.suffixes.is_none()
+            && name_parts.prefixes.is_none()
+        {
+            None
+        } else {
+            Some(name_parts)
+        }
+    }
+}
+
+fn get_string_or_vec(value: &Value) -> Option<Vec<String>> {
+    if let Some(e) = value.as_str() {
+        if e.is_empty() {
+            return None;
+        } else {
+            return Some(vec![e.to_string()]);
+        };
+    };
+    if let Some(e) = value.as_array() {
+        let strings = e
+            .iter()
+            .filter_map(|e| e.as_str())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        return (!strings.is_empty()).then_some(strings);
+    };
+    None
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
     use serde_json::Value;
 
-    use crate::contact::Contact;
+    use crate::contact::{Contact, NameParts};
 
     #[test]
     fn GIVEN_vcard_WHEN_from_vcard_THEN_properties_are_correct() {
@@ -522,5 +593,14 @@ mod tests {
             addr.full_address.as_ref().expect("full address not foudn"),
             "123 Maple Ave\nSuite 90001\nVancouver\nBC\n1239\n"
         );
+
+        // name parts
+        let Some(name_parts) = actual.name_parts else {panic!("no name parts")};
+        let expected = NameParts::builder()
+            .surnames(vec!["User".to_string()])
+            .given_names(vec!["Joe".to_string()])
+            .suffixes(vec!["ing. jr".to_string(), "M.Sc.".to_string()])
+            .build();
+        assert_eq!(name_parts, expected);
     }
 }

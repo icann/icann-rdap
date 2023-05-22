@@ -5,7 +5,7 @@ use buildstructor::Builder;
 
 /// Represents a contact. This more closely represents an EPP Contact with some
 /// things taken from JSContact.
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
     pub langs: Option<Vec<Lang>>,
@@ -39,7 +39,7 @@ pub struct Contact {
 }
 
 /// The language preference of the contact.
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Lang {
     /// The ordinal of the preference for this language.
     pub preference: Option<u64>,
@@ -49,23 +49,26 @@ pub struct Lang {
 }
 
 /// Name parts of a name.
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NameParts {
     /// Name prefixes.
     pub prefixes: Option<Vec<String>>,
 
-    /// Surname or last name.
-    pub surname: Option<String>,
+    /// Surnames or last names.
+    pub surnames: Option<Vec<String>>,
 
-    /// Given or first name.
-    pub given: Option<String>,
+    /// Middle names.
+    pub middle_names: Option<Vec<String>>,
+
+    /// Given or first names.
+    pub given_names: Option<Vec<String>>,
 
     /// Name suffixes.
     pub suffixes: Option<Vec<String>>,
 }
 
 /// A postal address.
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PostalAddress {
     /// Preference of this address in relation to others.
     pub preference: Option<u64>,
@@ -99,7 +102,7 @@ pub struct PostalAddress {
 }
 
 /// Represents an email address.
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Email {
     /// Preference of this email in relation to others.
     pub preference: Option<u64>,
@@ -112,7 +115,7 @@ pub struct Email {
 }
 
 /// Represents phone number.
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Phone {
     /// Preference of this phone in relation to others.
     pub preference: Option<u64>,
