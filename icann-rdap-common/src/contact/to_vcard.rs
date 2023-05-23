@@ -36,7 +36,7 @@ impl Contact {
             for lang in langs {
                 let mut params: Map<String, Value> = Map::new();
                 if let Some(pref) = lang.preference {
-                    params.insert("pref".to_string(), Value::from(pref));
+                    params.insert("pref".to_string(), Value::String(pref.to_string()));
                 }
                 vcard.push(json!([
                     "lang",
@@ -69,7 +69,7 @@ impl Contact {
             for email in emails {
                 let mut params: Map<String, Value> = Map::new();
                 if let Some(pref) = email.preference {
-                    params.insert("pref".to_string(), Value::from(pref));
+                    params.insert("pref".to_string(), Value::String(pref.to_string()));
                 }
                 if let Some(contexts) = email.contexts.as_ref() {
                     params.insert("type".to_string(), vec_string_to_param(contexts));
@@ -82,7 +82,7 @@ impl Contact {
             for phone in phones {
                 let mut params: Map<String, Value> = Map::new();
                 if let Some(pref) = phone.preference {
-                    params.insert("pref".to_string(), Value::from(pref));
+                    params.insert("pref".to_string(), Value::String(pref.to_string()));
                 }
                 let mut types: Vec<String> = Vec::new();
                 if let Some(contexts) = &phone.contexts {
@@ -100,7 +100,7 @@ impl Contact {
             for addr in addrs {
                 let mut params: Map<String, Value> = Map::new();
                 if let Some(pref) = addr.preference {
-                    params.insert("pref".to_string(), Value::from(pref));
+                    params.insert("pref".to_string(), Value::String(pref.to_string()));
                 }
                 if let Some(contexts) = addr.contexts.as_ref() {
                     params.insert("type".to_string(), vec_string_to_param(contexts));
@@ -150,25 +150,22 @@ impl Contact {
         }
 
         // return the vcard array
-        vec![
-            Value::from_str("vcard").expect("unable to create vcard literal"),
-            Value::from(vcard),
-        ]
+        vec![Value::String("vcard".to_string()), Value::from(vcard)]
     }
 }
 
 fn vec_string_to_value(strings: &Option<Vec<String>>) -> Value {
     let Some(strings) = strings else {
-        return Value::from_str("").expect("empty string serialization bombed");
+        return Value::String("".to_string());
     };
 
     if strings.is_empty() {
-        return Value::from_str("").expect("empty string serialization bombed");
+        return Value::String("".to_string());
     };
 
     if strings.len() == 1 {
         let Some(one) = strings.first() else {panic!("couldn't get first element on length of 1")};
-        return Value::from_str(one).expect("serializing string");
+        return Value::String(one.to_owned());
     };
 
     // else
@@ -177,14 +174,87 @@ fn vec_string_to_value(strings: &Option<Vec<String>>) -> Value {
 
 fn vec_string_to_param(strings: &Vec<String>) -> Value {
     if strings.is_empty() {
-        return Value::from_str("").expect("empty string serialization bombed");
+        return Value::String("".to_string());
     };
 
     if strings.len() == 1 {
         let Some(one) = strings.first() else {panic!("couldn't get first element on length of 1")};
-        return Value::from_str(one).expect("serializing string");
+        return Value::String(one.to_owned());
     };
 
     // else
     Value::from(strings.clone())
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use crate::contact::{Contact, Email, Lang, NameParts, Phone, PostalAddress};
+
+    #[test]
+    fn GIVEN_contact_WHEN_to_vcard_THEN_from_vcard_is_same() {
+        // GIVEN
+        let contact = Contact::builder()
+            .full_name("Joe User")
+            .name_parts(
+                NameParts::builder()
+                    .surnames(vec!["User".to_string()])
+                    .given_names(vec!["Joe".to_string()])
+                    .suffixes(vec!["ing. jr".to_string(), "M.Sc.".to_string()])
+                    .build(),
+            )
+            .kind("individual")
+            .langs(vec![
+                Lang::builder().preference(1).tag("fr").build(),
+                Lang::builder().preference(2).tag("en").build(),
+            ])
+            .organization_names(vec!["Example".to_string()])
+            .titles(vec!["Research Scientist".to_string()])
+            .postal_addresses(vec![PostalAddress::builder()
+                .country_name("Canada")
+                .postal_code("G1V 2M2")
+                .region_code("QC")
+                .locality("Quebec")
+                .street_parts(vec![
+                    "Suite 1234".to_string(),
+                    "4321 Rue Somewhere".to_string(),
+                ])
+                .build()])
+            .phones(vec![
+                Phone::builder()
+                    .preference(1)
+                    .contexts(vec!["work".to_string()])
+                    .features(vec!["voice".to_string()])
+                    .phone("tel:+1-555-555-1234;ext=102")
+                    .build(),
+                Phone::builder()
+                    .contexts(vec!["work".to_string(), "cell".to_string()])
+                    .features(vec![
+                        "voice".to_string(),
+                        "video".to_string(),
+                        "text".to_string(),
+                    ])
+                    .phone("tel:+1-555-555-4321")
+                    .build(),
+            ])
+            .emails(vec![Email::builder()
+                .contexts(vec!["work".to_string()])
+                .email("joe.user@example.com")
+                .build()])
+            .build();
+
+        // WHEN
+        let actual = Contact::from_vcard(&contact.to_vcard()).expect("from vcard");
+
+        // THEN
+        assert_eq!(contact.full_name, actual.full_name);
+        assert_eq!(contact.name_parts, actual.name_parts);
+        assert_eq!(contact.kind, actual.kind);
+        assert_eq!(contact.langs, actual.langs);
+        assert_eq!(contact.organization_names, actual.organization_names);
+        assert_eq!(contact.titles, actual.titles);
+        assert_eq!(contact.postal_addresses, actual.postal_addresses);
+        assert_eq!(contact.phones, actual.phones);
+        assert_eq!(contact.emails, actual.emails);
+    }
 }
