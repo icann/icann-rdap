@@ -28,7 +28,7 @@ pub struct Variant {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub idn_table: Option<String>,
 
-    #[serde(rename = "variant_names")]
+    #[serde(rename = "variantNames")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variant_names: Option<Vec<VariantName>>,
 }
@@ -45,7 +45,7 @@ pub struct DsDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digest: Option<String>,
 
-    #[serde(rename = "digest_type")]
+    #[serde(rename = "digestType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digest_type: Option<u8>,
 
