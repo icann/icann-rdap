@@ -37,16 +37,16 @@ impl ToMd for Nameserver {
 
         // identifiers
         table = table
-            .header(&"Identifiers")
-            .and_data(&"LDH Name", &self.ldh_name)
-            .and_data(&"Unicode Name", &self.unicode_name)
-            .and_data(&"Handle", &self.object_common.handle);
+            .header_ref(&"Identifiers")
+            .and_data_ref(&"LDH Name", &self.ldh_name)
+            .and_data_ref(&"Unicode Name", &self.unicode_name)
+            .and_data_ref(&"Handle", &self.object_common.handle);
         if let Some(addresses) = &self.ip_addresses {
             if let Some(v4) = &addresses.v4 {
-                table = table.data_ul(&"Ipv4", v4.iter().collect());
+                table = table.data_ul_ref(&"Ipv4", v4.iter().collect());
             }
             if let Some(v6) = &addresses.v6 {
-                table = table.data_ul(&"Ipv6", v6.iter().collect());
+                table = table.data_ul_ref(&"Ipv6", v6.iter().collect());
             }
         }
 

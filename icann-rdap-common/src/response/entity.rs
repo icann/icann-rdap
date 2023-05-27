@@ -1,3 +1,4 @@
+use crate::contact::Contact;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -60,6 +61,11 @@ impl Entity {
             autnums: None,
             networks: None,
         }
+    }
+
+    pub fn contact(&self) -> Option<Contact> {
+        let Some(vcard) = &self.vcard_array else {return None};
+        Contact::from_vcard(vcard)
     }
 }
 

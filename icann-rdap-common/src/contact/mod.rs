@@ -1,6 +1,8 @@
 pub mod from_vcard;
 pub mod to_vcard;
 
+use std::fmt::Display;
+
 use buildstructor::Builder;
 
 /// Represents a contact. This more closely represents an EPP Contact with some
@@ -38,6 +40,21 @@ pub struct Contact {
     pub phones: Option<Vec<Phone>>,
 }
 
+impl Contact {
+    pub fn is_non_empty(&self) -> bool {
+        self.langs.is_some()
+            || self.kind.is_some()
+            || self.full_name.is_some()
+            || self.name_parts.is_some()
+            || self.nick_names.is_some()
+            || self.titles.is_some()
+            || self.organization_names.is_some()
+            || self.postal_addresses.is_some()
+            || self.emails.is_some()
+            || self.phones.is_some()
+    }
+}
+
 /// The language preference of the contact.
 #[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Lang {
@@ -46,6 +63,16 @@ pub struct Lang {
 
     /// RFC 5646 language tag.
     pub tag: String,
+}
+
+impl Display for Lang {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(pref) = self.preference {
+            write!(f, "{} (pref: {})", self.tag, pref)
+        } else {
+            f.write_str(&self.tag)
+        }
+    }
 }
 
 /// Name parts of a name.
@@ -114,6 +141,24 @@ pub struct Email {
     pub email: String,
 }
 
+impl Display for Email {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut qualifiers = Vec::new();
+        if let Some(pref) = self.preference {
+            qualifiers.push(format!("(pref: {pref})"));
+        }
+        if let Some(contexts) = &self.contexts {
+            qualifiers.push(format!("({})", contexts.join(",")));
+        }
+        let qualifiers = qualifiers.join(" ");
+        if qualifiers.is_empty() {
+            f.write_str(&self.email)
+        } else {
+            write!(f, "{} {}", &self.email, qualifiers)
+        }
+    }
+}
+
 /// Represents phone number.
 #[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Phone {
@@ -128,4 +173,25 @@ pub struct Phone {
 
     /// Features (voice, fax, etc...)
     pub features: Option<Vec<String>>,
+}
+
+impl Display for Phone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut qualifiers = Vec::new();
+        if let Some(pref) = self.preference {
+            qualifiers.push(format!("(pref: {pref})"));
+        }
+        if let Some(contexts) = &self.contexts {
+            qualifiers.push(format!("({})", contexts.join(",")));
+        }
+        if let Some(features) = &self.features {
+            qualifiers.push(format!("({})", features.join(",")));
+        }
+        let qualifiers = qualifiers.join(" ");
+        if qualifiers.is_empty() {
+            f.write_str(&self.phone)
+        } else {
+            write!(f, "{} {}", &self.phone, qualifiers)
+        }
+    }
 }

@@ -26,7 +26,7 @@ impl Contact {
             .and_name_parts(vcard.find_property("n").get_name_parts())
             .build();
 
-        Some(contact)
+        contact.is_non_empty().then_some(contact)
     }
 }
 

@@ -36,10 +36,10 @@ impl ToMd for Domain {
 
         // identifiers
         table = table
-            .header(&"Identifiers")
-            .and_data(&"LDH Name", &self.ldh_name)
-            .and_data(&"Unicode Name", &self.unicode_name)
-            .and_data(&"Handle", &self.object_common.handle);
+            .header_ref(&"Identifiers")
+            .and_data_ref(&"LDH Name", &self.ldh_name)
+            .and_data_ref(&"Unicode Name", &self.unicode_name)
+            .and_data_ref(&"Handle", &self.object_common.handle);
 
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);

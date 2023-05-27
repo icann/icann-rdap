@@ -204,7 +204,7 @@ pub(crate) fn events_to_table(
     header_name: &str,
     params: MdParams,
 ) -> MultiPartTable {
-    table = table.header(&header_name.to_string());
+    table = table.header_ref(&header_name.to_string());
     for event in events {
         let event_date = &event
             .event_date
@@ -215,7 +215,7 @@ pub(crate) fn events_to_table(
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);
         }
-        table = table.data_ul(&event.event_action.to_owned().to_words_title_case(), ul);
+        table = table.data_ul_ref(&event.event_action.to_owned().to_words_title_case(), ul);
     }
     table
 }
@@ -225,10 +225,10 @@ pub(crate) fn links_to_table(
     mut table: MultiPartTable,
     header_name: &str,
 ) -> MultiPartTable {
-    table = table.header(&header_name.to_string());
+    table = table.header_ref(&header_name.to_string());
     for link in links {
         if let Some(title) = &link.title {
-            table = table.data(&"Title", &title.trim());
+            table = table.data_ref(&"Title", &title.trim());
         };
         let rel = link
             .rel
@@ -250,7 +250,7 @@ pub(crate) fn links_to_table(
             hreflang_s = hreflang.join(", ");
             ul.push(&hreflang_s)
         };
-        table = table.data_ul(&rel, ul);
+        table = table.data_ul_ref(&rel, ul);
     }
     table
 }
@@ -269,7 +269,7 @@ pub(crate) fn checks_to_table(
     if !filtered_checks.is_empty() {
         filtered_checks.sort();
         filtered_checks.dedup();
-        table = table.header(&"Checks");
+        table = table.header_ref(&"Checks");
 
         // Informational
         let class = CheckClass::Informational;
@@ -278,7 +278,7 @@ pub(crate) fn checks_to_table(
             .filter(|item| item.check_class == class)
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
-        table = table.data_ul(
+        table = table.data_ul_ref(
             &&class
                 .to_string()
                 .to_right_em(*CHECK_CLASS_LEN, params.options),
@@ -292,7 +292,7 @@ pub(crate) fn checks_to_table(
             .filter(|item| item.check_class == class)
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
-        table = table.data_ul(
+        table = table.data_ul_ref(
             &class
                 .to_string()
                 .to_right_em(*CHECK_CLASS_LEN, params.options),
@@ -306,7 +306,7 @@ pub(crate) fn checks_to_table(
             .filter(|item| item.check_class == class)
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
-        table = table.data_ul(
+        table = table.data_ul_ref(
             &&class
                 .to_string()
                 .to_right_em(*CHECK_CLASS_LEN, params.options),

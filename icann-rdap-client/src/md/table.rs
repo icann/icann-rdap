@@ -20,18 +20,24 @@ impl MultiPartTable {
         Self { rows: Vec::new() }
     }
 
-    pub(crate) fn header(mut self, name: &impl ToString) -> Self {
+    pub(crate) fn header_ref(mut self, name: &impl ToString) -> Self {
         self.rows.push(Row::Header(name.to_string()));
         self
     }
 
-    pub(crate) fn data(mut self, name: &impl ToString, value: &impl ToString) -> Self {
+    pub(crate) fn data_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
         self.rows
             .push(Row::Data((name.to_string(), value.to_string())));
         self
     }
 
-    pub(crate) fn data_ul(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
+    pub(crate) fn data(mut self, name: &impl ToString, value: impl ToString) -> Self {
+        self.rows
+            .push(Row::Data((name.to_string(), value.to_string())));
+        self
+    }
+
+    pub(crate) fn data_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::Data((
@@ -48,7 +54,24 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn and_data(mut self, name: &impl ToString, value: &Option<String>) -> Self {
+    pub(crate) fn data_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
+        value.iter().enumerate().for_each(|(i, v)| {
+            if i == 0 {
+                self.rows.push(Row::Data((
+                    name.to_string(),
+                    format!("* {}", v.to_string()),
+                )))
+            } else {
+                self.rows.push(Row::Data((
+                    String::default(),
+                    format!("* {}", v.to_string()),
+                )))
+            }
+        });
+        self
+    }
+
+    pub(crate) fn and_data_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
         self.rows.push(Row::Data((
             name.to_string(),
             value.as_deref().unwrap_or_default().to_string(),
@@ -56,15 +79,35 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn and_data_ul(
+    pub(crate) fn and_data_ref_maybe(self, name: &impl ToString, value: &Option<String>) -> Self {
+        if let Some(value) = value {
+            self.data_ref(name, value)
+        } else {
+            self
+        }
+    }
+
+    pub(crate) fn and_data_ul_ref(
         self,
         name: &impl ToString,
         value: Option<Vec<&impl ToString>>,
     ) -> Self {
         if let Some(value) = value {
+            self.data_ul_ref(name, value)
+        } else {
+            self
+        }
+    }
+
+    pub(crate) fn and_data_ul(
+        self,
+        name: &impl ToString,
+        value: Option<Vec<impl ToString>>,
+    ) -> Self {
+        if let Some(value) = value {
             self.data_ul(name, value)
         } else {
-            self.data(name, &String::default())
+            self
         }
     }
 }
@@ -130,7 +173,7 @@ mod tests {
     #[test]
     fn GIVEN_header_WHEN_to_md_THEN_header_format_and_header() {
         // GIVEN
-        let table = MultiPartTable::new().header(&"foo");
+        let table = MultiPartTable::new().header_ref(&"foo");
 
         // WHEN
         let req_data = RequestData {
@@ -157,9 +200,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_header_and_data_WHEN_to_md_THEN_header_format_and_header() {
+    fn GIVEN_header_and_data_ref_WHEN_to_md_THEN_header_format_and_header() {
         // GIVEN
-        let table = MultiPartTable::new().header(&"foo").data(&"bizz", &"buzz");
+        let table = MultiPartTable::new()
+            .header_ref(&"foo")
+            .data_ref(&"bizz", &"buzz");
 
         // WHEN
         let req_data = RequestData {
@@ -186,12 +231,12 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_header_and_2_data_WHEN_to_md_THEN_header_format_and_header() {
+    fn GIVEN_header_and_2_data_ref_WHEN_to_md_THEN_header_format_and_header() {
         // GIVEN
         let table = MultiPartTable::new()
-            .header(&"foo")
-            .data(&"bizz", &"buzz")
-            .data(&"bar", &"baz");
+            .header_ref(&"foo")
+            .data_ref(&"bizz", &"buzz")
+            .data_ref(&"bar", &"baz");
 
         // WHEN
         let req_data = RequestData {
@@ -221,15 +266,81 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_header_and_2_data_twice_WHEN_to_md_THEN_header_format_and_header() {
+    fn GIVEN_header_and_data_WHEN_to_md_THEN_header_format_and_header() {
         // GIVEN
         let table = MultiPartTable::new()
-            .header(&"foo")
-            .data(&"bizz", &"buzz")
-            .data(&"bar", &"baz")
-            .header(&"foo")
-            .data(&"bizz", &"buzz")
-            .data(&"bar", &"baz");
+            .header_ref(&"foo")
+            .data(&"bizz", "buzz".to_string());
+
+        // WHEN
+        let req_data = RequestData {
+            req_number: 0,
+            source_host: "",
+            source_type: crate::request::SourceType::UncategorizedRegistry,
+        };
+        let rdap_response = RdapResponse::ErrorResponse(
+            icann_rdap_common::response::error::Error::builder()
+                .common(Common::builder().build())
+                .error_code(500)
+                .build(),
+        );
+        let actual = table.to_md(crate::md::MdParams {
+            heading_level: 0,
+            root: &rdap_response,
+            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
+            check_types: &[],
+            options: &crate::md::MdOptions::plain_text(),
+            req_data: &req_data,
+        });
+
+        assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
+    }
+
+    #[test]
+    fn GIVEN_header_and_2_data_WHEN_to_md_THEN_header_format_and_header() {
+        // GIVEN
+        let table = MultiPartTable::new()
+            .header_ref(&"foo")
+            .data(&"bizz", "buzz")
+            .data(&"bar", "baz");
+
+        // WHEN
+        let req_data = RequestData {
+            req_number: 0,
+            source_host: "",
+            source_type: crate::request::SourceType::UncategorizedRegistry,
+        };
+        let rdap_response = RdapResponse::ErrorResponse(
+            icann_rdap_common::response::error::Error::builder()
+                .common(Common::builder().build())
+                .error_code(500)
+                .build(),
+        );
+        let actual = table.to_md(crate::md::MdParams {
+            heading_level: 0,
+            root: &rdap_response,
+            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
+            check_types: &[],
+            options: &crate::md::MdOptions::plain_text(),
+            req_data: &req_data,
+        });
+
+        assert_eq!(
+            actual,
+            "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n| bar|baz|\n|\n\n"
+        )
+    }
+
+    #[test]
+    fn GIVEN_header_and_2_data_ref_twice_WHEN_to_md_THEN_header_format_and_header() {
+        // GIVEN
+        let table = MultiPartTable::new()
+            .header_ref(&"foo")
+            .data_ref(&"bizz", &"buzz")
+            .data_ref(&"bar", &"baz")
+            .header_ref(&"foo")
+            .data_ref(&"bizz", &"buzz")
+            .data_ref(&"bar", &"baz");
 
         // WHEN
         let req_data = RequestData {
