@@ -43,6 +43,10 @@ pub enum RdapServerError {
     ErrorOnChecks,
     #[error(transparent)]
     Envmnt(#[from] EnvmntError),
+    #[error("Argument parsing error: {0}")]
+    ArgParse(String),
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
 }
 
 impl IntoResponse for RdapServerError {

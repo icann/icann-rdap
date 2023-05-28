@@ -286,3 +286,14 @@ fn verify_rdap_template(
     }
     Ok(errors_found)
 }
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+
+    #[test]
+    fn cli_debug_assert_test() {
+        use clap::CommandFactory;
+        crate::Cli::command().debug_assert()
+    }
+}
