@@ -1,9 +1,18 @@
 use chrono::DateTime;
 use chrono::FixedOffset;
+use chrono::Utc;
 use clap::{Args, Parser, Subcommand};
+use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::contact::Contact;
+use icann_rdap_common::contact::PostalAddress;
+use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
+use icann_rdap_common::response::domain::Domain;
 use icann_rdap_common::response::entity::Entity;
+use icann_rdap_common::response::nameserver::IpAddresses;
+use icann_rdap_common::response::nameserver::Nameserver;
 use icann_rdap_common::response::types::Common;
+use icann_rdap_common::response::types::Event;
+use icann_rdap_common::response::types::Events;
 use icann_rdap_common::response::types::Link;
 use icann_rdap_common::response::types::Links;
 use icann_rdap_common::response::types::Notice;
@@ -12,15 +21,21 @@ use icann_rdap_common::response::types::Notices;
 use icann_rdap_common::response::types::ObjectCommon;
 use icann_rdap_common::response::types::Remark;
 use icann_rdap_common::response::types::Remarks;
+use icann_rdap_common::response::types::Status;
+use icann_rdap_common::response::types::StatusValue;
 use icann_rdap_common::response::RdapResponse;
 use icann_rdap_common::VERSION;
 use icann_rdap_srv::config::data_dir;
 use icann_rdap_srv::config::ServiceConfig;
 use icann_rdap_srv::config::StorageType;
+use icann_rdap_srv::rdap::response::ArcRdapResponse;
 use icann_rdap_srv::storage::data::load_data;
 use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
 use icann_rdap_srv::storage::StoreOps;
+use icann_rdap_srv::util::bin::check::check_rdap;
+use icann_rdap_srv::util::bin::check::to_check_classes;
+use icann_rdap_srv::util::bin::check::CheckArgs;
 use icann_rdap_srv::{
     config::{debug_config_vars, LOG},
     error::RdapServerError,
@@ -30,8 +45,6 @@ use pct_str::URIReserved;
 use regex::Regex;
 use std::fs;
 use std::path::PathBuf;
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
 use tracing::info;
 use tracing_subscriber::{
     fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
@@ -41,6 +54,9 @@ use tracing_subscriber::{
 #[command(author, version = VERSION, about, long_about)]
 /// This program creates RDAP objects.
 struct Cli {
+    #[clap(flatten)]
+    check_args: CheckArgs,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -148,7 +164,13 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
 #[derive(Debug, Subcommand)]
 enum Commands {
     /// Creates an RDAP entity.
-    Entity(EntityArgs),
+    Entity(Box<EntityArgs>),
+
+    /// Create a Nameserver.
+    Nameserver(Box<NameserverArgs>),
+
+    /// Create a domain.
+    Domain(Box<DomainArgs>),
 }
 
 #[derive(Debug, Args)]
@@ -158,7 +180,7 @@ struct EntityArgs {
 
     /// Entity handle.
     #[arg(long)]
-    handle: Option<String>,
+    handle: String,
 
     /// Full name of contact.
     ///
@@ -238,6 +260,53 @@ struct EntityArgs {
     postal_code: Option<String>,
 }
 
+#[derive(Debug, Args)]
+struct NameserverArgs {
+    #[clap(flatten)]
+    object_args: ObjectArgs,
+
+    /// Entity handle.
+    #[arg(long)]
+    handle: Option<String>,
+
+    /// Letters-Digits-Hyphen name.
+    #[arg(long)]
+    ldh: String,
+
+    /// Ipv4 Address.
+    ///
+    /// This argument may be given multiple times.
+    #[arg(long)]
+    v4: Vec<String>,
+
+    /// Ipv6 Address.
+    ///
+    /// This argument may be given multiple times.
+    #[arg(long)]
+    v6: Vec<String>,
+}
+
+#[derive(Debug, Args)]
+struct DomainArgs {
+    #[clap(flatten)]
+    object_args: ObjectArgs,
+
+    /// Entity handle.
+    #[arg(long)]
+    handle: Option<String>,
+
+    /// Letters-Digits-Hyphen name.
+    #[arg(long)]
+    ldh: String,
+
+    /// Nameserver LDH.
+    ///
+    /// The DNS LDH (letters, digits, hyphens) name of the name server.
+    /// This argument may be given multiple times.
+    #[arg(long)]
+    ns: Vec<String>,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), RdapServerError> {
     dotenv::dotenv().ok();
@@ -260,31 +329,31 @@ async fn main() -> Result<(), RdapServerError> {
     storage.init().await?;
     load_data(&config, &storage, false).await?;
 
-    let mut output = match cli.command {
-        Commands::Entity(args) => make_entity(args, &storage)?,
+    let output = match cli.command {
+        Commands::Entity(args) => make_entity(args, &storage).await?,
+        Commands::Nameserver(args) => make_nameserver(args, &storage).await?,
+        Commands::Domain(args) => make_domain(args, &storage).await?,
     };
-    output.id.get_or_insert(
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("getting epoch time")
-            .as_secs()
-            .to_string(),
-    );
+
+    let content = serde_json::to_string_pretty(&output.rdap)?;
+    let check_types = to_check_classes(&cli.check_args);
+    let checks_found = check_rdap(output.rdap, &check_types);
+    if checks_found {
+        return Err(RdapServerError::ErrorOnChecks);
+    } else {
+        info!("Checks conducted and no issues were found.");
+    }
+
+    let file_name = output
+        .self_href
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .replace(['.', '/', ':'], "_");
+    let file_name = format!("{}.json", PctString::encode(file_name.chars(), URIReserved));
 
     let mut path = PathBuf::from(data_dir);
-    path.push(
-        PctString::encode(
-            format!(
-                "{}_{}.json",
-                output.descriminator,
-                output.id.unwrap_or_default()
-            )
-            .chars(),
-            URIReserved,
-        )
-        .to_string(),
-    );
-    fs::write(&path, serde_json::to_string_pretty(&output.rdap)?)?;
+    path.push(file_name);
+    fs::write(&path, content)?;
     info!("Data written to {}.", path.to_string_lossy());
 
     Ok(())
@@ -292,8 +361,7 @@ async fn main() -> Result<(), RdapServerError> {
 
 struct Output {
     pub rdap: RdapResponse,
-    pub descriminator: &'static str,
-    pub id: Option<String>,
+    pub self_href: String,
 }
 
 fn notices(v: &[NoticeOrRemark]) -> Option<Vec<Notice>> {
@@ -306,8 +374,185 @@ fn remarks(v: &[NoticeOrRemark]) -> Option<Vec<Remark>> {
     (!remarks.is_empty()).then_some(remarks)
 }
 
-fn make_entity(args: EntityArgs, _store: &dyn StoreOps) -> Result<Output, RdapServerError> {
-    let contact = Contact::builder().and_full_name(args.full_name).build();
+async fn entities(
+    store: &dyn StoreOps,
+    args: &ObjectArgs,
+) -> Result<Option<Vec<Entity>>, RdapServerError> {
+    let mut entities: Vec<Entity> = Vec::new();
+    if let Some(handle) = &args.registrant {
+        entities.push(get_entity(store, handle, "registrant".to_string()).await?);
+    }
+    if let Some(handle) = &args.administrative {
+        entities.push(get_entity(store, handle, "administrative".to_string()).await?);
+    }
+    if let Some(handle) = &args.technical {
+        entities.push(get_entity(store, handle, "technical".to_string()).await?);
+    }
+    if let Some(handle) = &args.abuse {
+        entities.push(get_entity(store, handle, "abuse".to_string()).await?);
+    }
+    if let Some(handle) = &args.billing {
+        entities.push(get_entity(store, handle, "billing".to_string()).await?);
+    }
+    if let Some(handle) = &args.registrar {
+        entities.push(get_entity(store, handle, "registrar".to_string()).await?);
+    }
+    if let Some(handle) = &args.noc {
+        entities.push(get_entity(store, handle, "noc".to_string()).await?);
+    }
+    Ok((!entities.is_empty()).then_some(entities))
+}
+
+async fn get_entity(
+    store: &dyn StoreOps,
+    handle: &str,
+    role: String,
+) -> Result<Entity, RdapServerError> {
+    let e = store.get_entity_by_handle(handle).await?;
+    let e = match e {
+        icann_rdap_srv::rdap::response::RdapServerResponse::NoRef(e) => {
+            if let RdapResponse::Entity(e) = e {
+                Some(e)
+            } else {
+                None
+            }
+        }
+        icann_rdap_srv::rdap::response::RdapServerResponse::Arc(e) => {
+            if let ArcRdapResponse::Entity(e) = e {
+                Some((*e).clone())
+            } else {
+                None
+            }
+        }
+    };
+    if let Some(mut e) = e {
+        e.roles = Some(vec![role]);
+        Ok(e)
+    } else {
+        Err(RdapServerError::InvalidArg(handle.to_string()))
+    }
+}
+
+async fn nameservers(
+    store: &dyn StoreOps,
+    ns_names: Vec<String>,
+) -> Result<Option<Vec<Nameserver>>, RdapServerError> {
+    let mut nameservers: Vec<Nameserver> = Vec::new();
+    for ns in ns_names {
+        let ns = get_ns(store, &ns).await?;
+        nameservers.push(ns);
+    }
+    Ok((!nameservers.is_empty()).then_some(nameservers))
+}
+
+async fn get_ns(store: &dyn StoreOps, ldh: &str) -> Result<Nameserver, RdapServerError> {
+    let n = store.get_nameserver_by_ldh(ldh).await?;
+    let n = match n {
+        icann_rdap_srv::rdap::response::RdapServerResponse::NoRef(n) => {
+            if let RdapResponse::Nameserver(e) = n {
+                Some(e)
+            } else {
+                None
+            }
+        }
+        icann_rdap_srv::rdap::response::RdapServerResponse::Arc(n) => {
+            if let ArcRdapResponse::Nameserver(e) = n {
+                Some((*e).clone())
+            } else {
+                None
+            }
+        }
+    };
+    if let Some(n) = n {
+        Ok(n)
+    } else {
+        Err(RdapServerError::InvalidArg(ldh.to_string()))
+    }
+}
+
+fn status(args: &ObjectArgs) -> Option<Status> {
+    let status: Status = args
+        .status
+        .iter()
+        .map(|s| StatusValue(s.to_owned()))
+        .collect();
+    (!status.is_empty()).then_some(status)
+}
+
+fn events(args: &ObjectArgs) -> Option<Events> {
+    let mut events: Events = Vec::new();
+    let created_at = if let Some(dt) = args.created {
+        dt
+    } else {
+        Utc::now().into()
+    };
+    let created = Event::builder()
+        .event_date(created_at.to_rfc3339())
+        .event_action("registration".to_string())
+        .build();
+    events.push(created);
+    let updated_at = if let Some(dt) = args.created {
+        dt
+    } else {
+        Utc::now().into()
+    };
+    let updated = Event::builder()
+        .event_date(updated_at.to_rfc3339())
+        .event_action("last changed".to_string())
+        .build();
+    events.push(updated);
+    (!events.is_empty()).then_some(events)
+}
+
+fn links(self_href: &str) -> Option<Links> {
+    let mut links: Links = Vec::new();
+    let self_link = Link::builder()
+        .value(self_href.to_owned())
+        .href(self_href.to_owned())
+        .rel("self".to_string())
+        .media_type(RDAP_MEDIA_TYPE.to_string())
+        .build();
+    links.push(self_link);
+    (!links.is_empty()).then_some(links)
+}
+
+async fn make_entity(
+    args: Box<EntityArgs>,
+    store: &dyn StoreOps,
+) -> Result<Output, RdapServerError> {
+    let self_href = QueryType::Entity(args.handle.to_owned())
+        .query_url(&args.object_args.base_url)
+        .expect("entity self href");
+    let full_name = if let Some(full_name) = args.full_name {
+        full_name
+    } else if let Some(first_org) = args.org_name.first() {
+        first_org.clone()
+    } else {
+        return Err(RdapServerError::InvalidArg(
+            "a full name or org name is required".to_string(),
+        ));
+    };
+    let mut contact = Contact::builder()
+        .full_name(full_name)
+        .and_organization_names((!args.org_name.is_empty()).then_some(args.org_name))
+        .and_titles((!args.title.is_empty()).then_some(args.title))
+        .build();
+    contact = contact.set_emails(&args.email);
+    contact = contact.add_voice_phones(&args.voice);
+    contact = contact.add_fax_phones(&args.fax);
+    let postal_address = PostalAddress::builder()
+        .and_street_parts(
+            (!&args.street.is_empty())
+                .then_some(args.street.iter().map(|s| s.to_string()).collect()),
+        )
+        .and_locality(args.locality)
+        .and_region_name(args.region_name)
+        .and_region_code(args.region_code)
+        .and_country_name(args.country_name)
+        .and_country_code(args.country_code)
+        .and_postal_code(args.postal_code)
+        .build();
+    contact = contact.set_postal_address(postal_address);
     let vcard = contact.is_non_empty().then_some(contact.to_vcard());
     let entity = Entity::builder()
         .and_vcard_array(vcard)
@@ -319,21 +564,90 @@ fn make_entity(args: EntityArgs, _store: &dyn StoreOps) -> Result<Output, RdapSe
         .object_common(
             ObjectCommon::builder()
                 .object_class_name("entity")
+                .and_entities(entities(store, &args.object_args).await?)
                 .and_remarks(remarks(&args.object_args.remark))
-                .and_handle(args.handle.clone())
+                .and_status(status(&args.object_args))
+                .and_events(events(&args.object_args))
+                .and_links(links(&self_href))
+                .handle(args.handle.clone())
                 .build(),
         );
-    let mut id = Option::None;
-    if let Some(handle) = &args.handle {
-        id.get_or_insert(handle.clone());
-    }
-    if let Some(full_name) = &contact.full_name {
-        id.get_or_insert(full_name.clone());
-    }
     let output = Output {
         rdap: RdapResponse::Entity(entity.build()),
-        descriminator: "entity",
-        id,
+        self_href,
+    };
+    Ok(output)
+}
+
+async fn make_nameserver(
+    args: Box<NameserverArgs>,
+    store: &dyn StoreOps,
+) -> Result<Output, RdapServerError> {
+    let self_href = QueryType::Nameserver(args.ldh.to_owned())
+        .query_url(&args.object_args.base_url)
+        .expect("nameserver self href");
+    let v4s = (!args.v4.is_empty()).then_some(args.v4);
+    let v6s = (!args.v6.is_empty()).then_some(args.v6);
+    let ips = if v4s.is_some() || v6s.is_some() {
+        Some(IpAddresses::builder().and_v6(v6s).and_v4(v4s).build())
+    } else {
+        None
+    };
+    let ns = Nameserver::builder()
+        .ldh_name(args.ldh)
+        .and_ip_addresses(ips)
+        .common(
+            Common::builder()
+                .and_notices(notices(&args.object_args.notice))
+                .build(),
+        )
+        .object_common(
+            ObjectCommon::builder()
+                .object_class_name("nameserver")
+                .and_entities(entities(store, &args.object_args).await?)
+                .and_remarks(remarks(&args.object_args.remark))
+                .and_status(status(&args.object_args))
+                .and_events(events(&args.object_args))
+                .and_links(links(&self_href))
+                .and_handle(args.handle)
+                .build(),
+        );
+    let output = Output {
+        rdap: RdapResponse::Nameserver(ns.build()),
+        self_href,
+    };
+    Ok(output)
+}
+
+async fn make_domain(
+    args: Box<DomainArgs>,
+    store: &dyn StoreOps,
+) -> Result<Output, RdapServerError> {
+    let self_href = QueryType::Domain(args.ldh.to_owned())
+        .query_url(&args.object_args.base_url)
+        .expect("nameserver self href");
+    let domain = Domain::builder()
+        .ldh_name(args.ldh)
+        .and_nameservers(nameservers(store, args.ns).await?)
+        .common(
+            Common::builder()
+                .and_notices(notices(&args.object_args.notice))
+                .build(),
+        )
+        .object_common(
+            ObjectCommon::builder()
+                .object_class_name("domain")
+                .and_entities(entities(store, &args.object_args).await?)
+                .and_remarks(remarks(&args.object_args.remark))
+                .and_status(status(&args.object_args))
+                .and_events(events(&args.object_args))
+                .and_links(links(&self_href))
+                .and_handle(args.handle)
+                .build(),
+        );
+    let output = Output {
+        rdap: RdapResponse::Domain(domain.build()),
+        self_href,
     };
     Ok(output)
 }

@@ -110,6 +110,7 @@ pub trait GetSubChecks {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
 
+/// Traverse the checks, and return true if one is found.
 pub fn traverse_checks<F>(
     checks: &Checks<'_>,
     classes: &[CheckClass],

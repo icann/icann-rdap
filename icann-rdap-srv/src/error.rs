@@ -45,6 +45,8 @@ pub enum RdapServerError {
     Envmnt(#[from] EnvmntError),
     #[error("Argument parsing error: {0}")]
     ArgParse(String),
+    #[error("Invalid argument error: {0}")]
+    InvalidArg(String),
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
 }

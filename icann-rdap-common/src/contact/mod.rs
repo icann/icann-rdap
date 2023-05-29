@@ -53,6 +53,56 @@ impl Contact {
             || self.emails.is_some()
             || self.phones.is_some()
     }
+
+    pub fn set_emails(mut self, emails: &[impl ToString]) -> Self {
+        let emails: Vec<Email> = emails
+            .iter()
+            .map(|e| Email::builder().email(e.to_string()).build())
+            .collect();
+        self.emails = (!emails.is_empty()).then_some(emails);
+        self
+    }
+
+    pub fn add_voice_phones(mut self, phones: &[impl ToString]) -> Self {
+        let mut phones: Vec<Phone> = phones
+            .iter()
+            .map(|p| {
+                Phone::builder()
+                    .contexts(vec!["voice".to_string()])
+                    .phone(p.to_string())
+                    .build()
+            })
+            .collect();
+        if let Some(mut self_phones) = self.phones.clone() {
+            phones.append(&mut self_phones);
+        } else {
+            self.phones = (!phones.is_empty()).then_some(phones);
+        }
+        self
+    }
+
+    pub fn add_fax_phones(mut self, phones: &[impl ToString]) -> Self {
+        let mut phones: Vec<Phone> = phones
+            .iter()
+            .map(|p| {
+                Phone::builder()
+                    .contexts(vec!["fax".to_string()])
+                    .phone(p.to_string())
+                    .build()
+            })
+            .collect();
+        if let Some(mut self_phones) = self.phones.clone() {
+            phones.append(&mut self_phones);
+        } else {
+            self.phones = (!phones.is_empty()).then_some(phones);
+        }
+        self
+    }
+
+    pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
+        self.postal_addresses = Some(vec![postal_address]);
+        self
+    }
 }
 
 /// The language preference of the contact.

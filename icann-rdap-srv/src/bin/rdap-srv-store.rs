@@ -1,15 +1,12 @@
 use std::{net::IpAddr, path::PathBuf};
 
 use clap::{Parser, ValueEnum};
-use icann_rdap_common::{
-    check::{traverse_checks, CheckClass, CheckParams, GetChecks},
-    response::RdapResponse,
-    VERSION,
-};
+use icann_rdap_common::{check::CheckClass, response::RdapResponse, VERSION};
 use icann_rdap_srv::{
     config::{data_dir, debug_config_vars, LOG},
     error::RdapServerError,
     storage::data::{trigger_reload, trigger_update, NetworkIdType, Template},
+    util::bin::check::{check_rdap, to_check_classes, CheckArgs},
 };
 use ipnet::IpNet;
 use serde_json::Value;
@@ -27,16 +24,8 @@ struct Cli {
     #[arg()]
     directory: Option<String>,
 
-    /// Check type.
-    ///
-    /// Specifies the type of checks to conduct on the RDAP
-    /// files. These are RDAP specific checks and not
-    /// JSON validation which is done automatically. This
-    /// argument may be specified multiple times to include
-    /// multiple check types. If no check types are given,
-    /// all check types are used.
-    #[arg(short = 'C', long, required = false, value_enum)]
-    check_type: Vec<CheckTypeArg>,
+    #[clap(flatten)]
+    check_args: CheckArgs,
 
     /// Update storage.
     ///
@@ -71,20 +60,7 @@ async fn main() -> Result<(), RdapServerError> {
 
     debug_config_vars();
 
-    let check_types = if cli.check_type.is_empty() {
-        vec![
-            CheckClass::SpecificationWarning,
-            CheckClass::SpecificationError,
-        ]
-    } else {
-        cli.check_type
-            .iter()
-            .map(|c| match c {
-                CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
-                CheckTypeArg::SpecError => CheckClass::SpecificationError,
-            })
-            .collect::<Vec<CheckClass>>()
-    };
+    let check_types = to_check_classes(&cli.check_args);
 
     let data_dir = data_dir();
 
@@ -179,20 +155,6 @@ fn verify_rdap(
         errors_found = true;
     };
     Ok(errors_found)
-}
-
-fn check_rdap(rdap: RdapResponse, check_types: &[CheckClass]) -> bool {
-    let checks = rdap.get_checks(CheckParams {
-        do_subchecks: true,
-        root: &rdap,
-        parent_type: rdap.get_type(),
-    });
-    traverse_checks(
-        &checks,
-        check_types,
-        None,
-        &mut |struct_tree, check_item| error!("{struct_tree} -> {check_item}"),
-    )
 }
 
 /// Verifies the template files.
