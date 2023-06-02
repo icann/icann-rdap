@@ -5,7 +5,7 @@ This repository contains open source code written by the Internet Corporation fo
 for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
 
-***THIS PROJECT IS IN ALPHA STAGE*** You are welcome to use it and file issues or bug reports, however there are no
+***THIS PROJECT IS IN ALPHA STAGE.*** You are welcome to use it and file issues or bug reports, however there are no
 guarantees as to timeliness of responses.
 
 Installing the RDAP Client
