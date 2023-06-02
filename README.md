@@ -5,6 +5,9 @@ This repository contains open source code written by the Internet Corporation fo
 for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
 
+***THIS PROJECT IS IN ALPHA STAGE*** You are welcome to use it and file issues or bug reports, however there are no
+guarantees as to timeliness of responses.
+
 Installing the RDAP Client
 --------------------------
 
@@ -13,6 +16,8 @@ Installing the RDAP Client
 Pre-built binaries are available for most mainstream systems: x86_64 and Arm 64bit for Linux GNU systems, x86_64 and Arm 64bit
 macOS, and x86_64 for Windows. You may find the pre-built binaries on the [Releases](https://github.com/icann/icann-rdap/releases)
 page.
+
+For non-Ubuntu Linux, compiling from source (which is easy) is recommended to avoid issues with dynamic linking to OpenSSL.
 
 ### Compiling from Source
 
