@@ -6,7 +6,10 @@ use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::contact::Contact;
 use icann_rdap_common::contact::PostalAddress;
 use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
+use icann_rdap_common::response::autnum::Autnum;
 use icann_rdap_common::response::domain::Domain;
+use icann_rdap_common::response::domain::DsDatum;
+use icann_rdap_common::response::domain::SecureDns;
 use icann_rdap_common::response::entity::Entity;
 use icann_rdap_common::response::nameserver::IpAddresses;
 use icann_rdap_common::response::nameserver::Nameserver;
@@ -45,6 +48,7 @@ use pct_str::URIReserved;
 use regex::Regex;
 use std::fs;
 use std::path::PathBuf;
+use tracing::error;
 use tracing::info;
 use tracing_subscriber::{
     fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
@@ -171,6 +175,9 @@ enum Commands {
 
     /// Create a domain.
     Domain(Box<DomainArgs>),
+
+    /// Create an autnum.
+    Autnum(Box<AutnumArgs>),
 }
 
 #[derive(Debug, Args)]
@@ -291,7 +298,7 @@ struct DomainArgs {
     #[clap(flatten)]
     object_args: ObjectArgs,
 
-    /// Entity handle.
+    /// Domain handle.
     #[arg(long)]
     handle: Option<String>,
 
@@ -299,12 +306,90 @@ struct DomainArgs {
     #[arg(long)]
     ldh: String,
 
+    /// Zone is signed.
+    #[arg(long)]
+    zone_signed: Option<bool>,
+
+    /// Delegation is signed.
+    #[arg(long)]
+    delegation_signed: Option<bool>,
+
+    /// Maximum Signature Life.
+    ///
+    /// This value is specified in seconds.
+    #[arg(long)]
+    max_sig_life: Option<u64>,
+
+    /// Adds DS Information.
+    ///
+    /// Takes the form of "KEYTAG ALGORITHM DIGEST_TYPE DIGEST".
+    /// This argument maybe specified multiple times.
+    #[arg(long, value_parser = parse_ds_datum)]
+    ds: Vec<DsDatum>,
+
     /// Nameserver LDH.
     ///
     /// The DNS LDH (letters, digits, hyphens) name of the name server.
     /// This argument may be given multiple times.
     #[arg(long)]
     ns: Vec<String>,
+}
+
+fn parse_ds_datum(arg: &str) -> Result<DsDatum, RdapServerError> {
+    let strings = arg.split_whitespace().collect::<Vec<&str>>();
+    if strings.len() != 4 {
+        return Err(RdapServerError::InvalidArg(
+            "not enough DS data".to_string(),
+        ));
+    }
+    let key_tag: u32 = strings[0]
+        .parse()
+        .map_err(|_e| RdapServerError::InvalidArg("cannot parse keyTag".to_string()))?;
+    let algorithm: u8 = strings[1]
+        .parse()
+        .map_err(|_e| RdapServerError::InvalidArg("cannot parse algorithm".to_string()))?;
+    let digest_type: u8 = strings[2]
+        .parse()
+        .map_err(|_e| RdapServerError::InvalidArg("cannot parse digestType".to_string()))?;
+    let ds_datum = DsDatum::builder()
+        .key_tag(key_tag)
+        .algorithm(algorithm)
+        .digest_type(digest_type)
+        .digest(strings[3].to_owned())
+        .build();
+    Ok(ds_datum)
+}
+
+#[derive(Debug, Args)]
+struct AutnumArgs {
+    #[clap(flatten)]
+    object_args: ObjectArgs,
+
+    /// Start Autnum
+    #[arg(long)]
+    start_autnum: u32,
+
+    /// End Autnum
+    ///
+    /// If not given, start_autnum will be used.
+    #[arg(long)]
+    end_autnum: Option<u32>,
+
+    /// Autnum handle.
+    #[arg(long)]
+    handle: Option<String>,
+
+    /// Autnum handle.
+    #[arg(long)]
+    autnum_type: Option<String>,
+
+    /// Country.
+    #[arg(long)]
+    country: Option<String>,
+
+    /// Name.
+    #[arg(long)]
+    name: Option<String>,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -329,10 +414,26 @@ async fn main() -> Result<(), RdapServerError> {
     storage.init().await?;
     load_data(&config, &storage, false).await?;
 
+    let work = do_the_work(cli, &storage, &data_dir).await;
+    match work {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            error!("Error: {err}");
+            Err(err)
+        }
+    }
+}
+
+async fn do_the_work(
+    cli: Cli,
+    storage: &dyn StoreOps,
+    data_dir: &str,
+) -> Result<(), RdapServerError> {
     let output = match cli.command {
-        Commands::Entity(args) => make_entity(args, &storage).await?,
-        Commands::Nameserver(args) => make_nameserver(args, &storage).await?,
-        Commands::Domain(args) => make_domain(args, &storage).await?,
+        Commands::Entity(args) => make_entity(args, storage).await?,
+        Commands::Nameserver(args) => make_nameserver(args, storage).await?,
+        Commands::Domain(args) => make_domain(args, storage).await?,
+        Commands::Autnum(args) => make_autnum(args, storage).await?,
     };
 
     let content = serde_json::to_string_pretty(&output.rdap)?;
@@ -355,7 +456,6 @@ async fn main() -> Result<(), RdapServerError> {
     path.push(file_name);
     fs::write(&path, content)?;
     info!("Data written to {}.", path.to_string_lossy());
-
     Ok(())
 }
 
@@ -625,9 +725,25 @@ async fn make_domain(
 ) -> Result<Output, RdapServerError> {
     let self_href = QueryType::Domain(args.ldh.to_owned())
         .query_url(&args.object_args.base_url)
-        .expect("nameserver self href");
+        .expect("domain self href");
+    let secure_dns = if !args.ds.is_empty()
+        || args.zone_signed.is_some()
+        || args.delegation_signed.is_some()
+        || args.max_sig_life.is_some()
+    {
+        let secure_dns = SecureDns::builder()
+            .and_zone_signed(args.zone_signed)
+            .and_delegation_signed(args.delegation_signed)
+            .and_max_sig_life(args.max_sig_life)
+            .and_ds_data((!args.ds.is_empty()).then_some(args.ds))
+            .build();
+        Some(secure_dns)
+    } else {
+        None
+    };
     let domain = Domain::builder()
         .ldh_name(args.ldh)
+        .and_secure_dns(secure_dns)
         .and_nameservers(nameservers(store, args.ns).await?)
         .common(
             Common::builder()
@@ -652,10 +768,48 @@ async fn make_domain(
     Ok(output)
 }
 
+async fn make_autnum(
+    args: Box<AutnumArgs>,
+    store: &dyn StoreOps,
+) -> Result<Output, RdapServerError> {
+    let self_href = QueryType::AsNumber(args.start_autnum.to_string())
+        .query_url(&args.object_args.base_url)
+        .expect("autnum self href");
+    let autnum = Autnum::builder()
+        .start_autnum(args.start_autnum)
+        .end_autnum(args.end_autnum.unwrap_or(args.start_autnum))
+        .and_autnum_type(args.autnum_type)
+        .and_country(args.country)
+        .and_name(args.name)
+        .common(
+            Common::builder()
+                .and_notices(notices(&args.object_args.notice))
+                .build(),
+        )
+        .object_common(
+            ObjectCommon::builder()
+                .object_class_name("autnum")
+                .and_entities(entities(store, &args.object_args).await?)
+                .and_remarks(remarks(&args.object_args.remark))
+                .and_status(status(&args.object_args))
+                .and_events(events(&args.object_args))
+                .and_links(links(&self_href))
+                .and_handle(args.handle)
+                .build(),
+        );
+    let output = Output {
+        rdap: RdapResponse::Autnum(autnum.build()),
+        self_href,
+    };
+    Ok(output)
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::parse_notice_or_remark;
+    use icann_rdap_common::response::domain::DsDatum;
+
+    use crate::{parse_ds_datum, parse_notice_or_remark};
 
     #[test]
     fn cli_debug_assert_test() {
@@ -697,5 +851,23 @@ mod tests {
             link.media_type.as_ref().expect("no media_type in link"),
             media_type
         );
+    }
+
+    #[test]
+    fn GIVEN_ds_data_WHEN_parse_THEN_correct() {
+        // GIVEN
+        let data = "123456 1 2 THISISADIGEST";
+
+        // WHEN
+        let actual = parse_ds_datum(data).expect("parsing ds datum");
+
+        // THEN
+        let expected = DsDatum::builder()
+            .key_tag(123456)
+            .algorithm(1)
+            .digest_type(2)
+            .digest("THISISADIGEST".to_string())
+            .build();
+        assert_eq!(expected, actual);
     }
 }

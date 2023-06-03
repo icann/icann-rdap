@@ -91,7 +91,7 @@ pub struct SecureDns {
 
     #[serde(rename = "maxSigLife")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_sig_life: Option<i64>,
+    pub max_sig_life: Option<u64>,
 
     #[serde(rename = "dsData")]
     #[serde(skip_serializing_if = "Option::is_none")]
