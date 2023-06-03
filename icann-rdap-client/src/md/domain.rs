@@ -88,6 +88,12 @@ impl ToMd for Domain {
                 .iter()
                 .for_each(|ns| md.push_str(&ns.to_md(params.next_level())));
         }
+
+        // network
+        if let Some(network) = &self.network {
+            md.push_str(&network.to_md(params.next_level()));
+        }
+
         md.push('\n');
         md
     }
