@@ -5,6 +5,7 @@ use icann_rdap_common::response::entity::Entity;
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
+use super::types::public_ids_to_table;
 use super::FromMd;
 use super::{
     string::StringUtil,
@@ -34,6 +35,9 @@ impl ToMd for Entity {
         table = table
             .header_ref(&"Identifiers")
             .and_data_ref(&"Handle", &self.object_common.handle);
+        if let Some(public_ids) = &self.public_ids {
+            table = public_ids_to_table(public_ids, table);
+        }
 
         if let Some(contact) = self.contact() {
             table = table

@@ -1,6 +1,7 @@
 pub mod check;
 pub mod client;
 pub mod contact;
+pub mod dns_types;
 pub mod iana;
 pub mod media_types;
 pub mod response;

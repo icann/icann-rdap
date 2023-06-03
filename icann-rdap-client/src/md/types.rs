@@ -1,7 +1,7 @@
 use std::any::TypeId;
 
 use icann_rdap_common::response::types::{
-    Common, Event, Link, Links, Notices, ObjectCommon, Remarks,
+    Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
 };
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
 use strum::EnumMessage;
@@ -10,7 +10,7 @@ use icann_rdap_common::check::{
     CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN,
 };
 
-use super::string::StringUtil;
+use super::string::{StringListUtil, StringUtil};
 use super::table::{MultiPartTable, ToMpTable};
 use super::{checks_ul, MdParams, HR};
 use super::{FromMd, ToMd};
@@ -183,6 +183,19 @@ impl ToMd for Common {
 
 impl ToMpTable for ObjectCommon {
     fn add_to_mptable(&self, mut table: MultiPartTable, params: MdParams) -> MultiPartTable {
+        if self.status.is_some() || self.port_43.is_some() {
+            table = table.header_ref(&"Information");
+
+            // Status
+            if let Some(status) = &self.status {
+                let values = status.iter().map(|v| v.0.as_str()).collect::<Vec<&str>>();
+                table = table.data_ul(&"Status", values.make_list_all_title_case());
+            }
+
+            // Port 43
+            table = table.and_data_ref(&"Whois", &self.port_43);
+        }
+
         // Events
         if let Some(events) = &self.events {
             table = events_to_table(events, table, "Events", params);
@@ -196,6 +209,16 @@ impl ToMpTable for ObjectCommon {
         // TODO Checks
         table
     }
+}
+
+pub(crate) fn public_ids_to_table(
+    publid_ids: &[PublicId],
+    mut table: MultiPartTable,
+) -> MultiPartTable {
+    for pid in publid_ids {
+        table = table.data_ref(&pid.id_type, &pid.identifier);
+    }
+    table
 }
 
 pub(crate) fn events_to_table(
