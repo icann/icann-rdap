@@ -38,22 +38,39 @@ in the `target/release` directory.
 
 ## Quick Start
 
-Create directory in /tmp:
+Create a `.env` file in the directory where you intend to run the commands, and put the following in that file:
+
+    RDAP_SRV_LOG=debug
+    RDAP_SRV_DATA_DIR=/tmp/rdap-srv/data
+    RDAP_BASE_URL=http://localhost:3000/rdap
+
+Create directory in /tmp to hold server data files:
 
     mkdir -p /tmp/rdap-srv/data
 
-Copy the files from icann-rdap-srv/resources/test-data-files and place them in the directory
-created above.
+Create some data:
+
+    ./target/release/rdap-srv-data entity --handle foo1234 --email joe@example.com --full-name "Joe User"
+    ./target/release/rdap-srv-data nameserver --ldh ns1.example.com --registrant foo1234
 
 Start the server:
 
-    RDAP_SRV_LOG=debug RDAP_SRV_DATA_DIR=/tmp/rdap-srv/data target/release/rdap-srv
+    ./target/release/rdap-srv
 
-Query the server with the client:
+Query the server with the client in another terminal:
 
-    target/release/rdap -B http://localhost:3000/rdap xn--fo-5ja.example
+    ./target/release/rdap -B http://localhost:3000/rdap ns1.example.com
 
-Profit!
+While the server is running, do the following in a separate terminal to add some more data:
+
+    ./target/release/rdap-srv-data domain --ldh example.com --registrant foo1234 --ns ns1.example.com
+    ./target/release/rdap-srv-store --update
+
+Query the server for the new data:
+
+    ./target/release/rdap -B http://localhost:3000/rdap example.com
+
+For more information on the options available, use the `--help` option.
 
 ## Running the Server
 
@@ -107,3 +124,31 @@ but does not remove any previous data unless that data exists in the data direct
 The "reload" file triggers a full reload, removing all previous data and replacing it with
 the data from the files in the data directory.
 
+Alternatively, you can use the `rdap-srv-store` command to touch the files to trigger
+reloads and updates: `rdap-srv-store --update` or `rdap-srv-store --reload`.
+
+## Create Data
+
+RDAP data can often be tricky to create, but the `rdap-srv-data` command makes it easier.
+This command does not cover all possible RDAP expressions, but it does cover the common
+scenarios and can be used as a starting point for those who require more complex RDAP data.
+
+This command has 5 sub-commands, each with its own specific set of command line arguments.
+Use the `--help` option to see the arguments for each sub-command.
+
+    rdap-srv-data entity --help
+    rdap-srv-data nameserver --help
+    rdap-srv-data domain --help
+    rdap-srv-data autnum --help    
+    rdap-srv-data network --help
+
+## Use Your Data
+
+As mentioned above, the `rdap-srv-store` command can be used to signal a reload or update
+of the server. This command can also be used to copy your own data into the data directory
+by specifiing a directory:
+
+    rdap-srv-store --update /my_data/rdap
+
+This command will perform checks on your data while copying them to ensure the data is
+RDAP compliant.

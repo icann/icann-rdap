@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use chrono::FixedOffset;
 use chrono::Utc;
+use cidr_utils::cidr::IpCidr;
 use clap::{Args, Parser, Subcommand};
 use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::contact::Contact;
@@ -13,6 +14,7 @@ use icann_rdap_common::response::domain::SecureDns;
 use icann_rdap_common::response::entity::Entity;
 use icann_rdap_common::response::nameserver::IpAddresses;
 use icann_rdap_common::response::nameserver::Nameserver;
+use icann_rdap_common::response::network::Network;
 use icann_rdap_common::response::types::Common;
 use icann_rdap_common::response::types::Event;
 use icann_rdap_common::response::types::Events;
@@ -178,6 +180,9 @@ enum Commands {
 
     /// Create an autnum.
     Autnum(Box<AutnumArgs>),
+
+    /// Create an IP network.
+    Network(Box<NetworkArgs>),
 }
 
 #[derive(Debug, Args)]
@@ -379,7 +384,7 @@ struct AutnumArgs {
     #[arg(long)]
     handle: Option<String>,
 
-    /// Autnum handle.
+    /// Autnum type.
     #[arg(long)]
     autnum_type: Option<String>,
 
@@ -390,6 +395,43 @@ struct AutnumArgs {
     /// Name.
     #[arg(long)]
     name: Option<String>,
+}
+
+#[derive(Debug, Args)]
+struct NetworkArgs {
+    #[clap(flatten)]
+    object_args: ObjectArgs,
+
+    /// IP CIDR.
+    ///
+    /// The RDAP start and end address and IP type will be derived from this.
+    #[arg(long, value_parser = parse_cidr)]
+    cidr: IpCidr,
+
+    /// Network handle.
+    #[arg(long)]
+    handle: Option<String>,
+
+    /// Parent network handle.
+    #[arg(long)]
+    parent_handle: Option<String>,
+
+    /// Network type.
+    #[arg(long)]
+    network_type: Option<String>,
+
+    /// Country.
+    #[arg(long)]
+    country: Option<String>,
+
+    /// Name.
+    #[arg(long)]
+    name: Option<String>,
+}
+
+fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
+    let ip_cidr = IpCidr::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
+    Ok(ip_cidr)
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -434,6 +476,7 @@ async fn do_the_work(
         Commands::Nameserver(args) => make_nameserver(args, storage).await?,
         Commands::Domain(args) => make_domain(args, storage).await?,
         Commands::Autnum(args) => make_autnum(args, storage).await?,
+        Commands::Network(args) => make_network(args, storage).await?,
     };
 
     let content = serde_json::to_string_pretty(&output.rdap)?;
@@ -799,6 +842,55 @@ async fn make_autnum(
         );
     let output = Output {
         rdap: RdapResponse::Autnum(autnum.build()),
+        self_href,
+    };
+    Ok(output)
+}
+
+async fn make_network(
+    args: Box<NetworkArgs>,
+    store: &dyn StoreOps,
+) -> Result<Output, RdapServerError> {
+    let (self_href, ip_version) = match &args.cidr {
+        IpCidr::V4(cidr) => {
+            let self_href = QueryType::IpV4Cidr(cidr.to_string())
+                .query_url(&args.object_args.base_url)
+                .expect("ipv4 network self href");
+            (self_href, "v4".to_string())
+        }
+        IpCidr::V6(cidr) => {
+            let self_href = QueryType::IpV6Cidr(cidr.to_string())
+                .query_url(&args.object_args.base_url)
+                .expect("ipv6 network self href");
+            (self_href, "v6".to_string())
+        }
+    };
+    let network = Network::builder()
+        .start_address(args.cidr.first_as_ip_addr().to_string())
+        .end_address(args.cidr.last_as_ip_addr().to_string())
+        .ip_version(ip_version)
+        .and_country(args.country)
+        .and_name(args.name)
+        .and_network_type(args.network_type)
+        .and_parent_handle(args.parent_handle)
+        .common(
+            Common::builder()
+                .and_notices(notices(&args.object_args.notice))
+                .build(),
+        )
+        .object_common(
+            ObjectCommon::builder()
+                .object_class_name("ip network")
+                .and_entities(entities(store, &args.object_args).await?)
+                .and_remarks(remarks(&args.object_args.remark))
+                .and_status(status(&args.object_args))
+                .and_events(events(&args.object_args))
+                .and_links(links(&self_href))
+                .and_handle(args.handle)
+                .build(),
+        );
+    let output = Output {
+        rdap: RdapResponse::Network(network.build()),
         self_href,
     };
     Ok(output)
