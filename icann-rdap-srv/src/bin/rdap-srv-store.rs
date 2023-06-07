@@ -1,6 +1,6 @@
 use std::{net::IpAddr, path::PathBuf};
 
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use icann_rdap_common::{check::CheckClass, response::RdapResponse, VERSION};
 use icann_rdap_srv::{
     config::{data_dir, debug_config_vars, LOG},
@@ -38,15 +38,6 @@ struct Cli {
     /// If true, storage is completely reloaded.
     #[arg(long, required = false, conflicts_with = "update")]
     reload: bool,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum CheckTypeArg {
-    /// Checks for specification warnings.
-    SpecWarn,
-
-    /// Checks for specficiation errors.
-    SpecError,
 }
 
 #[tokio::main(flavor = "multi_thread")]
