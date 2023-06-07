@@ -11,6 +11,7 @@ pub mod domain;
 pub mod entity;
 pub mod error;
 pub mod help;
+pub mod items;
 pub mod nameserver;
 pub mod network;
 pub mod search;

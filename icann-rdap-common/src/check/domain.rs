@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use crate::response::domain::Domain;
 
-use super::{Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Domain {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -29,10 +29,7 @@ impl GetChecks for Domain {
                 })
                 .count();
             if empty_count != 0 {
-                items.push(CheckItem {
-                    check_class: super::CheckClass::SpecificationWarning,
-                    check: Check::EmptyDomainVariant,
-                });
+                items.push(CheckItem::empty_domain_variant());
             };
         };
 

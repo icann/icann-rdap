@@ -16,16 +16,13 @@ use crate::{
 use chrono::DateTime;
 use lazy_static::lazy_static;
 
-use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items = Vec::new();
         if params.parent_type != params.root.get_type() {
-            items.push(CheckItem {
-                check_class: CheckClass::SpecificationError,
-                check: Check::InvalidRdapConformanceParent,
-            })
+            items.push(CheckItem::invalid_rdap_conformance_parent())
         };
         Checks {
             struct_name: "RDAP Conformance",
@@ -64,10 +61,7 @@ impl GetChecks for Link {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.value.is_none() {
-            items.push(CheckItem {
-                check_class: CheckClass::SpecificationError,
-                check: Check::LinkMissingValueProperty,
-            })
+            items.push(CheckItem::link_missing_value_property())
         };
         if let Some(rel) = &self.rel {
             if rel.eq("related") {
@@ -75,42 +69,24 @@ impl GetChecks for Link {
                     if !media_type.eq(RDAP_MEDIA_TYPE)
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
-                        items.push(CheckItem {
-                            check_class: CheckClass::SpecificationWarning,
-                            check: Check::RelatedLinkIsNotRdap,
-                        })
+                        items.push(CheckItem::related_link_is_not_rdap())
                     }
                 } else {
-                    items.push(CheckItem {
-                        check_class: CheckClass::SpecificationWarning,
-                        check: Check::RelatedLinkHasNoType,
-                    })
+                    items.push(CheckItem::related_link_has_no_type())
                 }
             } else if rel.eq("self") {
                 if let Some(media_type) = &self.media_type {
                     if !media_type.eq(RDAP_MEDIA_TYPE) {
-                        items.push(CheckItem {
-                            check_class: CheckClass::SpecificationWarning,
-                            check: Check::SelfLinkIsNotRdap,
-                        })
+                        items.push(CheckItem::self_link_is_not_rdap())
                     }
                 } else {
-                    items.push(CheckItem {
-                        check_class: CheckClass::SpecificationWarning,
-                        check: Check::SelfLinkHasNoType,
-                    })
+                    items.push(CheckItem::self_link_has_no_type())
                 }
             } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) {
-                items.push(CheckItem {
-                    check_class: CheckClass::SpecificationWarning,
-                    check: Check::ObjectClassHasNoSelfLink,
-                })
+                items.push(CheckItem::object_class_has_no_self_link())
             }
         } else {
-            items.push(CheckItem {
-                check_class: CheckClass::SpecificationError,
-                check: Check::LinkMissingRelProperty,
-            })
+            items.push(CheckItem::link_missing_rel_property())
         }
         Checks {
             struct_name: "Link",
@@ -201,10 +177,7 @@ impl GetSubChecks for ObjectCommon {
         } else {
             sub_checks.push(Checks {
                 struct_name: "Links",
-                items: vec![CheckItem {
-                    check_class: CheckClass::SpecificationWarning,
-                    check: Check::ObjectClassHasNoSelfLink,
-                }],
+                items: vec![CheckItem::object_class_has_no_self_link()],
                 sub_checks: Vec::new(),
             })
         };
@@ -221,10 +194,7 @@ impl GetSubChecks for ObjectCommon {
                 if date.is_err() {
                     sub_checks.push(Checks {
                         struct_name: "Links",
-                        items: vec![CheckItem {
-                            check_class: CheckClass::SpecificationError,
-                            check: Check::EventDateIsNotRfc3339,
-                        }],
+                        items: vec![CheckItem::event_date_is_not_rfc3339()],
                         sub_checks: Vec::new(),
                     })
                 }
