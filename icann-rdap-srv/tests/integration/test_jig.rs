@@ -26,3 +26,27 @@ impl RdapSrvStoreTestJig {
         }
     }
 }
+
+pub struct RdapSrvDataTestJig {
+    pub cmd: Command,
+    pub source_dir: TestDir,
+    pub data_dir: TestDir,
+}
+
+impl RdapSrvDataTestJig {
+    pub fn new() -> RdapSrvDataTestJig {
+        let source_dir = TestDir::temp();
+        let data_dir = TestDir::temp();
+        let mut cmd = Command::cargo_bin("rdap-srv-data").expect("cannot find rdap-srv-data cmd");
+        cmd.env_clear()
+            .timeout(Duration::from_secs(2))
+            .env("RDAP_BASE_URL", "http://localhost:3000/rdap")
+            .env("RDAP_SRV_LOG", "debug")
+            .env("RDAP_SRV_DATA_DIR", data_dir.root());
+        RdapSrvDataTestJig {
+            cmd,
+            source_dir,
+            data_dir,
+        }
+    }
+}

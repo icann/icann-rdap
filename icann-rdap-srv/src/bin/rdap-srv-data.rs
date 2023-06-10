@@ -30,7 +30,6 @@ use icann_rdap_common::response::types::Status;
 use icann_rdap_common::response::types::StatusValue;
 use icann_rdap_common::response::RdapResponse;
 use icann_rdap_common::VERSION;
-use icann_rdap_srv::config::data_dir;
 use icann_rdap_srv::config::ServiceConfig;
 use icann_rdap_srv::config::StorageType;
 use icann_rdap_srv::rdap::response::ArcRdapResponse;
@@ -62,6 +61,10 @@ use tracing_subscriber::{
 struct Cli {
     #[clap(flatten)]
     check_args: CheckArgs,
+
+    /// Specifies the directory where data will be written.
+    #[arg(long, env = "RDAP_SRV_DATA_DIR")]
+    data_dir: String,
 
     #[command(subcommand)]
     command: Commands,
@@ -445,7 +448,7 @@ async fn main() -> Result<(), RdapServerError> {
 
     debug_config_vars();
 
-    let data_dir = data_dir();
+    let data_dir = cli.data_dir.clone();
     let storage_type = StorageType::new_from_env()?;
     let config = ServiceConfig::builder()
         .storage_type(storage_type)
