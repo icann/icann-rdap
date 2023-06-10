@@ -39,4 +39,15 @@ pub struct RequestResponse<'a> {
     pub checks: Checks<'a>,
 }
 
+/// The primary purpose for this struct is to allow deserialization for testing.
+/// If somebody can help get #[serde(borrow)] to work for the non-owned version,
+/// that would be awesome.
+#[derive(Clone, Deserialize)]
+pub struct RequestResponseOwned<'a> {
+    #[serde(borrow)]
+    pub req_data: RequestData<'a>,
+    pub res_data: ResponseData,
+    pub checks: Checks<'a>,
+}
+
 pub type RequestResponses<'a> = Vec<RequestResponse<'a>>;

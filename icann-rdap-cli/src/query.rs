@@ -131,7 +131,7 @@ async fn do_inr_query<'a, W: std::io::Write>(
             let req_data = RequestData {
                 req_number: 1,
                 source_host: &source_host,
-                source_type: SourceType::UncategorizedRegistry,
+                source_type: SourceType::RegionalInternetRegistry,
             };
             transactions = do_output(output_params, &req_data, &response, write, transactions)?;
             do_final_output(output_params, write, transactions)?;
