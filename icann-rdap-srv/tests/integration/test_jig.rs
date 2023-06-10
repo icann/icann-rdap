@@ -49,4 +49,18 @@ impl RdapSrvDataTestJig {
             data_dir,
         }
     }
+
+    pub fn new_cmd(self) -> RdapSrvDataTestJig {
+        let mut cmd = Command::cargo_bin("rdap-srv-data").expect("cannot find rdap-srv-data cmd");
+        cmd.env_clear()
+            .timeout(Duration::from_secs(2))
+            .env("RDAP_BASE_URL", "http://localhost:3000/rdap")
+            .env("RDAP_SRV_LOG", "debug")
+            .env("RDAP_SRV_DATA_DIR", self.data_dir.root());
+        RdapSrvDataTestJig {
+            cmd,
+            source_dir: self.source_dir,
+            data_dir: self.data_dir,
+        }
+    }
 }
