@@ -56,6 +56,11 @@ async fn main() -> Result<(), RdapServerError> {
     let data_dir = data_dir();
 
     if let Some(directory) = cli.directory {
+        if directory == data_dir {
+            return Err(RdapServerError::InvalidArg(
+                "Source directory is same as data (destination) directory.".to_string(),
+            ));
+        }
         do_validate_then_move(&directory, &check_types, &data_dir).await?;
     }
 

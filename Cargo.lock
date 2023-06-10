@@ -1195,6 +1195,7 @@ dependencies = [
 name = "icann-rdap-srv"
 version = "0.0.6"
 dependencies = [
+ "assert_cmd",
  "async-trait",
  "axum",
  "axum-client-ip",
@@ -1209,6 +1210,7 @@ dependencies = [
  "headers",
  "http",
  "hyper",
+ "icann-rdap-cli",
  "icann-rdap-client",
  "icann-rdap-common",
  "ipnet",
