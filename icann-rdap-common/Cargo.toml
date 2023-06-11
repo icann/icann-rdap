@@ -19,3 +19,8 @@ serde_json.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+
+# fixture testings
+rstest = "0.17.0"

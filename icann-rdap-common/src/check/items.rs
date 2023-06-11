@@ -71,4 +71,12 @@ impl CheckItem {
             check: Check::EventDateIsNotRfc3339,
         }
     }
+
+    // Handle
+    pub fn handle_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::HandleIsEmpty,
+        }
+    }
 }

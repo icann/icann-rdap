@@ -16,7 +16,7 @@ use crate::{
 use chrono::DateTime;
 use lazy_static::lazy_static;
 
-use super::{CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
@@ -214,7 +214,17 @@ impl GetSubChecks for ObjectCommon {
             });
         }
 
-        // TODO get handle
+        // handle
+        if let Some(handle) = &self.handle {
+            if handle.is_whitespace_or_empty() {
+                sub_checks.push(Checks {
+                    struct_name: "Handle",
+                    items: vec![CheckItem::handle_is_empty()],
+                    sub_checks: Vec::new(),
+                })
+            }
+        }
+
         // TODO get status
         // TODO get port43
         sub_checks

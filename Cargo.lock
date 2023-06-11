@@ -1184,6 +1184,7 @@ dependencies = [
  "const_format",
  "lazy_static",
  "reqwest",
+ "rstest",
  "serde",
  "serde_json",
  "strum",
