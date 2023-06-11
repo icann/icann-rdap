@@ -87,4 +87,12 @@ impl CheckItem {
             check: Check::StatusIsEmpty,
         }
     }
+
+    // Roles
+    pub fn roles_are_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::RolesAreEmpty,
+        }
+    }
 }

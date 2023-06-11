@@ -181,6 +181,10 @@ pub enum Check {
     // Status
     #[strum(message = "status appears to be empty or only whitespace")]
     StatusIsEmpty,
+
+    // Roles
+    #[strum(message = "roles appears to be empty or only whitespace")]
+    RolesAreEmpty,
 }
 
 #[cfg(test)]
