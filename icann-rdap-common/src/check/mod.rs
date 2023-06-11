@@ -177,6 +177,10 @@ pub enum Check {
     // Handle
     #[strum(message = "handle appears to be empty or only whitespace")]
     HandleIsEmpty,
+
+    // Status
+    #[strum(message = "status appears to be empty or only whitespace")]
+    StatusIsEmpty,
 }
 
 #[cfg(test)]

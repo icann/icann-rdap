@@ -79,4 +79,12 @@ impl CheckItem {
             check: Check::HandleIsEmpty,
         }
     }
+
+    // Status
+    pub fn status_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::StatusIsEmpty,
+        }
+    }
 }
