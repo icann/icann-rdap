@@ -18,12 +18,12 @@ pub(crate) async fn network_by_netid(
 ) -> Result<Response, RdapServerError> {
     if netid.contains('/') {
         debug!("getting network by cidr {netid}");
-        if !IpCidr::is_ip_cidr(&netid) {
-            Ok(BAD_REQUEST.response())
-        } else {
+        if let Ok(cidr) = IpCidr::from_str(&netid) {
             let storage = state.get_storage().await?;
-            let network = storage.get_network_by_cidr(&netid).await?;
+            let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
             Ok(network.response())
+        } else {
+            Ok(BAD_REQUEST.response())
         }
     } else {
         debug!("getting network by ip address {netid}");

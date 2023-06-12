@@ -11,9 +11,11 @@ pub mod domain;
 pub mod entity;
 pub mod error;
 pub mod help;
+pub mod items;
 pub mod nameserver;
 pub mod network;
 pub mod search;
+pub mod string;
 pub mod types;
 
 lazy_static! {
@@ -171,6 +173,18 @@ pub enum Check {
     // Events
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
+
+    // Handle
+    #[strum(message = "handle appears to be empty or only whitespace")]
+    HandleIsEmpty,
+
+    // Status
+    #[strum(message = "status appears to be empty or only whitespace")]
+    StatusIsEmpty,
+
+    // Roles
+    #[strum(message = "roles appears to be empty or only whitespace")]
+    RolesAreEmpty,
 }
 
 #[cfg(test)]

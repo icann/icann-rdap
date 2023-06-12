@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use crate::response::entity::Entity;
 
-use super::{CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringListCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Entity {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -19,9 +19,15 @@ impl GetChecks for Entity {
         } else {
             Vec::new()
         };
+        let mut items = Vec::new();
+        if let Some(roles) = &self.roles {
+            if roles.as_slice().is_empty_or_any_empty_or_whitespace() {
+                items.push(CheckItem::roles_are_empty());
+            }
+        }
         Checks {
             struct_name: "Entity",
-            items: Vec::new(),
+            items,
             sub_checks,
         }
     }

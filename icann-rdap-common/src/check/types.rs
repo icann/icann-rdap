@@ -16,16 +16,16 @@ use crate::{
 use chrono::DateTime;
 use lazy_static::lazy_static;
 
-use super::{Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{
+    string::{StringCheck, StringListCheck},
+    CheckItem, CheckParams, Checks, GetChecks, GetSubChecks,
+};
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items = Vec::new();
         if params.parent_type != params.root.get_type() {
-            items.push(CheckItem {
-                check_class: CheckClass::SpecificationError,
-                check: Check::InvalidRdapConformanceParent,
-            })
+            items.push(CheckItem::invalid_rdap_conformance_parent())
         };
         Checks {
             struct_name: "RDAP Conformance",
@@ -56,7 +56,6 @@ lazy_static! {
         TypeId::of::<Entity>(),
         TypeId::of::<Autnum>(),
         TypeId::of::<Network>(),
-        TypeId::of::<Nameserver>(),
     ];
 }
 
@@ -64,10 +63,7 @@ impl GetChecks for Link {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.value.is_none() {
-            items.push(CheckItem {
-                check_class: CheckClass::SpecificationError,
-                check: Check::LinkMissingValueProperty,
-            })
+            items.push(CheckItem::link_missing_value_property())
         };
         if let Some(rel) = &self.rel {
             if rel.eq("related") {
@@ -75,42 +71,31 @@ impl GetChecks for Link {
                     if !media_type.eq(RDAP_MEDIA_TYPE)
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
-                        items.push(CheckItem {
-                            check_class: CheckClass::SpecificationWarning,
-                            check: Check::RelatedLinkIsNotRdap,
-                        })
+                        items.push(CheckItem::related_link_is_not_rdap())
                     }
                 } else {
-                    items.push(CheckItem {
-                        check_class: CheckClass::SpecificationWarning,
-                        check: Check::RelatedLinkHasNoType,
-                    })
+                    items.push(CheckItem::related_link_has_no_type())
                 }
             } else if rel.eq("self") {
                 if let Some(media_type) = &self.media_type {
                     if !media_type.eq(RDAP_MEDIA_TYPE) {
-                        items.push(CheckItem {
-                            check_class: CheckClass::SpecificationWarning,
-                            check: Check::SelfLinkIsNotRdap,
-                        })
+                        items.push(CheckItem::self_link_is_not_rdap())
                     }
                 } else {
-                    items.push(CheckItem {
-                        check_class: CheckClass::SpecificationWarning,
-                        check: Check::SelfLinkHasNoType,
-                    })
+                    items.push(CheckItem::self_link_has_no_type())
                 }
-            } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) {
-                items.push(CheckItem {
-                    check_class: CheckClass::SpecificationWarning,
-                    check: Check::ObjectClassHasNoSelfLink,
-                })
+            } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) ||
+                // because some registries do not model nameservers directly,
+                // they can be embedded in other objects but aren't first class
+                // objects themself (see RIR example in RFC 9083). Therefore,
+                // it only matters that a nameserver has no self link if it is
+                // the top most object (i.e. a first class object).
+                params.root.get_type() == TypeId::of::<Nameserver>()
+            {
+                items.push(CheckItem::object_class_has_no_self_link())
             }
         } else {
-            items.push(CheckItem {
-                check_class: CheckClass::SpecificationError,
-                check: Check::LinkMissingRelProperty,
-            })
+            items.push(CheckItem::link_missing_rel_property())
         }
         Checks {
             struct_name: "Link",
@@ -198,13 +183,17 @@ impl GetSubChecks for ObjectCommon {
         // links
         if let Some(links) = &self.links {
             sub_checks.push(links.get_checks(params));
-        } else {
+        } else if params.root.get_type() != TypeId::of::<Nameserver>()
+            && params.parent_type != TypeId::of::<Nameserver>()
+        // because some registries do not model nameservers directly,
+        // they can be embedded in other objects but aren't first class
+        // objects themself (see RIR example in RFC 9083). Therefore,
+        // it only matters that a nameserver has no self link if it is
+        // the top most object (i.e. a first class object).
+        {
             sub_checks.push(Checks {
                 struct_name: "Links",
-                items: vec![CheckItem {
-                    check_class: CheckClass::SpecificationWarning,
-                    check: Check::ObjectClassHasNoSelfLink,
-                }],
+                items: vec![CheckItem::object_class_has_no_self_link()],
                 sub_checks: Vec::new(),
             })
         };
@@ -221,18 +210,36 @@ impl GetSubChecks for ObjectCommon {
                 if date.is_err() {
                     sub_checks.push(Checks {
                         struct_name: "Links",
-                        items: vec![CheckItem {
-                            check_class: CheckClass::SpecificationError,
-                            check: Check::EventDateIsNotRfc3339,
-                        }],
+                        items: vec![CheckItem::event_date_is_not_rfc3339()],
                         sub_checks: Vec::new(),
                     })
                 }
             });
         }
 
-        // TODO get handle
-        // TODO get status
+        // handle
+        if let Some(handle) = &self.handle {
+            if handle.is_whitespace_or_empty() {
+                sub_checks.push(Checks {
+                    struct_name: "Handle",
+                    items: vec![CheckItem::handle_is_empty()],
+                    sub_checks: Vec::new(),
+                })
+            }
+        }
+
+        // Status
+        if let Some(status) = &self.status {
+            let status: Vec<&str> = status.iter().map(|s| s.0.as_str()).collect();
+            if status.as_slice().is_empty_or_any_empty_or_whitespace() {
+                sub_checks.push(Checks {
+                    struct_name: "Status",
+                    items: vec![CheckItem::status_is_empty()],
+                    sub_checks: Vec::new(),
+                })
+            }
+        }
+
         // TODO get port43
         sub_checks
     }
@@ -244,6 +251,7 @@ mod tests {
     use crate::response::{
         domain::Domain,
         entity::Entity,
+        nameserver::Nameserver,
         types::{Common, Extension, Link, ObjectCommon},
         RdapResponse,
     };
@@ -531,6 +539,67 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::ObjectClassHasNoSelfLink)
             .expect("link missing check");
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_no_links_WHEN_checked_THEN_no_object_classes_should_have_self_link() {
+        // GIVEN
+        let rdap = RdapResponse::Nameserver(
+            Nameserver::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::builder()
+                        .object_class_name("nameserver")
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        assert!(checks.sub("Links").is_none());
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_no_self_links_WHEN_checked_THEN_no_object_classes_should_have_self_link(
+    ) {
+        // GIVEN
+        let rdap = RdapResponse::Nameserver(
+            Nameserver::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::builder()
+                        .object_class_name("nameserver")
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("no_self")
+                            .media_type("foo")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        assert!(!checks
+            .sub("Links")
+            .expect("Links not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::ObjectClassHasNoSelfLink));
     }
 
     #[test]

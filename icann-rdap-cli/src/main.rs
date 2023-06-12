@@ -83,27 +83,19 @@ struct Cli {
     /// This option gets a base URL from the RDAP bootstrap registry maintained
     /// by IANA. For example, using "com" will get the base URL for the .com
     /// registry.
-    #[arg(
-        short = 'b',
-        long,
-        conflicts_with = "url",
-        required = false,
-        env = "RDAP_BASE"
-    )]
+    ///
+    /// This option silently ignored if the --url option is used.
+    #[arg(short = 'b', long, required = false, env = "RDAP_BASE")]
     base: Option<String>,
 
     /// An RDAP base URL for a specific RDAP server.
     ///
     /// Use this option to explicitly give an RDAP base URL when issuing queries.
     /// If not specified, the base URL will come from the RDAP boostrap process
-    /// outline in RFC 9224.
-    #[arg(
-        short = 'B',
-        long,
-        conflicts_with = "url",
-        required = false,
-        env = "RDAP_BASE_URL"
-    )]
+    /// outlined in RFC 9224.
+    ///
+    /// This option silently ignored if the --url option is used.
+    #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
 
     /// Output format.

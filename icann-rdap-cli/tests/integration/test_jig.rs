@@ -11,6 +11,7 @@ use test_dir::TestDir;
 pub struct TestJig {
     pub mem: Mem,
     pub cmd: Command,
+    pub rdap_base: String,
     // pass ownership to the test so the directories are dropped when the test is done.
     _test_dir: TestDir,
 }
@@ -36,7 +37,7 @@ impl TestJig {
         let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
         cmd.env_clear()
             .timeout(Duration::from_secs(2))
-            .env("RDAP_BASE_URL", rdap_base)
+            .env("RDAP_BASE_URL", rdap_base.clone())
             .env("RDAP_PAGING", "none")
             .env("RDAP_OUTPUT", "json-extra")
             .env("RDAP_LOG", "debug")
@@ -45,6 +46,7 @@ impl TestJig {
         TestJig {
             mem,
             cmd,
+            rdap_base,
             _test_dir: test_dir,
         }
     }

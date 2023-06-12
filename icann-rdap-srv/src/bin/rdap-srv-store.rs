@@ -1,6 +1,6 @@
 use std::{net::IpAddr, path::PathBuf};
 
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use icann_rdap_common::{check::CheckClass, response::RdapResponse, VERSION};
 use icann_rdap_srv::{
     config::{data_dir, debug_config_vars, LOG},
@@ -40,15 +40,6 @@ struct Cli {
     reload: bool,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum CheckTypeArg {
-    /// Checks for specification warnings.
-    SpecWarn,
-
-    /// Checks for specficiation errors.
-    SpecError,
-}
-
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), RdapServerError> {
     dotenv::dotenv().ok();
@@ -65,6 +56,11 @@ async fn main() -> Result<(), RdapServerError> {
     let data_dir = data_dir();
 
     if let Some(directory) = cli.directory {
+        if directory == data_dir {
+            return Err(RdapServerError::InvalidArg(
+                "Source directory is same as data (destination) directory.".to_string(),
+            ));
+        }
         do_validate_then_move(&directory, &check_types, &data_dir).await?;
     }
 
