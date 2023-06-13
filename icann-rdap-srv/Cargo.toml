@@ -48,8 +48,6 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 
-icann-rdap-cli = { path = "../icann-rdap-cli" }
-
 # cli assertions
 assert_cmd = "2.0.11"
 
