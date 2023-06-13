@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.7"
+version = "0.0.8"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -40,7 +40,7 @@ cidr-utils = "0.5"
 clap = { version = "4.0", features = [ "std", "derive", "env" ] }
 
 # chrono (time and date library)
-chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"] }
+chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
 
 # compile time constants formatting
 const_format = "0.2.30"
