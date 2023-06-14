@@ -11,6 +11,7 @@ version = "0.0.8"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
+keywords = ["whois", "rdap"]
 
 [workspace.dependencies]
 
