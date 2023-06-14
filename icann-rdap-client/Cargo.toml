@@ -3,13 +3,14 @@ name = "icann-rdap-client"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = """
 An RDAP client library.
 """
 
 [dependencies]
 
-icann-rdap-common = { path = "../icann-rdap-common" }
+icann-rdap-common = { version = "0.0.8", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr-utils.workspace = true

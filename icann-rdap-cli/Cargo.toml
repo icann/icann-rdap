@@ -3,6 +3,7 @@ name = "icann-rdap-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = """
 An RDAP Command Line Interface client.
 """
@@ -13,8 +14,8 @@ path = "src/main.rs"
 
 [dependencies]
 
-icann-rdap-client = { path = "../icann-rdap-client" }
-icann-rdap-common = { path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.8", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.8", path = "../icann-rdap-common" }
 
 anyhow.workspace = true
 clap.workspace = true

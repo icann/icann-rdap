@@ -3,14 +3,15 @@ name = "icann-rdap-srv"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
 description = """
 An RDAP Server.
 """
 
 [dependencies]
 
-icann-rdap-client = { path = "../icann-rdap-client" }
-icann-rdap-common = { path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.8", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.8", path = "../icann-rdap-common" }
 
 async-trait.workspace = true
 axum.workspace = true
