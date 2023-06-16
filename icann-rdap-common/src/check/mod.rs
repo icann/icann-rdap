@@ -185,6 +185,10 @@ pub enum Check {
     // Roles
     #[strum(message = "roles appears to be empty or only whitespace")]
     RolesAreEmpty,
+
+    // LDH Name
+    #[strum(message = "ldhName does not appear to be an LDH name")]
+    InvalidLdhName,
 }
 
 #[cfg(test)]

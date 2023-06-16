@@ -95,4 +95,12 @@ impl CheckItem {
             check: Check::RolesAreEmpty,
         }
     }
+
+    // LDH Name
+    pub fn invalid_ldh_name() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::InvalidLdhName,
+        }
+    }
 }

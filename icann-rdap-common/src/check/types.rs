@@ -248,11 +248,13 @@ impl GetSubChecks for ObjectCommon {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+    use rstest::rstest;
+
     use crate::response::{
         domain::Domain,
         entity::Entity,
         nameserver::Nameserver,
-        types::{Common, Extension, Link, ObjectCommon},
+        types::{Common, Extension, Link, ObjectCommon, StatusValue},
         RdapResponse,
     };
 
@@ -600,6 +602,62 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::ObjectClassHasNoSelfLink));
+    }
+
+    #[rstest]
+    #[case(vec![])]
+    #[case(vec![StatusValue("".to_string())])]
+    #[case(vec![StatusValue("  ".to_string())])]
+    #[case(vec![StatusValue("  ".to_string()), StatusValue("foo".to_string())])]
+    #[test]
+    fn GIVEN_nameserver_with_empty_status_WHEN_checked_THEN_status_is_empty(
+        #[case] status: Vec<StatusValue>,
+    ) {
+        // GIVEN
+        let mut ns = Nameserver::new_ldh("ns1.example.com");
+        ns.object_common.status = Some(status);
+        let rdap = RdapResponse::Nameserver(ns);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        assert!(checks
+            .sub("Status")
+            .expect("status not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::StatusIsEmpty));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("  ")]
+    #[test]
+    fn GIVEN_nameserver_with_empty_handle_WHEN_checked_THEN_handle_is_empty(#[case] handle: &str) {
+        // GIVEN
+        let mut ns = Nameserver::new_ldh("ns1.example.com");
+        ns.object_common.handle = Some(handle.to_string());
+        let rdap = RdapResponse::Nameserver(ns);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        assert!(checks
+            .sub("Handle")
+            .expect("handle not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::HandleIsEmpty));
     }
 
     #[test]
