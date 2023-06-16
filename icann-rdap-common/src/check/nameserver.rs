@@ -1,7 +1,10 @@
 use std::any::TypeId;
+use std::net::IpAddr;
+use std::str::FromStr;
 
 use crate::response::nameserver::Nameserver;
 
+use super::string::StringListCheck;
 use super::{string::StringCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Nameserver {
@@ -29,6 +32,25 @@ impl GetChecks for Nameserver {
             }
         }
 
+        if let Some(ip_addresses) = &self.ip_addresses {
+            if let Some(v6_addrs) = &ip_addresses.v6 {
+                if v6_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
+                    items.push(CheckItem::ip_address_list_is_empty())
+                }
+                if v6_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
+                    items.push(CheckItem::malformed_ip_address())
+                }
+            }
+            if let Some(v4_addrs) = &ip_addresses.v4 {
+                if v4_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
+                    items.push(CheckItem::ip_address_list_is_empty())
+                }
+                if v4_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
+                    items.push(CheckItem::malformed_ip_address())
+                }
+            }
+        }
+
         Checks {
             struct_name: "Nameserver",
             items,
@@ -40,7 +62,11 @@ impl GetChecks for Nameserver {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::response::{nameserver::Nameserver, RdapResponse};
+    use crate::response::{
+        nameserver::{IpAddresses, Nameserver},
+        types::{Common, ObjectCommon},
+        RdapResponse,
+    };
     use rstest::rstest;
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -67,5 +93,125 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::InvalidLdhName));
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_empty_v6s_WHEN_checked_THEN_ip_list_is_empty_check() {
+        // GIVEN
+        let ns = Nameserver::builder()
+            .ldh_name("ns1.example.com")
+            .common(Common::builder().build())
+            .object_common(
+                ObjectCommon::builder()
+                    .object_class_name("nameserver")
+                    .build(),
+            )
+            .ip_addresses(IpAddresses::builder().v6(vec![]).build())
+            .build();
+        let rdap = RdapResponse::Nameserver(ns);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::IpAddressListIsEmpty));
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_empty_v4s_WHEN_checked_THEN_ip_list_is_empty_check() {
+        // GIVEN
+        let ns = Nameserver::builder()
+            .ldh_name("ns1.example.com")
+            .common(Common::builder().build())
+            .object_common(
+                ObjectCommon::builder()
+                    .object_class_name("nameserver")
+                    .build(),
+            )
+            .ip_addresses(IpAddresses::builder().v4(vec![]).build())
+            .build();
+        let rdap = RdapResponse::Nameserver(ns);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::IpAddressListIsEmpty));
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_bad_v6s_WHEN_checked_THEN_ip_list_is_empty_check() {
+        // GIVEN
+        let ns = Nameserver::builder()
+            .ldh_name("ns1.example.com")
+            .common(Common::builder().build())
+            .object_common(
+                ObjectCommon::builder()
+                    .object_class_name("nameserver")
+                    .build(),
+            )
+            .ip_addresses(IpAddresses::builder().v6(vec!["__".to_string()]).build())
+            .build();
+        let rdap = RdapResponse::Nameserver(ns);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::MalformedIpAddress));
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_bad_v4s_WHEN_checked_THEN_ip_list_is_empty_check() {
+        // GIVEN
+        let ns = Nameserver::builder()
+            .ldh_name("ns1.example.com")
+            .common(Common::builder().build())
+            .object_common(
+                ObjectCommon::builder()
+                    .object_class_name("nameserver")
+                    .build(),
+            )
+            .ip_addresses(IpAddresses::builder().v4(vec!["___".to_string()]).build())
+            .build();
+        let rdap = RdapResponse::Nameserver(ns);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::MalformedIpAddress));
     }
 }
