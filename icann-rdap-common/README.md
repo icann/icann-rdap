@@ -8,15 +8,30 @@ to RDAP are a current work activity of the IETF's [REGEXT working group](https:/
 ***THIS PROJECT IS IN ALPHA STAGE.*** You are welcome to use it and file issues or bug reports, however there are no
 guarantees as to timeliness of responses.
 
-About
+Installation
+------------
+
+Add the library to your Cargo.toml: `cargo add icann-rdap-common`.
+
+Usage
 -----
 
-This repository hosts 4 separate Rust crates:
+```
+// create an RDAP domain
+let domain = Domain::basic().ldh("example.com").build();
 
-* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client.
-* [icann-rdap-client](icann-rdap-client/README.md) is a library handling making RDAP requests.
-* [icann-rdap-common](icann-rdap-common/README.md) is a library of RDAP structures.
-* [icann-rdap-srv](icann-rdap-srv/README.md) is a simple, in-memory RDAP server.
+// create an IP network
+let net = Network::basic().cidr(IpCidr::from_str("10.0.0.0/14")).build();
+
+// create a nameserver
+let ns = Nameserver::basic().ldh("ns1.example.com").build();
+
+// create an autnum
+let autnum = Autnum::basic().autnum("700").build();
+
+// create an entity
+let entity = Entity::basic().handle("foo-BAR").build();
+```
 
 License
 -------

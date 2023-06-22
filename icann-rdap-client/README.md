@@ -8,15 +8,30 @@ to RDAP are a current work activity of the IETF's [REGEXT working group](https:/
 ***THIS PROJECT IS IN ALPHA STAGE.*** You are welcome to use it and file issues or bug reports, however there are no
 guarantees as to timeliness of responses.
 
-About
+
+Installation
+------------
+
+Add the library to your Cargo.toml: `cargo add icann-rdap-client`
+
+Also, add the commons library: `cargo add icann-rdap-common`.
+
+Usage
 -----
 
-This repository hosts 4 separate Rust crates:
+```
+// create a query
+let query = QueryType::from_str("192.168.0.1")?;
+// or
+let query = QueryType::from_str("icann.org")?;
 
-* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client.
-* [icann-rdap-client](icann-rdap-client/README.md) is a library handling making RDAP requests.
-* [icann-rdap-common](icann-rdap-common/README.md) is a library of RDAP structures.
-* [icann-rdap-srv](icann-rdap-srv/README.md) is a simple, in-memory RDAP server.
+// create a client (from icann-rdap-common)
+let config = ClientConfig::default();
+let client = create_client(&config)?;
+
+// issue the RDAP query
+let response = rdap_request("https://rdap-bootstrap.arin.net/bootstrap", &query, &client)?;
+```
 
 License
 -------
