@@ -157,4 +157,52 @@ impl CheckItem {
             check: Check::IpAddressListIsEmpty,
         }
     }
+    pub fn this_network() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::ThisNetwork,
+        }
+    }
+    pub fn private_use_ip() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::PrivateUseIp,
+        }
+    }
+    pub fn shared_nat_ip() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::SharedNatIp,
+        }
+    }
+    pub fn loopback() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::Loopback,
+        }
+    }
+    pub fn linklocal() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::LinkLocal,
+        }
+    }
+    pub fn unique_local() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::UniqueLocal,
+        }
+    }
+    pub fn documentation_net() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::DocumentationNet,
+        }
+    }
+    pub fn reserved_net() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::ReservedNet,
+        }
+    }
 }

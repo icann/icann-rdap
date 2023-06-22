@@ -211,6 +211,22 @@ pub enum Check {
     MalformedIPVersion,
     #[strum(message = "IP address list is empty")]
     IpAddressListIsEmpty,
+    #[strum(message = "\"This network.\" See RFC 791")]
+    ThisNetwork,
+    #[strum(message = "Private use. See RFC 1918")]
+    PrivateUseIp,
+    #[strum(message = "Shared NAT network. See RFC 6598")]
+    SharedNatIp,
+    #[strum(message = "Loopback network. See RFC 1122")]
+    Loopback,
+    #[strum(message = "Link local network. See RFC 3927")]
+    LinkLocal,
+    #[strum(message = "Unique local network. See RFC 8190")]
+    UniqueLocal,
+    #[strum(message = "Documentation network. See RFC 5737")]
+    DocumentationNet,
+    #[strum(message = "Reserved network. See RFC 1112")]
+    ReservedNet,
 }
 
 #[cfg(test)]

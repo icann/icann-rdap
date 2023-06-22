@@ -1,5 +1,7 @@
 use std::{any::TypeId, net::IpAddr, str::FromStr};
 
+use cidr_utils::cidr::IpCidr;
+
 use crate::response::network::Network;
 
 use super::{string::StringCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
@@ -57,6 +59,62 @@ impl GetChecks for Network {
                         } else if ip_version != "v4" && ip_version != "v6" {
                             items.push(CheckItem::malfomred_ip_version())
                         }
+                    }
+                    let this_network =
+                        IpCidr::from_str("0.0.0.0/8").expect("incorrect this netowrk cidr");
+                    if this_network.contains(start_addr) && this_network.contains(end_addr) {
+                        items.push(CheckItem::this_network())
+                    }
+                    let private_10 = IpCidr::from_str("10.0.0.0/8").expect("incorrect net 10 cidr");
+                    let private_172 =
+                        IpCidr::from_str("172.16.0.0/12").expect("incorrect net 172.16 cidr");
+                    let private_192 =
+                        IpCidr::from_str("192.168.0.0/16").expect("incorrect net 192.168 cidr");
+                    if (private_10.contains(start_addr) && private_10.contains(end_addr))
+                        || (private_172.contains(start_addr) && private_172.contains(end_addr))
+                        || (private_192.contains(start_addr) && private_192.contains(end_addr))
+                    {
+                        items.push(CheckItem::private_use_ip())
+                    }
+                    let shared_nat =
+                        IpCidr::from_str("100.64.0.0/10").expect("incorrect net 100 cidr");
+                    if shared_nat.contains(start_addr) && shared_nat.contains(end_addr) {
+                        items.push(CheckItem::shared_nat_ip())
+                    }
+                    let loopback =
+                        IpCidr::from_str("127.0.0.0/8").expect("incorrect loopback cidr");
+                    if loopback.contains(start_addr) && loopback.contains(end_addr) {
+                        items.push(CheckItem::loopback())
+                    }
+                    let linklocal1 =
+                        IpCidr::from_str("169.254.0.0/16").expect("incorrect linklocal1 cidr");
+                    let linklocal2 =
+                        IpCidr::from_str("fe80::/10").expect("incorrect linklocal2 cidr");
+                    if (linklocal1.contains(start_addr) && linklocal1.contains(end_addr))
+                        || (linklocal2.contains(start_addr) && linklocal2.contains(end_addr))
+                    {
+                        items.push(CheckItem::linklocal())
+                    }
+                    let uniquelocal =
+                        IpCidr::from_str("fe80::/10").expect("incorrect unique local cidr");
+                    if uniquelocal.contains(start_addr) && uniquelocal.contains(end_addr) {
+                        items.push(CheckItem::unique_local())
+                    }
+                    let doc1 = IpCidr::from_str("192.0.2.0/24").expect("incorrect doc1 cidr");
+                    let doc2 = IpCidr::from_str("198.51.100.0/24").expect("incorrect doc2 cidr");
+                    let doc3 = IpCidr::from_str("203.0.113.0/24").expect("incorrect doc3 cidr");
+                    let doc4 = IpCidr::from_str("2001:db8::/32").expect("incorrect doc4 cidr");
+                    if (doc1.contains(start_addr) && doc1.contains(end_addr))
+                        || (doc2.contains(start_addr) && doc2.contains(end_addr))
+                        || (doc3.contains(start_addr) && doc3.contains(end_addr))
+                        || (doc4.contains(start_addr) && doc4.contains(end_addr))
+                    {
+                        items.push(CheckItem::documentation_net())
+                    }
+                    let reserved =
+                        IpCidr::from_str("240.0.0.0/4").expect("incorrect reserved cidr");
+                    if reserved.contains(start_addr) && reserved.contains(end_addr) {
+                        items.push(CheckItem::linklocal())
                     }
                 }
             }
