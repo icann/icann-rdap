@@ -1,5 +1,11 @@
 ICANN RDAP Server
 =================
+This repository contains open source code written by the Internet Corporation for Assigned Names and Numbers (ICANN)
+for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
+to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
+
+***THIS PROJECT IS IN ALPHA STAGE.*** You are welcome to use it and file issues or bug reports, however there are no
+guarantees as to timeliness of responses.
 
 This server was created to aid in the development of the ICANN RDAP Command Line Interface client.
 It can be used as a library or as a server started within its own process. It currently has in-memory
@@ -18,6 +24,20 @@ RDAP core support is as follows:
 - [ ] Nameserver search
 - [ ] Entity search
 - [ ] Help (`/help`)
+
+### Compiling from crates.io
+
+If you have [Rust](https://www.rust-lang.org/) installed on your system, then compiling from source is
+very straightforward. If you do not have Rust installed on your system, it is usually very easy to do:
+see [Rustup](https://rustup.rs/).
+
+If you are on a Linux system, you will need OpenSSL development files. For Debian and Ubuntu, this is
+usually done via `apt install pkg-config libssl-dev`. For other Linux systems, consult your packaging
+documentation.
+
+For macOS and Windows, the native TLS libraries are used, and there are no steps needed to install them.
+
+To build and install: `cargo install icann-rdap-srv`.
 
 ## Compiling from Source
 
@@ -152,3 +172,18 @@ by specifiing a directory:
 
 This command will perform checks on your data while copying them to ensure the data is
 RDAP compliant.
+
+License
+-------
+
+Licensed under either of
+* Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license (LICENSE-MIT or http://opensource.org/licenses/MIT) at your option.
+
+Contribution
+------------
+
+Unless you explicitly state otherwise, any contribution, as defined in the Apache-2.0 license, 
+intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, 
+shall be dual licensed pursuant to the Apache License, Version 2.0 or the MIT License referenced 
+as above, at ICANN’s option, without any additional terms or conditions.

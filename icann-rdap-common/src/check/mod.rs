@@ -185,6 +185,32 @@ pub enum Check {
     // Roles
     #[strum(message = "roles appears to be empty or only whitespace")]
     RolesAreEmpty,
+
+    // LDH Name
+    #[strum(message = "ldhName does not appear to be an LDH name")]
+    InvalidLdhName,
+
+    // Network or Autnum Name
+    #[strum(message = "name appears to be empty or only whitespace")]
+    NameIsEmpty,
+
+    // Network or Autnum Type
+    #[strum(message = "type appears to be empty or only whitespace")]
+    TypeIsEmpty,
+
+    // IP Address
+    #[strum(message = "start or end IP address is missing")]
+    MissingIpAddress,
+    #[strum(message = "IP address is malformed")]
+    MalformedIpAddress,
+    #[strum(message = "end IP address comes before start IP address")]
+    EndIpBeforeStartIp,
+    #[strum(message = "IP version does not match IP address")]
+    IpVersionMismatch,
+    #[strum(message = "IP version is malformed")]
+    MalformedIPVersion,
+    #[strum(message = "IP address list is empty")]
+    IpAddressListIsEmpty,
 }
 
 #[cfg(test)]
