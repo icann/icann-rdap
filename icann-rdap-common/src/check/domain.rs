@@ -40,6 +40,18 @@ impl GetChecks for Domain {
             if !ldh.is_ldh_domain_name() {
                 items.push(CheckItem::invalid_ldh_name());
             }
+            let name = ldh.trim_end_matches('.');
+            if name.eq("example")
+                || name.ends_with(".example")
+                || name.eq("example.com")
+                || name.ends_with(".example.com")
+                || name.eq("example.net")
+                || name.ends_with(".example.net")
+                || name.eq("example.org")
+                || name.ends_with(".example.org")
+            {
+                items.push(CheckItem::documentation_name())
+            }
         }
 
         Checks {

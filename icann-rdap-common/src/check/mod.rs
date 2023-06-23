@@ -189,6 +189,8 @@ pub enum Check {
     // LDH Name
     #[strum(message = "ldhName does not appear to be an LDH name")]
     InvalidLdhName,
+    #[strum(message = "Documentation domain name. See RFC 6761")]
+    DocumentataionName,
 
     // Network or Autnum Name
     #[strum(message = "name appears to be empty or only whitespace")]
@@ -227,6 +229,18 @@ pub enum Check {
     DocumentationNet,
     #[strum(message = "Reserved network. See RFC 1112")]
     ReservedNet,
+
+    // Autnum
+    #[strum(message = "start or end autnum is missing")]
+    MissingAutnum,
+    #[strum(message = "end AS number comes before start AS number")]
+    EndAutnumBeforeStartAutnum,
+    #[strum(message = "Private use. See RFC 6996")]
+    PrivateUseAutnum,
+    #[strum(message = "Documentation AS number. See RFC 5398")]
+    DocumentationAutnum,
+    #[strum(message = "Reserved AS number. See RFC 6996")]
+    ReservedAutnum,
 }
 
 #[cfg(test)]

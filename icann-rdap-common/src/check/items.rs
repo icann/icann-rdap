@@ -103,6 +103,12 @@ impl CheckItem {
             check: Check::InvalidLdhName,
         }
     }
+    pub fn documentation_name() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::DocumentataionName,
+        }
+    }
 
     // Network or Autnum Name
     pub fn name_is_empty() -> CheckItem {
@@ -203,6 +209,38 @@ impl CheckItem {
         CheckItem {
             check_class: CheckClass::Informational,
             check: Check::ReservedNet,
+        }
+    }
+
+    // Autnum
+    pub fn missing_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::MissingAutnum,
+        }
+    }
+    pub fn end_autnum_before_start_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::EndAutnumBeforeStartAutnum,
+        }
+    }
+    pub fn private_use_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::PrivateUseAutnum,
+        }
+    }
+    pub fn documentation_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::DocumentationAutnum,
+        }
+    }
+    pub fn reserved_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::ReservedAutnum,
         }
     }
 }

@@ -22,6 +22,41 @@ impl GetChecks for Autnum {
 
         let mut items = Vec::new();
 
+        if self.start_autnum.is_none() || self.end_autnum.is_none() {
+            items.push(CheckItem::missing_autnum())
+        }
+
+        if let Some(start_num) = &self.start_autnum {
+            if let Some(end_num) = &self.end_autnum {
+                if start_num > end_num {
+                    items.push(CheckItem::end_autnum_before_start_autnum())
+                }
+                if *start_num == 0
+                    || *start_num == 65535
+                    || *start_num == 4294967295
+                    || *end_num == 0
+                    || *end_num == 65535
+                    || *end_num == 4294967295
+                {
+                    items.push(CheckItem::reserved_autnum())
+                }
+                if (64496..=64511).contains(start_num)
+                    || (64496..=64511).contains(end_num)
+                    || (65536..=65551).contains(start_num)
+                    || (65536..=65551).contains(end_num)
+                {
+                    items.push(CheckItem::documentation_autnum())
+                }
+                if (64512..=65534).contains(start_num)
+                    || (64512..=65534).contains(end_num)
+                    || (64512..=65534).contains(start_num)
+                    || (64512..=65534).contains(end_num)
+                {
+                    items.push(CheckItem::private_use_autnum())
+                }
+            }
+        }
+
         if let Some(name) = &self.name {
             if name.is_whitespace_or_empty() {
                 items.push(CheckItem::name_is_empty())
