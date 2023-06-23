@@ -243,4 +243,24 @@ impl CheckItem {
             check: Check::ReservedAutnum,
         }
     }
+
+    // VCard
+    pub fn vcard_array_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::VcardArrayIsEmpty,
+        }
+    }
+    pub fn vcard_has_no_fn() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::VcardHasNoFn,
+        }
+    }
+    pub fn vcard_fn_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::VcardFnIsEmpty,
+        }
+    }
 }

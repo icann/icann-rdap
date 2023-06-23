@@ -241,6 +241,14 @@ pub enum Check {
     DocumentationAutnum,
     #[strum(message = "Reserved AS number. See RFC 6996")]
     ReservedAutnum,
+
+    // VCard
+    #[strum(message = "vCard array does not contain a vCard")]
+    VcardArrayIsEmpty,
+    #[strum(message = "vCard has not fn property")]
+    VcardHasNoFn,
+    #[strum(message = "vCard fn property is empty")]
+    VcardFnIsEmpty,
 }
 
 #[cfg(test)]
