@@ -1,5 +1,5 @@
 use std::{
-    fs::{create_dir_all, write},
+    fs::{create_dir_all, remove_dir_all, write},
     path::PathBuf,
 };
 
@@ -29,6 +29,13 @@ pub(crate) fn init() -> Result<(), CliError> {
         write(config_path(), example_config)?;
     }
     Ok(())
+}
+
+/// Reset the directories.
+pub(crate) fn reset() -> Result<(), CliError> {
+    remove_dir_all(PROJECT_DIRS.config_dir())?;
+    remove_dir_all(PROJECT_DIRS.cache_dir())?;
+    init()
 }
 
 pub(crate) fn config_path() -> PathBuf {

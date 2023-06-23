@@ -56,6 +56,26 @@ The basic usage is `rdap XXX` where XXX is a domain name, IP address, AS number,
 
 For more advanced usage, run `rdap --help` which should yield the extensive help guide.
 
+Configuration
+-------------
+
+Configuration of this program may be set using environment variables or 
+using an environment variables configuration file in the configuration 
+directory of this program. An  example is automatically written to the 
+configuration directory. This configuraiton file may be customized by 
+uncommenting out the provided environment variable settings.
+
+The location of the configuration file is platform dependent.
+
+On Linux, this file is located at $XDG_CONFIG_HOME/rdap/rdap.env or 
+$HOME/.config/rdap/rdap.env.
+
+On macOS, this file is located at 
+$HOME/Library/Application Support/rdap/rdap.env.
+
+On Windows, this file is located at
+{FOLDERID_RoamingAppData}\rdap\config\rdap.env.
+
 License
 -------
 

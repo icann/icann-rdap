@@ -33,7 +33,7 @@ const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
 #[command(group(
             ArgGroup::new("input")
                 .required(true)
-                .args(["query_value", "url", "server_help"]),
+                .args(["query_value", "url", "server_help", "reset"]),
         ))]
 #[command(group(
             ArgGroup::new("base_specify")
@@ -156,6 +156,12 @@ struct Cli {
         default_value_t = LogLevel::Info
     )]
     log_level: LogLevel,
+
+    /// Reset.
+    ///
+    /// Removes the cache files and resets the config file.
+    #[arg(long, required = false)]
+    reset: bool,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -291,6 +297,15 @@ pub async fn main() -> anyhow::Result<()> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
+
+    if cli.reset {
+        // TODO uncomment once #10 is complete.
+        // info!("Removing cache files and resetting configuration.");
+        dirs::reset()?;
+        // TODO uncomment once #10 is complete.
+        // info!("Exiting after reset.");
+        return Ok(());
+    }
 
     let level = LevelFilter::from(&cli.log_level);
 
