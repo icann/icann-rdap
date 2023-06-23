@@ -245,10 +245,14 @@ pub enum Check {
     // VCard
     #[strum(message = "vCard array does not contain a vCard")]
     VcardArrayIsEmpty,
-    #[strum(message = "vCard has not fn property")]
+    #[strum(message = "vCard has no fn property")]
     VcardHasNoFn,
     #[strum(message = "vCard fn property is empty")]
     VcardFnIsEmpty,
+
+    // Port 43
+    #[strum(message = "port43 appears to be empty or only whitespace")]
+    Port43IsEmpty,
 }
 
 #[cfg(test)]

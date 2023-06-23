@@ -263,4 +263,12 @@ impl CheckItem {
             check: Check::VcardFnIsEmpty,
         }
     }
+
+    // Port43
+    pub fn port43_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::Port43IsEmpty,
+        }
+    }
 }

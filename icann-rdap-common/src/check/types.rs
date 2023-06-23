@@ -174,11 +174,13 @@ impl GetSubChecks for ObjectCommon {
         let mut sub_checks: Vec<Checks> = Vec::new();
 
         // entities
-        if let Some(entities) = &self.entities {
-            entities
-                .iter()
-                .for_each(|e| sub_checks.push(e.get_checks(params)))
-        };
+        if params.do_subchecks {
+            if let Some(entities) = &self.entities {
+                entities
+                    .iter()
+                    .for_each(|e| sub_checks.push(e.get_checks(params)))
+            };
+        }
 
         // links
         if let Some(links) = &self.links {
@@ -240,7 +242,16 @@ impl GetSubChecks for ObjectCommon {
             }
         }
 
-        // TODO get port43
+        if let Some(port43) = &self.port_43 {
+            if port43.is_whitespace_or_empty() {
+                sub_checks.push(Checks {
+                    struct_name: "Port43",
+                    items: vec![CheckItem::port43_is_empty()],
+                    sub_checks: Vec::new(),
+                })
+            }
+        }
+
         sub_checks
     }
 }
