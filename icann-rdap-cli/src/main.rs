@@ -210,7 +210,7 @@ enum QtypeArg {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum OtypeArg {
     /// Results are rendered as Markdown in the terminal using ANSI terminal capabilities.
-    AnsiText,
+    RenderedMarkdown,
 
     /// Results are rendered as Markdown in plain text.
     Markdown,
@@ -310,7 +310,7 @@ pub async fn main() -> anyhow::Result<()> {
                 OutputType::Json
             }
         }
-        OtypeArg::AnsiText => OutputType::AnsiText,
+        OtypeArg::RenderedMarkdown => OutputType::AnsiText,
         OtypeArg::Markdown => OutputType::Markdown,
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
