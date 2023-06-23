@@ -23,7 +23,7 @@ use crate::error::CliError;
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OutputType {
     /// Results are rendered as Markdown in the terminal using ANSI terminal capabilities.
-    AnsiText,
+    RenderedMarkdown,
 
     /// Results are rendered as Markdown in plain text.
     Markdown,
@@ -183,7 +183,7 @@ fn do_output<'a, W: std::io::Write>(
     mut transactions: RequestResponses<'a>,
 ) -> Result<RequestResponses<'a>, CliError> {
     match output_params.output_type {
-        OutputType::AnsiText => {
+        OutputType::RenderedMarkdown => {
             let mut skin = MadSkin::default_dark();
             skin.set_headers_fg(Yellow);
             skin.headers[1].align = Alignment::Center;

@@ -305,12 +305,12 @@ pub async fn main() -> anyhow::Result<()> {
     let output_type = match cli.output_type {
         OtypeArg::Auto => {
             if std::io::stdout().is_terminal() {
-                OutputType::AnsiText
+                OutputType::RenderedMarkdown
             } else {
                 OutputType::Json
             }
         }
-        OtypeArg::RenderedMarkdown => OutputType::AnsiText,
+        OtypeArg::RenderedMarkdown => OutputType::RenderedMarkdown,
         OtypeArg::Markdown => OutputType::Markdown,
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
