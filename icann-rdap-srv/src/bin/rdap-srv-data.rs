@@ -708,8 +708,7 @@ async fn make_entity(
                 .build(),
         )
         .object_common(
-            ObjectCommon::builder()
-                .object_class_name("entity")
+            ObjectCommon::entity()
                 .and_entities(entities(store, &args.object_args).await?)
                 .and_remarks(remarks(&args.object_args.remark))
                 .and_status(status(&args.object_args))
@@ -748,8 +747,7 @@ async fn make_nameserver(
                 .build(),
         )
         .object_common(
-            ObjectCommon::builder()
-                .object_class_name("nameserver")
+            ObjectCommon::nameserver()
                 .and_entities(entities(store, &args.object_args).await?)
                 .and_remarks(remarks(&args.object_args.remark))
                 .and_status(status(&args.object_args))
@@ -797,8 +795,7 @@ async fn make_domain(
                 .build(),
         )
         .object_common(
-            ObjectCommon::builder()
-                .object_class_name("domain")
+            ObjectCommon::domain()
                 .and_entities(entities(store, &args.object_args).await?)
                 .and_remarks(remarks(&args.object_args.remark))
                 .and_status(status(&args.object_args))
@@ -833,8 +830,7 @@ async fn make_autnum(
                 .build(),
         )
         .object_common(
-            ObjectCommon::builder()
-                .object_class_name("autnum")
+            ObjectCommon::autnum()
                 .and_entities(entities(store, &args.object_args).await?)
                 .and_remarks(remarks(&args.object_args.remark))
                 .and_status(status(&args.object_args))
@@ -882,8 +878,7 @@ async fn make_network(
                 .build(),
         )
         .object_common(
-            ObjectCommon::builder()
-                .object_class_name("ip network")
+            ObjectCommon::ip_network()
                 .and_entities(entities(store, &args.object_args).await?)
                 .and_remarks(remarks(&args.object_args.remark))
                 .and_status(status(&args.object_args))

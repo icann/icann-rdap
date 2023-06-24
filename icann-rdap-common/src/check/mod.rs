@@ -189,6 +189,8 @@ pub enum Check {
     // LDH Name
     #[strum(message = "ldhName does not appear to be an LDH name")]
     InvalidLdhName,
+    #[strum(message = "Documentation domain name. See RFC 6761")]
+    DocumentataionName,
 
     // Network or Autnum Name
     #[strum(message = "name appears to be empty or only whitespace")]
@@ -211,6 +213,46 @@ pub enum Check {
     MalformedIPVersion,
     #[strum(message = "IP address list is empty")]
     IpAddressListIsEmpty,
+    #[strum(message = "\"This network.\" See RFC 791")]
+    ThisNetwork,
+    #[strum(message = "Private use. See RFC 1918")]
+    PrivateUseIp,
+    #[strum(message = "Shared NAT network. See RFC 6598")]
+    SharedNatIp,
+    #[strum(message = "Loopback network. See RFC 1122")]
+    Loopback,
+    #[strum(message = "Link local network. See RFC 3927")]
+    LinkLocal,
+    #[strum(message = "Unique local network. See RFC 8190")]
+    UniqueLocal,
+    #[strum(message = "Documentation network. See RFC 5737")]
+    DocumentationNet,
+    #[strum(message = "Reserved network. See RFC 1112")]
+    ReservedNet,
+
+    // Autnum
+    #[strum(message = "start or end autnum is missing")]
+    MissingAutnum,
+    #[strum(message = "end AS number comes before start AS number")]
+    EndAutnumBeforeStartAutnum,
+    #[strum(message = "Private use. See RFC 6996")]
+    PrivateUseAutnum,
+    #[strum(message = "Documentation AS number. See RFC 5398")]
+    DocumentationAutnum,
+    #[strum(message = "Reserved AS number. See RFC 6996")]
+    ReservedAutnum,
+
+    // VCard
+    #[strum(message = "vCard array does not contain a vCard")]
+    VcardArrayIsEmpty,
+    #[strum(message = "vCard has no fn property")]
+    VcardHasNoFn,
+    #[strum(message = "vCard fn property is empty")]
+    VcardFnIsEmpty,
+
+    // Port 43
+    #[strum(message = "port43 appears to be empty or only whitespace")]
+    Port43IsEmpty,
 }
 
 #[cfg(test)]

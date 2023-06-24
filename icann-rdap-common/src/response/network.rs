@@ -46,9 +46,7 @@ impl Network {
     pub fn new_network(cidr: IpCidr) -> Self {
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::builder()
-                .object_class_name("ip network")
-                .build(),
+            object_common: ObjectCommon::ip_network().build(),
             start_address: Some(cidr.first_as_ip_addr().to_string()),
             end_address: Some(cidr.last_as_ip_addr().to_string()),
             ip_version: match cidr {

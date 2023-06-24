@@ -49,10 +49,7 @@ impl Entity {
     pub fn new_handle<T: Into<String>>(handle: T) -> Self {
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::builder()
-                .object_class_name("entity")
-                .handle(handle.into())
-                .build(),
+            object_common: ObjectCommon::entity().handle(handle.into()).build(),
             vcard_array: None,
             roles: None,
             public_ids: None,

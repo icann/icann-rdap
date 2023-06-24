@@ -154,6 +154,119 @@ pub struct ObjectCommon {
     pub entities: Option<Vec<Entity>>,
 }
 
+#[buildstructor::buildstructor]
+impl ObjectCommon {
+    #[builder(entry = "domain")]
+    pub fn new_domain(
+        handle: Option<String>,
+        remarks: Option<Remarks>,
+        links: Option<Links>,
+        events: Option<Events>,
+        status: Option<Status>,
+        port_43: Option<Port43>,
+        entities: Option<Vec<Entity>>,
+    ) -> Self {
+        Self {
+            object_class_name: "domain".to_string(),
+            handle,
+            remarks,
+            links,
+            events,
+            status,
+            port_43,
+            entities,
+        }
+    }
+
+    #[builder(entry = "ip_network")]
+    pub fn new_ip_network(
+        handle: Option<String>,
+        remarks: Option<Remarks>,
+        links: Option<Links>,
+        events: Option<Events>,
+        status: Option<Status>,
+        port_43: Option<Port43>,
+        entities: Option<Vec<Entity>>,
+    ) -> Self {
+        Self {
+            object_class_name: "ip network".to_string(),
+            handle,
+            remarks,
+            links,
+            events,
+            status,
+            port_43,
+            entities,
+        }
+    }
+
+    #[builder(entry = "autnum")]
+    pub fn new_autnum(
+        handle: Option<String>,
+        remarks: Option<Remarks>,
+        links: Option<Links>,
+        events: Option<Events>,
+        status: Option<Status>,
+        port_43: Option<Port43>,
+        entities: Option<Vec<Entity>>,
+    ) -> Self {
+        Self {
+            object_class_name: "autnum".to_string(),
+            handle,
+            remarks,
+            links,
+            events,
+            status,
+            port_43,
+            entities,
+        }
+    }
+
+    #[builder(entry = "nameserver")]
+    pub fn new_nameserver(
+        handle: Option<String>,
+        remarks: Option<Remarks>,
+        links: Option<Links>,
+        events: Option<Events>,
+        status: Option<Status>,
+        port_43: Option<Port43>,
+        entities: Option<Vec<Entity>>,
+    ) -> Self {
+        Self {
+            object_class_name: "nameserver".to_string(),
+            handle,
+            remarks,
+            links,
+            events,
+            status,
+            port_43,
+            entities,
+        }
+    }
+
+    #[builder(entry = "entity")]
+    pub fn new_entity(
+        handle: Option<String>,
+        remarks: Option<Remarks>,
+        links: Option<Links>,
+        events: Option<Events>,
+        status: Option<Status>,
+        port_43: Option<Port43>,
+        entities: Option<Vec<Entity>>,
+    ) -> Self {
+        Self {
+            object_class_name: "entity".to_string(),
+            handle,
+            remarks,
+            links,
+            events,
+            status,
+            port_43,
+            entities,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

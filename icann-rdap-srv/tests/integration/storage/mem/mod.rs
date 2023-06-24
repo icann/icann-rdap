@@ -382,11 +382,7 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_first_address_THEN_n
             .start_address(start)
             .end_address(end)
             .ip_version("v4")
-            .object_common(
-                ObjectCommon::builder()
-                    .object_class_name("ip network")
-                    .build(),
-            )
+            .object_common(ObjectCommon::ip_network().build())
             .common(Common::builder().build())
             .build(),
     )
@@ -429,11 +425,7 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_last_address_THEN_ne
             .start_address(start)
             .end_address(end)
             .ip_version("v4")
-            .object_common(
-                ObjectCommon::builder()
-                    .object_class_name("ip network")
-                    .build(),
-            )
+            .object_common(ObjectCommon::ip_network().build())
             .common(Common::builder().build())
             .build(),
     )

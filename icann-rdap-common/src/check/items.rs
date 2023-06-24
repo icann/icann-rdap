@@ -103,6 +103,12 @@ impl CheckItem {
             check: Check::InvalidLdhName,
         }
     }
+    pub fn documentation_name() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::DocumentataionName,
+        }
+    }
 
     // Network or Autnum Name
     pub fn name_is_empty() -> CheckItem {
@@ -155,6 +161,114 @@ impl CheckItem {
         CheckItem {
             check_class: CheckClass::SpecificationError,
             check: Check::IpAddressListIsEmpty,
+        }
+    }
+    pub fn this_network() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::ThisNetwork,
+        }
+    }
+    pub fn private_use_ip() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::PrivateUseIp,
+        }
+    }
+    pub fn shared_nat_ip() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::SharedNatIp,
+        }
+    }
+    pub fn loopback() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::Loopback,
+        }
+    }
+    pub fn linklocal() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::LinkLocal,
+        }
+    }
+    pub fn unique_local() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::UniqueLocal,
+        }
+    }
+    pub fn documentation_net() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::DocumentationNet,
+        }
+    }
+    pub fn reserved_net() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::ReservedNet,
+        }
+    }
+
+    // Autnum
+    pub fn missing_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::MissingAutnum,
+        }
+    }
+    pub fn end_autnum_before_start_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::EndAutnumBeforeStartAutnum,
+        }
+    }
+    pub fn private_use_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::PrivateUseAutnum,
+        }
+    }
+    pub fn documentation_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::DocumentationAutnum,
+        }
+    }
+    pub fn reserved_autnum() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::Informational,
+            check: Check::ReservedAutnum,
+        }
+    }
+
+    // VCard
+    pub fn vcard_array_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::VcardArrayIsEmpty,
+        }
+    }
+    pub fn vcard_has_no_fn() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::VcardHasNoFn,
+        }
+    }
+    pub fn vcard_fn_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::VcardFnIsEmpty,
+        }
+    }
+
+    // Port43
+    pub fn port43_is_empty() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::Port43IsEmpty,
         }
     }
 }

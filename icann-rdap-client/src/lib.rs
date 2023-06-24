@@ -1,4 +1,5 @@
 #![allow(dead_code)] // TODO remove this at some point
+#![doc = include_str!("../README.md")]
 use std::fmt::Display;
 
 use icann_rdap_common::response::RdapResponseError;

@@ -10,7 +10,7 @@ An RDAP client library.
 
 [dependencies]
 
-icann-rdap-common = { version = "0.0.8", path = "../icann-rdap-common" }
+icann-rdap-common = { version = "0.0.9", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr-utils.workspace = true
@@ -30,3 +30,6 @@ thiserror.workspace = true
 
 # fixture testings
 rstest = "0.17.0"
+
+# tokio async runtime
+tokio = { version = "1.21", features = [ "full" ] }

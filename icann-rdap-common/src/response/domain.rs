@@ -143,7 +143,7 @@ impl Domain {
     pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::builder().object_class_name("domain").build(),
+            object_common: ObjectCommon::domain().build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name: None,
             variants: None,

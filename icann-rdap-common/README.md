@@ -16,20 +16,27 @@ Add the library to your Cargo.toml: `cargo add icann-rdap-common`.
 Usage
 -----
 
-```
+```rust
 // create an RDAP domain
-let domain = Domain::basic().ldh("example.com").build();
+use icann_rdap_common::response::domain::Domain;
+let domain = Domain::basic().ldh_name("example.com").build();
 
 // create an IP network
-let net = Network::basic().cidr(IpCidr::from_str("10.0.0.0/14")).build();
+use cidr_utils::cidr::IpCidr;
+let cidr = IpCidr::from_str("10.0.0.0/16").unwrap();
+use icann_rdap_common::response::network::Network;
+let net = Network::basic().cidr(cidr).build();
 
 // create a nameserver
-let ns = Nameserver::basic().ldh("ns1.example.com").build();
+use icann_rdap_common::response::nameserver::Nameserver;
+let ns = Nameserver::basic().ldh_name("ns1.example.com").build();
 
 // create an autnum
-let autnum = Autnum::basic().autnum("700").build();
+use icann_rdap_common::response::autnum::Autnum;
+let autnum = Autnum::basic().autnum(700).build();
 
 // create an entity
+use icann_rdap_common::response::entity::Entity;
 let entity = Entity::basic().handle("foo-BAR").build();
 ```
 

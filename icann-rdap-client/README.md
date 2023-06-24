@@ -19,18 +19,34 @@ Also, add the commons library: `cargo add icann-rdap-common`.
 Usage
 -----
 
-```
-// create a query
-let query = QueryType::from_str("192.168.0.1")?;
-// or
-let query = QueryType::from_str("icann.org")?;
+```rust,no_run
+use icann_rdap_common::client::ClientConfig;
+use icann_rdap_common::client::create_client;
+use icann_rdap_client::query::request::rdap_request;
+use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::RdapClientError;
+use std::str::FromStr;
+use tokio::main;
 
-// create a client (from icann-rdap-common)
-let config = ClientConfig::default();
-let client = create_client(&config)?;
+#[tokio::main]
+async fn main() -> Result<(), RdapClientError> {
 
-// issue the RDAP query
-let response = rdap_request("https://rdap-bootstrap.arin.net/bootstrap", &query, &client)?;
+    // create a query
+    let query = QueryType::from_str("192.168.0.1")?;
+    // or
+    let query = QueryType::from_str("icann.org")?;
+
+    // create a client (from icann-rdap-common)
+    let config = ClientConfig::default();
+    let client = create_client(&config)?;
+
+    // issue the RDAP query
+    let base_url = "https://rdap-bootstrap.arin.net/bootstrap";
+    let response = rdap_request(base_url, &query, &client).await?;
+
+    Ok(())
+}
+
 ```
 
 License

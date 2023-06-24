@@ -174,11 +174,13 @@ impl GetSubChecks for ObjectCommon {
         let mut sub_checks: Vec<Checks> = Vec::new();
 
         // entities
-        if let Some(entities) = &self.entities {
-            entities
-                .iter()
-                .for_each(|e| sub_checks.push(e.get_checks(params)))
-        };
+        if params.do_subchecks {
+            if let Some(entities) = &self.entities {
+                entities
+                    .iter()
+                    .for_each(|e| sub_checks.push(e.get_checks(params)))
+            };
+        }
 
         // links
         if let Some(links) = &self.links {
@@ -240,7 +242,16 @@ impl GetSubChecks for ObjectCommon {
             }
         }
 
-        // TODO get port43
+        if let Some(port43) = &self.port_43 {
+            if port43.is_whitespace_or_empty() {
+                sub_checks.push(Checks {
+                    struct_name: "Port43",
+                    items: vec![CheckItem::port43_is_empty()],
+                    sub_checks: Vec::new(),
+                })
+            }
+        }
+
         sub_checks
     }
 }
@@ -267,8 +278,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder().href("https://foo").build()])
                         .build(),
                 )
@@ -301,8 +311,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder().href("https://foo").build()])
                         .build(),
                 )
@@ -335,8 +344,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
                             .rel("related")
@@ -372,8 +380,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
                             .rel("related")
@@ -410,8 +417,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
                             .rel("self")
@@ -447,8 +453,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
                             .rel("self")
@@ -485,8 +490,7 @@ mod tests {
             Domain::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
                             .rel("no_self")
@@ -522,7 +526,7 @@ mod tests {
         let rdap = RdapResponse::Domain(
             Domain::builder()
                 .common(Common::builder().build())
-                .object_common(ObjectCommon::builder().object_class_name("domain").build())
+                .object_common(ObjectCommon::domain().build())
                 .build(),
         );
 
@@ -549,11 +553,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(
             Nameserver::builder()
                 .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("nameserver")
-                        .build(),
-                )
+                .object_common(ObjectCommon::nameserver().build())
                 .build(),
         );
 
@@ -576,8 +576,7 @@ mod tests {
             Nameserver::builder()
                 .common(Common::builder().build())
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("nameserver")
+                    ObjectCommon::nameserver()
                         .links(vec![Link::builder()
                             .href("https://foo")
                             .rel("no_self")
@@ -671,17 +670,14 @@ mod tests {
                         .build(),
                 )
                 .object_common(
-                    ObjectCommon::builder()
-                        .object_class_name("domain")
+                    ObjectCommon::domain()
                         .entities(vec![Entity::builder()
                             .common(
                                 Common::builder()
                                     .rdap_conformance(vec![Extension("foo".to_string())])
                                     .build(),
                             )
-                            .object_common(
-                                ObjectCommon::builder().object_class_name("entity").build(),
-                            )
+                            .object_common(ObjectCommon::entity().build())
                             .build()])
                         .build(),
                 )
