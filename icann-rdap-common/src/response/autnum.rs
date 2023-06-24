@@ -37,7 +37,7 @@ impl Autnum {
     pub fn new_autnum(autnum: u32) -> Self {
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::builder().object_class_name("autnum").build(),
+            object_common: ObjectCommon::autnum().build(),
             start_autnum: Some(autnum),
             end_autnum: Some(autnum),
             name: None,
@@ -50,7 +50,7 @@ impl Autnum {
     pub fn new_autnum_nums(start_autnum: u32, end_autnum: u32) -> Self {
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::builder().object_class_name("autnum").build(),
+            object_common: ObjectCommon::autnum().build(),
             start_autnum: Some(start_autnum),
             end_autnum: Some(end_autnum),
             name: None,

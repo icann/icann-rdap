@@ -101,11 +101,7 @@ mod tests {
         let ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .common(Common::builder().build())
-            .object_common(
-                ObjectCommon::builder()
-                    .object_class_name("nameserver")
-                    .build(),
-            )
+            .object_common(ObjectCommon::nameserver().build())
             .ip_addresses(IpAddresses::builder().v6(vec![]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
@@ -131,11 +127,7 @@ mod tests {
         let ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .common(Common::builder().build())
-            .object_common(
-                ObjectCommon::builder()
-                    .object_class_name("nameserver")
-                    .build(),
-            )
+            .object_common(ObjectCommon::nameserver().build())
             .ip_addresses(IpAddresses::builder().v4(vec![]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
@@ -161,11 +153,7 @@ mod tests {
         let ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .common(Common::builder().build())
-            .object_common(
-                ObjectCommon::builder()
-                    .object_class_name("nameserver")
-                    .build(),
-            )
+            .object_common(ObjectCommon::nameserver().build())
             .ip_addresses(IpAddresses::builder().v6(vec!["__".to_string()]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
@@ -191,11 +179,7 @@ mod tests {
         let ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .common(Common::builder().build())
-            .object_common(
-                ObjectCommon::builder()
-                    .object_class_name("nameserver")
-                    .build(),
-            )
+            .object_common(ObjectCommon::nameserver().build())
             .ip_addresses(IpAddresses::builder().v4(vec!["___".to_string()]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
