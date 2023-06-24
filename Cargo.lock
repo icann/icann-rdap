@@ -1199,6 +1199,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]

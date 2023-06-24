@@ -30,3 +30,6 @@ thiserror.workspace = true
 
 # fixture testings
 rstest = "0.17.0"
+
+# tokio async runtime
+tokio = { version = "1.21", features = [ "full" ] }
