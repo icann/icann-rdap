@@ -26,6 +26,7 @@ dotenv.workspace = true
 is-terminal.workspace = true
 lazy_static.workspace = true
 minus.workspace = true
+pct-str.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true

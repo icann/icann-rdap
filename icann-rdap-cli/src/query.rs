@@ -7,10 +7,7 @@ use std::io::ErrorKind;
 
 use icann_rdap_client::{
     md::{MdOptions, MdParams, ToMd},
-    query::{
-        qtype::QueryType,
-        request::{rdap_request, ResponseData},
-    },
+    query::{qtype::QueryType, request::ResponseData},
     request::{RequestData, RequestResponse, RequestResponses, SourceType},
 };
 use icann_rdap_common::{media_types::RDAP_MEDIA_TYPE, response::RdapResponse};
@@ -19,6 +16,7 @@ use simplelog::info;
 use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
 use crate::error::CliError;
+use crate::request::do_request;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OutputType {
@@ -38,16 +36,18 @@ pub(crate) enum OutputType {
     JsonExtra,
 }
 
-pub(crate) struct OutputParams {
+pub(crate) struct ProcessingParams {
     pub output_type: OutputType,
     pub check_types: Vec<CheckClass>,
     pub error_on_checks: bool,
+    pub no_cache: bool,
+    pub max_cache_age: u32,
 }
 
 pub(crate) async fn do_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
@@ -57,24 +57,24 @@ pub(crate) async fn do_query<'a, W: std::io::Write>(
         | QueryType::IpV4Cidr(_)
         | QueryType::IpV6Cidr(_)
         | QueryType::AsNumber(_) => {
-            do_inr_query(base_url, query_type, output_params, client, write).await
+            do_inr_query(base_url, query_type, processing_params, client, write).await
         }
         QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
-            do_domain_query(base_url, query_type, output_params, client, write).await
+            do_domain_query(base_url, query_type, processing_params, client, write).await
         }
-        _ => do_basic_query(base_url, query_type, output_params, None, client, write).await,
+        _ => do_basic_query(base_url, query_type, processing_params, None, client, write).await,
     }
 }
 
 async fn do_domain_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let response = rdap_request(base_url, query_type, client).await;
+    let response = do_request(base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.host.to_owned();
@@ -83,13 +83,14 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            transactions = do_output(output_params, &req_data, &response, write, transactions)?;
+            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if let Some(url) = get_related_link(&response.rdap).first() {
                 info!("Querying domain name from registrar.");
                 let query_type = QueryType::Url(url.to_string());
-                let registrar_response = rdap_request(base_url, &query_type, client).await;
+                let registrar_response =
+                    do_request(base_url, &query_type, processing_params, client).await;
                 match registrar_response {
                     Ok(registrar_response) => {
                         regr_source_host = registrar_response.host;
@@ -99,19 +100,19 @@ async fn do_domain_query<'a, W: std::io::Write>(
                             source_type: SourceType::DomainRegistrar,
                         };
                         transactions = do_output(
-                            output_params,
+                            processing_params,
                             &regr_req_data,
                             &response,
                             write,
                             transactions,
                         )?;
                     }
-                    Err(error) => return Err(CliError::RdapClient(error)),
+                    Err(error) => return Err(error),
                 }
             }
-            do_final_output(output_params, write, transactions)?;
+            do_final_output(processing_params, write, transactions)?;
         }
-        Err(error) => return Err(CliError::RdapClient(error)),
+        Err(error) => return Err(error),
     };
     Ok(())
 }
@@ -119,12 +120,12 @@ async fn do_domain_query<'a, W: std::io::Write>(
 async fn do_inr_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let response = rdap_request(base_url, query_type, client).await;
+    let response = do_request(base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.host.to_owned();
@@ -133,10 +134,10 @@ async fn do_inr_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::RegionalInternetRegistry,
             };
-            transactions = do_output(output_params, &req_data, &response, write, transactions)?;
-            do_final_output(output_params, write, transactions)?;
+            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            do_final_output(processing_params, write, transactions)?;
         }
-        Err(error) => return Err(CliError::RdapClient(error)),
+        Err(error) => return Err(error),
     };
     Ok(())
 }
@@ -144,13 +145,13 @@ async fn do_inr_query<'a, W: std::io::Write>(
 async fn do_basic_query<'a, W: std::io::Write>(
     base_url: &str,
     query_type: &QueryType,
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     req_data: Option<&'a RequestData<'a>>,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let response = rdap_request(base_url, query_type, client).await;
+    let response = do_request(base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.host.to_owned();
@@ -167,22 +168,22 @@ async fn do_basic_query<'a, W: std::io::Write>(
                     source_type: SourceType::UncategorizedRegistry,
                 }
             };
-            transactions = do_output(output_params, &req_data, &response, write, transactions)?;
-            do_final_output(output_params, write, transactions)?;
+            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            do_final_output(processing_params, write, transactions)?;
         }
-        Err(error) => return Err(CliError::RdapClient(error)),
+        Err(error) => return Err(error),
     };
     Ok(())
 }
 
 fn do_output<'a, W: std::io::Write>(
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     req_data: &'a RequestData,
     response: &'a ResponseData,
     write: &mut W,
     mut transactions: RequestResponses<'a>,
 ) -> Result<RequestResponses<'a>, CliError> {
-    match output_params.output_type {
+    match processing_params.output_type {
         OutputType::RenderedMarkdown => {
             let mut skin = MadSkin::default_dark();
             skin.set_headers_fg(Yellow);
@@ -205,7 +206,7 @@ fn do_output<'a, W: std::io::Write>(
                     heading_level: 1,
                     root: &response.rdap,
                     parent_type: response.rdap.get_type(),
-                    check_types: &output_params.check_types,
+                    check_types: &processing_params.check_types,
                     options: &MdOptions::default(),
                     req_data,
                 }),
@@ -218,7 +219,7 @@ fn do_output<'a, W: std::io::Write>(
                 heading_level: 1,
                 root: &response.rdap,
                 parent_type: response.rdap.get_type(),
-                check_types: &output_params.check_types,
+                check_types: &processing_params.check_types,
                 options: &MdOptions {
                     text_style_char: '_',
                     style_in_justify: true,
@@ -244,11 +245,11 @@ fn do_output<'a, W: std::io::Write>(
 }
 
 fn do_final_output<W: std::io::Write>(
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     write: &mut W,
     transactions: RequestResponses<'_>,
 ) -> Result<(), CliError> {
-    match output_params.output_type {
+    match processing_params.output_type {
         OutputType::Json => {
             for req_res in &transactions {
                 writeln!(
@@ -275,7 +276,7 @@ fn do_final_output<W: std::io::Write>(
 
     let mut checks_found = false;
     // we don't want to error on informational
-    let error_check_types: Vec<CheckClass> = output_params
+    let error_check_types: Vec<CheckClass> = processing_params
         .check_types
         .iter()
         .filter(|ct| *ct != &CheckClass::Informational)
@@ -287,7 +288,7 @@ fn do_final_output<W: std::io::Write>(
             &error_check_types,
             None,
             &mut |struct_tree, check_item| {
-                if output_params.error_on_checks {
+                if processing_params.error_on_checks {
                     error!("{struct_tree} -> {check_item}")
                 }
             },
@@ -296,7 +297,7 @@ fn do_final_output<W: std::io::Write>(
             checks_found = true
         }
     }
-    if checks_found && output_params.error_on_checks {
+    if checks_found && processing_params.error_on_checks {
         return Err(CliError::ErrorOnChecks);
     }
 

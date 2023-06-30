@@ -1,7 +1,7 @@
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
-use query::OutputParams;
+use query::ProcessingParams;
 use std::str::FromStr;
 
 use clap::{ArgGroup, Parser, ValueEnum};
@@ -24,6 +24,7 @@ use simplelog::warn;
 pub mod dirs;
 pub mod error;
 pub mod query;
+pub mod request;
 
 const BEFORE_LONG_HELP: &str = include_str!("before_long_help.txt");
 const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
@@ -156,6 +157,23 @@ struct Cli {
         default_value_t = LogLevel::Info
     )]
     log_level: LogLevel,
+
+    /// Do not use the cache.
+    ///
+    /// When given, the cache will be neither read from nor written to.
+    #[arg(short = 'N', long, required = false, env = "RDAP_NO_CACHE")]
+    no_cache: bool,
+
+    /// Max cache age.
+    ///
+    /// Specifies the maximum age in seconds of an item in the cache.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_MAX_CACHE_AGE",
+        default_value = "86400"
+    )]
+    max_cache_age: u32,
 
     /// Reset.
     ///
@@ -349,10 +367,12 @@ pub async fn main() -> anyhow::Result<()> {
             .collect::<Vec<CheckClass>>()
     };
 
-    let output_params = OutputParams {
+    let processing_params = ProcessingParams {
         output_type,
         check_types,
         error_on_checks: cli.error_on_checks,
+        no_cache: cli.no_cache,
+        max_cache_age: cli.max_cache_age,
     };
 
     // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.
@@ -378,7 +398,7 @@ pub async fn main() -> anyhow::Result<()> {
                 &base_url,
                 cli.query_value,
                 &query_type,
-                &output_params,
+                &processing_params,
                 &client,
                 output,
             ));
@@ -396,7 +416,7 @@ pub async fn main() -> anyhow::Result<()> {
                     &base_url,
                     cli.query_value,
                     &query_type,
-                    &output_params,
+                    &processing_params,
                     &client,
                     output
                 )
@@ -414,7 +434,7 @@ async fn exec<W: std::io::Write>(
     base_url: &str,
     query_value: Option<String>,
     query_type: &QueryType,
-    output_params: &OutputParams,
+    output_params: &ProcessingParams,
     client: &Client,
     mut output: W,
 ) -> Result<(), CliError> {

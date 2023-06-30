@@ -16,4 +16,6 @@ pub enum CliError {
     UnknownOutputType,
     #[error("RDAP response failed checks.")]
     ErrorOnChecks,
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }

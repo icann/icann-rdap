@@ -1,4 +1,7 @@
-use reqwest::{header::EXPIRES, Client};
+use reqwest::{
+    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES},
+    Client,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -41,7 +44,11 @@ pub struct RdapBootstrapRegistry {
 pub struct IanaResponse {
     pub registry: IanaRegistry,
     pub registry_type: IanaRegistryType,
+    pub content_length: Option<u64>,
+    pub content_type: Option<String>,
+    pub host: String,
     pub expires: Option<String>,
+    pub cache_control: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -58,15 +65,32 @@ pub async fn iana_request(
 ) -> Result<IanaResponse, IanaResponseError> {
     let url = registry_type.url();
     let response = client.get(url).send().await?.error_for_status()?;
+    let content_type = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .map(|value| value.to_str().unwrap().to_string());
     let expires = response
         .headers()
         .get(EXPIRES)
         .map(|value| value.to_str().unwrap().to_string());
+    let cache_control = response
+        .headers()
+        .get(CACHE_CONTROL)
+        .map(|value| value.to_str().unwrap().to_string());
+    let content_length = response.content_length();
+    let url = response.url().to_owned();
     let text = response.text().await?;
     let json: RdapBootstrapRegistry = serde_json::from_str(&text)?;
     Ok(IanaResponse {
         registry: IanaRegistry::RdapBootstrapRegistry(json),
         registry_type,
+        content_length,
+        content_type,
+        host: url
+            .host_str()
+            .expect("URL has no host. This shouldn't happen.")
+            .to_owned(),
         expires,
+        cache_control,
     })
 }

@@ -1168,6 +1168,7 @@ dependencies = [
  "is-terminal",
  "lazy_static",
  "minus",
+ "pct-str",
  "reqwest",
  "rstest",
  "serde",

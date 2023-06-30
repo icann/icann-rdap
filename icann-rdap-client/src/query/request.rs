@@ -1,5 +1,8 @@
 use icann_rdap_common::response::RdapResponse;
-use reqwest::{header::CONTENT_TYPE, Client};
+use reqwest::{
+    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES},
+    Client,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -18,6 +21,14 @@ pub async fn rdap_request(
         .headers()
         .get(CONTENT_TYPE)
         .map(|value| value.to_str().unwrap().to_string());
+    let expires = response
+        .headers()
+        .get(EXPIRES)
+        .map(|value| value.to_str().unwrap().to_string());
+    let cache_control = response
+        .headers()
+        .get(CACHE_CONTROL)
+        .map(|value| value.to_str().unwrap().to_string());
     let content_length = response.content_length();
     let url = response.url().to_owned();
     let text = response.text().await?;
@@ -32,6 +43,8 @@ pub async fn rdap_request(
                 .host_str()
                 .expect("URL has no host. This shouldn't happen.")
                 .to_owned(),
+            expires,
+            cache_control,
         })
     } else {
         Err(RdapClientError::ParsingError(Box::new(
@@ -52,4 +65,6 @@ pub struct ResponseData {
     pub content_length: Option<u64>,
     pub content_type: Option<String>,
     pub host: String,
+    pub expires: Option<String>,
+    pub cache_control: Option<String>,
 }
