@@ -77,7 +77,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
     let response = do_request(base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
-            let source_host = response.host.to_owned();
+            let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
                 source_host: &source_host,
@@ -93,7 +93,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
                     do_request(base_url, &query_type, processing_params, client).await;
                 match registrar_response {
                     Ok(registrar_response) => {
-                        regr_source_host = registrar_response.host;
+                        regr_source_host = registrar_response.http_data.host;
                         regr_req_data = RequestData {
                             req_number: 2,
                             source_host: &regr_source_host,
@@ -128,7 +128,7 @@ async fn do_inr_query<'a, W: std::io::Write>(
     let response = do_request(base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
-            let source_host = response.host.to_owned();
+            let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
                 source_host: &source_host,
@@ -154,7 +154,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
     let response = do_request(base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
-            let source_host = response.host.to_owned();
+            let source_host = response.http_data.host.to_owned();
             let req_data = if let Some(meta) = req_data {
                 RequestData {
                     req_number: meta.req_number + 1,

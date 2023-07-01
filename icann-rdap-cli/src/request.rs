@@ -4,7 +4,7 @@ use std::{
 };
 
 use icann_rdap_client::{
-    cache::CacheData,
+    cache::HttpData,
     query::{
         qtype::QueryType,
         request::{rdap_request, ResponseData},
@@ -40,7 +40,7 @@ pub(crate) async fn do_request(
             for line in buf.lines() {
                 lines.push(line?)
             }
-            let cache_data = CacheData::from_lines(&lines)?;
+            let cache_data = HttpData::from_lines(&lines)?;
             if !cache_data
                 .0
                 .is_expired(processing_params.max_cache_age as i64)
@@ -54,16 +54,9 @@ pub(crate) async fn do_request(
     let response = rdap_request(base_url, query_type, client).await?;
     if !processing_params.no_cache {
         if let Some(self_link) = response.rdap.get_self_link() {
-            let cache_data = CacheData::now()
-                .host(response.host.to_owned())
-                .and_content_length(response.content_length)
-                .and_expires(response.expires.to_owned())
-                .and_cache_control(response.cache_control.to_owned())
-                .and_content_type(response.content_type.to_owned())
-                .build();
-            if cache_data.should_cache() {
+            if response.http_data.should_cache() {
                 let data = serde_json::to_string_pretty(&response)?;
-                let cache_contents = cache_data.to_lines(&data)?;
+                let cache_contents = response.http_data.to_lines(&data)?;
                 let query_url = query_type.query_url(base_url)?;
                 let file_name = format!(
                     "{}.cache",

@@ -6,7 +6,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::RdapClientError;
+use crate::{cache::HttpData, RdapClientError};
 
 use super::qtype::QueryType;
 
@@ -35,17 +35,18 @@ pub async fn rdap_request(
     let json: Result<Value, serde_json::Error> = serde_json::from_str(&text);
     if let Ok(rdap_json) = json {
         let rdap = RdapResponse::try_from(rdap_json)?;
-        Ok(ResponseData {
-            rdap,
-            content_length,
-            content_type,
-            host: url
-                .host_str()
-                .expect("URL has no host. This shouldn't happen.")
-                .to_owned(),
-            expires,
-            cache_control,
-        })
+        let http_data = HttpData::now()
+            .and_content_length(content_length)
+            .and_content_type(content_type)
+            .host(
+                url.host_str()
+                    .expect("URL has no host. This shouldn't happen.")
+                    .to_owned(),
+            )
+            .and_expires(expires)
+            .and_cache_control(cache_control)
+            .build();
+        Ok(ResponseData { rdap, http_data })
     } else {
         Err(RdapClientError::ParsingError(Box::new(
             crate::ParsingErrorInfo {
@@ -62,9 +63,5 @@ pub async fn rdap_request(
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ResponseData {
     pub rdap: RdapResponse,
-    pub content_length: Option<u64>,
-    pub content_type: Option<String>,
-    pub host: String,
-    pub expires: Option<String>,
-    pub cache_control: Option<String>,
+    pub http_data: HttpData,
 }
