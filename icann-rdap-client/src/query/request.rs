@@ -1,4 +1,4 @@
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::{cache::HttpData, response::RdapResponse};
 use reqwest::{
     header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES},
     Client,
@@ -6,7 +6,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{cache::HttpData, RdapClientError};
+use crate::RdapClientError;
 
 use super::qtype::QueryType;
 

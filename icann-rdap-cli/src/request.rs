@@ -3,13 +3,11 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use icann_rdap_client::{
-    cache::HttpData,
-    query::{
-        qtype::QueryType,
-        request::{rdap_request, ResponseData},
-    },
+use icann_rdap_client::query::{
+    qtype::QueryType,
+    request::{rdap_request, ResponseData},
 };
+use icann_rdap_common::cache::HttpData;
 use pct_str::PctString;
 use pct_str::URIReserved;
 use reqwest::Client;

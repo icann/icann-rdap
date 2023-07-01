@@ -2,8 +2,6 @@ use buildstructor::Builder;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::RdapClientError;
-
 #[derive(Serialize, Deserialize, Clone, Debug, Builder, PartialEq, Eq)]
 pub struct HttpData {
     pub content_length: Option<u64>,
@@ -72,7 +70,7 @@ impl HttpData {
         true
     }
 
-    pub fn from_lines(lines: &[String]) -> Result<(Self, &[String]), RdapClientError> {
+    pub fn from_lines(lines: &[String]) -> Result<(Self, &[String]), serde_json::Error> {
         let count = lines.iter().take_while(|s| !s.starts_with("---")).count();
         let cache_data = lines
             .iter()
@@ -84,7 +82,7 @@ impl HttpData {
         Ok((cache_data, &lines[count + 1..]))
     }
 
-    pub fn to_lines(&self, data: &str) -> Result<String, RdapClientError> {
+    pub fn to_lines(&self, data: &str) -> Result<String, serde_json::Error> {
         let mut lines = serde_json::to_string(self)?;
         lines.push_str("\n---\n");
         lines.push_str(data);

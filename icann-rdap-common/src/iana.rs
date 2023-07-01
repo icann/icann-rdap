@@ -5,6 +5,8 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::cache::HttpData;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum IanaRegistryType {
     RdapBootstrapDns,
@@ -44,11 +46,7 @@ pub struct RdapBootstrapRegistry {
 pub struct IanaResponse {
     pub registry: IanaRegistry,
     pub registry_type: IanaRegistryType,
-    pub content_length: Option<u64>,
-    pub content_type: Option<String>,
-    pub host: String,
-    pub expires: Option<String>,
-    pub cache_control: Option<String>,
+    pub http_data: HttpData,
 }
 
 #[derive(Debug, Error)]
@@ -81,16 +79,20 @@ pub async fn iana_request(
     let url = response.url().to_owned();
     let text = response.text().await?;
     let json: RdapBootstrapRegistry = serde_json::from_str(&text)?;
+    let http_data = HttpData::now()
+        .host(
+            url.host_str()
+                .expect("URL has no host. This shouldn't happen.")
+                .to_owned(),
+        )
+        .and_content_length(content_length)
+        .and_content_type(content_type)
+        .and_expires(expires)
+        .and_cache_control(cache_control)
+        .build();
     Ok(IanaResponse {
         registry: IanaRegistry::RdapBootstrapRegistry(json),
         registry_type,
-        content_length,
-        content_type,
-        host: url
-            .host_str()
-            .expect("URL has no host. This shouldn't happen.")
-            .to_owned(),
-        expires,
-        cache_control,
+        http_data,
     })
 }
