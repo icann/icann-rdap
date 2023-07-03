@@ -1,4 +1,5 @@
 use icann_rdap_client::RdapClientError;
+use icann_rdap_common::iana::IanaResponseError;
 use minus::MinusError;
 use thiserror::Error;
 
@@ -18,4 +19,10 @@ pub enum CliError {
     ErrorOnChecks,
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Iana(#[from] IanaResponseError),
+    #[error("Invalid IANA bootsrap file")]
+    InvalidBootstrap,
+    #[error("Bootstrap not found")]
+    BootstrapNotFound,
 }

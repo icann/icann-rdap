@@ -21,6 +21,7 @@ use crate::query::do_query;
 #[cfg(debug_assertions)]
 use simplelog::warn;
 
+pub mod bootstrap;
 pub mod dirs;
 pub mod error;
 pub mod query;

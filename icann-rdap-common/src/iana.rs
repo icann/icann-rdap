@@ -26,9 +26,17 @@ impl IanaRegistryType {
             IanaRegistryType::RdapObjectTags => "https://data.iana.org/rdap/object-tags.json",
         }
     }
+
+    pub fn file_name(&self) -> &str {
+        let url = self.url();
+        url.rsplit('/')
+            .next()
+            .expect("unexpected errror: cannot get filename from url")
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
 pub enum IanaRegistry {
     RdapBootstrapRegistry(RdapBootstrapRegistry),
     // might add IANA registrar IDs later
@@ -39,7 +47,7 @@ pub struct RdapBootstrapRegistry {
     pub version: String,
     pub publication: String,
     pub description: Option<String>,
-    pub services: Vec<Vec<String>>,
+    pub services: Vec<Vec<Vec<String>>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -95,4 +103,70 @@ pub async fn iana_request(
         registry_type,
         http_data,
     })
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use rstest::rstest;
+
+    use super::{IanaRegistry, IanaRegistryType};
+
+    #[rstest]
+    #[case(IanaRegistryType::RdapBootstrapDns, "dns.json")]
+    #[case(IanaRegistryType::RdapBootstrapAsn, "asn.json")]
+    #[case(IanaRegistryType::RdapBootstrapIpv4, "ipv4.json")]
+    #[case(IanaRegistryType::RdapBootstrapIpv6, "ipv6.json")]
+    #[case(IanaRegistryType::RdapObjectTags, "object-tags.json")]
+    fn GIVEN_registry_WHEN_get_file_name_THEN_correct_result(
+        #[case] registry: IanaRegistryType,
+        #[case] expected: &str,
+    ) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = registry.file_name();
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn GIVEN_domain_bootstrap_WHEN_deserialize_THEN_success() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Some text",
+                "services": [
+                  [
+                    ["net", "com"],
+                    [
+                      "https://registry.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["org", "mytld"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["xn--zckzah"],
+                    [
+                      "https://example.net/rdap/xn--zckzah/",
+                      "http://example.net/rdap/xn--zckzah/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+
+        // WHEN
+        let actual = serde_json::from_str::<IanaRegistry>(bootstrap);
+
+        // THEN
+        actual.unwrap();
+    }
 }
