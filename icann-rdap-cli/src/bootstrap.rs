@@ -64,6 +64,41 @@ fn get_domain_bootstrap_urls(
     Ok(longest.1)
 }
 
+fn get_asn_bootstrap_urls(
+    iana: IanaRegistry,
+    query_type: &QueryType,
+) -> Result<Vec<String>, CliError> {
+    let QueryType::AsNumber(asn) = query_type else {panic!("invalid query type")};
+    let autnum = asn
+        .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
+        .parse::<u32>()
+        .map_err(|_| CliError::InvalidBootstrap)?;
+    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
+    for service in bootstrap.services {
+        let as_range = service
+            .first()
+            .ok_or(CliError::InvalidBootstrap)?
+            .first()
+            .ok_or(CliError::BootstrapNotFound)?;
+        let as_split = as_range.split('-').collect::<Vec<&str>>();
+        let start_as = as_split
+            .first()
+            .ok_or(CliError::InvalidBootstrap)?
+            .parse::<u32>()
+            .map_err(|_| CliError::InvalidBootstrap)?;
+        let end_as = as_split
+            .last()
+            .ok_or(CliError::InvalidBootstrap)?
+            .parse::<u32>()
+            .map_err(|_| CliError::InvalidBootstrap)?;
+        if start_as <= autnum && end_as >= autnum {
+            let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
+            return Ok(urls.to_owned());
+        }
+    }
+    Err(CliError::BootstrapNotFound)
+}
+
 async fn get_iana_registry(
     reg_type: IanaRegistryType,
     client: &Client,
@@ -96,6 +131,8 @@ async fn get_iana_registry(
 mod tests {
     use icann_rdap_client::query::qtype::QueryType;
     use icann_rdap_common::iana::IanaRegistry;
+
+    use crate::bootstrap::get_asn_bootstrap_urls;
 
     use super::{get_domain_bootstrap_urls, get_preferred_url};
 
@@ -197,6 +234,94 @@ mod tests {
         assert_eq!(
             actual.expect("no vec").first().expect("vec is empty"),
             "https://registry.co.uk/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_autnum_bootstrap_with_match_WHEN_find_with_string_THEN_return_match() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "RDAP Bootstrap file for example registries.",
+                "services": [
+                  [
+                    ["64496-64496"],
+                    [
+                      "https://rir3.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["64497-64510", "65536-65551"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["64512-65534"],
+                    [
+                      "http://example.net/rdaprir2/",
+                      "https://example.net/rdaprir2/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
+
+        // WHEN
+        let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber("as64498".to_string()));
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://example.org/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_autnum_bootstrap_with_match_WHEN_find_with_number_THEN_return_match() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "RDAP Bootstrap file for example registries.",
+                "services": [
+                  [
+                    ["64496-64496"],
+                    [
+                      "https://rir3.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["64497-64510", "65536-65551"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["64512-65534"],
+                    [
+                      "http://example.net/rdaprir2/",
+                      "https://example.net/rdaprir2/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
+
+        // WHEN
+        let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber("64498".to_string()));
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://example.org/"
         );
     }
 }
