@@ -8,6 +8,8 @@ use icann_rdap_common::{
     cache::HttpData,
     iana::{iana_request, IanaRegistry, IanaRegistryType},
 };
+use ipnet::{Ipv4Net, Ipv6Net};
+use prefix_trie::PrefixMap;
 use reqwest::Client;
 use simplelog::debug;
 
@@ -99,6 +101,58 @@ fn get_asn_bootstrap_urls(
     Err(CliError::BootstrapNotFound)
 }
 
+fn get_ipv4_bootstrap_urls(
+    iana: IanaRegistry,
+    query_type: &QueryType,
+) -> Result<Vec<String>, CliError> {
+    let ip = match query_type {
+        QueryType::IpV4Addr(addr) => format!("{addr}/32"),
+        QueryType::IpV4Cidr(cidr) => cidr.to_owned(),
+        _ => panic!("non ip query for ip bootstrap"),
+    };
+    let mut pm: PrefixMap<Ipv4Net, Vec<String>> = PrefixMap::new();
+    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
+    for service in bootstrap.services {
+        let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
+        for cidr in service.first().ok_or(CliError::InvalidBootstrap)? {
+            pm.insert(
+                cidr.parse().map_err(|_| CliError::InvalidBootstrap)?,
+                urls.clone(),
+            );
+        }
+    }
+    let net = pm
+        .get_lpm(&ip.parse().map_err(|_| CliError::InvalidBootstrap)?)
+        .ok_or(CliError::BootstrapNotFound)?;
+    Ok(net.1.to_owned())
+}
+
+fn get_ipv6_bootstrap_urls(
+    iana: IanaRegistry,
+    query_type: &QueryType,
+) -> Result<Vec<String>, CliError> {
+    let ip = match query_type {
+        QueryType::IpV6Addr(addr) => format!("{addr}/128"),
+        QueryType::IpV6Cidr(cidr) => cidr.to_owned(),
+        _ => panic!("non ip query for ip bootstrap"),
+    };
+    let mut pm: PrefixMap<Ipv6Net, Vec<String>> = PrefixMap::new();
+    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
+    for service in bootstrap.services {
+        let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
+        for cidr in service.first().ok_or(CliError::InvalidBootstrap)? {
+            pm.insert(
+                cidr.parse().map_err(|_| CliError::InvalidBootstrap)?,
+                urls.clone(),
+            );
+        }
+    }
+    let net = pm
+        .get_lpm(&ip.parse().map_err(|_| CliError::InvalidBootstrap)?)
+        .ok_or(CliError::BootstrapNotFound)?;
+    Ok(net.1.to_owned())
+}
+
 async fn get_iana_registry(
     reg_type: IanaRegistryType,
     client: &Client,
@@ -132,7 +186,9 @@ mod tests {
     use icann_rdap_client::query::qtype::QueryType;
     use icann_rdap_common::iana::IanaRegistry;
 
-    use crate::bootstrap::get_asn_bootstrap_urls;
+    use crate::bootstrap::{
+        get_asn_bootstrap_urls, get_ipv4_bootstrap_urls, get_ipv6_bootstrap_urls,
+    };
 
     use super::{get_domain_bootstrap_urls, get_preferred_url};
 
@@ -317,6 +373,185 @@ mod tests {
 
         // WHEN
         let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber("64498".to_string()));
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://example.org/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_ipv4_bootstrap_with_match_WHEN_find_with_ip_address_THEN_return_match() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "RDAP Bootstrap file for example registries.",
+                "services": [
+                  [
+                    ["198.51.100.0/24", "192.0.0.0/8"],
+                    [
+                      "https://rir1.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["203.0.113.0/24", "192.0.2.0/24"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["203.0.113.0/28"],
+                    [
+                      "https://example.net/rdaprir2/",
+                      "http://example.net/rdaprir2/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv4 bootstrap");
+
+        // WHEN
+        let actual =
+            get_ipv4_bootstrap_urls(iana, &QueryType::IpV4Addr("198.51.100.1".to_string()));
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://rir1.example.com/myrdap/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_ipv4_bootstrap_with_match_WHEN_find_with_cidr_THEN_return_match() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "RDAP Bootstrap file for example registries.",
+                "services": [
+                  [
+                    ["198.51.100.0/24", "192.0.0.0/8"],
+                    [
+                      "https://rir1.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["203.0.113.0/24", "192.0.2.0/24"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["203.0.113.0/28"],
+                    [
+                      "https://example.net/rdaprir2/",
+                      "http://example.net/rdaprir2/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv4 bootstrap");
+
+        // WHEN
+        let actual =
+            get_ipv4_bootstrap_urls(iana, &QueryType::IpV4Cidr("203.0.113.0/24".to_string()));
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://example.org/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_ipv6_bootstrap_with_match_WHEN_find_with_ip_address_THEN_return_match() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "RDAP Bootstrap file for example registries.",
+                "services": [
+                  [
+                    ["2001:db8::/34"],
+                    [
+                      "https://rir2.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["2001:db8:4000::/36", "2001:db8:ffff::/48"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["2001:db8:1000::/36"],
+                    [
+                      "https://example.net/rdaprir2/",
+                      "http://example.net/rdaprir2/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv6 bootstrap");
+
+        // WHEN
+        let actual = get_ipv6_bootstrap_urls(iana, &QueryType::IpV6Addr("2001:db8::1".to_string()));
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://rir2.example.com/myrdap/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_ipv6_bootstrap_with_match_WHEN_find_with_ip_cidr_THEN_return_match() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "RDAP Bootstrap file for example registries.",
+                "services": [
+                  [
+                    ["2001:db8::/34"],
+                    [
+                      "https://rir2.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["2001:db8:4000::/36", "2001:db8:ffff::/48"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ],
+                  [
+                    ["2001:db8:1000::/36"],
+                    [
+                      "https://example.net/rdaprir2/",
+                      "http://example.net/rdaprir2/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv6 bootstrap");
+
+        // WHEN
+        let actual =
+            get_ipv6_bootstrap_urls(iana, &QueryType::IpV6Cidr("2001:db8:4000::/36".to_string()));
 
         // THEN
         assert_eq!(
