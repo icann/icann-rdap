@@ -1,3 +1,4 @@
+use bootstrap::BootstrapType;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
@@ -368,18 +369,22 @@ pub async fn main() -> anyhow::Result<()> {
             .collect::<Vec<CheckClass>>()
     };
 
+    let bootstrap_type = if let Some(tag) = cli.base {
+        BootstrapType::Tag(tag)
+    } else if let Some(base_url) = cli.base_url {
+        BootstrapType::Url(base_url)
+    } else {
+        BootstrapType::None
+    };
+
     let processing_params = ProcessingParams {
+        bootstrap_type,
         output_type,
         check_types,
         error_on_checks: cli.error_on_checks,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
     };
-
-    // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.
-    let base_url = cli
-        .base_url
-        .unwrap_or_else(|| "https://rdap-bootstrap.arin.net/bootstrap".to_string());
 
     let client_config = ClientConfig {
         user_agent_suffix: "CLI".to_string(),
@@ -396,7 +401,6 @@ pub async fn main() -> anyhow::Result<()> {
             .expect("Error instantiating log output.");
             let output = &mut std::io::stdout();
             let res1 = join!(exec(
-                &base_url,
                 cli.query_value,
                 &query_type,
                 &processing_params,
@@ -414,7 +418,6 @@ pub async fn main() -> anyhow::Result<()> {
             let (res1, res2) = join!(
                 spawn_blocking(move || minus::dynamic_paging(pager)),
                 exec(
-                    &base_url,
                     cli.query_value,
                     &query_type,
                     &processing_params,
@@ -432,10 +435,9 @@ pub async fn main() -> anyhow::Result<()> {
 }
 
 async fn exec<W: std::io::Write>(
-    base_url: &str,
     query_value: Option<String>,
     query_type: &QueryType,
-    output_params: &ProcessingParams,
+    processing_params: &ProcessingParams,
     client: &Client,
     mut output: W,
 ) -> Result<(), CliError> {
@@ -449,7 +451,7 @@ async fn exec<W: std::io::Write>(
     } else {
         info!("query is {query_type}");
     }
-    let result = do_query(base_url, query_type, output_params, client, &mut output).await;
+    let result = do_query(query_type, processing_params, client, &mut output).await;
     match result {
         Ok(_) => Ok(()),
         Err(error) => {

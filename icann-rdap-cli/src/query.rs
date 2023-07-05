@@ -15,6 +15,8 @@ use reqwest::Client;
 use simplelog::info;
 use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
+use crate::bootstrap::get_base_url;
+use crate::bootstrap::BootstrapType;
 use crate::error::CliError;
 use crate::request::do_request;
 
@@ -37,6 +39,7 @@ pub(crate) enum OutputType {
 }
 
 pub(crate) struct ProcessingParams {
+    pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
     pub check_types: Vec<CheckClass>,
     pub error_on_checks: bool,
@@ -45,7 +48,6 @@ pub(crate) struct ProcessingParams {
 }
 
 pub(crate) async fn do_query<'a, W: std::io::Write>(
-    base_url: &str,
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
@@ -57,24 +59,24 @@ pub(crate) async fn do_query<'a, W: std::io::Write>(
         | QueryType::IpV4Cidr(_)
         | QueryType::IpV6Cidr(_)
         | QueryType::AsNumber(_) => {
-            do_inr_query(base_url, query_type, processing_params, client, write).await
+            do_inr_query(query_type, processing_params, client, write).await
         }
         QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
-            do_domain_query(base_url, query_type, processing_params, client, write).await
+            do_domain_query(query_type, processing_params, client, write).await
         }
-        _ => do_basic_query(base_url, query_type, processing_params, None, client, write).await,
+        _ => do_basic_query(query_type, processing_params, None, client, write).await,
     }
 }
 
 async fn do_domain_query<'a, W: std::io::Write>(
-    base_url: &str,
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let response = do_request(base_url, query_type, processing_params, client).await;
+    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
+    let response = do_request(&base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -90,7 +92,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 info!("Querying domain name from registrar.");
                 let query_type = QueryType::Url(url.to_string());
                 let registrar_response =
-                    do_request(base_url, &query_type, processing_params, client).await;
+                    do_request(&base_url, &query_type, processing_params, client).await;
                 match registrar_response {
                     Ok(registrar_response) => {
                         regr_source_host = registrar_response.http_data.host;
@@ -118,14 +120,14 @@ async fn do_domain_query<'a, W: std::io::Write>(
 }
 
 async fn do_inr_query<'a, W: std::io::Write>(
-    base_url: &str,
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let response = do_request(base_url, query_type, processing_params, client).await;
+    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
+    let response = do_request(&base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -143,7 +145,6 @@ async fn do_inr_query<'a, W: std::io::Write>(
 }
 
 async fn do_basic_query<'a, W: std::io::Write>(
-    base_url: &str,
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     req_data: Option<&'a RequestData<'a>>,
@@ -151,7 +152,8 @@ async fn do_basic_query<'a, W: std::io::Write>(
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let response = do_request(base_url, query_type, processing_params, client).await;
+    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
+    let response = do_request(&base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
