@@ -56,6 +56,52 @@ The basic usage is `rdap XXX` where XXX is a domain name, IP address, AS number,
 
 For more advanced usage, run `rdap --help` which should yield the extensive help guide.
 
+Paging Output
+-------------
+
+By default, the client will attempt to determine if paging the output (showing information one page at a time)
+is appropriate. This is done by attempting to determine if the terminal is interactive or not. If the terminal
+is not interactive, paging will be turned off otherwise it will be on.
+
+You can explicitly control this behavior using the `-P` command argument such as `-P none` to specify no paging.
+This is also controlled via the `RDAP_PAGING` environmental variable (see configuration below).
+
+Output Format
+-------------
+
+By default, the client will attempt to determine the output format of the information. If it determines the shell
+is interactive, output will be in `rendered-markdown`. Otherwise the output will be JSON.
+
+You can explicitly control this behavior using the `-O` command argument or the `RDAP_OUTPUT` environment variable
+(see below).
+
+Directing Queries To A Specific Server
+--------------------------------------
+
+By default, the client will use the RDAP bootstrap files provided by IANA to determine the authoritative server
+for the information being requested. These IANA files have the "base URLs" for the RDAP servers.
+
+You can override this behavior by either specifying a base "object tag" from the IANA object tags registry or with
+an explicit URL.
+
+An object tag can be specified with the `-b` command argument or the `RDAP_BASE` environment variable (see below).
+For example, `-b arin` will direct the client to find the ARIN server in the RDAP object tag registry.
+
+An explicit base URL can be specified using the `-B` command or the `RDAP_BASE_URL` environment variable.
+
+Caching
+-------
+
+By default, the client will cache data based on the request URL and "self" links provided in the RDAP results.
+
+This can be turned off with the `-N` command parameter or by setting the `RDAP_NO_CACHE` environment variable to "true".
+
+Logging
+-------
+
+The client logs errors, warning, and other information on its processing. This can be controlled with the
+`--log-level` command argument or the `RDAP_LOG` environment variable.
+
 Configuration
 -------------
 
