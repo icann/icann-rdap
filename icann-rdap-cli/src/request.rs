@@ -72,6 +72,13 @@ pub(crate) async fn do_request(
                     let path = rdap_cache_path().join(file_name);
                     fs::write(path, &cache_contents)?;
                 }
+            } else {
+                debug!("Not caching data according to server policy.");
+                debug!("Expires header: {:?}", &response.http_data.expires);
+                debug!(
+                    "Cache-control header: {:?}",
+                    &response.http_data.cache_control
+                );
             }
         }
     }
