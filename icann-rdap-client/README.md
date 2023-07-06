@@ -16,6 +16,8 @@ Add the library to your Cargo.toml: `cargo add icann-rdap-client`
 
 Also, add the commons library: `cargo add icann-rdap-common`.
 
+Both icann-rdap-common and icann-rdap-client can be compiled for WASM targets.
+
 Usage
 -----
 

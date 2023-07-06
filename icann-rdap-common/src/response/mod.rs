@@ -13,7 +13,7 @@ use self::{
     nameserver::Nameserver,
     network::Network,
     search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
-    types::{Links, RdapConformance},
+    types::{Link, Links, RdapConformance},
 };
 
 pub mod autnum;
@@ -166,6 +166,7 @@ impl RdapResponse {
             RdapResponse::Help(_) => TypeId::of::<Help>(),
         }
     }
+
     pub fn get_links(&self) -> Option<&Links> {
         match self {
             RdapResponse::Entity(e) => e.object_common.links.as_ref(),
@@ -178,6 +179,20 @@ impl RdapResponse {
             RdapResponse::NameserverSearchResults(_) => None,
             RdapResponse::ErrorResponse(_) => None,
             RdapResponse::Help(_) => None,
+        }
+    }
+
+    pub fn get_self_link(&self) -> Option<&Link> {
+        if let Some(links) = self.get_links() {
+            links.iter().find(|link| {
+                if let Some(rel) = &link.rel {
+                    rel == "self"
+                } else {
+                    false
+                }
+            })
+        } else {
+            None
         }
     }
 

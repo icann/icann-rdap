@@ -1,5 +1,8 @@
-use icann_rdap_common::response::RdapResponse;
-use reqwest::{header::CONTENT_TYPE, Client};
+use icann_rdap_common::{cache::HttpData, response::RdapResponse};
+use reqwest::{
+    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES},
+    Client,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -18,21 +21,32 @@ pub async fn rdap_request(
         .headers()
         .get(CONTENT_TYPE)
         .map(|value| value.to_str().unwrap().to_string());
+    let expires = response
+        .headers()
+        .get(EXPIRES)
+        .map(|value| value.to_str().unwrap().to_string());
+    let cache_control = response
+        .headers()
+        .get(CACHE_CONTROL)
+        .map(|value| value.to_str().unwrap().to_string());
     let content_length = response.content_length();
     let url = response.url().to_owned();
     let text = response.text().await?;
     let json: Result<Value, serde_json::Error> = serde_json::from_str(&text);
     if let Ok(rdap_json) = json {
         let rdap = RdapResponse::try_from(rdap_json)?;
-        Ok(ResponseData {
-            rdap,
-            content_length,
-            content_type,
-            host: url
-                .host_str()
-                .expect("URL has no host. This shouldn't happen.")
-                .to_owned(),
-        })
+        let http_data = HttpData::now()
+            .and_content_length(content_length)
+            .and_content_type(content_type)
+            .host(
+                url.host_str()
+                    .expect("URL has no host. This shouldn't happen.")
+                    .to_owned(),
+            )
+            .and_expires(expires)
+            .and_cache_control(cache_control)
+            .build();
+        Ok(ResponseData { rdap, http_data })
     } else {
         Err(RdapClientError::ParsingError(Box::new(
             crate::ParsingErrorInfo {
@@ -49,7 +63,5 @@ pub async fn rdap_request(
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ResponseData {
     pub rdap: RdapResponse,
-    pub content_length: Option<u64>,
-    pub content_type: Option<String>,
-    pub host: String,
+    pub http_data: HttpData,
 }

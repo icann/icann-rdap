@@ -22,6 +22,8 @@ pub enum RdapClientError {
     Client(#[from] reqwest::Error),
     #[error("Error parsing response")]
     ParsingError(Box<ParsingErrorInfo>),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
 }
 
 #[derive(Debug)]

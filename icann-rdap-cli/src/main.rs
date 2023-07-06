@@ -1,7 +1,8 @@
+use bootstrap::BootstrapType;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
-use query::OutputParams;
+use query::ProcessingParams;
 use std::str::FromStr;
 
 use clap::{ArgGroup, Parser, ValueEnum};
@@ -21,9 +22,11 @@ use crate::query::do_query;
 #[cfg(debug_assertions)]
 use simplelog::warn;
 
+pub mod bootstrap;
 pub mod dirs;
 pub mod error;
 pub mod query;
+pub mod request;
 
 const BEFORE_LONG_HELP: &str = include_str!("before_long_help.txt");
 const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
@@ -156,6 +159,23 @@ struct Cli {
         default_value_t = LogLevel::Info
     )]
     log_level: LogLevel,
+
+    /// Do not use the cache.
+    ///
+    /// When given, the cache will be neither read from nor written to.
+    #[arg(short = 'N', long, required = false, env = "RDAP_NO_CACHE")]
+    no_cache: bool,
+
+    /// Max cache age.
+    ///
+    /// Specifies the maximum age in seconds of an item in the cache.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_MAX_CACHE_AGE",
+        default_value = "86400"
+    )]
+    max_cache_age: u32,
 
     /// Reset.
     ///
@@ -349,16 +369,22 @@ pub async fn main() -> anyhow::Result<()> {
             .collect::<Vec<CheckClass>>()
     };
 
-    let output_params = OutputParams {
+    let bootstrap_type = if let Some(tag) = cli.base {
+        BootstrapType::Tag(tag)
+    } else if let Some(base_url) = cli.base_url {
+        BootstrapType::Url(base_url)
+    } else {
+        BootstrapType::None
+    };
+
+    let processing_params = ProcessingParams {
+        bootstrap_type,
         output_type,
         check_types,
         error_on_checks: cli.error_on_checks,
+        no_cache: cli.no_cache,
+        max_cache_age: cli.max_cache_age,
     };
-
-    // TODO this will need to get more sophisticated once the bootstrapping logic is implemented.
-    let base_url = cli
-        .base_url
-        .unwrap_or_else(|| "https://rdap-bootstrap.arin.net/bootstrap".to_string());
 
     let client_config = ClientConfig {
         user_agent_suffix: "CLI".to_string(),
@@ -375,10 +401,9 @@ pub async fn main() -> anyhow::Result<()> {
             .expect("Error instantiating log output.");
             let output = &mut std::io::stdout();
             let res1 = join!(exec(
-                &base_url,
                 cli.query_value,
                 &query_type,
-                &output_params,
+                &processing_params,
                 &client,
                 output,
             ));
@@ -393,10 +418,9 @@ pub async fn main() -> anyhow::Result<()> {
             let (res1, res2) = join!(
                 spawn_blocking(move || minus::dynamic_paging(pager)),
                 exec(
-                    &base_url,
                     cli.query_value,
                     &query_type,
-                    &output_params,
+                    &processing_params,
                     &client,
                     output
                 )
@@ -411,10 +435,9 @@ pub async fn main() -> anyhow::Result<()> {
 }
 
 async fn exec<W: std::io::Write>(
-    base_url: &str,
     query_value: Option<String>,
     query_type: &QueryType,
-    output_params: &OutputParams,
+    processing_params: &ProcessingParams,
     client: &Client,
     mut output: W,
 ) -> Result<(), CliError> {
@@ -428,7 +451,7 @@ async fn exec<W: std::io::Write>(
     } else {
         info!("query is {query_type}");
     }
-    let result = do_query(base_url, query_type, output_params, client, &mut output).await;
+    let result = do_query(query_type, processing_params, client, &mut output).await;
     match result {
         Ok(_) => Ok(()),
         Err(error) => {
