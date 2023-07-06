@@ -27,6 +27,12 @@ pub(crate) async fn get_base_url(
     client: &Client,
     query_type: &QueryType,
 ) -> Result<String, CliError> {
+    if let QueryType::Url(url) = query_type {
+        // this is ultimately ignored without this logic a bootstrap not found error is thrown
+        // which is wrong for URL queries.
+        return Ok(url.to_owned());
+    }
+
     match bootstrap_type {
         BootstrapType::None => qtype_to_bootstrap_url(client, query_type).await,
         BootstrapType::Url(url) => Ok(url.to_owned()),
