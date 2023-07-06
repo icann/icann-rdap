@@ -124,13 +124,13 @@ strum = "0.24"
 strum_macros = "0.24"
 
 # terminal markdown generator
-termimad = "0.20"
+termimad = "0.23"
 
 # error macros
 thiserror = "1.0"
 
 # tokio async runtime
-tokio = { version = "1.21", features = [ "full" ] }
+tokio = { version = "1.29", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.4", features = ["timeout", "util"] }
