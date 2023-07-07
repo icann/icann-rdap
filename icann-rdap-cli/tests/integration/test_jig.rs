@@ -41,6 +41,7 @@ impl TestJig {
             .env("RDAP_PAGING", "none")
             .env("RDAP_OUTPUT", "json-extra")
             .env("RDAP_LOG", "debug")
+            .env("RDAP_ALLOW_HTTP", "true")
             .env("XDG_CACHE_HOME", test_dir.path("cache"))
             .env("XDG_CONFIG_HOME", test_dir.path("config"));
         TestJig {

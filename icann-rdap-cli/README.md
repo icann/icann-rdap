@@ -102,6 +102,16 @@ Logging
 The client logs errors, warning, and other information on its processing. This can be controlled with the
 `--log-level` command argument or the `RDAP_LOG` environment variable.
 
+Secure Connections
+------------------
+
+By default, the client will use secure connections. The following arguments and environment variables can be used
+to modify this behavior:
+
+* `-T` or `RDAP_ALLOW_HTTP` : RDAP servers should be using HTTPS. When given or set to true, HTTP will be allowed.
+* `-K` or `RDAP_ALLOW_INVALID_HOST_NAMES` : Allows HTTPS connections in which the host name does not match the certificate.
+* `-I` or `RDAP_ALLOW_INVALID_CERTIFICATES` : Allows HTTPS connections in which the TLS certificate is invalid.
+
 Configuration
 -------------
 
@@ -121,6 +131,13 @@ $HOME/Library/Application Support/rdap/rdap.env.
 
 On Windows, this file is located at
 {FOLDERID_RoamingAppData}\rdap\config\rdap.env.
+
+Resetting
+---------
+
+Use the `--reset` argument to reset all client state. This will remove the RDAP and IANA caches and
+reset the `rdap.env` file (see above) to the default.
+
 
 License
 -------
