@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use strum_macros::Display;
 use thiserror::Error;
 
 use self::{
@@ -37,8 +38,8 @@ pub enum RdapResponseError {
 }
 
 /// The various types of RDAP response.
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(untagged)]
+#[derive(Serialize, Deserialize, Clone, Display)]
+#[serde(untagged, try_from = "Value")]
 pub enum RdapResponse {
     // Object Classes
     Entity(Entity),
@@ -335,5 +336,19 @@ mod tests {
 
         // THEN
         assert!(matches!(actual, RdapResponse::ErrorResponse(_)));
+    }
+
+    #[test]
+    fn GIVEN_entity_search_results_variant_WHEN_to_string_THEN_string_is_entity() {
+        // GIVEN
+        let entity: Value =
+            serde_json::from_str(include_str!("test_files/entities_fn_arin.json")).unwrap();
+        let value = RdapResponse::try_from(entity).unwrap();
+
+        // WHEN
+        let actual = value.to_string();
+
+        // THEN
+        assert_eq!(actual, "EntitySearchResults");
     }
 }

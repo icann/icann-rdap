@@ -140,10 +140,13 @@ pub struct Domain {
 #[buildstructor::buildstructor]
 impl Domain {
     #[builder(entry = "basic")]
-    pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
+    pub fn new_ldh<T: Into<String>>(
+        ldh_name: T,
+        entities: Option<Vec<crate::response::entity::Entity>>,
+    ) -> Self {
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::domain().build(),
+            object_common: ObjectCommon::domain().and_entities(entities).build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name: None,
             variants: None,
