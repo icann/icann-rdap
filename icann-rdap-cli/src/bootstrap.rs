@@ -135,25 +135,23 @@ fn get_asn_bootstrap_urls(
         .map_err(|_| CliError::InvalidBootstrap)?;
     let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
     for service in bootstrap.services {
-        let as_range = service
-            .first()
-            .ok_or(CliError::InvalidBootstrap)?
-            .first()
-            .ok_or(CliError::BootstrapNotFound)?;
-        let as_split = as_range.split('-').collect::<Vec<&str>>();
-        let start_as = as_split
-            .first()
-            .ok_or(CliError::InvalidBootstrap)?
-            .parse::<u32>()
-            .map_err(|_| CliError::InvalidBootstrap)?;
-        let end_as = as_split
-            .last()
-            .ok_or(CliError::InvalidBootstrap)?
-            .parse::<u32>()
-            .map_err(|_| CliError::InvalidBootstrap)?;
-        if start_as <= autnum && end_as >= autnum {
-            let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
-            return Ok(urls.to_owned());
+        let as_ranges = service.first().ok_or(CliError::InvalidBootstrap)?;
+        for range in as_ranges {
+            let as_split = range.split('-').collect::<Vec<&str>>();
+            let start_as = as_split
+                .first()
+                .ok_or(CliError::InvalidBootstrap)?
+                .parse::<u32>()
+                .map_err(|_| CliError::InvalidBootstrap)?;
+            let end_as = as_split
+                .last()
+                .ok_or(CliError::InvalidBootstrap)?
+                .parse::<u32>()
+                .map_err(|_| CliError::InvalidBootstrap)?;
+            if start_as <= autnum && end_as >= autnum {
+                let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
+                return Ok(urls.to_owned());
+            }
         }
     }
     Err(CliError::BootstrapNotFound)
@@ -268,6 +266,7 @@ async fn get_iana_registry(
 mod tests {
     use icann_rdap_client::query::qtype::QueryType;
     use icann_rdap_common::iana::IanaRegistry;
+    use rstest::rstest;
 
     use crate::bootstrap::{
         get_asn_bootstrap_urls, get_ipv4_bootstrap_urls, get_ipv6_bootstrap_urls,
@@ -421,8 +420,17 @@ mod tests {
         );
     }
 
-    #[test]
-    fn GIVEN_autnum_bootstrap_with_match_WHEN_find_with_number_THEN_return_match() {
+    #[rstest]
+    #[case(64497u32, "https://example.org/")]
+    #[case(64498u32, "https://example.org/")]
+    #[case(64510u32, "https://example.org/")]
+    #[case(65536u32, "https://example.org/")]
+    #[case(65537u32, "https://example.org/")]
+    #[case(64513u32, "http://example.net/rdaprir2/")]
+    fn GIVEN_autnum_bootstrap_with_match_WHEN_find_with_number_THEN_return_match(
+        #[case] asn: u32,
+        #[case] bootstrap_url: &str,
+    ) {
         // GIVEN
         let bootstrap = r#"
             {
@@ -456,12 +464,12 @@ mod tests {
             serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
 
         // WHEN
-        let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber("64498".to_string()));
+        let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber(asn.to_string()));
 
         // THEN
         assert_eq!(
             actual.expect("no vec").first().expect("vec is empty"),
-            "https://example.org/"
+            bootstrap_url
         );
     }
 
