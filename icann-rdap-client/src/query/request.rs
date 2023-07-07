@@ -46,7 +46,11 @@ pub async fn rdap_request(
             .and_expires(expires)
             .and_cache_control(cache_control)
             .build();
-        Ok(ResponseData { rdap, http_data })
+        Ok(ResponseData {
+            http_data,
+            rdap_type: rdap.to_string(),
+            rdap,
+        })
     } else {
         Err(RdapClientError::ParsingError(Box::new(
             crate::ParsingErrorInfo {
@@ -63,5 +67,6 @@ pub async fn rdap_request(
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ResponseData {
     pub rdap: RdapResponse,
+    pub rdap_type: String,
     pub http_data: HttpData,
 }

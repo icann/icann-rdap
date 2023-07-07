@@ -39,4 +39,10 @@ async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
     let rdap = &responses.first().expect("response is empty").res_data.rdap;
     println!("response type is {rdap}");
     assert!(matches!(rdap, RdapResponse::Domain(_)));
+    let rdap_type = &responses
+        .first()
+        .expect("response is empty")
+        .res_data
+        .rdap_type;
+    assert_eq!(rdap_type, "Domain");
 }
