@@ -18,6 +18,8 @@ This library can be compiled for WASM targets.
 Usage
 -----
 
+Create some RDAP objects:
+
 ```rust
 // create an RDAP domain
 use icann_rdap_common::response::domain::Domain;
@@ -40,6 +42,42 @@ let autnum = Autnum::basic().autnum(700).build();
 // create an entity
 use icann_rdap_common::response::entity::Entity;
 let entity = Entity::basic().handle("foo-BAR").build();
+```
+
+Parse RDAP JSON:
+
+```rust
+use icann_rdap_common::response::RdapResponse;
+
+let json = r#"
+  {
+    "objectClassName": "ip network",
+    "links": [
+      {
+        "value": "http://localhost:3000/rdap/ip/10.0.0.0/16",
+        "rel": "self",
+        "href": "http://localhost:3000/rdap/ip/10.0.0.0/16",
+        "type": "application/rdap+json"
+      }
+    ],
+    "events": [
+      {
+        "eventAction": "registration",
+        "eventDate": "2023-06-16T22:56:49.594173356+00:00"
+      },
+      {
+        "eventAction": "last changed",
+        "eventDate": "2023-06-16T22:56:49.594189140+00:00"
+      }
+    ],
+    "startAddress": "10.0.0.0",
+    "endAddress": "10.0.255.255",
+    "ipVersion": "v4"
+  }
+"#;
+
+let rdap: RdapResponse = serde_json::from_str(json).unwrap();
+assert!(matches!(rdap, RdapResponse::Network(_)));
 ```
 
 License
