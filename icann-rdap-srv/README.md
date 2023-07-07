@@ -79,7 +79,7 @@ Start the server:
 
 Query the server with the client in another terminal:
 
-    ./target/release/rdap -B http://localhost:3000/rdap ns1.example.com
+    ./target/release/rdap -T -B http://localhost:3000/rdap ns1.example.com
 
 While the server is running, do the following in a separate terminal to add some more data:
 
@@ -88,7 +88,7 @@ While the server is running, do the following in a separate terminal to add some
 
 Query the server for the new data:
 
-    ./target/release/rdap -B http://localhost:3000/rdap example.com
+    ./target/release/rdap -T -B http://localhost:3000/rdap example.com
 
 For more information on the options available, use the `--help` option.
 

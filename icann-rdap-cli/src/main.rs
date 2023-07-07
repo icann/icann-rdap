@@ -36,7 +36,7 @@ const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
 #[command(group(
             ArgGroup::new("input")
                 .required(true)
-                .args(["query_value", "url", "server_help", "reset"]),
+                .args(["query_value", "server_help", "reset"]),
         ))]
 #[command(group(
             ArgGroup::new("base_specify")
@@ -68,13 +68,6 @@ struct Cli {
     )]
     query_type: Option<QtypeArg>,
 
-    /// Perform a query using a specifc URL.
-    ///
-    /// When used, no query or base URL lookup will be used. Insteead, the
-    /// given URL will be sent to the RDAP server in the URL directly.
-    #[arg(short = 'u', long)]
-    url: Option<String>,
-
     /// Get an RDAP server's help information.
     ///
     /// Ask for a server's help information.
@@ -86,8 +79,6 @@ struct Cli {
     /// This option gets a base URL from the RDAP bootstrap registry maintained
     /// by IANA. For example, using "com" will get the base URL for the .com
     /// registry.
-    ///
-    /// This option silently ignored if the --url option is used.
     #[arg(short = 'b', long, required = false, env = "RDAP_BASE")]
     base: Option<String>,
 
@@ -96,8 +87,6 @@ struct Cli {
     /// Use this option to explicitly give an RDAP base URL when issuing queries.
     /// If not specified, the base URL will come from the RDAP boostrap process
     /// outlined in RFC 9224.
-    ///
-    /// This option silently ignored if the --url option is used.
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
 
@@ -177,6 +166,37 @@ struct Cli {
     )]
     max_cache_age: u32,
 
+    /// Allow HTTP connections.
+    ///
+    /// When given, allows connections to RDAP servers using HTTP.
+    /// Otherwise, only HTTPS is allowed.
+    #[arg(short = 'T', long, required = false, env = "RDAP_ALLOW_HTTP")]
+    allow_http: bool,
+
+    /// Allow invalid host names.
+    ///
+    /// When given, allows HTTPS connections to servers where the host name does
+    /// not match the certificate's host name.
+    #[arg(
+        short = 'K',
+        long,
+        required = false,
+        env = "RDAP_ALLOW_INVALID_HOST_NAMES"
+    )]
+    allow_invalid_host_names: bool,
+
+    /// Allow invalid certificates.
+    ///
+    /// When given, allows HTTPS connections to servers where the TLS certificates
+    /// are invalid.
+    #[arg(
+        short = 'I',
+        long,
+        required = false,
+        env = "RDAP_ALLOW_INVALID_CERTIFICATES"
+    )]
+    allow_invalid_certificates: bool,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -230,6 +250,9 @@ enum QtypeArg {
 
     /// Nameserver IP Address Search
     NsIp,
+
+    /// RDAP URL
+    Url,
 }
 
 /// Represents the output type possibilities.
@@ -386,9 +409,12 @@ pub async fn main() -> anyhow::Result<()> {
         max_cache_age: cli.max_cache_age,
     };
 
-    let client_config = ClientConfig {
-        user_agent_suffix: "CLI".to_string(),
-    };
+    let client_config = ClientConfig::builder()
+        .user_agent_suffix("CLI")
+        .https_only(!cli.allow_http)
+        .accept_invalid_host_names(cli.allow_invalid_host_names)
+        .accept_invalid_certificates(cli.allow_invalid_certificates)
+        .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
         if !use_pager {
@@ -480,12 +506,11 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
                 QtypeArg::DomainNsIp => QueryType::DomainNsIpSearch(query_value),
                 QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
                 QtypeArg::NsIp => QueryType::NameserverIpSearch(query_value),
+                QtypeArg::Url => QueryType::Url(query_value),
             }
         } else {
             QueryType::from_str(&query_value).unwrap()
         }
-    } else if let Some(url) = cli.url.clone() {
-        QueryType::Url(url)
     } else {
         QueryType::Help
     }

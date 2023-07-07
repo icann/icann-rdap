@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.10"
+version = "0.0.11"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -98,7 +98,7 @@ prefix-trie = "0.2.4"
 regex = "1.7"
 
 # http client library
-reqwest = {version = "0.11", features = ["json", "stream"]}
+reqwest = {version = "0.11", features = ["json", "stream", "native-tls-vendored"]}
 
 # serialization / deserialization library
 serde = { version = "1.0", features = [ "derive" ] }
@@ -124,13 +124,13 @@ strum = "0.24"
 strum_macros = "0.24"
 
 # terminal markdown generator
-termimad = "0.20"
+termimad = "0.23"
 
 # error macros
 thiserror = "1.0"
 
 # tokio async runtime
-tokio = { version = "1.21", features = [ "full" ] }
+tokio = { version = "1.29", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.4", features = ["timeout", "util"] }

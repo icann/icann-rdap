@@ -34,7 +34,7 @@ impl HttpData {
 
     pub fn is_expired(&self, max_age: i64) -> bool {
         let now = Utc::now();
-        if now > self.received + Duration::seconds(max_age) {
+        if now >= self.received + Duration::seconds(max_age) {
             return true;
         }
         if let Some(cache_control) = &self.cache_control {
@@ -45,14 +45,14 @@ impl HttpData {
             if let Some(cc_max_age) = cc_max_age {
                 let cc_max_age = cc_max_age.trim_start_matches("max-age=").parse::<i64>();
                 if let Ok(cc_max_age) = cc_max_age {
-                    return now > self.received + Duration::seconds(cc_max_age);
+                    return now >= self.received + Duration::seconds(cc_max_age);
                 }
             }
         }
         if let Some(expires) = &self.expires {
             let expire_time = DateTime::parse_from_rfc2822(expires);
             if let Ok(expire_time) = expire_time {
-                return now > expire_time;
+                return now >= expire_time;
             } else {
                 return false;
             }
@@ -109,7 +109,7 @@ mod tests {
     #[case(HttpData::now().host("example.com").expires((Utc::now() + Duration::seconds(100)).to_rfc2822()).build(), 50, false)]
     #[case(HttpData::now().host("example.com").cache_control("max-age=100").expires(Utc::now().to_rfc2822()).build(), 100, false)]
     #[case(HttpData::now().host("example.com").cache_control("max-age=0").expires((Utc::now() + Duration::seconds(50)).to_rfc2822()).build(), 100, true)]
-    fn GIVEN_cache_data_and_max_age_WHEN_is_expired_THEN_correc(
+    fn GIVEN_cache_data_and_max_age_WHEN_is_expired_THEN_correct(
         #[case] cache_data: HttpData,
         #[case] max_age: i64,
         #[case] expected: bool,
