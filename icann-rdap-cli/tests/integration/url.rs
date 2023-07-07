@@ -23,7 +23,7 @@ async fn GIVEN_url_used_with_base_url_WHEN_query_THEN_success() {
 
     // WHEN
     let url = format!("{}/ip/10.0.0.1", test_jig.rdap_base);
-    test_jig.cmd.arg("--url").arg(url);
+    test_jig.cmd.arg(url);
 
     // THEN
     let assert = test_jig.cmd.assert();
@@ -47,7 +47,7 @@ async fn GIVEN_url_used_with_no_base_url_WHEN_query_THEN_success() {
 
     // WHEN
     let url = format!("{}/ip/10.0.0.1", test_jig.rdap_base);
-    test_jig.cmd.arg("--url").arg(url);
+    test_jig.cmd.arg(url);
 
     // THEN
     let assert = test_jig.cmd.assert();

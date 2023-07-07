@@ -13,8 +13,6 @@ use crate::test_jig::TestJig;
 #[case("foo.example", "foo.example")]
 #[case("foo.example", "foo.example.")]
 #[case("foo.example", "FOO.EXAMPLE")]
-#[case("foo.example", "foo.example ")]
-#[case("foo.example", " foo.example")]
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q_domain: &str) {
     // GIVEN
@@ -133,6 +131,25 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
 
     // WHEN
     test_jig.cmd.arg(q_cidr);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn GIVEN_url_WHEN_query_THEN_success() {
+    // GIVEN
+    let mut test_jig = TestJig::new();
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let url = format!("{}/domain/foo.example", test_jig.rdap_base);
+    test_jig.cmd.arg(url);
 
     // THEN
     let assert = test_jig.cmd.assert();

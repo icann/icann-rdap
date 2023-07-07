@@ -137,6 +137,11 @@ impl FromStr for QueryType {
     type Err = RdapClientError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // if it looks like a HTTP(S) url
+        if s.starts_with("http://") || s.starts_with("https://") {
+            return Ok(QueryType::Url(s.to_owned()));
+        }
+
         // if looks like an autnum
         let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
         if let Ok(_autnum) = u32::from_str(autnum) {
@@ -161,8 +166,7 @@ impl FromStr for QueryType {
         }
 
         // if it looks like a domain name
-        let labels: Vec<&str> = s.split('.').filter(|l| is_ldh(l)).collect();
-        if labels.len() > 1 {
+        if is_ldh_domain(s) {
             if is_nameserver(s) {
                 return Ok(QueryType::Nameserver(s.to_owned()));
             } else {
@@ -171,7 +175,7 @@ impl FromStr for QueryType {
         }
 
         // if it is just one word
-        if !s.contains(char::is_whitespace) {
+        if !s.contains(|c: char| c.is_whitespace() || c == '.' || c == ',' || c == '"') {
             return Ok(QueryType::Entity(s.to_owned()));
         }
 
@@ -180,14 +184,18 @@ impl FromStr for QueryType {
     }
 }
 
-fn is_ldh(s: &str) -> bool {
-    s.contains(|c: char| c.is_alphanumeric() || c == '-')
+fn is_ldh_domain(text: &str) -> bool {
+    lazy_static! {
+        static ref LDH_DOMAIN_RE: Regex =
+            Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap();
+    }
+    LDH_DOMAIN_RE.is_match(text)
 }
 
 fn is_nameserver(text: &str) -> bool {
     lazy_static! {
         static ref NS_RE: Regex =
-            Regex::new(r"(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]*\.[a-zA-Z0-9-]*\.?").unwrap();
+            Regex::new(r"^(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.?$").unwrap();
     }
     NS_RE.is_match(text)
 }
@@ -278,6 +286,7 @@ mod tests {
     #[case("foo.example.com")]
     #[case("snark.fail")]
     #[case("ns.fail")]
+    #[case(".com")]
     fn GIVEN_domain_name_WHEN_query_type_from_str_THEN_query_is_domain(#[case] input: &str) {
         // GIVEN case input
 
@@ -313,5 +322,31 @@ mod tests {
         // THEN
         let q = q.unwrap();
         assert!(matches!(q, QueryType::Entity(_)))
+    }
+
+    #[rstest]
+    #[case("https://example.com")]
+    #[case("http://foo.example.com")]
+    fn GIVEN_url_WHEN_query_type_from_str_THEN_query_is_url(#[case] input: &str) {
+        // GIVEN case input
+
+        // WHEN
+        let q = QueryType::from_str(input);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::Url(_)))
+    }
+
+    #[rstest]
+    #[case("ns.foo_bar.com")]
+    #[case("ns.foo bar.com")]
+    fn GIVEN_bad_input_WHEN_query_type_from_str_THEN_error(#[case] input: &str) {
+        // GIVEN case input
+
+        // WHEN
+        let q = QueryType::from_str(input);
+
+        // THEN
+        assert!(q.is_err());
     }
 }
