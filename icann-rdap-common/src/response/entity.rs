@@ -6,7 +6,7 @@ use serde_json::Value;
 use super::{
     autnum::Autnum,
     network::Network,
-    types::{Common, Events, ObjectCommon, PublicIds, Status},
+    types::{to_option_status, Common, Events, ObjectCommon, PublicIds},
 };
 
 /// Represents an RDAP entity response.
@@ -34,9 +34,6 @@ pub struct Entity {
     pub as_event_actor: Option<Events>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub autnums: Option<Vec<Autnum>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -45,16 +42,58 @@ pub struct Entity {
 
 #[buildstructor::buildstructor]
 impl Entity {
+    /// Builds a basic autnum object.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::response::entity::Entity;
+    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::contact::Contact;
+    ///
+    /// let contact = Contact::builder()
+    ///   .kind("individual")
+    ///   .full_name("Bob Smurd")
+    ///   .build();
+    ///
+    /// let entity = Entity::basic()
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   .role("registrant")
+    ///   .contact(contact)
+    ///   .build();
+    /// ```
     #[builder(entry = "basic")]
-    pub fn new_handle<T: Into<String>>(handle: T) -> Self {
+    pub fn new_handle<T: Into<String>>(
+        handle: T,
+        remarks: Vec<crate::response::types::Remark>,
+        links: Vec<crate::response::types::Link>,
+        events: Vec<crate::response::types::Event>,
+        statuses: Vec<String>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Vec<Entity>,
+        contact: Option<Contact>,
+        roles: Vec<String>,
+        public_ids: Option<PublicIds>,
+    ) -> Self {
+        let roles = (!roles.is_empty()).then_some(roles);
+        let entities = (!entities.is_empty()).then_some(entities);
+        let remarks = (!remarks.is_empty()).then_some(remarks);
+        let links = (!links.is_empty()).then_some(links);
+        let events = (!events.is_empty()).then_some(events);
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::entity().handle(handle.into()).build(),
-            vcard_array: None,
-            roles: None,
-            public_ids: None,
+            object_common: ObjectCommon::entity()
+                .handle(handle.into())
+                .and_remarks(remarks)
+                .and_links(links)
+                .and_events(events)
+                .and_status(to_option_status(statuses))
+                .and_port_43(port_43)
+                .and_entities(entities)
+                .build(),
+            vcard_array: contact.map(|c| c.to_vcard()),
+            roles,
+            public_ids,
             as_event_actor: None,
-            status: None,
             autnums: None,
             networks: None,
         }

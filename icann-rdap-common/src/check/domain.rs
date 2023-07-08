@@ -76,7 +76,7 @@ mod tests {
     #[case("_.")]
     fn GIVEN_domain_with_bad_ldh_WHEN_checked_THEN_invalid_ldh(#[case] ldh: &str) {
         // GIVEN
-        let domain = Domain::new_ldh(ldh, None);
+        let domain = Domain::basic().ldh_name(ldh).build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN

@@ -1,7 +1,5 @@
 #![allow(non_snake_case)]
 
-use cidr_utils::cidr::IpCidr;
-
 use icann_rdap_common::response::network::Network;
 use icann_rdap_srv::storage::StoreOps;
 
@@ -14,8 +12,9 @@ async fn GIVEN_url_used_with_base_url_WHEN_query_THEN_success() {
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
-            .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-            .build(),
+            .cidr("10.0.0.0/24")
+            .build()
+            .expect("cidr parsing"),
     )
     .await
     .expect("add network in tx");
@@ -38,8 +37,9 @@ async fn GIVEN_url_used_with_no_base_url_WHEN_query_THEN_success() {
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
-            .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-            .build(),
+            .cidr("10.0.0.0/24")
+            .build()
+            .expect("cidr parsing"),
     )
     .await
     .expect("add network in tx");

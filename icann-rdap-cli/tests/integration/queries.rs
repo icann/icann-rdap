@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use cidr_utils::cidr::IpCidr;
 use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
@@ -54,9 +53,14 @@ async fn GIVEN_nameserver_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new();
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_nameserver(&Nameserver::basic().ldh_name("ns.foo.example").build())
-        .await
-        .expect("add nameserver in tx");
+    tx.add_nameserver(
+        &Nameserver::basic()
+            .ldh_name("ns.foo.example")
+            .build()
+            .unwrap(),
+    )
+    .await
+    .expect("add nameserver in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN
@@ -72,14 +76,9 @@ async fn GIVEN_autnum_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new();
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(
-        &Autnum::basic_nums()
-            .start_autnum(700)
-            .end_autnum(710)
-            .build(),
-    )
-    .await
-    .expect("add autnum in tx");
+    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+        .await
+        .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN
@@ -97,8 +96,9 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
-            .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-            .build(),
+            .cidr("10.0.0.0/24")
+            .build()
+            .expect("cidr parsing"),
     )
     .await
     .expect("add network in tx");
@@ -122,8 +122,9 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
-            .cidr(IpCidr::from_str(db_cidr).expect("cidr parsing"))
-            .build(),
+            .cidr(db_cidr)
+            .build()
+            .expect("cidr parsing"),
     )
     .await
     .expect("add network in tx");

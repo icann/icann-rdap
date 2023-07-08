@@ -332,7 +332,7 @@ pub async fn trigger_update(data_dir: &str) -> Result<(), RdapServerError> {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use cidr_utils::cidr::IpCidr;
+
     use icann_rdap_common::response::domain::Domain;
 
     use super::*;
@@ -376,8 +376,9 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: Network::basic()
-                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-                .build(),
+                .cidr("10.0.0.0/24")
+                .build()
+                .expect("cidr parsing"),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(
                     "10.0.0.0/24".parse().expect("ipnet parsing"),
@@ -400,8 +401,9 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: Network::basic()
-                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-                .build(),
+                .cidr("10.0.0.0/24")
+                .build()
+                .expect("cidr parsing"),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Range {
                     start_address: "10.0.0.0".to_string(),
@@ -431,8 +433,9 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: Network::basic()
-                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-                .build(),
+                .cidr("10.0.0.0/24")
+                .build()
+                .expect("cidr parsing"),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(
                     "10.0.0.0/24".parse().expect("ipnet parsing"),
@@ -453,8 +456,9 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: Network::basic()
-                .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-                .build(),
+                .cidr("10.0.0.0/24")
+                .build()
+                .expect("cidr parsing"),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Range {
                     start_address: "10.0.0.0".to_string(),

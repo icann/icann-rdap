@@ -35,9 +35,49 @@ pub enum RdapResponseError {
     UnknownRdapResponse,
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
+    AddrParse(#[from] std::net::AddrParseError),
+    #[error(transparent)]
+    CidrParse(#[from] cidr_utils::cidr::IpCidrError),
 }
 
 /// The various types of RDAP response.
+///
+/// It can be parsed from JSON using serde:
+///
+/// ```rust
+/// use icann_rdap_common::response::RdapResponse;
+///
+/// let json = r#"
+///   {
+///     "objectClassName": "ip network",
+///     "links": [
+///       {
+///         "value": "http://localhost:3000/rdap/ip/10.0.0.0/16",
+///         "rel": "self",
+///         "href": "http://localhost:3000/rdap/ip/10.0.0.0/16",
+///         "type": "application/rdap+json"
+///       }
+///     ],
+///     "events": [
+///       {
+///         "eventAction": "registration",
+///         "eventDate": "2023-06-16T22:56:49.594173356+00:00"
+///       },
+///       {
+///         "eventAction": "last changed",
+///         "eventDate": "2023-06-16T22:56:49.594189140+00:00"
+///       }
+///     ],
+///     "startAddress": "10.0.0.0",
+///     "endAddress": "10.0.255.255",
+///     "ipVersion": "v4"
+///   }
+/// "#;
+///
+/// let rdap: RdapResponse = serde_json::from_str(json).unwrap();
+/// assert!(matches!(rdap, RdapResponse::Network(_)));
+/// ```
 #[derive(Serialize, Deserialize, Clone, Display)]
 #[serde(untagged, try_from = "Value")]
 pub enum RdapResponse {

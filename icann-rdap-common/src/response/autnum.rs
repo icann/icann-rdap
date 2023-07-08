@@ -1,7 +1,7 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::types::{Common, ObjectCommon};
+use super::types::{to_option_status, Common, ObjectCommon};
 
 /// Represents an RDAP autnum object response.
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
@@ -33,26 +33,46 @@ pub struct Autnum {
 
 #[buildstructor::buildstructor]
 impl Autnum {
+    /// Builds a basic autnum object.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::response::autnum::Autnum;
+    /// use icann_rdap_common::response::types::StatusValue;
+    ///
+    /// let autnum = Autnum::basic()
+    ///   .autnum_range(700..710)
+    ///   .handle("AS700-1")
+    ///   .status("active")
+    ///   .build();
+    /// ```
     #[builder(entry = "basic")]
-    pub fn new_autnum(autnum: u32) -> Self {
+    pub fn new_autnum(
+        autnum_range: std::ops::Range<u32>,
+        handle: Option<String>,
+        remarks: Vec<crate::response::types::Remark>,
+        links: Vec<crate::response::types::Link>,
+        events: Vec<crate::response::types::Event>,
+        statuses: Vec<String>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Vec<crate::response::entity::Entity>,
+    ) -> Self {
+        let entities = (!entities.is_empty()).then_some(entities);
+        let remarks = (!remarks.is_empty()).then_some(remarks);
+        let links = (!links.is_empty()).then_some(links);
+        let events = (!events.is_empty()).then_some(events);
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::autnum().build(),
-            start_autnum: Some(autnum),
-            end_autnum: Some(autnum),
-            name: None,
-            autnum_type: None,
-            country: None,
-        }
-    }
-
-    #[builder(entry = "basic_nums")]
-    pub fn new_autnum_nums(start_autnum: u32, end_autnum: u32) -> Self {
-        Self {
-            common: Common::builder().build(),
-            object_common: ObjectCommon::autnum().build(),
-            start_autnum: Some(start_autnum),
-            end_autnum: Some(end_autnum),
+            object_common: ObjectCommon::autnum()
+                .and_handle(handle)
+                .and_remarks(remarks)
+                .and_links(links)
+                .and_events(events)
+                .and_status(to_option_status(statuses))
+                .and_port_43(port_43)
+                .and_entities(entities)
+                .build(),
+            start_autnum: Some(autnum_range.start),
+            end_autnum: Some(autnum_range.end),
             name: None,
             autnum_type: None,
             country: None,

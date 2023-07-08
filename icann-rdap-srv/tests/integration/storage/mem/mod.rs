@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use cidr_utils::cidr::IpCidr;
 use icann_rdap_common::response::{
     autnum::Autnum,
     domain::Domain,
@@ -137,9 +136,14 @@ async fn GIVEN_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_nameserver_r
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_nameserver(&Nameserver::basic().ldh_name("ns.foo.example").build())
-        .await
-        .expect("add nameserver in tx");
+    tx.add_nameserver(
+        &Nameserver::basic()
+            .ldh_name("ns.foo.example")
+            .build()
+            .unwrap(),
+    )
+    .await
+    .expect("add nameserver in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN
@@ -181,14 +185,9 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_retu
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(
-        &Autnum::basic_nums()
-            .start_autnum(700)
-            .end_autnum(710)
-            .build(),
-    )
-    .await
-    .expect("add autnum in tx");
+    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+        .await
+        .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN
@@ -213,14 +212,9 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_return
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(
-        &Autnum::basic_nums()
-            .start_autnum(700)
-            .end_autnum(710)
-            .build(),
-    )
-    .await
-    .expect("add autnum in tx");
+    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+        .await
+        .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN
@@ -273,13 +267,9 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_address_THEN_network_return
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(
-        &Network::basic()
-            .cidr(IpCidr::from_str(cidr).expect("cidr parsing"))
-            .build(),
-    )
-    .await
-    .expect("add network in tx");
+    tx.add_network(&Network::basic().cidr(cidr).build().expect("cidr parsing"))
+        .await
+        .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN
@@ -337,13 +327,9 @@ async fn GIVEN_contained_networks_in_mem_WHEN_lookup_network_by_address_THEN_mos
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     for cidr in cidrs {
-        tx.add_network(
-            &Network::basic()
-                .cidr(IpCidr::from_str(cidr).expect("cidr parsing"))
-                .build(),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::basic().cidr(*cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -469,13 +455,9 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_cidr_THEN_network_returned(
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(
-        &Network::basic()
-            .cidr(IpCidr::from_str(cidr).expect("cidr parsing"))
-            .build(),
-    )
-    .await
-    .expect("add network in tx");
+    tx.add_network(&Network::basic().cidr(cidr).build().expect("cidr parsing"))
+        .await
+        .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
     // WHEN

@@ -7,6 +7,12 @@ use super::entity::Entity;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Extension(pub String);
 
+impl From<&str> for Extension {
+    fn from(value: &str) -> Self {
+        Extension(value.to_string())
+    }
+}
+
 /// The RDAP conformance array.
 pub type RdapConformance = Vec<Extension>;
 
@@ -96,8 +102,27 @@ pub struct Event {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct StatusValue(pub String);
 
+impl From<&str> for StatusValue {
+    fn from(value: &str) -> Self {
+        StatusValue(value.to_string())
+    }
+}
+
 /// An array of status values.
 pub type Status = Vec<StatusValue>;
+
+pub fn to_option_status(values: Vec<String>) -> Option<Status> {
+    if !values.is_empty() {
+        Some(
+            values
+                .into_iter()
+                .map(|s| StatusValue::from(s.as_str()))
+                .collect::<Status>(),
+        )
+    } else {
+        None
+    }
+}
 
 /// An RDAP port53 type.
 pub type Port43 = String;

@@ -138,7 +138,7 @@ impl GetChecks for Network {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use cidr_utils::cidr::IpCidr;
+
     use rstest::rstest;
 
     use crate::response::network::Network;
@@ -149,8 +149,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_empty_name_WHEN_checked_THEN_empty_name_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         network.name = Some("".to_string());
         let rdap = RdapResponse::Network(network);
 
@@ -169,8 +171,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_empty_type_WHEN_checked_THEN_empty_type_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         network.network_type = Some("".to_string());
         let rdap = RdapResponse::Network(network);
 
@@ -189,8 +193,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_no_start_WHEN_checked_THEN_missing_ip_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         network.start_address = None;
         let rdap = RdapResponse::Network(network);
 
@@ -212,8 +218,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_no_end_WHEN_checked_THEN_missing_ip_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         network.end_address = None;
         let rdap = RdapResponse::Network(network);
 
@@ -235,8 +243,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_bad_start_WHEN_checked_THEN_malformed_ip_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         network.start_address = Some("____".to_string());
         let rdap = RdapResponse::Network(network);
 
@@ -258,8 +268,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_bad_end_WHEN_checked_THEN_malformed_ip_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         network.end_address = Some("___".to_string());
         let rdap = RdapResponse::Network(network);
 
@@ -281,8 +293,10 @@ mod tests {
     #[test]
     fn GIVEN_network_with_end_before_start_WHEN_checked_THEN_end_before_start_check() {
         // GIVEN
-        let mut network =
-            Network::new_network(IpCidr::from_str("10.0.0.0/8").expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
         let swap = network.end_address.clone();
         network.end_address = network.start_address.clone();
         network.start_address = swap;
@@ -311,7 +325,10 @@ mod tests {
         #[case] version: &str,
     ) {
         // GIVEN
-        let mut network = Network::new_network(IpCidr::from_str(cidr).expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr(cidr)
+            .build()
+            .expect("invalid ip cidr");
         network.ip_version = Some(version.to_string());
         let rdap = RdapResponse::Network(network);
 
@@ -340,7 +357,10 @@ mod tests {
         #[case] version: &str,
     ) {
         // GIVEN
-        let mut network = Network::new_network(IpCidr::from_str(cidr).expect("invalid ip cidr"));
+        let mut network = Network::basic()
+            .cidr(cidr)
+            .build()
+            .expect("invalid ip cidr");
         network.ip_version = Some(version.to_string());
         let rdap = RdapResponse::Network(network);
 

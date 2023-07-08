@@ -21,27 +21,25 @@ Usage
 Create some RDAP objects:
 
 ```rust
+// create an entity
+use icann_rdap_common::response::entity::Entity;
+let holder = Entity::basic().handle("foo-BAR").build();
+
 // create an RDAP domain
 use icann_rdap_common::response::domain::Domain;
-let domain = Domain::basic().ldh_name("example.com").build();
+let domain = Domain::basic().ldh_name("example.com").entity(holder.clone()).build();
 
 // create an IP network
-use cidr_utils::cidr::IpCidr;
-let cidr = IpCidr::from_str("10.0.0.0/16").unwrap();
 use icann_rdap_common::response::network::Network;
-let net = Network::basic().cidr(cidr).build();
+let net = Network::basic().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
 
 // create a nameserver
 use icann_rdap_common::response::nameserver::Nameserver;
-let ns = Nameserver::basic().ldh_name("ns1.example.com").build();
+let ns = Nameserver::basic().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
 
 // create an autnum
 use icann_rdap_common::response::autnum::Autnum;
-let autnum = Autnum::basic().autnum(700).build();
-
-// create an entity
-use icann_rdap_common::response::entity::Entity;
-let entity = Entity::basic().handle("foo-BAR").build();
+let autnum = Autnum::basic().autnum_range(700..700).entity(holder).build();
 ```
 
 Parse RDAP JSON:

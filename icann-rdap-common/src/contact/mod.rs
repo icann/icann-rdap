@@ -7,6 +7,16 @@ use buildstructor::Builder;
 
 /// Represents a contact. This more closely represents an EPP Contact with some
 /// things taken from JSContact.
+///
+/// Using the builder to create the Contact:
+/// ```rust
+/// use icann_rdap_common::contact::Contact;
+///
+/// let contact = Contact::builder()
+///   .kind("individual")
+///   .full_name("Bob Smurd")
+///   .build();
+/// ```
 #[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
