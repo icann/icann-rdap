@@ -98,15 +98,15 @@ struct ObjectArgs {
 
     /// Adds a server notice.
     ///
-    /// Takes the form of "[LINK] description" where the optional [LINK] takes
-    /// the form of "(REL;TYPE)[HREF]". This argument maybe specified multiple times.
+    /// Takes the form of "\[LINK\] description" where the optional \[LINK\] takes
+    /// the form of "(REL;TYPE)\[HREF\]". This argument maybe specified multiple times.
     #[arg(long, value_parser = parse_notice_or_remark)]
     notice: Vec<NoticeOrRemark>,
 
     /// Adds an object remark.
     ///
-    /// Takes the form of "[LINK] description" where the optional [LINK] takes
-    /// the form of "(REL;TYPE)[HREF]". This argument maybe specified multiple times.
+    /// Takes the form of "\[LINK\] description" where the optional \[LINK\] takes
+    /// the form of "(REL;TYPE)\[HREF\]". This argument maybe specified multiple times.
     #[arg(long, value_parser = parse_notice_or_remark)]
     remark: Vec<NoticeOrRemark>,
 
