@@ -43,6 +43,7 @@ impl ToMd for Network {
             .and_data_ref(&"Start Address", &self.start_address)
             .and_data_ref(&"End Address", &self.end_address)
             .and_data_ref(&"IP Version", &self.ip_version)
+            .and_data_ul(&"CIDR", self.cidr0_cidrs.clone())
             .and_data_ref(&"Handle", &self.object_common.handle)
             .and_data_ref(&"Parent Handle", &self.parent_handle)
             .and_data_ref(&"Network Type", &self.network_type)

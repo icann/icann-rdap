@@ -7,6 +7,46 @@ use super::{
     RdapResponseError,
 };
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Cidr0Cidr {
+    V4Cidr(V4Cidr),
+    V6Cidr(V6Cidr),
+}
+
+impl std::fmt::Display for Cidr0Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cidr0Cidr::V4Cidr(cidr) => cidr.fmt(f),
+            Cidr0Cidr::V6Cidr(cidr) => cidr.fmt(f),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+pub struct V4Cidr {
+    pub v4prefix: String,
+    pub length: u8,
+}
+
+impl std::fmt::Display for V4Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.v4prefix, self.length)
+    }
+}
+
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+pub struct V6Cidr {
+    pub v6prefix: String,
+    pub length: u8,
+}
+
+impl std::fmt::Display for V6Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.v6prefix, self.length)
+    }
+}
+
 /// Represents an RDAP network response.
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Network {
@@ -41,6 +81,9 @@ pub struct Network {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
 
 #[buildstructor::buildstructor]
@@ -94,6 +137,7 @@ impl Network {
             network_type: None,
             parent_handle: None,
             country: None,
+            cidr0_cidrs: None,
         })
     }
 }
