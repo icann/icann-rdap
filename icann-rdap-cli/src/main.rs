@@ -2,8 +2,14 @@ use bootstrap::BootstrapType;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
+use query::PageWriter;
 use query::ProcessingParams;
 use std::str::FromStr;
+use tracing::error;
+use tracing::info;
+#[cfg(debug_assertions)]
+use tracing::warn;
+use tracing_subscriber::filter::LevelFilter;
 
 use clap::{ArgGroup, Parser, ValueEnum};
 use error::CliError;
@@ -12,15 +18,9 @@ use icann_rdap_common::VERSION;
 use is_terminal::IsTerminal;
 use query::{BridgeWriter, OutputType};
 use reqwest::Client;
-use simplelog::{
-    error, info, ColorChoice, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
-};
 use tokio::{join, task::spawn_blocking};
 
 use crate::query::do_query;
-
-#[cfg(debug_assertions)]
-use simplelog::warn;
 
 pub mod bootstrap;
 pub mod dirs;
@@ -325,12 +325,12 @@ enum PagerType {
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
-            LogLevel::Off => LevelFilter::Off,
-            LogLevel::Error => LevelFilter::Error,
-            LogLevel::Warn => LevelFilter::Warn,
-            LogLevel::Info => LevelFilter::Info,
-            LogLevel::Debug => LevelFilter::Debug,
-            LogLevel::Trace => LevelFilter::Trace,
+            LogLevel::Off => LevelFilter::OFF,
+            LogLevel::Error => LevelFilter::ERROR,
+            LogLevel::Warn => LevelFilter::WARN,
+            LogLevel::Info => LevelFilter::INFO,
+            LogLevel::Debug => LevelFilter::DEBUG,
+            LogLevel::Trace => LevelFilter::TRACE,
         }
     }
 }
@@ -418,13 +418,7 @@ pub async fn main() -> anyhow::Result<()> {
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
         if !use_pager {
-            TermLogger::init(
-                level,
-                Config::default(),
-                TerminalMode::Stderr,
-                ColorChoice::Auto,
-            )
-            .expect("Error instantiating log output.");
+            tracing_subscriber::fmt().with_max_level(level).init();
             let output = &mut std::io::stdout();
             let res1 = join!(exec(
                 cli.query_value,
@@ -437,9 +431,14 @@ pub async fn main() -> anyhow::Result<()> {
         } else {
             let pager = minus::Pager::new();
             let output = BridgeWriter(pager.clone());
+            let pager2 = pager.clone();
 
-            WriteLogger::init(level, Config::default(), output.clone())
-                .expect("Error instantiating log output.");
+            tracing_subscriber::fmt()
+                .with_max_level(level)
+                .with_writer(move || -> Box<dyn std::io::Write> {
+                    Box::new(PageWriter(pager2.clone()))
+                })
+                .init();
             let pager = pager.clone();
             let (res1, res2) = join!(
                 spawn_blocking(move || minus::dynamic_paging(pager)),

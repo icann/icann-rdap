@@ -12,7 +12,7 @@ use icann_rdap_common::{
 use ipnet::{Ipv4Net, Ipv6Net};
 use prefix_trie::PrefixMap;
 use reqwest::Client;
-use simplelog::debug;
+use tracing::debug;
 
 use crate::{dirs::bootstrap_cache_path, error::CliError};
 

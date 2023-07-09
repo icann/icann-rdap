@@ -2,8 +2,10 @@ use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::GetChecks;
-use simplelog::error;
+use minus::Pager;
 use std::io::ErrorKind;
+use tracing::error;
+use tracing::info;
 
 use icann_rdap_client::{
     md::{MdOptions, MdParams, ToMd},
@@ -12,7 +14,6 @@ use icann_rdap_client::{
 };
 use icann_rdap_common::{media_types::RDAP_MEDIA_TYPE, response::RdapResponse};
 use reqwest::Client;
-use simplelog::info;
 use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
 use crate::bootstrap::get_base_url;
@@ -313,6 +314,22 @@ impl<W: std::fmt::Write> std::io::Write for BridgeWriter<W> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.0
             .write_str(&String::from_utf8_lossy(buf))
+            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct PageWriter(pub(crate) Pager);
+
+impl std::io::Write for PageWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .push_str(String::from_utf8_lossy(buf))
             .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
         Ok(buf.len())
     }
