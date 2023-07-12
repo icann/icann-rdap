@@ -435,6 +435,11 @@ pub async fn main() -> anyhow::Result<()> {
             res1.0?;
         } else {
             let pager = minus::Pager::new();
+            pager
+                .set_prompt(format!(
+                    "{query_type} - Q to quit, j/k or pgup/pgdn to scroll"
+                ))
+                .expect("unable to set prompt");
             let output = FmtWrite(pager.clone());
             let pager2 = pager.clone();
 
