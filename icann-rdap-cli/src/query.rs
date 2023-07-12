@@ -2,8 +2,6 @@ use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::GetChecks;
-use minus::Pager;
-use std::io::ErrorKind;
 use tracing::error;
 use tracing::info;
 
@@ -305,38 +303,6 @@ fn do_final_output<W: std::io::Write>(
     }
 
     Ok(())
-}
-
-#[derive(Clone)]
-pub(crate) struct BridgeWriter<W: std::fmt::Write>(pub(crate) W);
-
-impl<W: std::fmt::Write> std::io::Write for BridgeWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0
-            .write_str(&String::from_utf8_lossy(buf))
-            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-#[derive(Clone)]
-pub(crate) struct PageWriter(pub(crate) Pager);
-
-impl std::io::Write for PageWriter {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0
-            .push_str(String::from_utf8_lossy(buf))
-            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
 }
 
 fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
