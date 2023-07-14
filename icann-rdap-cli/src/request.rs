@@ -11,7 +11,7 @@ use icann_rdap_common::cache::HttpData;
 use pct_str::PctString;
 use pct_str::URIReserved;
 use reqwest::Client;
-use tracing::{info, log::debug};
+use tracing::{debug, info};
 
 use crate::{dirs::rdap_cache_path, error::CliError, query::ProcessingParams};
 
