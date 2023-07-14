@@ -2,7 +2,50 @@ use buildstructor::Builder;
 use cidr_utils::cidr::IpCidr;
 use serde::{Deserialize, Serialize};
 
-use super::types::{Common, ObjectCommon};
+use super::{
+    types::{to_option_status, Common, ObjectCommon},
+    RdapResponseError,
+};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Cidr0Cidr {
+    V4Cidr(V4Cidr),
+    V6Cidr(V6Cidr),
+}
+
+impl std::fmt::Display for Cidr0Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Cidr0Cidr::V4Cidr(cidr) => cidr.fmt(f),
+            Cidr0Cidr::V6Cidr(cidr) => cidr.fmt(f),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+pub struct V4Cidr {
+    pub v4prefix: String,
+    pub length: u8,
+}
+
+impl std::fmt::Display for V4Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.v4prefix, self.length)
+    }
+}
+
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+pub struct V6Cidr {
+    pub v6prefix: String,
+    pub length: u8,
+}
+
+impl std::fmt::Display for V6Cidr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.v6prefix, self.length)
+    }
+}
 
 /// Represents an RDAP network response.
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
@@ -38,15 +81,52 @@ pub struct Network {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
 
 #[buildstructor::buildstructor]
 impl Network {
+    /// Builds a basic IP network object.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::response::network::Network;
+    /// use icann_rdap_common::response::types::StatusValue;
+    ///
+    /// let net = Network::basic()
+    ///   .cidr("10.0.0.0/24")
+    ///   .handle("NET-10-0-0-0")
+    ///   .status("active")
+    ///   .build().unwrap();
+    /// ```
     #[builder(entry = "basic")]
-    pub fn new_network(cidr: IpCidr) -> Self {
-        Self {
+    pub fn new_network(
+        cidr: String,
+        handle: Option<String>,
+        remarks: Vec<crate::response::types::Remark>,
+        links: Vec<crate::response::types::Link>,
+        events: Vec<crate::response::types::Event>,
+        statuses: Vec<String>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Vec<crate::response::entity::Entity>,
+    ) -> Result<Self, RdapResponseError> {
+        let cidr = IpCidr::from_str(cidr)?;
+        let entities = (!entities.is_empty()).then_some(entities);
+        let remarks = (!remarks.is_empty()).then_some(remarks);
+        let links = (!links.is_empty()).then_some(links);
+        let events = (!events.is_empty()).then_some(events);
+        Ok(Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::ip_network().build(),
+            object_common: ObjectCommon::ip_network()
+                .and_handle(handle)
+                .and_remarks(remarks)
+                .and_links(links)
+                .and_events(events)
+                .and_status(to_option_status(statuses))
+                .and_port_43(port_43)
+                .and_entities(entities)
+                .build(),
             start_address: Some(cidr.first_as_ip_addr().to_string()),
             end_address: Some(cidr.last_as_ip_addr().to_string()),
             ip_version: match cidr {
@@ -57,7 +137,8 @@ impl Network {
             network_type: None,
             parent_handle: None,
             country: None,
-        }
+            cidr0_cidrs: None,
+        })
     }
 }
 

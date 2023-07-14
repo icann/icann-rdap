@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     nameserver::Nameserver,
     network::Network,
-    types::{Common, Events, Links, ObjectCommon, PublicIds},
+    types::{to_option_status, Common, Events, Links, ObjectCommon, PublicIds},
 };
 
 /// Represents an RDAP variant name.
@@ -139,16 +139,50 @@ pub struct Domain {
 
 #[buildstructor::buildstructor]
 impl Domain {
+    /// Builds a basic domain object.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::response::domain::Domain;
+    /// use icann_rdap_common::response::types::StatusValue;
+    ///
+    /// let domain = Domain::basic()
+    ///   .ldh_name("foo.example.com")
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   .build();
+    /// ```
     #[builder(entry = "basic")]
-    pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
+    pub fn new_ldh<T: Into<String>>(
+        ldh_name: T,
+        nameservers: Option<Vec<Nameserver>>,
+        handle: Option<String>,
+        remarks: Vec<crate::response::types::Remark>,
+        links: Vec<crate::response::types::Link>,
+        events: Vec<crate::response::types::Event>,
+        statuses: Vec<String>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Vec<crate::response::entity::Entity>,
+    ) -> Self {
+        let entities = (!entities.is_empty()).then_some(entities);
+        let remarks = (!remarks.is_empty()).then_some(remarks);
+        let links = (!links.is_empty()).then_some(links);
+        let events = (!events.is_empty()).then_some(events);
         Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::domain().build(),
+            object_common: ObjectCommon::domain()
+                .and_handle(handle)
+                .and_remarks(remarks)
+                .and_links(links)
+                .and_events(events)
+                .and_status(to_option_status(statuses))
+                .and_port_43(port_43)
+                .and_entities(entities)
+                .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name: None,
             variants: None,
             secure_dns: None,
-            nameservers: None,
+            nameservers,
             public_ids: None,
             network: None,
         }

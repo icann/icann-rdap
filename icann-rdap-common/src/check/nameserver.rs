@@ -77,7 +77,7 @@ mod tests {
     #[case("_.")]
     fn GIVEN_nameserver_with_bad_ldh_WHEN_checked_THEN_invalid_ldh(#[case] ldh: &str) {
         // GIVEN
-        let ns = Nameserver::new_ldh(ldh);
+        let ns = Nameserver::basic().ldh_name(ldh).build().unwrap();
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN

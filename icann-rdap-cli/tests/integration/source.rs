@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use cidr_utils::cidr::IpCidr;
 use icann_rdap_client::request::{RequestResponseOwned, SourceType};
 use icann_rdap_common::response::network::Network;
 use icann_rdap_srv::storage::StoreOps;
@@ -21,8 +20,9 @@ async fn GIVEN_inr_query_WHEN_query_THEN_source_is_rir(
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
-            .cidr(IpCidr::from_str(db_cidr).expect("cidr parsing"))
-            .build(),
+            .cidr(db_cidr)
+            .build()
+            .expect("cidr parsing"),
     )
     .await
     .expect("add network in tx");

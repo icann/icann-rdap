@@ -613,7 +613,10 @@ mod tests {
         #[case] status: Vec<StatusValue>,
     ) {
         // GIVEN
-        let mut ns = Nameserver::new_ldh("ns1.example.com");
+        let mut ns = Nameserver::basic()
+            .ldh_name("ns1.example.com")
+            .build()
+            .unwrap();
         ns.object_common.status = Some(status);
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -639,7 +642,10 @@ mod tests {
     #[test]
     fn GIVEN_nameserver_with_empty_handle_WHEN_checked_THEN_handle_is_empty(#[case] handle: &str) {
         // GIVEN
-        let mut ns = Nameserver::new_ldh("ns1.example.com");
+        let mut ns = Nameserver::basic()
+            .ldh_name("ns1.example.com")
+            .build()
+            .unwrap();
         ns.object_common.handle = Some(handle.to_string());
         let rdap = RdapResponse::Nameserver(ns);
 

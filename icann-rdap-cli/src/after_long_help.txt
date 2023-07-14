@@ -8,7 +8,20 @@ On Linux, this file is located at $XDG_CONFIG_HOME/rdap/rdap.env or
 $HOME/.config/rdap/rdap.env.
 
 On macOS, this file is located at 
-$HOME/Library/Application Support/rdap/rdap.env.
+$HOME/Library/Application Support/org.ICANN.rdap/rdap.env.
 
 On Windows, this file is located at
 {FOLDERID_RoamingAppData}\rdap\config\rdap.env.
+
+Caches:
+
+Cache data used by this program is kept in a location dependent on the platform:
+
+On Linux, these files are located at $XDG_CACHE_HOME/rdap/ or 
+$HOME/.cache/rdap/.
+
+On macOS, these files are located at 
+$HOME/Library/Caches/org.ICANN.rdap/.
+
+On Windows, this file is located at
+{FOLDERID_LocalAppData}\rdap\.

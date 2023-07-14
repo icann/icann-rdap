@@ -51,4 +51,18 @@ impl TestJig {
             _test_dir: test_dir,
         }
     }
+
+    pub fn new_cmd(self) -> TestJig {
+        let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
+        cmd.env_clear()
+            .timeout(Duration::from_secs(2))
+            .env("RDAP_BASE_URL", self.rdap_base.clone())
+            .env("RDAP_PAGING", "none")
+            .env("RDAP_OUTPUT", "json-extra")
+            .env("RDAP_LOG", "debug")
+            .env("RDAP_ALLOW_HTTP", "true")
+            .env("XDG_CACHE_HOME", self._test_dir.path("cache"))
+            .env("XDG_CONFIG_HOME", self._test_dir.path("config"));
+        TestJig { cmd, ..self }
+    }
 }

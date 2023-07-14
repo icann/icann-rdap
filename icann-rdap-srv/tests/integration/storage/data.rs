@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use cidr_utils::cidr::IpCidr;
 use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
 };
@@ -181,7 +180,7 @@ async fn GIVEN_data_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded(
     // GIVEN
     let ldh_name = "ns.foo.example";
     let temp = TestDir::temp();
-    let nameserver = Nameserver::basic().ldh_name(ldh_name).build();
+    let nameserver = Nameserver::basic().ldh_name(ldh_name).build().unwrap();
     let nameserver_file = temp.path("ns_foo_example.json");
     std::fs::write(
         nameserver_file,
@@ -213,7 +212,7 @@ async fn GIVEN_data_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_
     let ldh2 = "ns.bar.example";
     let temp = TestDir::temp();
     let template = Template::Nameserver {
-        nameserver: Nameserver::basic().ldh_name("example").build(),
+        nameserver: Nameserver::basic().ldh_name("example").build().unwrap(),
         ids: vec![
             NameserverId::builder().ldh_name(ldh1).build(),
             NameserverId::builder().ldh_name(ldh2).build(),
@@ -247,7 +246,7 @@ async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     // GIVEN
     let num = 700u32;
     let temp = TestDir::temp();
-    let autnum = Autnum::basic().autnum(num).build();
+    let autnum = Autnum::basic().autnum_range(num..num).build();
     let autnum_file = temp.path("700.json");
     std::fs::write(
         autnum_file,
@@ -279,7 +278,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
     let num2 = 800u32;
     let temp = TestDir::temp();
     let template = Template::Autnum {
-        autnum: Autnum::basic().autnum(0).build(),
+        autnum: Autnum::basic().autnum_range(0..0).build(),
         ids: vec![
             AutnumId::builder()
                 .start_autnum(num1)
@@ -322,8 +321,9 @@ async fn GIVEN_data_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
     let network = Network::basic()
-        .cidr(IpCidr::from_str("10.0.0.0/24").expect("cidr parsing"))
-        .build();
+        .cidr("10.0.0.0/24")
+        .build()
+        .expect("cidr parsing");
     let net_file = temp.path("ten_net.json");
     std::fs::write(
         net_file,
@@ -361,8 +361,9 @@ async fn GIVEN_data_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netwo
     let temp = TestDir::temp();
     let template = Template::Network {
         network: Network::basic()
-            .cidr(IpCidr::from_str("1.1.1.1/32").expect("parsing cidr"))
-            .build(),
+            .cidr("1.1.1.1/32")
+            .build()
+            .expect("parsing cidr"),
         ids: vec![
             NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(cidr1.parse().expect("parsing cidr")))
@@ -411,8 +412,9 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
     let temp = TestDir::temp();
     let template = Template::Network {
         network: Network::basic()
-            .cidr(IpCidr::from_str("1.1.1.1/32").expect("parsing cidr"))
-            .build(),
+            .cidr("1.1.1.1/32")
+            .build()
+            .expect("parsing cidr"),
         ids: vec![
             NetworkId::builder()
                 .network_id(NetworkIdType::Range {

@@ -1,3 +1,4 @@
+#![allow(rustdoc::bare_urls)]
 #![doc = include_str!("../README.md")]
 pub mod cache;
 pub mod check;

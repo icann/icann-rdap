@@ -1,7 +1,12 @@
+use std::{net::IpAddr, str::FromStr};
+
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::types::{Common, ObjectCommon};
+use super::{
+    types::{to_option_status, Common, ObjectCommon},
+    RdapResponseError,
+};
 
 /// Represents an IP address set for nameservers.
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
@@ -11,6 +16,26 @@ pub struct IpAddresses {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub v4: Option<Vec<String>>,
+}
+
+#[buildstructor::buildstructor]
+impl IpAddresses {
+    #[builder(entry = "basic")]
+    pub fn new_basic(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
+        let mut v4: Vec<String> = Vec::new();
+        let mut v6: Vec<String> = Vec::new();
+        for addr in addresses {
+            let ip = IpAddr::from_str(&addr)?;
+            match ip {
+                IpAddr::V4(_) => v4.push(addr),
+                IpAddr::V6(_) => v6.push(addr),
+            }
+        }
+        Ok(Self {
+            v4: (!v4.is_empty()).then_some(v4),
+            v6: (!v6.is_empty()).then_some(v6),
+        })
+    }
 }
 
 /// Represents an RDAP nameserver response.
@@ -37,15 +62,58 @@ pub struct Nameserver {
 
 #[buildstructor::buildstructor]
 impl Nameserver {
+    /// Builds a basic nameserver object.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::response::nameserver::Nameserver;
+    /// use icann_rdap_common::response::entity::Entity;
+    /// use icann_rdap_common::response::types::StatusValue;
+    ///
+    /// let ns = Nameserver::basic()
+    ///   .ldh_name("ns1.example.com")
+    ///   .handle("ns1_example_com-1")
+    ///   .status("active")
+    ///   .address("10.0.0.1")
+    ///   .address("10.0.0.2")
+    ///   .entity(Entity::basic().handle("FOO").build())
+    ///   .build().unwrap();
+    /// ```
     #[builder(entry = "basic")]
-    pub fn new_ldh<T: Into<String>>(ldh_name: T) -> Self {
-        Self {
+    pub fn new_ldh<T: Into<String>>(
+        ldh_name: T,
+        addresses: Vec<String>,
+        handle: Option<String>,
+        remarks: Vec<crate::response::types::Remark>,
+        links: Vec<crate::response::types::Link>,
+        events: Vec<crate::response::types::Event>,
+        statuses: Vec<String>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Vec<crate::response::entity::Entity>,
+    ) -> Result<Self, RdapResponseError> {
+        let ip_addresses = if !addresses.is_empty() {
+            Some(IpAddresses::basic().addresses(addresses).build()?)
+        } else {
+            None
+        };
+        let entities = (!entities.is_empty()).then_some(entities);
+        let remarks = (!remarks.is_empty()).then_some(remarks);
+        let links = (!links.is_empty()).then_some(links);
+        let events = (!events.is_empty()).then_some(events);
+        Ok(Self {
             common: Common::builder().build(),
-            object_common: ObjectCommon::nameserver().build(),
+            object_common: ObjectCommon::nameserver()
+                .and_handle(handle)
+                .and_remarks(remarks)
+                .and_links(links)
+                .and_events(events)
+                .and_status(to_option_status(statuses))
+                .and_port_43(port_43)
+                .and_entities(entities)
+                .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name: None,
-            ip_addresses: None,
-        }
+            ip_addresses,
+        })
     }
 }
 

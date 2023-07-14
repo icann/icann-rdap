@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.11"
+version = "0.0.12"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -105,9 +105,6 @@ serde = { version = "1.0", features = [ "derive" ] }
 
 # json serializer
 serde_json = "1.0"
-
-# simple log framework
-simplelog = { version = "0.12", features = ["paris"] }
 
 # sqlx (async db)
 sqlx = { version = "0.6", features = [
