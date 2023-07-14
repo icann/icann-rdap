@@ -1,4 +1,8 @@
 use assert_cmd::Command;
+use icann_rdap_srv::config::ListenConfig;
+use icann_rdap_srv::server::AppState;
+use icann_rdap_srv::server::Listener;
+use icann_rdap_srv::storage::mem::ops::Mem;
 use std::time::Duration;
 use test_dir::DirBuilder;
 use test_dir::TestDir;
@@ -62,5 +66,29 @@ impl RdapSrvDataTestJig {
             source_dir: self.source_dir,
             data_dir: self.data_dir,
         }
+    }
+}
+
+pub struct SrvTestJig {
+    pub mem: Mem,
+    pub rdap_base: String,
+}
+
+impl SrvTestJig {
+    pub fn new() -> SrvTestJig {
+        let mem = Mem::default();
+        let app_state = AppState {
+            storage: mem.clone(),
+        };
+        let _ = tracing_subscriber::fmt().try_init();
+        let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
+        let rdap_base = listener.rdap_base();
+        tokio::spawn(async move {
+            listener
+                .start_with_state(app_state)
+                .await
+                .expect("starting server");
+        });
+        SrvTestJig { mem, rdap_base }
     }
 }

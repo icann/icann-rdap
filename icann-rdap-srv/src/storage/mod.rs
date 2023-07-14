@@ -5,6 +5,8 @@ use icann_rdap_common::response::{
 
 use crate::{error::RdapServerError, rdap::response::RdapServerResponse};
 
+use self::data::DomainId;
+
 pub mod data;
 pub mod mem;
 pub mod pg;
@@ -59,6 +61,13 @@ pub trait StoreOps: Send + Sync {
 pub trait TxHandle: Send {
     /// Add a domain name to storage.
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError>;
+
+    // TODO add back when ready
+    // async fn add_domain_err(
+    //     &mut self,
+    //     domain_id: &DomainId,
+    //     error: &icann_rdap_common::response::error::Error,
+    // ) -> Result<(), RdapServerError>;
 
     /// Add an entitty to storage.
     async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError>;

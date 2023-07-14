@@ -4,7 +4,10 @@ use icann_rdap_common::response::{
 };
 use sqlx::{PgPool, Postgres};
 
-use crate::{error::RdapServerError, storage::TxHandle};
+use crate::{
+    error::RdapServerError,
+    storage::{data::DomainId, TxHandle},
+};
 
 pub struct PgTx<'a> {
     db_tx: sqlx::Transaction<'a, Postgres>,

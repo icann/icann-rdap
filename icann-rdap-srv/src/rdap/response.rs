@@ -22,6 +22,7 @@ use icann_rdap_common::{
 };
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 lazy_static! {
     pub static ref NOT_FOUND: RdapServerResponse =
@@ -76,9 +77,54 @@ impl RdapServerResponse {
         }
     }
 
+    pub(crate) fn first_notice_link_href(&self) -> Option<&str> {
+        match self {
+            RdapServerResponse::NoRef(rdap) => {
+                if let RdapResponse::ErrorResponse(rdap_error) = rdap {
+                    let Some(notices) = &rdap_error.common.notices else {return None};
+                    let Some(first_notice) = notices.first() else {return None};
+                    let Some(links) = &first_notice.0.links else {return None};
+                    let Some(first_link) = links.first() else {return None};
+                    Some(&first_link.href)
+                } else {
+                    None
+                }
+            }
+            RdapServerResponse::Arc(rdap) => {
+                if let ArcRdapResponse::ErrorResponse(rdap_error) = rdap {
+                    let Some(notices) = &rdap_error.common.notices else {return None};
+                    let Some(first_notice) = notices.first() else {return None};
+                    let Some(links) = &first_notice.0.links else {return None};
+                    let Some(first_link) = links.first() else {return None};
+                    Some(&first_link.href)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     pub(crate) fn response(&self) -> Response {
         let status_code = self.status_code();
-        (status_code, RDAP_HEADERS, Json(self)).into_response()
+        match status_code {
+            StatusCode::MULTIPLE_CHOICES
+            | StatusCode::FOUND
+            | StatusCode::SEE_OTHER
+            | StatusCode::USE_PROXY
+            | StatusCode::TEMPORARY_REDIRECT
+            | StatusCode::PERMANENT_REDIRECT
+            | StatusCode::NOT_MODIFIED => {
+                let href = self.first_notice_link_href();
+                if let Some(href) = href {
+                    let headers: [(&str, &str); 2] = [RDAP_HEADERS[0], ("location", href)];
+                    (status_code, headers, Json(self)).into_response()
+                } else {
+                    warn!("redirect does not have an href to use for location header.");
+                    (status_code, RDAP_HEADERS, Json(self)).into_response()
+                }
+            }
+            _ => (status_code, RDAP_HEADERS, Json(self)).into_response(),
+        }
     }
 }
 
@@ -112,7 +158,12 @@ mod tests {
 
     use axum::response::IntoResponse;
     use http::StatusCode;
-    use icann_rdap_common::response::{domain::Domain, error::Error, RdapResponse};
+    use icann_rdap_common::response::{
+        domain::Domain,
+        error::Error,
+        types::{Link, Notice, NoticeOrRemark},
+        RdapResponse,
+    };
 
     use crate::rdap::response::{NOT_FOUND, NOT_IMPLEMENTED};
 
@@ -180,5 +231,51 @@ mod tests {
 
         // THEN
         assert_eq!(json, r#"{"errorCode":501}"#);
+    }
+
+    #[test]
+    fn GIVEN_arc_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
+        // GIVEN
+        let given = RdapServerResponse::Arc(ArcRdapResponse::ErrorResponse(Arc::new(
+            Error::basic()
+                .error_code(307)
+                .notice(Notice(
+                    NoticeOrRemark::builder()
+                        .links(vec![Link::builder()
+                            .href("https://other.example.com")
+                            .build()])
+                        .build(),
+                ))
+                .build(),
+        )));
+
+        // WHEN
+        let actual = given.first_notice_link_href();
+
+        // THEN
+        assert_eq!(actual.expect("no href"), "https://other.example.com");
+    }
+
+    #[test]
+    fn GIVEN_no_ref_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
+        // GIVEN
+        let given = RdapServerResponse::NoRef(RdapResponse::ErrorResponse(
+            Error::basic()
+                .error_code(307)
+                .notice(Notice(
+                    NoticeOrRemark::builder()
+                        .links(vec![Link::builder()
+                            .href("https://other.example.com")
+                            .build()])
+                        .build(),
+                ))
+                .build(),
+        ));
+
+        // WHEN
+        let actual = given.first_notice_link_href();
+
+        // THEN
+        assert_eq!(actual.expect("no href"), "https://other.example.com");
     }
 }

@@ -8,10 +8,14 @@ use icann_rdap_common::response::{
 use ipnet::{Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
 
-use crate::{error::RdapServerError, storage::TxHandle};
+use crate::{
+    error::RdapServerError,
+    storage::{data::DomainId, TxHandle},
+};
 
 use super::ops::Mem;
 
+// TODO see if #[repr(align(64))] impacts performance
 pub struct MemTx {
     mem: Mem,
     autnums: RangeMap<u32, Arc<Autnum>>,

@@ -22,9 +22,10 @@ pub struct Error {
 #[buildstructor::buildstructor]
 impl Error {
     #[builder(entry = "basic")]
-    pub fn new_error_code(error_code: u16) -> Self {
+    pub fn new_error_code(error_code: u16, notices: Vec<crate::response::types::Notice>) -> Self {
+        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().build(),
+            common: Common::builder().and_notices(notices).build(),
             error_code,
             title: None,
             description: None,
