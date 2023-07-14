@@ -1,12 +1,12 @@
-ICANN RDAP
-==========
+ICANN RDAP Common
+=================
 
-This repository contains open source code written by the Internet Corporation for Assigned Names and Numbers (ICANN)
-for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
+This is a common component library for the Registration Data Access Protocol (RDAP) written and sponsored
+by the Internet Corporation for Assigned Names and Numbers [(ICANN)](https://www.icann.org). 
+RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
+More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
 
-***THIS PROJECT IS IN ALPHA STAGE.*** You are welcome to use it and file issues or bug reports, however there are no
-guarantees as to timeliness of responses.
 
 Installation
 ------------

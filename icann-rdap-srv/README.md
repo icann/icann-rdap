@@ -1,18 +1,18 @@
 ICANN RDAP Server
 =================
-This repository contains open source code written by the Internet Corporation for Assigned Names and Numbers (ICANN)
-for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
-to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
-
-***THIS PROJECT IS IN ALPHA STAGE.*** You are welcome to use it and file issues or bug reports, however there are no
-guarantees as to timeliness of responses.
 
 This server was created to aid in the development of the ICANN RDAP Command Line Interface client.
 It can be used as a library or as a server started within its own process. It currently has in-memory
 storage, though its storage layer is architected to accomodate a PostgreSQL backend if that is needed
 in the future.
 
-RDAP core support is as follows:
+This software is written and sponsored
+by the Internet Corporation for Assigned Names and Numbers [(ICANN)](https://www.icann.org). 
+RDAP is standard of the [IETF](https://ietf.org/), and extensions
+to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
+More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
+
+RDAP core support in this server is as follows:
 
 - [X] LDH Domain lookup (`/domain/ldh`)
 - [X] Entity lookup (`/entity/handle`)
