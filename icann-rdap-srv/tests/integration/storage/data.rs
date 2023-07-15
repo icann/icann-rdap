@@ -8,8 +8,9 @@ use icann_rdap_srv::{
     config::{ServiceConfig, StorageType},
     storage::{
         data::{
-            load_data, AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType,
-            Template,
+            load_data, AutnumId, AutnumOrError::AutnumObject, DomainId, DomainOrError, EntityId,
+            EntityOrError::EntityObject, NameserverId, NameserverOrError::NameserverObject,
+            NetworkId, NetworkIdType, NetworkOrError::NetworkObject, Template,
         },
         mem::{config::MemConfig, ops::Mem},
         StoreOps,
@@ -68,7 +69,7 @@ async fn GIVEN_data_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_load
     let ldh2 = "bar.example";
     let temp = TestDir::temp();
     let template = Template::Domain {
-        domain: Domain::basic().ldh_name("example").build(),
+        domain: DomainOrError::DomainObject(Domain::basic().ldh_name("example").build()),
         ids: vec![
             DomainId::builder().ldh_name(ldh1).build(),
             DomainId::builder().ldh_name(ldh2).build(),
@@ -136,7 +137,7 @@ async fn GIVEN_data_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loa
     let handle2 = "bar";
     let temp = TestDir::temp();
     let template = Template::Entity {
-        entity: Entity::basic().handle("example").build(),
+        entity: EntityObject(Entity::basic().handle("example").build()),
         ids: vec![
             EntityId::builder().handle(handle1).build(),
             EntityId::builder().handle(handle2).build(),
@@ -207,7 +208,7 @@ async fn GIVEN_data_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_
     let ldh2 = "ns.bar.example";
     let temp = TestDir::temp();
     let template = Template::Nameserver {
-        nameserver: Nameserver::basic().ldh_name("example").build().unwrap(),
+        nameserver: NameserverObject(Nameserver::basic().ldh_name("example").build().unwrap()),
         ids: vec![
             NameserverId::builder().ldh_name(ldh1).build(),
             NameserverId::builder().ldh_name(ldh2).build(),
@@ -271,7 +272,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
     let num2 = 800u32;
     let temp = TestDir::temp();
     let template = Template::Autnum {
-        autnum: Autnum::basic().autnum_range(0..0).build(),
+        autnum: AutnumObject(Autnum::basic().autnum_range(0..0).build()),
         ids: vec![
             AutnumId::builder()
                 .start_autnum(num1)
@@ -351,10 +352,12 @@ async fn GIVEN_data_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netwo
     let start2 = "10.0.1.0";
     let temp = TestDir::temp();
     let template = Template::Network {
-        network: Network::basic()
-            .cidr("1.1.1.1/32")
-            .build()
-            .expect("parsing cidr"),
+        network: NetworkObject(
+            Network::basic()
+                .cidr("1.1.1.1/32")
+                .build()
+                .expect("parsing cidr"),
+        ),
         ids: vec![
             NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(cidr1.parse().expect("parsing cidr")))
@@ -401,10 +404,12 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
     let end2 = "10.0.1.255";
     let temp = TestDir::temp();
     let template = Template::Network {
-        network: Network::basic()
-            .cidr("1.1.1.1/32")
-            .build()
-            .expect("parsing cidr"),
+        network: NetworkObject(
+            Network::basic()
+                .cidr("1.1.1.1/32")
+                .build()
+                .expect("parsing cidr"),
+        ),
         ids: vec![
             NetworkId::builder()
                 .network_id(NetworkIdType::Range {

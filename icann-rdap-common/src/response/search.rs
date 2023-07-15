@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::{domain::Domain, entity::Entity, nameserver::Nameserver, types::Common};
 
 /// Represents RDAP domain search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
 pub struct DomainSearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -25,7 +25,7 @@ impl DomainSearchResults {
 }
 
 /// Represents RDAP nameserver search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
 pub struct NameserverSearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -46,7 +46,7 @@ impl NameserverSearchResults {
 }
 
 /// Represents RDAP entity search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
 pub struct EntitySearchResults {
     #[serde(flatten)]
     pub common: Common,

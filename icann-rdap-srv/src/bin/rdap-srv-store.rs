@@ -5,7 +5,10 @@ use icann_rdap_common::{check::CheckClass, response::RdapResponse, VERSION};
 use icann_rdap_srv::{
     config::{data_dir, debug_config_vars, LOG},
     error::RdapServerError,
-    storage::data::{trigger_reload, trigger_update, NetworkIdType, Template},
+    storage::data::{
+        trigger_reload, trigger_update, AutnumOrError, DomainOrError, EntityOrError,
+        NameserverOrError, NetworkIdType, NetworkOrError, Template,
+    },
     util::bin::check::{check_rdap, to_check_classes, CheckArgs},
 };
 use ipnet::IpNet;
@@ -167,74 +170,115 @@ fn verify_rdap_template(
             Template::Domain { domain, ids } => {
                 for id in ids {
                     debug!("verifying domain from template for {id:?}");
-                    let mut domain = domain.clone();
-                    domain.ldh_name = Some(id.ldh_name);
-                    if let Some(unicode_name) = id.unicode_name {
-                        domain.unicode_name = Some(unicode_name);
+                    match &domain {
+                        DomainOrError::DomainObject(domain) => {
+                            let mut domain = domain.clone();
+                            domain.ldh_name = Some(id.ldh_name);
+                            if let Some(unicode_name) = id.unicode_name {
+                                domain.unicode_name = Some(unicode_name);
+                            };
+                            errors_found |= check_rdap(RdapResponse::Domain(domain), check_types);
+                        }
+                        DomainOrError::ErrorResponse(error) => {
+                            errors_found |=
+                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                        }
                     };
-                    errors_found |= check_rdap(RdapResponse::Domain(domain), check_types);
                 }
             }
             Template::Entity { entity, ids } => {
                 for id in ids {
                     debug!("verifying entity from template for {id:?}");
-                    let mut entity = entity.clone();
-                    entity.object_common.handle = Some(id.handle);
-                    errors_found |= check_rdap(RdapResponse::Entity(entity), check_types);
+                    match &entity {
+                        EntityOrError::EntityObject(entity) => {
+                            let mut entity = entity.clone();
+                            entity.object_common.handle = Some(id.handle);
+                            errors_found |= check_rdap(RdapResponse::Entity(entity), check_types);
+                        }
+                        EntityOrError::ErrorResponse(error) => {
+                            errors_found |=
+                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                        }
+                    };
                 }
             }
             Template::Nameserver { nameserver, ids } => {
                 for id in ids {
                     debug!("verifying dding nameserver from template for {id:?}");
-                    let mut nameserver = nameserver.clone();
-                    nameserver.ldh_name = Some(id.ldh_name);
-                    if let Some(unicode_name) = id.unicode_name {
-                        nameserver.unicode_name = Some(unicode_name);
+                    match &nameserver {
+                        NameserverOrError::NameserverObject(nameserver) => {
+                            let mut nameserver = nameserver.clone();
+                            nameserver.ldh_name = Some(id.ldh_name);
+                            if let Some(unicode_name) = id.unicode_name {
+                                nameserver.unicode_name = Some(unicode_name);
+                            };
+                            errors_found |=
+                                check_rdap(RdapResponse::Nameserver(nameserver), check_types);
+                        }
+                        NameserverOrError::ErrorResponse(error) => {
+                            errors_found |=
+                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                        }
                     };
-                    errors_found |= check_rdap(RdapResponse::Nameserver(nameserver), check_types);
                 }
             }
             Template::Autnum { autnum, ids } => {
                 for id in ids {
                     debug!("verifying autnum from template for {id:?}");
-                    let mut autnum = autnum.clone();
-                    autnum.start_autnum = Some(id.start_autnum);
-                    autnum.end_autnum = Some(id.end_autnum);
-                    errors_found |= check_rdap(RdapResponse::Autnum(autnum), check_types);
+                    match &autnum {
+                        AutnumOrError::AutnumObject(autnum) => {
+                            let mut autnum = autnum.clone();
+                            autnum.start_autnum = Some(id.start_autnum);
+                            autnum.end_autnum = Some(id.end_autnum);
+                            errors_found |= check_rdap(RdapResponse::Autnum(autnum), check_types);
+                        }
+                        AutnumOrError::ErrorResponse(error) => {
+                            errors_found |=
+                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                        }
+                    };
                 }
             }
             Template::Network { network, ids } => {
                 for id in ids {
                     debug!("verifying network from template for {id:?}");
-                    let mut network = network.clone();
-                    match id.network_id {
-                        NetworkIdType::Cidr(cidr) => match cidr {
-                            IpNet::V4(v4) => {
-                                network.start_address = Some(v4.network().to_string());
-                                network.end_address = Some(v4.broadcast().to_string());
-                                network.ip_version = Some("v4".to_string());
+                    match &network {
+                        NetworkOrError::NetworkObject(network) => {
+                            let mut network = network.clone();
+                            match id.network_id {
+                                NetworkIdType::Cidr(cidr) => match cidr {
+                                    IpNet::V4(v4) => {
+                                        network.start_address = Some(v4.network().to_string());
+                                        network.end_address = Some(v4.broadcast().to_string());
+                                        network.ip_version = Some("v4".to_string());
+                                    }
+                                    IpNet::V6(v6) => {
+                                        network.start_address = Some(v6.network().to_string());
+                                        network.end_address = Some(v6.broadcast().to_string());
+                                        network.ip_version = Some("v6".to_string());
+                                    }
+                                },
+                                NetworkIdType::Range {
+                                    start_address,
+                                    end_address,
+                                } => {
+                                    let addr: IpAddr = start_address.parse()?;
+                                    if addr.is_ipv4() {
+                                        network.ip_version = Some("v4".to_string());
+                                    } else {
+                                        network.ip_version = Some("v6".to_string());
+                                    }
+                                    network.start_address = Some(start_address);
+                                    network.end_address = Some(end_address);
+                                }
                             }
-                            IpNet::V6(v6) => {
-                                network.start_address = Some(v6.network().to_string());
-                                network.end_address = Some(v6.broadcast().to_string());
-                                network.ip_version = Some("v6".to_string());
-                            }
-                        },
-                        NetworkIdType::Range {
-                            start_address,
-                            end_address,
-                        } => {
-                            let addr: IpAddr = start_address.parse()?;
-                            if addr.is_ipv4() {
-                                network.ip_version = Some("v4".to_string());
-                            } else {
-                                network.ip_version = Some("v6".to_string());
-                            }
-                            network.start_address = Some(start_address);
-                            network.end_address = Some(end_address);
+                            errors_found |= check_rdap(RdapResponse::Network(network), check_types);
                         }
-                    }
-                    errors_found |= check_rdap(RdapResponse::Network(network), check_types);
+                        NetworkOrError::ErrorResponse(error) => {
+                            errors_found |=
+                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                        }
+                    };
                 }
             }
         };

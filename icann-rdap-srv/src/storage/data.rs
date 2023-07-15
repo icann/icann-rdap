@@ -28,25 +28,65 @@ pub const RELOAD: &str = "reload";
 #[serde(untagged)]
 pub enum Template {
     Domain {
-        domain: Domain,
+        domain: DomainOrError,
         ids: Vec<DomainId>,
     },
     Entity {
-        entity: Entity,
+        entity: EntityOrError,
         ids: Vec<EntityId>,
     },
     Nameserver {
-        nameserver: Nameserver,
+        nameserver: NameserverOrError,
         ids: Vec<NameserverId>,
     },
     Autnum {
-        autnum: Autnum,
+        autnum: AutnumOrError,
         ids: Vec<AutnumId>,
     },
     Network {
-        network: Network,
+        network: NetworkOrError,
         ids: Vec<NetworkId>,
     },
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum DomainOrError {
+    #[serde(rename = "object")]
+    DomainObject(Domain),
+    #[serde(rename = "error")]
+    ErrorResponse(icann_rdap_common::response::error::Error),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum EntityOrError {
+    #[serde(rename = "object")]
+    EntityObject(Entity),
+    #[serde(rename = "error")]
+    ErrorResponse(icann_rdap_common::response::error::Error),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum NameserverOrError {
+    #[serde(rename = "object")]
+    NameserverObject(Nameserver),
+    #[serde(rename = "error")]
+    ErrorResponse(icann_rdap_common::response::error::Error),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum AutnumOrError {
+    #[serde(rename = "object")]
+    AutnumObject(Autnum),
+    #[serde(rename = "error")]
+    ErrorResponse(icann_rdap_common::response::error::Error),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum NetworkOrError {
+    #[serde(rename = "object")]
+    NetworkObject(Network),
+    #[serde(rename = "error")]
+    ErrorResponse(icann_rdap_common::response::error::Error),
 }
 
 #[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
@@ -110,8 +150,11 @@ pub enum NetworkIdType {
 /// {
 ///   "domain":
 ///     {
-///       "objectClassName":"domain",
-///       "ldhName":"example"
+///       "object":
+///         {
+///           "objectClassName":"domain",
+///           "ldhName":"example"
+///         }
 ///     },
 ///   "ids":
 ///     [
@@ -206,74 +249,109 @@ async fn load_rdap_template(
             Template::Domain { domain, ids } => {
                 for id in ids {
                     debug!("adding domain from template for {id:?}");
-                    let mut domain = domain.clone();
-                    domain.ldh_name = Some(id.ldh_name);
-                    if let Some(unicode_name) = id.unicode_name {
-                        domain.unicode_name = Some(unicode_name);
+                    match &domain {
+                        DomainOrError::DomainObject(domain) => {
+                            let mut domain = domain.clone();
+                            domain.ldh_name = Some(id.ldh_name);
+                            if let Some(unicode_name) = id.unicode_name {
+                                domain.unicode_name = Some(unicode_name);
+                            };
+                            tx.add_domain(&domain).await?;
+                        }
+                        DomainOrError::ErrorResponse(error) => {
+                            tx.add_domain_err(&id, error).await?;
+                        }
                     };
-                    tx.add_domain(&domain).await?;
                 }
             }
             Template::Entity { entity, ids } => {
                 for id in ids {
                     debug!("adding entity from template for {id:?}");
-                    let mut entity = entity.clone();
-                    entity.object_common.handle = Some(id.handle);
-                    tx.add_entity(&entity).await?;
+                    match &entity {
+                        EntityOrError::EntityObject(entity) => {
+                            let mut entity = entity.clone();
+                            entity.object_common.handle = Some(id.handle);
+                            tx.add_entity(&entity).await?;
+                        }
+                        EntityOrError::ErrorResponse(error) => {
+                            tx.add_entity_err(&id, error).await?;
+                        }
+                    };
                 }
             }
             Template::Nameserver { nameserver, ids } => {
                 for id in ids {
                     debug!("adding nameserver from template for {id:?}");
-                    let mut nameserver = nameserver.clone();
-                    nameserver.ldh_name = Some(id.ldh_name);
-                    if let Some(unicode_name) = id.unicode_name {
-                        nameserver.unicode_name = Some(unicode_name);
+                    match &nameserver {
+                        NameserverOrError::NameserverObject(nameserver) => {
+                            let mut nameserver = nameserver.clone();
+                            nameserver.ldh_name = Some(id.ldh_name);
+                            if let Some(unicode_name) = id.unicode_name {
+                                nameserver.unicode_name = Some(unicode_name);
+                            };
+                            tx.add_nameserver(&nameserver).await?;
+                        }
+                        NameserverOrError::ErrorResponse(error) => {
+                            tx.add_nameserver_err(&id, error).await?;
+                        }
                     };
-                    tx.add_nameserver(&nameserver).await?;
                 }
             }
             Template::Autnum { autnum, ids } => {
                 for id in ids {
                     debug!("adding autnum from template for {id:?}");
-                    let mut autnum = autnum.clone();
-                    autnum.start_autnum = Some(id.start_autnum);
-                    autnum.end_autnum = Some(id.end_autnum);
-                    tx.add_autnum(&autnum).await?;
+                    match &autnum {
+                        AutnumOrError::AutnumObject(autnum) => {
+                            let mut autnum = autnum.clone();
+                            autnum.start_autnum = Some(id.start_autnum);
+                            autnum.end_autnum = Some(id.end_autnum);
+                            tx.add_autnum(&autnum).await?;
+                        }
+                        AutnumOrError::ErrorResponse(error) => {
+                            tx.add_autnum_err(&id, error).await?;
+                        }
+                    };
                 }
             }
             Template::Network { network, ids } => {
                 for id in ids {
                     debug!("adding network from template for {id:?}");
-                    let mut network = network.clone();
-                    match id.network_id {
-                        NetworkIdType::Cidr(cidr) => match cidr {
-                            IpNet::V4(v4) => {
-                                network.start_address = Some(v4.network().to_string());
-                                network.end_address = Some(v4.broadcast().to_string());
-                                network.ip_version = Some("v4".to_string());
+                    match &network {
+                        NetworkOrError::NetworkObject(network) => {
+                            let mut network = network.clone();
+                            match id.network_id {
+                                NetworkIdType::Cidr(cidr) => match cidr {
+                                    IpNet::V4(v4) => {
+                                        network.start_address = Some(v4.network().to_string());
+                                        network.end_address = Some(v4.broadcast().to_string());
+                                        network.ip_version = Some("v4".to_string());
+                                    }
+                                    IpNet::V6(v6) => {
+                                        network.start_address = Some(v6.network().to_string());
+                                        network.end_address = Some(v6.broadcast().to_string());
+                                        network.ip_version = Some("v6".to_string());
+                                    }
+                                },
+                                NetworkIdType::Range {
+                                    start_address,
+                                    end_address,
+                                } => {
+                                    let addr: IpAddr = start_address.parse()?;
+                                    if addr.is_ipv4() {
+                                        network.ip_version = Some("v4".to_string());
+                                    } else {
+                                        network.ip_version = Some("v6".to_string());
+                                    }
+                                    network.start_address = Some(start_address);
+                                    network.end_address = Some(end_address);
+                                }
                             }
-                            IpNet::V6(v6) => {
-                                network.start_address = Some(v6.network().to_string());
-                                network.end_address = Some(v6.broadcast().to_string());
-                                network.ip_version = Some("v6".to_string());
-                            }
-                        },
-                        NetworkIdType::Range {
-                            start_address,
-                            end_address,
-                        } => {
-                            let addr: IpAddr = start_address.parse()?;
-                            if addr.is_ipv4() {
-                                network.ip_version = Some("v4".to_string());
-                            } else {
-                                network.ip_version = Some("v6".to_string());
-                            }
-                            network.start_address = Some(start_address);
-                            network.end_address = Some(end_address);
+                            tx.add_network(&network).await?;
                         }
-                    }
-                    tx.add_network(&network).await?;
+                        NetworkOrError::ErrorResponse(error) => {
+                            tx.add_network_err(&id, error).await?;
+                        }
+                    };
                 }
             }
         };
@@ -341,7 +419,7 @@ mod tests {
     fn GIVEN_template_domain_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Domain {
-            domain: Domain::basic().ldh_name("foo.example").build(),
+            domain: DomainOrError::DomainObject(Domain::basic().ldh_name("foo.example").build()),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
 
@@ -351,21 +429,21 @@ mod tests {
         // THEN
         assert_eq!(
             actual,
-            r#"{"domain":{"objectClassName":"domain","ldhName":"foo.example"},"ids":[{"ldhName":"bar.example"}]}"#
+            r#"{"domain":{"object":{"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#
         );
     }
 
     #[test]
     fn GIVEN_template_domain_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let json_text = r#"{"domain":{"objectClassName":"domain","ldhName":"foo.example"},"ids":[{"ldhName":"bar.example"}]}"#;
+        let json_text = r#"{"domain":{"object":{"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(json_text).expect("deserializing template");
 
         // THEN
         let expected = Template::Domain {
-            domain: Domain::basic().ldh_name("foo.example").build(),
+            domain: DomainOrError::DomainObject(Domain::basic().ldh_name("foo.example").build()),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
         assert_eq!(actual, expected);
@@ -375,10 +453,12 @@ mod tests {
     fn GIVEN_template_network_with_cidr_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Network {
-            network: Network::basic()
-                .cidr("10.0.0.0/24")
-                .build()
-                .expect("cidr parsing"),
+            network: NetworkOrError::NetworkObject(
+                Network::basic()
+                    .cidr("10.0.0.0/24")
+                    .build()
+                    .expect("cidr parsing"),
+            ),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(
                     "10.0.0.0/24".parse().expect("ipnet parsing"),
@@ -392,7 +472,7 @@ mod tests {
         // THEN
         assert_eq!(
             actual,
-            r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":"10.0.0.0/24"}]}"#
+            r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":"10.0.0.0/24"}]}"#
         );
     }
 
@@ -400,10 +480,12 @@ mod tests {
     fn GIVEN_template_network_with_start_and_end_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Network {
-            network: Network::basic()
-                .cidr("10.0.0.0/24")
-                .build()
-                .expect("cidr parsing"),
+            network: NetworkOrError::NetworkObject(
+                Network::basic()
+                    .cidr("10.0.0.0/24")
+                    .build()
+                    .expect("cidr parsing"),
+            ),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Range {
                     start_address: "10.0.0.0".to_string(),
@@ -418,24 +500,26 @@ mod tests {
         // THEN
         assert_eq!(
             actual,
-            r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#
+            r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#
         );
     }
 
     #[test]
     fn GIVEN_template_network_with_cidr_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let text = r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":"10.0.0.0/24"}]}"#;
+        let text = r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":"10.0.0.0/24"}]}"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(text).expect("deserialize network template");
 
         // THEN
         let expected = Template::Network {
-            network: Network::basic()
-                .cidr("10.0.0.0/24")
-                .build()
-                .expect("cidr parsing"),
+            network: NetworkOrError::NetworkObject(
+                Network::basic()
+                    .cidr("10.0.0.0/24")
+                    .build()
+                    .expect("cidr parsing"),
+            ),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(
                     "10.0.0.0/24".parse().expect("ipnet parsing"),
@@ -448,17 +532,19 @@ mod tests {
     #[test]
     fn GIVEN_template_network_with_range_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let text = r#"{"network":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#;
+        let text = r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(text).expect("deserialize network template");
 
         // THEN
         let expected = Template::Network {
-            network: Network::basic()
-                .cidr("10.0.0.0/24")
-                .build()
-                .expect("cidr parsing"),
+            network: NetworkOrError::NetworkObject(
+                Network::basic()
+                    .cidr("10.0.0.0/24")
+                    .build()
+                    .expect("cidr parsing"),
+            ),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Range {
                     start_address: "10.0.0.0".to_string(),

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::types::Common;
 
 /// Represents an RDAP help response.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Help {
     #[serde(flatten)]
     pub common: Common,
