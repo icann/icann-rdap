@@ -33,6 +33,17 @@ use icann_rdap_common::VERSION;
 use icann_rdap_srv::config::ServiceConfig;
 use icann_rdap_srv::config::StorageType;
 use icann_rdap_srv::storage::data::load_data;
+use icann_rdap_srv::storage::data::AutnumId;
+use icann_rdap_srv::storage::data::AutnumOrError;
+use icann_rdap_srv::storage::data::DomainId;
+use icann_rdap_srv::storage::data::DomainOrError;
+use icann_rdap_srv::storage::data::EntityId;
+use icann_rdap_srv::storage::data::EntityOrError;
+use icann_rdap_srv::storage::data::NameserverId;
+use icann_rdap_srv::storage::data::NameserverOrError;
+use icann_rdap_srv::storage::data::NetworkId;
+use icann_rdap_srv::storage::data::NetworkOrError;
+use icann_rdap_srv::storage::data::Template;
 use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
 use icann_rdap_srv::storage::StoreOps;
@@ -64,6 +75,20 @@ struct Cli {
     /// Specifies the directory where data will be written.
     #[arg(long, env = "RDAP_SRV_DATA_DIR")]
     data_dir: String,
+
+    /// Output data as a redirect.
+    ///
+    /// When specified, the data will create a redirect template file to the given URL.
+    /// This cannot be used with --template.
+    #[arg(long, conflicts_with = "template")]
+    redirect: Option<String>,
+
+    /// Output data as a template.
+    ///
+    /// When specified, the data will be output as a template file.
+    /// This cannot be used with --redirect.
+    #[arg(long, conflicts_with = "redirect")]
+    template: bool,
 
     #[command(subcommand)]
     command: Commands,
@@ -481,31 +506,164 @@ async fn do_the_work(
         Commands::Network(args) => make_network(args, storage).await?,
     };
 
-    let content = serde_json::to_string_pretty(&output.rdap)?;
     let check_types = to_check_classes(&cli.check_args);
-    let checks_found = check_rdap(output.rdap, &check_types);
+    let checks_found = check_rdap(output.rdap.clone(), &check_types);
     if checks_found {
         return Err(RdapServerError::ErrorOnChecks);
     } else {
         info!("Checks conducted and no issues were found.");
     }
 
-    let file_name = output
-        .self_href
+    if cli.template {
+        create_template_file(data_dir, &output.self_href, &output.id, &output.rdap)?;
+    } else if let Some(redirect_url) = cli.redirect {
+        create_redirect_file(data_dir, &output.self_href, &output.id, &redirect_url)?;
+    } else {
+        create_json_file(data_dir, &output.self_href, output.rdap)?;
+    }
+
+    Ok(())
+}
+
+fn create_file_name(self_href: &str, extension: &str) -> String {
+    let file_name = self_href
         .trim_start_matches("https://")
         .trim_start_matches("http://")
         .replace(['.', '/', ':'], "_");
-    let file_name = format!("{}.json", PctString::encode(file_name.chars(), URIReserved));
+    format!(
+        "{}.{extension}",
+        PctString::encode(file_name.chars(), URIReserved)
+    )
+}
 
+fn create_json_file(
+    data_dir: &str,
+    self_href: &str,
+    rdap: RdapResponse,
+) -> Result<(), RdapServerError> {
+    let file_name = create_file_name(self_href, "json");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
+    let content = serde_json::to_string_pretty(&rdap)?;
     fs::write(&path, content)?;
-    info!("Data written to {}.", path.to_string_lossy());
+    info!("JSON data written to {}.", path.to_string_lossy());
     Ok(())
+}
+
+fn create_redirect_file(
+    data_dir: &str,
+    self_href: &str,
+    id: &RdapId,
+    url: &str,
+) -> Result<(), RdapServerError> {
+    let file_name = create_file_name(self_href, "template");
+    let mut path = PathBuf::from(data_dir);
+    path.push(file_name);
+    let error = icann_rdap_common::response::error::Error::basic()
+        .error_code(307)
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .title("Temporary Redirect")
+                .links(vec![Link::builder()
+                    .href(url)
+                    .value(self_href)
+                    .media_type(RDAP_MEDIA_TYPE)
+                    .rel("related")
+                    .build()])
+                .build(),
+        ))
+        .build();
+    let template = match id {
+        RdapId::Entity(id) => Template::Entity {
+            entity: EntityOrError::ErrorResponse(error),
+            ids: vec![id.clone()],
+        },
+        RdapId::Domain(id) => Template::Domain {
+            domain: DomainOrError::ErrorResponse(error),
+            ids: vec![id.clone()],
+        },
+        RdapId::Nameserver(id) => Template::Nameserver {
+            nameserver: NameserverOrError::ErrorResponse(error),
+            ids: vec![id.clone()],
+        },
+        RdapId::Autnum(id) => Template::Autnum {
+            autnum: AutnumOrError::ErrorResponse(error),
+            ids: vec![id.clone()],
+        },
+        RdapId::Netowrk(id) => Template::Network {
+            network: NetworkOrError::ErrorResponse(error),
+            ids: vec![id.clone()],
+        },
+    };
+    let content = serde_json::to_string_pretty(&template)?;
+    fs::write(&path, content)?;
+    info!("Redirect data written to {}.", path.to_string_lossy());
+    Ok(())
+}
+
+fn create_template_file(
+    data_dir: &str,
+    self_href: &str,
+    id: &RdapId,
+    rdap: &RdapResponse,
+) -> Result<(), RdapServerError> {
+    let file_name = create_file_name(self_href, "template");
+    let mut path = PathBuf::from(data_dir);
+    path.push(file_name);
+    let template = match id {
+        RdapId::Entity(id) => {
+            let RdapResponse::Entity(entity) = rdap else {panic!("non entity created with entity id")};
+            Template::Entity {
+                entity: EntityOrError::EntityObject(entity.clone()),
+                ids: vec![id.clone()],
+            }
+        }
+        RdapId::Domain(id) => {
+            let RdapResponse::Domain(domain) = rdap else {panic!("non domain created with domain id")};
+            Template::Domain {
+                domain: DomainOrError::DomainObject(domain.clone()),
+                ids: vec![id.clone()],
+            }
+        }
+        RdapId::Nameserver(id) => {
+            let RdapResponse::Nameserver(nameserver) = rdap else {panic!("non nameserver created with nameserver id")};
+            Template::Nameserver {
+                nameserver: NameserverOrError::NameserverObject(nameserver.clone()),
+                ids: vec![id.clone()],
+            }
+        }
+        RdapId::Autnum(id) => {
+            let RdapResponse::Autnum(autnum) = rdap else {panic!("non autnum created with autnum id")};
+            Template::Autnum {
+                autnum: AutnumOrError::AutnumObject(autnum.clone()),
+                ids: vec![id.clone()],
+            }
+        }
+        RdapId::Netowrk(id) => {
+            let RdapResponse::Network(network) = rdap else {panic!("non network created with network id")};
+            Template::Network {
+                network: NetworkOrError::NetworkObject(network.clone()),
+                ids: vec![id.clone()],
+            }
+        }
+    };
+    let content = serde_json::to_string_pretty(&template)?;
+    fs::write(&path, content)?;
+    info!("Template data written to {}.", path.to_string_lossy());
+    Ok(())
+}
+
+enum RdapId {
+    Entity(EntityId),
+    Domain(DomainId),
+    Nameserver(NameserverId),
+    Autnum(AutnumId),
+    Netowrk(NetworkId),
 }
 
 struct Output {
     pub rdap: RdapResponse,
+    pub id: RdapId,
     pub self_href: String,
 }
 
@@ -684,8 +842,17 @@ async fn make_entity(
                 .handle(args.handle.clone())
                 .build(),
         );
+    let entity = entity.build();
+    let id = RdapId::Entity(EntityId {
+        handle: entity
+            .object_common
+            .handle
+            .clone()
+            .expect("entity created without a handle"),
+    });
     let output = Output {
-        rdap: RdapResponse::Entity(entity.build()),
+        rdap: RdapResponse::Entity(entity),
+        id,
         self_href,
     };
     Ok(output)
@@ -723,8 +890,17 @@ async fn make_nameserver(
                 .and_handle(args.handle)
                 .build(),
         );
+    let ns = ns.build();
+    let id = RdapId::Nameserver(NameserverId {
+        ldh_name: ns
+            .ldh_name
+            .clone()
+            .expect("nameserver created without ldhName"),
+        unicode_name: ns.unicode_name.clone(),
+    });
     let output = Output {
-        rdap: RdapResponse::Nameserver(ns.build()),
+        rdap: RdapResponse::Nameserver(ns),
+        id,
         self_href,
     };
     Ok(output)
@@ -771,8 +947,17 @@ async fn make_domain(
                 .and_handle(args.handle)
                 .build(),
         );
+    let domain = domain.build();
+    let id = RdapId::Domain(DomainId {
+        ldh_name: domain
+            .ldh_name
+            .clone()
+            .expect("domain created without ldhName"),
+        unicode_name: domain.unicode_name.clone(),
+    });
     let output = Output {
-        rdap: RdapResponse::Domain(domain.build()),
+        rdap: RdapResponse::Domain(domain),
+        id,
         self_href,
     };
     Ok(output)
@@ -806,8 +991,20 @@ async fn make_autnum(
                 .and_handle(args.handle)
                 .build(),
         );
+    let autnum = autnum.build();
+    let id = RdapId::Autnum(AutnumId {
+        start_autnum: autnum
+            .start_autnum
+            .clone()
+            .expect("autnum created with no start"),
+        end_autnum: autnum
+            .end_autnum
+            .clone()
+            .expect("autnum create with no end"),
+    });
     let output = Output {
-        rdap: RdapResponse::Autnum(autnum.build()),
+        rdap: RdapResponse::Autnum(autnum),
+        id,
         self_href,
     };
     Ok(output)
@@ -854,8 +1051,22 @@ async fn make_network(
                 .and_handle(args.handle)
                 .build(),
         );
+    let network = network.build();
+    let id = RdapId::Netowrk(NetworkId {
+        network_id: icann_rdap_srv::storage::data::NetworkIdType::Range {
+            start_address: network
+                .start_address
+                .clone()
+                .expect("netowrk created without start address"),
+            end_address: network
+                .end_address
+                .clone()
+                .expect("network created without end address"),
+        },
+    });
     let output = Output {
-        rdap: RdapResponse::Network(network.build()),
+        rdap: RdapResponse::Network(network),
+        id,
         self_href,
     };
     Ok(output)

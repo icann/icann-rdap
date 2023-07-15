@@ -89,7 +89,7 @@ pub enum NetworkOrError {
     ErrorResponse(icann_rdap_common::response::error::Error),
 }
 
-#[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct DomainId {
     #[serde(rename = "ldhName")]
     pub ldh_name: String,
@@ -98,12 +98,12 @@ pub struct DomainId {
     pub unicode_name: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct EntityId {
     pub handle: String,
 }
 
-#[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct NameserverId {
     #[serde(rename = "ldhName")]
     pub ldh_name: String,
@@ -112,7 +112,7 @@ pub struct NameserverId {
     pub unicode_name: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct AutnumId {
     #[serde(rename = "startAutnum")]
     pub start_autnum: u32,
@@ -120,13 +120,13 @@ pub struct AutnumId {
     pub end_autnum: u32,
 }
 
-#[derive(Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
 pub struct NetworkId {
     #[serde(rename = "networkId")]
     pub network_id: NetworkIdType,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum NetworkIdType {
     Cidr(IpNet),
@@ -237,6 +237,7 @@ async fn load_rdap(
 
 /// Loads the template files, creates RDAP objects from the templates, and puts them
 /// into storage.
+// TODO fix self links
 async fn load_rdap_template(
     contents: &str,
     path_name: &str,
