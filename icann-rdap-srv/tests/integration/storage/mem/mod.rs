@@ -7,11 +7,9 @@ use icann_rdap_common::response::{
     nameserver::Nameserver,
     network::Network,
     types::{Common, ObjectCommon},
+    RdapResponse,
 };
-use icann_rdap_srv::{
-    rdap::response::{ArcRdapResponse, RdapServerResponse},
-    storage::{mem::ops::Mem, StoreOps},
-};
+use icann_rdap_srv::storage::{mem::ops::Mem, StoreOps};
 use rstest::rstest;
 
 #[tokio::test]
@@ -33,9 +31,7 @@ async fn GIVEN_domain_in_mem_WHEN_new_truncate_tx_THEN_no_domain_in_mem() {
         .get_domain_by_ldh("foo.example")
         .await
         .expect("getting domain by ldh");
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }
 
@@ -56,9 +52,7 @@ async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_domain_returned() {
         .expect("getting domain by ldh");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Domain(_)));
-    let ArcRdapResponse::Domain(domain) = response else { panic!() };
+    let RdapResponse::Domain(domain) = actual else { panic!() };
     assert_eq!(
         domain.ldh_name.as_ref().expect("ldhName is none"),
         "foo.example"
@@ -77,9 +71,7 @@ async fn GIVEN_no_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_404_returned() {
         .expect("getting domain by ldh");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }
 
@@ -100,9 +92,7 @@ async fn GIVEN_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_entity_returned()
         .expect("getting entity by handle");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Entity(_)));
-    let ArcRdapResponse::Entity(entity) = response else { panic!() };
+    let RdapResponse::Entity(entity) = actual else { panic!() };
     assert_eq!(
         entity
             .object_common
@@ -125,9 +115,7 @@ async fn GIVEN_no_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_404_returned()
         .expect("getting entity by handle");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }
 
@@ -153,9 +141,7 @@ async fn GIVEN_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_nameserver_r
         .expect("getting nameserver by ldh");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Nameserver(_)));
-    let ArcRdapResponse::Nameserver(nameserver) = response else { panic!() };
+    let RdapResponse::Nameserver(nameserver) = actual else { panic!() };
     assert_eq!(
         nameserver.ldh_name.as_ref().expect("ldhName is none"),
         "ns.foo.example"
@@ -174,9 +160,7 @@ async fn GIVEN_no_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_404_retur
         .expect("getting nameserver by ldh");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }
 
@@ -197,9 +181,7 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_retu
         .expect("getting autnum by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Autnum(_)));
-    let ArcRdapResponse::Autnum(autnum) = response else { panic!() };
+    let RdapResponse::Autnum(autnum) = actual else { panic!() };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startNum is none"),
         700
@@ -224,9 +206,7 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_return
         .expect("getting autnum by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Autnum(_)));
-    let ArcRdapResponse::Autnum(autnum) = response else { panic!() };
+    let RdapResponse::Autnum(autnum) = actual else { panic!() };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startNum is none"),
         700
@@ -246,9 +226,7 @@ async fn GIVEN_no_autnum_in_mem_WHEN_lookup_autnum_by_num_THEN_404_returned() {
         .expect("getting autnum by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }
 
@@ -279,9 +257,7 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_address_THEN_network_return
         .expect("getting network by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Network(_)));
-    let ArcRdapResponse::Network(network) = response else { panic!() };
+    let RdapResponse::Network(network) = actual else { panic!() };
     assert_eq!(
         *network
             .start_address
@@ -307,9 +283,7 @@ async fn GIVEN_no_network_in_mem_WHEN_lookup_network_by_address_THEN_404_returne
         .expect("getting network by address");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }
 
@@ -340,9 +314,7 @@ async fn GIVEN_contained_networks_in_mem_WHEN_lookup_network_by_address_THEN_mos
         .expect("getting network by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Network(_)));
-    let ArcRdapResponse::Network(network) = response else { panic!() };
+    let RdapResponse::Network(network) = actual else { panic!() };
     assert_eq!(
         *network
             .start_address
@@ -383,9 +355,7 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_first_address_THEN_n
         .expect("getting network by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Network(_)));
-    let ArcRdapResponse::Network(network) = response else { panic!() };
+    let RdapResponse::Network(network) = actual else { panic!() };
     assert_eq!(
         *network
             .start_address
@@ -426,9 +396,7 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_last_address_THEN_ne
         .expect("getting network by num");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Network(_)));
-    let ArcRdapResponse::Network(network) = response else { panic!() };
+    let RdapResponse::Network(network) = actual else { panic!() };
     assert_eq!(
         *network
             .start_address
@@ -467,9 +435,7 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_cidr_THEN_network_returned(
         .expect("getting network by cidr");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::Network(_)));
-    let ArcRdapResponse::Network(network) = response else { panic!() };
+    let RdapResponse::Network(network) = actual else { panic!() };
     assert_eq!(
         *network
             .start_address
@@ -495,8 +461,6 @@ async fn GIVEN_no_network_in_mem_WHEN_lookup_network_by_cidr_THEN_404_returned()
         .expect("getting network by address");
 
     // THEN
-    let RdapServerResponse::Arc(response) = actual else { panic!() };
-    assert!(matches!(response, ArcRdapResponse::ErrorResponse(_)));
-    let ArcRdapResponse::ErrorResponse(error) = response else { panic!() };
+    let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
 }

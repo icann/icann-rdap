@@ -1,16 +1,20 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
+    RdapResponse,
 };
-use ipnet::{Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
+use ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
 
 use crate::{
     error::RdapServerError,
-    storage::{data::DomainId, TxHandle},
+    storage::{
+        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
+        TxHandle,
+    },
 };
 
 use super::ops::Mem;
@@ -18,12 +22,12 @@ use super::ops::Mem;
 // TODO see if #[repr(align(64))] impacts performance
 pub struct MemTx {
     mem: Mem,
-    autnums: RangeMap<u32, Arc<Autnum>>,
-    ip4: PrefixMap<Ipv4Net, Arc<Network>>,
-    ip6: PrefixMap<Ipv6Net, Arc<Network>>,
-    domains: HashMap<String, Arc<Domain>>,
-    nameservers: HashMap<String, Arc<Nameserver>>,
-    entities: HashMap<String, Arc<Entity>>,
+    autnums: RangeMap<u32, Arc<RdapResponse>>,
+    ip4: PrefixMap<Ipv4Net, Arc<RdapResponse>>,
+    ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
+    domains: HashMap<String, Arc<RdapResponse>>,
+    nameservers: HashMap<String, Arc<RdapResponse>>,
+    entities: HashMap<String, Arc<RdapResponse>>,
 }
 
 impl MemTx {
@@ -60,8 +64,22 @@ impl TxHandle for MemTx {
             .handle
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
-        self.entities
-            .insert(handle.to_owned(), Arc::new(entity.clone()));
+        self.entities.insert(
+            handle.to_owned(),
+            Arc::new(RdapResponse::Entity(entity.clone())),
+        );
+        Ok(())
+    }
+
+    async fn add_entity_err(
+        &mut self,
+        entity_id: &EntityId,
+        error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        self.entities.insert(
+            entity_id.handle.to_owned(),
+            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+        );
         Ok(())
     }
 
@@ -70,8 +88,22 @@ impl TxHandle for MemTx {
             .ldh_name
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
-        self.domains
-            .insert(ldh_name.to_owned(), Arc::new(domain.clone()));
+        self.domains.insert(
+            ldh_name.to_owned(),
+            Arc::new(RdapResponse::Domain(domain.clone())),
+        );
+        Ok(())
+    }
+
+    async fn add_domain_err(
+        &mut self,
+        domain_id: &DomainId,
+        error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        self.domains.insert(
+            domain_id.ldh_name.to_owned(),
+            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+        );
         Ok(())
     }
 
@@ -80,8 +112,22 @@ impl TxHandle for MemTx {
             .ldh_name
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
-        self.nameservers
-            .insert(ldh_name.to_owned(), Arc::new(nameserver.clone()));
+        self.nameservers.insert(
+            ldh_name.to_owned(),
+            Arc::new(RdapResponse::Nameserver(nameserver.clone())),
+        );
+        Ok(())
+    }
+
+    async fn add_nameserver_err(
+        &mut self,
+        nameserver_id: &NameserverId,
+        error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        self.nameservers.insert(
+            nameserver_id.ldh_name.to_owned(),
+            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+        );
         Ok(())
     }
 
@@ -94,8 +140,22 @@ impl TxHandle for MemTx {
             .end_autnum
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
-        self.autnums
-            .insert((*start_num)..=(*end_num), Arc::new(autnum.clone()));
+        self.autnums.insert(
+            (*start_num)..=(*end_num),
+            Arc::new(RdapResponse::Autnum(autnum.clone())),
+        );
+        Ok(())
+    }
+
+    async fn add_autnum_err(
+        &mut self,
+        autnum_id: &AutnumId,
+        error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        self.autnums.insert(
+            (autnum_id.start_autnum)..=(autnum_id.end_autnum),
+            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+        );
         Ok(())
     }
 
@@ -116,14 +176,61 @@ impl TxHandle for MemTx {
         if is_v4 {
             let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
-                self.ip4.insert(net, Arc::new(network.clone()));
+                self.ip4
+                    .insert(net, Arc::new(RdapResponse::Network(network.clone())));
             }
         } else {
             let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
-                self.ip6.insert(net, Arc::new(network.clone()));
+                self.ip6
+                    .insert(net, Arc::new(RdapResponse::Network(network.clone())));
             }
         };
+        Ok(())
+    }
+
+    async fn add_network_err(
+        &mut self,
+        network_id: &NetworkId,
+        error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        let subnets = match &network_id.network_id {
+            crate::storage::data::NetworkIdType::Cidr(cidr) => cidr.subnets(cidr.prefix_len())?,
+            crate::storage::data::NetworkIdType::Range {
+                start_address,
+                end_address,
+            } => {
+                let start_addr = IpAddr::from_str(start_address)?;
+                let end_addr = IpAddr::from_str(end_address)?;
+                if start_addr.is_ipv4() && end_addr.is_ipv4() {
+                    let IpAddr::V4(start_addr) = start_addr else {panic!("check failed")};
+                    let IpAddr::V4(end_addr) = end_addr else {panic!("check failed")};
+                    IpSubnets::from(Ipv4Subnets::new(start_addr, end_addr, 0))
+                } else if start_addr.is_ipv6() && end_addr.is_ipv6() {
+                    let IpAddr::V6(start_addr) = start_addr else {panic!("check failed")};
+                    let IpAddr::V6(end_addr) = end_addr else {panic!("check failed")};
+                    IpSubnets::from(Ipv6Subnets::new(start_addr, end_addr, 0))
+                } else {
+                    return Err(RdapServerError::EmptyIndexData(
+                        "mismatch ip version".to_string(),
+                    ));
+                }
+            }
+        };
+        match subnets {
+            IpSubnets::V4(subnets) => {
+                for net in subnets {
+                    self.ip4
+                        .insert(net, Arc::new(RdapResponse::ErrorResponse(error.clone())));
+                }
+            }
+            IpSubnets::V6(subnets) => {
+                for net in subnets {
+                    self.ip6
+                        .insert(net, Arc::new(RdapResponse::ErrorResponse(error.clone())));
+                }
+            }
+        }
         Ok(())
     }
 

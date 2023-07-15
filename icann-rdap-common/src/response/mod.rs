@@ -78,7 +78,7 @@ pub enum RdapResponseError {
 /// let rdap: RdapResponse = serde_json::from_str(json).unwrap();
 /// assert!(matches!(rdap, RdapResponse::Network(_)));
 /// ```
-#[derive(Serialize, Deserialize, Clone, Display)]
+#[derive(Serialize, Deserialize, Clone, Display, PartialEq)]
 #[serde(untagged, try_from = "Value")]
 pub enum RdapResponse {
     // Object Classes

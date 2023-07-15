@@ -3,7 +3,7 @@ use axum::{
     response::Response,
 };
 
-use crate::{error::RdapServerError, server::DynStoreState};
+use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynStoreState};
 
 use super::response::BAD_REQUEST;
 

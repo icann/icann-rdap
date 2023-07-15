@@ -1,10 +1,10 @@
 use async_trait::async_trait;
+use icann_rdap_common::response::RdapResponse;
 use sqlx::{query, PgPool};
 use tracing::{debug, info};
 
 use crate::{
     error::RdapServerError,
-    rdap::response::RdapServerResponse,
     storage::{StoreOps, TxHandle},
 };
 
@@ -40,38 +40,26 @@ impl StoreOps for Pg {
         Ok(Box::new(PgTx::new_truncate(&self.pg_pool).await?))
     }
 
-    async fn get_domain_by_ldh(&self, _ldh: &str) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_domain_by_ldh(&self, _ldh: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
 
-    async fn get_entity_by_handle(
-        &self,
-        _handle: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_entity_by_handle(&self, _handle: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
 
-    async fn get_nameserver_by_ldh(
-        &self,
-        _ldh: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_nameserver_by_ldh(&self, _ldh: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
 
-    async fn get_autnum_by_num(&self, _num: u32) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_autnum_by_num(&self, _num: u32) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
 
-    async fn get_network_by_ipaddr(
-        &self,
-        _ipaddr: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_network_by_ipaddr(&self, _ipaddr: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
-    async fn get_network_by_cidr(
-        &self,
-        _cidr: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_network_by_cidr(&self, _cidr: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
 }

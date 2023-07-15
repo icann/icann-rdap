@@ -7,7 +7,11 @@ use axum::{
 use cidr_utils::cidr::IpCidr;
 use tracing::debug;
 
-use crate::{error::RdapServerError, rdap::response::BAD_REQUEST, server::DynStoreState};
+use crate::{
+    error::RdapServerError,
+    rdap::response::{ResponseUtil, BAD_REQUEST},
+    server::DynStoreState,
+};
 
 /// Gets a network object by the address path.
 #[axum_macros::debug_handler]

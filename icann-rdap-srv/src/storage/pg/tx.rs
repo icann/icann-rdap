@@ -6,7 +6,10 @@ use sqlx::{PgPool, Postgres};
 
 use crate::{
     error::RdapServerError,
-    storage::{data::DomainId, TxHandle},
+    storage::{
+        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
+        TxHandle,
+    },
 };
 
 pub struct PgTx<'a> {
@@ -34,6 +37,14 @@ impl<'a> TxHandle for PgTx<'a> {
         todo!()
     }
 
+    async fn add_entity_err(
+        &mut self,
+        _entity_id: &EntityId,
+        _error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
     async fn add_domain(&mut self, _domain: &Domain) -> Result<(), RdapServerError> {
         // TODO actually complete this
         // this is just here to make sure something will compile
@@ -43,7 +54,23 @@ impl<'a> TxHandle for PgTx<'a> {
         Ok(())
     }
 
+    async fn add_domain_err(
+        &mut self,
+        _domain_id: &DomainId,
+        _error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
     async fn add_nameserver(&mut self, _nameserver: &Nameserver) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
+    async fn add_nameserver_err(
+        &mut self,
+        _nameserver_id: &NameserverId,
+        _error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
         todo!()
     }
 
@@ -51,7 +78,23 @@ impl<'a> TxHandle for PgTx<'a> {
         todo!()
     }
 
+    async fn add_autnum_err(
+        &mut self,
+        _autnum_id: &AutnumId,
+        _error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
     async fn add_network(&mut self, _network: &Network) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
+    async fn add_network_err(
+        &mut self,
+        _network_id: &NetworkId,
+        _error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError> {
         todo!()
     }
 

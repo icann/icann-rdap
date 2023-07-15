@@ -1,5 +1,5 @@
 use reqwest::{
-    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES},
+    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION},
     Client,
 };
 use serde::{Deserialize, Serialize};
@@ -83,6 +83,11 @@ pub async fn iana_request(
         .headers()
         .get(CACHE_CONTROL)
         .map(|value| value.to_str().unwrap().to_string());
+    let location = response
+        .headers()
+        .get(LOCATION)
+        .map(|value| value.to_str().unwrap().to_string());
+    let status_code = response.status().as_u16();
     let content_length = response.content_length();
     let url = response.url().to_owned();
     let text = response.text().await?;
@@ -93,6 +98,8 @@ pub async fn iana_request(
                 .expect("URL has no host. This shouldn't happen.")
                 .to_owned(),
         )
+        .status_code(status_code)
+        .and_location(location)
         .and_content_length(content_length)
         .and_content_type(content_type)
         .and_expires(expires)

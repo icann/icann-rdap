@@ -32,7 +32,6 @@ use icann_rdap_common::response::RdapResponse;
 use icann_rdap_common::VERSION;
 use icann_rdap_srv::config::ServiceConfig;
 use icann_rdap_srv::config::StorageType;
-use icann_rdap_srv::rdap::response::ArcRdapResponse;
 use icann_rdap_srv::storage::data::load_data;
 use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
@@ -555,23 +554,7 @@ async fn get_entity(
     role: String,
 ) -> Result<Entity, RdapServerError> {
     let e = store.get_entity_by_handle(handle).await?;
-    let e = match e {
-        icann_rdap_srv::rdap::response::RdapServerResponse::NoRef(e) => {
-            if let RdapResponse::Entity(e) = e {
-                Some(e)
-            } else {
-                None
-            }
-        }
-        icann_rdap_srv::rdap::response::RdapServerResponse::Arc(e) => {
-            if let ArcRdapResponse::Entity(e) = e {
-                Some((*e).clone())
-            } else {
-                None
-            }
-        }
-    };
-    if let Some(mut e) = e {
+    if let RdapResponse::Entity(mut e) = e {
         e.roles = Some(vec![role]);
         Ok(e)
     } else {
@@ -593,23 +576,7 @@ async fn nameservers(
 
 async fn get_ns(store: &dyn StoreOps, ldh: &str) -> Result<Nameserver, RdapServerError> {
     let n = store.get_nameserver_by_ldh(ldh).await?;
-    let n = match n {
-        icann_rdap_srv::rdap::response::RdapServerResponse::NoRef(n) => {
-            if let RdapResponse::Nameserver(e) = n {
-                Some(e)
-            } else {
-                None
-            }
-        }
-        icann_rdap_srv::rdap::response::RdapServerResponse::Arc(n) => {
-            if let ArcRdapResponse::Nameserver(e) = n {
-                Some((*e).clone())
-            } else {
-                None
-            }
-        }
-    };
-    if let Some(n) = n {
+    if let RdapResponse::Nameserver(n) = n {
         Ok(n)
     } else {
         Err(RdapServerError::InvalidArg(ldh.to_string()))

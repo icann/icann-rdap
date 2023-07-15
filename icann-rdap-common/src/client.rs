@@ -70,6 +70,7 @@ impl ClientConfig {
 /// client holds its own connection pools, so in many
 /// uses cases creating only one client per process is
 /// necessary.
+// TODO create a wasm and non-wasm verion. wasm version should not take the config.
 #[allow(unused_variables)] // for config and wasm32
 pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
     let mut default_headers = header::HeaderMap::new();
@@ -83,11 +84,17 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
 
     #[cfg(not(target_arch = "wasm32"))]
     {
+        let redirects = if config.follow_redirects {
+            reqwest::redirect::Policy::default()
+        } else {
+            reqwest::redirect::Policy::none()
+        };
         client = client
             .user_agent(format!(
                 "icann_rdap client {VERSION} {}",
                 config.user_agent_suffix
             ))
+            .redirect(redirects)
             .https_only(config.https_only)
             .danger_accept_invalid_hostnames(config.accept_invalid_host_names)
             .danger_accept_invalid_certs(config.accept_invalid_certificates);

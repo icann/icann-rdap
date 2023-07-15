@@ -2,16 +2,14 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
-use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
-};
+use icann_rdap_common::response::RdapResponse;
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use pinboard::NonEmptyPinboard;
 use prefix_trie::PrefixMap;
 
 use crate::{
     error::RdapServerError,
-    rdap::response::{ArcRdapResponse, RdapServerResponse, NOT_FOUND},
+    rdap::response::NOT_FOUND,
     storage::{StoreOps, TxHandle},
 };
 
@@ -19,12 +17,12 @@ use super::{config::MemConfig, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
-    pub(crate) autnums: Arc<NonEmptyPinboard<RangeMap<u32, Arc<Autnum>>>>,
-    pub(crate) ip4: Arc<NonEmptyPinboard<PrefixMap<Ipv4Net, Arc<Network>>>>,
-    pub(crate) ip6: Arc<NonEmptyPinboard<PrefixMap<Ipv6Net, Arc<Network>>>>,
-    pub(crate) domains: Arc<NonEmptyPinboard<HashMap<String, Arc<Domain>>>>,
-    pub(crate) nameservers: Arc<NonEmptyPinboard<HashMap<String, Arc<Nameserver>>>>,
-    pub(crate) entities: Arc<NonEmptyPinboard<HashMap<String, Arc<Entity>>>>,
+    pub(crate) autnums: Arc<NonEmptyPinboard<RangeMap<u32, Arc<RdapResponse>>>>,
+    pub(crate) ip4: Arc<NonEmptyPinboard<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
+    pub(crate) ip6: Arc<NonEmptyPinboard<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
+    pub(crate) domains: Arc<NonEmptyPinboard<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) nameservers: Arc<NonEmptyPinboard<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) entities: Arc<NonEmptyPinboard<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
 }
 
@@ -62,59 +60,42 @@ impl StoreOps for Mem {
         Ok(Box::new(MemTx::new_truncate(self)))
     }
 
-    async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {
         let domains = self.domains.get_ref();
         let result = domains.get(ldh);
         match result {
-            Some(domain) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Domain(
-                domain.clone(),
-            ))),
+            Some(domain) => Ok(RdapResponse::clone(domain)),
             None => Ok(NOT_FOUND.clone()),
         }
     }
 
-    async fn get_entity_by_handle(
-        &self,
-        handle: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_entity_by_handle(&self, handle: &str) -> Result<RdapResponse, RdapServerError> {
         let entities = self.entities.get_ref();
         let result = entities.get(handle);
         match result {
-            Some(entity) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Entity(
-                entity.clone(),
-            ))),
+            Some(entity) => Ok(RdapResponse::clone(entity)),
             None => Ok(NOT_FOUND.clone()),
         }
     }
-    async fn get_nameserver_by_ldh(
-        &self,
-        ldh: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_nameserver_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {
         let nameservers = self.nameservers.get_ref();
         let result = nameservers.get(ldh);
         match result {
-            Some(nameserver) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Nameserver(
-                nameserver.clone(),
-            ))),
+            Some(nameserver) => Ok(RdapResponse::clone(nameserver)),
             None => Ok(NOT_FOUND.clone()),
         }
     }
 
-    async fn get_autnum_by_num(&self, num: u32) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_autnum_by_num(&self, num: u32) -> Result<RdapResponse, RdapServerError> {
         let autnums = self.autnums.get_ref();
         let result = autnums.get(num);
         match result {
-            Some(autnum) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Autnum(
-                autnum.clone(),
-            ))),
+            Some(autnum) => Ok(RdapResponse::clone(autnum)),
             None => Ok(NOT_FOUND.clone()),
         }
     }
 
-    async fn get_network_by_ipaddr(
-        &self,
-        ipaddr: &str,
-    ) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_network_by_ipaddr(&self, ipaddr: &str) -> Result<RdapResponse, RdapServerError> {
         let addr = ipaddr.parse::<IpAddr>()?;
         match addr {
             IpAddr::V4(v4) => {
@@ -122,9 +103,7 @@ impl StoreOps for Mem {
                 let ip4s = self.ip4.get_ref();
                 let result = ip4s.get_lpm(&slash32);
                 match result {
-                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
-                        network.1.clone(),
-                    ))),
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
                     None => Ok(NOT_FOUND.clone()),
                 }
             }
@@ -133,25 +112,21 @@ impl StoreOps for Mem {
                 let ip6s = self.ip6.get_ref();
                 let result = ip6s.get_lpm(&slash128);
                 match result {
-                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
-                        network.1.clone(),
-                    ))),
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
                     None => Ok(NOT_FOUND.clone()),
                 }
             }
         }
     }
 
-    async fn get_network_by_cidr(&self, cidr: &str) -> Result<RdapServerResponse, RdapServerError> {
+    async fn get_network_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
         let net = IpNet::from_str(cidr)?;
         match net {
             IpNet::V4(ipv4net) => {
                 let ip4s = self.ip4.get_ref();
                 let result = ip4s.get_lpm(&ipv4net);
                 match result {
-                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
-                        network.1.clone(),
-                    ))),
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
                     None => Ok(NOT_FOUND.clone()),
                 }
             }
@@ -159,9 +134,7 @@ impl StoreOps for Mem {
                 let ip6s = self.ip6.get_ref();
                 let result = ip6s.get_lpm(&ipv6net);
                 match result {
-                    Some(network) => Ok(RdapServerResponse::Arc(ArcRdapResponse::Network(
-                        network.1.clone(),
-                    ))),
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
                     None => Ok(NOT_FOUND.clone()),
                 }
             }
