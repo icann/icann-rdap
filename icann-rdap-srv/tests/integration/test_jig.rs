@@ -80,7 +80,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
         };
-        let _ = tracing_subscriber::fmt().try_init();
+        let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
         let rdap_base = listener.rdap_base();
         tokio::spawn(async move {

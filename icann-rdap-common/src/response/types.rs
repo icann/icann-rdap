@@ -13,6 +13,14 @@ impl From<&str> for Extension {
     }
 }
 
+impl std::ops::Deref for Extension {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// The RDAP conformance array.
 pub type RdapConformance = Vec<Extension>;
 
@@ -109,9 +117,11 @@ pub struct Event {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct StatusValue(pub String);
 
-impl From<&str> for StatusValue {
-    fn from(value: &str) -> Self {
-        StatusValue(value.to_string())
+impl std::ops::Deref for StatusValue {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -120,12 +130,7 @@ pub type Status = Vec<StatusValue>;
 
 pub fn to_option_status(values: Vec<String>) -> Option<Status> {
     if !values.is_empty() {
-        Some(
-            values
-                .into_iter()
-                .map(|s| StatusValue::from(s.as_str()))
-                .collect::<Status>(),
-        )
+        Some(values.into_iter().map(StatusValue).collect::<Status>())
     } else {
         None
     }
@@ -155,6 +160,28 @@ pub struct Common {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notices: Option<Notices>,
+}
+
+#[buildstructor::buildstructor]
+impl Common {
+    #[builder(entry = "level0")]
+    pub fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
+        let notices = (!notices.is_empty()).then_some(notices);
+        Common::new_level0_with_options(extensions, notices)
+    }
+
+    #[builder(entry = "level0_with_options")]
+    pub fn new_level0_with_options(
+        mut extensions: Vec<Extension>,
+        notices: Option<Vec<Notice>>,
+    ) -> Self {
+        let mut standard_extensions = vec![Extension("rdap_level_0".to_string())];
+        extensions.append(&mut standard_extensions);
+        Self {
+            rdap_conformance: Some(extensions),
+            notices,
+        }
+    }
 }
 
 /// Holds those types that are common in all object classes.

@@ -104,26 +104,69 @@ impl Network {
     pub fn new_network(
         cidr: String,
         handle: Option<String>,
+        country: Option<String>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
         remarks: Vec<crate::response::types::Remark>,
         links: Vec<crate::response::types::Link>,
         events: Vec<crate::response::types::Event>,
         statuses: Vec<String>,
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
+        notices: Vec<crate::response::types::Notice>,
     ) -> Result<Self, RdapResponseError> {
-        let cidr = IpCidr::from_str(cidr)?;
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
+        let statuses = to_option_status(statuses);
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
+        let notices = (!notices.is_empty()).then_some(notices);
+        Network::new_network_with_options(
+            cidr,
+            handle,
+            country,
+            name,
+            network_type,
+            parent_handle,
+            remarks,
+            links,
+            events,
+            statuses,
+            port_43,
+            entities,
+            notices,
+        )
+    }
+
+    #[builder(entry = "with_options")]
+    pub fn new_network_with_options(
+        cidr: String,
+        handle: Option<String>,
+        country: Option<String>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
+        remarks: Option<Vec<crate::response::types::Remark>>,
+        links: Option<Vec<crate::response::types::Link>>,
+        events: Option<Vec<crate::response::types::Event>>,
+        status: Option<Vec<crate::response::types::StatusValue>>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Option<Vec<crate::response::entity::Entity>>,
+        notices: Option<Vec<crate::response::types::Notice>>,
+    ) -> Result<Self, RdapResponseError> {
+        let cidr = IpCidr::from_str(cidr)?;
         Ok(Self {
-            common: Common::builder().build(),
+            common: Common::level0_with_options()
+                .extension("cidr0")
+                .and_notices(notices)
+                .build(),
             object_common: ObjectCommon::ip_network()
                 .and_handle(handle)
                 .and_remarks(remarks)
                 .and_links(links)
                 .and_events(events)
-                .and_status(to_option_status(statuses))
+                .and_status(status)
                 .and_port_43(port_43)
                 .and_entities(entities)
                 .build(),
@@ -133,11 +176,20 @@ impl Network {
                 IpCidr::V4(_) => Some("v4".to_string()),
                 IpCidr::V6(_) => Some("v6".to_string()),
             },
-            name: None,
-            network_type: None,
-            parent_handle: None,
-            country: None,
-            cidr0_cidrs: None,
+            name,
+            network_type,
+            parent_handle,
+            country,
+            cidr0_cidrs: match cidr {
+                IpCidr::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+                    v4prefix: cidr.get_prefix_as_ipv4_addr().to_string(),
+                    length: cidr.get_bits(),
+                })]),
+                IpCidr::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                    v6prefix: cidr.get_prefix_as_ipv6_addr().to_string(),
+                    length: cidr.get_bits(),
+                })]),
+            },
         })
     }
 
@@ -150,6 +202,13 @@ impl Network {
     /// See [ObjectCommon::get_self_link()].
     pub fn get_self_link(&self) -> Option<&Link> {
         self.object_common.get_self_link()
+    }
+
+    /// Removes notices and rdapConformance so this object can be a child
+    /// of another object.
+    pub fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
+        self
     }
 }
 

@@ -469,12 +469,27 @@ mod tests {
 
         // WHEN
         let actual = serde_json::to_string(&template).expect("serializing template");
+        let actual: Template = serde_json::from_str(&actual).expect("deserialize network template");
 
         // THEN
-        assert_eq!(
-            actual,
-            r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":"10.0.0.0/24"}]}"#
-        );
+        let expected = r#"
+        {
+            "network":{
+                "object":{
+                    "rdapConformance":["cidr0","rdap_level_0"],
+                    "objectClassName":"ip network",
+                    "startAddress":"10.0.0.0",
+                    "endAddress":"10.0.0.255",
+                    "ipVersion":"v4",
+                    "cidr0_cidrs":[{"v4prefix":"10.0.0.0","length":24}]
+                }
+            },
+            "ids":[
+                {"networkId":"10.0.0.0/24"}
+            ]
+        }"#;
+        let expected: Template = serde_json::from_str(expected).expect("deserialize expected");
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -497,18 +512,52 @@ mod tests {
 
         // WHEN
         let actual = serde_json::to_string(&template).expect("serializing template");
+        let actual: Template = serde_json::from_str(&actual).expect("deserialize network template");
 
         // THEN
-        assert_eq!(
-            actual,
-            r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#
-        );
+        let expected = r#"
+        {
+            "network":{
+                "object":{
+                    "rdapConformance":["cidr0","rdap_level_0"],
+                    "objectClassName":"ip network",
+                    "startAddress":"10.0.0.0",
+                    "endAddress":"10.0.0.255",
+                    "ipVersion":"v4",
+                    "cidr0_cidrs":[
+                        {"v4prefix":"10.0.0.0","length":24}
+                    ]
+                }
+            },
+            "ids":[
+                {"networkId":
+                    {"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}
+                }
+            ]
+        }"#;
+        let expected: Template = serde_json::from_str(expected).expect("deserialize expected");
+        assert_eq!(actual, expected);
     }
 
     #[test]
     fn GIVEN_template_network_with_cidr_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let text = r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":"10.0.0.0/24"}]}"#;
+        let text = r#"
+        {
+            "network":{
+                "object":{
+                    "rdapConformance":["cidr0","rdap_level_0"],
+                    "objectClassName":"ip network",
+                    "startAddress":"10.0.0.0",
+                    "endAddress":"10.0.0.255",
+                    "ipVersion":"v4",
+                    "cidr0_cidrs":[{"v4prefix":"10.0.0.0","length":24}]
+                }
+            },
+            "ids":[
+                {"networkId":"10.0.0.0/24"}
+            ]
+        }"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(text).expect("deserialize network template");
@@ -533,7 +582,26 @@ mod tests {
     #[test]
     fn GIVEN_template_network_with_range_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let text = r#"{"network":{"object":{"objectClassName":"ip network","startAddress":"10.0.0.0","endAddress":"10.0.0.255","ipVersion":"v4"}},"ids":[{"networkId":{"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}}]}"#;
+        let text = r#"
+        {
+            "network":{
+                "object":{
+                    "rdapConformance":["cidr0","rdap_level_0"],
+                    "objectClassName":"ip network",
+                    "startAddress":"10.0.0.0",
+                    "endAddress":"10.0.0.255",
+                    "ipVersion":"v4",
+                    "cidr0_cidrs":[
+                        {"v4prefix":"10.0.0.0","length":24}
+                    ]
+                }
+            },
+            "ids":[
+                {"networkId":
+                    {"startAddress":"10.0.0.0","endAddress":"10.0.0.255"}
+                }
+            ]
+        }"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(text).expect("deserialize network template");

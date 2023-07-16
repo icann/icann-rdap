@@ -6,7 +6,7 @@ use axum::{
 };
 use envmnt::errors::EnvmntError;
 use http::StatusCode;
-use icann_rdap_common::response::{types::Common, RdapResponse};
+use icann_rdap_common::response::{types::Common, RdapResponse, RdapResponseError};
 use ipnet::PrefixLenError;
 use thiserror::Error;
 
@@ -47,6 +47,8 @@ pub enum RdapServerError {
     InvalidArg(String),
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
+    Response(#[from] RdapResponseError),
 }
 
 impl IntoResponse for RdapServerError {

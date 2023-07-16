@@ -89,6 +89,13 @@ impl Autnum {
     pub fn get_self_link(&self) -> Option<&Link> {
         self.object_common.get_self_link()
     }
+
+    /// Removes notices and rdapConformance so this object can be a child
+    /// of another object.
+    pub fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
+        self
+    }
 }
 
 #[cfg(test)]

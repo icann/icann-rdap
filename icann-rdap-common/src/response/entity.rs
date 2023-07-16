@@ -114,6 +114,13 @@ impl Entity {
         let Some(vcard) = &self.vcard_array else {return None};
         Contact::from_vcard(vcard)
     }
+
+    /// Removes notices and rdapConformance so this object can be a child
+    /// of another object.
+    pub fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
+        self
+    }
 }
 
 #[cfg(test)]

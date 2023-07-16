@@ -714,7 +714,7 @@ async fn get_entity(
     let e = store.get_entity_by_handle(handle).await?;
     if let RdapResponse::Entity(mut e) = e {
         e.roles = Some(vec![role]);
-        Ok(e)
+        Ok(e.to_child())
     } else {
         Err(RdapServerError::InvalidArg(handle.to_string()))
     }
@@ -735,7 +735,7 @@ async fn nameservers(
 async fn get_ns(store: &dyn StoreOps, ldh: &str) -> Result<Nameserver, RdapServerError> {
     let n = store.get_nameserver_by_ldh(ldh).await?;
     if let RdapResponse::Nameserver(n) = n {
-        Ok(n)
+        Ok(n.to_child())
     } else {
         Err(RdapServerError::InvalidArg(ldh.to_string()))
     }
@@ -828,7 +828,7 @@ async fn make_entity(
     let entity = Entity::builder()
         .and_vcard_array(vcard)
         .common(
-            Common::builder()
+            Common::level0_with_options()
                 .and_notices(notices(&args.object_args.notice))
                 .build(),
         )
@@ -876,7 +876,7 @@ async fn make_nameserver(
         .ldh_name(args.ldh)
         .and_ip_addresses(ips)
         .common(
-            Common::builder()
+            Common::level0_with_options()
                 .and_notices(notices(&args.object_args.notice))
                 .build(),
         )
@@ -933,7 +933,7 @@ async fn make_domain(
         .and_secure_dns(secure_dns)
         .and_nameservers(nameservers(store, args.ns).await?)
         .common(
-            Common::builder()
+            Common::level0_with_options()
                 .and_notices(notices(&args.object_args.notice))
                 .build(),
         )
@@ -977,7 +977,7 @@ async fn make_autnum(
         .and_country(args.country)
         .and_name(args.name)
         .common(
-            Common::builder()
+            Common::level0_with_options()
                 .and_notices(notices(&args.object_args.notice))
                 .build(),
         )
@@ -1008,44 +1008,28 @@ async fn make_network(
     args: Box<NetworkArgs>,
     store: &dyn StoreOps,
 ) -> Result<Output, RdapServerError> {
-    let (self_href, ip_version) = match &args.cidr {
-        IpCidr::V4(cidr) => {
-            let self_href = QueryType::IpV4Cidr(cidr.to_string())
-                .query_url(&args.object_args.base_url)
-                .expect("ipv4 network self href");
-            (self_href, "v4".to_string())
-        }
-        IpCidr::V6(cidr) => {
-            let self_href = QueryType::IpV6Cidr(cidr.to_string())
-                .query_url(&args.object_args.base_url)
-                .expect("ipv6 network self href");
-            (self_href, "v6".to_string())
-        }
+    let self_href = match &args.cidr {
+        IpCidr::V4(cidr) => QueryType::IpV4Cidr(cidr.to_string())
+            .query_url(&args.object_args.base_url)
+            .expect("ipv4 network self href"),
+        IpCidr::V6(cidr) => QueryType::IpV6Cidr(cidr.to_string())
+            .query_url(&args.object_args.base_url)
+            .expect("ipv6 network self href"),
     };
-    let network = Network::builder()
-        .start_address(args.cidr.first_as_ip_addr().to_string())
-        .end_address(args.cidr.last_as_ip_addr().to_string())
-        .ip_version(ip_version)
+    let network = Network::with_options()
+        .cidr(args.cidr.to_string())
         .and_country(args.country)
         .and_name(args.name)
         .and_network_type(args.network_type)
         .and_parent_handle(args.parent_handle)
-        .common(
-            Common::builder()
-                .and_notices(notices(&args.object_args.notice))
-                .build(),
-        )
-        .object_common(
-            ObjectCommon::ip_network()
-                .and_entities(entities(store, &args.object_args).await?)
-                .and_remarks(remarks(&args.object_args.remark))
-                .and_status(status(&args.object_args))
-                .and_events(events(&args.object_args))
-                .and_links(links(&self_href))
-                .and_handle(args.handle)
-                .build(),
-        );
-    let network = network.build();
+        .and_notices(notices(&args.object_args.notice))
+        .and_entities(entities(store, &args.object_args).await?)
+        .and_remarks(remarks(&args.object_args.remark))
+        .and_status(status(&args.object_args))
+        .and_events(events(&args.object_args))
+        .and_links(links(&self_href))
+        .and_handle(args.handle);
+    let network = network.build()?;
     let id = RdapId::Netowrk(NetworkId {
         network_id: icann_rdap_srv::storage::data::NetworkIdType::Range {
             start_address: network
