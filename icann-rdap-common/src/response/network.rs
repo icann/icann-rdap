@@ -3,7 +3,7 @@ use cidr_utils::cidr::IpCidr;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    types::{to_option_status, Common, ObjectCommon},
+    types::{to_option_status, Common, Link, ObjectCommon},
     RdapResponseError,
 };
 
@@ -139,6 +139,17 @@ impl Network {
             country: None,
             cidr0_cidrs: None,
         })
+    }
+
+    /// See [ObjectCommon::set_self_link()].
+    pub fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+
+    /// See [ObjectCommon::get_self_link()].
+    pub fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
     }
 }
 

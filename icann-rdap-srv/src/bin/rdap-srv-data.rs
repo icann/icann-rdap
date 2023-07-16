@@ -993,14 +993,8 @@ async fn make_autnum(
         );
     let autnum = autnum.build();
     let id = RdapId::Autnum(AutnumId {
-        start_autnum: autnum
-            .start_autnum
-            .clone()
-            .expect("autnum created with no start"),
-        end_autnum: autnum
-            .end_autnum
-            .clone()
-            .expect("autnum create with no end"),
+        start_autnum: autnum.start_autnum.expect("autnum created with no start"),
+        end_autnum: autnum.end_autnum.expect("autnum create with no end"),
     });
     let output = Output {
         rdap: RdapResponse::Autnum(autnum),

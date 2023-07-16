@@ -6,7 +6,7 @@ use serde_json::Value;
 use super::{
     autnum::Autnum,
     network::Network,
-    types::{to_option_status, Common, Events, ObjectCommon, PublicIds},
+    types::{to_option_status, Common, Events, Link, ObjectCommon, PublicIds},
 };
 
 /// Represents an RDAP entity response.
@@ -97,6 +97,17 @@ impl Entity {
             autnums: None,
             networks: None,
         }
+    }
+
+    /// See [ObjectCommon::set_self_link()].
+    pub fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+
+    /// See [ObjectCommon::get_self_link()].
+    pub fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
     }
 
     pub fn contact(&self) -> Option<Contact> {

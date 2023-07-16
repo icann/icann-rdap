@@ -225,13 +225,7 @@ impl RdapResponse {
 
     pub fn get_self_link(&self) -> Option<&Link> {
         if let Some(links) = self.get_links() {
-            links.iter().find(|link| {
-                if let Some(rel) = &link.rel {
-                    rel == "self"
-                } else {
-                    false
-                }
-            })
+            links.iter().find(|link| link.is_relation("self"))
         } else {
             None
         }
