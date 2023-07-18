@@ -223,14 +223,6 @@ impl RdapResponse {
         }
     }
 
-    pub fn get_self_link(&self) -> Option<&Link> {
-        if let Some(links) = self.get_links() {
-            links.iter().find(|link| link.is_relation("self"))
-        } else {
-            None
-        }
-    }
-
     pub fn get_conformance(&self) -> Option<&RdapConformance> {
         match self {
             RdapResponse::Entity(e) => e.common.rdap_conformance.as_ref(),
@@ -245,6 +237,27 @@ impl RdapResponse {
             RdapResponse::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
+}
+
+impl GetSelfLink for RdapResponse {
+    fn get_self_link(&self) -> Option<&Link> {
+        if let Some(links) = self.get_links() {
+            links.iter().find(|link| link.is_relation("self"))
+        } else {
+            None
+        }
+    }
+}
+
+pub trait GetSelfLink {
+    /// Get's the first self link.
+    /// See [ObjectCommon::get_self_link()].
+    fn get_self_link(&self) -> Option<&Link>;
+}
+
+pub trait SelfLink: GetSelfLink {
+    /// See [ObjectCommon::get_self_link()].
+    fn set_self_link(self, link: Link) -> Self;
 }
 
 #[cfg(test)]

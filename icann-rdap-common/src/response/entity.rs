@@ -7,6 +7,7 @@ use super::{
     autnum::Autnum,
     network::Network,
     types::{to_option_status, Common, Events, Link, ObjectCommon, PublicIds},
+    GetSelfLink, SelfLink,
 };
 
 /// Represents an RDAP entity response.
@@ -99,17 +100,6 @@ impl Entity {
         }
     }
 
-    /// See [ObjectCommon::set_self_link()].
-    pub fn set_self_link(mut self, link: Link) -> Self {
-        self.object_common = self.object_common.set_self_link(link);
-        self
-    }
-
-    /// See [ObjectCommon::get_self_link()].
-    pub fn get_self_link(&self) -> Option<&Link> {
-        self.object_common.get_self_link()
-    }
-
     pub fn contact(&self) -> Option<Contact> {
         let Some(vcard) = &self.vcard_array else {return None};
         Contact::from_vcard(vcard)
@@ -119,6 +109,19 @@ impl Entity {
     /// of another object.
     pub fn to_child(mut self) -> Self {
         self.common = Common::builder().build();
+        self
+    }
+}
+
+impl GetSelfLink for Entity {
+    fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
+    }
+}
+
+impl SelfLink for Entity {
+    fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
         self
     }
 }

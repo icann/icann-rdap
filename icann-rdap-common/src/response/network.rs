@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     types::{to_option_status, Common, Link, ObjectCommon},
-    RdapResponseError,
+    GetSelfLink, RdapResponseError, SelfLink,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -193,21 +193,23 @@ impl Network {
         })
     }
 
-    /// See [ObjectCommon::set_self_link()].
-    pub fn set_self_link(mut self, link: Link) -> Self {
-        self.object_common = self.object_common.set_self_link(link);
-        self
-    }
-
-    /// See [ObjectCommon::get_self_link()].
-    pub fn get_self_link(&self) -> Option<&Link> {
-        self.object_common.get_self_link()
-    }
-
     /// Removes notices and rdapConformance so this object can be a child
     /// of another object.
     pub fn to_child(mut self) -> Self {
         self.common = Common::builder().build();
+        self
+    }
+}
+
+impl GetSelfLink for Network {
+    fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
+    }
+}
+
+impl SelfLink for Network {
+    fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
         self
     }
 }

@@ -6,10 +6,14 @@ use std::{
 
 use buildstructor::Builder;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
-    RdapResponse,
+    autnum::Autnum,
+    domain::Domain,
+    entity::Entity,
+    nameserver::Nameserver,
+    network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+    GetSelfLink, RdapResponse, SelfLink,
 };
-use ipnet::IpNet;
+use ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::time::sleep;
@@ -237,7 +241,6 @@ async fn load_rdap(
 
 /// Loads the template files, creates RDAP objects from the templates, and puts them
 /// into storage.
-// TODO fix self links
 async fn load_rdap_template(
     contents: &str,
     path_name: &str,
@@ -253,6 +256,7 @@ async fn load_rdap_template(
                     match &domain {
                         DomainOrError::DomainObject(domain) => {
                             let mut domain = domain.clone();
+                            domain = change_self_link(domain, "domain", &id.ldh_name);
                             domain.ldh_name = Some(id.ldh_name);
                             if let Some(unicode_name) = id.unicode_name {
                                 domain.unicode_name = Some(unicode_name);
@@ -271,6 +275,7 @@ async fn load_rdap_template(
                     match &entity {
                         EntityOrError::EntityObject(entity) => {
                             let mut entity = entity.clone();
+                            entity = change_self_link(entity, "entity", &id.handle);
                             entity.object_common.handle = Some(id.handle);
                             tx.add_entity(&entity).await?;
                         }
@@ -286,6 +291,7 @@ async fn load_rdap_template(
                     match &nameserver {
                         NameserverOrError::NameserverObject(nameserver) => {
                             let mut nameserver = nameserver.clone();
+                            nameserver = change_self_link(nameserver, "nameserver", &id.ldh_name);
                             nameserver.ldh_name = Some(id.ldh_name);
                             if let Some(unicode_name) = id.unicode_name {
                                 nameserver.unicode_name = Some(unicode_name);
@@ -304,6 +310,8 @@ async fn load_rdap_template(
                     match &autnum {
                         AutnumOrError::AutnumObject(autnum) => {
                             let mut autnum = autnum.clone();
+                            autnum =
+                                change_self_link(autnum, "autnum", &id.start_autnum.to_string());
                             autnum.start_autnum = Some(id.start_autnum);
                             autnum.end_autnum = Some(id.end_autnum);
                             tx.add_autnum(&autnum).await?;
@@ -326,11 +334,21 @@ async fn load_rdap_template(
                                         network.start_address = Some(v4.network().to_string());
                                         network.end_address = Some(v4.broadcast().to_string());
                                         network.ip_version = Some("v4".to_string());
+                                        network.cidr0_cidrs =
+                                            Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+                                                v4prefix: v4.network().to_string(),
+                                                length: v4.prefix_len(),
+                                            })]);
                                     }
                                     IpNet::V6(v6) => {
                                         network.start_address = Some(v6.network().to_string());
                                         network.end_address = Some(v6.broadcast().to_string());
                                         network.ip_version = Some("v6".to_string());
+                                        network.cidr0_cidrs =
+                                            Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                                                v6prefix: v6.network().to_string(),
+                                                length: v6.prefix_len(),
+                                            })]);
                                     }
                                 },
                                 NetworkIdType::Range {
@@ -340,13 +358,56 @@ async fn load_rdap_template(
                                     let addr: IpAddr = start_address.parse()?;
                                     if addr.is_ipv4() {
                                         network.ip_version = Some("v4".to_string());
+                                        network.cidr0_cidrs = Some(
+                                            Ipv4Subnets::new(
+                                                start_address.parse()?,
+                                                end_address.parse()?,
+                                                0,
+                                            )
+                                            .map(|net| {
+                                                Cidr0Cidr::V4Cidr(V4Cidr {
+                                                    v4prefix: net.network().to_string(),
+                                                    length: net.prefix_len(),
+                                                })
+                                            })
+                                            .collect::<Vec<Cidr0Cidr>>(),
+                                        );
                                     } else {
                                         network.ip_version = Some("v6".to_string());
+                                        network.cidr0_cidrs = Some(
+                                            Ipv6Subnets::new(
+                                                start_address.parse()?,
+                                                end_address.parse()?,
+                                                0,
+                                            )
+                                            .map(|net| {
+                                                Cidr0Cidr::V6Cidr(V6Cidr {
+                                                    v6prefix: net.network().to_string(),
+                                                    length: net.prefix_len(),
+                                                })
+                                            })
+                                            .collect::<Vec<Cidr0Cidr>>(),
+                                        );
                                     }
                                     network.start_address = Some(start_address);
                                     network.end_address = Some(end_address);
                                 }
                             }
+                            let first_cidr = network
+                                .cidr0_cidrs
+                                .as_ref()
+                                .expect("cidrs should be on network")
+                                .first()
+                                .map(|cidr| match cidr {
+                                    Cidr0Cidr::V4Cidr(cidr) => {
+                                        format!("{}/{}", cidr.v4prefix, cidr.length)
+                                    }
+                                    Cidr0Cidr::V6Cidr(cidr) => {
+                                        format!("{}/{}", cidr.v6prefix, cidr.length)
+                                    }
+                                })
+                                .expect("cidrs on network are empty");
+                            network = change_self_link(network, "ip", &first_cidr);
                             tx.add_network(&network).await?;
                         }
                         NetworkOrError::ErrorResponse(error) => {
@@ -406,6 +467,21 @@ pub async fn trigger_update(data_dir: &str) -> Result<(), RdapServerError> {
     let update_path = update_path.join(UPDATE);
     tokio::fs::File::create(update_path).await?;
     Ok(())
+}
+
+fn change_self_link<T: GetSelfLink + SelfLink>(mut object: T, segment: &str, id: &str) -> T {
+    if let Some(self_link) = object.get_self_link() {
+        if let Some(self_href) = self_link.href.split_once(segment) {
+            let mut new_self_link = self_link.clone();
+            new_self_link.href = format!("{}{segment}/{}", self_href.0, id);
+            object = object.set_self_link(new_self_link);
+        } else {
+            warn!("Unable to rewrite self link for {segment} {}", id);
+        }
+    } else {
+        warn!("No self link for {segment} {}", id);
+    }
+    object
 }
 
 #[cfg(test)]

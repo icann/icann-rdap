@@ -5,6 +5,7 @@ use super::{
     nameserver::Nameserver,
     network::Network,
     types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
+    GetSelfLink, SelfLink,
 };
 
 /// Represents an RDAP variant name.
@@ -188,17 +189,6 @@ impl Domain {
         }
     }
 
-    /// See [ObjectCommon::set_self_link()].
-    pub fn set_self_link(mut self, link: Link) -> Self {
-        self.object_common = self.object_common.set_self_link(link);
-        self
-    }
-
-    /// See [ObjectCommon::get_self_link()].
-    pub fn get_self_link(&self) -> Option<&Link> {
-        self.object_common.get_self_link()
-    }
-
     /// Removes notices and rdapConformance so this object can be a child
     /// of another object.
     pub fn to_child(mut self) -> Self {
@@ -207,10 +197,23 @@ impl Domain {
     }
 }
 
+impl GetSelfLink for Domain {
+    fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
+    }
+}
+
+impl SelfLink for Domain {
+    fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::response::types::Link;
+    use crate::response::{types::Link, SelfLink};
 
     use super::Domain;
 
