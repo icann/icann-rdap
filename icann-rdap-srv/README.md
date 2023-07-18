@@ -112,32 +112,6 @@ Files in this directory are either valid RDAP JSON files, or template files cont
 RDAP JSON. Files ending in `.json` are considered to be RDAP JSON, and files ending in `.template`
 are considered to be template files.
 
-Template files are also JSON, however they allow the creation of multiple RDAP objects using
-one RDAP template. The basic structure is as follows:
-
-```json
-{
-  "domain":
-    {
-      "objectClassName":"domain",
-      "ldhName":"example"
-    },
-  "ids":
-    [
-      {"ldhName":"bar.example"},
-      {"ldhName":"foo.example"}
-    ]
-}
-```
-
-The IDs array differs for every object class:
-
-* domain: `{"ldhName": "foo.example"}`. May optionally have a `unicodeName` as well.
-* entity: `{"handle"; "XXXX"}`
-* nameserver: `{"ldhName": "ns.foo.example"}`. May optionally have a `unicodeName` as well.
-* autnum: `{"start_autnum": 1, "end_autnum": 99}`
-* ip: either `{"networkId": {"startAddress": "xxx.xxx.xxx.xxx", "endAddress": "xxx.xxx.xxx.xxx"}}` or `{"networkId": "xxx.xxx.xxx.xxx/yyy"}`
-
 Memory storage supports hot reloading. This can be done by "touching" either the file
 named "update" or "reload" in the data directory. The "update" file triggers an update
 but does not remove any previous data unless that data exists in the data directory files.
@@ -161,6 +135,34 @@ Use the `--help` option to see the arguments for each sub-command.
     rdap-srv-data domain --help
     rdap-srv-data autnum --help    
     rdap-srv-data network --help
+
+## Templates
+
+Template files allow for the creation of many RDAP objects by changing just the ID of the object.
+The `rdap-srv-data` command can create a template file which can be used as a template. In other words,
+one can use the `rdap-srv-data` command to create the template file and then edit the file with
+the object ids desired.
+
+The following command creates an entity template using the `--template` option:
+
+    rdap-srv-data --template entity --handle foo --full-name "Bob Smurd"
+
+The IDs array in the templates differ for every object class:
+
+* domain: `{"ldhName": "foo.example"}`. May optionally have a `unicodeName` as well.
+* entity: `{"handle"; "XXXX"}`
+* nameserver: `{"ldhName": "ns.foo.example"}`. May optionally have a `unicodeName` as well.
+* autnum: `{"start_autnum": 1, "end_autnum": 99}`
+* ip: either `{"networkId": {"startAddress": "xxx.xxx.xxx.xxx", "endAddress": "xxx.xxx.xxx.xxx"}}` or `{"networkId": "xxx.xxx.xxx.xxx/yyy"}`
+
+## Redirects
+
+Template files can also be used to create redirects (which are modeled by the server as RDAP errors though they are not).
+Like other templates, more than one object ID can be used to create a redirect for many objects.
+
+The following command creates a redirect for an IP network:
+
+    rdap-srv-data --redirect http://other.example/ip/11.0.0.0/16 network --cidr 11.0.0.0/16
 
 ## Use Your Data
 
