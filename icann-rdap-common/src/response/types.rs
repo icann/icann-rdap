@@ -333,13 +333,7 @@ impl ObjectCommon {
         if let Some(links) = self.links {
             let mut new_links = links
                 .into_iter()
-                .filter(|link| {
-                    if let Some(rel) = &link.rel {
-                        rel == "self"
-                    } else {
-                        false
-                    }
-                })
+                .filter(|link| !link.is_relation("self"))
                 .collect::<Vec<Link>>();
             new_links.push(link);
             self.links = Some(new_links);
@@ -618,11 +612,23 @@ mod tests {
         oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
 
         // THEN
+        // new link is in
         assert_eq!(
             oc.links
+                .as_ref()
                 .expect("links are empty")
                 .iter()
                 .filter(|link| link.is_relation("self") && link.href == "http://foo.example")
+                .count(),
+            1
+        );
+        // all self links count == 1
+        assert_eq!(
+            oc.links
+                .as_ref()
+                .expect("links are empty")
+                .iter()
+                .filter(|link| link.is_relation("self"))
                 .count(),
             1
         );
