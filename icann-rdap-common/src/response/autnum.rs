@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     types::{to_option_status, Common, Link, ObjectCommon},
-    GetSelfLink, SelfLink,
+    GetSelfLink, SelfLink, ToChild,
 };
 
 /// Represents an RDAP autnum object response.
@@ -81,13 +81,6 @@ impl Autnum {
             country: None,
         }
     }
-
-    /// Removes notices and rdapConformance so this object can be a child
-    /// of another object.
-    pub fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
-        self
-    }
 }
 
 impl GetSelfLink for Autnum {
@@ -99,6 +92,13 @@ impl GetSelfLink for Autnum {
 impl SelfLink for Autnum {
     fn set_self_link(mut self, link: Link) -> Self {
         self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+}
+
+impl ToChild for Autnum {
+    fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
         self
     }
 }

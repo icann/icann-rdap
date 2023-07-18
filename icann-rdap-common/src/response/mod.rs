@@ -260,6 +260,12 @@ pub trait SelfLink: GetSelfLink {
     fn set_self_link(self, link: Link) -> Self;
 }
 
+pub trait ToChild {
+    /// Removes notices and rdapConformance so this object can be a child
+    /// of another object.
+    fn to_child(self) -> Self;
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {

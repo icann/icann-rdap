@@ -29,6 +29,7 @@ use icann_rdap_common::response::types::Remarks;
 use icann_rdap_common::response::types::Status;
 use icann_rdap_common::response::types::StatusValue;
 use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::response::ToChild;
 use icann_rdap_common::VERSION;
 use icann_rdap_srv::config::ServiceConfig;
 use icann_rdap_srv::config::StorageType;
