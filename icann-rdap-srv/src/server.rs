@@ -72,6 +72,9 @@ impl Listener {
         }
     }
 
+    /// Starts the server using a [ServiceConfig]. This is the entry point for a CLI.
+    /// This function will initiate any needed non-HTTP services and then call
+    /// call [start_with_app_state()], which initiates the HTTP service.
     pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
         if let StorageType::Memory(config) = &service_config.storage_type {
             let app_state = AppState::new_mem(config.clone(), service_config).await?;
@@ -83,6 +86,8 @@ impl Listener {
         Ok(())
     }
 
+    /// Starts the HTTP server with a specific [AppState]. This is the entry point for a library or testing
+    /// framework.
     pub async fn start_with_state<T>(self, app_state: AppState<T>) -> Result<(), RdapServerError>
     where
         T: StoreOps + Clone + Send + Sync + 'static,
@@ -149,6 +154,8 @@ pub trait StoreState: std::fmt::Debug {
     async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError>;
 }
 
+/// State that is passed to the HTTP service router and used by functions
+/// servicing HTTP requests.
 #[derive(Clone)]
 pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
