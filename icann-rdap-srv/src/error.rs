@@ -6,7 +6,10 @@ use axum::{
 };
 use envmnt::errors::EnvmntError;
 use http::StatusCode;
-use icann_rdap_common::response::{types::Common, RdapResponse, RdapResponseError};
+use icann_rdap_common::{
+    iana::IanaResponseError,
+    response::{types::Common, RdapResponse, RdapResponseError},
+};
 use ipnet::PrefixLenError;
 use thiserror::Error;
 
@@ -49,6 +52,10 @@ pub enum RdapServerError {
     SerdeJson(#[from] serde_json::Error),
     #[error(transparent)]
     Response(#[from] RdapResponseError),
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
+    #[error(transparent)]
+    Iana(#[from] IanaResponseError),
 }
 
 impl IntoResponse for RdapServerError {
