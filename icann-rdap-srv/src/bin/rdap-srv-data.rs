@@ -32,7 +32,6 @@ use icann_rdap_common::response::RdapResponse;
 use icann_rdap_common::response::ToChild;
 use icann_rdap_common::VERSION;
 use icann_rdap_srv::config::ServiceConfig;
-use icann_rdap_srv::config::StorageType;
 use icann_rdap_srv::storage::data::load_data;
 use icann_rdap_srv::storage::data::AutnumId;
 use icann_rdap_srv::storage::data::AutnumOrError;
@@ -474,12 +473,7 @@ async fn main() -> Result<(), RdapServerError> {
     debug_config_vars();
 
     let data_dir = cli.data_dir.clone();
-    let storage_type = StorageType::new_from_env()?;
-    let config = ServiceConfig::builder()
-        .storage_type(storage_type)
-        .data_dir(&data_dir)
-        .auto_reload(false)
-        .build();
+    let config = ServiceConfig::non_server().data_dir(&data_dir).build()?;
     let storage = Mem::new(MemConfig::builder().build());
     storage.init().await?;
     load_data(&config, &storage, false).await?;

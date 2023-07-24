@@ -23,11 +23,11 @@ async fn new_and_init_mem(data_dir: String) -> Mem {
     let mem = Mem::new(mem_config.clone());
     mem.init().await.expect("initialzing memeory");
     load_data(
-        &ServiceConfig::builder()
+        &ServiceConfig::non_server()
             .data_dir(data_dir)
-            .auto_reload(false)
             .storage_type(StorageType::Memory(mem_config))
-            .build(),
+            .build()
+            .expect("building service config"),
         &mem,
         false,
     )

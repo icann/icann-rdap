@@ -56,6 +56,8 @@ pub enum RdapServerError {
     Reqwest(#[from] reqwest::Error),
     #[error(transparent)]
     Iana(#[from] IanaResponseError),
+    #[error("Bootstrap error: {0}")]
+    Bootstrap(String),
 }
 
 impl IntoResponse for RdapServerError {

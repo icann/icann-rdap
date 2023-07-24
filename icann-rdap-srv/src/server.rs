@@ -15,6 +15,7 @@ use tower_http::{
 };
 
 use crate::{
+    bootstrap::init_bootstrap,
     config::{ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
@@ -76,6 +77,7 @@ impl Listener {
     /// This function will initiate any needed non-HTTP services and then call
     /// call [start_with_app_state()], which initiates the HTTP service.
     pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
+        init_bootstrap(service_config).await?;
         if let StorageType::Memory(config) = &service_config.storage_type {
             let app_state = AppState::new_mem(config.clone(), service_config).await?;
             self.start_with_state(app_state).await?;

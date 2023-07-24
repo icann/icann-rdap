@@ -74,12 +74,28 @@ pub type Notices = Vec<Notice>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Notice(pub NoticeOrRemark);
 
+impl std::ops::Deref for Notice {
+    type Target = NoticeOrRemark;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// An array of remarks.
 pub type Remarks = Vec<Remark>;
 
 /// Represents an RDAP Remark.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Remark(pub NoticeOrRemark);
+
+impl std::ops::Deref for Remark {
+    type Target = NoticeOrRemark;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
