@@ -79,6 +79,25 @@ impl SrvTestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
+            bootstrap: false,
+        };
+        let _ = tracing_subscriber::fmt().with_test_writer().try_init();
+        let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
+        let rdap_base = listener.rdap_base();
+        tokio::spawn(async move {
+            listener
+                .start_with_state(app_state)
+                .await
+                .expect("starting server");
+        });
+        SrvTestJig { mem, rdap_base }
+    }
+
+    pub fn _new_bootstrap() -> SrvTestJig {
+        let mem = Mem::default();
+        let app_state = AppState {
+            storage: mem.clone(),
+            bootstrap: true,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");

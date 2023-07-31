@@ -3,7 +3,7 @@ use axum::{
     response::Response,
 };
 
-use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynStoreState};
+use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 
 use super::response::BAD_REQUEST;
 
@@ -12,7 +12,7 @@ use super::response::BAD_REQUEST;
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn nameserver_by_name(
     Path(ns_name): Path<String>,
-    state: State<DynStoreState>,
+    state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
     let count = ns_name.chars().filter(|c| *c == '.').count();
     // if the nameserver name does not have at least 2 'dot' characters, return bad request.

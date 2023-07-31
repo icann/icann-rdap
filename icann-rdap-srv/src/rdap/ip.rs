@@ -10,7 +10,7 @@ use tracing::debug;
 use crate::{
     error::RdapServerError,
     rdap::response::{ResponseUtil, BAD_REQUEST},
-    server::DynStoreState,
+    server::DynServiceState,
 };
 
 /// Gets a network object by the address path.
@@ -18,7 +18,7 @@ use crate::{
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn network_by_netid(
     Path(netid): Path<String>,
-    state: State<DynStoreState>,
+    state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
     if netid.contains('/') {
         debug!("getting network by cidr {netid}");

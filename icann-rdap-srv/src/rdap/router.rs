@@ -9,7 +9,7 @@ use super::{
     response::{ResponseUtil, NOT_IMPLEMENTED},
 };
 
-pub(crate) fn rdap_router() -> Router<crate::server::DynStoreState> {
+pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
     Router::new()
         .route("/domain/:domain", get(domain_by_name))
         .route("/ip/*netid", get(network_by_netid))

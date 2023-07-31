@@ -21,6 +21,7 @@ impl TestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
+            bootstrap: false,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
