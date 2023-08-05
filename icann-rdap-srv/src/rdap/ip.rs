@@ -9,7 +9,10 @@ use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    rdap::response::{ResponseUtil, BAD_REQUEST},
+    rdap::{
+        response::{ResponseUtil, BAD_REQUEST},
+        ToBootStrap,
+    },
     server::DynServiceState,
 };
 
@@ -25,7 +28,11 @@ pub(crate) async fn network_by_netid(
         if let Ok(cidr) = IpCidr::from_str(&netid) {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
-            Ok(network.response())
+            if state.get_bootstrap() {
+                Ok(network.to_ip_bootstrap(&netid).response())
+            } else {
+                Ok(network.response())
+            }
         } else {
             Ok(BAD_REQUEST.response())
         }
@@ -37,7 +44,11 @@ pub(crate) async fn network_by_netid(
         } else {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_ipaddr(&netid).await?;
-            Ok(network.response())
+            if state.get_bootstrap() {
+                Ok(network.to_ip_bootstrap(&netid).response())
+            } else {
+                Ok(network.response())
+            }
         }
     }
 }

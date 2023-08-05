@@ -17,8 +17,8 @@ use crate::{
     config::ServiceConfig,
     error::RdapServerError,
     storage::data::{
-        trigger_reload, trigger_update, AutnumId, AutnumOrError, DomainId, DomainOrError,
-        NetworkId, NetworkIdType, NetworkOrError, Template,
+        trigger_reload, trigger_update, AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId,
+        EntityOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
     },
 };
 
@@ -84,6 +84,13 @@ async fn process_bootstrap(config: &ServiceConfig, client: &Client) -> Result<()
     {
         remove_previous_bootstrap(config, IanaRegistryType::RdapBootstrapIpv6).await?;
         make_ip_bootstrap(config, iana_reg, IanaRegistryType::RdapBootstrapIpv6).await?;
+        new_data = true;
+    }
+    if let Some(iana_reg) =
+        fetch_iana_registry(IanaRegistryType::RdapObjectTags, client, &config.data_dir).await?
+    {
+        remove_previous_bootstrap(config, IanaRegistryType::RdapObjectTags).await?;
+        make_tag_registry(config, iana_reg).await?;
         new_data = true;
     }
     if new_data {
@@ -238,6 +245,51 @@ async fn make_ip_bootstrap(
     Ok(())
 }
 
+async fn make_tag_registry(
+    config: &ServiceConfig,
+    iana: IanaRegistry,
+) -> Result<(), RdapServerError> {
+    let IanaRegistry::RdapBootstrapRegistry(reg) = iana;
+    for (num, service) in reg.services.iter().enumerate() {
+        if service.len() != 3 {
+            return Err(RdapServerError::Bootstrap(
+                "object tag registry has wrong number of arrays".to_string(),
+            ));
+        }
+        let tags = service
+            .get(1)
+            .ok_or(RdapServerError::Bootstrap("no tags".to_string()))?;
+        let urls = service
+            .get(2)
+            .ok_or(RdapServerError::Bootstrap("no urls for tags".to_string()))?;
+        let Some(url) = get_preferred_url(urls) else {return Err(RdapServerError::Bootstrap("no bootstrap URL in tag service".to_string()))};
+        let ids = tags
+            .iter()
+            .map(|tag| {
+                EntityId::builder()
+                    .handle(format!("-{}", tag.to_ascii_uppercase()))
+                    .build()
+            })
+            .collect::<Vec<EntityId>>();
+        let template = Template::Entity {
+            entity: EntityOrError::ErrorResponse(
+                icann_rdap_common::response::error::Error::redirect()
+                    .url(url)
+                    .build(),
+            ),
+            ids,
+        };
+        let content = serde_json::to_string_pretty(&template)?;
+        let mut path = PathBuf::from(&config.data_dir);
+        path.push(format!(
+            "{}_{num}.template",
+            IanaRegistryType::RdapObjectTags.prefix()
+        ));
+        fs::write(path, content).await?;
+    }
+    Ok(())
+}
+
 async fn fetch_iana_registry(
     reg_type: IanaRegistryType,
     client: &Client,
@@ -276,7 +328,11 @@ fn get_preferred_url(urls: &Vec<String>) -> Option<String> {
             .iter()
             .find(|s| s.starts_with("https://"))
             .unwrap_or_else(|| urls.first().unwrap());
-        Some(url.to_owned())
+        if !url.ends_with('/') {
+            Some(format!("{url}/"))
+        } else {
+            Some(url.to_owned())
+        }
     }
 }
 
@@ -547,5 +603,120 @@ mod tests {
         let Some(links) = &first_notice.links else {panic!("no links in notice")};
         let Some(first_link) = links.first() else {panic!("links are empty")};
         first_link.href.to_owned()
+    }
+
+    #[tokio::test]
+    async fn GIVEN_tag_bootstrap_WHEN_make_tag_registry_THEN_redirects_loaded() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+              "description": "RDAP bootstrap file for service provider object tags",
+              "publication": "2023-07-05T22:00:02Z",
+              "services": [
+                [
+                  [
+                    "info@arin.net"
+                  ],
+                  [
+                    "ARIN"
+                  ],
+                  [
+                    "https://rdap.arin.net/registry/",
+                    "http://rdap.arin.net/registry/"
+                  ]
+                ],
+                [
+                  [
+                    "carlos@lacnic.net"
+                  ],
+                  [
+                    "LACNIC"
+                  ],
+                  [
+                    "https://rdap.lacnic.net/rdap/"
+                  ]
+                ],
+                [
+                  [
+                    "bje@apnic.net"
+                  ],
+                  [
+                    "APNIC"
+                  ],
+                  [
+                    "https://rdap.apnic.net/"
+                  ]
+                ],
+                [
+                  [
+                    "kranjbar@ripe.net"
+                  ],
+                  [
+                    "RIPE"
+                  ],
+                  [
+                    "https://rdap.db.ripe.net/"
+                  ]
+                ],
+                [
+                  [
+                    "tld-tech@nic.fr"
+                  ],
+                  [
+                    "FRNIC"
+                  ],
+                  [
+                    "https://rdap.nic.fr/"
+                  ]
+                ],
+                [
+                  [
+                    "hello@glauca.digital"
+                  ],
+                  [
+                    "GLAUCA"
+                  ],
+                  [
+                    "https://whois-web.as207960.net/rdap/"
+                  ]
+                ]
+              ],
+              "version": "1.0"
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse tag bootstrap");
+
+        // WHEN
+        let temp = TestDir::temp();
+        let config = ServiceConfig::non_server()
+            .data_dir(temp.root().to_string_lossy().to_string())
+            .build()
+            .expect("error making service config");
+        make_tag_registry(&config, iana)
+            .await
+            .expect("unable to make DNS bootstrap");
+
+        // THEN
+        let mem = new_and_init_mem(config.data_dir).await;
+        // arin
+        let response = mem
+            .get_entity_by_handle("-ARIN")
+            .await
+            .expect("lookup of -ARIN");
+        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        assert_eq!(307, error.error_code);
+        assert_eq!(get_redirect_link(error), "https://rdap.arin.net/registry/",);
+        // GLAUCA
+        let response = mem
+            .get_entity_by_handle("-GLAUCA")
+            .await
+            .expect("lookup of -GLAUCA");
+        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        assert_eq!(307, error.error_code);
+        assert_eq!(
+            get_redirect_link(error),
+            "https://whois-web.as207960.net/rdap/"
+        );
     }
 }

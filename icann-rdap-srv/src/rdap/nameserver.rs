@@ -6,7 +6,7 @@ use icann_rdap_common::response::RdapResponse;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 
-use super::response::BAD_REQUEST;
+use super::{response::BAD_REQUEST, ToBootStrap};
 
 /// Gets a nameserver object by the name path.
 #[axum_macros::debug_handler]
@@ -33,7 +33,7 @@ pub(crate) async fn nameserver_by_name(
                 // like things.
                 let found = storage.get_domain_by_ldh(less_specific.1).await?;
                 if found.is_redirect() {
-                    return Ok(found.response());
+                    return Ok(found.to_nameserver_bootstrap(&ns_name).response());
                 } else {
                     ns_slice = less_specific.1;
                 }

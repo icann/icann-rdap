@@ -6,6 +6,8 @@ use icann_rdap_common::response::RdapResponse;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 
+use super::ToBootStrap;
+
 /// Gets a domain object by the name path, which can be either A-label or U-lable
 /// according to RFC 9082.
 #[axum_macros::debug_handler]
@@ -33,7 +35,7 @@ pub(crate) async fn domain_by_name(
         while let Some(less_specific) = dn_slice.split_once('.') {
             let found = storage.get_domain_by_ldh(less_specific.1).await?;
             if found.is_redirect() {
-                return Ok(found.response());
+                return Ok(found.to_domain_bootstrap(&domain_name).response());
             } else {
                 dn_slice = less_specific.1;
             }
