@@ -2,6 +2,7 @@ use axum::{
     extract::{Path, State},
     response::Response,
 };
+use icann_rdap_common::response::RdapResponse;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 
@@ -21,6 +22,24 @@ pub(crate) async fn nameserver_by_name(
     } else {
         let storage = state.get_storage().await?;
         let nameserver = storage.get_nameserver_by_ldh(&ns_name).await?;
+
+        if state.get_bootstrap()
+            && !matches!(nameserver, RdapResponse::Nameserver(_))
+            && !nameserver.is_redirect()
+        {
+            let mut ns_slice = ns_name.as_str();
+            while let Some(less_specific) = ns_slice.split_once('.') {
+                // this needs to be domain because that is where redirects will be for domain
+                // like things.
+                let found = storage.get_domain_by_ldh(less_specific.1).await?;
+                if found.is_redirect() {
+                    return Ok(found.response());
+                } else {
+                    ns_slice = less_specific.1;
+                }
+            }
+        }
+
         Ok(nameserver.response())
     }
 }

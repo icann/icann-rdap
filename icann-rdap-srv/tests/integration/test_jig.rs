@@ -93,7 +93,7 @@ impl SrvTestJig {
         SrvTestJig { mem, rdap_base }
     }
 
-    pub fn _new_bootstrap() -> SrvTestJig {
+    pub fn new_bootstrap() -> SrvTestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),

@@ -2,6 +2,7 @@ use axum::{
     extract::{Path, State},
     response::Response,
 };
+use icann_rdap_common::response::RdapResponse;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 
@@ -26,8 +27,18 @@ pub(crate) async fn domain_by_name(
     let storage = state.get_storage().await?;
     let domain = storage.get_domain_by_ldh(&domain_name).await?;
 
-    // TODO put logic only for bootstrapping here
-    if state.get_bootstrap() {}
+    if state.get_bootstrap() && !matches!(domain, RdapResponse::Domain(_)) && !domain.is_redirect()
+    {
+        let mut dn_slice = domain_name.as_str();
+        while let Some(less_specific) = dn_slice.split_once('.') {
+            let found = storage.get_domain_by_ldh(less_specific.1).await?;
+            if found.is_redirect() {
+                return Ok(found.response());
+            } else {
+                dn_slice = less_specific.1;
+            }
+        }
+    }
 
     Ok(domain.response())
 }

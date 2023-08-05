@@ -237,6 +237,13 @@ impl RdapResponse {
             RdapResponse::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
+
+    pub fn is_redirect(&self) -> bool {
+        match self {
+            RdapResponse::ErrorResponse(e) => e.is_redirect(),
+            _ => false,
+        }
+    }
 }
 
 impl GetSelfLink for RdapResponse {

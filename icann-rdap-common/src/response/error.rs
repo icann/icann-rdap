@@ -50,4 +50,38 @@ impl Error {
             description: None,
         }
     }
+
+    pub fn is_redirect(&self) -> bool {
+        self.error_code > 299 && self.error_code < 400
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use super::Error;
+
+    #[test]
+    fn GIVEN_error_code_301_WHEN_is_redirect_THEN_true() {
+        // GIVEN
+        let e = Error::redirect().url("https://foo.example").build();
+
+        // WHEN
+        let actual = e.is_redirect();
+
+        // THEN
+        assert!(actual);
+    }
+
+    #[test]
+    fn GIVEN_error_code_404_WHEN_is_redirect_THEN_false() {
+        // GIVEN
+        let e = Error::basic().error_code(404).build();
+
+        // WHEN
+        let actual = e.is_redirect();
+
+        // THEN
+        assert!(!actual);
+    }
 }
