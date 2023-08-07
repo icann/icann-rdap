@@ -78,7 +78,7 @@ pub enum RdapResponseError {
 /// let rdap: RdapResponse = serde_json::from_str(json).unwrap();
 /// assert!(matches!(rdap, RdapResponse::Network(_)));
 /// ```
-#[derive(Serialize, Deserialize, Clone, Display)]
+#[derive(Serialize, Deserialize, Clone, Display, PartialEq)]
 #[serde(untagged, try_from = "Value")]
 pub enum RdapResponse {
     // Object Classes
@@ -223,20 +223,6 @@ impl RdapResponse {
         }
     }
 
-    pub fn get_self_link(&self) -> Option<&Link> {
-        if let Some(links) = self.get_links() {
-            links.iter().find(|link| {
-                if let Some(rel) = &link.rel {
-                    rel == "self"
-                } else {
-                    false
-                }
-            })
-        } else {
-            None
-        }
-    }
-
     pub fn get_conformance(&self) -> Option<&RdapConformance> {
         match self {
             RdapResponse::Entity(e) => e.common.rdap_conformance.as_ref(),
@@ -251,6 +237,40 @@ impl RdapResponse {
             RdapResponse::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
+
+    pub fn is_redirect(&self) -> bool {
+        match self {
+            RdapResponse::ErrorResponse(e) => e.is_redirect(),
+            _ => false,
+        }
+    }
+}
+
+impl GetSelfLink for RdapResponse {
+    fn get_self_link(&self) -> Option<&Link> {
+        if let Some(links) = self.get_links() {
+            links.iter().find(|link| link.is_relation("self"))
+        } else {
+            None
+        }
+    }
+}
+
+pub trait GetSelfLink {
+    /// Get's the first self link.
+    /// See [ObjectCommon::get_self_link()].
+    fn get_self_link(&self) -> Option<&Link>;
+}
+
+pub trait SelfLink: GetSelfLink {
+    /// See [ObjectCommon::get_self_link()].
+    fn set_self_link(self, link: Link) -> Self;
+}
+
+pub trait ToChild {
+    /// Removes notices and rdapConformance so this object can be a child
+    /// of another object.
+    fn to_child(self) -> Self;
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use icann_rdap_common::{cache::HttpData, response::RdapResponse};
 use reqwest::{
-    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES},
+    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION},
     Client,
 };
 use serde::{Deserialize, Serialize};
@@ -29,13 +29,20 @@ pub async fn rdap_request(
         .headers()
         .get(CACHE_CONTROL)
         .map(|value| value.to_str().unwrap().to_string());
+    let location = response
+        .headers()
+        .get(LOCATION)
+        .map(|value| value.to_str().unwrap().to_string());
     let content_length = response.content_length();
+    let status_code = response.status().as_u16();
     let url = response.url().to_owned();
     let text = response.text().await?;
     let json: Result<Value, serde_json::Error> = serde_json::from_str(&text);
     if let Ok(rdap_json) = json {
         let rdap = RdapResponse::try_from(rdap_json)?;
         let http_data = HttpData::now()
+            .status_code(status_code)
+            .and_location(location)
             .and_content_length(content_length)
             .and_content_type(content_type)
             .host(

@@ -15,6 +15,7 @@ use tower_http::{
 };
 
 use crate::{
+    bootstrap::init_bootstrap,
     config::{ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
@@ -72,7 +73,11 @@ impl Listener {
         }
     }
 
+    /// Starts the server using a [ServiceConfig]. This is the entry point for a CLI.
+    /// This function will initiate any needed non-HTTP services and then call
+    /// call [start_with_app_state()], which initiates the HTTP service.
     pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
+        init_bootstrap(service_config).await?;
         if let StorageType::Memory(config) = &service_config.storage_type {
             let app_state = AppState::new_mem(config.clone(), service_config).await?;
             self.start_with_state(app_state).await?;
@@ -83,10 +88,12 @@ impl Listener {
         Ok(())
     }
 
+    /// Starts the HTTP server with a specific [AppState]. This is the entry point for a library or testing
+    /// framework.
     pub async fn start_with_state<T>(self, app_state: AppState<T>) -> Result<(), RdapServerError>
     where
         T: StoreOps + Clone + Send + Sync + 'static,
-        AppState<T>: StoreState,
+        AppState<T>: ServiceState,
     {
         let app = app_router::<T>(app_state);
 
@@ -112,9 +119,9 @@ async fn init_data(
 fn app_router<T>(state: AppState<T>) -> Router
 where
     T: StoreOps + Clone + Send + Sync + 'static,
-    AppState<T>: StoreState,
+    AppState<T>: ServiceState,
 {
-    let state = Arc::new(state) as DynStoreState;
+    let state = Arc::new(state) as DynServiceState;
     Router::new()
         .nest("/rdap", rdap_router())
         .layer(
@@ -142,16 +149,24 @@ where
         .with_state(state)
 }
 
-pub(crate) type DynStoreState = Arc<dyn StoreState + Send + Sync>;
+pub(crate) type DynServiceState = Arc<dyn ServiceState + Send + Sync>;
 
 #[async_trait]
-pub trait StoreState: std::fmt::Debug {
+pub trait ServiceState: std::fmt::Debug {
+    /// Gets the backend storage lookup engine.
     async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError>;
+
+    /// If returns true, this indicates the server has been configured to do
+    /// bootstrapping.
+    fn get_bootstrap(&self) -> bool;
 }
 
+/// State that is passed to the HTTP service router and used by functions
+/// servicing HTTP requests.
 #[derive(Clone)]
 pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
+    pub bootstrap: bool,
 }
 
 impl AppState<Mem> {
@@ -162,7 +177,10 @@ impl AppState<Mem> {
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Mem> { storage })
+        Ok(AppState::<Mem> {
+            storage,
+            bootstrap: service_config.bootstrap,
+        })
     }
 }
 
@@ -180,7 +198,10 @@ impl AppState<Pg> {
         let storage = Pg::new(config).await?;
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Pg> { storage })
+        Ok(AppState::<Pg> {
+            storage,
+            bootstrap: service_config.bootstrap,
+        })
     }
 }
 
@@ -191,15 +212,23 @@ impl std::fmt::Debug for AppState<Pg> {
 }
 
 #[async_trait]
-impl StoreState for AppState<Pg> {
+impl ServiceState for AppState<Pg> {
     async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError> {
         Ok(&self.storage)
+    }
+
+    fn get_bootstrap(&self) -> bool {
+        self.bootstrap
     }
 }
 
 #[async_trait]
-impl StoreState for AppState<Mem> {
+impl ServiceState for AppState<Mem> {
     async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError> {
         Ok(&self.storage)
+    }
+
+    fn get_bootstrap(&self) -> bool {
+        self.bootstrap
     }
 }

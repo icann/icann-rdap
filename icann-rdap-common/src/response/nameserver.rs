@@ -4,8 +4,8 @@ use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    types::{to_option_status, Common, ObjectCommon},
-    RdapResponseError,
+    types::{to_option_status, Common, Link, ObjectCommon},
+    GetSelfLink, RdapResponseError, SelfLink, ToChild,
 };
 
 /// Represents an IP address set for nameservers.
@@ -114,6 +114,26 @@ impl Nameserver {
             unicode_name: None,
             ip_addresses,
         })
+    }
+}
+
+impl GetSelfLink for Nameserver {
+    fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
+    }
+}
+
+impl SelfLink for Nameserver {
+    fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+}
+
+impl ToChild for Nameserver {
+    fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
+        self
     }
 }
 

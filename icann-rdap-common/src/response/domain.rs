@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use super::{
     nameserver::Nameserver,
     network::Network,
-    types::{to_option_status, Common, Events, Links, ObjectCommon, PublicIds},
+    types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
+    GetSelfLink, SelfLink, ToChild,
 };
 
 /// Represents an RDAP variant name.
@@ -189,9 +190,31 @@ impl Domain {
     }
 }
 
+impl GetSelfLink for Domain {
+    fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
+    }
+}
+
+impl SelfLink for Domain {
+    fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+}
+
+impl ToChild for Domain {
+    fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
+        self
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+    use crate::response::{types::Link, SelfLink};
+
     use super::Domain;
 
     #[test]
@@ -489,5 +512,29 @@ mod tests {
         assert!(actual.object_common.port_43.is_some());
         assert!(actual.object_common.entities.is_some());
         assert!(actual.secure_dns.is_some());
+    }
+
+    #[test]
+    fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
+        // GIVEN
+        let mut domain = Domain::basic()
+            .ldh_name("foo.example")
+            .link(Link::builder().href("http://bar.example").build())
+            .build();
+
+        // WHEN
+        domain = domain.set_self_link(Link::builder().href("http://foo.example").build());
+
+        // THEN
+        assert_eq!(
+            domain
+                .object_common
+                .links
+                .expect("links are empty")
+                .iter()
+                .filter(|link| link.is_relation("self"))
+                .count(),
+            1
+        );
     }
 }

@@ -15,6 +15,8 @@ pub const STORAGE: &str = "RDAP_SRV_STORAGE";
 pub const DB_URL: &str = "RDAP_SRV_DB_URL";
 pub const DATA_DIR: &str = "RDAP_SRV_DATA_DIR";
 pub const AUTO_RELOAD: &str = "RDAP_SRV_AUTO_RELOAD";
+pub const BOOTSTRAP: &str = "RDAP_SRV_BOOTSTRAP";
+pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
 
 pub fn debug_config_vars() {
     let var_list = [
@@ -25,6 +27,8 @@ pub fn debug_config_vars() {
         DB_URL,
         DATA_DIR,
         AUTO_RELOAD,
+        BOOTSTRAP,
+        UPDATE_ON_BOOTSTRAP,
     ];
     envmnt::vars()
         .iter()
@@ -82,4 +86,28 @@ pub struct ServiceConfig {
     pub storage_type: StorageType,
     pub data_dir: String,
     pub auto_reload: bool,
+    pub bootstrap: bool,
+    pub update_on_bootstrap: bool,
+}
+
+#[buildstructor::buildstructor]
+impl ServiceConfig {
+    #[builder(entry = "non_server")]
+    pub fn new_non_server(
+        data_dir: String,
+        storage_type: Option<StorageType>,
+    ) -> Result<Self, RdapServerError> {
+        let storage_type = if let Some(storage_type) = storage_type {
+            storage_type
+        } else {
+            StorageType::new_from_env()?
+        };
+        Ok(Self {
+            storage_type,
+            data_dir,
+            auto_reload: false,
+            bootstrap: false,
+            update_on_bootstrap: false,
+        })
+    }
 }

@@ -26,6 +26,9 @@ pub struct ClientConfig {
 
     /// If set to true, invalid certificates will be accepted.
     pub accept_invalid_certificates: bool,
+
+    /// If true, HTTP redirects will be followed.
+    pub follow_redirects: bool,
 }
 
 impl Default for ClientConfig {
@@ -35,6 +38,7 @@ impl Default for ClientConfig {
             https_only: true,
             accept_invalid_host_names: false,
             accept_invalid_certificates: false,
+            follow_redirects: true,
         }
     }
 }
@@ -47,6 +51,7 @@ impl ClientConfig {
         https_only: Option<bool>,
         accept_invalid_host_names: Option<bool>,
         accept_invalid_certificates: Option<bool>,
+        follow_redirects: Option<bool>,
     ) -> Self {
         let default = ClientConfig::default();
         Self {
@@ -56,6 +61,7 @@ impl ClientConfig {
                 .unwrap_or(default.accept_invalid_host_names),
             accept_invalid_certificates: accept_invalid_certificates
                 .unwrap_or(default.accept_invalid_certificates),
+            follow_redirects: follow_redirects.unwrap_or(default.follow_redirects),
         }
     }
 }
@@ -64,6 +70,7 @@ impl ClientConfig {
 /// client holds its own connection pools, so in many
 /// uses cases creating only one client per process is
 /// necessary.
+// TODO create a wasm and non-wasm verion. wasm version should not take the config.
 #[allow(unused_variables)] // for config and wasm32
 pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
     let mut default_headers = header::HeaderMap::new();
@@ -77,11 +84,17 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
 
     #[cfg(not(target_arch = "wasm32"))]
     {
+        let redirects = if config.follow_redirects {
+            reqwest::redirect::Policy::default()
+        } else {
+            reqwest::redirect::Policy::none()
+        };
         client = client
             .user_agent(format!(
                 "icann_rdap client {VERSION} {}",
                 config.user_agent_suffix
             ))
+            .redirect(redirects)
             .https_only(config.https_only)
             .danger_accept_invalid_hostnames(config.accept_invalid_host_names)
             .danger_accept_invalid_certs(config.accept_invalid_certificates);

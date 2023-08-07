@@ -10,6 +10,8 @@ pub struct HttpData {
     pub expires: Option<String>,
     pub cache_control: Option<String>,
     pub received: DateTime<Utc>,
+    pub status_code: u16,
+    pub location: Option<String>,
 }
 
 #[buildstructor::buildstructor]
@@ -21,6 +23,8 @@ impl HttpData {
         host: String,
         expires: Option<String>,
         cache_control: Option<String>,
+        status_code: Option<u16>,
+        location: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -29,6 +33,8 @@ impl HttpData {
             expires,
             cache_control,
             received: Utc::now(),
+            status_code: status_code.unwrap_or(200),
+            location,
         }
     }
 

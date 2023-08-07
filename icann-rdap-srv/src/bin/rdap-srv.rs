@@ -2,7 +2,7 @@ use envmnt::{get_or, get_parse_or, get_u16};
 use icann_rdap_srv::{
     config::{
         data_dir, debug_config_vars, ListenConfig, ServiceConfig, StorageType, AUTO_RELOAD,
-        LISTEN_ADDR, LISTEN_PORT, LOG,
+        BOOTSTRAP, LISTEN_ADDR, LISTEN_PORT, LOG, UPDATE_ON_BOOTSTRAP,
     },
     error::RdapServerError,
     server::Listener,
@@ -25,6 +25,8 @@ async fn main() -> Result<(), RdapServerError> {
     let listen_port = get_u16(LISTEN_PORT, 3000);
     let storage_type = StorageType::new_from_env()?;
     let auto_reload: bool = get_parse_or(AUTO_RELOAD, true)?;
+    let bootstrap: bool = get_parse_or(BOOTSTRAP, false)?;
+    let update_on_bootstrap: bool = get_parse_or(UPDATE_ON_BOOTSTRAP, false)?;
 
     let listener = Listener::listen(
         &ListenConfig::builder()
@@ -38,6 +40,8 @@ async fn main() -> Result<(), RdapServerError> {
                 .storage_type(storage_type)
                 .data_dir(data_dir())
                 .auto_reload(auto_reload)
+                .bootstrap(bootstrap)
+                .update_on_bootstrap(update_on_bootstrap)
                 .build(),
         )
         .await?;

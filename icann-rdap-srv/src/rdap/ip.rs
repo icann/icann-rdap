@@ -7,21 +7,32 @@ use axum::{
 use cidr_utils::cidr::IpCidr;
 use tracing::debug;
 
-use crate::{error::RdapServerError, rdap::response::BAD_REQUEST, server::DynStoreState};
+use crate::{
+    error::RdapServerError,
+    rdap::{
+        response::{ResponseUtil, BAD_REQUEST},
+        ToBootStrap,
+    },
+    server::DynServiceState,
+};
 
 /// Gets a network object by the address path.
 #[axum_macros::debug_handler]
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn network_by_netid(
     Path(netid): Path<String>,
-    state: State<DynStoreState>,
+    state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
     if netid.contains('/') {
         debug!("getting network by cidr {netid}");
         if let Ok(cidr) = IpCidr::from_str(&netid) {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
-            Ok(network.response())
+            if state.get_bootstrap() {
+                Ok(network.to_ip_bootstrap(&netid).response())
+            } else {
+                Ok(network.response())
+            }
         } else {
             Ok(BAD_REQUEST.response())
         }
@@ -33,7 +44,11 @@ pub(crate) async fn network_by_netid(
         } else {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_ipaddr(&netid).await?;
-            Ok(network.response())
+            if state.get_bootstrap() {
+                Ok(network.to_ip_bootstrap(&netid).response())
+            } else {
+                Ok(network.response())
+            }
         }
     }
 }

@@ -13,6 +13,14 @@ impl From<&str> for Extension {
     }
 }
 
+impl std::ops::Deref for Extension {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// The RDAP conformance array.
 pub type RdapConformance = Vec<Extension>;
 
@@ -52,6 +60,13 @@ pub struct Link {
     pub media_type: Option<String>,
 }
 
+impl Link {
+    pub fn is_relation(&self, rel: &str) -> bool {
+        let Some(link_rel) = &self.rel else {return false};
+        link_rel == rel
+    }
+}
+
 /// An array of notices.
 pub type Notices = Vec<Notice>;
 
@@ -59,12 +74,28 @@ pub type Notices = Vec<Notice>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Notice(pub NoticeOrRemark);
 
+impl std::ops::Deref for Notice {
+    type Target = NoticeOrRemark;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// An array of remarks.
 pub type Remarks = Vec<Remark>;
 
 /// Represents an RDAP Remark.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Remark(pub NoticeOrRemark);
+
+impl std::ops::Deref for Remark {
+    type Target = NoticeOrRemark;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
@@ -102,9 +133,11 @@ pub struct Event {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct StatusValue(pub String);
 
-impl From<&str> for StatusValue {
-    fn from(value: &str) -> Self {
-        StatusValue(value.to_string())
+impl std::ops::Deref for StatusValue {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -113,12 +146,7 @@ pub type Status = Vec<StatusValue>;
 
 pub fn to_option_status(values: Vec<String>) -> Option<Status> {
     if !values.is_empty() {
-        Some(
-            values
-                .into_iter()
-                .map(|s| StatusValue::from(s.as_str()))
-                .collect::<Status>(),
-        )
+        Some(values.into_iter().map(StatusValue).collect::<Status>())
     } else {
         None
     }
@@ -148,6 +176,28 @@ pub struct Common {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notices: Option<Notices>,
+}
+
+#[buildstructor::buildstructor]
+impl Common {
+    #[builder(entry = "level0")]
+    pub fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
+        let notices = (!notices.is_empty()).then_some(notices);
+        Common::new_level0_with_options(extensions, notices)
+    }
+
+    #[builder(entry = "level0_with_options")]
+    pub fn new_level0_with_options(
+        mut extensions: Vec<Extension>,
+        notices: Option<Vec<Notice>>,
+    ) -> Self {
+        let mut standard_extensions = vec![Extension("rdap_level_0".to_string())];
+        extensions.append(&mut standard_extensions);
+        Self {
+            rdap_conformance: Some(extensions),
+            notices,
+        }
+    }
 }
 
 /// Holds those types that are common in all object classes.
@@ -290,6 +340,32 @@ impl ObjectCommon {
             entities,
         }
     }
+
+    /// This will remove all other self links and place the provided link
+    /// into the Links. This method will also set the "rel" attribute
+    /// to "self" on the provided link.
+    pub fn set_self_link(mut self, mut link: Link) -> Self {
+        link.rel = Some("self".to_string());
+        if let Some(links) = self.links {
+            let mut new_links = links
+                .into_iter()
+                .filter(|link| !link.is_relation("self"))
+                .collect::<Vec<Link>>();
+            new_links.push(link);
+            self.links = Some(new_links);
+        } else {
+            self.links = Some(vec![link]);
+        }
+        self
+    }
+
+    pub fn get_self_link(&self) -> Option<&Link> {
+        if let Some(links) = &self.links {
+            links.iter().find(|link| link.is_relation("self"))
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -299,7 +375,7 @@ mod tests {
         Extension, Notice, Notices, RdapConformance, Remark, Remarks, Status, StatusValue,
     };
 
-    use super::{Event, Links, NoticeOrRemark, PublicId};
+    use super::{Event, Link, Links, NoticeOrRemark, ObjectCommon, PublicId};
 
     #[test]
     fn GIVEN_rdap_conformance_WHEN_serialize_THEN_array_of_strings() {
@@ -496,5 +572,81 @@ mod tests {
 
         // THEN
         let _actual = actual.unwrap();
+    }
+
+    #[test]
+    fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
+        // GIVEN
+        let mut oc = ObjectCommon::domain()
+            .links(vec![Link::builder().href("http://bar.example").build()])
+            .build();
+
+        // WHEN
+        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+
+        // THEN
+        assert_eq!(
+            oc.links
+                .expect("links are empty")
+                .iter()
+                .filter(|link| link.is_relation("self"))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn GIVEN_no_links_WHEN_set_self_link_THEN_link_is_only_one() {
+        // GIVEN
+        let mut oc = ObjectCommon::domain().build();
+
+        // WHEN
+        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+
+        // THEN
+        assert_eq!(
+            oc.links
+                .expect("links are empty")
+                .iter()
+                .filter(|link| link.is_relation("self"))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn GIVEN_one_self_link_WHEN_set_self_link_THEN_link_is_only_one() {
+        // GIVEN
+        let mut oc = ObjectCommon::domain()
+            .links(vec![Link::builder()
+                .href("http://bar.example")
+                .rel("self")
+                .build()])
+            .build();
+
+        // WHEN
+        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+
+        // THEN
+        // new link is in
+        assert_eq!(
+            oc.links
+                .as_ref()
+                .expect("links are empty")
+                .iter()
+                .filter(|link| link.is_relation("self") && link.href == "http://foo.example")
+                .count(),
+            1
+        );
+        // all self links count == 1
+        assert_eq!(
+            oc.links
+                .as_ref()
+                .expect("links are empty")
+                .iter()
+                .filter(|link| link.is_relation("self"))
+                .count(),
+            1
+        );
     }
 }

@@ -1,7 +1,10 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::types::{to_option_status, Common, ObjectCommon};
+use super::{
+    types::{to_option_status, Common, Link, ObjectCommon},
+    GetSelfLink, SelfLink, ToChild,
+};
 
 /// Represents an RDAP autnum object response.
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
@@ -77,6 +80,26 @@ impl Autnum {
             autnum_type: None,
             country: None,
         }
+    }
+}
+
+impl GetSelfLink for Autnum {
+    fn get_self_link(&self) -> Option<&Link> {
+        self.object_common.get_self_link()
+    }
+}
+
+impl SelfLink for Autnum {
+    fn set_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.set_self_link(link);
+        self
+    }
+}
+
+impl ToChild for Autnum {
+    fn to_child(mut self) -> Self {
+        self.common = Common::builder().build();
+        self
     }
 }
 

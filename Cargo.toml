@@ -83,7 +83,7 @@ ipnet = { version = "2.7", features = ["json"] }
 is-terminal = "0.4"
 
 # embedded pager
-minus = {version = "5.3", features = ["dynamic_output", "search"] }
+minus = {version = "5.4", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "1.2"

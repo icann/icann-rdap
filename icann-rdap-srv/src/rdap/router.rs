@@ -1,11 +1,15 @@
 use axum::{response::IntoResponse, routing::get, Router};
 
 use super::{
-    autnum::autnum_by_num, domain::domain_by_name, entity::entity_by_handle, ip::network_by_netid,
-    nameserver::nameserver_by_name, response::NOT_IMPLEMENTED,
+    autnum::autnum_by_num,
+    domain::domain_by_name,
+    entity::entity_by_handle,
+    ip::network_by_netid,
+    nameserver::nameserver_by_name,
+    response::{ResponseUtil, NOT_IMPLEMENTED},
 };
 
-pub(crate) fn rdap_router() -> Router<crate::server::DynStoreState> {
+pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
     Router::new()
         .route("/domain/:domain", get(domain_by_name))
         .route("/ip/*netid", get(network_by_netid))
