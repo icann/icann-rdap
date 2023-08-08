@@ -16,6 +16,7 @@ use icann_rdap_common::response::{
 use ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use strum_macros::Display;
 use tokio::time::sleep;
 use tracing::{debug, info, warn};
 
@@ -28,7 +29,7 @@ use crate::{
 pub const UPDATE: &str = "update";
 pub const RELOAD: &str = "reload";
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Display)]
 #[serde(untagged)]
 pub enum Template {
     Domain {
