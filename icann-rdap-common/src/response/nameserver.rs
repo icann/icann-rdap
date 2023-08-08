@@ -89,6 +89,7 @@ impl Nameserver {
         statuses: Vec<String>,
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
+        notices: Vec<crate::response::types::Notice>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
             Some(IpAddresses::basic().addresses(addresses).build()?)
@@ -99,8 +100,9 @@ impl Nameserver {
         let remarks = (!remarks.is_empty()).then_some(remarks);
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
+        let notices = (!notices.is_empty()).then_some(notices);
         Ok(Self {
-            common: Common::builder().build(),
+            common: Common::builder().and_notices(notices).build(),
             object_common: ObjectCommon::nameserver()
                 .and_handle(handle)
                 .and_remarks(remarks)

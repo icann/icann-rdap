@@ -2,18 +2,27 @@ use std::{fs, path::PathBuf};
 
 use clap::Parser;
 use icann_rdap_common::{
-    contact::{Contact, Email, PostalAddress},
+    contact::{Contact, Email, Phone, PostalAddress},
     media_types::RDAP_MEDIA_TYPE,
-    response::{domain::Domain, entity::Entity, nameserver::Nameserver, types::Link},
+    response::{
+        autnum::Autnum,
+        domain::Domain,
+        entity::Entity,
+        nameserver::Nameserver,
+        network::Network,
+        types::{Link, Notice, NoticeOrRemark, Remark},
+    },
     VERSION,
 };
 use icann_rdap_srv::{
     config::{debug_config_vars, LOG},
     error::RdapServerError,
     storage::data::{
-        DomainId, DomainOrError, EntityId, EntityOrError, NameserverId, NameserverOrError, Template,
+        AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError, NameserverId,
+        NameserverOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
     },
 };
+use ipnet::{Ipv4Subnets, Ipv6Subnets};
 use pct_str::{PctString, URIReserved};
 use tracing::info;
 use tracing_subscriber::{
@@ -34,15 +43,27 @@ struct Cli {
 
     /// Number of test entities to create.
     #[arg(long)]
-    num_entities: Option<u32>,
+    entities: Option<u32>,
 
     /// Number of test nameservers to create.
     #[arg(long)]
-    num_nameservers: Option<u32>,
+    nameservers: Option<u32>,
 
     /// Number of test domains to create.
     #[arg(long)]
-    num_domains: Option<u32>,
+    domains: Option<u32>,
+
+    /// Number of test autnums to create.
+    #[arg(long)]
+    autnums: Option<u32>,
+
+    /// Number of test ipv4 networks to create.
+    #[arg(long)]
+    v4s: Option<u32>,
+
+    /// Number of test ipv6 networks to create.
+    #[arg(long)]
+    v6s: Option<u32>,
 }
 
 fn main() -> Result<(), RdapServerError> {
@@ -57,14 +78,23 @@ fn main() -> Result<(), RdapServerError> {
 
     let data_dir = cli.data_dir;
     let base_url = cli.base_url;
-    if let Some(num_entities) = cli.num_entities {
-        make_entity_template(&data_dir, &base_url, num_entities)?
+    if let Some(entities) = cli.entities {
+        make_entity_template(&data_dir, &base_url, entities)?
     }
-    if let Some(num_nameservers) = cli.num_nameservers {
-        make_nameserver_template(&data_dir, &base_url, num_nameservers)?
+    if let Some(nameservers) = cli.nameservers {
+        make_nameserver_template(&data_dir, &base_url, nameservers)?
     }
-    if let Some(num_domains) = cli.num_domains {
-        make_domain_template(&data_dir, &base_url, num_domains)?
+    if let Some(domains) = cli.domains {
+        make_domain_template(&data_dir, &base_url, domains)?
+    }
+    if let Some(autnums) = cli.autnums {
+        make_autnum_template(&data_dir, &base_url, autnums)?
+    }
+    if let Some(v4s) = cli.v4s {
+        make_netv4_template(&data_dir, &base_url, v4s)?
+    }
+    if let Some(v6s) = cli.v6s {
+        make_netv6_template(&data_dir, &base_url, v6s)?
     }
     Ok(())
 }
@@ -87,7 +117,7 @@ fn make_entity_template(
         entity: EntityOrError::EntityObject(entity),
         ids,
     };
-    save_template(data_dir, base_url, template)
+    save_template(data_dir, base_url, template, None)
 }
 
 fn make_nameserver_template(
@@ -108,7 +138,7 @@ fn make_nameserver_template(
         nameserver: NameserverOrError::NameserverObject(nameserver),
         ids,
     };
-    save_template(data_dir, base_url, template)
+    save_template(data_dir, base_url, template, None)
 }
 
 fn make_domain_template(
@@ -116,7 +146,7 @@ fn make_domain_template(
     base_url: &str,
     num_domains: u32,
 ) -> Result<(), RdapServerError> {
-    let mut entity = make_test_entity(base_url, Some("nameserver"));
+    let mut entity = make_test_entity(base_url, Some("domain"));
     entity.roles = Some(vec!["registrant".to_string()]);
     let nameserver = make_test_nameserver(base_url, None)?;
     let domain = Domain::basic()
@@ -131,6 +161,20 @@ fn make_domain_template(
                 .build(),
         )
         .status("active")
+        .remark(Remark(
+            NoticeOrRemark::builder()
+                .title("Test Domain")
+                .description(vec![
+                    "This is a test domain. Don't get so hung up over it.".to_string()
+                ])
+                .build(),
+        ))
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .title("Test Server")
+                .description(vec!["This is a server contains test data.".to_string()])
+                .build(),
+        ))
         .build();
     let ids: Vec<DomainId> = (0..num_domains)
         .into_iter()
@@ -144,14 +188,121 @@ fn make_domain_template(
         domain: DomainOrError::DomainObject(domain),
         ids,
     };
-    save_template(data_dir, base_url, template)
+    save_template(data_dir, base_url, template, None)
+}
+
+fn make_autnum_template(
+    data_dir: &str,
+    base_url: &str,
+    num_autnums: u32,
+) -> Result<(), RdapServerError> {
+    let mut entity = make_test_entity(base_url, Some("autnum"));
+    entity.roles = Some(vec!["registrant".to_string()]);
+    let autnum = Autnum::basic()
+        .autnum_range(1..1)
+        .entity(entity)
+        .link(
+            Link::builder()
+                .rel("self")
+                .href(format!("https://{base_url}/autnum/test_autnum",))
+                .media_type(RDAP_MEDIA_TYPE)
+                .build(),
+        )
+        .status("active")
+        .remark(Remark(
+            NoticeOrRemark::builder()
+                .title("Test Autnum")
+                .description(vec![
+                    "This is a test autnum. Don't get so hung up over it.".to_string()
+                ])
+                .build(),
+        ))
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .title("Test Server")
+                .description(vec!["This is a server contains test data.".to_string()])
+                .build(),
+        ))
+        .build();
+    let ids: Vec<AutnumId> = (0..num_autnums)
+        .into_iter()
+        .map(|x| AutnumId::builder().start_autnum(x).end_autnum(x).build())
+        .collect();
+    let template = Template::Autnum {
+        autnum: AutnumOrError::AutnumObject(autnum),
+        ids,
+    };
+    save_template(data_dir, base_url, template, None)
+}
+
+fn make_netv4_template(
+    data_dir: &str,
+    base_url: &str,
+    num_netv4: u32,
+) -> Result<(), RdapServerError> {
+    let network = make_test_network(base_url)?;
+    let ids: Vec<NetworkId> = Ipv4Subnets::new("1.0.0.0".parse()?, "254.255.255.255".parse()?, 26)
+        .into_iter()
+        .take(num_netv4.try_into().unwrap())
+        .map(|x| {
+            NetworkId::builder()
+                .network_id(NetworkIdType::Cidr(ipnet::IpNet::V4(x)))
+                .build()
+        })
+        .collect();
+    let template = Template::Network {
+        network: NetworkOrError::NetworkObject(network),
+        ids,
+    };
+    save_template(data_dir, base_url, template, Some("v4"))
+}
+
+fn make_netv6_template(
+    data_dir: &str,
+    base_url: &str,
+    num_netv6: u32,
+) -> Result<(), RdapServerError> {
+    let network = make_test_network(base_url)?;
+    let ids: Vec<NetworkId> = Ipv6Subnets::new(
+        "2000::".parse()?,
+        "2000:ef:ffff:ffff:ffff:ffff:ffff:ffff".parse()?,
+        64,
+    )
+    .into_iter()
+    .take(num_netv6.try_into().unwrap())
+    .map(|x| {
+        NetworkId::builder()
+            .network_id(NetworkIdType::Cidr(ipnet::IpNet::V6(x)))
+            .build()
+    })
+    .collect();
+    let template = Template::Network {
+        network: NetworkOrError::NetworkObject(network),
+        ids,
+    };
+    save_template(data_dir, base_url, template, Some("v6"))
 }
 
 fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
+    let notices = if child_of.is_none() {
+        vec![Notice(
+            NoticeOrRemark::builder()
+                .title("Test Server")
+                .description(vec!["This is a server contains test data.".to_string()])
+                .build(),
+        )]
+    } else {
+        vec![]
+    };
     let contact = Contact::builder()
         .kind("individual")
         .full_name(format!("Alfred E. {}", child_of.unwrap_or("Nueman")))
         .emails(vec![Email::builder().email("alfred@example.net").build()])
+        .phones(vec![Phone::builder()
+            .phone("+12025555555")
+            .features(vec!["voice".to_string()])
+            .contexts(vec!["work".to_string()])
+            .build()])
         .postal_addresses(vec![PostalAddress::builder()
             .street_parts(vec![
                 "123 Mocking Bird Lane".to_string(),
@@ -176,6 +327,15 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
         )
         .status("active")
         .contact(contact)
+        .remark(Remark(
+            NoticeOrRemark::builder()
+                .title("Test Entity")
+                .description(vec![
+                    "This is a test entity. Don't get so hung up over it.".to_string()
+                ])
+                .build(),
+        ))
+        .notices(notices)
         .build()
 }
 
@@ -183,6 +343,16 @@ fn make_test_nameserver(
     base_url: &str,
     child_of: Option<&str>,
 ) -> Result<Nameserver, RdapServerError> {
+    let notices = if child_of.is_none() {
+        vec![Notice(
+            NoticeOrRemark::builder()
+                .title("Test Server")
+                .description(vec!["This is a server contains test data.".to_string()])
+                .build(),
+        )]
+    } else {
+        vec![]
+    };
     let mut entity = make_test_entity(base_url, Some("nameserver"));
     entity.roles = Some(vec!["tech".to_string()]);
     Ok(Nameserver::basic()
@@ -198,20 +368,67 @@ fn make_test_nameserver(
                 .build(),
         )
         .entity(entity)
+        .remark(Remark(
+            NoticeOrRemark::builder()
+                .title("Test Nameserver")
+                .description(vec![
+                    "This is a test nameserver. Don't get so hung up over it.".to_string(),
+                ])
+                .build(),
+        ))
+        .notices(notices)
         .build()?)
+}
+
+fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
+    let mut entity = make_test_entity(base_url, Some("network"));
+    entity.roles = Some(vec!["registrant".to_string()]);
+    let network = Network::basic()
+        .cidr("0.0.0.0/0")
+        .entity(entity)
+        .link(
+            Link::builder()
+                .rel("self")
+                .href(format!("https://{base_url}/ip/test_network",))
+                .media_type(RDAP_MEDIA_TYPE)
+                .build(),
+        )
+        .status("active")
+        .remark(Remark(
+            NoticeOrRemark::builder()
+                .title("Test Network")
+                .description(vec![
+                    "This is a test network. Don't get so hung up over it.".to_string(),
+                ])
+                .build(),
+        ))
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .title("Test Server")
+                .description(vec!["This is a server contains test data.".to_string()])
+                .build(),
+        ))
+        .build()?;
+    Ok(network)
 }
 
 fn save_template(
     data_dir: &str,
     base_url: &str,
     template: Template,
+    type_suffix: Option<&str>,
 ) -> Result<(), RdapServerError> {
     let file_name = base_url
         .trim_start_matches("https://")
         .trim_start_matches("http://")
         .replace(['.', '/', ':'], "_");
+    let type_suffix = if let Some(type_suffix) = type_suffix {
+        format!("_{type_suffix}")
+    } else {
+        "".to_string()
+    };
     let file_name = format!(
-        "{}_test_data_{}.template",
+        "{}_test_data_{}{type_suffix}.template",
         PctString::encode(file_name.chars(), URIReserved),
         template
     );
