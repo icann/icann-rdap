@@ -109,7 +109,7 @@ fn make_entity_template(
         .into_iter()
         .map(|x| {
             EntityId::builder()
-                .handle(format!("test_entity_{x}"))
+                .handle(format!("test-entity-{x}"))
                 .build()
         })
         .collect();
@@ -130,7 +130,7 @@ fn make_nameserver_template(
         .into_iter()
         .map(|x| {
             NameserverId::builder()
-                .ldh_name(format!("ns.test_nameserver_{x}.example"))
+                .ldh_name(format!("ns.test-nameserver-{x}.example"))
                 .build()
         })
         .collect();
@@ -156,7 +156,7 @@ fn make_domain_template(
         .link(
             Link::builder()
                 .rel("self")
-                .href(format!("https://{base_url}/domain/test_domain",))
+                .href(format!("https://{base_url}/domain/test-domain",))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )
@@ -180,7 +180,7 @@ fn make_domain_template(
         .into_iter()
         .map(|x| {
             DomainId::builder()
-                .ldh_name(format!("test_domain_{x}.example"))
+                .ldh_name(format!("test-domain-{x}.example"))
                 .build()
         })
         .collect();
@@ -204,7 +204,7 @@ fn make_autnum_template(
         .link(
             Link::builder()
                 .rel("self")
-                .href(format!("https://{base_url}/autnum/test_autnum",))
+                .href(format!("https://{base_url}/autnum/test-autnum",))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )

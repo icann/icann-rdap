@@ -1,0 +1,65 @@
+# This a YAML file to use with Drill (https://github.com/fcsonline/drill),
+# an HTTP load testing tool.  When used with rdap-srv-test-data, Drill
+# can be used to load test rdap-srv.
+
+---
+base: 'http://localhost:3000/rdap'
+iterations: 1000
+concurrency: 8
+
+plan:
+  - name: "Domain"
+    request:
+      url: /domain/test-domain-{{ item }}.example
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 5000
+
+  - name: "Entity"
+    request:
+      url: /entity/test-entity-{{ item }}
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 5000
+
+  - name: "Nameserver"
+    request:
+      url: /nameserver/ns.test-nameserver-{{ item }}.example
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 5000
+
+  - name: "Autnum"
+    request:
+      url: /autnum/{{ item }}
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 5000
+
+  - name: "IpV4 Octet 4"
+    request:
+      url: /ip/1.0.0.{{ item }}
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 254
+
+  - name: "IpV4 Octet 3"
+    request:
+      url: /ip/1.0.{{ item }}.0
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 254
+
+  - name: "IpV6"
+    request:
+      url: "/ip/2000:0:0:0::{{ item }}"
+    with_items_range:
+      start: 1
+      step: 1
+      stop: 5000
