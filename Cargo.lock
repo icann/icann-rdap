@@ -1283,7 +1283,6 @@ dependencies = [
  "is-terminal",
  "lazy_static",
  "pct-str",
- "pinboard",
  "prefix-trie",
  "regex",
  "reqwest",
@@ -1786,15 +1785,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "pinboard"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd5f86cbd9a742b934e6d0917ab0005988c480807913b05f4357ebf4e2a739e"
-dependencies = [
- "crossbeam-epoch",
-]
 
 [[package]]
 name = "pkg-config"

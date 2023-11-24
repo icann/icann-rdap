@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::RdapResponse;
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
-use pinboard::NonEmptyPinboard;
 use prefix_trie::PrefixMap;
+use tokio::sync::RwLock;
 
 use crate::{
     error::RdapServerError,
@@ -17,24 +17,24 @@ use super::{config::MemConfig, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
-    pub(crate) autnums: Arc<NonEmptyPinboard<RangeMap<u32, Arc<RdapResponse>>>>,
-    pub(crate) ip4: Arc<NonEmptyPinboard<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
-    pub(crate) ip6: Arc<NonEmptyPinboard<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
-    pub(crate) domains: Arc<NonEmptyPinboard<HashMap<String, Arc<RdapResponse>>>>,
-    pub(crate) nameservers: Arc<NonEmptyPinboard<HashMap<String, Arc<RdapResponse>>>>,
-    pub(crate) entities: Arc<NonEmptyPinboard<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) autnums: Arc<RwLock<RangeMap<u32, Arc<RdapResponse>>>>,
+    pub(crate) ip4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
+    pub(crate) ip6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
+    pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
 }
 
 impl Mem {
     pub fn new(config: MemConfig) -> Self {
         Self {
-            autnums: Arc::new(NonEmptyPinboard::new(RangeMap::new())),
-            ip4: Arc::new(NonEmptyPinboard::new(PrefixMap::new())),
-            ip6: Arc::new(NonEmptyPinboard::new(PrefixMap::new())),
-            domains: Arc::new(NonEmptyPinboard::new(HashMap::new())),
-            nameservers: Arc::new(NonEmptyPinboard::new(HashMap::new())),
-            entities: Arc::new(NonEmptyPinboard::new(HashMap::new())),
+            autnums: Arc::new(RwLock::new(RangeMap::new())),
+            ip4: Arc::new(RwLock::new(PrefixMap::new())),
+            ip6: Arc::new(RwLock::new(PrefixMap::new())),
+            domains: Arc::new(RwLock::new(HashMap::new())),
+            nameservers: Arc::new(RwLock::new(HashMap::new())),
+            entities: Arc::new(RwLock::new(HashMap::new())),
             config,
         }
     }
@@ -53,7 +53,7 @@ impl StoreOps for Mem {
     }
 
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
-        Ok(Box::new(MemTx::new(self)))
+        Ok(Box::new(MemTx::new(self).await))
     }
 
     async fn new_truncate_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
@@ -61,7 +61,7 @@ impl StoreOps for Mem {
     }
 
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {
-        let domains = self.domains.get_ref();
+        let domains = self.domains.read().await;
         let result = domains.get(ldh);
         match result {
             Some(domain) => Ok(RdapResponse::clone(domain)),
@@ -70,7 +70,7 @@ impl StoreOps for Mem {
     }
 
     async fn get_entity_by_handle(&self, handle: &str) -> Result<RdapResponse, RdapServerError> {
-        let entities = self.entities.get_ref();
+        let entities = self.entities.read().await;
         let result = entities.get(handle);
         match result {
             Some(entity) => Ok(RdapResponse::clone(entity)),
@@ -78,7 +78,7 @@ impl StoreOps for Mem {
         }
     }
     async fn get_nameserver_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {
-        let nameservers = self.nameservers.get_ref();
+        let nameservers = self.nameservers.read().await;
         let result = nameservers.get(ldh);
         match result {
             Some(nameserver) => Ok(RdapResponse::clone(nameserver)),
@@ -87,7 +87,7 @@ impl StoreOps for Mem {
     }
 
     async fn get_autnum_by_num(&self, num: u32) -> Result<RdapResponse, RdapServerError> {
-        let autnums = self.autnums.get_ref();
+        let autnums = self.autnums.read().await;
         let result = autnums.get(num);
         match result {
             Some(autnum) => Ok(RdapResponse::clone(autnum)),
@@ -100,7 +100,7 @@ impl StoreOps for Mem {
         match addr {
             IpAddr::V4(v4) => {
                 let slash32 = Ipv4Net::new(v4, 32)?;
-                let ip4s = self.ip4.get_ref();
+                let ip4s = self.ip4.read().await;
                 let result = ip4s.get_lpm(&slash32);
                 match result {
                     Some(network) => Ok(RdapResponse::clone(network.1)),
@@ -109,7 +109,7 @@ impl StoreOps for Mem {
             }
             IpAddr::V6(v6) => {
                 let slash128 = Ipv6Net::new(v6, 128)?;
-                let ip6s = self.ip6.get_ref();
+                let ip6s = self.ip6.read().await;
                 let result = ip6s.get_lpm(&slash128);
                 match result {
                     Some(network) => Ok(RdapResponse::clone(network.1)),
@@ -123,7 +123,7 @@ impl StoreOps for Mem {
         let net = IpNet::from_str(cidr)?;
         match net {
             IpNet::V4(ipv4net) => {
-                let ip4s = self.ip4.get_ref();
+                let ip4s = self.ip4.read().await;
                 let result = ip4s.get_lpm(&ipv4net);
                 match result {
                     Some(network) => Ok(RdapResponse::clone(network.1)),
@@ -131,7 +131,7 @@ impl StoreOps for Mem {
                 }
             }
             IpNet::V6(ipv6net) => {
-                let ip6s = self.ip6.get_ref();
+                let ip6s = self.ip6.read().await;
                 let result = ip6s.get_lpm(&ipv6net);
                 match result {
                     Some(network) => Ok(RdapResponse::clone(network.1)),

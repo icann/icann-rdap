@@ -31,7 +31,6 @@ http.workspace = true
 hyper.workspace = true
 lazy_static.workspace = true
 pct-str.workspace = true
-pinboard.workspace = true
 prefix-trie.workspace = true
 regex.workspace = true
 reqwest.workspace = true
