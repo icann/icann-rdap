@@ -19,7 +19,6 @@ use crate::{
 
 use super::ops::Mem;
 
-// TODO see if #[repr(align(64))] impacts performance
 pub struct MemTx {
     mem: Mem,
     autnums: RangeMap<u32, Arc<RdapResponse>>,
@@ -31,15 +30,15 @@ pub struct MemTx {
 }
 
 impl MemTx {
-    pub fn new(mem: &Mem) -> Self {
+    pub async fn new(mem: &Mem) -> Self {
         Self {
             mem: mem.clone(),
-            autnums: Arc::clone(&mem.autnums).get_ref().clone(),
-            ip4: Arc::clone(&mem.ip4).get_ref().clone(),
-            ip6: Arc::clone(&mem.ip6).get_ref().clone(),
-            domains: Arc::clone(&mem.domains).get_ref().clone(),
-            nameservers: Arc::clone(&mem.nameservers).get_ref().clone(),
-            entities: Arc::clone(&mem.entities).get_ref().clone(),
+            autnums: Arc::clone(&mem.autnums).read_owned().await.clone(),
+            ip4: Arc::clone(&mem.ip4).read_owned().await.clone(),
+            ip6: Arc::clone(&mem.ip6).read_owned().await.clone(),
+            domains: Arc::clone(&mem.domains).read_owned().await.clone(),
+            nameservers: Arc::clone(&mem.nameservers).read_owned().await.clone(),
+            entities: Arc::clone(&mem.entities).read_owned().await.clone(),
         }
     }
 
@@ -234,13 +233,31 @@ impl TxHandle for MemTx {
         Ok(())
     }
 
-    async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
-        self.mem.autnums.set(self.autnums);
-        self.mem.ip4.set(self.ip4);
-        self.mem.ip6.set(self.ip6);
-        self.mem.domains.set(self.domains);
-        self.mem.nameservers.set(self.nameservers);
-        self.mem.entities.set(self.entities);
+    async fn commit(mut self: Box<Self>) -> Result<(), RdapServerError> {
+        // autnums
+        let mut autnum_g = self.mem.autnums.write().await;
+        std::mem::swap(&mut self.autnums, &mut autnum_g);
+
+        // ip4
+        let mut ip4_g = self.mem.ip4.write().await;
+        std::mem::swap(&mut self.ip4, &mut ip4_g);
+
+        // ip6
+        let mut ip6_g = self.mem.ip6.write().await;
+        std::mem::swap(&mut self.ip6, &mut ip6_g);
+
+        // domains
+        let mut domains_g = self.mem.domains.write().await;
+        std::mem::swap(&mut self.domains, &mut domains_g);
+
+        // nameservers
+        let mut nameservers_g = self.mem.nameservers.write().await;
+        std::mem::swap(&mut self.nameservers, &mut nameservers_g);
+
+        // entities
+        let mut entities_g = self.mem.entities.write().await;
+        std::mem::swap(&mut self.entities, &mut entities_g);
+
         Ok(())
     }
 

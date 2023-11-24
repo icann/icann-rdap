@@ -88,9 +88,6 @@ minus = {version = "5.4", features = ["dynamic_output", "search"] }
 # percent encoding
 pct-str = "1.2"
 
-# eventually consistent shared data
-pinboard = "2.2.0"
-
 # ip address trie
 prefix-trie = "0.2.4"
 
