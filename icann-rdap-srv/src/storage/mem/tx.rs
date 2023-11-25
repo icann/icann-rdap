@@ -3,8 +3,8 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
-    RdapResponse,
+    autnum::Autnum, domain::Domain, entity::Entity, help::Help, nameserver::Nameserver,
+    network::Network, RdapResponse,
 };
 use ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
@@ -27,6 +27,7 @@ pub struct MemTx {
     domains: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
     entities: HashMap<String, Arc<RdapResponse>>,
+    srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
 impl MemTx {
@@ -39,6 +40,7 @@ impl MemTx {
             domains: Arc::clone(&mem.domains).read_owned().await.clone(),
             nameservers: Arc::clone(&mem.nameservers).read_owned().await.clone(),
             entities: Arc::clone(&mem.entities).read_owned().await.clone(),
+            srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
 
@@ -51,6 +53,7 @@ impl MemTx {
             domains: HashMap::new(),
             nameservers: HashMap::new(),
             entities: HashMap::new(),
+            srvhelps: HashMap::new(),
         }
     }
 }
@@ -233,6 +236,17 @@ impl TxHandle for MemTx {
         Ok(())
     }
 
+    async fn add_srv_help(
+        &mut self,
+        help: &Help,
+        host: Option<&str>,
+    ) -> Result<(), RdapServerError> {
+        let host = host.unwrap_or("..default");
+        self.srvhelps
+            .insert(host.to_string(), Arc::new(RdapResponse::Help(help.clone())));
+        Ok(())
+    }
+
     async fn commit(mut self: Box<Self>) -> Result<(), RdapServerError> {
         // autnums
         let mut autnum_g = self.mem.autnums.write().await;
@@ -257,6 +271,10 @@ impl TxHandle for MemTx {
         // entities
         let mut entities_g = self.mem.entities.write().await;
         std::mem::swap(&mut self.entities, &mut entities_g);
+
+        //srvhelps
+        let mut srvhelps_g = self.mem.srvhelps.write().await;
+        std::mem::swap(&mut self.srvhelps, &mut srvhelps_g);
 
         Ok(())
     }

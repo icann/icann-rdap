@@ -62,4 +62,7 @@ impl StoreOps for Pg {
     async fn get_network_by_cidr(&self, _cidr: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn get_srv_help(&self, _host: Option<&str>) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
 }

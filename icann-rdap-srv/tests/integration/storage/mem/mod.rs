@@ -4,9 +4,10 @@ use icann_rdap_common::response::{
     autnum::Autnum,
     domain::Domain,
     entity::Entity,
+    help::Help,
     nameserver::Nameserver,
     network::Network,
-    types::{Common, ObjectCommon},
+    types::{Common, Notice, NoticeOrRemark, ObjectCommon},
     RdapResponse,
 };
 use icann_rdap_srv::storage::{mem::ops::Mem, StoreOps};
@@ -463,4 +464,89 @@ async fn GIVEN_no_network_in_mem_WHEN_lookup_network_by_cidr_THEN_404_returned()
     // THEN
     let RdapResponse::ErrorResponse(error) = actual else { panic!() };
     assert_eq!(error.error_code, 404)
+}
+
+#[tokio::test]
+async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_default_help() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_srv_help(
+        &Help::basic()
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .description_entry("foo".to_string())
+                    .build(),
+            ))
+            .build()
+            .expect("building help"),
+        None,
+    )
+    .await
+    .expect("adding srv help");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem.get_srv_help(None).await.expect("getting srv helf");
+
+    // THEN
+    let RdapResponse::Help(srvhelp) = actual else {panic!()};
+    let notice = srvhelp
+        .common
+        .notices
+        .expect("no notices in srvhelp")
+        .first()
+        .expect("notices empty")
+        .to_owned();
+    assert_eq!(
+        notice
+            .description
+            .first()
+            .expect("no description in notice"),
+        "foo"
+    );
+}
+
+#[tokio::test]
+async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_srv_help(
+        &Help::basic()
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .description_entry("bar".to_string())
+                    .build(),
+            ))
+            .build()
+            .expect("building help"),
+        Some("bar.example.com"),
+    )
+    .await
+    .expect("adding srv help");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .get_srv_help(Some("bar.example.com"))
+        .await
+        .expect("getting srv helf");
+
+    // THEN
+    let RdapResponse::Help(srvhelp) = actual else {panic!()};
+    let notice = srvhelp
+        .common
+        .notices
+        .expect("no notices in srvhelp")
+        .first()
+        .expect("notices empty")
+        .to_owned();
+    assert_eq!(
+        notice
+            .description
+            .first()
+            .expect("no description in notice"),
+        "bar"
+    );
 }

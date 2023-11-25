@@ -23,6 +23,7 @@ pub struct Mem {
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
 }
 
@@ -35,6 +36,7 @@ impl Mem {
             domains: Arc::new(RwLock::new(HashMap::new())),
             nameservers: Arc::new(RwLock::new(HashMap::new())),
             entities: Arc::new(RwLock::new(HashMap::new())),
+            srvhelps: Arc::new(RwLock::new(HashMap::new())),
             config,
         }
     }
@@ -138,6 +140,16 @@ impl StoreOps for Mem {
                     None => Ok(NOT_FOUND.clone()),
                 }
             }
+        }
+    }
+
+    async fn get_srv_help(&self, host: Option<&str>) -> Result<RdapResponse, RdapServerError> {
+        let host = host.unwrap_or("..default");
+        let srvhelps = self.srvhelps.read().await;
+        let result = srvhelps.get(host);
+        match result {
+            Some(srvhelp) => Ok(RdapResponse::clone(srvhelp)),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 }
