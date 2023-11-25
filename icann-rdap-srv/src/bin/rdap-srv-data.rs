@@ -12,6 +12,7 @@ use icann_rdap_common::response::domain::Domain;
 use icann_rdap_common::response::domain::DsDatum;
 use icann_rdap_common::response::domain::SecureDns;
 use icann_rdap_common::response::entity::Entity;
+use icann_rdap_common::response::help::Help;
 use icann_rdap_common::response::nameserver::IpAddresses;
 use icann_rdap_common::response::nameserver::Nameserver;
 use icann_rdap_common::response::network::Network;
@@ -199,7 +200,7 @@ enum Commands {
     /// Creates an RDAP entity.
     Entity(Box<EntityArgs>),
 
-    /// Create a Nameserver.
+    /// Create a nameserver.
     Nameserver(Box<NameserverArgs>),
 
     /// Create a domain.
@@ -210,6 +211,9 @@ enum Commands {
 
     /// Create an IP network.
     Network(Box<NetworkArgs>),
+
+    /// Creates a Help response.
+    SrvHelp(SrvHelpArgs),
 }
 
 #[derive(Debug, Args)]
@@ -456,6 +460,22 @@ struct NetworkArgs {
     name: Option<String>,
 }
 
+#[derive(Debug, Args)]
+struct SrvHelpArgs {
+    /// Host.
+    ///
+    /// The host name for which help is given. If not given, then the default host is assumed.
+    #[arg(long)]
+    host: Option<String>,
+
+    /// Adds a server notice.
+    ///
+    /// Takes the form of "\[LINK\] description" where the optional \[LINK\] takes
+    /// the form of "(REL;TYPE)\[HREF\]". This argument maybe specified multiple times.
+    #[arg(long, value_parser = parse_notice_or_remark)]
+    notice: Vec<NoticeOrRemark>,
+}
+
 fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
     let ip_cidr = IpCidr::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
     Ok(ip_cidr)
@@ -499,6 +519,14 @@ async fn do_the_work(
         Commands::Domain(args) => make_domain(args, storage).await?,
         Commands::Autnum(args) => make_autnum(args, storage).await?,
         Commands::Network(args) => make_network(args, storage).await?,
+        Commands::SrvHelp(args) => {
+            if cli.template || cli.redirect.is_some() {
+                return Err(RdapServerError::InvalidArg(
+                    "help cannot use --redirect or --template options".to_string(),
+                ));
+            }
+            make_help(args)?
+        }
     };
 
     let check_types = to_check_classes(&cli.check_args);
@@ -509,7 +537,9 @@ async fn do_the_work(
         info!("Checks conducted and no issues were found.");
     }
 
-    if cli.template {
+    if let RdapId::Help = output.id {
+        create_help_file(data_dir, &output.self_href, output.rdap)?;
+    } else if cli.template {
         create_template_file(data_dir, &output.self_href, &output.id, &output.rdap)?;
     } else if let Some(redirect_url) = cli.redirect {
         create_redirect_file(data_dir, &output.self_href, &output.id, &redirect_url)?;
@@ -542,6 +572,20 @@ fn create_json_file(
     let content = serde_json::to_string_pretty(&rdap)?;
     fs::write(&path, content)?;
     info!("JSON data written to {}.", path.to_string_lossy());
+    Ok(())
+}
+
+fn create_help_file(
+    data_dir: &str,
+    self_href: &str,
+    rdap: RdapResponse,
+) -> Result<(), RdapServerError> {
+    let file_name = create_file_name(self_href, "help");
+    let mut path = PathBuf::from(data_dir);
+    path.push(file_name);
+    let content = serde_json::to_string_pretty(&rdap)?;
+    fs::write(&path, content)?;
+    info!("HELP data written to {}.", path.to_string_lossy());
     Ok(())
 }
 
@@ -589,6 +633,7 @@ fn create_redirect_file(
             network: NetworkOrError::ErrorResponse(error),
             ids: vec![id.clone()],
         },
+        RdapId::Help => panic!("cannot create help redirect file"),
     };
     let content = serde_json::to_string_pretty(&template)?;
     fs::write(&path, content)?;
@@ -641,6 +686,7 @@ fn create_template_file(
                 ids: vec![id.clone()],
             }
         }
+        RdapId::Help => panic!("cannot create help template file"),
     };
     let content = serde_json::to_string_pretty(&template)?;
     fs::write(&path, content)?;
@@ -654,6 +700,7 @@ enum RdapId {
     Nameserver(NameserverId),
     Autnum(AutnumId),
     Netowrk(NetworkId),
+    Help,
 }
 
 struct Output {
@@ -1041,6 +1088,18 @@ async fn make_network(
         rdap: RdapResponse::Network(network),
         id,
         self_href,
+    };
+    Ok(output)
+}
+
+fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
+    let help = Help::with_options()
+        .and_notices(notices(&args.notice))
+        .build()?;
+    let output = Output {
+        rdap: RdapResponse::Help(help),
+        id: RdapId::Help,
+        self_href: args.host.unwrap_or("__defualt".to_string()),
     };
     Ok(output)
 }
