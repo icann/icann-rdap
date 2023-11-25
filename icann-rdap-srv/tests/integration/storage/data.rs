@@ -1,7 +1,13 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
+    autnum::Autnum,
+    domain::Domain,
+    entity::Entity,
+    help::Help,
+    nameserver::Nameserver,
+    network::Network,
+    types::{Notice, NoticeOrRemark},
     RdapResponse,
 };
 use icann_rdap_srv::{
@@ -451,4 +457,94 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
             start
         )
     }
+}
+
+#[tokio::test]
+async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loaded() {
+    // GIVEN
+    let temp = TestDir::temp();
+    let srvhelp = Help::basic()
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .description_entry("foo".to_string())
+                .build(),
+        ))
+        .build()
+        .expect("building help");
+    let srvhelp_file = temp.path("__default.help");
+    std::fs::write(
+        srvhelp_file,
+        serde_json::to_string(&srvhelp).expect("serializing srvhelp"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
+
+    // THEN
+    let actual = mem
+        .get_srv_help(None)
+        .await
+        .expect("getting default srvhelp");
+    assert!(matches!(actual, RdapResponse::Help(_)));
+    let RdapResponse::Help(srvhelp) = actual else {panic!()};
+    let notice = srvhelp
+        .common
+        .notices
+        .expect("no notices in srvhelp")
+        .first()
+        .expect("notices empty")
+        .to_owned();
+    assert_eq!(
+        notice
+            .description
+            .first()
+            .expect("no description in notice"),
+        "foo"
+    );
+}
+
+#[tokio::test]
+async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() {
+    // GIVEN
+    let temp = TestDir::temp();
+    let srvhelp = Help::basic()
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .description_entry("bar".to_string())
+                .build(),
+        ))
+        .build()
+        .expect("building help");
+    let srvhelp_file = temp.path("foo_example_com.help");
+    std::fs::write(
+        srvhelp_file,
+        serde_json::to_string(&srvhelp).expect("serializing srvhelp"),
+    )
+    .expect("writing file");
+
+    // WHEN
+    let mem = new_and_init_mem(temp.root().to_string_lossy().to_string()).await;
+
+    // THEN
+    let actual = mem
+        .get_srv_help(Some("foo.example.com"))
+        .await
+        .expect("getting default srvhelp");
+    assert!(matches!(actual, RdapResponse::Help(_)));
+    let RdapResponse::Help(srvhelp) = actual else {panic!()};
+    let notice = srvhelp
+        .common
+        .notices
+        .expect("no notices in srvhelp")
+        .first()
+        .expect("notices empty")
+        .to_owned();
+    assert_eq!(
+        notice
+            .description
+            .first()
+            .expect("no description in notice"),
+        "bar"
+    );
 }

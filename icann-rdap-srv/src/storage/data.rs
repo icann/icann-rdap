@@ -177,6 +177,7 @@ pub async fn load_data(
 ) -> Result<(), RdapServerError> {
     let mut json_count: usize = 0;
     let mut template_count: usize = 0;
+    let mut srvhelp_count: usize = 0;
     let mut tx = if truncate {
         store.new_truncate_tx().await?
     } else {
@@ -193,19 +194,33 @@ pub async fn load_data(
 
     let mut entries = tokio::fs::read_dir(path).await?;
     while let Some(entry) = entries.next_entry().await? {
-        let entry = entry.path();
-        let contents = tokio::fs::read_to_string(&entry).await?;
-        if entry.extension().map_or(false, |ext| ext == "template") {
-            load_rdap_template(&contents, &entry.to_string_lossy(), &mut tx).await?;
+        let entry_path = entry.path();
+        let contents = tokio::fs::read_to_string(&entry_path).await?;
+        if entry_path
+            .extension()
+            .map_or(false, |ext| ext == "template")
+        {
+            load_rdap_template(&contents, &entry_path.to_string_lossy(), &mut tx).await?;
             template_count += 1;
-        } else if entry.extension().map_or(false, |ext| ext == "json") {
-            load_rdap(&contents, &entry.to_string_lossy(), &mut tx).await?;
+        } else if entry_path.extension().map_or(false, |ext| ext == "json") {
+            load_rdap(&contents, &entry_path.to_string_lossy(), &mut tx).await?;
             json_count += 1;
+        } else if entry_path.extension().map_or(false, |ext| ext == "help") {
+            load_srvhelp(
+                &contents,
+                &entry_path.to_string_lossy(),
+                &entry.file_name().to_string_lossy(),
+                &mut tx,
+            )
+            .await?;
+            srvhelp_count += 1;
         }
     }
 
-    info!("{json_count} RDAP JSON files loaded. {template_count} RDAP template files loaded.");
-    if json_count == 0 && template_count == 0 {
+    info!("{json_count} RDAP JSON files loaded.");
+    info!("{template_count} RDAP template files loaded.");
+    info!("{srvhelp_count} RDAP server help files loaded.");
+    if json_count == 0 && template_count == 0 && srvhelp_count == 0 {
         warn!("No data loaded. Server has no content to serve.");
     }
     tx.commit().await?;
@@ -229,6 +244,33 @@ async fn load_rdap(
                 RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await,
                 RdapResponse::Autnum(autnum) => tx.add_autnum(&autnum).await,
                 RdapResponse::Network(network) => tx.add_network(&network).await,
+                _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
+            }?;
+        } else {
+            return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned()));
+        }
+    } else {
+        return Err(RdapServerError::NonJsonFile(path_name.to_owned()));
+    }
+    Ok(())
+}
+
+/// Loads the RDAP HELP files and puts them in storage.
+async fn load_srvhelp(
+    contents: &str,
+    path_name: &str,
+    file_name: &str,
+    tx: &mut Box<dyn TxHandle>,
+) -> Result<(), RdapServerError> {
+    debug!("loading {path_name} into storage");
+    let Some(host) = file_name.strip_suffix(".help") else {return Err(RdapServerError::NonRdapJsonFile(path_name.to_string()))};
+    let host = host.replace('_', ".");
+    let json = serde_json::from_str::<Value>(contents);
+    if let Ok(value) = json {
+        let rdap = RdapResponse::try_from(value);
+        if let Ok(rdap) = rdap {
+            match rdap {
+                RdapResponse::Help(srvhelp) => tx.add_srv_help(&srvhelp, Some(&host)).await,
                 _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
             }?;
         } else {
