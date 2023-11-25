@@ -1099,7 +1099,7 @@ fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
     let output = Output {
         rdap: RdapResponse::Help(help),
         id: RdapId::Help,
-        self_href: args.host.unwrap_or("__defualt".to_string()),
+        self_href: args.host.unwrap_or("__default".to_string()),
     };
     Ok(output)
 }

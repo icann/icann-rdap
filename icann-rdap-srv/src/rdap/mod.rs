@@ -7,6 +7,7 @@ pub mod ip;
 pub mod nameserver;
 pub mod response;
 pub mod router;
+pub mod srvhelp;
 
 trait ToBootStrap {
     fn to_ip_bootstrap(self, ip_id: &str) -> RdapResponse;
