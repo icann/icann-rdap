@@ -1,0 +1,59 @@
+name: BuildTest
+
+on:
+  push:
+    tags:
+      - 'bt_*'
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check format
+      run: cargo fmt --check
+    - name: Build
+      run: cargo build --release --verbose
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Install WASM32
+      run: rustup target add wasm32-unknown-unknown
+    - name: Check wasm32
+      run: cargo check --target wasm32-unknown-unknown -p icann-rdap-client
+
+  build:
+    name: Release build
+    needs: [test-build]
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy: 
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            OS: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu 
+            OS: ubuntu-latest
+          - target: x86_64-apple-darwin 
+            OS: macos-latest
+          - target: aarch64-apple-darwin
+            OS: macos-latest
+          - target: x86_64-pc-windows-msvc 
+            OS: windows-latest
+    runs-on: ${{ matrix.OS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Build target
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target ${{ matrix.target }}
+
