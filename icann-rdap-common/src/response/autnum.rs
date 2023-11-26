@@ -58,13 +58,15 @@ impl Autnum {
         statuses: Vec<String>,
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
+        notices: Vec<crate::response::types::Notice>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
+        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().build(),
+            common: Common::builder().and_notices(notices).build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle)
                 .and_remarks(remarks)

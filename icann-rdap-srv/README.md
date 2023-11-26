@@ -23,7 +23,7 @@ RDAP core support in this server is as follows:
 - [ ] Domain search
 - [ ] Nameserver search
 - [ ] Entity search
-- [ ] Help (`/help`)
+- [X] Help (`/help`)
 
 ### Compiling from crates.io
 
@@ -67,6 +67,10 @@ Create a `.env` file in the directory where you intend to run the commands, and 
 Create directory in /tmp to hold server data files:
 
     mkdir -p /tmp/rdap-srv/data
+
+Create the default server help:
+
+    ./target/release/rdap-srv-data srv-help --notice "this is a test server"
 
 Create some data:
 

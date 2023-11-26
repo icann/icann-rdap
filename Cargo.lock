@@ -396,9 +396,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.3.3"
+version = "4.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca8f255e4b8027970e78db75e78831229c9815fdbfa67eb1a1b777a62e24b4a0"
+checksum = "5fd304a20bff958a57f04c4e96a2e7594cc4490a0e809cbd48bb6437edaa452d"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -407,22 +407,21 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.3.3"
+version = "4.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acd4f3c17c83b0ba34ffbc4f8bbd74f079413f747f84a6f89292f138057e36ab"
+checksum = "01c6a3f08f1fe5662a35cfe393aec09c4df95f60ee93b7556505260f75eee9e1"
 dependencies = [
  "anstream",
  "anstyle",
- "bitflags",
  "clap_lex",
  "strsim",
 ]
 
 [[package]]
 name = "clap_derive"
-version = "4.3.2"
+version = "4.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8cd2b2a819ad6eec39e8f1d6b53001af1e5469f8c177579cdaeb313115b825f"
+checksum = "54a9bb5758fc5dfe728d1019941681eccaf0cf8a4189b692a0ee2f2ecf90a050"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -1188,7 +1187,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1221,7 +1220,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1243,7 +1242,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1261,7 +1260,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "assert_cmd",
  "async-trait",
@@ -1284,7 +1283,6 @@ dependencies = [
  "is-terminal",
  "lazy_static",
  "pct-str",
- "pinboard",
  "prefix-trie",
  "regex",
  "reqwest",
@@ -1787,15 +1785,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "pinboard"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd5f86cbd9a742b934e6d0917ab0005988c480807913b05f4357ebf4e2a739e"
-dependencies = [
- "crossbeam-epoch",
-]
 
 [[package]]
 name = "pkg-config"

@@ -7,6 +7,7 @@ use super::{
     ip::network_by_netid,
     nameserver::nameserver_by_name,
     response::{ResponseUtil, NOT_IMPLEMENTED},
+    srvhelp::srvhelp,
 };
 
 pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
@@ -19,7 +20,7 @@ pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
         .route("/domains", get(not_implemented))
         .route("/nameservers", get(not_implemented))
         .route("/entities", get(not_implemented))
-        .route("/help", get(not_implemented))
+        .route("/help", get(srvhelp))
 }
 
 async fn not_implemented() -> impl IntoResponse {

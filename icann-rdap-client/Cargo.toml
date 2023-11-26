@@ -10,7 +10,7 @@ An RDAP client library.
 
 [dependencies]
 
-icann-rdap-common = { version = "0.0.13", path = "../icann-rdap-common" }
+icann-rdap-common = { version = "0.0.14", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr-utils.workspace = true

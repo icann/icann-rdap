@@ -178,6 +178,52 @@ fn GIVEN_network_options_WHEN_create_data_THEN_success() {
     assert.success();
 }
 
+#[test]
+fn GIVEN_srvhelp_with_no_options_WHEN_create_srvhelp_THEN_success() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+
+    // WHEN
+    test_jig.cmd.arg("srv-help");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+#[test]
+fn GIVEN_srvhelp_with_notice_WHEN_create_srvhelp_THEN_success() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("srv-help")
+        .arg("--notice")
+        .arg("\"A test notice\"");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[test]
+fn GIVEN_srvhelp_with_host_WHEN_create_srvhelp_THEN_success() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("srv-help")
+        .arg("--host")
+        .arg("foo.example.com");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
 fn make_foo1234() -> RdapSrvDataTestJig {
     let mut test_jig = RdapSrvDataTestJig::new();
     test_jig

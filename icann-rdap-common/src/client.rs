@@ -29,6 +29,9 @@ pub struct ClientConfig {
 
     /// If true, HTTP redirects will be followed.
     pub follow_redirects: bool,
+
+    /// Specify Host
+    pub host: Option<HeaderValue>,
 }
 
 impl Default for ClientConfig {
@@ -39,6 +42,7 @@ impl Default for ClientConfig {
             accept_invalid_host_names: false,
             accept_invalid_certificates: false,
             follow_redirects: true,
+            host: None,
         }
     }
 }
@@ -52,6 +56,7 @@ impl ClientConfig {
         accept_invalid_host_names: Option<bool>,
         accept_invalid_certificates: Option<bool>,
         follow_redirects: Option<bool>,
+        host: Option<HeaderValue>,
     ) -> Self {
         let default = ClientConfig::default();
         Self {
@@ -62,6 +67,7 @@ impl ClientConfig {
             accept_invalid_certificates: accept_invalid_certificates
                 .unwrap_or(default.accept_invalid_certificates),
             follow_redirects: follow_redirects.unwrap_or(default.follow_redirects),
+            host,
         }
     }
 }
@@ -78,6 +84,9 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
         header::ACCEPT,
         HeaderValue::from_static(&ACCEPT_HEADER_VALUES),
     );
+    if let Some(host) = &config.host {
+        default_headers.insert(header::HOST, host.into());
+    };
 
     #[allow(unused_mut)]
     let mut client = reqwest::Client::builder();

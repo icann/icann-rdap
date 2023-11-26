@@ -7,7 +7,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.13"
+version = "0.0.14"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -38,7 +38,7 @@ buildstructor = "0.5"
 cidr-utils = "0.5"
 
 # command line options parser
-clap = { version = "4.0", features = [ "std", "derive", "env" ] }
+clap = { version = "4.3.19", features = [ "std", "derive", "env", "unstable-styles" ] }
 
 # chrono (time and date library)
 chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
@@ -87,9 +87,6 @@ minus = {version = "5.4", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "1.2"
-
-# eventually consistent shared data
-pinboard = "2.2.0"
 
 # ip address trie
 prefix-trie = "0.2.4"

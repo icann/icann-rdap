@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
-    RdapResponse,
+    autnum::Autnum, domain::Domain, entity::Entity, help::Help, nameserver::Nameserver,
+    network::Network, RdapResponse,
 };
 
 use crate::error::RdapServerError;
@@ -46,6 +46,9 @@ pub trait StoreOps: Send + Sync {
     /// portion of the CIDR should be assumed to be complete, that is not "10.0/8". The network
     /// returned should be the most specific (longest prefix) network containing the IP address.
     async fn get_network_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
+
+    /// Get server help.
+    async fn get_srv_help(&self, host: Option<&str>) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -101,6 +104,12 @@ pub trait TxHandle: Send {
         &mut self,
         network_id: &NetworkId,
         error: &icann_rdap_common::response::error::Error,
+    ) -> Result<(), RdapServerError>;
+
+    async fn add_srv_help(
+        &mut self,
+        help: &Help,
+        host: Option<&str>,
     ) -> Result<(), RdapServerError>;
 
     /// Commit the transaction.

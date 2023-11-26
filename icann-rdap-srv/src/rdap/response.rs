@@ -50,10 +50,18 @@ impl ResponseUtil for RdapResponse {
 
     fn first_notice_link_href(&self) -> Option<&str> {
         if let RdapResponse::ErrorResponse(rdap_error) = self {
-            let Some(notices) = &rdap_error.common.notices else {return None};
-            let Some(first_notice) = notices.first() else {return None};
-            let Some(links) = &first_notice.0.links else {return None};
-            let Some(first_link) = links.first() else {return None};
+            let Some(notices) = &rdap_error.common.notices else {
+                return None;
+            };
+            let Some(first_notice) = notices.first() else {
+                return None;
+            };
+            let Some(links) = &first_notice.0.links else {
+                return None;
+            };
+            let Some(first_link) = links.first() else {
+                return None;
+            };
             Some(&first_link.href)
         } else {
             None

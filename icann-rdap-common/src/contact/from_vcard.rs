@@ -5,13 +5,21 @@ use super::{Contact, Email, Lang, NameParts, Phone, PostalAddress};
 impl Contact {
     pub fn from_vcard(vcard_array: &[Value]) -> Option<Contact> {
         // value should be "vcard" followed by array
-        let Some(value) = vcard_array.first() else {return None};
-        let Some(vcard_literal) = value.as_str() else {return None};
+        let Some(value) = vcard_array.first() else {
+            return None;
+        };
+        let Some(vcard_literal) = value.as_str() else {
+            return None;
+        };
         if !vcard_literal.eq_ignore_ascii_case("vcard") {
             return None;
         };
-        let Some(vcard) = vcard_array.get(1) else {return None};
-        let Some(vcard) = vcard.as_array() else {return None};
+        let Some(vcard) = vcard_array.get(1) else {
+            return None;
+        };
+        let Some(vcard) = vcard.as_array() else {
+            return None;
+        };
 
         let contact = Contact::builder()
             .and_full_name(vcard.find_property("fn").get_text())
@@ -81,15 +89,19 @@ trait GetText<'a> {
 
 impl<'a> GetText<'a> for Option<&'a Vec<Value>> {
     fn get_text(self) -> Option<String> {
-        let Some(values) = self else {return None};
-        let Some(fourth) = values.get(3) else {return None};
+        let Some(values) = self else { return None };
+        let Some(fourth) = values.get(3) else {
+            return None;
+        };
         fourth.as_str().map(|s| s.to_owned())
     }
 }
 
 impl<'a> GetText<'a> for &'a Vec<Value> {
     fn get_text(self) -> Option<String> {
-        let Some(fourth) = self.get(3) else {return None};
+        let Some(fourth) = self.get(3) else {
+            return None;
+        };
         fourth.as_str().map(|s| s.to_owned())
     }
 }
@@ -114,9 +126,15 @@ trait GetPreference<'a> {
 
 impl<'a> GetPreference<'a> for &'a Vec<Value> {
     fn get_preference(self) -> Option<u64> {
-        let Some(second) = self.get(1) else {return None};
-        let Some(second) = second.as_object() else {return None};
-        let Some(preference) = second.get("pref") else {return None};
+        let Some(second) = self.get(1) else {
+            return None;
+        };
+        let Some(second) = second.as_object() else {
+            return None;
+        };
+        let Some(preference) = second.get("pref") else {
+            return None;
+        };
         preference.as_str().and_then(|s| s.parse().ok())
     }
 }
@@ -127,9 +145,15 @@ trait GetLabel<'a> {
 
 impl<'a> GetLabel<'a> for &'a Vec<Value> {
     fn get_label(self) -> Option<String> {
-        let Some(second) = self.get(1) else {return None};
-        let Some(second) = second.as_object() else {return None};
-        let Some(label) = second.get("label") else {return None};
+        let Some(second) = self.get(1) else {
+            return None;
+        };
+        let Some(second) = second.as_object() else {
+            return None;
+        };
+        let Some(label) = second.get("label") else {
+            return None;
+        };
         label.as_str().map(|s| s.to_owned())
     }
 }
@@ -142,9 +166,15 @@ trait GetContexts<'a> {
 
 impl<'a> GetContexts<'a> for &'a Vec<Value> {
     fn get_contexts(self) -> Option<Vec<String>> {
-        let Some(second) = self.get(1) else {return None};
-        let Some(second) = second.as_object() else {return None};
-        let Some(contexts) = second.get("type") else {return None};
+        let Some(second) = self.get(1) else {
+            return None;
+        };
+        let Some(second) = second.as_object() else {
+            return None;
+        };
+        let Some(contexts) = second.get("type") else {
+            return None;
+        };
         if let Some(context) = contexts.as_str() {
             let context = context.to_lowercase();
             if CONTEXTS.contains(&context.as_str()) {
@@ -153,7 +183,9 @@ impl<'a> GetContexts<'a> for &'a Vec<Value> {
                 return None;
             }
         };
-        let Some(contexts) = contexts.as_array() else {return None};
+        let Some(contexts) = contexts.as_array() else {
+            return None;
+        };
         let contexts = contexts
             .iter()
             .filter_map(|v| v.as_str())
@@ -170,9 +202,15 @@ trait GetFeatures<'a> {
 
 impl<'a> GetFeatures<'a> for &'a Vec<Value> {
     fn get_features(self) -> Option<Vec<String>> {
-        let Some(second) = self.get(1) else {return None};
-        let Some(second) = second.as_object() else {return None};
-        let Some(features) = second.get("type") else {return None};
+        let Some(second) = self.get(1) else {
+            return None;
+        };
+        let Some(second) = second.as_object() else {
+            return None;
+        };
+        let Some(features) = second.get("type") else {
+            return None;
+        };
         if let Some(feature) = features.as_str() {
             let feature = feature.to_lowercase();
             if !CONTEXTS.contains(&feature.as_str()) {
@@ -181,7 +219,9 @@ impl<'a> GetFeatures<'a> for &'a Vec<Value> {
                 return None;
             }
         };
-        let Some(features) = features.as_array() else {return None};
+        let Some(features) = features.as_array() else {
+            return None;
+        };
         let features = features
             .iter()
             .filter_map(|v| v.as_str())
@@ -201,7 +241,9 @@ impl<'a> GetLangs<'a> for &'a [&'a Vec<Value>] {
         let langs = self
             .iter()
             .filter_map(|prop| {
-                let Some(tag) = (*prop).get_text() else {return None};
+                let Some(tag) = (*prop).get_text() else {
+                    return None;
+                };
                 let lang = Lang::builder()
                     .tag(tag)
                     .and_preference((*prop).get_preference())
@@ -222,7 +264,9 @@ impl<'a> GetEmails<'a> for &'a [&'a Vec<Value>] {
         let emails = self
             .iter()
             .filter_map(|prop| {
-                let Some(addr) = (*prop).get_text() else {return None};
+                let Some(addr) = (*prop).get_text() else {
+                    return None;
+                };
                 let email = Email::builder()
                     .email(addr)
                     .and_contexts((*prop).get_contexts())
@@ -244,7 +288,9 @@ impl<'a> GetPhones<'a> for &'a [&'a Vec<Value>] {
         let phones = self
             .iter()
             .filter_map(|prop| {
-                let Some(number) = (*prop).get_text() else {return None};
+                let Some(number) = (*prop).get_text() else {
+                    return None;
+                };
                 let phone = Phone::builder()
                     .phone(number)
                     .and_features((*prop).get_features())
@@ -331,9 +377,13 @@ trait GetNameParts<'a> {
 
 impl<'a> GetNameParts<'a> for Option<&'a Vec<Value>> {
     fn get_name_parts(self) -> Option<NameParts> {
-        let Some(values) = self else {return None};
-        let Some(fourth) = values.get(3) else {return None};
-        let Some(parts) = fourth.as_array() else {return None};
+        let Some(values) = self else { return None };
+        let Some(fourth) = values.get(3) else {
+            return None;
+        };
+        let Some(parts) = fourth.as_array() else {
+            return None;
+        };
         let mut iter = parts.iter().filter(|p| p.is_string() || p.is_array());
         let mut prefixes: Option<Vec<String>> = None;
         let mut surnames: Option<Vec<String>> = None;
@@ -520,7 +570,9 @@ mod tests {
         assert!(actual.nick_names.is_none());
 
         // langs
-        let Some(langs) = actual.langs else {panic!("langs not found")};
+        let Some(langs) = actual.langs else {
+            panic!("langs not found")
+        };
         assert_eq!(langs.len(), 2);
         assert_eq!(langs.get(0).expect("first lang").tag, "fr");
         assert_eq!(langs.get(0).expect("first lang").preference, Some(1));
@@ -528,8 +580,12 @@ mod tests {
         assert_eq!(langs.get(1).expect("second lang").preference, Some(2));
 
         // emails
-        let Some(emails) = actual.emails else {panic!("emails not found")};
-        let Some(email) = emails.first() else {panic!("no email found")};
+        let Some(emails) = actual.emails else {
+            panic!("emails not found")
+        };
+        let Some(email) = emails.first() else {
+            panic!("no email found")
+        };
         assert_eq!(email.email, "joe.user@example.com");
         assert!(email
             .contexts
@@ -538,8 +594,12 @@ mod tests {
             .contains(&"work".to_string()));
 
         // phones
-        let Some(phones) = actual.phones else {panic!("no phones found")};
-        let Some(phone) = phones.first() else {panic!("no first phone")};
+        let Some(phones) = actual.phones else {
+            panic!("no phones found")
+        };
+        let Some(phone) = phones.first() else {
+            panic!("no first phone")
+        };
         assert_eq!(phone.phone, "tel:+1-555-555-1234;ext=102");
         assert!(phone
             .contexts
@@ -551,7 +611,9 @@ mod tests {
             .as_ref()
             .expect("no features")
             .contains(&"voice".to_string()));
-        let Some(phone) = phones.last() else {panic!("no last phone")};
+        let Some(phone) = phones.last() else {
+            panic!("no last phone")
+        };
         assert_eq!(phone.phone, "tel:+1-555-555-4321");
         assert!(phone
             .contexts
@@ -565,14 +627,20 @@ mod tests {
             .contains(&"video".to_string()));
 
         // postal addresses
-        let Some(addresses) = actual.postal_addresses else {panic!("no postal addresses")};
-        let Some(addr) = addresses.first() else {panic!("first address not found")};
+        let Some(addresses) = actual.postal_addresses else {
+            panic!("no postal addresses")
+        };
+        let Some(addr) = addresses.first() else {
+            panic!("first address not found")
+        };
         assert!(addr
             .contexts
             .as_ref()
             .expect("no contexts")
             .contains(&"work".to_string()));
-        let Some(street_parts) = &addr.street_parts else {panic!("no street parts")};
+        let Some(street_parts) = &addr.street_parts else {
+            panic!("no street parts")
+        };
         assert_eq!(street_parts.get(0).expect("street part 0"), "Suite 1234");
         assert_eq!(
             street_parts.get(1).expect("street part 1"),
@@ -583,7 +651,9 @@ mod tests {
         assert_eq!(addr.region_code.as_ref().expect("region code"), "QC");
         assert!(addr.region_name.is_none());
         assert_eq!(addr.postal_code.as_ref().expect("postal code"), "G1V 2M2");
-        let Some(addr) = addresses.last() else {panic!("last address not found")};
+        let Some(addr) = addresses.last() else {
+            panic!("last address not found")
+        };
         assert!(addr
             .contexts
             .as_ref()
@@ -595,7 +665,9 @@ mod tests {
         );
 
         // name parts
-        let Some(name_parts) = actual.name_parts else {panic!("no name parts")};
+        let Some(name_parts) = actual.name_parts else {
+            panic!("no name parts")
+        };
         let expected = NameParts::builder()
             .surnames(vec!["User".to_string()])
             .given_names(vec!["Joe".to_string()])

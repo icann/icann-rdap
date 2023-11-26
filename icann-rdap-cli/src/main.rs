@@ -1,4 +1,6 @@
 use bootstrap::BootstrapType;
+use clap::builder::styling::AnsiColor;
+use clap::builder::Styles;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
@@ -33,8 +35,20 @@ pub mod write;
 const BEFORE_LONG_HELP: &str = include_str!("before_long_help.txt");
 const AFTER_LONG_HELP: &str = include_str!("after_long_help.txt");
 
+struct CliStyles;
+
+impl CliStyles {
+    fn cli_styles() -> Styles {
+        Styles::styled()
+            .header(AnsiColor::Yellow.on_default())
+            .usage(AnsiColor::Green.on_default())
+            .literal(AnsiColor::Green.on_default())
+            .placeholder(AnsiColor::Green.on_default())
+    }
+}
+
 #[derive(Parser, Debug)]
-#[command(author, version = VERSION, about, long_about)]
+#[command(author, version = VERSION, about, long_about, styles = CliStyles::cli_styles())]
 #[command(group(
             ArgGroup::new("input")
                 .required(true)

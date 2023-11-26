@@ -1,12 +1,9 @@
-name: Release
+name: BuildTest
 
 on:
-  pull_request:
   push:
-    branches:
-      - main
     tags:
-      - 'v*.*.*'
+      - 'bt_*'
 
 jobs:
   test-build:
@@ -59,17 +56,4 @@ jobs:
           use-cross: true
           command: build
           args: --release --target ${{ matrix.target }}
-
-      - name: Package
-        shell: bash
-        run: |
-          cd target/${{ matrix.target }}/release          
-          tar czvf ../../../icann-rdap-${{ matrix.target }}.tar.gz rdap rdap-srv rdap-srv-data rdap-srv-store rdap-srv-test-data 
-          cd -
-      - name: Publish
-        uses: softprops/action-gh-release@v1
-        with:
-            files: 'icann-rdap-*'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
