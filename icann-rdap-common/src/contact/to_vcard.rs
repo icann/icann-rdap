@@ -164,7 +164,9 @@ fn vec_string_to_value(strings: &Option<Vec<String>>) -> Value {
     };
 
     if strings.len() == 1 {
-        let Some(one) = strings.first() else {panic!("couldn't get first element on length of 1")};
+        let Some(one) = strings.first() else {
+            panic!("couldn't get first element on length of 1")
+        };
         return Value::String(one.to_owned());
     };
 
@@ -178,7 +180,9 @@ fn vec_string_to_param(strings: &Vec<String>) -> Value {
     };
 
     if strings.len() == 1 {
-        let Some(one) = strings.first() else {panic!("couldn't get first element on length of 1")};
+        let Some(one) = strings.first() else {
+            panic!("couldn't get first element on length of 1")
+        };
         return Value::String(one.to_owned());
     };
 

@@ -7,6 +7,7 @@ pub mod ip;
 pub mod nameserver;
 pub mod response;
 pub mod router;
+pub mod srvhelp;
 
 trait ToBootStrap {
     fn to_ip_bootstrap(self, ip_id: &str) -> RdapResponse;
@@ -56,10 +57,18 @@ impl ToBootStrap for RdapResponse {
 }
 
 fn bootstrap_redirect(error: Error, path: &str, id: &str) -> RdapResponse {
-    let Some(ref notices) = error.common.notices else {return RdapResponse::ErrorResponse(error)};
-    let Some(notice) = notices.first() else {return RdapResponse::ErrorResponse(error)};
-    let Some(links) = &notice.links else {return RdapResponse::ErrorResponse(error)};
-    let Some(link) = links.first() else {return RdapResponse::ErrorResponse(error)};
+    let Some(ref notices) = error.common.notices else {
+        return RdapResponse::ErrorResponse(error);
+    };
+    let Some(notice) = notices.first() else {
+        return RdapResponse::ErrorResponse(error);
+    };
+    let Some(links) = &notice.links else {
+        return RdapResponse::ErrorResponse(error);
+    };
+    let Some(link) = links.first() else {
+        return RdapResponse::ErrorResponse(error);
+    };
     let href = format!("{}{path}/{id}", link.href);
     let redirect = Error::redirect().url(href).build();
     RdapResponse::ErrorResponse(redirect)

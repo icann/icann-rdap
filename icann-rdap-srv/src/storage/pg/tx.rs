@@ -98,6 +98,14 @@ impl<'a> TxHandle for PgTx<'a> {
         todo!()
     }
 
+    async fn add_srv_help(
+        &mut self,
+        _help: &icann_rdap_common::response::help::Help,
+        _host: Option<&str>,
+    ) -> Result<(), RdapServerError> {
+        todo!()
+    }
+
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
         self.db_tx.commit().await?;
         Ok(())

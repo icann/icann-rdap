@@ -128,7 +128,9 @@ fn get_asn_bootstrap_urls(
     iana: IanaRegistry,
     query_type: &QueryType,
 ) -> Result<Vec<String>, CliError> {
-    let QueryType::AsNumber(asn) = query_type else {panic!("invalid query type")};
+    let QueryType::AsNumber(asn) = query_type else {
+        panic!("invalid query type")
+    };
     let autnum = asn
         .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
         .parse::<u32>()
@@ -213,7 +215,9 @@ fn get_entity_handle_bootstrap_urls(
     iana: IanaRegistry,
     query_type: &QueryType,
 ) -> Result<Vec<String>, CliError> {
-    let QueryType::Entity(handle) = query_type else {panic!("non entity handle for bootstrap")};
+    let QueryType::Entity(handle) = query_type else {
+        panic!("non entity handle for bootstrap")
+    };
     let handle_split = handle.rsplit_once('-').ok_or(CliError::BootstrapNotFound)?;
     get_tag_bootstrap_urls(iana, handle_split.1)
 }

@@ -129,7 +129,11 @@ async fn make_dns_bootstrap(
         let urls = service
             .last()
             .ok_or(RdapServerError::Bootstrap("no urls for tlds".to_string()))?;
-        let Some(url) = get_preferred_url(urls) else {return Err(RdapServerError::Bootstrap("no bootstrap URL in DNS service".to_string()))};
+        let Some(url) = get_preferred_url(urls) else {
+            return Err(RdapServerError::Bootstrap(
+                "no bootstrap URL in DNS service".to_string(),
+            ));
+        };
         let ids = tlds
             .iter()
             .map(|tld| DomainId::builder().ldh_name(tld).build())
@@ -165,7 +169,11 @@ async fn make_asn_bootstrap(
         let urls = service.last().ok_or(RdapServerError::Bootstrap(
             "no urls for ASN ranges".to_string(),
         ))?;
-        let Some(url) = get_preferred_url(urls) else {return Err(RdapServerError::Bootstrap("no bootstrap URL in Autnum service".to_string()))};
+        let Some(url) = get_preferred_url(urls) else {
+            return Err(RdapServerError::Bootstrap(
+                "no bootstrap URL in Autnum service".to_string(),
+            ));
+        };
         let ids = as_ranges
             .iter()
             .map(|as_range| {
@@ -218,7 +226,11 @@ async fn make_ip_bootstrap(
         let urls = service
             .last()
             .ok_or(RdapServerError::Bootstrap("no urls for CIDRs".to_string()))?;
-        let Some(url) = get_preferred_url(urls) else {return Err(RdapServerError::Bootstrap("no bootstrap URL in IP service".to_string()))};
+        let Some(url) = get_preferred_url(urls) else {
+            return Err(RdapServerError::Bootstrap(
+                "no bootstrap URL in IP service".to_string(),
+            ));
+        };
         let ids = cidrs
             .iter()
             .map(|cidr| {
@@ -262,7 +274,11 @@ async fn make_tag_registry(
         let urls = service
             .get(2)
             .ok_or(RdapServerError::Bootstrap("no urls for tags".to_string()))?;
-        let Some(url) = get_preferred_url(urls) else {return Err(RdapServerError::Bootstrap("no bootstrap URL in tag service".to_string()))};
+        let Some(url) = get_preferred_url(urls) else {
+            return Err(RdapServerError::Bootstrap(
+                "no bootstrap URL in tag service".to_string(),
+            ));
+        };
         let ids = tags
             .iter()
             .map(|tag| {
@@ -410,7 +426,9 @@ mod tests {
         let mem = new_and_init_mem(config.data_dir).await;
         // com
         let response = mem.get_domain_by_ldh("com").await.expect("lookup of com");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(
             get_redirect_link(error),
@@ -418,7 +436,9 @@ mod tests {
         );
         // net
         let response = mem.get_domain_by_ldh("net").await.expect("lookup of net");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(
             get_redirect_link(error),
@@ -426,7 +446,9 @@ mod tests {
         );
         // org
         let response = mem.get_domain_by_ldh("org").await.expect("lookup of org");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://example.org/");
         // mytld
@@ -434,7 +456,9 @@ mod tests {
             .get_domain_by_ldh("mytld")
             .await
             .expect("lookup of mytld");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://example.org/");
     }
@@ -487,22 +511,30 @@ mod tests {
         let mem = new_and_init_mem(config.data_dir).await;
         // 64496-64496
         let response = mem.get_autnum_by_num(64496).await.expect("lookup of 64497");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://rir3.example.com/myrdap/");
         // 64512-65534
         let response = mem.get_autnum_by_num(64512).await.expect("lookup of 64512");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://example.net/rdaprir2/");
         // 64497-64510
         let response = mem.get_autnum_by_num(64510).await.expect("lookup of 64510");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://example.org/");
         // 65536-65551
         let response = mem.get_autnum_by_num(65551).await.expect("lookup of 65551");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://example.org/");
     }
@@ -558,7 +590,9 @@ mod tests {
             .get_network_by_ipaddr("198.51.100.0")
             .await
             .expect("lookup of 198.51.100.0");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://rir1.example.com/myrdap/");
         // 192.0.0.0/8
@@ -566,7 +600,9 @@ mod tests {
             .get_network_by_cidr("192.0.0.0/8")
             .await
             .expect("lookup of 192.0.0.0/8");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://rir1.example.com/myrdap/");
         // 203.0.113.0/24
@@ -574,7 +610,9 @@ mod tests {
             .get_network_by_cidr("203.0.113.0/24")
             .await
             .expect("lookup of 203.0.113.0/24");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://example.org/");
     }
@@ -598,10 +636,18 @@ mod tests {
     }
 
     fn get_redirect_link(error: icann_rdap_common::response::error::Error) -> String {
-        let Some(notices) = error.common.notices else {panic!("no notices in error")};
-        let Some(first_notice) = notices.first() else {panic!("notices are empty")};
-        let Some(links) = &first_notice.links else {panic!("no links in notice")};
-        let Some(first_link) = links.first() else {panic!("links are empty")};
+        let Some(notices) = error.common.notices else {
+            panic!("no notices in error")
+        };
+        let Some(first_notice) = notices.first() else {
+            panic!("notices are empty")
+        };
+        let Some(links) = &first_notice.links else {
+            panic!("no links in notice")
+        };
+        let Some(first_link) = links.first() else {
+            panic!("links are empty")
+        };
         first_link.href.to_owned()
     }
 
@@ -704,7 +750,9 @@ mod tests {
             .get_entity_by_handle("-ARIN")
             .await
             .expect("lookup of -ARIN");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(get_redirect_link(error), "https://rdap.arin.net/registry/",);
         // GLAUCA
@@ -712,7 +760,9 @@ mod tests {
             .get_entity_by_handle("-GLAUCA")
             .await
             .expect("lookup of -GLAUCA");
-        let RdapResponse::ErrorResponse(error) = response else {panic!("not an error response")};
+        let RdapResponse::ErrorResponse(error) = response else {
+            panic!("not an error response")
+        };
         assert_eq!(307, error.error_code);
         assert_eq!(
             get_redirect_link(error),

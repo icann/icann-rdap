@@ -12,6 +12,7 @@ use icann_rdap_common::response::domain::Domain;
 use icann_rdap_common::response::domain::DsDatum;
 use icann_rdap_common::response::domain::SecureDns;
 use icann_rdap_common::response::entity::Entity;
+use icann_rdap_common::response::help::Help;
 use icann_rdap_common::response::nameserver::IpAddresses;
 use icann_rdap_common::response::nameserver::Nameserver;
 use icann_rdap_common::response::network::Network;
@@ -171,16 +172,40 @@ fn parse_datetime(arg: &str) -> Result<DateTime<FixedOffset>, chrono::format::Pa
 fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> {
     let re = Regex::new(r"^(?P<l>\(\S+\)\[\S+\])?\s*(?P<t>.+)$")
         .expect("creating notice/remark argument regex");
-    let Some(cap) = re.captures(arg) else {return Err(RdapServerError::ArgParse("Unable to parse Notice/Remark argumnet.".to_string()))};
-    let Some(description) = cap.name("t") else {return Err(RdapServerError::ArgParse("Unable to parse Notice/Remark description".to_string()))};
+    let Some(cap) = re.captures(arg) else {
+        return Err(RdapServerError::ArgParse(
+            "Unable to parse Notice/Remark argumnet.".to_string(),
+        ));
+    };
+    let Some(description) = cap.name("t") else {
+        return Err(RdapServerError::ArgParse(
+            "Unable to parse Notice/Remark description".to_string(),
+        ));
+    };
     let mut links: Option<Links> = None;
     if let Some(link_data) = cap.name("l") {
         let link_re =
             Regex::new(r"^\((?P<r>\w+);(?P<t>\S+)\)\[(?P<h>\S+)\]$").expect("creating link regex");
-        let Some(link_cap) = link_re.captures(link_data.as_str()) else {return Err(RdapServerError::ArgParse("Unable to parse link in Notice/Remark".to_string()))};
-        let Some(link_rel) = link_cap.name("r") else {return Err(RdapServerError::ArgParse("unable to parse link rel in Notice/Remark".to_string()))};
-        let Some(link_type) = link_cap.name("t") else {return Err(RdapServerError::ArgParse("unable to parse link type in Notice/Remark".to_string()))};
-        let Some(link_href) = link_cap.name("h") else {return Err(RdapServerError::ArgParse("unable to parse link href in Notice/Remark".to_string()))};
+        let Some(link_cap) = link_re.captures(link_data.as_str()) else {
+            return Err(RdapServerError::ArgParse(
+                "Unable to parse link in Notice/Remark".to_string(),
+            ));
+        };
+        let Some(link_rel) = link_cap.name("r") else {
+            return Err(RdapServerError::ArgParse(
+                "unable to parse link rel in Notice/Remark".to_string(),
+            ));
+        };
+        let Some(link_type) = link_cap.name("t") else {
+            return Err(RdapServerError::ArgParse(
+                "unable to parse link type in Notice/Remark".to_string(),
+            ));
+        };
+        let Some(link_href) = link_cap.name("h") else {
+            return Err(RdapServerError::ArgParse(
+                "unable to parse link href in Notice/Remark".to_string(),
+            ));
+        };
         links = Some(vec![Link::builder()
             .media_type(link_type.as_str().to_string())
             .href(link_href.as_str().to_string())
@@ -199,7 +224,7 @@ enum Commands {
     /// Creates an RDAP entity.
     Entity(Box<EntityArgs>),
 
-    /// Create a Nameserver.
+    /// Create a nameserver.
     Nameserver(Box<NameserverArgs>),
 
     /// Create a domain.
@@ -210,6 +235,9 @@ enum Commands {
 
     /// Create an IP network.
     Network(Box<NetworkArgs>),
+
+    /// Creates a Help response.
+    SrvHelp(SrvHelpArgs),
 }
 
 #[derive(Debug, Args)]
@@ -456,6 +484,22 @@ struct NetworkArgs {
     name: Option<String>,
 }
 
+#[derive(Debug, Args)]
+struct SrvHelpArgs {
+    /// Host.
+    ///
+    /// The host name for which help is given. If not given, then the default host is assumed.
+    #[arg(long)]
+    host: Option<String>,
+
+    /// Adds a server notice.
+    ///
+    /// Takes the form of "\[LINK\] description" where the optional \[LINK\] takes
+    /// the form of "(REL;TYPE)\[HREF\]". This argument maybe specified multiple times.
+    #[arg(long, value_parser = parse_notice_or_remark)]
+    notice: Vec<NoticeOrRemark>,
+}
+
 fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
     let ip_cidr = IpCidr::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
     Ok(ip_cidr)
@@ -499,6 +543,14 @@ async fn do_the_work(
         Commands::Domain(args) => make_domain(args, storage).await?,
         Commands::Autnum(args) => make_autnum(args, storage).await?,
         Commands::Network(args) => make_network(args, storage).await?,
+        Commands::SrvHelp(args) => {
+            if cli.template || cli.redirect.is_some() {
+                return Err(RdapServerError::InvalidArg(
+                    "help cannot use --redirect or --template options".to_string(),
+                ));
+            }
+            make_help(args)?
+        }
     };
 
     let check_types = to_check_classes(&cli.check_args);
@@ -509,7 +561,9 @@ async fn do_the_work(
         info!("Checks conducted and no issues were found.");
     }
 
-    if cli.template {
+    if let RdapId::Help = output.id {
+        create_help_file(data_dir, &output.self_href, output.rdap)?;
+    } else if cli.template {
         create_template_file(data_dir, &output.self_href, &output.id, &output.rdap)?;
     } else if let Some(redirect_url) = cli.redirect {
         create_redirect_file(data_dir, &output.self_href, &output.id, &redirect_url)?;
@@ -542,6 +596,20 @@ fn create_json_file(
     let content = serde_json::to_string_pretty(&rdap)?;
     fs::write(&path, content)?;
     info!("JSON data written to {}.", path.to_string_lossy());
+    Ok(())
+}
+
+fn create_help_file(
+    data_dir: &str,
+    self_href: &str,
+    rdap: RdapResponse,
+) -> Result<(), RdapServerError> {
+    let file_name = create_file_name(self_href, "help");
+    let mut path = PathBuf::from(data_dir);
+    path.push(file_name);
+    let content = serde_json::to_string_pretty(&rdap)?;
+    fs::write(&path, content)?;
+    info!("HELP data written to {}.", path.to_string_lossy());
     Ok(())
 }
 
@@ -589,6 +657,7 @@ fn create_redirect_file(
             network: NetworkOrError::ErrorResponse(error),
             ids: vec![id.clone()],
         },
+        RdapId::Help => panic!("cannot create help redirect file"),
     };
     let content = serde_json::to_string_pretty(&template)?;
     fs::write(&path, content)?;
@@ -607,40 +676,51 @@ fn create_template_file(
     path.push(file_name);
     let template = match id {
         RdapId::Entity(id) => {
-            let RdapResponse::Entity(entity) = rdap else {panic!("non entity created with entity id")};
+            let RdapResponse::Entity(entity) = rdap else {
+                panic!("non entity created with entity id")
+            };
             Template::Entity {
                 entity: EntityOrError::EntityObject(entity.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Domain(id) => {
-            let RdapResponse::Domain(domain) = rdap else {panic!("non domain created with domain id")};
+            let RdapResponse::Domain(domain) = rdap else {
+                panic!("non domain created with domain id")
+            };
             Template::Domain {
                 domain: DomainOrError::DomainObject(domain.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Nameserver(id) => {
-            let RdapResponse::Nameserver(nameserver) = rdap else {panic!("non nameserver created with nameserver id")};
+            let RdapResponse::Nameserver(nameserver) = rdap else {
+                panic!("non nameserver created with nameserver id")
+            };
             Template::Nameserver {
                 nameserver: NameserverOrError::NameserverObject(nameserver.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Autnum(id) => {
-            let RdapResponse::Autnum(autnum) = rdap else {panic!("non autnum created with autnum id")};
+            let RdapResponse::Autnum(autnum) = rdap else {
+                panic!("non autnum created with autnum id")
+            };
             Template::Autnum {
                 autnum: AutnumOrError::AutnumObject(autnum.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Netowrk(id) => {
-            let RdapResponse::Network(network) = rdap else {panic!("non network created with network id")};
+            let RdapResponse::Network(network) = rdap else {
+                panic!("non network created with network id")
+            };
             Template::Network {
                 network: NetworkOrError::NetworkObject(network.clone()),
                 ids: vec![id.clone()],
             }
         }
+        RdapId::Help => panic!("cannot create help template file"),
     };
     let content = serde_json::to_string_pretty(&template)?;
     fs::write(&path, content)?;
@@ -654,6 +734,7 @@ enum RdapId {
     Nameserver(NameserverId),
     Autnum(AutnumId),
     Netowrk(NetworkId),
+    Help,
 }
 
 struct Output {
@@ -1045,6 +1126,18 @@ async fn make_network(
     Ok(output)
 }
 
+fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
+    let help = Help::with_options()
+        .and_notices(notices(&args.notice))
+        .build()?;
+    let output = Output {
+        rdap: RdapResponse::Help(help),
+        id: RdapId::Help,
+        self_href: args.host.unwrap_or("__default".to_string()),
+    };
+    Ok(output)
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
@@ -1084,8 +1177,12 @@ mod tests {
 
         // THEN
         assert!(actual.description.contains(&description.to_string()));
-        let Some(links) = actual.links else {panic!("no links in notice")};
-        let Some(link) = links.first() else {panic!("links are empty")};
+        let Some(links) = actual.links else {
+            panic!("no links in notice")
+        };
+        let Some(link) = links.first() else {
+            panic!("links are empty")
+        };
         assert_eq!(link.rel.as_ref().expect("no rel in link"), rel);
         assert_eq!(link.href, href);
         assert_eq!(

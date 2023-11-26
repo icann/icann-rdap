@@ -62,7 +62,9 @@ pub struct Link {
 
 impl Link {
     pub fn is_relation(&self, rel: &str) -> bool {
-        let Some(link_rel) = &self.rel else {return false};
+        let Some(link_rel) = &self.rel else {
+            return false;
+        };
         link_rel == rel
     }
 }
