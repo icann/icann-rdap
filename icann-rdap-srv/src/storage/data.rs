@@ -263,7 +263,9 @@ async fn load_srvhelp(
     tx: &mut Box<dyn TxHandle>,
 ) -> Result<(), RdapServerError> {
     debug!("loading {path_name} into storage");
-    let Some(host) = file_name.strip_suffix(".help") else {return Err(RdapServerError::NonRdapJsonFile(path_name.to_string()))};
+    let Some(host) = file_name.strip_suffix(".help") else {
+        return Err(RdapServerError::NonRdapJsonFile(path_name.to_string()));
+    };
     let host = host.replace('_', ".");
     let json = serde_json::from_str::<Value>(contents);
     if let Ok(value) = json {
@@ -915,7 +917,9 @@ mod tests {
             "11.0.0.255"
         );
         let cidr0 = actual.cidr0_cidrs.as_ref().expect("no cidr0");
-        let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {panic!("no v4 cidr")};
+        let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
+            panic!("no v4 cidr")
+        };
         assert_eq!(v4cidr.v4prefix, "11.0.0.0");
         assert_eq!(v4cidr.length, 24);
         let self_link = actual.get_self_link().expect("self link messing");
@@ -960,7 +964,9 @@ mod tests {
             "11.0.0.255"
         );
         let cidr0 = actual.cidr0_cidrs.as_ref().expect("no cidr0");
-        let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {panic!("no v4 cidr")};
+        let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
+            panic!("no v4 cidr")
+        };
         assert_eq!(v4cidr.v4prefix, "11.0.0.0");
         assert_eq!(v4cidr.length, 24);
         let self_link = actual.get_self_link().expect("self link messing");

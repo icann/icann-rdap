@@ -103,7 +103,9 @@ impl Entity {
     }
 
     pub fn contact(&self) -> Option<Contact> {
-        let Some(vcard) = &self.vcard_array else {return None};
+        let Some(vcard) = &self.vcard_array else {
+            return None;
+        };
         Contact::from_vcard(vcard)
     }
 }

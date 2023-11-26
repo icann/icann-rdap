@@ -205,12 +205,20 @@ impl TxHandle for MemTx {
                 let start_addr = IpAddr::from_str(start_address)?;
                 let end_addr = IpAddr::from_str(end_address)?;
                 if start_addr.is_ipv4() && end_addr.is_ipv4() {
-                    let IpAddr::V4(start_addr) = start_addr else {panic!("check failed")};
-                    let IpAddr::V4(end_addr) = end_addr else {panic!("check failed")};
+                    let IpAddr::V4(start_addr) = start_addr else {
+                        panic!("check failed")
+                    };
+                    let IpAddr::V4(end_addr) = end_addr else {
+                        panic!("check failed")
+                    };
                     IpSubnets::from(Ipv4Subnets::new(start_addr, end_addr, 0))
                 } else if start_addr.is_ipv6() && end_addr.is_ipv6() {
-                    let IpAddr::V6(start_addr) = start_addr else {panic!("check failed")};
-                    let IpAddr::V6(end_addr) = end_addr else {panic!("check failed")};
+                    let IpAddr::V6(start_addr) = start_addr else {
+                        panic!("check failed")
+                    };
+                    let IpAddr::V6(end_addr) = end_addr else {
+                        panic!("check failed")
+                    };
                     IpSubnets::from(Ipv6Subnets::new(start_addr, end_addr, 0))
                 } else {
                     return Err(RdapServerError::EmptyIndexData(

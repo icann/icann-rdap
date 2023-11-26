@@ -64,7 +64,9 @@ async fn GIVEN_data_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
         .await
         .expect("getting domain by ldh");
     assert!(matches!(actual, RdapResponse::Domain(_)));
-    let RdapResponse::Domain(domain) = actual else { panic!() };
+    let RdapResponse::Domain(domain) = actual else {
+        panic!()
+    };
     assert_eq!(domain.ldh_name.as_ref().expect("ldhName is none"), ldh_name)
 }
 
@@ -98,7 +100,9 @@ async fn GIVEN_data_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_load
             .await
             .expect("getting domain by ldh");
         assert!(matches!(actual, RdapResponse::Domain(_)));
-        let RdapResponse::Domain(domain) = actual else { panic!() };
+        let RdapResponse::Domain(domain) = actual else {
+            panic!()
+        };
         assert_eq!(domain.ldh_name.as_ref().expect("ldhName is none"), ldh)
     }
 }
@@ -125,7 +129,9 @@ async fn GIVEN_data_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
         .await
         .expect("getting entity by ldh");
     assert!(matches!(actual, RdapResponse::Entity(_)));
-    let RdapResponse::Entity(entity) = actual else { panic!() };
+    let RdapResponse::Entity(entity) = actual else {
+        panic!()
+    };
     assert_eq!(
         entity
             .object_common
@@ -166,7 +172,9 @@ async fn GIVEN_data_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loa
             .await
             .expect("getting entity by handle");
         assert!(matches!(actual, RdapResponse::Entity(_)));
-        let RdapResponse::Entity(entity) = actual else { panic!() };
+        let RdapResponse::Entity(entity) = actual else {
+            panic!()
+        };
         assert_eq!(
             entity
                 .object_common
@@ -200,7 +208,9 @@ async fn GIVEN_data_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded(
         .await
         .expect("getting nameserver by ldh");
     assert!(matches!(actual, RdapResponse::Nameserver(_)));
-    let RdapResponse::Nameserver(nameserver) = actual else { panic!() };
+    let RdapResponse::Nameserver(nameserver) = actual else {
+        panic!()
+    };
     assert_eq!(
         nameserver.ldh_name.as_ref().expect("ldhName is none"),
         ldh_name
@@ -237,7 +247,9 @@ async fn GIVEN_data_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_
             .await
             .expect("getting nameserver by ldh");
         assert!(matches!(actual, RdapResponse::Nameserver(_)));
-        let RdapResponse::Nameserver(nameserver) = actual else { panic!() };
+        let RdapResponse::Nameserver(nameserver) = actual else {
+            panic!()
+        };
         assert_eq!(nameserver.ldh_name.as_ref().expect("ldhName is none"), ldh)
     }
 }
@@ -264,7 +276,9 @@ async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
         .await
         .expect("getting autnum by num");
     assert!(matches!(actual, RdapResponse::Autnum(_)));
-    let RdapResponse::Autnum(autnum) = actual else { panic!() };
+    let RdapResponse::Autnum(autnum) = actual else {
+        panic!()
+    };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startAutnum is none"),
         num
@@ -307,7 +321,9 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
             .await
             .expect("getting autnum by num");
         assert!(matches!(actual, RdapResponse::Autnum(_)));
-        let RdapResponse::Autnum(autnum) = actual else { panic!() };
+        let RdapResponse::Autnum(autnum) = actual else {
+            panic!()
+        };
         assert_eq!(
             *autnum.start_autnum.as_ref().expect("startAutnum is none"),
             num
@@ -339,7 +355,9 @@ async fn GIVEN_data_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
         .await
         .expect("getting autnum by num");
     assert!(matches!(actual, RdapResponse::Network(_)));
-    let RdapResponse::Network(network) = actual else { panic!() };
+    let RdapResponse::Network(network) = actual else {
+        panic!()
+    };
     assert_eq!(
         *network
             .start_address
@@ -390,7 +408,9 @@ async fn GIVEN_data_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netwo
             .await
             .expect("getting cidr by num");
         assert!(matches!(actual, RdapResponse::Network(_)));
-        let RdapResponse::Network(network) = actual else { panic!() };
+        let RdapResponse::Network(network) = actual else {
+            panic!()
+        };
         assert_eq!(
             *network
                 .start_address
@@ -448,7 +468,9 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
             .await
             .expect("getting cidr by addr");
         assert!(matches!(actual, RdapResponse::Network(_)));
-        let RdapResponse::Network(network) = actual else { panic!() };
+        let RdapResponse::Network(network) = actual else {
+            panic!()
+        };
         assert_eq!(
             *network
                 .start_address
@@ -487,7 +509,9 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
         .await
         .expect("getting default srvhelp");
     assert!(matches!(actual, RdapResponse::Help(_)));
-    let RdapResponse::Help(srvhelp) = actual else {panic!()};
+    let RdapResponse::Help(srvhelp) = actual else {
+        panic!()
+    };
     let notice = srvhelp
         .common
         .notices
@@ -532,7 +556,9 @@ async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() 
         .await
         .expect("getting default srvhelp");
     assert!(matches!(actual, RdapResponse::Help(_)));
-    let RdapResponse::Help(srvhelp) = actual else {panic!()};
+    let RdapResponse::Help(srvhelp) = actual else {
+        panic!()
+    };
     let notice = srvhelp
         .common
         .notices

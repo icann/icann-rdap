@@ -172,16 +172,40 @@ fn parse_datetime(arg: &str) -> Result<DateTime<FixedOffset>, chrono::format::Pa
 fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> {
     let re = Regex::new(r"^(?P<l>\(\S+\)\[\S+\])?\s*(?P<t>.+)$")
         .expect("creating notice/remark argument regex");
-    let Some(cap) = re.captures(arg) else {return Err(RdapServerError::ArgParse("Unable to parse Notice/Remark argumnet.".to_string()))};
-    let Some(description) = cap.name("t") else {return Err(RdapServerError::ArgParse("Unable to parse Notice/Remark description".to_string()))};
+    let Some(cap) = re.captures(arg) else {
+        return Err(RdapServerError::ArgParse(
+            "Unable to parse Notice/Remark argumnet.".to_string(),
+        ));
+    };
+    let Some(description) = cap.name("t") else {
+        return Err(RdapServerError::ArgParse(
+            "Unable to parse Notice/Remark description".to_string(),
+        ));
+    };
     let mut links: Option<Links> = None;
     if let Some(link_data) = cap.name("l") {
         let link_re =
             Regex::new(r"^\((?P<r>\w+);(?P<t>\S+)\)\[(?P<h>\S+)\]$").expect("creating link regex");
-        let Some(link_cap) = link_re.captures(link_data.as_str()) else {return Err(RdapServerError::ArgParse("Unable to parse link in Notice/Remark".to_string()))};
-        let Some(link_rel) = link_cap.name("r") else {return Err(RdapServerError::ArgParse("unable to parse link rel in Notice/Remark".to_string()))};
-        let Some(link_type) = link_cap.name("t") else {return Err(RdapServerError::ArgParse("unable to parse link type in Notice/Remark".to_string()))};
-        let Some(link_href) = link_cap.name("h") else {return Err(RdapServerError::ArgParse("unable to parse link href in Notice/Remark".to_string()))};
+        let Some(link_cap) = link_re.captures(link_data.as_str()) else {
+            return Err(RdapServerError::ArgParse(
+                "Unable to parse link in Notice/Remark".to_string(),
+            ));
+        };
+        let Some(link_rel) = link_cap.name("r") else {
+            return Err(RdapServerError::ArgParse(
+                "unable to parse link rel in Notice/Remark".to_string(),
+            ));
+        };
+        let Some(link_type) = link_cap.name("t") else {
+            return Err(RdapServerError::ArgParse(
+                "unable to parse link type in Notice/Remark".to_string(),
+            ));
+        };
+        let Some(link_href) = link_cap.name("h") else {
+            return Err(RdapServerError::ArgParse(
+                "unable to parse link href in Notice/Remark".to_string(),
+            ));
+        };
         links = Some(vec![Link::builder()
             .media_type(link_type.as_str().to_string())
             .href(link_href.as_str().to_string())
@@ -652,35 +676,45 @@ fn create_template_file(
     path.push(file_name);
     let template = match id {
         RdapId::Entity(id) => {
-            let RdapResponse::Entity(entity) = rdap else {panic!("non entity created with entity id")};
+            let RdapResponse::Entity(entity) = rdap else {
+                panic!("non entity created with entity id")
+            };
             Template::Entity {
                 entity: EntityOrError::EntityObject(entity.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Domain(id) => {
-            let RdapResponse::Domain(domain) = rdap else {panic!("non domain created with domain id")};
+            let RdapResponse::Domain(domain) = rdap else {
+                panic!("non domain created with domain id")
+            };
             Template::Domain {
                 domain: DomainOrError::DomainObject(domain.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Nameserver(id) => {
-            let RdapResponse::Nameserver(nameserver) = rdap else {panic!("non nameserver created with nameserver id")};
+            let RdapResponse::Nameserver(nameserver) = rdap else {
+                panic!("non nameserver created with nameserver id")
+            };
             Template::Nameserver {
                 nameserver: NameserverOrError::NameserverObject(nameserver.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Autnum(id) => {
-            let RdapResponse::Autnum(autnum) = rdap else {panic!("non autnum created with autnum id")};
+            let RdapResponse::Autnum(autnum) = rdap else {
+                panic!("non autnum created with autnum id")
+            };
             Template::Autnum {
                 autnum: AutnumOrError::AutnumObject(autnum.clone()),
                 ids: vec![id.clone()],
             }
         }
         RdapId::Netowrk(id) => {
-            let RdapResponse::Network(network) = rdap else {panic!("non network created with network id")};
+            let RdapResponse::Network(network) = rdap else {
+                panic!("non network created with network id")
+            };
             Template::Network {
                 network: NetworkOrError::NetworkObject(network.clone()),
                 ids: vec![id.clone()],
@@ -1143,8 +1177,12 @@ mod tests {
 
         // THEN
         assert!(actual.description.contains(&description.to_string()));
-        let Some(links) = actual.links else {panic!("no links in notice")};
-        let Some(link) = links.first() else {panic!("links are empty")};
+        let Some(links) = actual.links else {
+            panic!("no links in notice")
+        };
+        let Some(link) = links.first() else {
+            panic!("links are empty")
+        };
         assert_eq!(link.rel.as_ref().expect("no rel in link"), rel);
         assert_eq!(link.href, href);
         assert_eq!(

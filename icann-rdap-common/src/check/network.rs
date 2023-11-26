@@ -45,8 +45,12 @@ impl GetChecks for Network {
             if start_addr.is_err() {
                 items.push(CheckItem::malformed_ip_address())
             } else if self.end_address.is_some() {
-                let Ok(start_addr) = start_addr else {panic!("ip result did not work")};
-                let Some(end_ip) = &self.end_address else {panic!("end address unwrap failed")};
+                let Ok(start_addr) = start_addr else {
+                    panic!("ip result did not work")
+                };
+                let Some(end_ip) = &self.end_address else {
+                    panic!("end address unwrap failed")
+                };
                 if let Ok(end_addr) = IpAddr::from_str(end_ip) {
                     if start_addr > end_addr {
                         items.push(CheckItem::end_ip_before_start_ip())
