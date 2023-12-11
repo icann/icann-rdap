@@ -3,7 +3,7 @@
 #![doc = include_str!("../README.md")]
 use std::fmt::Display;
 
-use icann_rdap_common::response::RdapResponseError;
+use icann_rdap_common::{cache::HttpData, response::RdapResponseError};
 use reqwest::Url;
 use thiserror::Error;
 
@@ -30,9 +30,7 @@ pub enum RdapClientError {
 #[derive(Debug)]
 pub struct ParsingErrorInfo {
     pub text: String,
-    pub content_length: Option<u64>,
-    pub content_type: Option<String>,
-    pub url: Url,
+    pub http_data: HttpData,
     pub error: serde_json::Error,
 }
 
@@ -42,12 +40,14 @@ impl Display for ParsingErrorInfo {
             f,
             "Error: {}\n,Content Length: {}\nContent Type: {}\nUrl: {}\nText:\n{}\n",
             self.error,
-            self.content_length
+            self.http_data
+                .content_length
                 .map_or("No content length given".to_string(), |n| n.to_string()),
-            self.content_type
+            self.http_data
+                .content_type
                 .clone()
                 .unwrap_or("No content type given".to_string()),
-            self.url,
+            self.http_data.host,
             self.text
         )
     }
