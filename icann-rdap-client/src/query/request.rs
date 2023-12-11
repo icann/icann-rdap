@@ -37,22 +37,24 @@ pub async fn rdap_request(
     let status_code = response.status().as_u16();
     let url = response.url().to_owned();
     let text = response.text().await?;
+
+    let http_data = HttpData::now()
+        .status_code(status_code)
+        .and_location(location)
+        .and_content_length(content_length)
+        .and_content_type(content_type)
+        .host(
+            url.host_str()
+                .expect("URL has no host. This shouldn't happen.")
+                .to_owned(),
+        )
+        .and_expires(expires)
+        .and_cache_control(cache_control)
+        .build();
+
     let json: Result<Value, serde_json::Error> = serde_json::from_str(&text);
     if let Ok(rdap_json) = json {
         let rdap = RdapResponse::try_from(rdap_json)?;
-        let http_data = HttpData::now()
-            .status_code(status_code)
-            .and_location(location)
-            .and_content_length(content_length)
-            .and_content_type(content_type)
-            .host(
-                url.host_str()
-                    .expect("URL has no host. This shouldn't happen.")
-                    .to_owned(),
-            )
-            .and_expires(expires)
-            .and_cache_control(cache_control)
-            .build();
         Ok(ResponseData {
             http_data,
             rdap_type: rdap.to_string(),
@@ -62,16 +64,14 @@ pub async fn rdap_request(
         Err(RdapClientError::ParsingError(Box::new(
             crate::ParsingErrorInfo {
                 text,
-                content_length,
-                content_type,
-                url,
+                http_data,
                 error: json.err().unwrap(),
             },
         )))
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ResponseData {
     pub rdap: RdapResponse,
     pub rdap_type: String,
