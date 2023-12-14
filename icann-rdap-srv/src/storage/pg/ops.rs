@@ -1,3 +1,4 @@
+#![allow(clippy::diverging_sub_expression)]
 use async_trait::async_trait;
 use icann_rdap_common::response::RdapResponse;
 use sqlx::{query, PgPool};
