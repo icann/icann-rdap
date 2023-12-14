@@ -208,11 +208,19 @@ impl GetSubChecks for ObjectCommon {
         // events
         if let Some(events) = &self.events {
             events.iter().for_each(|e| {
-                let date = DateTime::parse_from_rfc3339(&e.event_date);
-                if date.is_err() {
+                if let Some(date) = &e.event_date {
+                    let date = DateTime::parse_from_rfc3339(date);
+                    if date.is_err() {
+                        sub_checks.push(Checks {
+                            struct_name: "Events",
+                            items: vec![CheckItem::event_date_is_not_rfc3339()],
+                            sub_checks: Vec::new(),
+                        })
+                    }
+                } else {
                     sub_checks.push(Checks {
-                        struct_name: "Links",
-                        items: vec![CheckItem::event_date_is_not_rfc3339()],
+                        struct_name: "Events",
+                        items: vec![CheckItem::event_date_is_absent()],
                         sub_checks: Vec::new(),
                     })
                 }
@@ -265,7 +273,7 @@ mod tests {
         domain::Domain,
         entity::Entity,
         nameserver::Nameserver,
-        types::{Common, Extension, Link, ObjectCommon, StatusValue},
+        types::{Common, Event, Extension, Link, ObjectCommon, StatusValue},
         RdapResponse,
     };
 
@@ -545,6 +553,71 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::ObjectClassHasNoSelfLink)
             .expect("link missing check");
+    }
+
+    #[test]
+    fn GIVEN_event_with_no_date_WHEN_checked_THEN_event_date_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .events(vec![Event::builder().event_action("foo").build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Events")
+            .expect("Events not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::EventDateIsAbsent)
+            .expect("event missing check");
+    }
+
+    #[test]
+    fn GIVEN_event_with_bad_date_WHEN_checked_THEN_event_date_is_not_date() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .events(vec![Event::builder()
+                            .event_action("foo")
+                            .event_date("bar")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Events")
+            .expect("Events not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::EventDateIsNotRfc3339)
+            .expect("event missing check");
     }
 
     #[test]
