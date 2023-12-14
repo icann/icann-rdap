@@ -106,7 +106,6 @@ fn make_entity_template(
 ) -> Result<(), RdapServerError> {
     let entity = make_test_entity(base_url, None);
     let ids: Vec<EntityId> = (0..num_entities)
-        .into_iter()
         .map(|x| {
             EntityId::builder()
                 .handle(format!("test-entity-{x}"))
@@ -127,7 +126,6 @@ fn make_nameserver_template(
 ) -> Result<(), RdapServerError> {
     let nameserver = make_test_nameserver(base_url, None)?;
     let ids: Vec<NameserverId> = (0..num_nameservers)
-        .into_iter()
         .map(|x| {
             NameserverId::builder()
                 .ldh_name(format!("ns.test-nameserver-{x}.example"))
@@ -177,7 +175,6 @@ fn make_domain_template(
         ))
         .build();
     let ids: Vec<DomainId> = (0..num_domains)
-        .into_iter()
         .map(|x| {
             DomainId::builder()
                 .ldh_name(format!("test-domain-{x}.example"))
@@ -225,7 +222,6 @@ fn make_autnum_template(
         ))
         .build();
     let ids: Vec<AutnumId> = (0..num_autnums)
-        .into_iter()
         .map(|x| AutnumId::builder().start_autnum(x).end_autnum(x).build())
         .collect();
     let template = Template::Autnum {

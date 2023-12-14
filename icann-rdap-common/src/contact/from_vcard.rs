@@ -89,7 +89,7 @@ trait GetText<'a> {
 
 impl<'a> GetText<'a> for Option<&'a Vec<Value>> {
     fn get_text(self) -> Option<String> {
-        let Some(values) = self else { return None };
+        let values = self?;
         let Some(fourth) = values.get(3) else {
             return None;
         };
@@ -377,7 +377,7 @@ trait GetNameParts<'a> {
 
 impl<'a> GetNameParts<'a> for Option<&'a Vec<Value>> {
     fn get_name_parts(self) -> Option<NameParts> {
-        let Some(values) = self else { return None };
+        let values = self?;
         let Some(fourth) = values.get(3) else {
             return None;
         };
