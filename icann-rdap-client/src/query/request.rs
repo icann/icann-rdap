@@ -10,12 +10,7 @@ use crate::RdapClientError;
 
 use super::qtype::QueryType;
 
-pub async fn rdap_request(
-    base_url: &str,
-    query_type: &QueryType,
-    client: &Client,
-) -> Result<ResponseData, RdapClientError> {
-    let url = query_type.query_url(base_url)?;
+pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData, RdapClientError> {
     let response = client.get(url).send().await?.error_for_status()?;
     let content_type = response
         .headers()
@@ -69,6 +64,15 @@ pub async fn rdap_request(
             },
         )))
     }
+}
+
+pub async fn rdap_request(
+    base_url: &str,
+    query_type: &QueryType,
+    client: &Client,
+) -> Result<ResponseData, RdapClientError> {
+    let url = query_type.query_url(base_url)?;
+    rdap_url_request(&url, client).await
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
