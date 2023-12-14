@@ -24,7 +24,6 @@ const_format.workspace = true
 directories.workspace = true
 dotenv.workspace = true
 ipnet.workspace = true
-is-terminal.workspace = true
 lazy_static.workspace = true
 minus.workspace = true
 pct-str.workspace = true
