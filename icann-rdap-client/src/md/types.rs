@@ -232,6 +232,7 @@ pub(crate) fn events_to_table(
         let event_date = &event
             .event_date
             .to_owned()
+            .unwrap_or("????".to_string())
             .format_date_time(params)
             .unwrap_or_default();
         let mut ul: Vec<&String> = vec![event_date];
