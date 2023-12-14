@@ -4,7 +4,6 @@
 use std::fmt::Display;
 
 use icann_rdap_common::{cache::HttpData, response::RdapResponseError};
-use reqwest::Url;
 use thiserror::Error;
 
 pub mod md;
