@@ -45,7 +45,7 @@ clap = { version = "4.4", features = [ "std", "derive", "env", "unstable-styles"
 chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
 
 # compile time constants formatting
-const_format = "0.2.30"
+const_format = "0.2"
 
 # cross-platform application directories
 directories = "5.0.0"
