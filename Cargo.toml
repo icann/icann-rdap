@@ -30,7 +30,7 @@ axum-macros = "0.3"
 axum-client-ip = "0.3.0"
 
 # b-tree with ranges
-btree-range-map = "0.5.1"
+btree-range-map = "0.7.2"
 
 # macros for the builder pattern
 buildstructor = "0.5"
