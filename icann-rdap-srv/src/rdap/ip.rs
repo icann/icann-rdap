@@ -1,10 +1,10 @@
-use std::net::IpAddr;
+use std::{net::IpAddr, str::FromStr};
 
 use axum::{
     extract::{Path, State},
     response::Response,
 };
-use cidr_utils::cidr::IpCidr;
+use cidr_utils::cidr::IpInet;
 use tracing::debug;
 
 use crate::{
@@ -25,7 +25,7 @@ pub(crate) async fn network_by_netid(
 ) -> Result<Response, RdapServerError> {
     if netid.contains('/') {
         debug!("getting network by cidr {netid}");
-        if let Ok(cidr) = IpCidr::from_str(&netid) {
+        if let Ok(cidr) = IpInet::from_str(&netid) {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
             if state.get_bootstrap() {

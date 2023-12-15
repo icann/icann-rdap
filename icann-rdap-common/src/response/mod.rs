@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use cidr_utils::cidr;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::Display;
@@ -38,7 +39,7 @@ pub enum RdapResponseError {
     #[error(transparent)]
     AddrParse(#[from] std::net::AddrParseError),
     #[error(transparent)]
-    CidrParse(#[from] cidr_utils::cidr::IpCidrError),
+    CidrParse(#[from] cidr::errors::NetworkParseError),
 }
 
 /// The various types of RDAP response.

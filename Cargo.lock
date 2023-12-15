@@ -390,6 +390,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cidr"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d18b093eba54c9aaa1e3784d4361eb2ba944cf7d0a932a830132238f483e8d8"
+
+[[package]]
 name = "cidr-utils"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -400,6 +406,17 @@ dependencies = [
  "num-traits",
  "once_cell",
  "regex",
+]
+
+[[package]]
+name = "cidr-utils"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25c0a9fb70c2c2cc2a520aa259b1d1345650046a07df1b6da1d3cefcd327f43e"
+dependencies = [
+ "cidr",
+ "num-bigint",
+ "num-traits",
 ]
 
 [[package]]
@@ -1186,7 +1203,7 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "chrono",
- "cidr-utils",
+ "cidr-utils 0.5.11",
  "clap",
  "const_format",
  "directories",
@@ -1217,7 +1234,7 @@ version = "0.0.14"
 dependencies = [
  "buildstructor",
  "chrono",
- "cidr-utils",
+ "cidr-utils 0.6.1",
  "const_format",
  "icann-rdap-common",
  "lazy_static",
@@ -1239,7 +1256,7 @@ version = "0.0.14"
 dependencies = [
  "buildstructor",
  "chrono",
- "cidr-utils",
+ "cidr-utils 0.6.1",
  "const_format",
  "lazy_static",
  "reqwest",
@@ -1263,7 +1280,7 @@ dependencies = [
  "btree-range-map",
  "buildstructor",
  "chrono",
- "cidr-utils",
+ "cidr-utils 0.6.1",
  "clap",
  "dotenv",
  "envmnt",

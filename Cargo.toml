@@ -36,7 +36,7 @@ btree-range-map = "0.7.2"
 buildstructor = "0.5"
 
 # CIDR utilities
-cidr-utils = "0.5"
+cidr-utils = "0.6"
 
 # command line options parser
 clap = { version = "4.3.19", features = [ "std", "derive", "env", "unstable-styles" ] }
