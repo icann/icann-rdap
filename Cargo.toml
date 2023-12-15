@@ -78,7 +78,7 @@ http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
 
 # for use prefixmap
-ipnet = { version = "2.7", features = ["json"] }
+ipnet = { version = "2.9", features = ["json"] }
 
 # embedded pager
 minus = {version = "5.4", features = ["dynamic_output", "search"] }
