@@ -48,7 +48,7 @@ chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], defau
 const_format = "0.2"
 
 # cross-platform application directories
-directories = "5.0.0"
+directories = "5.0"
 
 # loads environment variables from the a file
 dotenv = "0.15.0"
