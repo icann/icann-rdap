@@ -13,7 +13,7 @@ use crate::test_jig::SrvTestJig;
 async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status_code_is_redirect()
 {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("example").build(),
@@ -52,7 +52,7 @@ async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status
 #[should_panic]
 async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_should_panic() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("no_example").build(),
@@ -80,7 +80,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_sho
 #[tokio::test]
 async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("example").build(),
@@ -119,7 +119,7 @@ async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is
 #[should_panic]
 async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_panic() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("no_example").build(),
@@ -147,7 +147,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_pani
 #[tokio::test]
 async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_network_err(
         &NetworkId::builder()
@@ -190,7 +190,7 @@ async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is
 #[should_panic]
 async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_panic() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_network_err(
         &NetworkId::builder()
@@ -223,7 +223,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_pani
 async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status_code_is_redirect()
 {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum_err(
         &AutnumId::builder()
@@ -265,7 +265,7 @@ async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status
 #[should_panic]
 async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_should_panic() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum_err(
         &AutnumId::builder()
@@ -296,7 +296,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_sho
 #[tokio::test]
 async fn GIVEN_bootstrap_with_specific_tag_WHEN_query_entity_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId::builder().handle("-ARIN").build(),
@@ -335,7 +335,7 @@ async fn GIVEN_bootstrap_with_specific_tag_WHEN_query_entity_THEN_status_code_is
 async fn GIVEN_bootstrap_with_specific_tag_lowercase_WHEN_query_entity_THEN_status_code_is_redirect(
 ) {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId::builder().handle("-ARIN").build(),
@@ -374,7 +374,7 @@ async fn GIVEN_bootstrap_with_specific_tag_lowercase_WHEN_query_entity_THEN_stat
 #[should_panic]
 async fn GIVEN_bootstrap_with_no_specific_tag_WHEN_query_entity_THEN_should_panic() {
     // GIVEN
-    let test_srv = SrvTestJig::new_bootstrap();
+    let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId::builder().handle("-CLAUCA").build(),

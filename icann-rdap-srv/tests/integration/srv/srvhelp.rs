@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use http::HeaderValue;
 use icann_rdap_client::query::{qtype::QueryType, request::rdap_request};
 use icann_rdap_common::{
     client::{create_client, ClientConfig},
@@ -16,7 +15,7 @@ use crate::test_jig::SrvTestJig;
 #[tokio::test]
 async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let srvhelp = Help::basic()
         .notice(Notice(
@@ -49,7 +48,7 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
 #[tokio::test]
 async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let srvhelp = Help::basic()
         .notice(Notice(
@@ -68,7 +67,7 @@ async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
-        .host(HeaderValue::from_str("foo.example.com").expect("host header value"))
+        .host(reqwest::header::HeaderValue::from_static("foo.example.com"))
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::Help;

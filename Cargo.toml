@@ -23,11 +23,12 @@ anyhow = "1.0"
 async-trait = "0.1"
 
 # axum (web server)
-axum = { version = "0.6", features = ["headers"] }
-axum-macros = "0.3"
+axum = { version = "0.7" }
+axum-extra = { version = "0.9", features = [ "typed-header" ] }
+axum-macros = "0.4"
 
 # client IP address extractor
-axum-client-ip = "0.3.0"
+axum-client-ip = "0.5"
 
 # b-tree with ranges
 btree-range-map = "0.7.2"
@@ -69,13 +70,13 @@ git-version = "0.3"
 lazy_static = "1.4"
 
 # headers (http headers)
-headers = "0.3"
+headers = "0.4"
 
 # http constructs
-http = "0.2"
+http = "1.0"
 
 # hyper (http implementation used by axum)
-hyper = { version = "0.14", features = ["full"] }
+hyper = { version = "1.0", features = ["full"] }
 
 # for use prefixmap
 ipnet = { version = "2.9", features = ["json"] }
@@ -125,7 +126,7 @@ tokio = { version = "1.35", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.4", features = ["timeout", "util"] }
-tower-http = { version = "0.3.3", features = [
+tower-http = { version = "0.5", features = [
     "add-extension",
     "trace",
     "cors",
