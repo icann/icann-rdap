@@ -496,9 +496,9 @@ dependencies = [
 
 [[package]]
 name = "coolor"
-version = "0.5.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af4d7a805ca0d92f8c61a31c809d4323fdaa939b0b440e544d21db7797c5aaad"
+checksum = "95ce3e41909f18d5860fe1e6699651fcca2cb2576ee68c6984c93c2b26d059ea"
 dependencies = [
  "crossterm 0.23.2",
 ]
@@ -1416,6 +1416,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazy-regex"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d12be4595afdf58bd19e4a9f4e24187da2a66700786ff660a418e9059937a4c"
+dependencies = [
+ "lazy-regex-proc_macros",
+ "once_cell",
+ "regex",
+]
+
+[[package]]
+name = "lazy-regex-proc_macros"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44bcd58e6c97a7fcbaffcdc95728b393b8d98933bfadad49ed4097845b57ef0b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn 2.0.41",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1528,9 +1551,9 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "minimad"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38b136454924e4d020e55c4992e07c105b40d5c41b84662862f0e15bc0a2efef"
+checksum = "f6c4610f430e49b882fcaad0186134150d4d74fc76080b0a61f7000460c2e268"
 dependencies = [
  "once_cell",
 ]
@@ -2833,14 +2856,16 @@ dependencies = [
 
 [[package]]
 name = "termimad"
-version = "0.23.2"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e32883199fc52cda7e431958dee8bc3ec6898afabc152b76959b9e0e74e2202"
+checksum = "7c3d19056c90eb12f23da61808c9f8c22b7d031bb5d50400b726ecf2d9718e73"
 dependencies = [
  "coolor",
  "crossbeam",
  "crossterm 0.23.2",
+ "lazy-regex",
  "minimad",
+ "serde",
  "thiserror",
  "unicode-width",
 ]
