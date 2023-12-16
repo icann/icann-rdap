@@ -90,7 +90,7 @@ pct-str = "1.2"
 prefix-trie = "0.2.4"
 
 # regular expresions
-regex = "1.7"
+regex = "1.10"
 
 # http client library
 reqwest = {version = "0.11", features = ["json", "stream", "native-tls-vendored"]}
