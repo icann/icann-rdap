@@ -27,7 +27,7 @@ impl<'a> PgTx<'a> {
         let mut db_tx = pg_pool.begin().await?;
         // TODO actually complete this
         // this is just here to make sure something will compile
-        sqlx::query("truncate domain").execute(&mut db_tx).await?;
+        sqlx::query("truncate domain").execute(&mut *db_tx).await?;
         Ok(PgTx { db_tx })
     }
 }
@@ -50,7 +50,7 @@ impl<'a> TxHandle for PgTx<'a> {
         // TODO actually complete this
         // this is just here to make sure something will compile
         sqlx::query("insert domain")
-            .execute(&mut self.db_tx)
+            .execute(&mut *self.db_tx)
             .await?;
         Ok(())
     }

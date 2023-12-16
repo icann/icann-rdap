@@ -8,7 +8,7 @@ use crate::test_jig::TestJig;
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_domain_with_check_WHEN_query_THEN_failure() {
     // GIVEN
-    let mut test_jig = TestJig::new();
+    let mut test_jig = TestJig::new().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
         .await

@@ -1,4 +1,6 @@
-use axum::{extract::State, headers::Host, response::Response, TypedHeader};
+use axum::{extract::State, response::Response};
+use axum_extra::typed_header::TypedHeader;
+use headers::Host;
 use icann_rdap_common::response::RdapResponse;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};

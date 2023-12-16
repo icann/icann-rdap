@@ -12,7 +12,7 @@ use crate::test_jig::SrvTestJig;
 #[tokio::test]
 async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
         .await

@@ -1,5 +1,7 @@
+use std::str::FromStr;
+
 use buildstructor::Builder;
-use cidr_utils::cidr::IpCidr;
+use cidr_utils::cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -155,7 +157,7 @@ impl Network {
         entities: Option<Vec<crate::response::entity::Entity>>,
         notices: Option<Vec<crate::response::types::Notice>>,
     ) -> Result<Self, RdapResponseError> {
-        let cidr = IpCidr::from_str(cidr)?;
+        let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
             common: Common::level0_with_options()
                 .extension("cidr0")
@@ -170,24 +172,24 @@ impl Network {
                 .and_port_43(port_43)
                 .and_entities(entities)
                 .build(),
-            start_address: Some(cidr.first_as_ip_addr().to_string()),
-            end_address: Some(cidr.last_as_ip_addr().to_string()),
+            start_address: Some(cidr.first_address().to_string()),
+            end_address: Some(cidr.last_address().to_string()),
             ip_version: match cidr {
-                IpCidr::V4(_) => Some("v4".to_string()),
-                IpCidr::V6(_) => Some("v6".to_string()),
+                IpInet::V4(_) => Some("v4".to_string()),
+                IpInet::V6(_) => Some("v6".to_string()),
             },
             name,
             network_type,
             parent_handle,
             country,
             cidr0_cidrs: match cidr {
-                IpCidr::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: cidr.get_prefix_as_ipv4_addr().to_string(),
-                    length: cidr.get_bits(),
+                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+                    v4prefix: cidr.first_address().to_string(),
+                    length: cidr.network_length(),
                 })]),
-                IpCidr::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: cidr.get_prefix_as_ipv6_addr().to_string(),
-                    length: cidr.get_bits(),
+                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                    v6prefix: cidr.first_address().to_string(),
+                    length: cidr.network_length(),
                 })]),
             },
         })
