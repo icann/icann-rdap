@@ -19,6 +19,46 @@ Both icann-rdap-common and icann-rdap-client can be compiled for WASM targets.
 Usage
 -----
 
+To make a query using bootstrapping:
+
+```no_run
+use icann_rdap_common::client::ClientConfig;
+use icann_rdap_common::client::create_client;
+use icann_rdap_client::query::request::rdap_bootstrapped_request;
+use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::query::bootstrap::MemoryBootstrapStore;
+use icann_rdap_client::RdapClientError;
+use std::str::FromStr;
+use tokio::main;
+
+#[tokio::main]
+async fn main() -> Result<(), RdapClientError> {
+
+    // create a query
+    let query = QueryType::from_str("192.168.0.1")?;
+    // or
+    let query = QueryType::from_str("icann.org")?;
+
+    // create a client (from icann-rdap-common)
+    let config = ClientConfig::default();
+    let client = create_client(&config)?;
+    let store = MemoryBootstrapStore::new();
+
+    // issue the RDAP query
+    let response =
+        rdap_bootstrapped_request(
+           &query,
+           &client,
+           &store,
+           |reg| eprintln!("fetching {reg:?}")
+    ).await?;
+
+    Ok(())
+}
+```
+
+To specify a base URL:
+
 ```rust,no_run
 use icann_rdap_common::client::ClientConfig;
 use icann_rdap_common::client::create_client;

@@ -1,9 +1,13 @@
 #![allow(dead_code)] // TODO remove this at some point
 #![allow(rustdoc::bare_urls)]
 #![doc = include_str!("../README.md")]
-use std::fmt::Display;
+use std::{fmt::Display, sync::PoisonError};
 
-use icann_rdap_common::{cache::HttpData, response::RdapResponseError};
+use icann_rdap_common::{
+    cache::HttpData,
+    iana::{BootstrapRegistryError, IanaResponseError},
+    response::RdapResponseError,
+};
 use thiserror::Error;
 
 pub mod md;
@@ -24,6 +28,22 @@ pub enum RdapClientError {
     ParsingError(Box<ParsingErrorInfo>),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+    #[error("RwLock Poison Error")]
+    Poison,
+    #[error("Bootstrap unavailable")]
+    BootstrapUnavailable,
+    #[error(transparent)]
+    BootstrapError(#[from] BootstrapRegistryError),
+    #[error(transparent)]
+    IanaResponse(#[from] IanaResponseError),
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+}
+
+impl<T> From<PoisonError<T>> for RdapClientError {
+    fn from(_err: PoisonError<T>) -> Self {
+        Self::Poison
+    }
 }
 
 #[derive(Debug)]

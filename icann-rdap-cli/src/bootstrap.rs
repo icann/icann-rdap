@@ -1,16 +1,20 @@
-use core::panic;
 use std::{
     fs::{self, File},
     io::{BufRead, BufReader},
+    path::PathBuf,
 };
 
-use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::query::{
+    bootstrap::{
+        fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl,
+        RegistryHasNotExpired,
+    },
+    qtype::QueryType,
+};
 use icann_rdap_common::{
     cache::HttpData,
-    iana::{iana_request, IanaRegistry, IanaRegistryType},
+    iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
 };
-use ipnet::{Ipv4Net, Ipv6Net};
-use prefix_trie::PrefixMap;
 use reqwest::Client;
 use tracing::debug;
 
@@ -33,282 +37,133 @@ pub(crate) async fn get_base_url(
         return Ok(url.to_owned());
     }
 
+    let store = FileCacheBootstrapStore;
+
     match bootstrap_type {
-        BootstrapType::None => qtype_to_bootstrap_url(client, query_type).await,
+        BootstrapType::None => Ok(qtype_to_bootstrap_url(client, &store, query_type, |reg| {
+            debug!("Fetching IANA registry {}", reg.url())
+        })
+        .await?),
         BootstrapType::Url(url) => Ok(url.to_owned()),
         BootstrapType::Tag(tag) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapObjectTags, client).await?;
-            let urls = get_tag_bootstrap_urls(iana, tag)?;
-            Ok(get_preferred_url(urls)?)
+            fetch_bootstrap(&IanaRegistryType::RdapObjectTags, client, &store, |_reg| {
+                debug!("Fetching IANA RDAP Object Tag Registry")
+            })
+            .await?;
+            Ok(store.get_tag_urls(tag)?.preferred_url()?)
         }
     }
 }
 
-pub(crate) async fn qtype_to_bootstrap_url(
-    client: &Client,
-    query_type: &QueryType,
-) -> Result<String, CliError> {
-    match query_type {
-        QueryType::IpV4Addr(_) | QueryType::IpV4Cidr(_) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapBootstrapIpv4, client).await?;
-            let urls = get_ipv4_bootstrap_urls(iana, query_type)?;
-            Ok(get_preferred_url(urls)?)
+struct FileCacheBootstrapStore;
+
+impl BootstrapStore for FileCacheBootstrapStore {
+    fn has_bootstrap_registry(
+        &self,
+        reg_type: &IanaRegistryType,
+    ) -> Result<bool, icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(reg_type.file_name());
+        if path.exists() {
+            let fc_reg = fetch_file_cache_bootstrap(path, |s| debug!("Checking for {s}"))?;
+            return Ok(Some(fc_reg).registry_has_not_expired());
         }
-        QueryType::IpV6Addr(_) | QueryType::IpV6Cidr(_) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapBootstrapIpv6, client).await?;
-            let urls = get_ipv6_bootstrap_urls(iana, query_type)?;
-            Ok(get_preferred_url(urls)?)
-        }
-        QueryType::AsNumber(_) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapBootstrapAsn, client).await?;
-            let urls = get_asn_bootstrap_urls(iana, query_type)?;
-            Ok(get_preferred_url(urls)?)
-        }
-        QueryType::Domain(_) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapBootstrapDns, client).await?;
-            let urls = get_domain_bootstrap_urls(iana, query_type)?;
-            Ok(get_preferred_url(urls)?)
-        }
-        QueryType::Entity(_) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapObjectTags, client).await?;
-            let urls = get_entity_handle_bootstrap_urls(iana, query_type)?;
-            Ok(get_preferred_url(urls)?)
-        }
-        QueryType::Nameserver(_) => {
-            let iana = get_iana_registry(IanaRegistryType::RdapBootstrapDns, client).await?;
-            let urls = get_domain_bootstrap_urls(iana, query_type)?;
-            Ok(get_preferred_url(urls)?)
-        }
-        _ => Err(CliError::BootstrapNotFound),
+        Ok(false)
+    }
+
+    fn put_bootstrap_registry(
+        &self,
+        reg_type: &IanaRegistryType,
+        registry: IanaRegistry,
+        http_data: HttpData,
+    ) -> Result<(), icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(reg_type.file_name());
+        let data = serde_json::to_string_pretty(&registry)?;
+        let cache_contents = http_data.to_lines(&data)?;
+        fs::write(path, cache_contents)?;
+        Ok(())
+    }
+
+    fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapDns.file_name());
+        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        Ok(iana.get_dns_bootstrap_urls(ldh)?)
+    }
+
+    fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapAsn.file_name());
+        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        Ok(iana.get_asn_bootstrap_urls(asn)?)
+    }
+
+    fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapIpv4.file_name());
+        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        Ok(iana.get_ipv4_bootstrap_urls(ipv4)?)
+    }
+
+    fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapIpv6.file_name());
+        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        Ok(iana.get_ipv6_bootstrap_urls(ipv6)?)
+    }
+
+    fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+        let path = bootstrap_cache_path().join(IanaRegistryType::RdapObjectTags.file_name());
+        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        Ok(iana.get_tag_bootstrap_urls(tag)?)
     }
 }
 
-/// Prefer HTTPS urls.
-fn get_preferred_url(urls: Vec<String>) -> Result<String, CliError> {
-    if urls.is_empty() {
-        Err(CliError::InvalidBootstrap)
-    } else {
-        let url = urls
-            .iter()
-            .find(|s| s.starts_with("https://"))
-            .unwrap_or_else(|| urls.first().unwrap());
-        Ok(url.to_owned())
+fn fetch_file_cache_bootstrap<F>(
+    path: PathBuf,
+    callback: F,
+) -> Result<(IanaRegistry, HttpData), std::io::Error>
+where
+    F: FnOnce(String),
+{
+    let input = File::open(&path)?;
+    let buf = BufReader::new(input);
+    let mut lines = Vec::new();
+    for line in buf.lines() {
+        lines.push(line?);
     }
-}
-
-/// Gets the bootstrap url from IANA. Requirements are that it must be the longest match.
-fn get_domain_bootstrap_urls(
-    iana: IanaRegistry,
-    query_type: &QueryType,
-) -> Result<Vec<String>, CliError> {
-    let domain_name = match query_type {
-        QueryType::Domain(domain) => domain,
-        QueryType::Nameserver(ns) => ns,
-        _ => panic!("invalid domain query type"),
-    };
-    let mut longest_match: Option<(usize, Vec<String>)> = None;
-    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
-    for service in bootstrap.services {
-        let tlds = service.first().ok_or(CliError::InvalidBootstrap)?;
-        for tld in tlds {
-            if domain_name.ends_with(tld) {
-                let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
-                let longest = longest_match.get_or_insert_with(|| (tld.len(), urls.to_owned()));
-                if longest.0 < tld.len() {
-                    *longest = (tld.len(), urls.to_owned());
-                }
-            }
-        }
-    }
-    let longest = longest_match.ok_or(CliError::BootstrapNotFound)?;
-    Ok(longest.1)
-}
-
-fn get_asn_bootstrap_urls(
-    iana: IanaRegistry,
-    query_type: &QueryType,
-) -> Result<Vec<String>, CliError> {
-    let QueryType::AsNumber(asn) = query_type else {
-        panic!("invalid query type")
-    };
-    let autnum = asn
-        .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
-        .parse::<u32>()
-        .map_err(|_| CliError::InvalidBootstrap)?;
-    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
-    for service in bootstrap.services {
-        let as_ranges = service.first().ok_or(CliError::InvalidBootstrap)?;
-        for range in as_ranges {
-            let as_split = range.split('-').collect::<Vec<&str>>();
-            let start_as = as_split
-                .first()
-                .ok_or(CliError::InvalidBootstrap)?
-                .parse::<u32>()
-                .map_err(|_| CliError::InvalidBootstrap)?;
-            let end_as = as_split
-                .last()
-                .ok_or(CliError::InvalidBootstrap)?
-                .parse::<u32>()
-                .map_err(|_| CliError::InvalidBootstrap)?;
-            if start_as <= autnum && end_as >= autnum {
-                let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
-                return Ok(urls.to_owned());
-            }
-        }
-    }
-    Err(CliError::BootstrapNotFound)
-}
-
-fn get_ipv4_bootstrap_urls(
-    iana: IanaRegistry,
-    query_type: &QueryType,
-) -> Result<Vec<String>, CliError> {
-    let ip = match query_type {
-        QueryType::IpV4Addr(addr) => format!("{addr}/32"),
-        QueryType::IpV4Cidr(cidr) => cidr.to_owned(),
-        _ => panic!("non ip query for ip bootstrap"),
-    };
-    let mut pm: PrefixMap<Ipv4Net, Vec<String>> = PrefixMap::new();
-    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
-    for service in bootstrap.services {
-        let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
-        for cidr in service.first().ok_or(CliError::InvalidBootstrap)? {
-            pm.insert(
-                cidr.parse().map_err(|_| CliError::InvalidBootstrap)?,
-                urls.clone(),
-            );
-        }
-    }
-    let net = pm
-        .get_lpm(&ip.parse().map_err(|_| CliError::InvalidBootstrap)?)
-        .ok_or(CliError::BootstrapNotFound)?;
-    Ok(net.1.to_owned())
-}
-
-fn get_ipv6_bootstrap_urls(
-    iana: IanaRegistry,
-    query_type: &QueryType,
-) -> Result<Vec<String>, CliError> {
-    let ip = match query_type {
-        QueryType::IpV6Addr(addr) => format!("{addr}/128"),
-        QueryType::IpV6Cidr(cidr) => cidr.to_owned(),
-        _ => panic!("non ip query for ip bootstrap"),
-    };
-    let mut pm: PrefixMap<Ipv6Net, Vec<String>> = PrefixMap::new();
-    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
-    for service in bootstrap.services {
-        let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
-        for cidr in service.first().ok_or(CliError::InvalidBootstrap)? {
-            pm.insert(
-                cidr.parse().map_err(|_| CliError::InvalidBootstrap)?,
-                urls.clone(),
-            );
-        }
-    }
-    let net = pm
-        .get_lpm(&ip.parse().map_err(|_| CliError::InvalidBootstrap)?)
-        .ok_or(CliError::BootstrapNotFound)?;
-    Ok(net.1.to_owned())
-}
-
-fn get_entity_handle_bootstrap_urls(
-    iana: IanaRegistry,
-    query_type: &QueryType,
-) -> Result<Vec<String>, CliError> {
-    let QueryType::Entity(handle) = query_type else {
-        panic!("non entity handle for bootstrap")
-    };
-    let handle_split = handle.rsplit_once('-').ok_or(CliError::BootstrapNotFound)?;
-    get_tag_bootstrap_urls(iana, handle_split.1)
-}
-
-fn get_tag_bootstrap_urls(iana: IanaRegistry, tag: &str) -> Result<Vec<String>, CliError> {
-    let IanaRegistry::RdapBootstrapRegistry(bootstrap) = iana;
-    for service in bootstrap.services {
-        let object_tag = service
-            .get(1)
-            .ok_or(CliError::InvalidBootstrap)?
-            .first()
-            .ok_or(CliError::InvalidBootstrap)?;
-        if object_tag.to_ascii_uppercase() == tag.to_ascii_uppercase() {
-            let urls = service.last().ok_or(CliError::InvalidBootstrap)?;
-            return Ok(urls.to_owned());
-        }
-    }
-    Err(CliError::BootstrapNotFound)
-}
-
-async fn get_iana_registry(
-    reg_type: IanaRegistryType,
-    client: &Client,
-) -> Result<IanaRegistry, CliError> {
-    let path = bootstrap_cache_path().join(reg_type.file_name());
-    if path.exists() {
-        let input = File::open(&path)?;
-        let buf = BufReader::new(input);
-        let mut lines = Vec::new();
-        for line in buf.lines() {
-            lines.push(line?);
-        }
-        let cache_data = HttpData::from_lines(&lines)?;
-        if !cache_data.0.is_expired(604800i64) {
-            debug!("Getting bootstrap from {}", reg_type.file_name());
-            let iana: IanaRegistry = serde_json::from_str(&cache_data.1.join(""))?;
-            return Ok(iana);
-        }
-    }
-    debug!("Getting IANA bootstrap from {}", reg_type.url());
-    let iana = iana_request(reg_type, client).await?;
-    let data = serde_json::to_string_pretty(&iana.registry)?;
-    let cache_contents = iana.http_data.to_lines(&data)?;
-    fs::write(path, cache_contents)?;
-    Ok(iana.registry)
+    let cache_data = HttpData::from_lines(&lines)?;
+    callback(path.display().to_string());
+    let iana: IanaRegistry = serde_json::from_str(&cache_data.1.join(""))?;
+    Ok((iana, cache_data.0))
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-mod tests {
-    use icann_rdap_client::query::qtype::QueryType;
-    use icann_rdap_common::iana::IanaRegistry;
-    use rstest::rstest;
-
-    use crate::bootstrap::{
-        get_asn_bootstrap_urls, get_ipv4_bootstrap_urls, get_ipv6_bootstrap_urls,
-        get_tag_bootstrap_urls,
+mod test {
+    use icann_rdap_client::query::{bootstrap::PreferredUrl, qtype::QueryType};
+    use icann_rdap_common::{
+        cache::HttpData,
+        iana::{IanaRegistry, IanaRegistryType},
     };
+    use serial_test::serial;
+    use test_dir::{DirBuilder, FileType, TestDir};
 
-    use super::{get_domain_bootstrap_urls, get_preferred_url};
+    use crate::bootstrap::FileCacheBootstrapStore;
 
-    #[test]
-    fn GIVEN_one_url_WHEN_preferred_urls_THEN_that_is_the_one() {
-        // GIVEN
-        let urls = vec!["http://foo.example".to_string()];
+    use super::BootstrapStore;
 
-        // WHEN
-        let actual = get_preferred_url(urls).expect("cannot get preferred url");
-
-        // THEN
-        assert_eq!(actual, "http://foo.example");
+    fn test_dir() -> TestDir {
+        let test_dir = TestDir::temp()
+            .create("cache", FileType::Dir)
+            .create("config", FileType::Dir);
+        std::env::set_var("XDG_CACHE_HOME", test_dir.path("cache"));
+        std::env::set_var("XDG_CONFIG_HOME", test_dir.path("config"));
+        crate::dirs::init().expect("unable to init directories");
+        test_dir
     }
 
     #[test]
-    fn GIVEN_one_http_and_https_url_WHEN_preferred_urls_THEN_return_https() {
+    #[serial]
+    fn GIVEN_fcbootstrap_with_dns_WHEN_get_domain_query_url_THEN_correct_url() {
         // GIVEN
-        let urls = vec![
-            "http://foo.example".to_string(),
-            "https://foo.example".to_string(),
-        ];
-
-        // WHEN
-        let actual = get_preferred_url(urls).expect("cannot get preferred url");
-
-        // THEN
-        assert_eq!(actual, "https://foo.example");
-    }
-
-    #[test]
-    fn GIVEN_domain_bootstrap_with_matching_WHEN_find_THEN_url_matches() {
-        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
         let bootstrap = r#"
             {
                 "version": "1.0",
@@ -332,57 +187,30 @@ mod tests {
         "#;
         let iana =
             serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse domain bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapDns,
+            iana,
+            HttpData::now().host("example.com").build(),
+        )
+        .expect("put iana registry");
 
         // WHEN
-        let actual = get_domain_bootstrap_urls(iana, &QueryType::Domain("foo.org".to_string()));
+        let actual = bs
+            .get_domain_query_urls(&QueryType::Domain("example.org".to_string()))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
 
         // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://example.org/"
-        );
+        assert_eq!(actual, "https://example.org/")
     }
 
     #[test]
-    fn GIVEN_domain_bootstrap_with_two_matching_WHEN_find_THEN_return_longest_match() {
+    #[serial]
+    fn GIVEN_fcbootstrap_with_autnum_WHEN_get_autnum_query_url_THEN_correct_url() {
         // GIVEN
-        let bootstrap = r#"
-            {
-                "version": "1.0",
-                "publication": "2024-01-07T10:11:12Z",
-                "description": "Some text",
-                "services": [
-                  [
-                    ["co.uk"],
-                    [
-                      "https://registry.co.uk/"
-                    ]
-                  ],
-                  [
-                    ["uk"],
-                    [
-                      "https://registry.uk/"
-                    ]
-                  ]
-                ]
-            }
-        "#;
-        let iana =
-            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse domain bootstrap");
-
-        // WHEN
-        let actual = get_domain_bootstrap_urls(iana, &QueryType::Domain("foo.co.uk".to_string()));
-
-        // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://registry.co.uk/"
-        );
-    }
-
-    #[test]
-    fn GIVEN_autnum_bootstrap_with_match_WHEN_find_with_string_THEN_return_match() {
-        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
         let bootstrap = r#"
             {
                 "version": "1.0",
@@ -413,29 +241,30 @@ mod tests {
         "#;
         let iana =
             serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapAsn,
+            iana,
+            HttpData::now().host("example.com").build(),
+        )
+        .expect("put iana registry");
 
         // WHEN
-        let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber("as64498".to_string()));
+        let actual = bs
+            .get_autnum_query_urls(&QueryType::AsNumber("as64512".to_string()))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
 
         // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://example.org/"
-        );
+        assert_eq!(actual, "https://example.net/rdaprir2/");
     }
 
-    #[rstest]
-    #[case(64497u32, "https://example.org/")]
-    #[case(64498u32, "https://example.org/")]
-    #[case(64510u32, "https://example.org/")]
-    #[case(65536u32, "https://example.org/")]
-    #[case(65537u32, "https://example.org/")]
-    #[case(64513u32, "http://example.net/rdaprir2/")]
-    fn GIVEN_autnum_bootstrap_with_match_WHEN_find_with_number_THEN_return_match(
-        #[case] asn: u32,
-        #[case] bootstrap_url: &str,
-    ) {
+    #[test]
+    #[serial]
+    fn GIVEN_fcbootstrap_with_ipv4_THEN_get_ipv4_query_urls_THEN_correct_url() {
         // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
         let bootstrap = r#"
             {
                 "version": "1.0",
@@ -443,22 +272,22 @@ mod tests {
                 "description": "RDAP Bootstrap file for example registries.",
                 "services": [
                   [
-                    ["64496-64496"],
+                    ["198.51.100.0/24", "192.0.0.0/8"],
                     [
-                      "https://rir3.example.com/myrdap/"
+                      "https://rir1.example.com/myrdap/"
                     ]
                   ],
                   [
-                    ["64497-64510", "65536-65551"],
+                    ["203.0.113.0/24", "192.0.2.0/24"],
                     [
                       "https://example.org/"
                     ]
                   ],
                   [
-                    ["64512-65534"],
+                    ["203.0.113.0/28"],
                     [
-                      "http://example.net/rdaprir2/",
-                      "https://example.net/rdaprir2/"
+                      "https://example.net/rdaprir2/",
+                      "http://example.net/rdaprir2/"
                     ]
                   ]
                 ]
@@ -466,110 +295,30 @@ mod tests {
         "#;
         let iana =
             serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapIpv4,
+            iana,
+            HttpData::now().host("example.com").build(),
+        )
+        .expect("put iana registry");
 
         // WHEN
-        let actual = get_asn_bootstrap_urls(iana, &QueryType::AsNumber(asn.to_string()));
+        let actual = bs
+            .get_ipv4_query_urls(&QueryType::IpV4Addr("198.51.100.1".to_string()))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
 
         // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            bootstrap_url
-        );
+        assert_eq!(actual, "https://rir1.example.com/myrdap/");
     }
 
     #[test]
-    fn GIVEN_ipv4_bootstrap_with_match_WHEN_find_with_ip_address_THEN_return_match() {
+    #[serial]
+    fn GIVEN_fcbootstrap_with_ipv6_THEN_get_ipv6_query_urls_THEN_correct_url() {
         // GIVEN
-        let bootstrap = r#"
-            {
-                "version": "1.0",
-                "publication": "2024-01-07T10:11:12Z",
-                "description": "RDAP Bootstrap file for example registries.",
-                "services": [
-                  [
-                    ["198.51.100.0/24", "192.0.0.0/8"],
-                    [
-                      "https://rir1.example.com/myrdap/"
-                    ]
-                  ],
-                  [
-                    ["203.0.113.0/24", "192.0.2.0/24"],
-                    [
-                      "https://example.org/"
-                    ]
-                  ],
-                  [
-                    ["203.0.113.0/28"],
-                    [
-                      "https://example.net/rdaprir2/",
-                      "http://example.net/rdaprir2/"
-                    ]
-                  ]
-                ]
-            }
-        "#;
-        let iana =
-            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv4 bootstrap");
-
-        // WHEN
-        let actual =
-            get_ipv4_bootstrap_urls(iana, &QueryType::IpV4Addr("198.51.100.1".to_string()));
-
-        // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://rir1.example.com/myrdap/"
-        );
-    }
-
-    #[test]
-    fn GIVEN_ipv4_bootstrap_with_match_WHEN_find_with_cidr_THEN_return_match() {
-        // GIVEN
-        let bootstrap = r#"
-            {
-                "version": "1.0",
-                "publication": "2024-01-07T10:11:12Z",
-                "description": "RDAP Bootstrap file for example registries.",
-                "services": [
-                  [
-                    ["198.51.100.0/24", "192.0.0.0/8"],
-                    [
-                      "https://rir1.example.com/myrdap/"
-                    ]
-                  ],
-                  [
-                    ["203.0.113.0/24", "192.0.2.0/24"],
-                    [
-                      "https://example.org/"
-                    ]
-                  ],
-                  [
-                    ["203.0.113.0/28"],
-                    [
-                      "https://example.net/rdaprir2/",
-                      "http://example.net/rdaprir2/"
-                    ]
-                  ]
-                ]
-            }
-        "#;
-        let iana =
-            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv4 bootstrap");
-
-        // WHEN
-        let actual =
-            get_ipv4_bootstrap_urls(iana, &QueryType::IpV4Cidr("203.0.113.0/24".to_string()));
-
-        // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://example.org/"
-        );
-    }
-
-    #[test]
-    fn GIVEN_ipv6_bootstrap_with_match_WHEN_find_with_ip_address_THEN_return_match() {
-        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
         let bootstrap = r#"
             {
                 "version": "1.0",
@@ -599,66 +348,31 @@ mod tests {
             }
         "#;
         let iana =
-            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv6 bootstrap");
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapIpv6,
+            iana,
+            HttpData::now().host("example.com").build(),
+        )
+        .expect("put iana registry");
 
         // WHEN
-        let actual = get_ipv6_bootstrap_urls(iana, &QueryType::IpV6Addr("2001:db8::1".to_string()));
+        let actual = bs
+            .get_ipv6_query_urls(&QueryType::IpV6Addr("2001:db8::1".to_string()))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
 
         // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://rir2.example.com/myrdap/"
-        );
+        assert_eq!(actual, "https://rir2.example.com/myrdap/");
     }
 
     #[test]
-    fn GIVEN_ipv6_bootstrap_with_match_WHEN_find_with_ip_cidr_THEN_return_match() {
+    #[serial]
+    fn GIVEN_fcbootstrap_with_tag_THEN_get_entity_handle_query_urls_THEN_correct_url() {
         // GIVEN
-        let bootstrap = r#"
-            {
-                "version": "1.0",
-                "publication": "2024-01-07T10:11:12Z",
-                "description": "RDAP Bootstrap file for example registries.",
-                "services": [
-                  [
-                    ["2001:db8::/34"],
-                    [
-                      "https://rir2.example.com/myrdap/"
-                    ]
-                  ],
-                  [
-                    ["2001:db8:4000::/36", "2001:db8:ffff::/48"],
-                    [
-                      "https://example.org/"
-                    ]
-                  ],
-                  [
-                    ["2001:db8:1000::/36"],
-                    [
-                      "https://example.net/rdaprir2/",
-                      "http://example.net/rdaprir2/"
-                    ]
-                  ]
-                ]
-            }
-        "#;
-        let iana =
-            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse ipv6 bootstrap");
-
-        // WHEN
-        let actual =
-            get_ipv6_bootstrap_urls(iana, &QueryType::IpV6Cidr("2001:db8:4000::/36".to_string()));
-
-        // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://example.org/"
-        );
-    }
-
-    #[test]
-    fn GIVEN_tag_bootstrap_with_match_WHEN_find_with_tag_THEN_return_match() {
-        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
         let bootstrap = r#"
             {
               "version": "1.0",
@@ -691,15 +405,22 @@ mod tests {
              }
         "#;
         let iana =
-            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse tag bootstrap");
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse autnum bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapObjectTags,
+            iana,
+            HttpData::now().host("example.com").build(),
+        )
+        .expect("put iana registry");
 
         // WHEN
-        let actual = get_tag_bootstrap_urls(iana, "YYYY");
+        let actual = bs
+            .get_entity_handle_query_urls(&QueryType::Entity("foo-YYYY".to_string()))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
 
         // THEN
-        assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
-            "https://example.com/rdap/"
-        );
+        assert_eq!(actual, "https://example.com/rdap/");
     }
 }
