@@ -75,14 +75,16 @@ pub struct SrvTestJig {
 }
 
 impl SrvTestJig {
-    pub fn new() -> SrvTestJig {
+    pub async fn new() -> SrvTestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
-        let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
+        let listener = Listener::listen(&ListenConfig::default())
+            .await
+            .expect("listening on interface");
         let rdap_base = listener.rdap_base();
         tokio::spawn(async move {
             listener
@@ -93,14 +95,16 @@ impl SrvTestJig {
         SrvTestJig { mem, rdap_base }
     }
 
-    pub fn new_bootstrap() -> SrvTestJig {
+    pub async fn new_bootstrap() -> SrvTestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: true,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
-        let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
+        let listener = Listener::listen(&ListenConfig::default())
+            .await
+            .expect("listening on interface");
         let rdap_base = listener.rdap_base();
         tokio::spawn(async move {
             listener

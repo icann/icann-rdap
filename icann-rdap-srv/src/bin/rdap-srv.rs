@@ -33,7 +33,8 @@ async fn main() -> Result<(), RdapServerError> {
             .ip_addr(listen_addr)
             .port(listen_port)
             .build(),
-    )?;
+    )
+    .await?;
     listener
         .start_server(
             &ServiceConfig::builder()

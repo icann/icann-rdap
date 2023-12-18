@@ -65,6 +65,12 @@ impl CheckItem {
     }
 
     // Events
+    pub fn event_date_is_absent() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::EventDateIsAbsent,
+        }
+    }
     pub fn event_date_is_not_rfc3339() -> CheckItem {
         CheckItem {
             check_class: CheckClass::SpecificationError,

@@ -1,6 +1,6 @@
 use std::{net::IpAddr, str::FromStr};
 
-use cidr_utils::cidr::IpCidr;
+use cidr_utils::cidr::IpInet;
 use lazy_static::lazy_static;
 use pct_str::{PctString, URIReserved};
 use regex::Regex;
@@ -8,6 +8,7 @@ use strum_macros::Display;
 
 use crate::RdapClientError;
 
+/// Defines the various types of RDAP lookups and searches.
 #[derive(Display, Debug)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]
@@ -158,10 +159,10 @@ impl FromStr for QueryType {
         }
 
         // if it is a cidr
-        if let Ok(ip_cidr) = IpCidr::from_str(s) {
+        if let Ok(ip_cidr) = IpInet::from_str(s) {
             return match ip_cidr {
-                IpCidr::V4(_) => Ok(QueryType::IpV4Cidr(s.to_owned())),
-                IpCidr::V6(_) => Ok(QueryType::IpV6Cidr(s.to_owned())),
+                IpInet::V4(_) => Ok(QueryType::IpV4Cidr(s.to_owned())),
+                IpInet::V6(_) => Ok(QueryType::IpV6Cidr(s.to_owned())),
             };
         }
 

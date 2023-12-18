@@ -2,6 +2,7 @@ use chrono::DateTime;
 use chrono::FixedOffset;
 use chrono::Utc;
 use cidr_utils::cidr::IpCidr;
+use cidr_utils::cidr::IpInet;
 use clap::{Args, Parser, Subcommand};
 use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::contact::Contact;
@@ -60,6 +61,7 @@ use pct_str::URIReserved;
 use regex::Regex;
 use std::fs;
 use std::path::PathBuf;
+use std::str::FromStr;
 use tracing::error;
 use tracing::info;
 use tracing_subscriber::{
@@ -501,8 +503,8 @@ struct SrvHelpArgs {
 }
 
 fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
-    let ip_cidr = IpCidr::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
-    Ok(ip_cidr)
+    let ip_inet = IpInet::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
+    Ok(ip_inet.network())
 }
 
 #[tokio::main(flavor = "multi_thread")]

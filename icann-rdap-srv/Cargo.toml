@@ -10,11 +10,12 @@ An RDAP Server.
 
 [dependencies]
 
-icann-rdap-client = { version = "0.0.14", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.14", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.15", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.15", path = "../icann-rdap-common" }
 
 async-trait.workspace = true
 axum.workspace = true
+axum-extra.workspace = true
 axum-macros.workspace = true
 axum-client-ip.workspace = true
 btree-range-map.workspace = true
@@ -25,7 +26,6 @@ clap.workspace = true
 dotenv.workspace = true
 envmnt.workspace = true
 ipnet.workspace = true
-is-terminal.workspace = true
 headers.workspace = true
 http.workspace = true
 hyper.workspace = true

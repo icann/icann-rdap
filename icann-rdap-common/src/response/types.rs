@@ -124,8 +124,13 @@ pub struct Event {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_actor: Option<String>,
 
+    /// This value is required by RFC 9083 (and 7483),
+    /// however some servers don't include it. Therefore
+    /// it is optional here to be compatible with these
+    /// types of non-compliant servers.
     #[serde(rename = "eventDate")]
-    pub event_date: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_date: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,

@@ -1,13 +1,10 @@
-use std::{
-    net::{SocketAddr, TcpListener},
-    sync::Arc,
-    time::Duration,
-};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use axum::{error_handling::HandleErrorLayer, Router};
 use http::{Method, StatusCode};
 use icann_rdap_common::VERSION;
+use tokio::net::TcpListener;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -35,7 +32,7 @@ pub struct Listener {
 
 /// Starts the RDAP service.
 impl Listener {
-    pub fn listen(config: &ListenConfig) -> Result<Self, RdapServerError> {
+    pub async fn listen(config: &ListenConfig) -> Result<Self, RdapServerError> {
         tracing::info!("rdap-srv version {}", VERSION);
 
         #[cfg(debug_assertions)]
@@ -49,7 +46,7 @@ impl Listener {
 
         tracing::debug!("tcp binding to {}", binding);
 
-        let listener = TcpListener::bind(binding)?;
+        let listener = TcpListener::bind(binding).await?;
         let local_addr = listener.local_addr()?;
         Ok(Self {
             local_addr,
@@ -75,7 +72,7 @@ impl Listener {
 
     /// Starts the server using a [ServiceConfig]. This is the entry point for a CLI.
     /// This function will initiate any needed non-HTTP services and then call
-    /// call [start_with_app_state()], which initiates the HTTP service.
+    /// call [Listener::start_with_state], which initiates the HTTP service.
     pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
         init_bootstrap(service_config).await?;
         if let StorageType::Memory(config) = &service_config.storage_type {
@@ -98,9 +95,14 @@ impl Listener {
         let app = app_router::<T>(app_state);
 
         tracing::debug!("listening on {}", self.local_addr);
-        axum::Server::from_tcp(self.tcp_listener)?
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-            .await?;
+        // axum::Server::from_tcp(self.tcp_listener)?
+        //     .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+        //     .await?;
+        axum::serve(
+            self.tcp_listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await?;
         Ok(())
     }
 }
