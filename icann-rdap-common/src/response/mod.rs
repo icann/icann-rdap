@@ -259,12 +259,12 @@ impl GetSelfLink for RdapResponse {
 
 pub trait GetSelfLink {
     /// Get's the first self link.
-    /// See [ObjectCommon::get_self_link()].
+    /// See [crate::response::types::ObjectCommon::get_self_link()].
     fn get_self_link(&self) -> Option<&Link>;
 }
 
 pub trait SelfLink: GetSelfLink {
-    /// See [ObjectCommon::get_self_link()].
+    /// See [crate::response::types::ObjectCommon::get_self_link()].
     fn set_self_link(self, link: Link) -> Self;
 }
 

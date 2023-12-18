@@ -72,7 +72,7 @@ impl Listener {
 
     /// Starts the server using a [ServiceConfig]. This is the entry point for a CLI.
     /// This function will initiate any needed non-HTTP services and then call
-    /// call [start_with_app_state()], which initiates the HTTP service.
+    /// call [Listener::start_with_state], which initiates the HTTP service.
     pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
         init_bootstrap(service_config).await?;
         if let StorageType::Memory(config) = &service_config.storage_type {

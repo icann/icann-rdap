@@ -50,6 +50,9 @@ cidr-utils = "0.5"
 # fixture testings
 rstest = "0.17.0"
 
+# serial testings
+serial_test = "2.0.0"
+
 # test directories
 test_dir = "0.2.0"
 
