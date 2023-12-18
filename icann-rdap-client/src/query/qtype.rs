@@ -8,6 +8,7 @@ use strum_macros::Display;
 
 use crate::RdapClientError;
 
+/// Defines the various types of RDAP lookups and searches.
 #[derive(Display, Debug)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]

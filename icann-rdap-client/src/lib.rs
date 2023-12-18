@@ -14,6 +14,22 @@ pub mod md;
 pub mod query;
 pub mod request;
 
+#[doc(inline)]
+pub use crate::query::bootstrap::MemoryBootstrapStore;
+#[doc(inline)]
+pub use crate::query::qtype::QueryType;
+#[doc(inline)]
+pub use crate::query::request::rdap_bootstrapped_request;
+#[doc(inline)]
+pub use crate::query::request::rdap_request;
+#[doc(inline)]
+pub use crate::query::request::rdap_url_request;
+#[doc(inline)]
+pub use icann_rdap_common::client::create_client;
+#[doc(inline)]
+pub use icann_rdap_common::client::ClientConfig;
+
+/// Error returned by RDAP client functions and methods.
 #[derive(Error, Debug)]
 pub enum RdapClientError {
     #[error("Query value is not valid.")]
@@ -46,6 +62,7 @@ impl<T> From<PoisonError<T>> for RdapClientError {
     }
 }
 
+/// Describes the error that occurs when parsing RDAP responses.
 #[derive(Debug)]
 pub struct ParsingErrorInfo {
     pub text: String,

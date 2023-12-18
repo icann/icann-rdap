@@ -19,15 +19,11 @@ Both icann-rdap-common and icann-rdap-client can be compiled for WASM targets.
 Usage
 -----
 
-To make a query using bootstrapping:
+In RDAP, bootstrapping is the process of finding the authoritative RDAP server to
+query using the IANA RDAP bootstrap files. To make a query using bootstrapping:
 
 ```no_run
-use icann_rdap_common::client::ClientConfig;
-use icann_rdap_common::client::create_client;
-use icann_rdap_client::query::request::rdap_bootstrapped_request;
-use icann_rdap_client::query::qtype::QueryType;
-use icann_rdap_client::query::bootstrap::MemoryBootstrapStore;
-use icann_rdap_client::RdapClientError;
+use icann_rdap_client::*;
 use std::str::FromStr;
 use tokio::main;
 
@@ -42,6 +38,7 @@ async fn main() -> Result<(), RdapClientError> {
     // create a client (from icann-rdap-common)
     let config = ClientConfig::default();
     let client = create_client(&config)?;
+    // ideally, keep store in same context as client
     let store = MemoryBootstrapStore::new();
 
     // issue the RDAP query
@@ -60,11 +57,7 @@ async fn main() -> Result<(), RdapClientError> {
 To specify a base URL:
 
 ```rust,no_run
-use icann_rdap_common::client::ClientConfig;
-use icann_rdap_common::client::create_client;
-use icann_rdap_client::query::request::rdap_request;
-use icann_rdap_client::query::qtype::QueryType;
-use icann_rdap_client::RdapClientError;
+use icann_rdap_client::*;
 use std::str::FromStr;
 use tokio::main;
 

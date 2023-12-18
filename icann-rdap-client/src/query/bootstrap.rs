@@ -17,8 +17,14 @@ const SECONDS_IN_WEEK: i64 = 604800;
 
 /// Defines a trait for things that store bootstrap registries.
 pub trait BootstrapStore {
+    /// Called when store is checked to see if it has a valid bootstrap registry.
+    ///
+    /// This method should return false (i.e. `Ok(false)``) if the registry doesn't
+    /// exist in the store or if the registry in the store is out-of-date (such as
+    /// the cache control data indicates it is old).
     fn has_bootstrap_registry(&self, reg_type: &IanaRegistryType) -> Result<bool, RdapClientError>;
 
+    /// Puts a registry into the bootstrap registry store.
     fn put_bootstrap_registry(
         &self,
         reg_type: &IanaRegistryType,
@@ -26,6 +32,9 @@ pub trait BootstrapStore {
         http_data: HttpData,
     ) -> Result<(), RdapClientError>;
 
+    /// Get the urls for a domain or nameserver (which are domain names) query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
     fn get_domain_query_urls(
         &self,
         query_type: &QueryType,
@@ -38,6 +47,9 @@ pub trait BootstrapStore {
         self.get_dns_urls(domain_name)
     }
 
+    /// Get the urls for an autnum query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
     fn get_autnum_query_urls(
         &self,
         query_type: &QueryType,
@@ -48,6 +60,9 @@ pub trait BootstrapStore {
         self.get_asn_urls(asn)
     }
 
+    /// Get the urls for an IPv4 query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
     fn get_ipv4_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV4Addr(addr) => format!("{addr}/32"),
@@ -57,6 +72,9 @@ pub trait BootstrapStore {
         self.get_ipv4_urls(&ip)
     }
 
+    /// Get the urls for an IPv6 query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
     fn get_ipv6_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV6Addr(addr) => format!("{addr}/128"),
@@ -66,6 +84,9 @@ pub trait BootstrapStore {
         self.get_ipv6_urls(&ip)
     }
 
+    /// Get the urls for an entity handle query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
     fn get_entity_handle_query_urls(
         &self,
         query_type: &QueryType,
@@ -79,14 +100,41 @@ pub trait BootstrapStore {
         self.get_tag_query_urls(handle_split.1)
     }
 
+    /// Get the urls for an object tag query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
     fn get_tag_query_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError> {
         self.get_tag_urls(tag)
     }
 
+    /// Get the URLs associated with the IANA RDAP DNS bootstrap.
+    ///
+    /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
+    /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_dns_bootstrap_urls] method.
     fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, RdapClientError>;
+
+    /// Get the URLs associated with the IANA RDAP ASN bootstrap.
+    ///
+    /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
+    /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_asn_bootstrap_urls] method.
     fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, RdapClientError>;
+
+    /// Get the URLs associated with the IANA RDAP IPv4 bootstrap.
+    ///
+    /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
+    /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_ipv4_bootstrap_urls] method.
     fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, RdapClientError>;
+
+    /// Get the URLs associated with the IANA RDAP IPv6 bootstrap.
+    ///
+    /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
+    /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_ipv6_bootstrap_urls] method.
     fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, RdapClientError>;
+
+    /// Get the URLs associated with the IANA RDAP Object Tags bootstrap.
+    ///
+    /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
+    /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_tag_bootstrap_urls] method.
     fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError>;
 }
 
@@ -100,6 +148,13 @@ impl PreferredUrl for Vec<String> {
     }
 }
 
+/// A bootstrap registry store backed by memory.
+///
+/// This implementation of [BootstrapStore] keeps registries in memory. Every new instance starts with
+/// no registries in memory. They are added and maintained over time by calls to [MemoryBootstrapStore::put_bootstrap_registry()] by the
+/// machinery of [crate::query::request::rdap_bootstrapped_request()] and [crate::query::bootstrap::qtype_to_bootstrap_url()].
+///
+/// Ideally, this should be kept in the same scope as [reqwest::Client].
 pub struct MemoryBootstrapStore {
     ipv4: Arc<RwLock<Option<(IanaRegistry, HttpData)>>>,
     ipv6: Arc<RwLock<Option<(IanaRegistry, HttpData)>>>,
