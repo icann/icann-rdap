@@ -5,7 +5,7 @@ use std::{
 
 use icann_rdap_client::query::{
     qtype::QueryType,
-    request::{rdap_request, ResponseData},
+    request::{rdap_url_request, ResponseData},
 };
 use icann_rdap_common::{cache::HttpData, response::GetSelfLink};
 use pct_str::PctString;
@@ -24,8 +24,9 @@ pub(crate) async fn do_request(
     if processing_params.no_cache {
         info!("Cache has been disabled.")
     }
+    let query_url = query_type.query_url(base_url)?;
+    debug!("Requestion RDAP URL {query_url}");
     if !processing_params.no_cache {
-        let query_url = query_type.query_url(base_url)?;
         let file_name = format!(
             "{}.cache",
             PctString::encode(query_url.chars(), URIReserved)
@@ -49,7 +50,7 @@ pub(crate) async fn do_request(
             }
         }
     }
-    let response = rdap_request(base_url, query_type, client).await?;
+    let response = rdap_url_request(&query_url, client).await?;
     if !processing_params.no_cache {
         if let Some(self_link) = response.rdap.get_self_link() {
             if response.http_data.should_cache() {

@@ -18,7 +18,7 @@ use crate::test_jig::SrvTestJig;
 #[tokio::test]
 async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId {
@@ -66,7 +66,7 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
 #[tokio::test]
 async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver_err(
         &NameserverId {
@@ -114,7 +114,7 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
 #[tokio::test]
 async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId {
@@ -161,7 +161,7 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
 #[tokio::test]
 async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum_err(
         &AutnumId {
@@ -209,7 +209,7 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
 #[tokio::test]
 async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_network_err(
         &NetworkId {
@@ -256,7 +256,7 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
 #[tokio::test]
 async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_code_is_redirect() {
     // GIVEN
-    let test_srv = SrvTestJig::new();
+    let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_network_err(
         &NetworkId {

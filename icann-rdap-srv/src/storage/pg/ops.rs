@@ -1,3 +1,4 @@
+#![allow(clippy::diverging_sub_expression)]
 use async_trait::async_trait;
 use icann_rdap_common::response::RdapResponse;
 use sqlx::{query, PgPool};
@@ -27,7 +28,7 @@ impl StoreOps for Pg {
     async fn init(&self) -> Result<(), RdapServerError> {
         debug!("Testing database connection.");
         let mut conn = self.pg_pool.acquire().await?;
-        query("select 1").fetch_one(&mut conn).await?;
+        query("select 1").fetch_one(&mut *conn).await?;
         info!("Database connection test is successful.");
         Ok(())
     }

@@ -171,6 +171,8 @@ pub enum Check {
     EmptyDomainVariant,
 
     // Events
+    #[strum(message = "event date is absent")]
+    EventDateIsAbsent,
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
 

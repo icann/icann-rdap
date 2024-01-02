@@ -237,7 +237,7 @@ mod tests {
     #[test]
     fn GIVEN_list_of_sentences_WHEN_make_list_all_title_case_THEN_each_sentence_all_title_cased() {
         // GIVEN
-        let v = vec!["foo bar", "foO baR"];
+        let v = ["foo bar", "foO baR"];
 
         // WHEN
         let actual = v.make_list_all_title_case();
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn GIVEN_list_WHEN_make_title_case_list_THEN_comma_separated_title_cased() {
         // GIVEN
-        let list = vec!["foo bar", "bizz buzz"];
+        let list = ["foo bar", "bizz buzz"];
 
         // WHEN
         let actual = list.make_title_case_list();

@@ -5,9 +5,10 @@ members = [
   "icann-rdap-common",
   "icann-rdap-srv"
 ]
+resolver = "2"
 
 [workspace.package]
-version = "0.0.14"
+version = "0.0.15"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -22,32 +23,33 @@ anyhow = "1.0"
 async-trait = "0.1"
 
 # axum (web server)
-axum = { version = "0.6", features = ["headers"] }
-axum-macros = "0.3"
+axum = { version = "0.7" }
+axum-extra = { version = "0.9", features = [ "typed-header" ] }
+axum-macros = "0.4"
 
 # client IP address extractor
-axum-client-ip = "0.3.0"
+axum-client-ip = "0.5"
 
 # b-tree with ranges
-btree-range-map = "0.5.1"
+btree-range-map = "0.7.2"
 
 # macros for the builder pattern
 buildstructor = "0.5"
 
 # CIDR utilities
-cidr-utils = "0.5"
+cidr-utils = "0.6"
 
 # command line options parser
-clap = { version = "4.3.19", features = [ "std", "derive", "env", "unstable-styles" ] }
+clap = { version = "4.4", features = [ "std", "derive", "env", "unstable-styles" ] }
 
 # chrono (time and date library)
 chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
 
 # compile time constants formatting
-const_format = "0.2.30"
+const_format = "0.2"
 
 # cross-platform application directories
-directories = "5.0.0"
+directories = "5.0"
 
 # loads environment variables from the a file
 dotenv = "0.15.0"
@@ -68,22 +70,19 @@ git-version = "0.3"
 lazy_static = "1.4"
 
 # headers (http headers)
-headers = "0.3"
+headers = "0.4"
 
 # http constructs
-http = "0.2"
+http = "1.0"
 
 # hyper (http implementation used by axum)
-hyper = { version = "0.14", features = ["full"] }
+hyper = { version = "1.0", features = ["full"] }
 
 # for use prefixmap
-ipnet = { version = "2.7", features = ["json"] }
-
-# using terminal helper
-is-terminal = "0.4"
+ipnet = { version = "2.9", features = ["json"] }
 
 # embedded pager
-minus = {version = "5.4", features = ["dynamic_output", "search"] }
+minus = {version = "5.5", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "1.2"
@@ -92,7 +91,7 @@ pct-str = "1.2"
 prefix-trie = "0.2.4"
 
 # regular expresions
-regex = "1.7"
+regex = "1.10"
 
 # http client library
 reqwest = {version = "0.11", features = ["json", "stream", "native-tls-vendored"]}
@@ -104,13 +103,12 @@ serde = { version = "1.0", features = [ "derive" ] }
 serde_json = "1.0"
 
 # sqlx (async db)
-sqlx = { version = "0.6", features = [
+sqlx = { version = "0.7", features = [
     "runtime-tokio-rustls",
     "postgres",
     "chrono",
     "macros",
     "json",
-    "offline",
 ] }
 
 # enum utilities
@@ -118,17 +116,17 @@ strum = "0.24"
 strum_macros = "0.24"
 
 # terminal markdown generator
-termimad = "0.23"
+termimad = "0.26"
 
 # error macros
 thiserror = "1.0"
 
 # tokio async runtime
-tokio = { version = "1.29", features = [ "full" ] }
+tokio = { version = "1.35", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.4", features = ["timeout", "util"] }
-tower-http = { version = "0.3.3", features = [
+tower-http = { version = "0.5", features = [
     "add-extension",
     "trace",
     "cors",

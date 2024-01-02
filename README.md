@@ -31,3 +31,13 @@ intentionally submitted for inclusion in the work by you, as defined in the Apac
 shall be dual licensed pursuant to the Apache License, Version 2.0 or the MIT License referenced 
 as above, at ICANN’s option, without any additional terms or conditions.
 
+=======
+How To Contribute
+-----------------
+
+Before working on a Pull Request (PR), seek advice from the maintainers regarding the acceptance
+of the PR. To do this, submit an issue outlining the idea for the PR. If the maintainers agree
+that the contribution would be welcome, they will assign the issue to you.
+
+When submitting the PR, submit it against the 'dev' branch (not the 'main' branch).
+

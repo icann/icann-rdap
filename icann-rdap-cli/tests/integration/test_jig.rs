@@ -17,14 +17,16 @@ pub struct TestJig {
 }
 
 impl TestJig {
-    pub fn new() -> TestJig {
+    pub async fn new() -> TestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,
         };
         let _ = tracing_subscriber::fmt().try_init();
-        let listener = Listener::listen(&ListenConfig::default()).expect("listening on interface");
+        let listener = Listener::listen(&ListenConfig::default())
+            .await
+            .expect("listening on interface");
         let rdap_base = listener.rdap_base();
         tokio::spawn(async move {
             listener
