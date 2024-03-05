@@ -58,12 +58,22 @@ For more advanced usage, run `rdap --help` which should yield the extensive help
 Paging Output
 -------------
 
-By default, the client will attempt to determine if paging the output (showing information one page at a time)
-is appropriate. This is done by attempting to determine if the terminal is interactive or not. If the terminal
-is not interactive, paging will be turned off otherwise it will be on.
+The client has a built-in (embedded) pager. Use of this pager is controlled via the `RDAP_PAGING`
+environment variable and the `-P` command argument.
 
-You can explicitly control this behavior using the `-P` command argument such as `-P none` to specify no paging.
-This is also controlled via the `RDAP_PAGING` environmental variable (see configuration below).
+It takes three values:
+
+* "embedded" - use the built-in pager
+* "auto" - use the built-in pager if the program is being run from a terminal
+* "none" - use no paging
+
+For example, `-P embedded` will default to using the built-in pager.
+
+By default, the client will not use a pager.
+
+When set to "auto", the client determines if a pager is appropriate. 
+This is done by attempting to determine if the terminal is interactive or not. If the terminal
+is not interactive, paging will be turned off otherwise it will be on.
 
 Output Format
 -------------
