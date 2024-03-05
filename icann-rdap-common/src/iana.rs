@@ -84,7 +84,8 @@ impl BootstrapRegistry for IanaRegistry {
                 .first()
                 .ok_or(BootstrapRegistryError::EmptyService)?;
             for tld in tlds {
-                if ldh.ends_with(tld) {
+                // if the ldh domain ends with the tld or the tld is the empty string which means the root
+                if ldh.ends_with(tld) || tld.eq("") {
                     let urls = service.last().ok_or(BootstrapRegistryError::EmptyUrlSet)?;
                     let longest = longest_match.get_or_insert_with(|| (tld.len(), urls.to_owned()));
                     if longest.0 < tld.len() {
@@ -437,6 +438,43 @@ mod tests {
         assert_eq!(
             actual.expect("no vec").first().expect("vec is empty"),
             "https://registry.co.uk/"
+        );
+    }
+
+    #[test]
+    fn GIVEN_domain_bootstrap_with_root_WHEN_find_THEN_url_matches() {
+        // GIVEN
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Some text",
+                "services": [
+                  [
+                    ["net", "com"],
+                    [
+                      "https://registry.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    [""],
+                    [
+                      "https://example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse domain bootstrap");
+
+        // WHEN
+        let actual = iana.get_dns_bootstrap_urls("foo.org");
+
+        // THEN
+        assert_eq!(
+            actual.expect("no vec").first().expect("vec is empty"),
+            "https://example.org/"
         );
     }
 
