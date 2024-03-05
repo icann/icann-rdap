@@ -6,6 +6,7 @@ with proper GitHub and crates.io credentials. Without both, this will
 fail.
 
 1. Install the Cargo release plugin (if it is not already installed): `cargo install cargo-release`
+1. Go to the 'dev' branch and get the latest changes: `git switch dev` and then `git pull`.
 1. On the 'dev' branch, use the cargo release plugin to bump either the patch, minor, or major version: `cargo release version patch -x`, `cargo release version minor -x` or `cargo release version major -x`.
 1. Run the tests: `cargo test`
 1. Commit these changes to git.

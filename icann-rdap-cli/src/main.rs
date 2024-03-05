@@ -148,7 +148,7 @@ struct Cli {
         required = false,
         env = "RDAP_PAGING",
         value_enum,
-        default_value_t = PagerType::Auto,
+        default_value_t = PagerType::None,
     )]
     page_output: PagerType,
 
