@@ -65,6 +65,37 @@ async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_domain_returned() {
 }
 
 #[tokio::test]
+async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_unicode_THEN_domain_returned() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::idn()
+            .unicode_name("foo.example")
+            .ldh_name("foo.example")
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .get_domain_by_unicode("foo.example")
+        .await
+        .expect("getting domain by unicode");
+
+    // THEN
+    let RdapResponse::Domain(domain) = actual else {
+        panic!()
+    };
+    assert_eq!(
+        domain.unicode_name.as_ref().expect("unicodeName is none"),
+        "foo.example"
+    )
+}
+
+#[tokio::test]
 async fn GIVEN_no_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_404_returned() {
     // GIVEN
     let mem = Mem::default();

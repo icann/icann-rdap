@@ -25,6 +25,7 @@ cidr-utils.workspace = true
 clap.workspace = true
 dotenv.workspace = true
 envmnt.workspace = true
+idna.workspace = true
 ipnet.workspace = true
 headers.workspace = true
 http.workspace = true

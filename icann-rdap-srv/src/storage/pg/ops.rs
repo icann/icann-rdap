@@ -45,6 +45,10 @@ impl StoreOps for Pg {
         todo!()
     }
 
+    async fn get_domain_by_unicode(&self, _unicode: &str) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
+
     async fn get_entity_by_handle(&self, _handle: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }

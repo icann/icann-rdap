@@ -8,7 +8,7 @@ use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynSer
 
 use super::ToBootStrap;
 
-/// Gets a domain object by the name path, which can be either A-label or U-lable
+/// Gets a domain object by the name path, which can be either A-label or U-label
 /// according to RFC 9082.
 #[axum_macros::debug_handler]
 #[tracing::instrument(level = "debug")]
@@ -27,7 +27,12 @@ pub(crate) async fn domain_by_name(
     // TODO add option to verify it looks like a domain name and return BAD REQUEST if it does not.
     // not all servers may want to enforce that it has multiple labels, such as an IANA server.
     let storage = state.get_storage().await?;
-    let domain = storage.get_domain_by_ldh(&domain_name).await?;
+    let mut domain = storage.get_domain_by_ldh(&domain_name).await?;
+
+    // if not found in domain names, check if it is an IDN
+    if !matches!(domain, RdapResponse::Domain(_)) && !domain.is_redirect() {
+        domain = storage.get_domain_by_unicode(&domain_name).await?;
+    }
 
     if state.get_bootstrap() && !matches!(domain, RdapResponse::Domain(_)) && !domain.is_redirect()
     {

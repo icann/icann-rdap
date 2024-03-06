@@ -139,6 +139,46 @@ fn GIVEN_domain_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
+fn GIVEN_domain_with_idn_WHEN_create_data_THEN_success() {
+    // GIVEN
+    let mut test_jig = make_foo1234();
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("domain")
+        .arg("--ldh")
+        .arg("example.com")
+        .arg("--idn")
+        .arg("example.com")
+        .arg("--registrant")
+        .arg("foo1234");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[test]
+fn GIVEN_idn_WHEN_create_data_THEN_success() {
+    // GIVEN
+    let mut test_jig = make_foo1234();
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("domain")
+        .arg("--idn")
+        .arg("example.com")
+        .arg("--registrant")
+        .arg("foo1234");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[test]
 fn GIVEN_autnum_options_WHEN_create_data_THEN_success() {
     // GIVEN
     let mut test_jig = make_foo1234();
