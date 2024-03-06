@@ -155,6 +155,7 @@ impl Domain {
     #[builder(entry = "basic")]
     pub fn new_ldh<T: Into<String>>(
         ldh_name: T,
+        unicode_name: Option<String>,
         nameservers: Option<Vec<Nameserver>>,
         handle: Option<String>,
         remarks: Vec<crate::response::types::Remark>,
@@ -182,7 +183,59 @@ impl Domain {
                 .and_entities(entities)
                 .build(),
             ldh_name: Some(ldh_name.into()),
-            unicode_name: None,
+            unicode_name,
+            variants: None,
+            secure_dns: None,
+            nameservers,
+            public_ids: None,
+            network: None,
+        }
+    }
+
+    /// Builds an IDN object.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::response::domain::Domain;
+    /// use icann_rdap_common::response::types::StatusValue;
+    ///
+    /// let domain = Domain::idn()
+    ///   .unicode_name("foo.example.com")
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   .build();
+    /// ```
+    #[builder(entry = "idn")]
+    pub fn new_idn<T: Into<String>>(
+        ldh_name: Option<String>,
+        unicode_name: T,
+        nameservers: Option<Vec<Nameserver>>,
+        handle: Option<String>,
+        remarks: Vec<crate::response::types::Remark>,
+        links: Vec<crate::response::types::Link>,
+        events: Vec<crate::response::types::Event>,
+        statuses: Vec<String>,
+        port_43: Option<crate::response::types::Port43>,
+        entities: Vec<crate::response::entity::Entity>,
+        notices: Vec<crate::response::types::Notice>,
+    ) -> Self {
+        let entities = (!entities.is_empty()).then_some(entities);
+        let remarks = (!remarks.is_empty()).then_some(remarks);
+        let links = (!links.is_empty()).then_some(links);
+        let events = (!events.is_empty()).then_some(events);
+        let notices = (!notices.is_empty()).then_some(notices);
+        Self {
+            common: Common::builder().and_notices(notices).build(),
+            object_common: ObjectCommon::domain()
+                .and_handle(handle)
+                .and_remarks(remarks)
+                .and_links(links)
+                .and_events(events)
+                .and_status(to_option_status(statuses))
+                .and_port_43(port_43)
+                .and_entities(entities)
+                .build(),
+            ldh_name,
+            unicode_name: Some(unicode_name.into()),
             variants: None,
             secure_dns: None,
             nameservers,

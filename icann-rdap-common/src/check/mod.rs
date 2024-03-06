@@ -193,6 +193,14 @@ pub enum Check {
     InvalidLdhName,
     #[strum(message = "Documentation domain name. See RFC 6761")]
     DocumentataionName,
+    #[strum(message = "Unicode name does not match LDH")]
+    UnicodeDoesNotMatchLdh,
+
+    // Unicode Name
+    #[strum(message = "unicodeName does not appear to be a domain name")]
+    InvalidUnicodeDomainName,
+    #[strum(message = "unicodeName does not appear to be valid Unicode")]
+    InvalidUnicodeName,
 
     // Network or Autnum Name
     #[strum(message = "name appears to be empty or only whitespace")]

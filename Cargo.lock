@@ -1417,6 +1417,7 @@ dependencies = [
  "chrono",
  "cidr-utils 0.6.1",
  "const_format",
+ "idna",
  "ipnet",
  "lazy_static",
  "prefix-trie",

@@ -13,6 +13,7 @@ chrono.workspace = true
 cidr-utils.workspace = true
 const_format.workspace = true
 buildstructor.workspace = true
+idna.workspace = true
 ipnet.workspace = true
 lazy_static.workspace = true
 prefix-trie.workspace = true
