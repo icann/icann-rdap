@@ -25,6 +25,7 @@ pub struct MemTx {
     ip4: PrefixMap<Ipv4Net, Arc<RdapResponse>>,
     ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     domains: HashMap<String, Arc<RdapResponse>>,
+    idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
     entities: HashMap<String, Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
@@ -38,6 +39,7 @@ impl MemTx {
             ip4: Arc::clone(&mem.ip4).read_owned().await.clone(),
             ip6: Arc::clone(&mem.ip6).read_owned().await.clone(),
             domains: Arc::clone(&mem.domains).read_owned().await.clone(),
+            idns: Arc::clone(&mem.idns).read_owned().await.clone(),
             nameservers: Arc::clone(&mem.nameservers).read_owned().await.clone(),
             entities: Arc::clone(&mem.entities).read_owned().await.clone(),
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
@@ -51,6 +53,7 @@ impl MemTx {
             ip4: PrefixMap::new(),
             ip6: PrefixMap::new(),
             domains: HashMap::new(),
+            idns: HashMap::new(),
             nameservers: HashMap::new(),
             entities: HashMap::new(),
             srvhelps: HashMap::new(),
@@ -86,6 +89,7 @@ impl TxHandle for MemTx {
     }
 
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
+        // add the domain as LDH, which is required.
         let ldh_name = domain
             .ldh_name
             .as_ref()
@@ -94,6 +98,15 @@ impl TxHandle for MemTx {
             ldh_name.to_owned(),
             Arc::new(RdapResponse::Domain(domain.clone())),
         );
+
+        // add the domain by unicodeName
+        if let Some(unicode_name) = domain.unicode_name.as_ref() {
+            self.idns.insert(
+                unicode_name.to_owned(),
+                Arc::new(RdapResponse::Domain(domain.clone())),
+            );
+        };
+
         Ok(())
     }
 
@@ -271,6 +284,10 @@ impl TxHandle for MemTx {
         // domains
         let mut domains_g = self.mem.domains.write().await;
         std::mem::swap(&mut self.domains, &mut domains_g);
+
+        //idns
+        let mut idns_g = self.mem.idns.write().await;
+        std::mem::swap(&mut self.idns, &mut idns_g);
 
         // nameservers
         let mut nameservers_g = self.mem.nameservers.write().await;

@@ -1452,6 +1452,7 @@ dependencies = [
  "hyper 1.0.1",
  "icann-rdap-client",
  "icann-rdap-common",
+ "idna",
  "ipnet",
  "lazy_static",
  "pct-str",

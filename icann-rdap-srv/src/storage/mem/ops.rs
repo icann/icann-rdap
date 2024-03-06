@@ -21,6 +21,7 @@ pub struct Mem {
     pub(crate) ip4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
     pub(crate) ip6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
@@ -34,6 +35,7 @@ impl Mem {
             ip4: Arc::new(RwLock::new(PrefixMap::new())),
             ip6: Arc::new(RwLock::new(PrefixMap::new())),
             domains: Arc::new(RwLock::new(HashMap::new())),
+            idns: Arc::new(RwLock::new(HashMap::new())),
             nameservers: Arc::new(RwLock::new(HashMap::new())),
             entities: Arc::new(RwLock::new(HashMap::new())),
             srvhelps: Arc::new(RwLock::new(HashMap::new())),
@@ -71,6 +73,15 @@ impl StoreOps for Mem {
         }
     }
 
+    async fn get_domain_by_unicode(&self, unicode: &str) -> Result<RdapResponse, RdapServerError> {
+        let idns = self.idns.read().await;
+        let result = idns.get(unicode);
+        match result {
+            Some(domain) => Ok(RdapResponse::clone(domain)),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
     async fn get_entity_by_handle(&self, handle: &str) -> Result<RdapResponse, RdapServerError> {
         let entities = self.entities.read().await;
         let result = entities.get(handle);
@@ -79,6 +90,7 @@ impl StoreOps for Mem {
             None => Ok(NOT_FOUND.clone()),
         }
     }
+
     async fn get_nameserver_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {
         let nameservers = self.nameservers.read().await;
         let result = nameservers.get(ldh);

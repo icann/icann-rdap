@@ -15,6 +15,7 @@ More information on ICANN's role in RDAP can be found [here](https://www.icann.o
 RDAP core support in this server is as follows:
 
 - [X] LDH Domain lookup (`/domain/ldh`)
+- [X] IDN U-Label lookup (`/domain/unicode`)
 - [X] Entity lookup (`/entity/handle`)
 - [X] Nameserver lookup (`/nameserver/fqdn`)
 - [X] Autnum lookup (`/autnum/123`)
