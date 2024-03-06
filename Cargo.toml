@@ -78,6 +78,9 @@ http = "1.0"
 # hyper (http implementation used by axum)
 hyper = { version = "1.0", features = ["full"] }
 
+# internationalized domain names for applications
+idna = "0.5"
+
 # for use prefixmap
 ipnet = { version = "2.9", features = ["json"] }
 
