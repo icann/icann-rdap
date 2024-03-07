@@ -1396,6 +1396,7 @@ dependencies = [
  "cidr-utils 0.6.1",
  "const_format",
  "icann-rdap-common",
+ "idna",
  "lazy_static",
  "pct-str",
  "regex",
