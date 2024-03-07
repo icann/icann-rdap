@@ -31,7 +31,12 @@ impl<T: ToString> StringCheck for T {
 
     fn is_unicode_domain_name(&self) -> bool {
         let s = self.to_string();
-        s == "." || !s.is_whitespace_or_empty()
+        s == "."
+            || (!s.is_empty()
+                && s.split_terminator('.').all(|s| {
+                    s.chars()
+                        .all(|c| c == '-' || (!c.is_ascii_punctuation() && !c.is_whitespace()))
+                }))
     }
 }
 
@@ -202,6 +207,8 @@ mod tests {
     #[case(".", true)]
     #[case("foo.bar", true)]
     #[case("foo.bar.", true)]
+    #[case("fo_o.bar.", false)]
+    #[case("fo o.bar.", false)]
     fn GIVEN_string_WHEN_is_unicode_domain_name_THEN_correct_result(
         #[case] test_string: &str,
         #[case] expected: bool,

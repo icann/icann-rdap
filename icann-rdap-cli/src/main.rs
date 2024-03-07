@@ -240,6 +240,9 @@ enum QtypeArg {
     /// Domain Lookup
     Domain,
 
+    /// A-Label Domain Lookup
+    ALabel,
+
     /// Entity Lookup
     Entity,
 
@@ -520,6 +523,7 @@ fn query_type_from_cli(cli: &Cli) -> QueryType {
                 QtypeArg::V6Cidr => QueryType::IpV6Cidr(query_value),
                 QtypeArg::Autnum => QueryType::AsNumber(query_value),
                 QtypeArg::Domain => QueryType::Domain(query_value),
+                QtypeArg::ALabel => QueryType::ALable(query_value),
                 QtypeArg::Entity => QueryType::Entity(query_value),
                 QtypeArg::Ns => QueryType::Nameserver(query_value),
                 QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),

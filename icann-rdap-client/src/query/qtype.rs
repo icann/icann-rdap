@@ -1,6 +1,7 @@
 use std::{net::IpAddr, str::FromStr};
 
 use cidr_utils::cidr::IpInet;
+use icann_rdap_common::check::string::StringCheck;
 use lazy_static::lazy_static;
 use pct_str::{PctString, URIReserved};
 use regex::Regex;
@@ -28,6 +29,9 @@ pub enum QueryType {
 
     #[strum(serialize = "Domain Lookup")]
     Domain(String),
+
+    #[strum(serialize = "A-Label Domain Lookup")]
+    ALable(String),
 
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
@@ -89,6 +93,7 @@ impl QueryType {
                 "{base_url}/domain/{}",
                 PctString::encode(value.chars(), URIReserved)
             )),
+            QueryType::ALable(value) => a_label_query(value, base_url),
             QueryType::Entity(value) => Ok(format!(
                 "{base_url}/entity/{}",
                 PctString::encode(value.chars(), URIReserved)
@@ -114,6 +119,14 @@ impl QueryType {
             QueryType::Url(url) => Ok(url.to_owned()),
         }
     }
+}
+
+fn a_label_query(value: &str, base_url: &str) -> Result<String, RdapClientError> {
+    let domain = idna::domain_to_ascii(value).map_err(|_| RdapClientError::InvalidQueryValue)?;
+    Ok(format!(
+        "{base_url}/domain/{}",
+        PctString::encode(domain.chars(), URIReserved),
+    ))
 }
 
 fn ip_cidr_query(value: &str, base_url: &str) -> Result<String, RdapClientError> {
@@ -167,7 +180,7 @@ impl FromStr for QueryType {
         }
 
         // if it looks like a domain name
-        if is_ldh_domain(s) {
+        if is_domain_name(s) {
             if is_nameserver(s) {
                 return Ok(QueryType::Nameserver(s.to_owned()));
             } else {
@@ -191,6 +204,10 @@ fn is_ldh_domain(text: &str) -> bool {
             Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap();
     }
     LDH_DOMAIN_RE.is_match(text)
+}
+
+fn is_domain_name(text: &str) -> bool {
+    text.contains('.') && text.is_unicode_domain_name()
 }
 
 fn is_nameserver(text: &str) -> bool {
