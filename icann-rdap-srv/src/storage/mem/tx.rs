@@ -89,22 +89,19 @@ impl TxHandle for MemTx {
     }
 
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
+        let domain_response = Arc::new(RdapResponse::Domain(domain.clone()));
+
         // add the domain as LDH, which is required.
         let ldh_name = domain
             .ldh_name
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
-        self.domains.insert(
-            ldh_name.to_owned(),
-            Arc::new(RdapResponse::Domain(domain.clone())),
-        );
+        self.domains
+            .insert(ldh_name.to_owned(), domain_response.clone());
 
         // add the domain by unicodeName
         if let Some(unicode_name) = domain.unicode_name.as_ref() {
-            self.idns.insert(
-                unicode_name.to_owned(),
-                Arc::new(RdapResponse::Domain(domain.clone())),
-            );
+            self.idns.insert(unicode_name.to_owned(), domain_response);
         };
 
         Ok(())
