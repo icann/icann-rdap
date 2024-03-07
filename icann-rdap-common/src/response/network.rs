@@ -117,6 +117,7 @@ impl Network {
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
@@ -138,6 +139,7 @@ impl Network {
             port_43,
             entities,
             notices,
+            redacted,
         )
     }
 
@@ -156,12 +158,14 @@ impl Network {
         port_43: Option<crate::response::types::Port43>,
         entities: Option<Vec<crate::response::entity::Entity>>,
         notices: Option<Vec<crate::response::types::Notice>>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
             common: Common::level0_with_options()
                 .extension("cidr0")
                 .and_notices(notices)
+                .and_redacted(redacted)
                 .build(),
             object_common: ObjectCommon::ip_network()
                 .and_handle(handle)

@@ -1,7 +1,7 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::entity::Entity;
+use super::{entity::Entity, redacted::Redacted};
 
 /// Represents an RDAP extension identifier.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -183,26 +183,36 @@ pub struct Common {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notices: Option<Notices>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub redacted: Option<Vec<Redacted>>,
 }
 
 #[buildstructor::buildstructor]
 impl Common {
     #[builder(entry = "level0")]
-    pub fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
+    pub fn new_level0(
+        extensions: Vec<Extension>,
+        notices: Vec<Notice>,
+        redacted: Vec<Redacted>,
+    ) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
-        Common::new_level0_with_options(extensions, notices)
+        let redacted = (!redacted.is_empty()).then_some(redacted);
+        Common::new_level0_with_options(extensions, notices, redacted)
     }
 
     #[builder(entry = "level0_with_options")]
     pub fn new_level0_with_options(
         mut extensions: Vec<Extension>,
         notices: Option<Vec<Notice>>,
+        redacted: Option<Vec<Redacted>>,
     ) -> Self {
         let mut standard_extensions = vec![Extension("rdap_level_0".to_string())];
         extensions.append(&mut standard_extensions);
         Self {
             rdap_conformance: Some(extensions),
             notices,
+            redacted,
         }
     }
 }

@@ -212,30 +212,74 @@ fn do_output<'a, W: std::io::Write>(
                     req_data,
                 }),
             )?;
+            // Redactions
+            if let Some(redactions) = response.rdap.get_redaction_if_exists() {
+                let mut skin = MadSkin::default_dark();
+                skin.set_headers_fg(Yellow);
+                skin.headers[1].align = Alignment::Center;
+                skin.headers[2].align = Alignment::Center;
+                skin.headers[3].align = Alignment::Center;
+                skin.headers[4].compound_style.set_fg(DarkGreen);
+                skin.headers[5].compound_style.set_fg(Magenta);
+                skin.headers[6].compound_style.set_fg(Cyan);
+                skin.headers[7].compound_style.set_fg(Red);
+                skin.bold.set_fg(DarkBlue);
+                skin.italic.set_fg(Red);
+                skin.quote_mark.set_fg(DarkBlue);
+                skin.table.set_fg(DarkGreen);
+                skin.table.align = Alignment::Center;
+                skin.inline_code.set_fgbg(Cyan, Reset);
+
+                let all_redactions_md = redactions.as_slice().to_md(MdParams {
+                    heading_level: 1,
+                    root: &response.rdap,
+                    parent_type: redactions[0].get_type(),
+                    check_types: &processing_params.check_types,
+                    options: &MdOptions::default(),
+                    req_data,
+                });
+                skin.write_text_on(write, &all_redactions_md)?; // Write them all into one table
+            }
         }
-        OutputType::Markdown => writeln!(
-            write,
-            "{}",
-            response.rdap.to_md(MdParams {
-                heading_level: 1,
-                root: &response.rdap,
-                parent_type: response.rdap.get_type(),
-                check_types: &processing_params.check_types,
-                options: &MdOptions {
-                    text_style_char: '_',
-                    style_in_justify: true,
-                    ..MdOptions::default()
-                },
-                req_data,
-            })
-        )?,
+        OutputType::Markdown => {
+            writeln!(
+                write,
+                "{}",
+                response.rdap.to_md(MdParams {
+                    heading_level: 1,
+                    root: &response.rdap,
+                    parent_type: response.rdap.get_type(),
+                    check_types: &processing_params.check_types,
+                    options: &MdOptions {
+                        text_style_char: '_',
+                        style_in_justify: true,
+                        ..MdOptions::default()
+                    },
+                    req_data,
+                })
+            )?;
+            // Output the redactions
+            if let Some(redactions) = response.rdap.get_redaction_if_exists() {
+                let all_redactions_md = redactions.as_slice().to_md(MdParams {
+                    heading_level: 1,
+                    root: &response.rdap,
+                    parent_type: redactions[0].get_type(),
+                    check_types: &processing_params.check_types,
+                    options: &MdOptions::default(),
+                    req_data,
+                });
+                writeln!(write, "{}", all_redactions_md)?; // Write them all into one table
+            }
+        }
         _ => {} // do nothing
     };
+
     let checks = response.rdap.get_checks(CheckParams {
         do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
     });
+
     let req_res = RequestResponse {
         checks,
         req_data,

@@ -164,6 +164,7 @@ impl Domain {
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
@@ -171,7 +172,10 @@ impl Domain {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::builder()
+                .and_notices(notices)
+                .and_redacted(redacted)
+                .build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(remarks)

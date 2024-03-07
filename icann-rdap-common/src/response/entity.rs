@@ -75,6 +75,7 @@ impl Entity {
         roles: Vec<String>,
         public_ids: Option<PublicIds>,
         notices: Vec<crate::response::types::Notice>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         let roles = (!roles.is_empty()).then_some(roles);
         let entities = (!entities.is_empty()).then_some(entities);
@@ -83,7 +84,10 @@ impl Entity {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::builder()
+                .and_notices(notices)
+                .and_redacted(redacted)
+                .build(),
             object_common: ObjectCommon::entity()
                 .handle(handle.into())
                 .and_remarks(remarks)
