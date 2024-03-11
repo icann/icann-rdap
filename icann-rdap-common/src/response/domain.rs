@@ -165,6 +165,7 @@ impl Domain {
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
@@ -181,6 +182,7 @@ impl Domain {
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
                 .and_entities(entities)
+                .and_redacted(redacted)
                 .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name,

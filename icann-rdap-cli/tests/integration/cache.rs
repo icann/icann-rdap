@@ -23,6 +23,7 @@ async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
 
     test_jig.cmd.arg("foo.example");
     let output = test_jig.cmd.output().expect("executing domain query");
+
     let responses: Vec<RequestResponseOwned> =
         serde_json::from_slice(&output.stdout).expect("parsing stdout");
     let rdap = &responses.first().expect("response is empty").res_data.rdap;

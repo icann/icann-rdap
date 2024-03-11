@@ -25,6 +25,7 @@ pub mod error;
 pub mod help;
 pub mod nameserver;
 pub mod network;
+pub mod redacted;
 pub mod search;
 pub mod types;
 
@@ -219,6 +220,7 @@ impl RdapResponse {
             RdapResponse::DomainSearchResults(_) => None,
             RdapResponse::EntitySearchResults(_) => None,
             RdapResponse::NameserverSearchResults(_) => None,
+
             RdapResponse::ErrorResponse(_) => None,
             RdapResponse::Help(_) => None,
         }
@@ -280,6 +282,34 @@ mod tests {
     use serde_json::Value;
 
     use super::RdapResponse;
+
+    #[test]
+    fn GIVEN_redaction_response_when_try_from_THEN_response_is_lookup_with_redaction() {
+        // GIVEN
+        let expected: Value =
+            serde_json::from_str(include_str!("test_files/lookup_with_redaction.json")).unwrap();
+
+        // WHEN
+        let actual = RdapResponse::try_from(expected).unwrap();
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
+
+    #[test]
+    fn GIVEN_redaction_response_when_try_from_THEN_response_is_domain_search_results_with_redaction(
+    ) {
+        // GIVEN
+        let expected: Value =
+            serde_json::from_str(include_str!("test_files/domain_search_with_redaction.json"))
+                .unwrap();
+
+        // WHEN
+        let actual = RdapResponse::try_from(expected).unwrap();
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::DomainSearchResults(_)));
+    }
 
     #[test]
     fn GIVEN_domain_response_WHEN_try_from_THEN_response_is_domain() {
