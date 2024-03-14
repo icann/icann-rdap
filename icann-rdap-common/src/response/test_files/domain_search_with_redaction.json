@@ -1,0 +1,70 @@
+{
+  "rdapConformance": [
+    "rdap_level_0",
+    "redacted"
+  ],
+  "domainSearchResults":[
+    {
+      "objectClassName": "domain",
+      "ldhName": "example1.com",
+      "links":[
+        {
+          "value":"https://example.com/rdap/domain/example1.com",
+          "rel":"self",
+          "href":"https://example.com/rdap/domain/example1.com",
+          "type":"application/rdap+json"
+        },
+        {
+          "value":"https://example.com/rdap/domain/example1.com",
+          "rel":"related",
+          "href":"https://example.com/rdap/domain/example1.com",
+          "type":"application/rdap+json"
+        }
+      ],
+      "redacted": [
+        {
+          "name": {
+            "type": "Registry Domain ID"
+          },
+          "prePath": "$.domainSearchResults[0].handle",
+          "pathLang": "jsonpath",
+          "method": "removal",
+          "reason": {
+            "type": "Server policy"
+          }
+        }
+      ]
+    },
+    {
+      "objectClassName": "domain",
+      "ldhName": "example2.com",
+      "links":[
+        {
+          "value":"https://example.com/rdap/domain/example2.com",
+          "rel":"self",
+          "href":"https://example.com/rdap/domain/example2.com",
+          "type":"application/rdap+json"
+        },
+        {
+          "value":"https://example.com/rdap/domain/example2.com",
+          "rel":"related",
+          "href":"https://example.com/rdap/domain/example2.com",
+          "type":"application/rdap+json"
+        }
+      ],
+      "redacted": [
+        {
+          "name": {
+            "description": "Registry Domain ID"
+          },
+          "prePath": "$.domainSearchResults[1].handle",
+          "pathLang": "jsonpath",
+          "method": "removal",
+          "reason": {
+            "description": "Server policy"
+          }
+        }
+      ]
+    }
+  ]
+}

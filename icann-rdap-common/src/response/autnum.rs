@@ -49,6 +49,7 @@ impl Autnum {
     ///   .build();
     /// ```
     #[builder(entry = "basic")]
+
     pub fn new_autnum(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,
@@ -59,6 +60,7 @@ impl Autnum {
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
@@ -75,6 +77,7 @@ impl Autnum {
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
                 .and_entities(entities)
+                .and_redacted(redacted)
                 .build(),
             start_autnum: Some(autnum_range.start),
             end_autnum: Some(autnum_range.end),

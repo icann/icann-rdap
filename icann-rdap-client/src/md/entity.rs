@@ -80,6 +80,11 @@ impl ToMd for Entity {
                 .to_md(params.from_parent(typeid)),
         );
 
+        // redacted
+        if let Some(redacted) = &self.object_common.redacted {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+        }
+
         md.push('\n');
         md
     }
