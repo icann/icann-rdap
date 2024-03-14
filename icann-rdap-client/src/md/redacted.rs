@@ -32,20 +32,19 @@ impl ToMd for &[Redacted] {
                 .description
                 .clone()
                 .or(redacted.name.type_field.clone());
-            let pre_path_data = redacted.pre_path.clone();
-            let post_path_data = redacted.post_path.clone();
-            let replacement_path_data = redacted.replacement_path.clone();
-            let path_lang_data = redacted.path_lang.clone();
-            let method_data = redacted.method.clone().map(|m| m.to_string());
-            let reason_data = redacted.reason.clone().map(|m| m.to_string());
+            let method_data = redacted.method.as_ref().map(|m| m.to_string());
+            let reason_data = redacted.reason.as_ref().map(|m| m.to_string());
 
             // Special case the 'column' fields
             table = table
                 .and_data_ref(&"name".to_title_case(), &name_data)
-                .and_data_ref(&"prePath".to_title_case(), &pre_path_data)
-                .and_data_ref(&"postPath".to_title_case(), &post_path_data)
-                .and_data_ref(&"replacementPath".to_title_case(), &replacement_path_data)
-                .and_data_ref(&"pathLang".to_title_case(), &path_lang_data)
+                .and_data_ref(&"prePath".to_title_case(), &redacted.pre_path)
+                .and_data_ref(&"postPath".to_title_case(), &redacted.post_path)
+                .and_data_ref(
+                    &"replacementPath".to_title_case(),
+                    &redacted.replacement_path,
+                )
+                .and_data_ref(&"pathLang".to_title_case(), &redacted.path_lang)
                 .and_data_ref(&"method".to_title_case(), &method_data)
                 .and_data_ref(&"reason".to_title_case(), &reason_data);
 

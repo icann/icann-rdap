@@ -220,7 +220,6 @@ impl RdapResponse {
             RdapResponse::DomainSearchResults(_) => None,
             RdapResponse::EntitySearchResults(_) => None,
             RdapResponse::NameserverSearchResults(_) => None,
-
             RdapResponse::ErrorResponse(_) => None,
             RdapResponse::Help(_) => None,
         }

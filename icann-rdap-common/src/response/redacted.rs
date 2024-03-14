@@ -1,10 +1,9 @@
-use std::any::TypeId;
-
+use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
+use std::any::TypeId;
+use std::fmt;
 
 use crate::check::Checks;
-
-use std::fmt;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Name {
@@ -25,7 +24,7 @@ impl Name {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Reason {
     #[serde(rename = "description")]
     pub description: Option<String>,
@@ -36,10 +35,7 @@ pub struct Reason {
 
 impl std::fmt::Display for Reason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let output = self
-            .description
-            .clone()
-            .unwrap_or_else(|| self.type_field.clone().unwrap_or_else(|| "".to_string()));
+        let output = self.description.clone().unwrap_or_default();
         write!(f, "{}", output)
     }
 }
@@ -53,7 +49,7 @@ pub enum Method {
     ReplacementValue,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Redacted {
     #[serde[rename = "name"]]
     pub name: Name,
@@ -92,15 +88,6 @@ impl Default for Name {
     }
 }
 
-impl Default for Reason {
-    fn default() -> Self {
-        Self {
-            description: None,
-            type_field: None,
-        }
-    }
-}
-
 impl Default for Method {
     fn default() -> Self {
         Self::Removal // according to IETF draft this is the default
@@ -119,18 +106,6 @@ impl fmt::Display for Method {
 }
 
 impl Redacted {
-    pub fn new() -> Self {
-        Self {
-            name: Name::default(),
-            reason: Some(Reason::default()),
-            pre_path: None,
-            post_path: None,
-            path_lang: None,
-            replacement_path: None,
-            method: Some(Method::default()),
-        }
-    }
-
     pub fn get_checks(
         &self,
         _check_params: crate::check::CheckParams<'_>,
@@ -155,23 +130,24 @@ mod tests {
     #[test]
     fn GIVEN_redaction_WHEN_set_THEN_success() {
         // GIVEN
-        let mut name = Redacted::new();
-        name.name = Name {
+        let name = Name {
             description: Some("Registry Domain ID".to_string()),
             type_field: None,
         };
 
         // WHEN
-        let mut redacted = name;
-        redacted.reason = Some(Reason::default());
-        redacted.pre_path = Some("$.handle".to_string());
-        redacted.post_path = Some("$.entities[?(@.roles[0]=='registrant".to_string());
-        redacted.path_lang = Some("jsonpath".to_string());
-        redacted.replacement_path = Some(
-            "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='contact-uri')]"
-                .to_string(),
-        );
-        redacted.method = Some(Method::Removal);
+        let redacted = Redacted::builder()
+            .name(name)
+            .reason(Reason::default())
+            .pre_path("$.handle".to_string())
+            .post_path("$.entities[?(@.roles[0]=='registrant'".to_string())
+            .path_lang("jsonpath".to_string())
+            .replacement_path(
+                "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='contact-uri')]"
+                    .to_string(),
+            )
+            .method(Method::Removal)
+            .build();
 
         // THEN
         assert_eq!(
@@ -181,7 +157,7 @@ mod tests {
         assert_eq!(redacted.pre_path, Some("$.handle".to_string()));
         assert_eq!(
             redacted.post_path,
-            Some("$.entities[?(@.roles[0]=='registrant".to_string())
+            Some("$.entities[?(@.roles[0]=='registrant'".to_string())
         );
         assert_eq!(redacted.path_lang, Some("jsonpath".to_string()));
         assert_eq!(
@@ -204,7 +180,7 @@ mod tests {
           },
           "prePath": "$.handle",
           "pathLang": "jsonpath",
-          "postPath": "$.entities[?(@.roles[0]=='registrant",
+          "postPath": "$.entities[?(@.roles[0]=='registrant'",
           "replacementPath": "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='contact-uri')]",
           "method": "removal",
           "reason": {
@@ -213,8 +189,8 @@ mod tests {
         }
         "#;
 
-        let mut name: Redacted = Redacted::new();
-        name.name = Name {
+        // in this one we swap the two fields
+        let name = Name {
             type_field: Some("Registry Domain ID".to_string()),
             description: None,
         };
@@ -225,14 +201,19 @@ mod tests {
         };
 
         // WHEN
-        let mut sample_redact: Redacted = name;
-        sample_redact.pre_path = Some("$.handle".to_string());
-        sample_redact.path_lang = Some("jsonpath".to_string());
-        sample_redact.post_path = Some("$.entities[?(@.roles[0]=='registrant".to_string());
-        sample_redact.replacement_path = Some(
-            "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='contact-uri')]"
-                .to_string(),
-        );
+        // use the builder for most of the fields but not all
+        let mut sample_redact: Redacted = Redacted::builder()
+            .name(name)
+            .pre_path("$.handle".to_string())
+            .path_lang("jsonpath".to_string())
+            .post_path("$.entities[?(@.roles[0]=='registrant'".to_string())
+            .replacement_path(
+                "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='contact-uri')]"
+                    .to_string(),
+            )
+            .build();
+
+        // also make sure we can set the rest
         sample_redact.method = Some(Method::Removal);
         sample_redact.reason = Some(reason);
 
@@ -249,7 +230,7 @@ mod tests {
         assert_eq!(actual.pre_path, Some("$.handle".to_string()));
         assert_eq!(
             actual.post_path,
-            Some("$.entities[?(@.roles[0]=='registrant".to_string())
+            Some("$.entities[?(@.roles[0]=='registrant'".to_string())
         );
         assert_eq!(actual.path_lang, Some("jsonpath".to_string()));
         assert_eq!(
