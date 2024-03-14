@@ -213,29 +213,33 @@ fn do_output<'a, W: std::io::Write>(
                 }),
             )?;
         }
-        OutputType::Markdown => writeln!(
-            write,
-            "{}",
-            response.rdap.to_md(MdParams {
-                heading_level: 1,
-                root: &response.rdap,
-                parent_type: response.rdap.get_type(),
-                check_types: &processing_params.check_types,
-                options: &MdOptions {
-                    text_style_char: '_',
-                    style_in_justify: true,
-                    ..MdOptions::default()
-                },
-                req_data,
-            })
-        )?,
+        OutputType::Markdown => {
+            writeln!(
+                write,
+                "{}",
+                response.rdap.to_md(MdParams {
+                    heading_level: 1,
+                    root: &response.rdap,
+                    parent_type: response.rdap.get_type(),
+                    check_types: &processing_params.check_types,
+                    options: &MdOptions {
+                        text_style_char: '_',
+                        style_in_justify: true,
+                        ..MdOptions::default()
+                    },
+                    req_data,
+                })
+            )?;
+        }
         _ => {} // do nothing
     };
+
     let checks = response.rdap.get_checks(CheckParams {
         do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
     });
+
     let req_res = RequestResponse {
         checks,
         req_data,

@@ -94,6 +94,11 @@ impl ToMd for Domain {
             md.push_str(&network.to_md(params.next_level()));
         }
 
+        // redacted
+        if let Some(redacted) = &self.object_common.redacted {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+        }
+
         md.push('\n');
         md
     }
