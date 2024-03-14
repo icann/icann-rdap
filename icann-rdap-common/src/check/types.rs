@@ -84,13 +84,13 @@ impl GetChecks for Link {
                 } else {
                     items.push(CheckItem::self_link_has_no_type())
                 }
-            } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) ||
+            } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) &&
                 // because some registries do not model nameservers directly,
                 // they can be embedded in other objects but aren't first class
                 // objects themself (see RIR example in RFC 9083). Therefore,
                 // it only matters that a nameserver has no self link if it is
                 // the top most object (i.e. a first class object).
-                params.root.get_type() == TypeId::of::<Nameserver>()
+                params.root.get_type() != TypeId::of::<Nameserver>()
             {
                 items.push(CheckItem::object_class_has_no_self_link())
             }
@@ -269,12 +269,18 @@ impl GetSubChecks for ObjectCommon {
 mod tests {
     use rstest::rstest;
 
-    use crate::response::{
-        domain::Domain,
-        entity::Entity,
-        nameserver::Nameserver,
-        types::{Common, Event, Extension, Link, ObjectCommon, StatusValue},
-        RdapResponse,
+    use crate::{
+        check::Checks,
+        response::{
+            domain::Domain,
+            entity::Entity,
+            nameserver::Nameserver,
+            types::{
+                Common, Event, Extension, Link, Notice, NoticeOrRemark, ObjectCommon, Remark,
+                StatusValue,
+            },
+            RdapResponse,
+        },
     };
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -480,15 +486,151 @@ mod tests {
         });
 
         // THEN
-        checks
-            .sub("Links")
-            .expect("Links not found")
-            .sub("Link")
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::SelfLinkIsNotRdap)
-            .expect("link missing check");
+        assert!(find_any_check(&checks, Check::SelfLinkIsNotRdap));
+    }
+
+    #[test]
+    fn GIVEN_domain_with_self_link_WHEN_checked_THEN_no_check_found() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("self")
+                            .media_type("application/rdap+json")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+    }
+
+    #[test]
+    fn GIVEN_nameserver_with_self_link_WHEN_checked_THEN_no_check_found() {
+        // GIVEN
+        let rdap = RdapResponse::Nameserver(
+            Nameserver::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("self")
+                            .media_type("application/rdap+json")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+    }
+
+    #[test]
+    /// Issue #59
+    fn GIVEN_nameserver_with_self_link_and_notice_WHEN_checked_THEN_no_check_found() {
+        // GIVEN
+        let rdap = RdapResponse::Nameserver(
+            Nameserver::builder()
+                .common(
+                    Common::builder()
+                        .notices(vec![Notice(
+                            NoticeOrRemark::builder()
+                                .description_entry("a notice")
+                                .links(vec![Link::builder()
+                                    .href("https://tos")
+                                    .rel("terms-of-service")
+                                    .media_type("text/html")
+                                    .build()])
+                                .build(),
+                        )])
+                        .build(),
+                )
+                .object_common(
+                    ObjectCommon::domain()
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("self")
+                            .media_type("application/rdap+json")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+    }
+
+    #[test]
+    /// Issue #59
+    fn GIVEN_nameserver_with_self_link_and_remark_WHEN_checked_THEN_no_check_found() {
+        // GIVEN
+        let rdap = RdapResponse::Nameserver(
+            Nameserver::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .remarks(vec![Remark(
+                            NoticeOrRemark::builder()
+                                .description_entry("a notice")
+                                .links(vec![Link::builder()
+                                    .href("https://tos")
+                                    .rel("terms-of-service")
+                                    .media_type("text/html")
+                                    .build()])
+                                .build(),
+                        )])
+                        .links(vec![Link::builder()
+                            .href("https://foo")
+                            .rel("self")
+                            .media_type("application/rdap+json")
+                            .build()])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
     }
 
     #[test]
@@ -780,5 +922,19 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::InvalidRdapConformanceParent)
             .expect("check missing");
+    }
+
+    fn find_any_check(checks: &Checks, check_type: Check) -> bool {
+        if checks.items.iter().any(|c| c.check == check_type) {
+            return true;
+        }
+        if checks
+            .sub_checks
+            .iter()
+            .any(|c| find_any_check(c, check_type))
+        {
+            return true;
+        }
+        false
     }
 }
