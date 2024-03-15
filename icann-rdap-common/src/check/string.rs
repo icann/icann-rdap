@@ -8,6 +8,9 @@ pub trait StringCheck {
     /// Tests if a string is an LDH doamin name. This is not to be confused with [StringCheck::is_ldh_string],
     /// which checks individual domain labels.
     fn is_ldh_domain_name(&self) -> bool;
+
+    /// Tests if a string is a Unicode domain name.
+    fn is_unicode_domain_name(&self) -> bool;
 }
 
 impl<T: ToString> StringCheck for T {
@@ -24,6 +27,16 @@ impl<T: ToString> StringCheck for T {
     fn is_ldh_domain_name(&self) -> bool {
         let s = self.to_string();
         s == "." || (!s.is_empty() && s.split_terminator('.').all(|s| s.is_ldh_string()))
+    }
+
+    fn is_unicode_domain_name(&self) -> bool {
+        let s = self.to_string();
+        s == "."
+            || (!s.is_empty()
+                && s.split_terminator('.').all(|s| {
+                    s.chars()
+                        .all(|c| c == '-' || (!c.is_ascii_punctuation() && !c.is_whitespace()))
+                }))
     }
 }
 
@@ -183,6 +196,27 @@ mod tests {
 
         // WHEN
         let actual = test_string.is_ldh_domain_name();
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("foo", true)]
+    #[case("", false)]
+    #[case(".", true)]
+    #[case("foo.bar", true)]
+    #[case("foo.bar.", true)]
+    #[case("fo_o.bar.", false)]
+    #[case("fo o.bar.", false)]
+    fn GIVEN_string_WHEN_is_unicode_domain_name_THEN_correct_result(
+        #[case] test_string: &str,
+        #[case] expected: bool,
+    ) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = test_string.is_unicode_domain_name();
 
         // THEN
         assert_eq!(actual, expected);

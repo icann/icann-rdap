@@ -29,6 +29,9 @@ pub trait StoreOps: Send + Sync {
     /// Get a domain from storage using the 'ldhName' as the key.
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError>;
 
+    /// Get a domain from storage using the 'unicodeName' as the key.
+    async fn get_domain_by_unicode(&self, unicode: &str) -> Result<RdapResponse, RdapServerError>;
+
     /// Get an entity from storage using the 'handle' of the entity as the key.
     async fn get_entity_by_handle(&self, handle: &str) -> Result<RdapResponse, RdapServerError>;
 

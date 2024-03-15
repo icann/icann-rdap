@@ -15,6 +15,7 @@ pub mod error;
 pub mod help;
 pub mod nameserver;
 pub mod network;
+pub mod redacted;
 pub mod search;
 pub mod string;
 pub mod table;

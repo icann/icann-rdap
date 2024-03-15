@@ -10,12 +10,13 @@ An RDAP client library.
 
 [dependencies]
 
-icann-rdap-common = { version = "0.0.15", path = "../icann-rdap-common" }
+icann-rdap-common = { version = "0.0.16", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr-utils.workspace = true
 chrono.workspace = true
 const_format.workspace = true
+idna.workspace = true
 lazy_static.workspace = true
 pct-str.workspace = true
 regex.workspace = true

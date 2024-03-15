@@ -52,6 +52,27 @@ impl GetChecks for Domain {
             {
                 items.push(CheckItem::documentation_name())
             }
+
+            // if there is also a unicodeName
+            if let Some(unicode_name) = &self.unicode_name {
+                let expected = idna::domain_to_ascii(unicode_name);
+                if let Ok(expected) = expected {
+                    if !expected.eq_ignore_ascii_case(ldh) {
+                        items.push(CheckItem::unicode_does_not_match_ldh())
+                    }
+                }
+            }
+        }
+
+        // check unicode_name
+        if let Some(unicode_name) = &self.unicode_name {
+            if !unicode_name.is_unicode_domain_name() {
+                items.push(CheckItem::invalid_unicode_domain_name());
+            }
+            let expected = idna::domain_to_ascii(unicode_name);
+            if expected.is_err() {
+                items.push(CheckItem::invalid_unicode_name());
+            }
         }
 
         Checks {
@@ -92,5 +113,52 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::InvalidLdhName));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("  ")]
+    fn GIVEN_domain_with_bad_unicode_WHEN_checked_THEN_invalid_ldh(#[case] unicode: &str) {
+        // GIVEN
+        let domain = Domain::idn().unicode_name(unicode).build();
+        let rdap = RdapResponse::Domain(domain);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::InvalidUnicodeDomainName));
+    }
+
+    #[test]
+    fn GIVEN_domain_with_mismatch_ldh_and_unicode_WHEN_checked_THEN_unicode_does_not_match() {
+        // GIVEN
+        let domain = Domain::idn()
+            .unicode_name("foo.com")
+            .ldh_name("xn--foo.com")
+            .build();
+        let rdap = RdapResponse::Domain(domain);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::UnicodeDoesNotMatchLdh));
     }
 }

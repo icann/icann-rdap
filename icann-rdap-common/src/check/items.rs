@@ -115,6 +115,26 @@ impl CheckItem {
             check: Check::DocumentataionName,
         }
     }
+    pub fn unicode_does_not_match_ldh() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationWarning,
+            check: Check::UnicodeDoesNotMatchLdh,
+        }
+    }
+
+    // Unicode Name
+    pub fn invalid_unicode_domain_name() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::InvalidUnicodeDomainName,
+        }
+    }
+    pub fn invalid_unicode_name() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::InvalidUnicodeName,
+        }
+    }
 
     // Network or Autnum Name
     pub fn name_is_empty() -> CheckItem {

@@ -1356,7 +1356,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.15"
+version = "0.0.16"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1389,13 +1389,14 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.15"
+version = "0.0.16"
 dependencies = [
  "buildstructor",
  "chrono",
  "cidr-utils 0.6.1",
  "const_format",
  "icann-rdap-common",
+ "idna",
  "lazy_static",
  "pct-str",
  "regex",
@@ -1411,12 +1412,13 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.15"
+version = "0.0.16"
 dependencies = [
  "buildstructor",
  "chrono",
  "cidr-utils 0.6.1",
  "const_format",
+ "idna",
  "ipnet",
  "lazy_static",
  "prefix-trie",
@@ -1431,7 +1433,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.15"
+version = "0.0.16"
 dependencies = [
  "assert_cmd",
  "async-trait",
@@ -1451,6 +1453,7 @@ dependencies = [
  "hyper 1.0.1",
  "icann-rdap-client",
  "icann-rdap-common",
+ "idna",
  "ipnet",
  "lazy_static",
  "pct-str",
