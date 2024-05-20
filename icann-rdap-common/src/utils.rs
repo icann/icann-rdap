@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use jsonpath_lib as jsonpath;
 use jsonpath::replace_with;
+use jsonpath_lib as jsonpath;
 use jsonpath_rust::{JsonPathFinder, JsonPathInst};
 use serde_json::{json, Value};
 
@@ -444,9 +444,8 @@ fn parse_redacted_array(
         // now we need to check if we need to do the final path substitution
         match redacted_object.redaction_type {
             // if you are changing what you're going to subsitute on, you need to change this.
-            Some(RedactionType::EmptyValue)
-            | Some(RedactionType::PartialValue)
-            | Some(RedactionType::ReplacementValue) => {
+            Some(RedactionType::EmptyValue) | Some(RedactionType::PartialValue) => {
+                // | Some(RedactionType::ReplacementValue) => {
                 redacted_object.do_final_path_subsitution = true;
             }
             _ => {
