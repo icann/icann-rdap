@@ -2,6 +2,7 @@ use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::GetChecks;
+use icann_rdap_common::utils::replace_redacted_items;
 use tracing::error;
 use tracing::info;
 
@@ -84,7 +85,19 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            let replaced_rdap = replace_redacted_items(response.rdap.clone());
+            let replaced_data = ResponseData {
+                rdap: replaced_rdap,
+                // copy other fields from `response`
+                ..response.clone()
+            };
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if let Some(url) = get_related_link(&response.rdap).first() {
@@ -135,7 +148,19 @@ async fn do_inr_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::RegionalInternetRegistry,
             };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            let replaced_rdap = replace_redacted_items(response.rdap.clone());
+            let replaced_data = ResponseData {
+                rdap: replaced_rdap,
+                // copy other fields from `response`
+                ..response.clone()
+            };
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => return Err(error),
@@ -169,7 +194,19 @@ async fn do_basic_query<'a, W: std::io::Write>(
                     source_type: SourceType::UncategorizedRegistry,
                 }
             };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            let replaced_rdap = replace_redacted_items(response.rdap.clone());
+            let replaced_data = ResponseData {
+                rdap: replaced_rdap,
+                // copy other fields from `response`
+                ..response.clone()
+            };
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => return Err(error),

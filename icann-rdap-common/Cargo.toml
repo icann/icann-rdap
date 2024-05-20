@@ -24,6 +24,10 @@ strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
 
+jsonpath-rust = "=0.5.0"
+jsonpath_lib = "0.3.0"
+regex = "1.5.4"
+
 [dev-dependencies]
 
 # fixture testings
