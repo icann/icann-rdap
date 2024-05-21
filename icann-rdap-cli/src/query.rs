@@ -2,12 +2,11 @@ use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::GetChecks;
-use icann_rdap_common::utils::replace_redacted_items;
 use tracing::error;
 use tracing::info;
 
 use icann_rdap_client::{
-    md::{MdOptions, MdParams, ToMd},
+    md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
     query::{qtype::QueryType, request::ResponseData},
     request::{RequestData, RequestResponse, RequestResponses, SourceType},
 };

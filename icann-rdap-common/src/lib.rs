@@ -8,7 +8,6 @@ pub mod dns_types;
 pub mod iana;
 pub mod media_types;
 pub mod response;
-pub mod utils;
 
 #[cfg(debug_assertions)]
 use const_format::formatcp;
