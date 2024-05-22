@@ -274,7 +274,7 @@ fn parse_redacted_array(
         // this is the original_path given to us
         let original_path = pre_path.clone().or(post_path.clone());
         let mut redacted_object = RedactedObject {
-            name: Value::String(String::from("")), // Set to empty string initially
+            name: Value::String(String::default()), // Set to empty string initially
             path_index_count: 0,                   // Set to 0 initially
             pre_path,
             post_path,
