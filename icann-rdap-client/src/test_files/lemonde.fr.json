@@ -1,0 +1,1007 @@
+{
+  "rdapConformance": [
+    "rdap_level_0",
+    "icann_rdap_technical_implementation_guide_0",
+    "icann_rdap_response_profile_0"
+  ],
+  "objectClassName": "domain",
+  "handle": "DOM000000024309-FRNIC",
+  "links": [
+    {
+      "value": "https://rdap.nic.fr/domain/lemonde.fr",
+      "rel": "self",
+      "href": "https://rdap.nic.fr/domain/lemonde.fr"
+    }
+  ],
+  "events": [
+    {
+      "eventAction": "registration",
+      "eventDate": "2005-08-02T14:16:36Z"
+    },
+    {
+      "eventAction": "expiration",
+      "eventDate": "2025-06-09T22:08:09Z"
+    },
+    {
+      "eventAction": "last changed",
+      "eventDate": "2024-06-12T22:09:39.881923Z"
+    },
+    {
+      "eventAction": "transfer",
+      "eventDate": "2022-06-09T22:08:09Z"
+    }
+  ],
+  "status": [
+    "server update prohibited",
+    "server transfer prohibited",
+    "server delete prohibited",
+    "server recover prohibited"
+  ],
+  "port43": "whois.nameshield.net",
+  "entities": [
+    {
+      "objectClassName": "entity",
+      "handle": "RAR24-FRNIC",
+      "remarks": [
+        {
+          "description": [
+            "No"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/entity/RAR24-FRNIC",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/entity/RAR24-FRNIC"
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "registration",
+          "eventDate": "1997-12-29T00:00:00Z"
+        },
+        {
+          "eventAction": "last changed",
+          "eventDate": "2022-10-01T11:41:28.622961Z"
+        }
+      ],
+      "status": [
+        "active"
+      ],
+      "port43": "whois.nameshield.net",
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "fn",
+            {},
+            "text",
+            "NAMESHIELD"
+          ],
+          [
+            "tel",
+            {},
+            "text",
+            "+33.241182828"
+          ],
+          [
+            "tel",
+            {
+              "type": "fax"
+            },
+            "text",
+            "+33.241182829"
+          ],
+          [
+            "email",
+            {},
+            "text",
+            "registrar@nameshield.net"
+          ],
+          [
+            "url",
+            {},
+            "uri",
+            "https://www.nameshield.com/contact-nameshield/"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "39 boulevard des Capucines",
+              "PARIS",
+              "",
+              "75002",
+              "FR"
+            ]
+          ]
+        ]
+      ],
+      "roles": [
+        "sponsor",
+        "registrar"
+      ],
+      "publicIds": [
+        {
+          "type": "IANA Registrar ID",
+          "identifier": "1251"
+        }
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "N17024-FRNIC",
+      "remarks": [
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "ORGANIZATION"
+          ]
+        },
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "NotIdentified"
+          ]
+        },
+        {
+          "description": [
+            "NAMESHIELD"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/entity/N17024-FRNIC",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/entity/N17024-FRNIC"
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "registration",
+          "eventDate": "2017-11-21T09:50:30Z"
+        },
+        {
+          "eventAction": "last changed",
+          "eventDate": "2024-06-13T12:35:12.350131Z"
+        }
+      ],
+      "status": [
+        "associated",
+        "active"
+      ],
+      "port43": "whois.nameshield.net",
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "fn",
+            {},
+            "text",
+            "NAMESHIELD"
+          ],
+          [
+            "org",
+            {},
+            "text",
+            "TECHNICAL department"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "79 rue Desjardins",
+              "ANGERS",
+              "",
+              "49100",
+              "FR"
+            ]
+          ],
+          [
+            "email",
+            {},
+            "text",
+            "technical@nameshield.net"
+          ],
+          [
+            "tel",
+            {},
+            "text",
+            "+33.241182828"
+          ],
+          [
+            "tel",
+            {
+              "type": "fax"
+            },
+            "text",
+            "+33.241182829"
+          ]
+        ]
+      ],
+      "roles": [
+        "technical"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "SEDM254-FRNIC",
+      "remarks": [
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "ORGANIZATION"
+          ]
+        },
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "NotIdentified"
+          ]
+        },
+        {
+          "description": [
+            "NAMESHIELD"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/entity/SEDM254-FRNIC",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/entity/SEDM254-FRNIC"
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "registration",
+          "eventDate": "2022-04-04T07:21:16Z"
+        }
+      ],
+      "status": [
+        "server update prohibited",
+        "associated"
+      ],
+      "port43": "whois.nameshield.net",
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "fn",
+            {},
+            "text",
+            "SOCIETE EDITRICE du monde"
+          ],
+          [
+            "org",
+            {},
+            "text",
+            "SOCIETE EDITRICE DU MONDE"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "67-69 avenue Pierre Mendes-France",
+              "PARIS",
+              "",
+              "75013",
+              "FR"
+            ]
+          ],
+          [
+            "email",
+            {},
+            "text",
+            "domain_names@lemonde.fr"
+          ],
+          [
+            "tel",
+            {},
+            "text",
+            "+33.157282224"
+          ]
+        ]
+      ],
+      "roles": [
+        "registrant"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "SEDM255-FRNIC",
+      "remarks": [
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "ORGANIZATION"
+          ]
+        },
+        {
+          "description": [
+            "NO"
+          ]
+        },
+        {
+          "description": [
+            "NotIdentified"
+          ]
+        },
+        {
+          "description": [
+            "NAMESHIELD"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/entity/SEDM255-FRNIC",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/entity/SEDM255-FRNIC"
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "registration",
+          "eventDate": "2022-04-04T07:21:17Z"
+        },
+        {
+          "eventAction": "last changed",
+          "eventDate": "2022-11-01T07:38:07.668742Z"
+        }
+      ],
+      "status": [
+        "associated",
+        "active"
+      ],
+      "port43": "whois.nameshield.net",
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "fn",
+            {},
+            "text",
+            "SOCIETE EDITRICE du monde"
+          ],
+          [
+            "org",
+            {},
+            "text",
+            "SOCIETE EDITRICE DU MONDE"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "67-69 avenue Pierre Mendes-France",
+              "PARIS",
+              "",
+              "75013",
+              "FR"
+            ]
+          ],
+          [
+            "email",
+            {},
+            "text",
+            "domain_names@lemonde.fr"
+          ],
+          [
+            "tel",
+            {},
+            "text",
+            "+33.157282224"
+          ]
+        ]
+      ],
+      "roles": [
+        "administrative"
+      ]
+    }
+  ],
+  "ldhName": "lemonde.fr",
+  "nameservers": [
+    {
+      "objectClassName": "nameserver",
+      "handle": "HOST65144-FRNIC",
+      "remarks": [
+        {
+          "title": "result set truncated due to authorization",
+          "description": [
+            "The list of results does not contain all results due to lack of authorization.",
+            "This may indicate to some clients that proper authorization will yield a longer result set."
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/nameserver/ns-cloud-b4.googledomains.com",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/nameserver/ns-cloud-b4.googledomains.com"
+        }
+      ],
+      "status": [
+        "associated",
+        "active"
+      ],
+      "port43": "whois.nic.fr",
+      "entities": [
+        {
+          "objectClassName": "entity",
+          "handle": "RAR939-FRNIC",
+          "remarks": [
+            {
+              "description": [
+                "No"
+              ]
+            }
+          ],
+          "links": [
+            {
+              "value": "https://rdap.nic.fr/entity/RAR939-FRNIC",
+              "rel": "self",
+              "href": "https://rdap.nic.fr/entity/RAR939-FRNIC"
+            }
+          ],
+          "events": [
+            {
+              "eventAction": "registration",
+              "eventDate": "2014-07-29T15:35:33Z"
+            },
+            {
+              "eventAction": "last changed",
+              "eventDate": "2022-10-12T18:54:01.785057Z"
+            }
+          ],
+          "status": [
+            "active"
+          ],
+          "port43": "whois.nic.fr",
+          "vcardArray": [
+            "vcard",
+            [
+              [
+                "version",
+                {},
+                "text",
+                "4.0"
+              ],
+              [
+                "fn",
+                {},
+                "text",
+                "Registry Operations"
+              ],
+              [
+                "tel",
+                {},
+                "text",
+                "+33.139308300"
+              ],
+              [
+                "tel",
+                {
+                  "type": "fax"
+                },
+                "text",
+                "+33.139308301"
+              ],
+              [
+                "email",
+                {},
+                "text",
+                "support@afnic.fr"
+              ],
+              [
+                "url",
+                {},
+                "uri",
+                "https://www.afnic.fr"
+              ],
+              [
+                "adr",
+                {},
+                "text",
+                [
+                  "",
+                  "",
+                  [
+                    "AFNIC",
+                    "immeuble le Stephenson",
+                    "1, rue Stephenson"
+                  ],
+                  "Montigny-Le-Bretonneux",
+                  "",
+                  "78180",
+                  "FR"
+                ]
+              ]
+            ]
+          ],
+          "roles": [
+            "sponsor",
+            "registrar"
+          ],
+          "publicIds": [
+            {
+              "type": "IANA Registrar ID",
+              "identifier": "9999"
+            }
+          ]
+        }
+      ],
+      "ldhName": "ns-cloud-b4.googledomains.com",
+      "ipAddresses": {}
+    },
+    {
+      "objectClassName": "nameserver",
+      "handle": "HOST65142-FRNIC",
+      "remarks": [
+        {
+          "title": "result set truncated due to authorization",
+          "description": [
+            "The list of results does not contain all results due to lack of authorization.",
+            "This may indicate to some clients that proper authorization will yield a longer result set."
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/nameserver/ns-cloud-b2.googledomains.com",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/nameserver/ns-cloud-b2.googledomains.com"
+        }
+      ],
+      "status": [
+        "associated",
+        "active"
+      ],
+      "port43": "whois.nic.fr",
+      "entities": [
+        {
+          "objectClassName": "entity",
+          "handle": "RAR939-FRNIC",
+          "remarks": [
+            {
+              "description": [
+                "No"
+              ]
+            }
+          ],
+          "links": [
+            {
+              "value": "https://rdap.nic.fr/entity/RAR939-FRNIC",
+              "rel": "self",
+              "href": "https://rdap.nic.fr/entity/RAR939-FRNIC"
+            }
+          ],
+          "events": [
+            {
+              "eventAction": "registration",
+              "eventDate": "2014-07-29T15:35:33Z"
+            },
+            {
+              "eventAction": "last changed",
+              "eventDate": "2022-10-12T18:54:01.785057Z"
+            }
+          ],
+          "status": [
+            "active"
+          ],
+          "port43": "whois.nic.fr",
+          "vcardArray": [
+            "vcard",
+            [
+              [
+                "version",
+                {},
+                "text",
+                "4.0"
+              ],
+              [
+                "fn",
+                {},
+                "text",
+                "Registry Operations"
+              ],
+              [
+                "tel",
+                {},
+                "text",
+                "+33.139308300"
+              ],
+              [
+                "tel",
+                {
+                  "type": "fax"
+                },
+                "text",
+                "+33.139308301"
+              ],
+              [
+                "email",
+                {},
+                "text",
+                "support@afnic.fr"
+              ],
+              [
+                "url",
+                {},
+                "uri",
+                "https://www.afnic.fr"
+              ],
+              [
+                "adr",
+                {},
+                "text",
+                [
+                  "",
+                  "",
+                  [
+                    "AFNIC",
+                    "immeuble le Stephenson",
+                    "1, rue Stephenson"
+                  ],
+                  "Montigny-Le-Bretonneux",
+                  "",
+                  "78180",
+                  "FR"
+                ]
+              ]
+            ]
+          ],
+          "roles": [
+            "sponsor",
+            "registrar"
+          ],
+          "publicIds": [
+            {
+              "type": "IANA Registrar ID",
+              "identifier": "9999"
+            }
+          ]
+        }
+      ],
+      "ldhName": "ns-cloud-b2.googledomains.com",
+      "ipAddresses": {}
+    },
+    {
+      "objectClassName": "nameserver",
+      "handle": "HOST65143-FRNIC",
+      "remarks": [
+        {
+          "title": "result set truncated due to authorization",
+          "description": [
+            "The list of results does not contain all results due to lack of authorization.",
+            "This may indicate to some clients that proper authorization will yield a longer result set."
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/nameserver/ns-cloud-b3.googledomains.com",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/nameserver/ns-cloud-b3.googledomains.com"
+        }
+      ],
+      "status": [
+        "associated",
+        "active"
+      ],
+      "port43": "whois.nic.fr",
+      "entities": [
+        {
+          "objectClassName": "entity",
+          "handle": "RAR939-FRNIC",
+          "remarks": [
+            {
+              "description": [
+                "No"
+              ]
+            }
+          ],
+          "links": [
+            {
+              "value": "https://rdap.nic.fr/entity/RAR939-FRNIC",
+              "rel": "self",
+              "href": "https://rdap.nic.fr/entity/RAR939-FRNIC"
+            }
+          ],
+          "events": [
+            {
+              "eventAction": "registration",
+              "eventDate": "2014-07-29T15:35:33Z"
+            },
+            {
+              "eventAction": "last changed",
+              "eventDate": "2022-10-12T18:54:01.785057Z"
+            }
+          ],
+          "status": [
+            "active"
+          ],
+          "port43": "whois.nic.fr",
+          "vcardArray": [
+            "vcard",
+            [
+              [
+                "version",
+                {},
+                "text",
+                "4.0"
+              ],
+              [
+                "fn",
+                {},
+                "text",
+                "Registry Operations"
+              ],
+              [
+                "tel",
+                {},
+                "text",
+                "+33.139308300"
+              ],
+              [
+                "tel",
+                {
+                  "type": "fax"
+                },
+                "text",
+                "+33.139308301"
+              ],
+              [
+                "email",
+                {},
+                "text",
+                "support@afnic.fr"
+              ],
+              [
+                "url",
+                {},
+                "uri",
+                "https://www.afnic.fr"
+              ],
+              [
+                "adr",
+                {},
+                "text",
+                [
+                  "",
+                  "",
+                  [
+                    "AFNIC",
+                    "immeuble le Stephenson",
+                    "1, rue Stephenson"
+                  ],
+                  "Montigny-Le-Bretonneux",
+                  "",
+                  "78180",
+                  "FR"
+                ]
+              ]
+            ]
+          ],
+          "roles": [
+            "sponsor",
+            "registrar"
+          ],
+          "publicIds": [
+            {
+              "type": "IANA Registrar ID",
+              "identifier": "9999"
+            }
+          ]
+        }
+      ],
+      "ldhName": "ns-cloud-b3.googledomains.com",
+      "ipAddresses": {}
+    },
+    {
+      "objectClassName": "nameserver",
+      "handle": "HOST65141-FRNIC",
+      "remarks": [
+        {
+          "title": "result set truncated due to authorization",
+          "description": [
+            "The list of results does not contain all results due to lack of authorization.",
+            "This may indicate to some clients that proper authorization will yield a longer result set."
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://rdap.nic.fr/nameserver/ns-cloud-b1.googledomains.com",
+          "rel": "self",
+          "href": "https://rdap.nic.fr/nameserver/ns-cloud-b1.googledomains.com"
+        }
+      ],
+      "status": [
+        "associated",
+        "active"
+      ],
+      "port43": "whois.nic.fr",
+      "entities": [
+        {
+          "objectClassName": "entity",
+          "handle": "RAR939-FRNIC",
+          "remarks": [
+            {
+              "description": [
+                "No"
+              ]
+            }
+          ],
+          "links": [
+            {
+              "value": "https://rdap.nic.fr/entity/RAR939-FRNIC",
+              "rel": "self",
+              "href": "https://rdap.nic.fr/entity/RAR939-FRNIC"
+            }
+          ],
+          "events": [
+            {
+              "eventAction": "registration",
+              "eventDate": "2014-07-29T15:35:33Z"
+            },
+            {
+              "eventAction": "last changed",
+              "eventDate": "2022-10-12T18:54:01.785057Z"
+            }
+          ],
+          "status": [
+            "active"
+          ],
+          "port43": "whois.nic.fr",
+          "vcardArray": [
+            "vcard",
+            [
+              [
+                "version",
+                {},
+                "text",
+                "4.0"
+              ],
+              [
+                "fn",
+                {},
+                "text",
+                "Registry Operations"
+              ],
+              [
+                "tel",
+                {},
+                "text",
+                "+33.139308300"
+              ],
+              [
+                "tel",
+                {
+                  "type": "fax"
+                },
+                "text",
+                "+33.139308301"
+              ],
+              [
+                "email",
+                {},
+                "text",
+                "support@afnic.fr"
+              ],
+              [
+                "url",
+                {},
+                "uri",
+                "https://www.afnic.fr"
+              ],
+              [
+                "adr",
+                {},
+                "text",
+                [
+                  "",
+                  "",
+                  [
+                    "AFNIC",
+                    "immeuble le Stephenson",
+                    "1, rue Stephenson"
+                  ],
+                  "Montigny-Le-Bretonneux",
+                  "",
+                  "78180",
+                  "FR"
+                ]
+              ]
+            ]
+          ],
+          "roles": [
+            "sponsor",
+            "registrar"
+          ],
+          "publicIds": [
+            {
+              "type": "IANA Registrar ID",
+              "identifier": "9999"
+            }
+          ]
+        }
+      ],
+      "ldhName": "ns-cloud-b1.googledomains.com",
+      "ipAddresses": {}
+    }
+  ]
+}

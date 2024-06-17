@@ -1,0 +1,455 @@
+{
+  "rdapConformance": [
+    "icann_rdap_technical_implementation_guide_0",
+    "ur_domain_check_0"
+  ],
+  "notices": [
+    {
+      "title": "Status Codes",
+      "description": [
+        "For more information on domain status codes, please visit https://icann.org/epp"
+      ],
+      "links": [
+        {
+          "href": "https://icann.org/epp"
+        }
+      ]
+    },
+    {
+      "title": "RDDS Inaccuracy Complaint Form",
+      "description": [
+        "URL of the ICANN RDDS Inaccuracy Complaint Form: https://www.icann.org/wicf/"
+      ],
+      "links": [
+        {
+          "href": "https://www.icann.org/wicf/"
+        }
+      ]
+    },
+    {
+      "title": "Terms of service",
+      "description": [
+        "The WHOIS information provided in this page has been redacted",
+        "in compliance with ICANN's Temporary Specification for gTLD",
+        "Registration Data.",
+        "",
+        "The data in this record is provided by Uniregistry for informational",
+        "purposes only, and it does not guarantee its accuracy. Uniregistry is",
+        "authoritative for whois information in top-level domains it operates",
+        "under contract with the Internet Corporation for Assigned Names and",
+        "Numbers. Whois information from other top-level domains is provided by",
+        "a third-party under license to Uniregistry.",
+        "",
+        "This service is intended only for query-based access. By using this",
+        "service, you agree that you will use any data presented only for lawful",
+        "purposes and that, under no circumstances will you use (a) data",
+        "acquired for the purpose of allowing, enabling, or otherwise supporting",
+        "the transmission by e-mail, telephone, facsimile or other",
+        "communications mechanism of mass  unsolicited, commercial advertising",
+        "or solicitations to entities other than your existing  customers; or",
+        "(b) this service to enable high volume, automated, electronic processes",
+        "that send queries or data to the systems of any Registrar or any",
+        "Registry except as reasonably necessary to register domain names or",
+        "modify existing domain name registrations.",
+        "",
+        "Uniregistry reserves the right to modify these terms at any time. By",
+        "submitting this query, you agree to abide by this policy. All rights",
+        "reserved.",
+        ""
+      ],
+      "links": [
+        {
+          "href": "https://whois.uniregistry.net/"
+        }
+      ]
+    }
+  ],
+  "objectClassName": "domain",
+  "handle": "DO_a7aec7e93f5797ee898b23cefe340fe3-UR",
+  "events": [
+    {
+      "eventAction": "registration",
+      "eventActor": "markmonitor",
+      "eventDate": "2014-11-12T19:15:55.283Z"
+    },
+    {
+      "eventAction": "expiration",
+      "eventDate": "2024-11-12T19:15:55.283Z"
+    },
+    {
+      "eventAction": "last changed",
+      "eventDate": "2023-10-17T10:47:21.733Z"
+    },
+    {
+      "eventAction": "last update of RDAP database",
+      "eventDate": "2024-06-12T19:40:52.232Z"
+    }
+  ],
+  "status": [
+    "client update prohibited",
+    "client transfer prohibited",
+    "client delete prohibited"
+  ],
+  "entities": [
+    {
+      "objectClassName": "entity",
+      "remarks": [
+        {
+          "title": "REDACTED FOR PRIVACY",
+          "description": [
+            "Some of the data in this object has been removed"
+          ]
+        },
+        {
+          "title": "EMAIL REDACTED FOR PRIVACY",
+          "description": [
+            "Please query the RDDS service of the Registrar of Record identified in this output for information on how to contact the Registrant, Admin, or Tech contact of the queried domain name."
+          ]
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "org",
+            {},
+            "text",
+            "Microsoft Corporation"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "",
+              "",
+              "WA",
+              "",
+              "US"
+            ]
+          ]
+        ]
+      ],
+      "roles": [
+        "registrant"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "remarks": [
+        {
+          "title": "REDACTED FOR PRIVACY",
+          "description": [
+            "Some of the data in this object has been removed"
+          ]
+        },
+        {
+          "title": "EMAIL REDACTED FOR PRIVACY",
+          "description": [
+            "Please query the RDDS service of the Registrar of Record identified in this output for information on how to contact the Registrant, Admin, or Tech contact of the queried domain name."
+          ]
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "",
+              "",
+              ""
+            ]
+          ]
+        ]
+      ],
+      "roles": [
+        "administrative"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "remarks": [
+        {
+          "title": "REDACTED FOR PRIVACY",
+          "description": [
+            "Some of the data in this object has been removed"
+          ]
+        },
+        {
+          "title": "EMAIL REDACTED FOR PRIVACY",
+          "description": [
+            "Please query the RDDS service of the Registrar of Record identified in this output for information on how to contact the Registrant, Admin, or Tech contact of the queried domain name."
+          ]
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "",
+              "",
+              ""
+            ]
+          ]
+        ]
+      ],
+      "roles": [
+        "technical"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "292",
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "entities": [
+        {
+          "objectClassName": "entity",
+          "handle": "CO_03a1e5a41de9801039c48cce9ea7414f-UR",
+          "events": [
+            {
+              "eventAction": "last update of RDAP database",
+              "eventDate": "2024-06-12T19:40:52.232Z"
+            }
+          ],
+          "vcardArray": [
+            "vcard",
+            [
+              [
+                "version",
+                {},
+                "text",
+                "4.0"
+              ],
+              [
+                "fn",
+                {},
+                "text",
+                "Markmonitor"
+              ],
+              [
+                "adr",
+                {},
+                "text",
+                [
+                  "",
+                  "",
+                  [
+                    "2150 S Bonito Way, Suite 150",
+                    "",
+                    ""
+                  ],
+                  "Meridian",
+                  "ID",
+                  "83642",
+                  "US"
+                ]
+              ],
+              [
+                "tel",
+                {
+                  "type": "voice"
+                },
+                "uri",
+                "tel:+1.2083895740"
+              ],
+              [
+                "tel",
+                {
+                  "type": "fax"
+                },
+                "uri",
+                "tel:+1.2083895771"
+              ],
+              [
+                "email",
+                {},
+                "text",
+                "abusecomplaints@markmonitor.com"
+              ]
+            ]
+          ],
+          "roles": [
+            "abuse"
+          ]
+        }
+      ],
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "fn",
+            {},
+            "text",
+            "MarkMonitor Inc."
+          ],
+          [
+            "adr",
+            {},
+            "text",
+            [
+              "",
+              "",
+              "3540 East Longwing Lane, Suite 300",
+              "Meridian",
+              "ID",
+              "83646",
+              "US"
+            ]
+          ],
+          [
+            "tel",
+            {
+              "type": "voice"
+            },
+            "uri",
+            "tel:+1.208389574"
+          ],
+          [
+            "tel",
+            {
+              "type": "fax"
+            },
+            "uri",
+            "tel:+1.2083895771"
+          ],
+          [
+            "email",
+            {},
+            "text",
+            "ccops@markmonitor.com"
+          ]
+        ]
+      ],
+      "roles": [
+        "registrar"
+      ]
+    }
+  ],
+  "ldhName": "microsoft.click",
+  "unicodeName": "microsoft.click",
+  "secureDNS": {
+    "delegationSigned": false
+  },
+  "nameservers": [
+    {
+      "objectClassName": "nameserver",
+      "handle": "HO_6d2f0b70100a174318954d7e2af08b36-UR",
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "status": [
+        "associated"
+      ],
+      "ldhName": "ns4-08.azure-dns.info",
+      "unicodeName": "ns4-08.azure-dns.info"
+    },
+    {
+      "objectClassName": "nameserver",
+      "handle": "HO_a639e2ec1bd022f8dcf45d00dfc1cf7d-UR",
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "status": [
+        "associated"
+      ],
+      "ldhName": "ns2-08.azure-dns.net",
+      "unicodeName": "ns2-08.azure-dns.net"
+    },
+    {
+      "objectClassName": "nameserver",
+      "handle": "HO_bcdf18efa72577e5ac61514bce694770-UR",
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "status": [
+        "associated"
+      ],
+      "ldhName": "ns3-08.azure-dns.org",
+      "unicodeName": "ns3-08.azure-dns.org"
+    },
+    {
+      "objectClassName": "nameserver",
+      "handle": "HO_8fa40a46321cfbe1b88b1590e5bd9cea-UR",
+      "events": [
+        {
+          "eventAction": "last update of RDAP database",
+          "eventDate": "2024-06-12T19:40:52.232Z"
+        }
+      ],
+      "status": [
+        "associated"
+      ],
+      "ldhName": "ns1-08.azure-dns.com",
+      "unicodeName": "ns1-08.azure-dns.com"
+    }
+  ]
+}
