@@ -1,7 +1,7 @@
-use super::{GtldParams, ToGtld};
+use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::types::Common;
 
-impl ToGtld for Common {
+impl ToGtldWhois for Common {
     fn to_gtld(&self, _params: &mut GtldParams) -> String {
         String::new()
     }

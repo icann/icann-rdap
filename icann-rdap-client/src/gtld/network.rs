@@ -1,8 +1,8 @@
-use super::{GtldParams, ToGtld};
+use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::network::Network;
 use std::any::TypeId;
 
-impl ToGtld for Network {
+impl ToGtldWhois for Network {
     fn to_gtld(&self, params: &mut GtldParams) -> String {
         let _typeid = TypeId::of::<Network>();
         let mut gtld = String::new();

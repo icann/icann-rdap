@@ -1,8 +1,8 @@
-use super::{GtldParams, RoleInfo, ToGtld};
-use icann_rdap_common::contact::PostalAddress;
+use super::{GtldParams, RoleInfo, ToGtldWhois};
+use icann_rdap_common::contact::{Contact, PostalAddress};
 use icann_rdap_common::response::entity::Entity;
 
-impl ToGtld for Option<Vec<Entity>> {
+impl ToGtldWhois for Option<Vec<Entity>> {
     fn to_gtld(&self, params: &mut GtldParams) -> String {
         let mut front_formatted_data = String::new();
         let mut formatted_data = String::new();
@@ -67,6 +67,18 @@ impl ToGtld for Option<Vec<Entity>> {
                                     }
                                     if !role_info.adr.is_empty() {
                                         formatted_data += &role_info.adr;
+                                    }
+                                    if !role_info.email.is_empty() {
+                                        formatted_data +=
+                                            &format!("{} Email: {}\n", cfl(role), role_info.email);
+                                    }
+                                    if !role_info.phone.is_empty() {
+                                        formatted_data +=
+                                            &format!("{} Phone: {}\n", cfl(role), role_info.phone);
+                                    }
+                                    if !role_info.fax.is_empty() {
+                                        formatted_data +=
+                                            &format!("{} Fax: {}\n", cfl(role), role_info.fax);
                                     }
                                 }
                             }
@@ -133,11 +145,13 @@ fn extract_role_info(
     vcard_array: &[serde_json::Value],
     params: &mut GtldParams,
 ) -> RoleInfo {
-    let mut name = String::new();
-    let mut org = String::new();
-    let mut url = String::new();
-    let mut adr = String::new();
+    let contact = match Contact::from_vcard(vcard_array) {
+        Some(contact) => contact,
+        None => return RoleInfo::default(),
+    };
 
+    let mut adr = String::new();
+    let mut url = String::new();
     let label = match role {
         "registrar" => "Registrar",
         "technical" => "Technical",
@@ -147,14 +161,19 @@ fn extract_role_info(
     };
     params.label = label.to_string();
 
+    let name = contact.full_name.unwrap_or_default();
+    let org = contact
+        .organization_names
+        .and_then(|orgs| orgs.get(0).cloned())
+        .unwrap_or_default();
+
+    // Contact address and the URL do not parse correctly, use the vcard.
     for vcard in vcard_array.iter() {
         if let Some(properties) = vcard.as_array() {
             for property in properties {
                 if let Some(property) = property.as_array() {
                     match property[0].as_str().unwrap_or("") {
-                        "fn" => name = property[3].as_str().unwrap_or("").to_string(),
                         "url" => url = property[3].as_str().unwrap_or("").to_string(),
-                        "org" => org = property[3].as_str().unwrap_or("").to_string(),
                         "adr" => {
                             if let Some(address_components) = property[3].as_array() {
                                 adr = format_address_with_label(params, address_components);
@@ -167,11 +186,49 @@ fn extract_role_info(
         }
     }
 
+    let email = contact
+        .emails
+        .and_then(|emails| emails.get(0).map(|email| email.email.clone()))
+        .unwrap_or_default();
+    let phone = contact
+        .phones
+        .as_ref()
+        .and_then(|phones| {
+            phones
+                .iter()
+                .find(|phone| {
+                    phone
+                        .features
+                        .as_ref()
+                        .map_or(true, |features| !features.contains(&"fax".to_string()))
+                })
+                .map(|phone| phone.phone.clone())
+        })
+        .unwrap_or_default();
+    let fax = contact
+        .phones
+        .as_ref()
+        .and_then(|phones| {
+            phones
+                .iter()
+                .find(|phone| {
+                    phone
+                        .features
+                        .as_ref()
+                        .map_or(false, |features| features.contains(&"fax".to_string()))
+                })
+                .map(|phone| phone.phone.clone())
+        })
+        .unwrap_or_default();
+
     RoleInfo {
         name,
         org,
         url,
         adr,
+        email,
+        phone,
+        fax,
     }
 }
 
@@ -182,27 +239,28 @@ fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String)
                 for role in roles {
                     if role.as_str() == "abuse" {
                         if let Some(vcard_array) = &entity.vcard_array {
-                            if let Some(properties) = vcard_array[1].as_array() {
-                                for property in properties {
-                                    if let Some(property) = property.as_array() {
-                                        if property[0].as_str().unwrap_or("") == "tel" {
-                                            let abuse_contact_phone =
-                                                property[3].as_str().unwrap_or("").to_string();
-                                            if !abuse_contact_phone.is_empty() {
-                                                front_formatted_data.push_str(&format!(
-                                                    "Registrar Abuse Contact Phone: {}\n",
-                                                    abuse_contact_phone
-                                                ));
-                                            }
-                                        } else if property[0].as_str().unwrap_or("") == "email" {
-                                            let abuse_contact_email =
-                                                property[3].as_str().unwrap_or("").to_string();
-                                            if !abuse_contact_email.is_empty() {
-                                                front_formatted_data.push_str(&format!(
-                                                    "Registrar Abuse Contact Email: {}\n",
-                                                    abuse_contact_email
-                                                ));
-                                            }
+                            if let Some(contact) = Contact::from_vcard(vcard_array) {
+                                // Emails
+                                if let Some(emails) = &contact.emails {
+                                    for email in emails {
+                                        let abuse_contact_email = &email.email;
+                                        if !abuse_contact_email.is_empty() {
+                                            front_formatted_data.push_str(&format!(
+                                                "Registrar Abuse Contact Email: {}\n",
+                                                abuse_contact_email
+                                            ));
+                                        }
+                                    }
+                                }
+                                // Phones
+                                if let Some(phones) = &contact.phones {
+                                    for phone in phones {
+                                        let abuse_contact_phone = &phone.phone;
+                                        if !abuse_contact_phone.is_empty() {
+                                            front_formatted_data.push_str(&format!(
+                                                "Registrar Abuse Contact Phone: {}\n",
+                                                abuse_contact_phone
+                                            ));
                                         }
                                     }
                                 }
@@ -215,7 +273,6 @@ fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String)
     }
 }
 
-// Where do we move this to?
 // capitalize first letter
 fn cfl(s: &str) -> String {
     s.char_indices()

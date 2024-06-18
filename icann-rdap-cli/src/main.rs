@@ -293,7 +293,7 @@ enum OtypeArg {
     JsonExtra,
 
     /// Global Top Level Domain Output
-    Gtld,
+    GtldWhois,
 
     /// Automatically determine the output type.
     Auto,
@@ -395,7 +395,7 @@ pub async fn main() -> anyhow::Result<()> {
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
-        OtypeArg::Gtld => OutputType::Gtld,
+        OtypeArg::GtldWhois => OutputType::GtldWhois,
     };
 
     let check_types = if cli.check_type.is_empty() {

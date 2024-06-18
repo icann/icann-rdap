@@ -4,8 +4,6 @@ use std::any::TypeId;
 
 pub mod domain;
 pub mod entity;
-pub mod error;
-pub mod help;
 pub mod nameserver;
 pub mod network;
 pub mod types;
@@ -34,11 +32,11 @@ impl<'a> GtldParams<'a> {
     }
 }
 
-pub trait ToGtld {
+pub trait ToGtldWhois {
     fn to_gtld(&self, params: &mut GtldParams) -> String;
 }
 
-impl ToGtld for RdapResponse {
+impl ToGtldWhois for RdapResponse {
     fn to_gtld(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
         let variant_gtld = match &self {
@@ -50,9 +48,9 @@ impl ToGtld for RdapResponse {
     }
 }
 
-impl ToGtld for PostalAddress {
+impl ToGtldWhois for PostalAddress {
     fn to_gtld(&self, params: &mut GtldParams) -> String {
-        let label = &params.label; // Use the label from params
+        let label = &params.label;
 
         let street = self
             .street_parts
@@ -75,4 +73,21 @@ pub struct RoleInfo {
     org: String,
     url: String,
     adr: String,
+    email: String,
+    phone: String,
+    fax: String,
+}
+
+impl Default for RoleInfo {
+    fn default() -> Self {
+        RoleInfo {
+            name: String::new(),
+            org: String::new(),
+            url: String::new(),
+            adr: String::new(),
+            email: String::new(),
+            phone: String::new(),
+            fax: String::new(),
+        }
+    }
 }

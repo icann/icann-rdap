@@ -6,7 +6,7 @@ use tracing::error;
 use tracing::info;
 
 use icann_rdap_client::{
-    gtld::{GtldParams, ToGtld},
+    gtld::{GtldParams, ToGtldWhois},
     md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
     query::{qtype::QueryType, request::ResponseData},
     request::{RequestData, RequestResponse, RequestResponses, SourceType},
@@ -35,7 +35,7 @@ pub(crate) enum OutputType {
     PrettyJson,
 
     /// Global Top Level Domain Output
-    Gtld,
+    GtldWhois,
 
     /// RDAP JSON with extra information.
     JsonExtra,
@@ -271,7 +271,7 @@ fn do_output<'a, W: std::io::Write>(
                 })
             )?;
         }
-        OutputType::Gtld => {
+        OutputType::GtldWhois => {
             let mut params = GtldParams {
                 root: &response.rdap,
                 parent_type: response.rdap.get_type(),
@@ -324,7 +324,7 @@ fn do_final_output<W: std::io::Write>(
         OutputType::JsonExtra => {
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
-        OutputType::Gtld => {}
+        OutputType::GtldWhois => {}
         _ => {} // do nothing
     };
 

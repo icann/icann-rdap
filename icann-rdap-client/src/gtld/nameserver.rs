@@ -1,7 +1,7 @@
-use super::{GtldParams, ToGtld};
+use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::nameserver::Nameserver;
 
-impl ToGtld for Nameserver {
+impl ToGtldWhois for Nameserver {
     fn to_gtld(&self, _params: &mut GtldParams) -> String {
         let mut gtld = String::new();
         // header

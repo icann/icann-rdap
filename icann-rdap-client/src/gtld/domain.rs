@@ -1,11 +1,11 @@
-use super::{GtldParams, ToGtld};
+use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::domain::Domain;
 use icann_rdap_common::response::domain::SecureDns;
 use icann_rdap_common::response::nameserver::Nameserver;
 use icann_rdap_common::response::network::Network;
 use icann_rdap_common::response::types::{Event, StatusValue};
 
-impl ToGtld for Domain {
+impl ToGtldWhois for Domain {
     fn to_gtld(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
 
@@ -27,9 +27,7 @@ impl ToGtld for Domain {
             format_domain_info(&self.object_common.status, &self.object_common.port_43);
         gtld.push_str(&domain_info);
 
-        // Enitities!
-        // registrar and abuse/tech/admin/registrant info
-        // let formatted_data = format_registrar_and_role_info(params, &self.object_common.entities);
+        // Enitities: registrar and abuse/tech/admin/registrant info
         let formatted_data = self.object_common.entities.to_gtld(params);
         gtld.push_str(&formatted_data);
 
@@ -175,5 +173,71 @@ fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
                 break;
             }
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use super::{GtldParams, ToGtldWhois};
+    use icann_rdap_common::response::domain::Domain;
+    use icann_rdap_common::response::RdapResponse;
+    use serde_json::Value;
+    use std::any::TypeId;
+    use std::error::Error;
+    use std::fs::File;
+    use std::io::Read;
+
+    fn process_gtld_file(file_path: &str) -> Result<String, Box<dyn Error>> {
+        let mut file = File::open(file_path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        let toplevel_json_response: Value = serde_json::from_str(&contents)?;
+
+        let actual = serde_json::from_value::<Domain>(toplevel_json_response);
+        let gtld_version_of_the_domain = match actual {
+            Ok(domain) => {
+                let rdap_response = RdapResponse::Domain(Domain::basic().ldh_name("").build());
+                let mut gtld_params = GtldParams {
+                    root: &rdap_response,
+                    parent_type: TypeId::of::<Domain>(),
+                    label: "".to_string(),
+                };
+                domain.to_gtld(&mut gtld_params)
+            }
+            Err(e) => {
+                return Err(Box::new(e));
+            }
+        };
+
+        Ok(gtld_version_of_the_domain)
+    }
+
+    #[test]
+    fn test_ms_click_response() {
+        let expected_output =
+            std::fs::read_to_string("src/test_files/microsoft.click-expected.gtld").unwrap();
+
+        let output = process_gtld_file("src/test_files/microsoft.click.json").unwrap();
+        assert_eq!(output, expected_output);
+    }
+
+    #[test]
+    fn test_lemonde_response() {
+        let expected_output =
+            std::fs::read_to_string("src/test_files/lemonde.fr-expected.gtld").unwrap();
+
+        let output = process_gtld_file("src/test_files/lemonde.fr.json").unwrap();
+        assert_eq!(output, expected_output);
+    }
+
+    #[test]
+    fn test_moscow_response() {
+        let expected_output =
+            std::fs::read_to_string("src/test_files/home.moscow-expected.gtld").unwrap();
+
+        let output = process_gtld_file("src/test_files/home.moscow.json").unwrap();
+        assert_eq!(output, expected_output);
     }
 }
