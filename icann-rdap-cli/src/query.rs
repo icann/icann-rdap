@@ -277,7 +277,7 @@ fn do_output<'a, W: std::io::Write>(
                 parent_type: response.rdap.get_type(),
                 label: "".to_string(),
             };
-            writeln!(write, "{}", response.rdap.to_gtld(&mut params))?;
+            writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
         }
         _ => {} // do nothing
     };

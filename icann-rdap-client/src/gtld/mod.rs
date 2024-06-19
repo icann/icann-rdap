@@ -33,14 +33,14 @@ impl<'a> GtldParams<'a> {
 }
 
 pub trait ToGtldWhois {
-    fn to_gtld(&self, params: &mut GtldParams) -> String;
+    fn to_gtld_whois(&self, params: &mut GtldParams) -> String;
 }
 
 impl ToGtldWhois for RdapResponse {
-    fn to_gtld(&self, params: &mut GtldParams) -> String {
+    fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
         let variant_gtld = match &self {
-            RdapResponse::Domain(domain) => domain.to_gtld(params),
+            RdapResponse::Domain(domain) => domain.to_gtld_whois(params),
             _ => String::new(),
         };
         gtld.push_str(&variant_gtld);
@@ -49,7 +49,7 @@ impl ToGtldWhois for RdapResponse {
 }
 
 impl ToGtldWhois for PostalAddress {
-    fn to_gtld(&self, params: &mut GtldParams) -> String {
+    fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let label = &params.label;
 
         let street = self
@@ -68,6 +68,8 @@ impl ToGtldWhois for PostalAddress {
         )
     }
 }
+
+#[derive(Default)]
 pub struct RoleInfo {
     name: String,
     org: String,
@@ -76,18 +78,4 @@ pub struct RoleInfo {
     email: String,
     phone: String,
     fax: String,
-}
-
-impl Default for RoleInfo {
-    fn default() -> Self {
-        RoleInfo {
-            name: String::new(),
-            org: String::new(),
-            url: String::new(),
-            adr: String::new(),
-            email: String::new(),
-            phone: String::new(),
-            fax: String::new(),
-        }
-    }
 }

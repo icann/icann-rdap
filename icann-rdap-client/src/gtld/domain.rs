@@ -6,7 +6,7 @@ use icann_rdap_common::response::network::Network;
 use icann_rdap_common::response::types::{Event, StatusValue};
 
 impl ToGtldWhois for Domain {
-    fn to_gtld(&self, params: &mut GtldParams) -> String {
+    fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
 
         gtld.push_str("\n\n");
@@ -28,7 +28,7 @@ impl ToGtldWhois for Domain {
         gtld.push_str(&domain_info);
 
         // Enitities: registrar and abuse/tech/admin/registrant info
-        let formatted_data = self.object_common.entities.to_gtld(params);
+        let formatted_data = self.object_common.entities.to_gtld_whois(params);
         gtld.push_str(&formatted_data);
 
         // nameservers and network
@@ -126,11 +126,11 @@ fn format_nameservers_and_network(
     if let Some(nameservers) = nameservers {
         nameservers
             .iter()
-            .for_each(|ns| gtld.push_str(&ns.to_gtld(params)));
+            .for_each(|ns| gtld.push_str(&ns.to_gtld_whois(params)));
     }
 
     if let Some(network) = network {
-        gtld.push_str(&network.to_gtld(params));
+        gtld.push_str(&network.to_gtld_whois(params));
     }
 
     gtld
@@ -204,7 +204,7 @@ mod tests {
                     parent_type: TypeId::of::<Domain>(),
                     label: "".to_string(),
                 };
-                domain.to_gtld(&mut gtld_params)
+                domain.to_gtld_whois(&mut gtld_params)
             }
             Err(e) => {
                 return Err(Box::new(e));

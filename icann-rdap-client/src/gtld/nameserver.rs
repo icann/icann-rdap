@@ -2,7 +2,7 @@ use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::nameserver::Nameserver;
 
 impl ToGtldWhois for Nameserver {
-    fn to_gtld(&self, _params: &mut GtldParams) -> String {
+    fn to_gtld_whois(&self, _params: &mut GtldParams) -> String {
         let mut gtld = String::new();
         // header
         let header_text = if let Some(unicode_name) = &self.unicode_name {

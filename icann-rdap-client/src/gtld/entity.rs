@@ -3,7 +3,7 @@ use icann_rdap_common::contact::{Contact, PostalAddress};
 use icann_rdap_common::response::entity::Entity;
 
 impl ToGtldWhois for Option<Vec<Entity>> {
-    fn to_gtld(&self, params: &mut GtldParams) -> String {
+    fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let mut front_formatted_data = String::new();
         let mut formatted_data = String::new();
 
@@ -137,7 +137,7 @@ fn format_address_with_label(
         )
         .build();
 
-    postal_address.to_gtld(params).to_string()
+    postal_address.to_gtld_whois(params).to_string()
 }
 
 fn extract_role_info(
@@ -164,7 +164,7 @@ fn extract_role_info(
     let name = contact.full_name.unwrap_or_default();
     let org = contact
         .organization_names
-        .and_then(|orgs| orgs.get(0).cloned())
+        .and_then(|orgs| orgs.first().cloned())
         .unwrap_or_default();
 
     // Contact address and the URL do not parse correctly, use the vcard.
@@ -188,7 +188,7 @@ fn extract_role_info(
 
     let email = contact
         .emails
-        .and_then(|emails| emails.get(0).map(|email| email.email.clone()))
+        .and_then(|emails| emails.first().map(|email| email.email.clone()))
         .unwrap_or_default();
     let phone = contact
         .phones
