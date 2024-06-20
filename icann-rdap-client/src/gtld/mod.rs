@@ -73,7 +73,6 @@ impl ToGtldWhois for PostalAddress {
 pub struct RoleInfo {
     name: String,
     org: String,
-    url: String,
     adr: String,
     email: String,
     phone: String,

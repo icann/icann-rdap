@@ -27,10 +27,6 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                                             role_info.org
                                         );
                                     }
-                                    if !role_info.url.is_empty() {
-                                        front_formatted_data +=
-                                            &format!("{} URL: {}\n", cfl(role), role_info.url);
-                                    }
                                     if !role_info.adr.is_empty() {
                                         front_formatted_data += &role_info.adr;
                                     }
@@ -98,6 +94,7 @@ fn format_address_with_label(
     params: &mut GtldParams,
     address_components: &[serde_json::Value],
 ) -> String {
+    // TODO once from_vcard is fixed to handle the way addressing is done, replace this with the normal builder.
     let postal_address = PostalAddress::builder()
         .street_parts(
             address_components
@@ -149,9 +146,7 @@ fn extract_role_info(
         Some(contact) => contact,
         None => return RoleInfo::default(),
     };
-
     let mut adr = String::new();
-    let mut url = String::new();
     let label = match role {
         "registrar" => "Registrar",
         "technical" => "Technical",
@@ -167,13 +162,12 @@ fn extract_role_info(
         .and_then(|orgs| orgs.first().cloned())
         .unwrap_or_default();
 
-    // Contact address and the URL do not parse correctly, use the vcard.
+    // TODO this is a workout to get the address out of the contact. Replace this when from_vcard is fixed
     for vcard in vcard_array.iter() {
         if let Some(properties) = vcard.as_array() {
             for property in properties {
                 if let Some(property) = property.as_array() {
                     match property[0].as_str().unwrap_or("") {
-                        "url" => url = property[3].as_str().unwrap_or("").to_string(),
                         "adr" => {
                             if let Some(address_components) = property[3].as_array() {
                                 adr = format_address_with_label(params, address_components);
@@ -224,7 +218,6 @@ fn extract_role_info(
     RoleInfo {
         name,
         org,
-        url,
         adr,
         email,
         phone,
