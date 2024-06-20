@@ -1,0 +1,345 @@
+{
+  "rdapConformance": [
+    "rdap_level_0",
+    "icann_rdap_response_profile_0",
+    "icann_rdap_technical_implementation_guide_0"
+  ],
+  "notices": [
+    {
+      "title": "Terms of Use",
+      "description": [
+        "Terms of Use page."
+      ],
+      "links": [
+        {
+          "value": "https://flexireg.net/ru/whois-terms_of_use.en.html",
+          "rel": "related",
+          "href": "https://flexireg.net/ru/whois-terms_of_use.en.html",
+          "type": "text/html"
+        }
+      ]
+    },
+    {
+      "title": "Status Codes",
+      "description": [
+        "For more information on domain status codes, please visit https://icann.org/epp."
+      ],
+      "links": [
+        {
+          "value": "https://icann.org/epp",
+          "rel": "related",
+          "href": "https://icann.org/epp",
+          "type": "text/html"
+        }
+      ]
+    },
+    {
+      "title": "RDDS Inaccuracy Complaint Form",
+      "description": [
+        "URL of the ICANN RDDS Inaccuracy Complaint Form:https://icann.org/wicf"
+      ],
+      "links": [
+        {
+          "value": "https://www.icann.org/wicf",
+          "rel": "related",
+          "href": "https://www.icann.org/wicf",
+          "type": "text/html"
+        }
+      ]
+    }
+  ],
+  "objectClassName": "domain",
+  "handle": "20211019192813345912_c936bef81d9614db04ffc278b29daf5a_domain-FIR",
+  "links": [
+    {
+      "value": "https://flexireg.net/moscow/rdap/domain/home.moscow",
+      "rel": "self",
+      "href": "https://flexireg.net/moscow/rdap/domain/home.moscow",
+      "type": "application/rdap+json"
+    }
+  ],
+  "events": [
+    {
+      "eventAction": "registration",
+      "eventDate": "2021-10-19T19:28:12Z"
+    },
+    {
+      "eventAction": "last changed",
+      "eventDate": "2023-11-20T18:36:22Z"
+    },
+    {
+      "eventAction": "expiration",
+      "eventDate": "2024-10-19T19:28:12Z"
+    },
+    {
+      "eventAction": "last update of RDAP database",
+      "eventDate": "2024-06-18T22:01:39+03:00"
+    }
+  ],
+  "status": [
+    "client transfer prohibited"
+  ],
+  "port43": "whois.flexireg.net",
+  "entities": [
+    {
+      "objectClassName": "entity",
+      "handle": "regru-msk-fir",
+      "links": [
+        {
+          "value": "https://flexireg.net/moscow/rdap/entity/regru-msk-fir",
+          "rel": "self",
+          "href": "https://flexireg.net/moscow/rdap/entity/regru-msk-fir",
+          "type": "application/rdap+json"
+        }
+      ],
+      "entities": [
+        {
+          "objectClassName": "entity",
+          "vcardArray": [
+            "vcard",
+            [
+              [
+                "version",
+                {},
+                "text",
+                "4.0"
+              ],
+              [
+                "fn",
+                {},
+                "text",
+                "Abuse contact"
+              ],
+              [
+                "tel",
+                {
+                  "pref": "1",
+                  "type": [
+                    "work",
+                    "voice"
+                  ]
+                },
+                "uri",
+                "tel:+7"
+              ],
+              [
+                "tel",
+                {
+                  "pref": "1",
+                  "type": [
+                    "work",
+                    "voice"
+                  ]
+                },
+                "uri",
+                "tel:495"
+              ],
+              [
+                "tel",
+                {
+                  "pref": "1",
+                  "type": [
+                    "work",
+                    "voice"
+                  ]
+                },
+                "uri",
+                "tel:5801111"
+              ],
+              [
+                "email",
+                {
+                  "type": "work"
+                },
+                "text",
+                "abuse@reg.ru"
+              ]
+            ]
+          ],
+          "roles": [
+            "abuse"
+          ]
+        }
+      ],
+      "vcardArray": [
+        "vcard",
+        [
+          [
+            "version",
+            {},
+            "text",
+            "4.0"
+          ],
+          [
+            "fn",
+            {},
+            "text",
+            "Limited Liability Company \"Registrar of domain names REG.RU\""
+          ],
+          [
+            "adr",
+            {
+              "type": "work"
+            },
+            "text",
+            [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ]
+          ],
+          [
+            "email",
+            {
+              "type": "work"
+            },
+            "text",
+            "info@reg.ru"
+          ]
+        ]
+      ],
+      "roles": [
+        "registrar"
+      ],
+      "publicIds": [
+        {
+          "type": "IANA Registrar ID",
+          "identifier": "1606"
+        }
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "20231120183619454758_28c280fc7dcaa0dff7cd2b0e9b87e263_contact-FIR",
+      "remarks": [
+        {
+          "title": "REDACTED FOR PRIVACY",
+          "description": [
+            "Some of the data in this object has been removed"
+          ]
+        },
+        {
+          "title": "EMAIL REDACTED FOR PRIVACY",
+          "description": [
+            "Please query the RDDS service of the Registrar of Record identified in this output for information on how to contact the Registrant of the queried domain name"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://flexireg.net/moscow/rdap/entity/20231120183619454758_28c280fc7dcaa0dff7cd2b0e9b87e263_contact-FIR",
+          "rel": "self",
+          "href": "https://flexireg.net/moscow/rdap/entity/20231120183619454758_28c280fc7dcaa0dff7cd2b0e9b87e263_contact-FIR",
+          "type": "application/rdap+json"
+        }
+      ],
+      "roles": [
+        "registrant"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "20231120183619841977_163830e2aa5d03e5d5f7d2a1b936acec_contact-FIR",
+      "remarks": [
+        {
+          "title": "REDACTED FOR PRIVACY",
+          "description": [
+            "Some of the data in this object has been removed"
+          ]
+        },
+        {
+          "title": "EMAIL REDACTED FOR PRIVACY",
+          "description": [
+            "Please query the RDDS service of the Registrar of Record identified in this output for information on how to contact the Registrant of the queried domain name"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://flexireg.net/moscow/rdap/entity/20231120183619841977_163830e2aa5d03e5d5f7d2a1b936acec_contact-FIR",
+          "rel": "self",
+          "href": "https://flexireg.net/moscow/rdap/entity/20231120183619841977_163830e2aa5d03e5d5f7d2a1b936acec_contact-FIR",
+          "type": "application/rdap+json"
+        }
+      ],
+      "roles": [
+        "administrative"
+      ]
+    },
+    {
+      "objectClassName": "entity",
+      "handle": "20231120183621248371_e50abb5e0ee9095975084ceb57105843_contact-FIR",
+      "remarks": [
+        {
+          "title": "REDACTED FOR PRIVACY",
+          "description": [
+            "Some of the data in this object has been removed"
+          ]
+        },
+        {
+          "title": "EMAIL REDACTED FOR PRIVACY",
+          "description": [
+            "Please query the RDDS service of the Registrar of Record identified in this output for information on how to contact the Registrant of the queried domain name"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "value": "https://flexireg.net/moscow/rdap/entity/20231120183621248371_e50abb5e0ee9095975084ceb57105843_contact-FIR",
+          "rel": "self",
+          "href": "https://flexireg.net/moscow/rdap/entity/20231120183621248371_e50abb5e0ee9095975084ceb57105843_contact-FIR",
+          "type": "application/rdap+json"
+        }
+      ],
+      "roles": [
+        "technical"
+      ]
+    }
+  ],
+  "ldhName": "home.moscow",
+  "secureDNS": {
+    "delegationSigned": false
+  },
+  "nameservers": [
+    {
+      "objectClassName": "nameserver",
+      "links": [
+        {
+          "value": "https://flexireg.net/moscow/rdap/nameserver/ns1.reg.ru",
+          "rel": "self",
+          "href": "https://flexireg.net/moscow/rdap/nameserver/ns1.reg.ru",
+          "type": "application/rdap+json"
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "registration",
+          "eventDate": "2015-02-05T12:41:57Z"
+        }
+      ],
+      "ldhName": "ns1.reg.ru"
+    },
+    {
+      "objectClassName": "nameserver",
+      "links": [
+        {
+          "value": "https://flexireg.net/moscow/rdap/nameserver/ns2.reg.ru",
+          "rel": "self",
+          "href": "https://flexireg.net/moscow/rdap/nameserver/ns2.reg.ru",
+          "type": "application/rdap+json"
+        }
+      ],
+      "events": [
+        {
+          "eventAction": "registration",
+          "eventDate": "2015-02-05T12:41:57Z"
+        }
+      ],
+      "ldhName": "ns2.reg.ru"
+    }
+  ]
+}
