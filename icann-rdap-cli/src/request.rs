@@ -25,7 +25,7 @@ pub(crate) async fn do_request(
         info!("Cache has been disabled.")
     }
     let query_url = query_type.query_url(base_url)?;
-    debug!("Requestion RDAP URL {query_url}");
+    debug!("Requesting RDAP URL {query_url}");
     if !processing_params.no_cache {
         let file_name = format!(
             "{}.cache",
