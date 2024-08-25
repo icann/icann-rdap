@@ -292,6 +292,9 @@ enum OtypeArg {
     /// RDAP JSON with extra information.
     JsonExtra,
 
+    /// Global Top Level Domain Output
+    GtldWhois,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -392,6 +395,7 @@ pub async fn main() -> anyhow::Result<()> {
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
+        OtypeArg::GtldWhois => OutputType::GtldWhois,
     };
 
     let check_types = if cli.check_type.is_empty() {

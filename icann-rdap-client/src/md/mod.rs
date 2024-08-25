@@ -1,7 +1,6 @@
 use crate::request::RequestData;
-use std::{any::TypeId, char};
-
 use icann_rdap_common::{check::CheckParams, response::RdapResponse};
+use std::{any::TypeId, char};
 use strum::EnumMessage;
 
 use icann_rdap_common::check::{CheckClass, Checks, CHECK_CLASS_LEN};
