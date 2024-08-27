@@ -16,7 +16,7 @@ use super::qtype::QueryType;
 const SECONDS_IN_WEEK: i64 = 604800;
 
 /// Defines a trait for things that store bootstrap registries.
-pub trait BootstrapStore {
+pub trait BootstrapStore: Send + Sync {
     /// Called when store is checked to see if it has a valid bootstrap registry.
     ///
     /// This method should return false (i.e. `Ok(false)``) if the registry doesn't
@@ -162,6 +162,9 @@ pub struct MemoryBootstrapStore {
     dns: Arc<RwLock<Option<(IanaRegistry, HttpData)>>>,
     tag: Arc<RwLock<Option<(IanaRegistry, HttpData)>>>,
 }
+
+unsafe impl Send for MemoryBootstrapStore {}
+unsafe impl Sync for MemoryBootstrapStore {}
 
 impl Default for MemoryBootstrapStore {
     fn default() -> Self {
