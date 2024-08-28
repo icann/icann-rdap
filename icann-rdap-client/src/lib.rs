@@ -10,6 +10,7 @@ use icann_rdap_common::{
 };
 use thiserror::Error;
 
+pub mod gtld;
 pub mod md;
 pub mod query;
 pub mod request;

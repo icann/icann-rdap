@@ -6,7 +6,8 @@ use tracing::error;
 use tracing::info;
 
 use icann_rdap_client::{
-    md::{MdOptions, MdParams, ToMd},
+    gtld::{GtldParams, ToGtldWhois},
+    md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
     query::{qtype::QueryType, request::ResponseData},
     request::{RequestData, RequestResponse, RequestResponses, SourceType},
 };
@@ -32,6 +33,9 @@ pub(crate) enum OutputType {
 
     /// Results are output as Pretty RDAP JSON.
     PrettyJson,
+
+    /// Global Top Level Domain Output
+    GtldWhois,
 
     /// RDAP JSON with extra information.
     JsonExtra,
@@ -84,7 +88,19 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            let replaced_rdap = replace_redacted_items(response.rdap.clone());
+            let replaced_data = ResponseData {
+                rdap: replaced_rdap,
+                // copy other fields from `response`
+                ..response.clone()
+            };
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if let Some(url) = get_related_link(&response.rdap).first() {
@@ -135,7 +151,19 @@ async fn do_inr_query<'a, W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::RegionalInternetRegistry,
             };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            let replaced_rdap = replace_redacted_items(response.rdap.clone());
+            let replaced_data = ResponseData {
+                rdap: replaced_rdap,
+                // copy other fields from `response`
+                ..response.clone()
+            };
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => return Err(error),
@@ -169,7 +197,19 @@ async fn do_basic_query<'a, W: std::io::Write>(
                     source_type: SourceType::UncategorizedRegistry,
                 }
             };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
+            let replaced_rdap = replace_redacted_items(response.rdap.clone());
+            let replaced_data = ResponseData {
+                rdap: replaced_rdap,
+                // copy other fields from `response`
+                ..response.clone()
+            };
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => return Err(error),
@@ -231,6 +271,14 @@ fn do_output<'a, W: std::io::Write>(
                 })
             )?;
         }
+        OutputType::GtldWhois => {
+            let mut params = GtldParams {
+                root: &response.rdap,
+                parent_type: response.rdap.get_type(),
+                label: "".to_string(),
+            };
+            writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
+        }
         _ => {} // do nothing
     };
 
@@ -276,6 +324,7 @@ fn do_final_output<W: std::io::Write>(
         OutputType::JsonExtra => {
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
+        OutputType::GtldWhois => {}
         _ => {} // do nothing
     };
 
