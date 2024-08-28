@@ -14,8 +14,8 @@ path = "src/main.rs"
 
 [dependencies]
 
-icann-rdap-client = { version = "0.0.16", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.16", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.17", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.17", path = "../icann-rdap-common" }
 
 anyhow.workspace = true
 clap.workspace = true

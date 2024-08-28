@@ -1356,7 +1356,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1389,7 +1389,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1414,7 +1414,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1435,7 +1435,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "assert_cmd",
  "async-trait",
