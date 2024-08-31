@@ -100,15 +100,27 @@ impl std::ops::Deref for Remark {
 }
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
-    pub description: Vec<String>,
+    pub description: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+}
+
+#[buildstructor::buildstructor]
+impl NoticeOrRemark {
+    #[builder]
+    pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
+        NoticeOrRemark {
+            title,
+            description: Some(description),
+            links,
+        }
+    }
 }
 
 /// An array of events.
@@ -490,7 +502,7 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.title.as_ref().unwrap();
-        assert_eq!(actual.description.len(), 2);
+        assert_eq!(actual.description.expect("must have description").len(), 2);
         actual.links.unwrap();
     }
 

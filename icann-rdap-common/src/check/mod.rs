@@ -176,6 +176,10 @@ pub enum Check {
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
 
+    // NoticeOrRemark
+    #[strum(message = "RFC 9083 requires a description in a notice or remark")]
+    DescriptionIsAbsent,
+
     // Handle
     #[strum(message = "handle appears to be empty or only whitespace")]
     HandleIsEmpty,

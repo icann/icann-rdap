@@ -644,6 +644,8 @@ async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_defaul
     assert_eq!(
         notice
             .description
+            .as_ref()
+            .expect("no description!")
             .first()
             .expect("no description in notice"),
         "foo"
@@ -690,6 +692,8 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
     assert_eq!(
         notice
             .description
+            .as_ref()
+            .expect("no description")
             .first()
             .expect("no description in notice"),
         "bar"

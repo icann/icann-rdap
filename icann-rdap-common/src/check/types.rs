@@ -137,6 +137,10 @@ impl GetChecks for Remarks {
 
 impl GetChecks for NoticeOrRemark {
     fn get_checks(&self, params: CheckParams) -> Checks {
+        let mut items: Vec<CheckItem> = Vec::new();
+        if self.description.is_none() {
+            items.push(CheckItem::description_is_absent())
+        };
         let mut sub_checks: Vec<Checks> = Vec::new();
         if params.do_subchecks {
             if let Some(links) = &self.links {
@@ -148,7 +152,7 @@ impl GetChecks for NoticeOrRemark {
         };
         Checks {
             struct_name: "Notice/Remark",
-            items: Vec::new(),
+            items,
             sub_checks,
         }
     }
@@ -760,6 +764,41 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::EventDateIsNotRfc3339)
             .expect("event missing check");
+    }
+
+    #[test]
+    fn GIVEN_notice_with_no_description_WHEN_checked_THEN_description_absent() {
+        // GIVEN
+        let notice = NoticeOrRemark {
+            title: None,
+            description: None,
+            links: None,
+        };
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().notices(vec![Notice(notice)]).build())
+                .object_common(ObjectCommon::domain().build())
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        checks
+            .sub("Notices")
+            .expect("Notices not found")
+            .sub("Notice/Remark")
+            .expect("Notice/Remark not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::DescriptionIsAbsent)
+            .expect("description missing check");
     }
 
     #[test]

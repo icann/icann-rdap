@@ -524,6 +524,8 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
     assert_eq!(
         notice
             .description
+            .as_ref()
+            .expect("no description!")
             .first()
             .expect("no description in notice"),
         "foo"
@@ -571,6 +573,8 @@ async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() 
     assert_eq!(
         notice
             .description
+            .as_ref()
+            .expect("no description!")
             .first()
             .expect("no description in notice"),
         "bar"

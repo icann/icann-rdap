@@ -1198,7 +1198,10 @@ mod tests {
         let actual = parse_notice_or_remark(arg).expect("parsing notice");
 
         // THEN
-        assert!(actual.description.contains(&arg.to_string()));
+        assert!(actual
+            .description
+            .expect("no description!")
+            .contains(&arg.to_string()));
     }
 
     #[test]
@@ -1214,7 +1217,10 @@ mod tests {
         let actual = parse_notice_or_remark(&arg).expect("parsing notice");
 
         // THEN
-        assert!(actual.description.contains(&description.to_string()));
+        assert!(actual
+            .description
+            .expect("no description!")
+            .contains(&description.to_string()));
         let Some(links) = actual.links else {
             panic!("no links in notice")
         };

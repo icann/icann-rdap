@@ -78,6 +78,14 @@ impl CheckItem {
         }
     }
 
+    // NoticeOrRemark
+    pub fn description_is_absent() -> CheckItem {
+        CheckItem {
+            check_class: CheckClass::SpecificationError,
+            check: Check::DescriptionIsAbsent,
+        }
+    }
+
     // Handle
     pub fn handle_is_empty() -> CheckItem {
         CheckItem {
