@@ -2,7 +2,9 @@ use assert_cmd::Command;
 use icann_rdap_srv::config::ListenConfig;
 use icann_rdap_srv::server::AppState;
 use icann_rdap_srv::server::Listener;
+use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
+use icann_rdap_srv::storage::CommonConfig;
 use std::time::Duration;
 use test_dir::DirBuilder;
 use test_dir::TestDir;
@@ -77,6 +79,27 @@ pub struct SrvTestJig {
 impl SrvTestJig {
     pub async fn new() -> SrvTestJig {
         let mem = Mem::default();
+        let app_state = AppState {
+            storage: mem.clone(),
+            bootstrap: false,
+        };
+        let _ = tracing_subscriber::fmt().with_test_writer().try_init();
+        let listener = Listener::listen(&ListenConfig::default())
+            .await
+            .expect("listening on interface");
+        let rdap_base = listener.rdap_base();
+        tokio::spawn(async move {
+            listener
+                .start_with_state(app_state)
+                .await
+                .expect("starting server");
+        });
+        SrvTestJig { mem, rdap_base }
+    }
+
+    pub async fn new_common_config(common_config: CommonConfig) -> SrvTestJig {
+        let mem_config = MemConfig::builder().common_config(common_config).build();
+        let mem = Mem::new(mem_config);
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,

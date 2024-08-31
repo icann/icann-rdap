@@ -1,11 +1,11 @@
 use buildstructor::Builder;
-use envmnt::get_or;
+use envmnt::{get_or, get_parse_or};
 use strum_macros::Display;
 use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    storage::{mem::config::MemConfig, pg::config::PgConfig},
+    storage::{mem::config::MemConfig, pg::config::PgConfig, CommonConfig},
 };
 
 pub const LOG: &str = "RDAP_SRV_LOG";
@@ -17,6 +17,7 @@ pub const DATA_DIR: &str = "RDAP_SRV_DATA_DIR";
 pub const AUTO_RELOAD: &str = "RDAP_SRV_AUTO_RELOAD";
 pub const BOOTSTRAP: &str = "RDAP_SRV_BOOTSTRAP";
 pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
+pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
 
 pub fn debug_config_vars() {
     let var_list = [
@@ -29,6 +30,7 @@ pub fn debug_config_vars() {
         AUTO_RELOAD,
         BOOTSTRAP,
         UPDATE_ON_BOOTSTRAP,
+        DOMAIN_SEARCH_BY_NAME_ENABLE,
     ];
     envmnt::vars()
         .iter()
@@ -65,12 +67,21 @@ pub enum StorageType {
 
 impl StorageType {
     pub fn new_from_env() -> Result<Self, RdapServerError> {
+        let domain_search_by_name = get_parse_or(DOMAIN_SEARCH_BY_NAME_ENABLE, false)?;
+        let common_config = CommonConfig::builder()
+            .domain_search_by_name_enable(domain_search_by_name)
+            .build();
         let storage = get_or(STORAGE, "memory");
         let storage_type = if storage == "memory" {
-            StorageType::Memory(MemConfig::builder().build())
+            StorageType::Memory(MemConfig::builder().common_config(common_config).build())
         } else if storage == "postgres" {
             let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
-            StorageType::Postgres(PgConfig::builder().db_url(db_url).build())
+            StorageType::Postgres(
+                PgConfig::builder()
+                    .db_url(db_url)
+                    .common_config(common_config)
+                    .build(),
+            )
         } else {
             return Err(RdapServerError::Config(format!(
                 "storage type of '{storage}' is invalid"

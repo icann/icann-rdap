@@ -48,6 +48,7 @@ use icann_rdap_srv::storage::data::NetworkOrError;
 use icann_rdap_srv::storage::data::Template;
 use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
+use icann_rdap_srv::storage::CommonConfig;
 use icann_rdap_srv::storage::StoreOps;
 use icann_rdap_srv::util::bin::check::check_rdap;
 use icann_rdap_srv::util::bin::check::to_check_classes;
@@ -524,7 +525,11 @@ async fn main() -> Result<(), RdapServerError> {
 
     let data_dir = cli.data_dir.clone();
     let config = ServiceConfig::non_server().data_dir(&data_dir).build()?;
-    let storage = Mem::new(MemConfig::builder().build());
+    let storage = Mem::new(
+        MemConfig::builder()
+            .common_config(CommonConfig::default())
+            .build(),
+    );
     storage.init().await?;
     load_data(&config, &storage, false).await?;
 

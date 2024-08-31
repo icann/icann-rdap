@@ -2,7 +2,9 @@ use assert_cmd::Command;
 use icann_rdap_srv::config::ListenConfig;
 use icann_rdap_srv::server::AppState;
 use icann_rdap_srv::server::Listener;
+use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
+use icann_rdap_srv::storage::CommonConfig;
 use std::time::Duration;
 use test_dir::DirBuilder;
 use test_dir::FileType;
@@ -18,7 +20,19 @@ pub struct TestJig {
 
 impl TestJig {
     pub async fn new() -> TestJig {
-        let mem = Mem::default();
+        let common_config = CommonConfig::default();
+        TestJig::new_common_config(common_config).await
+    }
+
+    pub async fn new_with_enable_domain_name_search() -> TestJig {
+        let common_config = CommonConfig::builder()
+            .domain_search_by_name_enable(true)
+            .build();
+        TestJig::new_common_config(common_config).await
+    }
+
+    pub async fn new_common_config(common_config: CommonConfig) -> TestJig {
+        let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,

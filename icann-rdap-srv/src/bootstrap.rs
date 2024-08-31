@@ -379,7 +379,7 @@ mod tests {
         storage::{
             data::load_data,
             mem::{config::MemConfig, ops::Mem},
-            StoreOps,
+            CommonConfig, StoreOps,
         },
     };
 
@@ -618,7 +618,9 @@ mod tests {
     }
 
     async fn new_and_init_mem(data_dir: String) -> Mem {
-        let mem_config = MemConfig::builder().build();
+        let mem_config = MemConfig::builder()
+            .common_config(CommonConfig::default())
+            .build();
         let mem = Mem::new(mem_config.clone());
         mem.init().await.expect("initialzing memeory");
         load_data(
