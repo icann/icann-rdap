@@ -14,11 +14,17 @@ pub struct SearchLabels<T: Clone> {
 
 impl<T: Clone> SearchLabels<T> {
     /// Insert a value based on a domain name.
-    fn insert(&mut self, text: &str, value: T) {
-        for (i, char) in text.chars().enumerate() {
+    pub(crate) fn insert(&mut self, text: &str, value: T) {
+        // char_indices gets the UTF8 indices as well as the character
+        for (i, char) in text.char_indices() {
             if char == '.' && i != 0 {
                 let prefix = &text[..i];
-                let suffix = &text[(i + 1)..];
+                // find the next UTF8 character index
+                let mut next_i = i + 1;
+                while !text.is_char_boundary(next_i) {
+                    next_i += 1;
+                }
+                let suffix = &text[next_i..];
                 self.label_suffixes
                     .entry(suffix.to_owned())
                     .or_insert(Trie::new())
@@ -33,7 +39,7 @@ impl<T: Clone> SearchLabels<T> {
     }
 
     /// Search values based on a label search
-    fn search(&mut self, search: &str) -> Result<Vec<T>, RdapServerError> {
+    pub(crate) fn search(&self, search: &str) -> Result<Vec<T>, RdapServerError> {
         // search string is invalid if it doesn't have only one asterisk ('*')
         if search.chars().filter(|c| *c == '*').count() != 1 {
             return Err(RdapServerError::InvalidArg(
@@ -61,7 +67,6 @@ impl<T: Clone> SearchLabels<T> {
             .expect("internal error. previous check should insure there is an asterisk");
 
         // this is a limitation of the trie in that it requires a prefix
-        // see https://github.com/avnerbarr/radix-trie/issues/1
         if parts.0.is_empty() {
             return Err(RdapServerError::InvalidArg(
                 "Search string must have a prefix".to_string(),
@@ -202,7 +207,7 @@ mod tests {
     #[test]
     fn GIVEN_search_string_with_two_asterisks_WHEN_search_THEN_error() {
         // GIVEN
-        let mut labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::builder().build();
         let search = "foo.*.*";
 
         // WHEN
@@ -215,7 +220,7 @@ mod tests {
     #[test]
     fn GIVEN_search_string_with_asterisk_suffix_WHEN_search_THEN_error() {
         // GIVEN
-        let mut labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::builder().build();
         let search = "foo.*example.net";
 
         // WHEN
@@ -228,7 +233,7 @@ mod tests {
     #[test]
     fn GIVEN_search_string_with_no_asterisk_WHEN_search_THEN_error() {
         // GIVEN
-        let mut labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::builder().build();
         let search = "foo.example.net";
 
         // WHEN
@@ -241,7 +246,7 @@ mod tests {
     #[test]
     fn GIVEN_empty_search_string_WHEN_search_THEN_error() {
         // GIVEN
-        let mut labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::builder().build();
         let search = "";
 
         // WHEN

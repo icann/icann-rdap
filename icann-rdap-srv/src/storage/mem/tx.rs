@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-use super::ops::Mem;
+use super::{label_search::SearchLabels, ops::Mem};
 
 pub struct MemTx {
     mem: Mem,
@@ -25,6 +25,7 @@ pub struct MemTx {
     ip4: PrefixMap<Ipv4Net, Arc<RdapResponse>>,
     ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     domains: HashMap<String, Arc<RdapResponse>>,
+    domains_by_name: SearchLabels<Arc<RdapResponse>>,
     idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
     entities: HashMap<String, Arc<RdapResponse>>,
@@ -33,12 +34,23 @@ pub struct MemTx {
 
 impl MemTx {
     pub async fn new(mem: &Mem) -> Self {
+        let domains = Arc::clone(&mem.domains).read_owned().await.clone();
+        let mut domains_by_name = SearchLabels::builder().build();
+
+        // only do load up domain search labels if search by domain names is supported
+        if mem.config.common_config.domain_search_by_name_enable {
+            for (name, value) in domains.iter() {
+                domains_by_name.insert(name, value.clone());
+            }
+        }
+
         Self {
             mem: mem.clone(),
             autnums: Arc::clone(&mem.autnums).read_owned().await.clone(),
             ip4: Arc::clone(&mem.ip4).read_owned().await.clone(),
             ip6: Arc::clone(&mem.ip6).read_owned().await.clone(),
-            domains: Arc::clone(&mem.domains).read_owned().await.clone(),
+            domains,
+            domains_by_name,
             idns: Arc::clone(&mem.idns).read_owned().await.clone(),
             nameservers: Arc::clone(&mem.nameservers).read_owned().await.clone(),
             entities: Arc::clone(&mem.entities).read_owned().await.clone(),
@@ -53,6 +65,7 @@ impl MemTx {
             ip4: PrefixMap::new(),
             ip6: PrefixMap::new(),
             domains: HashMap::new(),
+            domains_by_name: SearchLabels::builder().build(),
             idns: HashMap::new(),
             nameservers: HashMap::new(),
             entities: HashMap::new(),
@@ -101,8 +114,13 @@ impl TxHandle for MemTx {
 
         // add the domain by unicodeName
         if let Some(unicode_name) = domain.unicode_name.as_ref() {
-            self.idns.insert(unicode_name.to_owned(), domain_response);
+            self.idns
+                .insert(unicode_name.to_owned(), domain_response.clone());
         };
+
+        if self.mem.config.common_config.domain_search_by_name_enable {
+            self.domains_by_name.insert(ldh_name, domain_response);
+        }
 
         Ok(())
     }
@@ -281,6 +299,10 @@ impl TxHandle for MemTx {
         // domains
         let mut domains_g = self.mem.domains.write().await;
         std::mem::swap(&mut self.domains, &mut domains_g);
+
+        //domains by name
+        let mut domains_by_name_g = self.mem.domains_by_name.write().await;
+        std::mem::swap(&mut self.domains_by_name, &mut domains_by_name_g);
 
         //idns
         let mut idns_g = self.mem.idns.write().await;

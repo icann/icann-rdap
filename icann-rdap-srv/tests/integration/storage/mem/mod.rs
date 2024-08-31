@@ -10,7 +10,10 @@ use icann_rdap_common::response::{
     types::{Common, Notice, NoticeOrRemark, ObjectCommon},
     RdapResponse,
 };
-use icann_rdap_srv::storage::{mem::ops::Mem, StoreOps};
+use icann_rdap_srv::storage::{
+    mem::{config::MemConfig, ops::Mem},
+    CommonConfig, StoreOps,
+};
 use rstest::rstest;
 
 #[tokio::test]
@@ -93,6 +96,79 @@ async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_unicode_THEN_domain_returned(
         domain.unicode_name.as_ref().expect("unicodeName is none"),
         "foo.example"
     )
+}
+
+#[tokio::test]
+async fn GIVEN_domain_in_mem_WHEN_search_domain_by_name_THEN_domain_returned() {
+    // GIVEN
+    let mem = Mem::default();
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::idn()
+            .unicode_name("foo.example.com")
+            .ldh_name("foo.example.com")
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .search_domains_by_name("foo.example.*")
+        .await
+        .expect("getting domain by unicode");
+
+    // THEN
+    let RdapResponse::DomainSearchResults(domains) = actual else {
+        panic!()
+    };
+    assert_eq!(domains.clone().results.len(), 1);
+    assert_eq!(
+        domains
+            .results
+            .first()
+            .expect("at least one")
+            .unicode_name
+            .as_ref()
+            .expect("unicodeName is none"),
+        "foo.example.com"
+    )
+}
+
+#[tokio::test]
+async fn GIVEN_domain_in_mem_but_search_not_enabled_WHEN_search_domain_by_name_THEN_not_implemented(
+) {
+    // GIVEN
+    let mem_config = MemConfig::builder()
+        .common_config(
+            CommonConfig::builder()
+                .domain_search_by_name_enable(false)
+                .build(),
+        )
+        .build();
+    let mem = Mem::new(mem_config);
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::idn()
+            .unicode_name("foo.example.com")
+            .ldh_name("foo.example.com")
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .search_domains_by_name("foo.example.*")
+        .await
+        .expect("getting domain by unicode");
+
+    // THEN
+    let RdapResponse::ErrorResponse(_e) = actual else {
+        panic!()
+    };
 }
 
 #[tokio::test]

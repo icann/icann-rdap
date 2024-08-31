@@ -175,3 +175,21 @@ async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
     let assert = test_jig.cmd.assert();
     assert.success();
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
+    // GIVEN
+    let mut test_jig = TestJig::new_with_enable_domain_name_search().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    test_jig.cmd.arg("-t").arg("domain-name").arg("foo.*");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}

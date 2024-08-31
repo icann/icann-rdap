@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "ab-radix-trie"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20f46b50157150f6d6f20e5b5fc783a91f4cdb5e2197b322ed2f595b436b8fd9"
+checksum = "1996a0a7d153953579280bca89e620b9bc0a609727984e53f1f4073776746866"
 dependencies = [
  "env_logger",
  "log",

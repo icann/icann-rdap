@@ -2,18 +2,20 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::response::{
+    domain::Domain, search::DomainSearchResults, types::Common, RdapResponse,
+};
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use prefix_trie::PrefixMap;
 use tokio::sync::RwLock;
 
 use crate::{
     error::RdapServerError,
-    rdap::response::NOT_FOUND,
-    storage::{StoreOps, TxHandle},
+    rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
+    storage::{CommonConfig, StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, tx::MemTx};
+use super::{config::MemConfig, label_search::SearchLabels, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -21,6 +23,7 @@ pub struct Mem {
     pub(crate) ip4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
     pub(crate) ip6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) domains_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
@@ -35,6 +38,7 @@ impl Mem {
             ip4: Arc::new(RwLock::new(PrefixMap::new())),
             ip6: Arc::new(RwLock::new(PrefixMap::new())),
             domains: Arc::new(RwLock::new(HashMap::new())),
+            domains_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
             idns: Arc::new(RwLock::new(HashMap::new())),
             nameservers: Arc::new(RwLock::new(HashMap::new())),
             entities: Arc::new(RwLock::new(HashMap::new())),
@@ -46,7 +50,11 @@ impl Mem {
 
 impl Default for Mem {
     fn default() -> Self {
-        Mem::new(MemConfig::builder().build())
+        Mem::new(
+            MemConfig::builder()
+                .common_config(CommonConfig::default())
+                .build(),
+        )
     }
 }
 
@@ -163,5 +171,30 @@ impl StoreOps for Mem {
             Some(srvhelp) => Ok(RdapResponse::clone(srvhelp)),
             None => Ok(NOT_FOUND.clone()),
         }
+    }
+
+    async fn search_domains_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        //else
+        let domains_by_name = self.domains_by_name.read().await;
+        let results = domains_by_name
+            .search(name)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|d| match d {
+                RdapResponse::Domain(d) => Some(d),
+                _ => None,
+            })
+            .collect::<Vec<Domain>>();
+        let response = RdapResponse::DomainSearchResults(
+            DomainSearchResults::builder()
+                .common(Common::new_level0(vec![], vec![]))
+                .results(results)
+                .build(),
+        );
+        Ok(response)
     }
 }

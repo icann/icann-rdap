@@ -2,6 +2,7 @@ use icann_rdap_common::response::{error::Error, RdapResponse};
 
 pub mod autnum;
 pub mod domain;
+pub mod domains;
 pub mod entity;
 pub mod ip;
 pub mod nameserver;

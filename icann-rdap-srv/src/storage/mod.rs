@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use buildstructor::Builder;
 use icann_rdap_common::response::{
     autnum::Autnum, domain::Domain, entity::Entity, help::Help, nameserver::Nameserver,
     network::Network, RdapResponse,
@@ -52,6 +53,9 @@ pub trait StoreOps: Send + Sync {
 
     /// Get server help.
     async fn get_srv_help(&self, host: Option<&str>) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for domains by name.
+    async fn search_domains_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -120,4 +124,18 @@ pub trait TxHandle: Send {
 
     /// Rollback the transaction.
     async fn rollback(self: Box<Self>) -> Result<(), RdapServerError>;
+}
+
+/// Common configuration for storage back ends.
+#[derive(Debug, Clone, Copy, Builder)]
+pub struct CommonConfig {
+    pub domain_search_by_name_enable: bool,
+}
+
+impl Default for CommonConfig {
+    fn default() -> Self {
+        CommonConfig {
+            domain_search_by_name_enable: true,
+        }
+    }
 }
