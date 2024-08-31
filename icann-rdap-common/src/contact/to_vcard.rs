@@ -113,7 +113,7 @@ impl Contact {
                 }
                 let mut lines: Vec<String> = Vec::new();
                 if let Some(street_parts) = &addr.street_parts {
-                    lines.push(street_parts.get(0).cloned().unwrap_or("".to_string()));
+                    lines.push(street_parts.first().cloned().unwrap_or("".to_string()));
                     lines.push(street_parts.get(1).cloned().unwrap_or("".to_string()));
                     lines.push(street_parts.get(2).cloned().unwrap_or("".to_string()));
                 } else {
@@ -174,7 +174,7 @@ fn vec_string_to_value(strings: &Option<Vec<String>>) -> Value {
     Value::from(strings.clone())
 }
 
-fn vec_string_to_param(strings: &Vec<String>) -> Value {
+fn vec_string_to_param(strings: &[String]) -> Value {
     if strings.is_empty() {
         return Value::String("".to_string());
     };
@@ -187,7 +187,7 @@ fn vec_string_to_param(strings: &Vec<String>) -> Value {
     };
 
     // else
-    Value::from(strings.clone())
+    Value::from(strings)
 }
 
 #[cfg(test)]

@@ -105,9 +105,7 @@ impl Entity {
     }
 
     pub fn contact(&self) -> Option<Contact> {
-        let Some(vcard) = &self.vcard_array else {
-            return None;
-        };
+        let vcard = self.vcard_array.as_ref()?;
         Contact::from_vcard(vcard)
     }
 }
