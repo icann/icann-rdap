@@ -222,7 +222,7 @@ mod tests {
         if let Some(redacted_array) = redacted_array_option {
             crate::md::redacted::convert_redactions(&mut rdap_json_response, &redacted_array);
         } else {
-            assert!(false, "No redacted array found in the JSON");
+            panic!("No redacted array found in the JSON");
         }
         let pretty_json = serde_json::to_string_pretty(&rdap_json_response)?;
         println!("{}", pretty_json);

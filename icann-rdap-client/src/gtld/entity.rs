@@ -167,13 +167,10 @@ fn extract_role_info(
         if let Some(properties) = vcard.as_array() {
             for property in properties {
                 if let Some(property) = property.as_array() {
-                    match property[0].as_str().unwrap_or("") {
-                        "adr" => {
-                            if let Some(address_components) = property[3].as_array() {
-                                adr = format_address_with_label(params, address_components);
-                            }
+                    if let "adr" = property[0].as_str().unwrap_or("") {
+                        if let Some(address_components) = property[3].as_array() {
+                            adr = format_address_with_label(params, address_components);
                         }
-                        _ => {}
                     }
                 }
             }

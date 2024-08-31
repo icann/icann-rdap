@@ -336,7 +336,7 @@ async fn fetch_iana_registry(
 }
 
 /// Prefer HTTPS urls.
-fn get_preferred_url(urls: &Vec<String>) -> Option<String> {
+fn get_preferred_url(urls: &[String]) -> Option<String> {
     if urls.is_empty() {
         None
     } else {
