@@ -243,7 +243,15 @@ pub(crate) fn events_to_table(
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);
         }
-        table = table.data_ul_ref(&event.event_action.to_owned().to_words_title_case(), ul);
+        table = table.data_ul_ref(
+            &event
+                .event_action
+                .as_ref()
+                .unwrap_or(&"action not given".to_string())
+                .to_owned()
+                .to_words_title_case(),
+            ul,
+        );
     }
     table
 }

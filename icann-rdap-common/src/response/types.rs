@@ -153,10 +153,15 @@ impl NoticeOrRemark {
 pub type Events = Vec<Event>;
 
 /// Represents an RDAP event.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Event {
+    /// This value is required by RFC 9083 (and 7483),
+    /// however some servers don't include it. Therefore
+    /// it is optional here to be compatible with these
+    /// types of non-compliant servers.
     #[serde(rename = "eventAction")]
-    pub event_action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_action: Option<String>,
 
     #[serde(rename = "eventActor")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -172,6 +177,24 @@ pub struct Event {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+}
+
+#[buildstructor::buildstructor]
+impl Event {
+    #[builder]
+    pub fn new(
+        event_action: String,
+        event_date: String,
+        event_actor: Option<String>,
+        links: Option<Links>,
+    ) -> Self {
+        Event {
+            event_action: Some(event_action),
+            event_actor,
+            event_date: Some(event_date),
+            links,
+        }
+    }
 }
 
 /// Represents an item in an RDAP status array.

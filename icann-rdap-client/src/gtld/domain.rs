@@ -75,24 +75,26 @@ fn format_registry_dates(events: &Option<Vec<Event>>) -> String {
     let mut formatted_dates = String::new();
     if let Some(events) = events {
         for event in events {
-            match event.event_action.as_str() {
-                "last changed" => {
-                    if let Some(event_date) = &event.event_date {
-                        formatted_dates.push_str(&format!("Updated Date: {}\n", event_date));
+            if let Some(event_action) = &event.event_action {
+                match event_action.as_str() {
+                    "last changed" => {
+                        if let Some(event_date) = &event.event_date {
+                            formatted_dates.push_str(&format!("Updated Date: {}\n", event_date));
+                        }
                     }
-                }
-                "registration" => {
-                    if let Some(event_date) = &event.event_date {
-                        formatted_dates.push_str(&format!("Creation Date: {}\n", event_date));
+                    "registration" => {
+                        if let Some(event_date) = &event.event_date {
+                            formatted_dates.push_str(&format!("Creation Date: {}\n", event_date));
+                        }
                     }
-                }
-                "expiration" => {
-                    if let Some(event_date) = &event.event_date {
-                        formatted_dates
-                            .push_str(&format!("Registry Expiry Date: {}\n", event_date));
+                    "expiration" => {
+                        if let Some(event_date) = &event.event_date {
+                            formatted_dates
+                                .push_str(&format!("Registry Expiry Date: {}\n", event_date));
+                        }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }
@@ -163,14 +165,16 @@ fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
 fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
     if let Some(events) = events {
         for event in events {
-            if event.event_action == "last update of RDAP database" {
-                if let Some(event_date) = &event.event_date {
-                    gtld.push_str(&format!(
-                        ">>> Last update of RDAP database: {} <<<\n",
-                        event_date
-                    ));
+            if let Some(event_action) = &event.event_action {
+                if event_action == "last update of RDAP database" {
+                    if let Some(event_date) = &event.event_date {
+                        gtld.push_str(&format!(
+                            ">>> Last update of RDAP database: {} <<<\n",
+                            event_date
+                        ));
+                    }
+                    break;
                 }
-                break;
             }
         }
     }

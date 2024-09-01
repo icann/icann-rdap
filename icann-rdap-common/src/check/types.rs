@@ -231,6 +231,13 @@ impl GetSubChecks for ObjectCommon {
                         sub_checks: Vec::new(),
                     })
                 }
+                if e.event_action.is_none() {
+                    sub_checks.push(Checks {
+                        struct_name: "Events",
+                        items: vec![Check::EventActionIsAbsent.check_item()],
+                        sub_checks: Vec::new(),
+                    })
+                }
             });
         }
 
@@ -780,7 +787,12 @@ mod tests {
                 .common(Common::builder().build())
                 .object_common(
                     ObjectCommon::domain()
-                        .events(vec![Event::builder().event_action("foo").build()])
+                        .events(vec![Event {
+                            event_action: Some("foo".to_string()),
+                            event_date: None,
+                            event_actor: None,
+                            links: None,
+                        }])
                         .build(),
                 )
                 .build(),
@@ -800,6 +812,42 @@ mod tests {
             .items
             .iter()
             .find(|c| c.check == Check::EventDateIsAbsent)
+            .expect("event missing check");
+    }
+
+    #[test]
+    fn GIVEN_event_with_no_action_WHEN_checked_THEN_event_action_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .events(vec![Event {
+                            event_date: Some("1990-12-31T23:59:59Z".to_string()),
+                            event_action: None,
+                            event_actor: None,
+                            links: None,
+                        }])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Events")
+            .expect("Events not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::EventActionIsAbsent)
             .expect("event missing check");
     }
 

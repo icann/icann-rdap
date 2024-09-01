@@ -176,6 +176,8 @@ pub enum Check {
     EventDateIsAbsent,
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
+    #[strum(message = "event action is absent")]
+    EventActionIsAbsent,
 
     // Notice Or Remark
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
@@ -288,6 +290,7 @@ impl Check {
 
             Check::EventDateIsAbsent => CheckClass::SpecificationError,
             Check::EventDateIsNotRfc3339 => CheckClass::SpecificationError,
+            Check::EventActionIsAbsent => CheckClass::SpecificationError,
 
             Check::NoticeOrRemarkDescriptionIsAbsent => CheckClass::SpecificationError,
 
