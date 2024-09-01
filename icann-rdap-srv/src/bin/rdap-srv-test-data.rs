@@ -155,6 +155,7 @@ fn make_domain_template(
             Link::builder()
                 .rel("self")
                 .href(format!("https://{base_url}/domain/test-domain",))
+                .value(format!("https://{base_url}/domain/test-domain",))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )
@@ -202,6 +203,7 @@ fn make_autnum_template(
             Link::builder()
                 .rel("self")
                 .href(format!("https://{base_url}/autnum/test-autnum",))
+                .value(format!("https://{base_url}/autnum/test-autnum",))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )
@@ -318,6 +320,10 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
                     "https://{base_url}/entity/child_of_{}",
                     child_of.unwrap_or("none")
                 ))
+                .value(format!(
+                    "https://{base_url}/entity/child_of_{}",
+                    child_of.unwrap_or("none")
+                ))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )
@@ -360,6 +366,10 @@ fn make_test_nameserver(
                     "https://{base_url}/nameserver/child_of_{}",
                     child_of.unwrap_or("none")
                 ))
+                .value(format!(
+                    "https://{base_url}/nameserver/child_of_{}",
+                    child_of.unwrap_or("none")
+                ))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )
@@ -386,6 +396,7 @@ fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
             Link::builder()
                 .rel("self")
                 .href(format!("https://{base_url}/ip/test_network",))
+                .value(format!("https://{base_url}/ip/test_network",))
                 .media_type(RDAP_MEDIA_TYPE)
                 .build(),
         )

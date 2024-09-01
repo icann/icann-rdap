@@ -71,7 +71,9 @@ impl ToMd for Link {
         if let Some(rel) = &self.rel {
             md.push_str(&format!("[{rel}] "));
         };
-        md.push_str(&self.href.to_owned().to_inline(params.options));
+        if let Some(href) = &self.href {
+            md.push_str(&href.to_owned().to_inline(params.options));
+        }
         md.push(' ');
         if let Some(media_type) = &self.media_type {
             md.push_str(&format!("of type '{media_type}' "));
@@ -261,7 +263,10 @@ pub(crate) fn links_to_table(
             .as_ref()
             .unwrap_or(&"Link".to_string())
             .to_title_case();
-        let mut ul: Vec<&String> = vec![&link.href];
+        let mut ul: Vec<&String> = vec![];
+        if let Some(href) = &link.href {
+            ul.push(href)
+        }
         if let Some(media_type) = &link.media_type {
             ul.push(media_type)
         };

@@ -212,6 +212,7 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
         links = Some(vec![Link::builder()
             .media_type(link_type.as_str().to_string())
             .href(link_href.as_str().to_string())
+            .value(link_href.as_str().to_string())
             .rel(link_rel.as_str().to_string())
             .build()]);
     }
@@ -1228,7 +1229,7 @@ mod tests {
             panic!("links are empty")
         };
         assert_eq!(link.rel.as_ref().expect("no rel in link"), rel);
-        assert_eq!(link.href, href);
+        assert_eq!(link.href.as_ref().expect("link has no href"), href);
         assert_eq!(
             link.media_type.as_ref().expect("no media_type in link"),
             media_type

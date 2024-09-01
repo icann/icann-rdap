@@ -28,7 +28,7 @@ pub type RdapConformance = Vec<Extension>;
 pub type Links = Vec<Link>;
 
 /// Represents and RDAP link structure.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Link {
     /// Represents the value part of a link in an RDAP response.
     /// According to RFC 9083, this field is required
@@ -44,7 +44,10 @@ pub struct Link {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rel: Option<String>,
 
-    pub href: String,
+    /// This is required by RDAP, both RFC 7043 and 9083,
+    /// but is optional because some servers do the wrong thing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub href: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hreflang: Option<Vec<String>>,
@@ -60,12 +63,34 @@ pub struct Link {
     pub media_type: Option<String>,
 }
 
+#[buildstructor::buildstructor]
 impl Link {
     pub fn is_relation(&self, rel: &str) -> bool {
         let Some(link_rel) = &self.rel else {
             return false;
         };
         link_rel == rel
+    }
+
+    #[builder]
+    pub fn new(
+        value: String,
+        href: String,
+        rel: String,
+        hreflang: Option<Vec<String>>,
+        title: Option<String>,
+        media: Option<String>,
+        media_type: Option<String>,
+    ) -> Self {
+        Link {
+            value: Some(value),
+            rel: Some(rel),
+            href: Some(href),
+            hreflang,
+            title,
+            media,
+            media_type,
+        }
     }
 }
 
@@ -105,6 +130,7 @@ pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -465,8 +491,14 @@ mod tests {
             actual_2.value.as_ref().unwrap(),
             "https://2.example.com/context_uri"
         );
-        assert_eq!(actual_1.href, "https://1.example.com/target_uri");
-        assert_eq!(actual_2.href, "https://2.example.com/target_uri");
+        assert_eq!(
+            actual_1.href.as_ref().unwrap(),
+            "https://1.example.com/target_uri"
+        );
+        assert_eq!(
+            actual_2.href.as_ref().unwrap(),
+            "https://2.example.com/target_uri"
+        );
         assert_eq!(actual_1.title.as_ref().unwrap(), "title1");
         assert_eq!(actual_2.title.as_ref().unwrap(), "title2");
         assert_eq!(actual_1.media_type.as_ref().unwrap(), "application/json");
@@ -610,11 +642,21 @@ mod tests {
     fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
         // GIVEN
         let mut oc = ObjectCommon::domain()
-            .links(vec![Link::builder().href("http://bar.example").build()])
+            .links(vec![Link::builder()
+                .href("http://bar.example")
+                .value("http://bar.example")
+                .rel("unknown")
+                .build()])
             .build();
 
         // WHEN
-        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+        oc = oc.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         assert_eq!(
@@ -633,7 +675,13 @@ mod tests {
         let mut oc = ObjectCommon::domain().build();
 
         // WHEN
-        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+        oc = oc.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         assert_eq!(
@@ -652,12 +700,19 @@ mod tests {
         let mut oc = ObjectCommon::domain()
             .links(vec![Link::builder()
                 .href("http://bar.example")
+                .value("http://bar.example")
                 .rel("self")
                 .build()])
             .build();
 
         // WHEN
-        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+        oc = oc.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         // new link is in
@@ -666,7 +721,8 @@ mod tests {
                 .as_ref()
                 .expect("links are empty")
                 .iter()
-                .filter(|link| link.is_relation("self") && link.href == "http://foo.example")
+                .filter(|link| link.is_relation("self")
+                    && link.href.as_ref().unwrap() == "http://foo.example")
                 .count(),
             1
         );

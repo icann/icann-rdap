@@ -65,6 +65,9 @@ impl GetChecks for Link {
         if self.value.is_none() {
             items.push(Check::LinkMissingValueProperty.check_item())
         };
+        if self.href.is_none() {
+            items.push(Check::LinkMissingHrefProperty.check_item())
+        };
         if let Some(rel) = &self.rel {
             if rel.eq("related") {
                 if let Some(media_type) = &self.media_type {
@@ -297,7 +300,15 @@ mod tests {
                 .common(Common::builder().build())
                 .object_common(
                     ObjectCommon::domain()
-                        .links(vec![Link::builder().href("https://foo").build()])
+                        .links(vec![Link {
+                            href: Some("https://foo".to_string()),
+                            value: Some("https://foo".to_string()),
+                            rel: None,
+                            title: None,
+                            hreflang: None,
+                            media: None,
+                            media_type: None,
+                        }])
                         .build(),
                 )
                 .build(),
@@ -330,7 +341,15 @@ mod tests {
                 .common(Common::builder().build())
                 .object_common(
                     ObjectCommon::domain()
-                        .links(vec![Link::builder().href("https://foo").build()])
+                        .links(vec![Link {
+                            href: Some("https://foo".to_string()),
+                            value: None,
+                            rel: Some("about".to_string()),
+                            title: None,
+                            hreflang: None,
+                            media: None,
+                            media_type: None,
+                        }])
                         .build(),
                 )
                 .build(),
@@ -356,6 +375,47 @@ mod tests {
     }
 
     #[test]
+    fn GIVEN_link_with_no_href_property_WHEN_checked_THEN_link_missing_href_property() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .links(vec![Link {
+                            value: Some("https://foo".to_string()),
+                            href: None,
+                            rel: Some("about".to_string()),
+                            title: None,
+                            hreflang: None,
+                            media: None,
+                            media_type: None,
+                        }])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .sub("Link")
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::LinkMissingHrefProperty)
+            .expect("link missing check");
+    }
+
+    #[test]
     fn GIVEN_related_link_with_no_type_property_WHEN_checked_THEN_related_link_has_no_type() {
         // GIVEN
         let rdap = RdapResponse::Domain(
@@ -365,6 +425,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("related")
                             .build()])
                         .build(),
@@ -401,6 +462,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("related")
                             .media_type("foo")
                             .build()])
@@ -438,6 +500,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .build()])
                         .build(),
@@ -474,6 +537,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("foo")
                             .build()])
@@ -503,6 +567,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -533,6 +598,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -565,6 +631,7 @@ mod tests {
                                 .description_entry("a notice")
                                 .links(vec![Link::builder()
                                     .href("https://tos")
+                                    .value("https://tos")
                                     .rel("terms-of-service")
                                     .media_type("text/html")
                                     .build()])
@@ -576,6 +643,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -610,6 +678,7 @@ mod tests {
                                 .description_entry("a notice")
                                 .links(vec![Link::builder()
                                     .href("https://tos")
+                                    .value("https://tos")
                                     .rel("terms-of-service")
                                     .media_type("text/html")
                                     .build()])
@@ -617,6 +686,7 @@ mod tests {
                         )])
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -647,6 +717,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("no_self")
                             .media_type("foo")
                             .build()])
@@ -833,6 +904,7 @@ mod tests {
                     ObjectCommon::nameserver()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("no_self")
                             .media_type("foo")
                             .build()])

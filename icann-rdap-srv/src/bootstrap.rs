@@ -650,7 +650,10 @@ mod tests {
         let Some(first_link) = links.first() else {
             panic!("links are empty")
         };
-        first_link.href.to_owned()
+        let Some(href) = &first_link.href else {
+            panic!("link has no href")
+        };
+        href.clone()
     }
 
     #[tokio::test]

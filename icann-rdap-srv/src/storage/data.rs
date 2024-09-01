@@ -420,12 +420,16 @@ pub async fn trigger_update(data_dir: &str) -> Result<(), RdapServerError> {
 
 fn change_self_link<T: GetSelfLink + SelfLink>(mut object: T, segment: &str, id: &str) -> T {
     if let Some(self_link) = object.get_self_link() {
-        if let Some(self_href) = self_link.href.rsplit_once(segment) {
-            let mut new_self_link = self_link.clone();
-            new_self_link.href = format!("{}{segment}/{}", self_href.0, id);
-            object = object.set_self_link(new_self_link);
+        if let Some(self_href) = &self_link.href {
+            if let Some(self_href_split) = self_href.rsplit_once(segment) {
+                let mut new_self_link = self_link.clone();
+                new_self_link.href = Some(format!("{}{segment}/{}", self_href_split.0, id));
+                object = object.set_self_link(new_self_link);
+            } else {
+                warn!("Unable to rewrite self link for {segment} {}", id);
+            }
         } else {
-            warn!("Unable to rewrite self link for {segment} {}", id);
+            warn!("Unable to use self link because it has not href")
         }
     } else {
         warn!("No self link for {segment} {}", id);
@@ -771,6 +775,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/domain/foo.example")
+                    .value("http://reg.example/domain/foo.example")
                     .build(),
             )
             .build();
@@ -785,7 +790,10 @@ mod tests {
             "bar.example"
         );
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/domain/bar.example");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/domain/bar.example"
+        );
     }
 
     #[test]
@@ -797,6 +805,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/entity/foo")
+                    .value("http://reg.example/entity/foo")
                     .build(),
             )
             .build();
@@ -815,7 +824,10 @@ mod tests {
             "bar"
         );
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/entity/bar");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/entity/bar"
+        );
     }
 
     #[test]
@@ -827,6 +839,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/nameserver/ns.foo.example")
+                    .value("http://reg.example/nameserver/ns.foo.example")
                     .build(),
             )
             .build()
@@ -843,7 +856,7 @@ mod tests {
         );
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
-            self_link.href,
+            self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/nameserver/ns.bar.example"
         );
     }
@@ -857,6 +870,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/autnum/700")
+                    .value("http://reg.example/autnum/700")
                     .build(),
             )
             .build();
@@ -875,7 +889,10 @@ mod tests {
         );
         assert_eq!(*actual.end_autnum.as_ref().expect("no end on autnum"), 999);
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/autnum/900");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has href"),
+            "http://reg.example/autnum/900"
+        );
     }
 
     #[test]
@@ -887,6 +904,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/ip/10.0.0.0/24")
+                    .value("http://reg.example/ip/10.0.0.0/24")
                     .build(),
             )
             .build()
@@ -923,7 +941,10 @@ mod tests {
         assert_eq!(v4cidr.v4prefix, "11.0.0.0");
         assert_eq!(v4cidr.length, 24);
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/ip/11.0.0.0/24");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/ip/11.0.0.0/24"
+        );
     }
 
     #[test]
@@ -935,6 +956,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/ip/10.0.0.0/24")
+                    .value("http://reg.example/ip/10.0.0.0/24")
                     .build(),
             )
             .build()
@@ -970,6 +992,9 @@ mod tests {
         assert_eq!(v4cidr.v4prefix, "11.0.0.0");
         assert_eq!(v4cidr.length, 24);
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/ip/11.0.0.0/24");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/ip/11.0.0.0/24"
+        );
     }
 }

@@ -164,6 +164,8 @@ pub enum Check {
     LinkSelfIsNotRdap,
     #[strum(message = "RFC 9083 recommends self links for all object classes")]
     LinkObjectClassHasNoSelf,
+    #[strum(message = "'href' property not found in Link structure as required by RFC 9083")]
+    LinkMissingHrefProperty,
 
     // Variant
     #[strum(message = "empty domain variant is ambiguous")]
@@ -280,6 +282,7 @@ impl Check {
             Check::LinkSelfHasNoType => CheckClass::SpecificationWarning,
             Check::LinkSelfIsNotRdap => CheckClass::SpecificationWarning,
             Check::LinkObjectClassHasNoSelf => CheckClass::SpecificationWarning,
+            Check::LinkMissingHrefProperty => CheckClass::SpecificationError,
 
             Check::VariantEmptyDomain => CheckClass::SpecificationWarning,
 

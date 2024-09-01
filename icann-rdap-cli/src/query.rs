@@ -363,10 +363,14 @@ fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
         let urls: Vec<&str> = links
             .iter()
             .filter(|l| {
-                if let Some(rel) = &l.rel {
-                    if let Some(media_type) = &l.media_type {
-                        rel.eq_ignore_ascii_case("related")
-                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                if l.href.as_ref().is_some() {
+                    if let Some(rel) = &l.rel {
+                        if let Some(media_type) = &l.media_type {
+                            rel.eq_ignore_ascii_case("related")
+                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     }
@@ -374,7 +378,7 @@ fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
                     false
                 }
             })
-            .map(|l| l.href.as_str())
+            .map(|l| l.href.as_ref().unwrap().as_str())
             .collect::<Vec<&str>>();
         urls
     } else {
