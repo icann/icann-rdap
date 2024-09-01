@@ -220,7 +220,12 @@ pub(crate) fn public_ids_to_table(
     mut table: MultiPartTable,
 ) -> MultiPartTable {
     for pid in publid_ids {
-        table = table.data_ref(&pid.id_type, &pid.identifier);
+        table = table.data_ref(
+            pid.id_type.as_ref().unwrap_or(&"(not given)".to_string()),
+            pid.identifier
+                .as_ref()
+                .unwrap_or(&"(not given)".to_string()),
+        );
     }
     table
 }

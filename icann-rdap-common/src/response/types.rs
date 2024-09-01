@@ -227,12 +227,27 @@ pub type Port43 = String;
 pub type PublicIds = Vec<PublicId>;
 
 /// An RDAP Public ID.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicId {
+    /// This are manditory per RFC 9083.
     #[serde(rename = "type")]
-    pub id_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id_type: Option<String>,
 
-    pub identifier: String,
+    /// This are manditory per RFC 9083.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+}
+
+#[buildstructor::buildstructor]
+impl PublicId {
+    #[builder]
+    pub fn new(id_type: String, identifier: String) -> Self {
+        PublicId {
+            id_type: Some(id_type),
+            identifier: Some(identifier),
+        }
+    }
 }
 
 /// Holds those types that are common in all responses.

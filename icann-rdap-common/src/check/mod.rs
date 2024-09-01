@@ -270,6 +270,12 @@ pub enum Check {
     // Port 43
     #[strum(message = "port43 appears to be empty or only whitespace")]
     Port43IsEmpty,
+
+    // Public Id
+    #[strum(message = "publicId type is absent")]
+    PublicIdTypeIsAbsent,
+    #[strum(message = "publicId identifier is absent")]
+    PublicIdIdentifierIsAbsent,
 }
 
 impl Check {
@@ -337,6 +343,9 @@ impl Check {
             Check::VcardFnIsEmpty => CheckClass::SpecificationWarning,
 
             Check::Port43IsEmpty => CheckClass::SpecificationError,
+
+            Check::PublicIdTypeIsAbsent => CheckClass::SpecificationError,
+            Check::PublicIdIdentifierIsAbsent => CheckClass::SpecificationError,
         };
         CheckItem {
             check_class,

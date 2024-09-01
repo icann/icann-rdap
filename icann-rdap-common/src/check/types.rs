@@ -9,7 +9,8 @@ use crate::{
         nameserver::Nameserver,
         network::Network,
         types::{
-            Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, RdapConformance, Remarks,
+            Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds, RdapConformance,
+            Remarks,
         },
     },
 };
@@ -161,6 +162,29 @@ impl GetChecks for NoticeOrRemark {
     }
 }
 
+impl GetSubChecks for PublicIds {
+    fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
+        let mut sub_checks: Vec<Checks> = Vec::new();
+        self.iter().for_each(|pid| {
+            if pid.id_type.is_none() {
+                sub_checks.push(Checks {
+                    struct_name: "Public IDs",
+                    items: vec![Check::PublicIdTypeIsAbsent.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+            if pid.identifier.is_none() {
+                sub_checks.push(Checks {
+                    struct_name: "Public IDs",
+                    items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        });
+        sub_checks
+    }
+}
+
 impl GetSubChecks for Common {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = Vec::new();
@@ -264,6 +288,7 @@ impl GetSubChecks for ObjectCommon {
             }
         }
 
+        // Port 43
         if let Some(port43) = &self.port_43 {
             if port43.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
@@ -290,8 +315,8 @@ mod tests {
             entity::Entity,
             nameserver::Nameserver,
             types::{
-                Common, Event, Extension, Link, Notice, NoticeOrRemark, ObjectCommon, Remark,
-                StatusValue,
+                Common, Event, Extension, Link, Notice, NoticeOrRemark, ObjectCommon, PublicId,
+                Remark, StatusValue,
             },
             RdapResponse,
         },
@@ -883,6 +908,68 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::EventDateIsNotRfc3339)
             .expect("event missing check");
+    }
+
+    #[test]
+    fn GIVEN_public_id_with_no_type_WHEN_checked_THEN_type_is_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(ObjectCommon::domain().build())
+                .public_ids(vec![PublicId {
+                    id_type: None,
+                    identifier: Some("thing".to_string()),
+                }])
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Public IDs")
+            .expect("Public Ids not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::PublicIdTypeIsAbsent)
+            .expect("public id missing check");
+    }
+
+    #[test]
+    fn GIVEN_public_id_with_no_identifier_WHEN_checked_THEN_identifier_is_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(ObjectCommon::domain().build())
+                .public_ids(vec![PublicId {
+                    identifier: None,
+                    id_type: Some("thing".to_string()),
+                }])
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Public IDs")
+            .expect("Public Ids not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::PublicIdIdentifierIsAbsent)
+            .expect("public id missing check");
     }
 
     #[test]

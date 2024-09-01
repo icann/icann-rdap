@@ -15,6 +15,9 @@ impl GetChecks for Domain {
                     .object_common
                     .get_sub_checks(params.from_parent(TypeId::of::<Domain>())),
             );
+            if let Some(public_ids) = &self.public_ids {
+                sub_checks.append(&mut public_ids.get_sub_checks(params));
+            }
             sub_checks
         } else {
             Vec::new()
