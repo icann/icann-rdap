@@ -9,7 +9,8 @@ use crate::{
         nameserver::Nameserver,
         network::Network,
         types::{
-            Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, RdapConformance, Remarks,
+            Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds, RdapConformance,
+            Remarks,
         },
     },
 };
@@ -64,6 +65,9 @@ impl GetChecks for Link {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.value.is_none() {
             items.push(Check::LinkMissingValueProperty.check_item())
+        };
+        if self.href.is_none() {
+            items.push(Check::LinkMissingHrefProperty.check_item())
         };
         if let Some(rel) = &self.rel {
             if rel.eq("related") {
@@ -158,6 +162,29 @@ impl GetChecks for NoticeOrRemark {
     }
 }
 
+impl GetSubChecks for PublicIds {
+    fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
+        let mut sub_checks: Vec<Checks> = Vec::new();
+        self.iter().for_each(|pid| {
+            if pid.id_type.is_none() {
+                sub_checks.push(Checks {
+                    struct_name: "Public IDs",
+                    items: vec![Check::PublicIdTypeIsAbsent.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+            if pid.identifier.is_none() {
+                sub_checks.push(Checks {
+                    struct_name: "Public IDs",
+                    items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        });
+        sub_checks
+    }
+}
+
 impl GetSubChecks for Common {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = Vec::new();
@@ -228,6 +255,13 @@ impl GetSubChecks for ObjectCommon {
                         sub_checks: Vec::new(),
                     })
                 }
+                if e.event_action.is_none() {
+                    sub_checks.push(Checks {
+                        struct_name: "Events",
+                        items: vec![Check::EventActionIsAbsent.check_item()],
+                        sub_checks: Vec::new(),
+                    })
+                }
             });
         }
 
@@ -254,6 +288,7 @@ impl GetSubChecks for ObjectCommon {
             }
         }
 
+        // Port 43
         if let Some(port43) = &self.port_43 {
             if port43.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
@@ -280,8 +315,8 @@ mod tests {
             entity::Entity,
             nameserver::Nameserver,
             types::{
-                Common, Event, Extension, Link, Notice, NoticeOrRemark, ObjectCommon, Remark,
-                StatusValue,
+                Common, Event, Extension, Link, Notice, NoticeOrRemark, ObjectCommon, PublicId,
+                Remark, StatusValue,
             },
             RdapResponse,
         },
@@ -297,7 +332,15 @@ mod tests {
                 .common(Common::builder().build())
                 .object_common(
                     ObjectCommon::domain()
-                        .links(vec![Link::builder().href("https://foo").build()])
+                        .links(vec![Link {
+                            href: Some("https://foo".to_string()),
+                            value: Some("https://foo".to_string()),
+                            rel: None,
+                            title: None,
+                            hreflang: None,
+                            media: None,
+                            media_type: None,
+                        }])
                         .build(),
                 )
                 .build(),
@@ -330,7 +373,15 @@ mod tests {
                 .common(Common::builder().build())
                 .object_common(
                     ObjectCommon::domain()
-                        .links(vec![Link::builder().href("https://foo").build()])
+                        .links(vec![Link {
+                            href: Some("https://foo".to_string()),
+                            value: None,
+                            rel: Some("about".to_string()),
+                            title: None,
+                            hreflang: None,
+                            media: None,
+                            media_type: None,
+                        }])
                         .build(),
                 )
                 .build(),
@@ -356,6 +407,47 @@ mod tests {
     }
 
     #[test]
+    fn GIVEN_link_with_no_href_property_WHEN_checked_THEN_link_missing_href_property() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .links(vec![Link {
+                            value: Some("https://foo".to_string()),
+                            href: None,
+                            rel: Some("about".to_string()),
+                            title: None,
+                            hreflang: None,
+                            media: None,
+                            media_type: None,
+                        }])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Links")
+            .expect("Links not found")
+            .sub("Link")
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::LinkMissingHrefProperty)
+            .expect("link missing check");
+    }
+
+    #[test]
     fn GIVEN_related_link_with_no_type_property_WHEN_checked_THEN_related_link_has_no_type() {
         // GIVEN
         let rdap = RdapResponse::Domain(
@@ -365,6 +457,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("related")
                             .build()])
                         .build(),
@@ -401,6 +494,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("related")
                             .media_type("foo")
                             .build()])
@@ -438,6 +532,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .build()])
                         .build(),
@@ -474,6 +569,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("foo")
                             .build()])
@@ -503,6 +599,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -533,6 +630,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -565,6 +663,7 @@ mod tests {
                                 .description_entry("a notice")
                                 .links(vec![Link::builder()
                                     .href("https://tos")
+                                    .value("https://tos")
                                     .rel("terms-of-service")
                                     .media_type("text/html")
                                     .build()])
@@ -576,6 +675,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -610,6 +710,7 @@ mod tests {
                                 .description_entry("a notice")
                                 .links(vec![Link::builder()
                                     .href("https://tos")
+                                    .value("https://tos")
                                     .rel("terms-of-service")
                                     .media_type("text/html")
                                     .build()])
@@ -617,6 +718,7 @@ mod tests {
                         )])
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("self")
                             .media_type("application/rdap+json")
                             .build()])
@@ -647,6 +749,7 @@ mod tests {
                     ObjectCommon::domain()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("no_self")
                             .media_type("foo")
                             .build()])
@@ -709,7 +812,12 @@ mod tests {
                 .common(Common::builder().build())
                 .object_common(
                     ObjectCommon::domain()
-                        .events(vec![Event::builder().event_action("foo").build()])
+                        .events(vec![Event {
+                            event_action: Some("foo".to_string()),
+                            event_date: None,
+                            event_actor: None,
+                            links: None,
+                        }])
                         .build(),
                 )
                 .build(),
@@ -729,6 +837,42 @@ mod tests {
             .items
             .iter()
             .find(|c| c.check == Check::EventDateIsAbsent)
+            .expect("event missing check");
+    }
+
+    #[test]
+    fn GIVEN_event_with_no_action_WHEN_checked_THEN_event_action_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(
+                    ObjectCommon::domain()
+                        .events(vec![Event {
+                            event_date: Some("1990-12-31T23:59:59Z".to_string()),
+                            event_action: None,
+                            event_actor: None,
+                            links: None,
+                        }])
+                        .build(),
+                )
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Events")
+            .expect("Events not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::EventActionIsAbsent)
             .expect("event missing check");
     }
 
@@ -764,6 +908,68 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::EventDateIsNotRfc3339)
             .expect("event missing check");
+    }
+
+    #[test]
+    fn GIVEN_public_id_with_no_type_WHEN_checked_THEN_type_is_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(ObjectCommon::domain().build())
+                .public_ids(vec![PublicId {
+                    id_type: None,
+                    identifier: Some("thing".to_string()),
+                }])
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Public IDs")
+            .expect("Public Ids not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::PublicIdTypeIsAbsent)
+            .expect("public id missing check");
+    }
+
+    #[test]
+    fn GIVEN_public_id_with_no_identifier_WHEN_checked_THEN_identifier_is_absent() {
+        // GIVEN
+        let rdap = RdapResponse::Domain(
+            Domain::builder()
+                .common(Common::builder().build())
+                .object_common(ObjectCommon::domain().build())
+                .public_ids(vec![PublicId {
+                    identifier: None,
+                    id_type: Some("thing".to_string()),
+                }])
+                .build(),
+        );
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        checks
+            .sub("Public IDs")
+            .expect("Public Ids not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::PublicIdIdentifierIsAbsent)
+            .expect("public id missing check");
     }
 
     #[test]
@@ -833,6 +1039,7 @@ mod tests {
                     ObjectCommon::nameserver()
                         .links(vec![Link::builder()
                             .href("https://foo")
+                            .value("https://foo")
                             .rel("no_self")
                             .media_type("foo")
                             .build()])

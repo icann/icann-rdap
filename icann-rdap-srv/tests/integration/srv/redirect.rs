@@ -31,6 +31,8 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
                 NoticeOrRemark::builder()
                     .links(vec![Link::builder()
                         .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
                         .build()])
                     .build(),
             ))
@@ -79,6 +81,8 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
                 NoticeOrRemark::builder()
                     .links(vec![Link::builder()
                         .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
                         .build()])
                     .build(),
             ))
@@ -126,6 +130,8 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
                 NoticeOrRemark::builder()
                     .links(vec![Link::builder()
                         .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
                         .build()])
                     .build(),
             ))
@@ -174,6 +180,8 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
                 NoticeOrRemark::builder()
                     .links(vec![Link::builder()
                         .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
                         .build()])
                     .build(),
             ))
@@ -221,6 +229,8 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
                 NoticeOrRemark::builder()
                     .links(vec![Link::builder()
                         .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
                         .build()])
                     .build(),
             ))
@@ -271,6 +281,8 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
                 NoticeOrRemark::builder()
                     .links(vec![Link::builder()
                         .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
                         .build()])
                     .build(),
             ))

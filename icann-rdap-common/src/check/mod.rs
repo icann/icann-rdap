@@ -164,6 +164,8 @@ pub enum Check {
     LinkSelfIsNotRdap,
     #[strum(message = "RFC 9083 recommends self links for all object classes")]
     LinkObjectClassHasNoSelf,
+    #[strum(message = "'href' property not found in Link structure as required by RFC 9083")]
+    LinkMissingHrefProperty,
 
     // Variant
     #[strum(message = "empty domain variant is ambiguous")]
@@ -174,6 +176,8 @@ pub enum Check {
     EventDateIsAbsent,
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
+    #[strum(message = "event action is absent")]
+    EventActionIsAbsent,
 
     // Notice Or Remark
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
@@ -266,6 +270,22 @@ pub enum Check {
     // Port 43
     #[strum(message = "port43 appears to be empty or only whitespace")]
     Port43IsEmpty,
+
+    // Public Id
+    #[strum(message = "publicId type is absent")]
+    PublicIdTypeIsAbsent,
+    #[strum(message = "publicId identifier is absent")]
+    PublicIdIdentifierIsAbsent,
+
+    // Cidr0
+    #[strum(message = "Cidr0 v4 prefix is absent")]
+    Cidr0V4PrefixIsAbsent,
+    #[strum(message = "Cidr0 v4 length is absent")]
+    Cidr0V4LengthIsAbsent,
+    #[strum(message = "Cidr0 v6 prefix is absent")]
+    Cidr0V6PrefixIsAbsent,
+    #[strum(message = "Cidr0 v6 length is absent")]
+    Cidr0V6LengthIsAbsent,
 }
 
 impl Check {
@@ -280,11 +300,13 @@ impl Check {
             Check::LinkSelfHasNoType => CheckClass::SpecificationWarning,
             Check::LinkSelfIsNotRdap => CheckClass::SpecificationWarning,
             Check::LinkObjectClassHasNoSelf => CheckClass::SpecificationWarning,
+            Check::LinkMissingHrefProperty => CheckClass::SpecificationError,
 
             Check::VariantEmptyDomain => CheckClass::SpecificationWarning,
 
             Check::EventDateIsAbsent => CheckClass::SpecificationError,
             Check::EventDateIsNotRfc3339 => CheckClass::SpecificationError,
+            Check::EventActionIsAbsent => CheckClass::SpecificationError,
 
             Check::NoticeOrRemarkDescriptionIsAbsent => CheckClass::SpecificationError,
 
@@ -331,6 +353,14 @@ impl Check {
             Check::VcardFnIsEmpty => CheckClass::SpecificationWarning,
 
             Check::Port43IsEmpty => CheckClass::SpecificationError,
+
+            Check::PublicIdTypeIsAbsent => CheckClass::SpecificationError,
+            Check::PublicIdIdentifierIsAbsent => CheckClass::SpecificationError,
+
+            Check::Cidr0V4PrefixIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V4LengthIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V6PrefixIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V6LengthIsAbsent => CheckClass::SpecificationError,
         };
         CheckItem {
             check_class,

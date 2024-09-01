@@ -54,7 +54,8 @@ impl ResponseUtil for RdapResponse {
             let first_notice = notices.first()?;
             let links = first_notice.0.links.as_ref()?;
             let first_link = links.first()?;
-            Some(&first_link.href)
+            let href = first_link.href.as_ref()?;
+            Some(href)
         } else {
             None
         }
@@ -143,6 +144,8 @@ mod tests {
                     NoticeOrRemark::builder()
                         .links(vec![Link::builder()
                             .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("related")
                             .build()])
                         .build(),
                 ))

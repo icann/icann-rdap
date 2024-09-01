@@ -70,7 +70,10 @@ fn bootstrap_redirect(error: Error, path: &str, id: &str) -> RdapResponse {
     let Some(link) = links.first() else {
         return RdapResponse::ErrorResponse(error);
     };
-    let href = format!("{}{path}/{id}", link.href);
+    let Some(href) = &link.href else {
+        return RdapResponse::ErrorResponse(error);
+    };
+    let href = format!("{}{path}/{id}", href);
     let redirect = Error::redirect().url(href).build();
     RdapResponse::ErrorResponse(redirect)
 }

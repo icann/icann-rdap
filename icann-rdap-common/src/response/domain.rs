@@ -576,11 +576,23 @@ mod tests {
         // GIVEN
         let mut domain = Domain::basic()
             .ldh_name("foo.example")
-            .link(Link::builder().href("http://bar.example").build())
+            .link(
+                Link::builder()
+                    .href("http://bar.example")
+                    .value("http://bar.example")
+                    .rel("unknown")
+                    .build(),
+            )
             .build();
 
         // WHEN
-        domain = domain.set_self_link(Link::builder().href("http://foo.example").build());
+        domain = domain.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         assert_eq!(
