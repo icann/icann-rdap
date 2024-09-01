@@ -4,7 +4,7 @@ use cidr_utils::cidr::IpCidr;
 
 use crate::response::network::Network;
 
-use super::{string::StringCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Network {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -26,24 +26,24 @@ impl GetChecks for Network {
 
         if let Some(name) = &self.name {
             if name.is_whitespace_or_empty() {
-                items.push(CheckItem::name_is_empty())
+                items.push(Check::NetworkOrAutnumNameIsEmpty.check_item())
             }
         }
 
         if let Some(network_type) = &self.network_type {
             if network_type.is_whitespace_or_empty() {
-                items.push(CheckItem::type_is_empty())
+                items.push(Check::NetworkOrAutnumTypeIsEmpty.check_item())
             }
         }
 
         if self.start_address.is_none() || self.end_address.is_none() {
-            items.push(CheckItem::missing_ip_address())
+            items.push(Check::IpAddressMissing.check_item())
         }
 
         if let Some(start_ip) = &self.start_address {
             let start_addr = IpAddr::from_str(start_ip);
             if start_addr.is_err() {
-                items.push(CheckItem::malformed_ip_address())
+                items.push(Check::IpAddressMalformed.check_item())
             } else if self.end_address.is_some() {
                 let Ok(start_addr) = start_addr else {
                     panic!("ip result did not work")
@@ -53,21 +53,21 @@ impl GetChecks for Network {
                 };
                 if let Ok(end_addr) = IpAddr::from_str(end_ip) {
                     if start_addr > end_addr {
-                        items.push(CheckItem::end_ip_before_start_ip())
+                        items.push(Check::IpAddressEndBeforeStart.check_item())
                     }
                     if let Some(ip_version) = &self.ip_version {
                         if (ip_version == "v4" && (start_addr.is_ipv6() || end_addr.is_ipv6()))
                             || (ip_version == "v6" && (start_addr.is_ipv4() || end_addr.is_ipv4()))
                         {
-                            items.push(CheckItem::ip_version_mismatch())
+                            items.push(Check::IpAddressVersionMismatch.check_item())
                         } else if ip_version != "v4" && ip_version != "v6" {
-                            items.push(CheckItem::malfomred_ip_version())
+                            items.push(Check::IpAddressMalformedVersion.check_item())
                         }
                     }
                     let this_network =
                         IpCidr::from_str("0.0.0.0/8").expect("incorrect this netowrk cidr");
                     if this_network.contains(&start_addr) && this_network.contains(&end_addr) {
-                        items.push(CheckItem::this_network())
+                        items.push(Check::IpAddressThisNetwork.check_item())
                     }
                     let private_10 = IpCidr::from_str("10.0.0.0/8").expect("incorrect net 10 cidr");
                     let private_172 =
@@ -78,17 +78,17 @@ impl GetChecks for Network {
                         || (private_172.contains(&start_addr) && private_172.contains(&end_addr))
                         || (private_192.contains(&start_addr) && private_192.contains(&end_addr))
                     {
-                        items.push(CheckItem::private_use_ip())
+                        items.push(Check::IpAddressPrivateUse.check_item())
                     }
                     let shared_nat =
                         IpCidr::from_str("100.64.0.0/10").expect("incorrect net 100 cidr");
                     if shared_nat.contains(&start_addr) && shared_nat.contains(&end_addr) {
-                        items.push(CheckItem::shared_nat_ip())
+                        items.push(Check::IpAddressSharedNat.check_item())
                     }
                     let loopback =
                         IpCidr::from_str("127.0.0.0/8").expect("incorrect loopback cidr");
                     if loopback.contains(&start_addr) && loopback.contains(&end_addr) {
-                        items.push(CheckItem::loopback())
+                        items.push(Check::IpAddressLoopback.check_item())
                     }
                     let linklocal1 =
                         IpCidr::from_str("169.254.0.0/16").expect("incorrect linklocal1 cidr");
@@ -97,12 +97,12 @@ impl GetChecks for Network {
                     if (linklocal1.contains(&start_addr) && linklocal1.contains(&end_addr))
                         || (linklocal2.contains(&start_addr) && linklocal2.contains(&end_addr))
                     {
-                        items.push(CheckItem::linklocal())
+                        items.push(Check::IpAddressLinkLocal.check_item())
                     }
                     let uniquelocal =
                         IpCidr::from_str("fe80::/10").expect("incorrect unique local cidr");
                     if uniquelocal.contains(&start_addr) && uniquelocal.contains(&end_addr) {
-                        items.push(CheckItem::unique_local())
+                        items.push(Check::IpAddressUniqueLocal.check_item())
                     }
                     let doc1 = IpCidr::from_str("192.0.2.0/24").expect("incorrect doc1 cidr");
                     let doc2 = IpCidr::from_str("198.51.100.0/24").expect("incorrect doc2 cidr");
@@ -113,12 +113,12 @@ impl GetChecks for Network {
                         || (doc3.contains(&start_addr) && doc3.contains(&end_addr))
                         || (doc4.contains(&start_addr) && doc4.contains(&end_addr))
                     {
-                        items.push(CheckItem::documentation_net())
+                        items.push(Check::IpAddressDocumentationNet.check_item())
                     }
                     let reserved =
                         IpCidr::from_str("240.0.0.0/4").expect("incorrect reserved cidr");
                     if reserved.contains(&start_addr) && reserved.contains(&end_addr) {
-                        items.push(CheckItem::linklocal())
+                        items.push(Check::IpAddressLinkLocal.check_item())
                     }
                 }
             }
@@ -127,7 +127,7 @@ impl GetChecks for Network {
         if let Some(end_ip) = &self.end_address {
             let addr = IpAddr::from_str(end_ip);
             if addr.is_err() {
-                items.push(CheckItem::malformed_ip_address())
+                items.push(Check::IpAddressMalformed.check_item())
             }
         }
 
@@ -169,7 +169,10 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks.items.iter().any(|c| c.check == Check::NameIsEmpty));
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty));
     }
 
     #[test]
@@ -191,7 +194,10 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks.items.iter().any(|c| c.check == Check::TypeIsEmpty));
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
     }
 
     #[test]
@@ -216,7 +222,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MissingIpAddress));
+            .any(|c| c.check == Check::IpAddressMissing));
     }
 
     #[test]
@@ -241,7 +247,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MissingIpAddress));
+            .any(|c| c.check == Check::IpAddressMissing));
     }
 
     #[test]
@@ -266,7 +272,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MalformedIpAddress));
+            .any(|c| c.check == Check::IpAddressMalformed));
     }
 
     #[test]
@@ -291,7 +297,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MalformedIpAddress));
+            .any(|c| c.check == Check::IpAddressMalformed));
     }
 
     #[test]
@@ -318,7 +324,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::EndIpBeforeStartIp));
+            .any(|c| c.check == Check::IpAddressEndBeforeStart));
     }
 
     #[rstest]
@@ -348,7 +354,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::IpVersionMismatch));
+            .any(|c| c.check == Check::IpAddressVersionMismatch));
     }
 
     #[rstest]
@@ -380,6 +386,6 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MalformedIPVersion));
+            .any(|c| c.check == Check::IpAddressMalformedVersion));
     }
 }

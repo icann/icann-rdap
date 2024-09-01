@@ -18,14 +18,14 @@ use lazy_static::lazy_static;
 
 use super::{
     string::{StringCheck, StringListCheck},
-    CheckItem, CheckParams, Checks, GetChecks, GetSubChecks,
+    Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks,
 };
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items = Vec::new();
         if params.parent_type != params.root.get_type() {
-            items.push(CheckItem::invalid_rdap_conformance_parent())
+            items.push(Check::RdapConformanceInvalidParent.check_item())
         };
         Checks {
             struct_name: "RDAP Conformance",
@@ -63,7 +63,7 @@ impl GetChecks for Link {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.value.is_none() {
-            items.push(CheckItem::link_missing_value_property())
+            items.push(Check::LinkMissingValueProperty.check_item())
         };
         if let Some(rel) = &self.rel {
             if rel.eq("related") {
@@ -71,18 +71,18 @@ impl GetChecks for Link {
                     if !media_type.eq(RDAP_MEDIA_TYPE)
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
-                        items.push(CheckItem::related_link_is_not_rdap())
+                        items.push(Check::LinkRelatedIsNotRdap.check_item())
                     }
                 } else {
-                    items.push(CheckItem::related_link_has_no_type())
+                    items.push(Check::LinkRelatedHasNoType.check_item())
                 }
             } else if rel.eq("self") {
                 if let Some(media_type) = &self.media_type {
                     if !media_type.eq(RDAP_MEDIA_TYPE) {
-                        items.push(CheckItem::self_link_is_not_rdap())
+                        items.push(Check::LinkSelfIsNotRdap.check_item())
                     }
                 } else {
-                    items.push(CheckItem::self_link_has_no_type())
+                    items.push(Check::LinkSelfHasNoType.check_item())
                 }
             } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) &&
                 // because some registries do not model nameservers directly,
@@ -92,10 +92,10 @@ impl GetChecks for Link {
                 // the top most object (i.e. a first class object).
                 params.root.get_type() != TypeId::of::<Nameserver>()
             {
-                items.push(CheckItem::object_class_has_no_self_link())
+                items.push(Check::LinkObjectClassHasNoSelf.check_item())
             }
         } else {
-            items.push(CheckItem::link_missing_rel_property())
+            items.push(Check::LinkMissingRelProperty.check_item())
         }
         Checks {
             struct_name: "Link",
@@ -139,7 +139,7 @@ impl GetChecks for NoticeOrRemark {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if self.description.is_none() {
-            items.push(CheckItem::description_is_absent())
+            items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
         };
         let mut sub_checks: Vec<Checks> = Vec::new();
         if params.do_subchecks {
@@ -199,7 +199,7 @@ impl GetSubChecks for ObjectCommon {
         {
             sub_checks.push(Checks {
                 struct_name: "Links",
-                items: vec![CheckItem::object_class_has_no_self_link()],
+                items: vec![Check::LinkObjectClassHasNoSelf.check_item()],
                 sub_checks: Vec::new(),
             })
         };
@@ -217,14 +217,14 @@ impl GetSubChecks for ObjectCommon {
                     if date.is_err() {
                         sub_checks.push(Checks {
                             struct_name: "Events",
-                            items: vec![CheckItem::event_date_is_not_rfc3339()],
+                            items: vec![Check::EventDateIsNotRfc3339.check_item()],
                             sub_checks: Vec::new(),
                         })
                     }
                 } else {
                     sub_checks.push(Checks {
                         struct_name: "Events",
-                        items: vec![CheckItem::event_date_is_absent()],
+                        items: vec![Check::EventDateIsAbsent.check_item()],
                         sub_checks: Vec::new(),
                     })
                 }
@@ -236,7 +236,7 @@ impl GetSubChecks for ObjectCommon {
             if handle.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
                     struct_name: "Handle",
-                    items: vec![CheckItem::handle_is_empty()],
+                    items: vec![Check::HandleIsEmpty.check_item()],
                     sub_checks: Vec::new(),
                 })
             }
@@ -248,7 +248,7 @@ impl GetSubChecks for ObjectCommon {
             if status.as_slice().is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
                     struct_name: "Status",
-                    items: vec![CheckItem::status_is_empty()],
+                    items: vec![Check::StatusIsEmpty.check_item()],
                     sub_checks: Vec::new(),
                 })
             }
@@ -258,7 +258,7 @@ impl GetSubChecks for ObjectCommon {
             if port43.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
                     struct_name: "Port43",
-                    items: vec![CheckItem::port43_is_empty()],
+                    items: vec![Check::Port43IsEmpty.check_item()],
                     sub_checks: Vec::new(),
                 })
             }
@@ -387,7 +387,7 @@ mod tests {
             .expect("Link not found")
             .items
             .iter()
-            .find(|c| c.check == Check::RelatedLinkHasNoType)
+            .find(|c| c.check == Check::LinkRelatedHasNoType)
             .expect("link missing check");
     }
 
@@ -424,7 +424,7 @@ mod tests {
             .expect("Link not found")
             .items
             .iter()
-            .find(|c| c.check == Check::RelatedLinkIsNotRdap)
+            .find(|c| c.check == Check::LinkRelatedIsNotRdap)
             .expect("link missing check");
     }
 
@@ -460,7 +460,7 @@ mod tests {
             .expect("Link not found")
             .items
             .iter()
-            .find(|c| c.check == Check::SelfLinkHasNoType)
+            .find(|c| c.check == Check::LinkSelfHasNoType)
             .expect("link missing check");
     }
 
@@ -490,7 +490,7 @@ mod tests {
         });
 
         // THEN
-        assert!(find_any_check(&checks, Check::SelfLinkIsNotRdap));
+        assert!(find_any_check(&checks, Check::LinkSelfIsNotRdap));
     }
 
     #[test]
@@ -520,7 +520,7 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+        assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
     }
 
     #[test]
@@ -549,7 +549,7 @@ mod tests {
         });
 
         // THEN
-        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+        assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
     }
 
     #[test]
@@ -593,7 +593,7 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+        assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
     }
 
     #[test]
@@ -634,7 +634,7 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(!find_any_check(&checks, Check::ObjectClassHasNoSelfLink));
+        assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
     }
 
     #[test]
@@ -670,7 +670,7 @@ mod tests {
             .expect("Link not found")
             .items
             .iter()
-            .find(|c| c.check == Check::ObjectClassHasNoSelfLink)
+            .find(|c| c.check == Check::LinkObjectClassHasNoSelf)
             .expect("link missing check");
     }
 
@@ -697,7 +697,7 @@ mod tests {
             .expect("Links not found")
             .items
             .iter()
-            .find(|c| c.check == Check::ObjectClassHasNoSelfLink)
+            .find(|c| c.check == Check::LinkObjectClassHasNoSelf)
             .expect("link missing check");
     }
 
@@ -797,7 +797,7 @@ mod tests {
             .expect("Notice/Remark not found")
             .items
             .iter()
-            .find(|c| c.check == Check::DescriptionIsAbsent)
+            .find(|c| c.check == Check::NoticeOrRemarkDescriptionIsAbsent)
             .expect("description missing check");
     }
 
@@ -854,7 +854,7 @@ mod tests {
             .expect("Links not found")
             .items
             .iter()
-            .any(|c| c.check == Check::ObjectClassHasNoSelfLink));
+            .any(|c| c.check == Check::LinkObjectClassHasNoSelf));
     }
 
     #[rstest]
@@ -959,7 +959,7 @@ mod tests {
             .expect("rdap conformance not found")
             .items
             .iter()
-            .find(|c| c.check == Check::InvalidRdapConformanceParent)
+            .find(|c| c.check == Check::RdapConformanceInvalidParent)
             .expect("check missing");
     }
 
