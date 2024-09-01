@@ -24,6 +24,14 @@ impl std::ops::Deref for Extension {
 /// The RDAP conformance array.
 pub type RdapConformance = Vec<Extension>;
 
+/// HrefLang
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum HrefLang {
+    Langs(Vec<String>),
+    Lang(String),
+}
+
 /// An array of RDAP link structures.
 pub type Links = Vec<Link>;
 
@@ -50,7 +58,7 @@ pub struct Link {
     pub href: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hreflang: Option<Vec<String>>,
+    pub hreflang: Option<HrefLang>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
@@ -77,11 +85,12 @@ impl Link {
         value: String,
         href: String,
         rel: String,
-        hreflang: Option<Vec<String>>,
+        hreflang: Option<String>,
         title: Option<String>,
         media: Option<String>,
         media_type: Option<String>,
     ) -> Self {
+        let hreflang = hreflang.map(HrefLang::Lang);
         Link {
             value: Some(value),
             rel: Some(rel),
@@ -506,6 +515,62 @@ mod tests {
                 "rel" : "self",
                 "href" : "https://2.example.com/target_uri",
                 "hreflang" : [ "en", "ch" ],
+                "title" : "title2",
+                "media" : "screen",
+                "type" : "application/json"
+            }
+        ]   
+        "#;
+
+        // WHEN
+        let links = serde_json::from_str::<Links>(expected);
+
+        // THEN
+        let actual = links.unwrap();
+        assert_eq!(actual.len(), 2);
+        let actual_1 = actual.first().unwrap();
+        let actual_2 = actual.last().unwrap();
+        assert_eq!(
+            actual_1.value.as_ref().unwrap(),
+            "https://1.example.com/context_uri"
+        );
+        assert_eq!(
+            actual_2.value.as_ref().unwrap(),
+            "https://2.example.com/context_uri"
+        );
+        assert_eq!(
+            actual_1.href.as_ref().unwrap(),
+            "https://1.example.com/target_uri"
+        );
+        assert_eq!(
+            actual_2.href.as_ref().unwrap(),
+            "https://2.example.com/target_uri"
+        );
+        assert_eq!(actual_1.title.as_ref().unwrap(), "title1");
+        assert_eq!(actual_2.title.as_ref().unwrap(), "title2");
+        assert_eq!(actual_1.media_type.as_ref().unwrap(), "application/json");
+        assert_eq!(actual_2.media_type.as_ref().unwrap(), "application/json");
+    }
+
+    #[test]
+    fn GIVEN_an_array_of_links_with_one_lang_WHEN_deserialize_THEN_success() {
+        // GIVEN
+        let expected = r#"
+        [
+            {
+                "value" : "https://1.example.com/context_uri",
+                "rel" : "self",
+                "href" : "https://1.example.com/target_uri",
+                "hreflang" : "en",
+                "title" : "title1",
+                "media" : "screen",
+                "type" : "application/json"
+            },
+            {
+                "value" : "https://2.example.com/context_uri",
+                "rel" : "self",
+                "href" : "https://2.example.com/target_uri",
+                "hreflang" : "ch",
                 "title" : "title2",
                 "media" : "screen",
                 "type" : "application/json"

@@ -85,7 +85,14 @@ impl ToMd for Link {
             md.push_str(&format!("for {value} ",));
         };
         if let Some(hreflang) = &self.hreflang {
-            md.push_str(&format!("in languages {}", hreflang.join(", ")));
+            match hreflang {
+                icann_rdap_common::response::types::HrefLang::Lang(lang) => {
+                    md.push_str(&format!("in language {}", lang));
+                }
+                icann_rdap_common::response::types::HrefLang::Langs(langs) => {
+                    md.push_str(&format!("in languages {}", langs.join(", ")));
+                }
+            }
         };
         md.push('\n');
         let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
@@ -291,7 +298,10 @@ pub(crate) fn links_to_table(
         };
         let hreflang_s;
         if let Some(hreflang) = &link.hreflang {
-            hreflang_s = hreflang.join(", ");
+            hreflang_s = match hreflang {
+                icann_rdap_common::response::types::HrefLang::Lang(lang) => lang.to_owned(),
+                icann_rdap_common::response::types::HrefLang::Langs(langs) => langs.join(", "),
+            };
             ul.push(&hreflang_s)
         };
         table = table.data_ul_ref(&rel, ul);
