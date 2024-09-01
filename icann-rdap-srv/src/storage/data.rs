@@ -484,8 +484,8 @@ fn make_network_from_template(
                 network.end_address = Some(v4.broadcast().to_string());
                 network.ip_version = Some("v4".to_string());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: v4.network().to_string(),
-                    length: v4.prefix_len(),
+                    v4prefix: Some(v4.network().to_string()),
+                    length: Some(v4.prefix_len()),
                 })]);
             }
             IpNet::V6(v6) => {
@@ -493,8 +493,8 @@ fn make_network_from_template(
                 network.end_address = Some(v6.broadcast().to_string());
                 network.ip_version = Some("v6".to_string());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: v6.network().to_string(),
-                    length: v6.prefix_len(),
+                    v6prefix: Some(v6.network().to_string()),
+                    length: Some(v6.prefix_len()),
                 })]);
             }
         },
@@ -509,8 +509,8 @@ fn make_network_from_template(
                     Ipv4Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
                             Cidr0Cidr::V4Cidr(V4Cidr {
-                                v4prefix: net.network().to_string(),
-                                length: net.prefix_len(),
+                                v4prefix: Some(net.network().to_string()),
+                                length: Some(net.prefix_len()),
                             })
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
@@ -521,8 +521,8 @@ fn make_network_from_template(
                     Ipv6Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
                             Cidr0Cidr::V6Cidr(V6Cidr {
-                                v6prefix: net.network().to_string(),
-                                length: net.prefix_len(),
+                                v6prefix: Some(net.network().to_string()),
+                                length: Some(net.prefix_len()),
                             })
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
@@ -539,10 +539,18 @@ fn make_network_from_template(
         .first()
         .map(|cidr| match cidr {
             Cidr0Cidr::V4Cidr(cidr) => {
-                format!("{}/{}", cidr.v4prefix, cidr.length)
+                format!(
+                    "{}/{}",
+                    cidr.v4prefix.as_ref().expect("no v4prefix"),
+                    cidr.length.expect("no v4 length")
+                )
             }
             Cidr0Cidr::V6Cidr(cidr) => {
-                format!("{}/{}", cidr.v6prefix, cidr.length)
+                format!(
+                    "{}/{}",
+                    cidr.v6prefix.as_ref().expect("no v6prefix"),
+                    cidr.length.expect("no v6 length")
+                )
             }
         })
         .expect("cidrs on network are empty");
@@ -938,8 +946,8 @@ mod tests {
         let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
             panic!("no v4 cidr")
         };
-        assert_eq!(v4cidr.v4prefix, "11.0.0.0");
-        assert_eq!(v4cidr.length, 24);
+        assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
+        assert_eq!(v4cidr.length, Some(24));
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
@@ -989,8 +997,8 @@ mod tests {
         let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
             panic!("no v4 cidr")
         };
-        assert_eq!(v4cidr.v4prefix, "11.0.0.0");
-        assert_eq!(v4cidr.length, 24);
+        assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
+        assert_eq!(v4cidr.length, Some(24));
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),

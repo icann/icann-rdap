@@ -2,7 +2,7 @@ use std::{any::TypeId, net::IpAddr, str::FromStr};
 
 use cidr_utils::cidr::IpCidr;
 
-use crate::response::network::Network;
+use crate::response::network::{Cidr0Cidr, Network};
 
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
@@ -17,6 +17,42 @@ impl GetChecks for Network {
                     .object_common
                     .get_sub_checks(params.from_parent(TypeId::of::<Network>())),
             );
+            if let Some(cidr0) = &self.cidr0_cidrs {
+                cidr0.iter().for_each(|cidr| match cidr {
+                    Cidr0Cidr::V4Cidr(v4) => {
+                        if v4.v4prefix.is_none() {
+                            sub_checks.push(Checks {
+                                struct_name: "Cidr0",
+                                items: vec![Check::Cidr0V4PrefixIsAbsent.check_item()],
+                                sub_checks: Vec::new(),
+                            })
+                        }
+                        if v4.length.is_none() {
+                            sub_checks.push(Checks {
+                                struct_name: "Cidr0",
+                                items: vec![Check::Cidr0V4LengthIsAbsent.check_item()],
+                                sub_checks: Vec::new(),
+                            })
+                        }
+                    }
+                    Cidr0Cidr::V6Cidr(v6) => {
+                        if v6.v6prefix.is_none() {
+                            sub_checks.push(Checks {
+                                struct_name: "Cidr0",
+                                items: vec![Check::Cidr0V6PrefixIsAbsent.check_item()],
+                                sub_checks: Vec::new(),
+                            })
+                        }
+                        if v6.length.is_none() {
+                            sub_checks.push(Checks {
+                                struct_name: "Cidr0",
+                                items: vec![Check::Cidr0V6LengthIsAbsent.check_item()],
+                                sub_checks: Vec::new(),
+                            })
+                        }
+                    }
+                })
+            }
             sub_checks
         } else {
             Vec::new()
@@ -145,7 +181,8 @@ mod tests {
 
     use rstest::rstest;
 
-    use crate::response::network::Network;
+    use crate::response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr};
+    use crate::response::types::{Common, ObjectCommon};
     use crate::response::RdapResponse;
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -387,5 +424,125 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::IpAddressMalformedVersion));
+    }
+
+    #[test]
+    fn GIVEN_cidr0_with_v4_prefixex_WHEN_checked_THEN_no_prefix_check() {
+        // GIVEN
+        let network = Network::builder()
+            .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+                v4prefix: None,
+                length: Some(0),
+            })])
+            .common(Common::builder().build())
+            .object_common(ObjectCommon::ip_network().build())
+            .build();
+        let rdap = RdapResponse::Network(network);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .sub("Cidr0")
+            .expect("Cidr0")
+            .items
+            .iter()
+            .any(|c| c.check == Check::Cidr0V4PrefixIsAbsent));
+    }
+
+    #[test]
+    fn GIVEN_cidr0_with_v6_prefixex_WHEN_checked_THEN_no_prefix_check() {
+        // GIVEN
+        let network = Network::builder()
+            .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                v6prefix: None,
+                length: Some(0),
+            })])
+            .common(Common::builder().build())
+            .object_common(ObjectCommon::ip_network().build())
+            .build();
+        let rdap = RdapResponse::Network(network);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .sub("Cidr0")
+            .expect("Cidr0")
+            .items
+            .iter()
+            .any(|c| c.check == Check::Cidr0V6PrefixIsAbsent));
+    }
+
+    #[test]
+    fn GIVEN_cidr0_with_v4_length_WHEN_checked_THEN_no_length_check() {
+        // GIVEN
+        let network = Network::builder()
+            .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+                v4prefix: Some("0.0.0.0".to_string()),
+                length: None,
+            })])
+            .common(Common::builder().build())
+            .object_common(ObjectCommon::ip_network().build())
+            .build();
+        let rdap = RdapResponse::Network(network);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .sub("Cidr0")
+            .expect("Cidr0")
+            .items
+            .iter()
+            .any(|c| c.check == Check::Cidr0V4LengthIsAbsent));
+    }
+
+    #[test]
+    fn GIVEN_cidr0_with_v6_length_WHEN_checked_THEN_no_length_check() {
+        // GIVEN
+        let network = Network::builder()
+            .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                v6prefix: Some("0.0.0.0".to_string()),
+                length: None,
+            })])
+            .common(Common::builder().build())
+            .object_common(ObjectCommon::ip_network().build())
+            .build();
+        let rdap = RdapResponse::Network(network);
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams {
+            do_subchecks: true,
+            root: &rdap,
+            parent_type: rdap.get_type(),
+        });
+
+        // THEN
+        dbg!(&checks);
+        assert!(checks
+            .sub("Cidr0")
+            .expect("Cidr0")
+            .items
+            .iter()
+            .any(|c| c.check == Check::Cidr0V6LengthIsAbsent));
     }
 }

@@ -276,6 +276,16 @@ pub enum Check {
     PublicIdTypeIsAbsent,
     #[strum(message = "publicId identifier is absent")]
     PublicIdIdentifierIsAbsent,
+
+    // Cidr0
+    #[strum(message = "Cidr0 v4 prefix is absent")]
+    Cidr0V4PrefixIsAbsent,
+    #[strum(message = "Cidr0 v4 length is absent")]
+    Cidr0V4LengthIsAbsent,
+    #[strum(message = "Cidr0 v6 prefix is absent")]
+    Cidr0V6PrefixIsAbsent,
+    #[strum(message = "Cidr0 v6 length is absent")]
+    Cidr0V6LengthIsAbsent,
 }
 
 impl Check {
@@ -346,6 +356,11 @@ impl Check {
 
             Check::PublicIdTypeIsAbsent => CheckClass::SpecificationError,
             Check::PublicIdIdentifierIsAbsent => CheckClass::SpecificationError,
+
+            Check::Cidr0V4PrefixIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V4LengthIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V6PrefixIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V6LengthIsAbsent => CheckClass::SpecificationError,
         };
         CheckItem {
             check_class,

@@ -25,27 +25,69 @@ impl std::fmt::Display for Cidr0Cidr {
     }
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V4Cidr {
-    pub v4prefix: String,
-    pub length: u8,
+    pub v4prefix: Option<String>,
+    pub length: Option<u8>,
+}
+
+#[buildstructor::buildstructor]
+impl V4Cidr {
+    #[builder]
+    pub fn new(v4prefix: String, length: u8) -> Self {
+        V4Cidr {
+            v4prefix: Some(v4prefix),
+            length: Some(length),
+        }
+    }
 }
 
 impl std::fmt::Display for V4Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.v4prefix, self.length)
+        let length_s = if let Some(length) = self.length {
+            length.to_string()
+        } else {
+            "not_given".to_string()
+        };
+        write!(
+            f,
+            "{}/{}",
+            self.v4prefix.as_ref().unwrap_or(&"not_given".to_string()),
+            length_s
+        )
     }
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V6Cidr {
-    pub v6prefix: String,
-    pub length: u8,
+    pub v6prefix: Option<String>,
+    pub length: Option<u8>,
+}
+
+#[buildstructor::buildstructor]
+impl V6Cidr {
+    #[builder]
+    pub fn new(v6prefix: String, length: u8) -> Self {
+        V6Cidr {
+            v6prefix: Some(v6prefix),
+            length: Some(length),
+        }
+    }
 }
 
 impl std::fmt::Display for V6Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.v6prefix, self.length)
+        let length_s = if let Some(length) = self.length {
+            length.to_string()
+        } else {
+            "not_given".to_string()
+        };
+        write!(
+            f,
+            "{}/{}",
+            self.v6prefix.as_ref().unwrap_or(&"not_given".to_string()),
+            length_s
+        )
     }
 }
 
@@ -188,12 +230,12 @@ impl Network {
             country,
             cidr0_cidrs: match cidr {
                 IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: cidr.first_address().to_string(),
-                    length: cidr.network_length(),
+                    v4prefix: Some(cidr.first_address().to_string()),
+                    length: Some(cidr.network_length()),
                 })]),
                 IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: cidr.first_address().to_string(),
-                    length: cidr.network_length(),
+                    v6prefix: Some(cidr.first_address().to_string()),
+                    length: Some(cidr.network_length()),
                 })]),
             },
         })
