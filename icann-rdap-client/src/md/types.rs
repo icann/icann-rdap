@@ -127,9 +127,11 @@ impl ToMd for NoticeOrRemark {
         if let Some(title) = &self.title {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
-        self.description
-            .iter()
-            .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
+        if let Some(description) = &self.description {
+            description
+                .iter()
+                .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
+        }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
             .iter()

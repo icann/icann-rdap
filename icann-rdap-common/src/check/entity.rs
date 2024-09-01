@@ -4,7 +4,7 @@ use crate::{contact::Contact, response::entity::Entity};
 
 use super::{
     string::{StringCheck, StringListCheck},
-    CheckItem, CheckParams, Checks, GetChecks, GetSubChecks,
+    Check, CheckParams, Checks, GetChecks, GetSubChecks,
 };
 
 impl GetChecks for Entity {
@@ -27,7 +27,7 @@ impl GetChecks for Entity {
 
         if let Some(roles) = &self.roles {
             if roles.as_slice().is_empty_or_any_empty_or_whitespace() {
-                items.push(CheckItem::roles_are_empty());
+                items.push(Check::RoleIsEmpty.check_item());
             }
         }
 
@@ -35,13 +35,13 @@ impl GetChecks for Entity {
             if let Some(contact) = Contact::from_vcard(vcard) {
                 if let Some(full_name) = contact.full_name {
                     if full_name.is_whitespace_or_empty() {
-                        items.push(CheckItem::vcard_fn_is_empty())
+                        items.push(Check::VcardFnIsEmpty.check_item())
                     }
                 } else {
-                    items.push(CheckItem::vcard_has_no_fn())
+                    items.push(Check::VcardHasNoFn.check_item())
                 }
             } else {
-                items.push(CheckItem::vcard_array_is_empty())
+                items.push(Check::VcardArrayIsEmpty.check_item())
             }
         }
 

@@ -11,7 +11,6 @@ pub mod domain;
 pub mod entity;
 pub mod error;
 pub mod help;
-pub mod items;
 pub mod nameserver;
 pub mod network;
 pub mod search;
@@ -148,33 +147,37 @@ where
 pub enum Check {
     // RDAP Conformance
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
-    InvalidRdapConformanceParent,
+    RdapConformanceInvalidParent,
 
-    // Links
+    // Link
     #[strum(message = "'value' property not found in Link structure as required by RFC 9083")]
     LinkMissingValueProperty,
     #[strum(message = "'rel' property not found in Link structure as required by RFC 9083")]
     LinkMissingRelProperty,
     #[strum(message = "ambiguous follow because related link has no 'type' property")]
-    RelatedLinkHasNoType,
+    LinkRelatedHasNoType,
     #[strum(message = "ambiguous follow because related link does not have RDAP media type")]
-    RelatedLinkIsNotRdap,
+    LinkRelatedIsNotRdap,
     #[strum(message = "self link has no 'type' property")]
-    SelfLinkHasNoType,
+    LinkSelfHasNoType,
     #[strum(message = "self link does not have RDAP media type")]
-    SelfLinkIsNotRdap,
+    LinkSelfIsNotRdap,
     #[strum(message = "RFC 9083 recommends self links for all object classes")]
-    ObjectClassHasNoSelfLink,
+    LinkObjectClassHasNoSelf,
 
-    // Variants
+    // Variant
     #[strum(message = "empty domain variant is ambiguous")]
-    EmptyDomainVariant,
+    VariantEmptyDomain,
 
-    // Events
+    // Event
     #[strum(message = "event date is absent")]
     EventDateIsAbsent,
     #[strum(message = "event date is not RFC 3339 compliant")]
     EventDateIsNotRfc3339,
+
+    // Notice Or Remark
+    #[strum(message = "RFC 9083 requires a description in a notice or remark")]
+    NoticeOrRemarkDescriptionIsAbsent,
 
     // Handle
     #[strum(message = "handle appears to be empty or only whitespace")]
@@ -184,75 +187,75 @@ pub enum Check {
     #[strum(message = "status appears to be empty or only whitespace")]
     StatusIsEmpty,
 
-    // Roles
-    #[strum(message = "roles appears to be empty or only whitespace")]
-    RolesAreEmpty,
+    // Role
+    #[strum(message = "role appears to be empty or only whitespace")]
+    RoleIsEmpty,
 
     // LDH Name
     #[strum(message = "ldhName does not appear to be an LDH name")]
-    InvalidLdhName,
+    LdhNameInvalid,
     #[strum(message = "Documentation domain name. See RFC 6761")]
-    DocumentataionName,
+    LdhNameDocumentation,
     #[strum(message = "Unicode name does not match LDH")]
-    UnicodeDoesNotMatchLdh,
+    LdhNameDoesNotMatchUnicode,
 
-    // Unicode Name
+    // Unicode Nmae
     #[strum(message = "unicodeName does not appear to be a domain name")]
-    InvalidUnicodeDomainName,
+    UnicodeNameInvalidDomain,
     #[strum(message = "unicodeName does not appear to be valid Unicode")]
-    InvalidUnicodeName,
+    UnicodeNameInvalidUnicode,
 
-    // Network or Autnum Name
+    // Network Or Autnum Name
     #[strum(message = "name appears to be empty or only whitespace")]
-    NameIsEmpty,
+    NetworkOrAutnumNameIsEmpty,
 
     // Network or Autnum Type
     #[strum(message = "type appears to be empty or only whitespace")]
-    TypeIsEmpty,
+    NetworkOrAutnumTypeIsEmpty,
 
     // IP Address
     #[strum(message = "start or end IP address is missing")]
-    MissingIpAddress,
+    IpAddressMissing,
     #[strum(message = "IP address is malformed")]
-    MalformedIpAddress,
+    IpAddressMalformed,
     #[strum(message = "end IP address comes before start IP address")]
-    EndIpBeforeStartIp,
+    IpAddressEndBeforeStart,
     #[strum(message = "IP version does not match IP address")]
-    IpVersionMismatch,
+    IpAddressVersionMismatch,
     #[strum(message = "IP version is malformed")]
-    MalformedIPVersion,
+    IpAddressMalformedVersion,
     #[strum(message = "IP address list is empty")]
     IpAddressListIsEmpty,
     #[strum(message = "\"This network.\" See RFC 791")]
-    ThisNetwork,
+    IpAddressThisNetwork,
     #[strum(message = "Private use. See RFC 1918")]
-    PrivateUseIp,
+    IpAddressPrivateUse,
     #[strum(message = "Shared NAT network. See RFC 6598")]
-    SharedNatIp,
+    IpAddressSharedNat,
     #[strum(message = "Loopback network. See RFC 1122")]
-    Loopback,
+    IpAddressLoopback,
     #[strum(message = "Link local network. See RFC 3927")]
-    LinkLocal,
+    IpAddressLinkLocal,
     #[strum(message = "Unique local network. See RFC 8190")]
-    UniqueLocal,
+    IpAddressUniqueLocal,
     #[strum(message = "Documentation network. See RFC 5737")]
-    DocumentationNet,
+    IpAddressDocumentationNet,
     #[strum(message = "Reserved network. See RFC 1112")]
-    ReservedNet,
+    IpAddressReservedNet,
 
     // Autnum
     #[strum(message = "start or end autnum is missing")]
-    MissingAutnum,
+    AutnumMissing,
     #[strum(message = "end AS number comes before start AS number")]
-    EndAutnumBeforeStartAutnum,
+    AutnumEndBeforeStart,
     #[strum(message = "Private use. See RFC 6996")]
-    PrivateUseAutnum,
+    AutnumPrivateUse,
     #[strum(message = "Documentation AS number. See RFC 5398")]
-    DocumentationAutnum,
+    AutnumDocumentation,
     #[strum(message = "Reserved AS number. See RFC 6996")]
-    ReservedAutnum,
+    AutnumReserved,
 
-    // VCard
+    // Vcard
     #[strum(message = "vCard array does not contain a vCard")]
     VcardArrayIsEmpty,
     #[strum(message = "vCard has no fn property")]
@@ -263,6 +266,77 @@ pub enum Check {
     // Port 43
     #[strum(message = "port43 appears to be empty or only whitespace")]
     Port43IsEmpty,
+}
+
+impl Check {
+    fn check_item(self) -> CheckItem {
+        let check_class = match self {
+            Check::RdapConformanceInvalidParent => CheckClass::SpecificationError,
+
+            Check::LinkMissingValueProperty => CheckClass::SpecificationError,
+            Check::LinkMissingRelProperty => CheckClass::SpecificationError,
+            Check::LinkRelatedHasNoType => CheckClass::SpecificationWarning,
+            Check::LinkRelatedIsNotRdap => CheckClass::SpecificationWarning,
+            Check::LinkSelfHasNoType => CheckClass::SpecificationWarning,
+            Check::LinkSelfIsNotRdap => CheckClass::SpecificationWarning,
+            Check::LinkObjectClassHasNoSelf => CheckClass::SpecificationWarning,
+
+            Check::VariantEmptyDomain => CheckClass::SpecificationWarning,
+
+            Check::EventDateIsAbsent => CheckClass::SpecificationError,
+            Check::EventDateIsNotRfc3339 => CheckClass::SpecificationError,
+
+            Check::NoticeOrRemarkDescriptionIsAbsent => CheckClass::SpecificationError,
+
+            Check::HandleIsEmpty => CheckClass::SpecificationWarning,
+
+            Check::StatusIsEmpty => CheckClass::SpecificationError,
+
+            Check::RoleIsEmpty => CheckClass::SpecificationError,
+
+            Check::LdhNameInvalid => CheckClass::SpecificationError,
+            Check::LdhNameDocumentation => CheckClass::Informational,
+            Check::LdhNameDoesNotMatchUnicode => CheckClass::SpecificationWarning,
+
+            Check::UnicodeNameInvalidDomain => CheckClass::SpecificationError,
+            Check::UnicodeNameInvalidUnicode => CheckClass::SpecificationError,
+
+            Check::NetworkOrAutnumNameIsEmpty => CheckClass::SpecificationWarning,
+
+            Check::NetworkOrAutnumTypeIsEmpty => CheckClass::SpecificationWarning,
+
+            Check::IpAddressMissing => CheckClass::SpecificationWarning,
+            Check::IpAddressMalformed => CheckClass::SpecificationError,
+            Check::IpAddressEndBeforeStart => CheckClass::SpecificationWarning,
+            Check::IpAddressVersionMismatch => CheckClass::SpecificationWarning,
+            Check::IpAddressMalformedVersion => CheckClass::SpecificationError,
+            Check::IpAddressListIsEmpty => CheckClass::SpecificationError,
+            Check::IpAddressThisNetwork => CheckClass::Informational,
+            Check::IpAddressPrivateUse => CheckClass::Informational,
+            Check::IpAddressSharedNat => CheckClass::Informational,
+            Check::IpAddressLoopback => CheckClass::Informational,
+            Check::IpAddressLinkLocal => CheckClass::Informational,
+            Check::IpAddressUniqueLocal => CheckClass::Informational,
+            Check::IpAddressDocumentationNet => CheckClass::Informational,
+            Check::IpAddressReservedNet => CheckClass::Informational,
+
+            Check::AutnumMissing => CheckClass::SpecificationWarning,
+            Check::AutnumEndBeforeStart => CheckClass::SpecificationWarning,
+            Check::AutnumPrivateUse => CheckClass::Informational,
+            Check::AutnumDocumentation => CheckClass::Informational,
+            Check::AutnumReserved => CheckClass::Informational,
+
+            Check::VcardArrayIsEmpty => CheckClass::SpecificationError,
+            Check::VcardHasNoFn => CheckClass::SpecificationError,
+            Check::VcardFnIsEmpty => CheckClass::SpecificationWarning,
+
+            Check::Port43IsEmpty => CheckClass::SpecificationError,
+        };
+        CheckItem {
+            check_class,
+            check: self,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -277,7 +351,7 @@ mod tests {
             struct_name: "foo",
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
-                check: Check::EmptyDomainVariant,
+                check: Check::VariantEmptyDomain,
             }],
             sub_checks: vec![],
         };
@@ -301,7 +375,7 @@ mod tests {
             struct_name: "foo",
             items: vec![CheckItem {
                 check_class: CheckClass::SpecificationWarning,
-                check: Check::EmptyDomainVariant,
+                check: Check::VariantEmptyDomain,
             }],
             sub_checks: vec![],
         };
@@ -328,7 +402,7 @@ mod tests {
                 struct_name: "bar",
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
-                    check: Check::EmptyDomainVariant,
+                    check: Check::VariantEmptyDomain,
                 }],
                 sub_checks: vec![],
             }],
@@ -356,7 +430,7 @@ mod tests {
                 struct_name: "bar",
                 items: vec![CheckItem {
                     check_class: CheckClass::SpecificationWarning,
-                    check: Check::EmptyDomainVariant,
+                    check: Check::VariantEmptyDomain,
                 }],
                 sub_checks: vec![],
             }],
@@ -381,13 +455,13 @@ mod tests {
             struct_name: "foo",
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
-                check: Check::InvalidRdapConformanceParent,
+                check: Check::RdapConformanceInvalidParent,
             }],
             sub_checks: vec![Checks {
                 struct_name: "bar",
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
-                    check: Check::EmptyDomainVariant,
+                    check: Check::VariantEmptyDomain,
                 }],
                 sub_checks: vec![],
             }],
