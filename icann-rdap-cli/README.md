@@ -6,6 +6,7 @@ by the Internet Corporation for Assigned Names and Numbers [(ICANN)](https://www
 RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
 More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
+General information on RDAP can be found [here](https://rdap.rcode3.com/).
 
 Installing the RDAP Client
 --------------------------
@@ -79,7 +80,7 @@ Output Format
 -------------
 
 By default, the client will attempt to determine the output format of the information. If it determines the shell
-is interactive, output will be in `rendered-markdown`. Otherwise the output will be JSON.
+is interactive, output will be in `rendered-markdown`. Otherwise, the output will be JSON.
 
 You can explicitly control this behavior using the `-O` command argument or the `RDAP_OUTPUT` environment variable
 (see below).

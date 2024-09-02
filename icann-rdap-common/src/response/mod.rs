@@ -1,3 +1,4 @@
+//! RDAP structures for parsing and creating RDAP responses.
 use std::any::TypeId;
 
 use cidr_utils::cidr;

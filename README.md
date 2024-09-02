@@ -5,16 +5,17 @@ This repository contains open source code written by the Internet Corporation fo
 for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
 More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
+General information on RDAP can be found [here](https://rdap.rcode3.com/).
 
 About
 -----
 
-This repository hosts 4 separate Rust crates:
+This repository hosts 4 separate packages (i.e. Rust crates):
 
-* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client.
+* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client. This package produces an executable binary.
 * [icann-rdap-client](icann-rdap-client/README.md) is a library handling making RDAP requests.
 * [icann-rdap-common](icann-rdap-common/README.md) is a library of RDAP structures.
-* [icann-rdap-srv](icann-rdap-srv/README.md) is a simple, in-memory RDAP server.
+* [icann-rdap-srv](icann-rdap-srv/README.md) is a simple, in-memory RDAP server. This package produces multiple executable binaries.
 
 License
 -------

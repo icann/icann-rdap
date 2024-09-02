@@ -24,7 +24,7 @@ impl std::ops::Deref for Extension {
 /// The RDAP conformance array.
 pub type RdapConformance = Vec<Extension>;
 
-/// HrefLang
+/// HrefLang, either a string or an array of strings.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum HrefLang {
@@ -36,6 +36,31 @@ pub enum HrefLang {
 pub type Links = Vec<Link>;
 
 /// Represents and RDAP link structure.
+///
+/// This structure allows `value`, `rel`, and `href` to be
+/// optional to be tolerant of misbehaving servers,
+/// but those are fields required by RFC 9083.
+///
+/// To create an RFC valid structure, use the builder
+/// which will not allow omision of required fields.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::Link;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains?domain=foo.*")
+///   .rel("related")
+///   .href("https://example.com/domain/foo.example")
+///   .hreflang("ch")
+///   .title("Related Object")
+///   .media("print")
+///   .media_type("application/rdap+json")
+///   .build();
+/// ```
+///
+/// Note also that this structure allows for `hreflang` to
+/// be either a single string or an array of strings. However,
+/// the builder will always construct an array of strings.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Link {
     /// Represents the value part of a link in an RDAP response.
@@ -57,6 +82,7 @@ pub struct Link {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub href: Option<String>,
 
+    /// This can either be a string or an array of strings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hreflang: Option<HrefLang>,
 
@@ -134,6 +160,32 @@ impl std::ops::Deref for Remark {
 }
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
+///
+/// RFC 9083 requires that `description` be required, but some servers
+/// do not follow this rule. Therefore, this structure allows `description`
+/// to be optional. It is recommended to use builder to construct an RFC valie
+/// structure.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::NoticeOrRemark;
+/// use icann_rdap_common::response::types::Link;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/tou.html")
+///   .hreflang("en")
+///   .title("ToU Link")
+///   .media_type("text/html")
+///   .build();
+///
+/// let nr = NoticeOrRemark::builder()
+///   .title("Terms of Use")
+///   .description_entry("Please read our terms of use.")
+///   .links(vec![link])
+///   .build();
+/// ```
+///
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -162,6 +214,35 @@ impl NoticeOrRemark {
 pub type Events = Vec<Event>;
 
 /// Represents an RDAP event.
+///
+/// RFC 9083 requires `eventAction` (event_action) and `eventDate` (event_date), but
+/// this structure allows those to be optional to be able to parse responses from
+/// servers that do not strictly obey the RFC.
+///
+/// Use of the builder to contruct an RFC valid structure is recommended.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::Event;
+/// use icann_rdap_common::response::types::Link;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/registration-duration.html")
+///   .hreflang("en")
+///   .title("Domain Validity Period")
+///   .media_type("text/html")
+///   .build();
+///
+/// let nr = Event::builder()
+///   .event_action("expiration")
+///   .event_date("1990-12-31T23:59:59Z")
+///   .links(vec![link])
+///   .build();
+/// ```
+///
+/// NOTE: `event_date` is to be an RFC 3339 valid date and time.
+/// The builder does not enforce RFC 3339 validity.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Event {
     /// This value is required by RFC 9083 (and 7483),
@@ -236,6 +317,21 @@ pub type Port43 = String;
 pub type PublicIds = Vec<PublicId>;
 
 /// An RDAP Public ID.
+///
+/// RFC 9083 requires `type` (id_type) and `identifier`, but
+/// this structure allows those to be optional to be able to parse responses from
+/// servers that do not strictly obey the RFC.
+///
+/// Use of the builder to contruct an RFC valid structure is recommended.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::PublicId;
+///
+/// let public_id = PublicId::builder()
+///   .id_type("IANA Registrar ID")
+///   .identifier("1990")
+///   .build();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicId {
     /// This are manditory per RFC 9083.

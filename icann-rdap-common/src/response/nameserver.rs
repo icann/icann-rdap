@@ -38,7 +38,59 @@ impl IpAddresses {
     }
 }
 
-/// Represents an RDAP nameserver response.
+/// Represents an RDAP [nameserver](https://rdap.rcode3.com/protocol/object_classes.html#nameserver) response.
+///
+/// Using the builder is recommended to construct this structure as it
+/// will fill-in many of the mandatory fields.
+/// The following is an example.
+///
+/// ```rust
+/// use icann_rdap_common::response::nameserver::Nameserver;
+/// use icann_rdap_common::response::entity::Entity;
+/// use icann_rdap_common::response::types::StatusValue;
+///
+/// let ns = Nameserver::basic()
+///   .ldh_name("ns1.example.com")
+///   .handle("ns1_example_com-1")
+///   .status("active")
+///   .address("10.0.0.1")
+///   .address("10.0.0.2")
+///   .entity(Entity::basic().handle("FOO").build())
+///   .build().unwrap();
+/// let c = serde_json::to_string_pretty(&ns).unwrap();
+/// eprintln!("{c}");
+/// ```
+///
+/// This will produce the following.
+///
+/// ```norust
+///   {
+///     "rdapConformance": [
+///       "rdap_level_0"
+///     ],
+///     "objectClassName": "nameserver",
+///     "handle": "ns1_example_com-1",
+///     "status": [
+///       "active"
+///     ],
+///     "entities": [
+///       {
+///         "rdapConformance": [
+///           "rdap_level_0"
+///         ],
+///         "objectClassName": "entity",
+///         "handle": "FOO"
+///       }
+///     ],
+///     "ldhName": "ns1.example.com",
+///     "ipAddresses": {
+///       "v4": [
+///         "10.0.0.1",
+///         "10.0.0.2"
+///       ]
+///     }
+///   }
+/// ```
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Nameserver {
     #[serde(flatten)]
@@ -103,7 +155,7 @@ impl Nameserver {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Ok(Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0_with_options().and_notices(notices).build(),
             object_common: ObjectCommon::nameserver()
                 .and_handle(handle)
                 .and_remarks(remarks)

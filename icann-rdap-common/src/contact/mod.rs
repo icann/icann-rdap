@@ -1,3 +1,9 @@
+//! Easy representation of contact information found in an Entity.
+//!
+//! This module converts contact information to and from vCard/jCard, which is hard to
+//! work with directly. It is also intended as a way of bridging the between vCard/jCard
+//! and any new contact model.
+
 pub mod from_vcard;
 pub mod to_vcard;
 

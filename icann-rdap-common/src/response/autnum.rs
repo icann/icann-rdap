@@ -6,7 +6,40 @@ use super::{
     GetSelfLink, SelfLink, ToChild,
 };
 
-/// Represents an RDAP autnum object response.
+/// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.
+///
+/// Using the builder to construct this structure is recommended
+/// as it will fill-in many of the mandatory fields.
+/// The following is an example.
+///
+/// ```rust
+/// use icann_rdap_common::response::autnum::Autnum;
+/// use icann_rdap_common::response::types::StatusValue;
+///
+/// let autnum = Autnum::basic()
+///   .autnum_range(700..710) // the range of autnums
+///   .handle("AS700-1")
+///   .status("active")
+///   .build();
+/// let c = serde_json::to_string_pretty(&autnum).unwrap();
+/// eprintln!("{c}");
+/// ```
+/// This will produce the following.
+///
+/// ```norust
+/// {
+///   "rdapConformance": [
+///     "rdap_level_0"
+///   ],
+///   "objectClassName": "autnum",
+///   "handle": "AS700-1",
+///   "status": [
+///     "active"
+///   ],
+///   "startAutnum": 700,
+///   "endAutnum": 710
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Autnum {
     #[serde(flatten)]
@@ -68,7 +101,7 @@ impl Autnum {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0_with_options().and_notices(notices).build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle)
                 .and_remarks(remarks)
