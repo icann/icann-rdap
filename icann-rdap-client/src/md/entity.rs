@@ -45,6 +45,7 @@ impl ToMd for Entity {
                 .and_data_ref_maybe(&"Kind", &contact.kind)
                 .and_data_ref_maybe(&"Full Name", &contact.full_name)
                 .and_data_ul(&"Titles", contact.titles)
+                .and_data_ul(&"Org Roles", contact.roles)
                 .and_data_ul(&"Nicknames", contact.nick_names)
                 .and_data_ul(&"Organization Names", contact.organization_names)
                 .and_data_ul(&"Languages", contact.langs)

@@ -75,6 +75,12 @@ impl Contact {
             }
         }
 
+        if let Some(roles) = &self.roles {
+            for role in roles {
+                vcard.push(json!(["role", {}, "text", role]));
+            }
+        }
+
         if let Some(nick_names) = &self.nick_names {
             for nick_name in nick_names {
                 vcard.push(json!(["nickname", {}, "text", nick_name]));
