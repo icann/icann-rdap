@@ -171,6 +171,12 @@ impl Contact {
             }
         }
 
+        if let Some(contact_uris) = &self.contact_uris {
+            for uri in contact_uris {
+                vcard.push(json!(["contact-uri", {}, "uri", uri]));
+            }
+        }
+
         // return the vcard array
         vec![Value::String("vcard".to_string()), Value::from(vcard)]
     }
@@ -236,6 +242,8 @@ mod tests {
             ])
             .organization_names(vec!["Example".to_string()])
             .titles(vec!["Research Scientist".to_string()])
+            .roles(vec!["Project Lead".to_string()])
+            .contact_uris(vec!["https://example.com/contact-form".to_string()])
             .postal_addresses(vec![PostalAddress::builder()
                 .country_name("Canada")
                 .postal_code("G1V 2M2")
@@ -279,8 +287,10 @@ mod tests {
         assert_eq!(contact.langs, actual.langs);
         assert_eq!(contact.organization_names, actual.organization_names);
         assert_eq!(contact.titles, actual.titles);
+        assert_eq!(contact.roles, actual.roles);
         assert_eq!(contact.postal_addresses, actual.postal_addresses);
         assert_eq!(contact.phones, actual.phones);
         assert_eq!(contact.emails, actual.emails);
+        assert_eq!(contact.contact_uris, actual.contact_uris);
     }
 }

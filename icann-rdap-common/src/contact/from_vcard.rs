@@ -72,6 +72,7 @@ impl Contact {
             .and_phones(vcard.find_properties("tel").get_phones())
             .and_postal_addresses(vcard.find_properties("adr").get_postal_addresses())
             .and_name_parts(vcard.find_property("n").get_name_parts())
+            .and_contact_uris(vcard.find_properties("contact-uri").get_texts())
             .build();
 
         contact.is_non_empty().then_some(contact)
@@ -526,7 +527,11 @@ mod tests {
               ["tz", {},
                 "utc-offset", "-05:00"],
               ["url", { "type":"home" },
-                "uri", "https://example.org"]
+                "uri", "https://example.org"],
+              ["contact-uri", {},
+                "uri",
+                "https://example.com/contact-form"
+              ]
             ]
           ]
         "#;
@@ -682,5 +687,15 @@ mod tests {
             .suffixes(vec!["ing. jr".to_string(), "M.Sc.".to_string()])
             .build();
         assert_eq!(name_parts, expected);
+
+        // contact-uris
+        assert_eq!(
+            actual
+                .contact_uris
+                .expect("no contact-uris")
+                .first()
+                .expect("contact-uris empty"),
+            "https://example.com/contact-form"
+        );
     }
 }

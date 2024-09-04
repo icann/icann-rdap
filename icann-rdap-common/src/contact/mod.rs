@@ -134,6 +134,9 @@ pub struct Contact {
 
     /// Phone numbers.
     pub phones: Option<Vec<Phone>>,
+
+    /// Contact URIs.
+    pub contact_uris: Option<Vec<String>>,
 }
 
 impl Contact {
@@ -150,6 +153,7 @@ impl Contact {
             || self.postal_addresses.is_some()
             || self.emails.is_some()
             || self.phones.is_some()
+            || self.contact_uris.is_some()
     }
 
     /// Set the set of emails.

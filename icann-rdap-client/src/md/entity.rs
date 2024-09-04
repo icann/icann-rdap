@@ -50,7 +50,8 @@ impl ToMd for Entity {
                 .and_data_ul(&"Organization Names", contact.organization_names)
                 .and_data_ul(&"Languages", contact.langs)
                 .and_data_ul(&"Phones", contact.phones)
-                .and_data_ul(&"Emails", contact.emails);
+                .and_data_ul(&"Emails", contact.emails)
+                .and_data_ul(&"Web Contact", contact.contact_uris);
             table = contact.postal_addresses.add_to_mptable(table, params);
             table = contact.name_parts.add_to_mptable(table, params)
         }
