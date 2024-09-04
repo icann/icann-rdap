@@ -1,8 +1,55 @@
+//! Convert jCard/vCard to Contact.
 use serde_json::Value;
 
 use super::{Contact, Email, Lang, NameParts, Phone, PostalAddress};
 
 impl Contact {
+    /// Creates a Contact from an array of [`Value`]s.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::contact::Contact;
+    /// use serde::Deserialize;
+    /// use serde_json::Value;
+    ///
+    /// let json = r#"
+    /// [
+    ///   "vcard",
+    ///   [
+    ///     ["version", {}, "text", "4.0"],
+    ///     ["fn", {}, "text", "Joe User"],
+    ///     ["kind", {}, "text", "individual"],
+    ///     ["org", {
+    ///       "type":"work"
+    ///     }, "text", "Example"],
+    ///     ["title", {}, "text", "Research Scientist"],
+    ///     ["role", {}, "text", "Project Lead"],
+    ///     ["adr",
+    ///       { "type":"work" },
+    ///       "text",
+    ///       [
+    ///         "",
+    ///         "Suite 1234",
+    ///         "4321 Rue Somewhere",
+    ///         "Quebec",
+    ///         "QC",
+    ///         "G1V 2M2",
+    ///         "Canada"
+    ///       ]
+    ///     ],
+    ///     ["tel",
+    ///       { "type":["work", "voice"], "pref":"1" },
+    ///       "uri", "tel:+1-555-555-1234;ext=102"
+    ///     ],
+    ///     ["email",
+    ///       { "type":"work" },
+    ///       "text", "joe.user@example.com"
+    ///     ]
+    ///   ]
+    /// ]"#;
+    ///
+    /// let data: Vec<Value> = serde_json::from_str(json).unwrap();
+    /// let contact = Contact::from_vcard(&data);
+    /// ```
     pub fn from_vcard(vcard_array: &[Value]) -> Option<Contact> {
         // value should be "vcard" followed by array
         let value = vcard_array.first()?;

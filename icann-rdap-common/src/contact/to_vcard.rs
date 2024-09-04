@@ -1,3 +1,4 @@
+//! Convert a Contact to jCard/vCard.
 use std::str::FromStr;
 
 use serde_json::{json, Map, Value};
@@ -5,7 +6,22 @@ use serde_json::{json, Map, Value};
 use super::Contact;
 
 impl Contact {
-    // Outputs the vcard array.
+    /// Output the Contact data as vCard in JSON values ([`Vec<Value>`]).
+    ///
+    /// ```rust
+    /// use icann_rdap_common::contact::Contact;
+    /// use serde::Serialize;
+    /// use serde_json::Value;
+    ///
+    /// let contact = Contact::builder()
+    ///   .kind("individual")
+    ///   .full_name("Bob Smurd")
+    ///   .build();
+    ///
+    /// let v = contact.to_vcard();
+    /// let json = serde_json::to_string(&v);
+    /// ```
+
     pub fn to_vcard(&self) -> Vec<Value> {
         // start the vcard with the version.
         let mut vcard: Vec<Value> = vec![json!(["version", {}, "text", "4.0"])];

@@ -3,6 +3,81 @@
 //! This module converts contact information to and from vCard/jCard, which is hard to
 //! work with directly. It is also intended as a way of bridging the between vCard/jCard
 //! and any new contact model.
+//!
+//! This struct can be built using the builder.
+//!
+//! ```rust
+//! use icann_rdap_common::contact::Contact;
+//!
+//! let contact = Contact::builder()
+//!   .kind("individual")
+//!   .full_name("Bob Smurd")
+//!   .build();
+//! ```
+//!
+//! Once built, a Contact struct can be converted to an array of [serde_json::Value]'s,
+//! which can be used with serde to serialize to JSON.
+//!
+//! ```rust
+//! use icann_rdap_common::contact::Contact;
+//! use serde::Serialize;
+//! use serde_json::Value;
+//!
+//! let contact = Contact::builder()
+//!   .kind("individual")
+//!   .full_name("Bob Smurd")
+//!   .build();
+//!
+//! let v = contact.to_vcard();
+//! let json = serde_json::to_string(&v);
+//! ```
+//!
+//! To deserialize, use the `from_vcard` function.
+//!
+//! ```rust
+//! use icann_rdap_common::contact::Contact;
+//! use serde::Deserialize;
+//! use serde_json::Value;
+//!
+//! let json = r#"
+//! [
+//!   "vcard",
+//!   [
+//!     ["version", {}, "text", "4.0"],
+//!     ["fn", {}, "text", "Joe User"],
+//!     ["kind", {}, "text", "individual"],
+//!     ["org", {
+//!       "type":"work"
+//!     }, "text", "Example"],
+//!     ["title", {}, "text", "Research Scientist"],
+//!     ["role", {}, "text", "Project Lead"],
+//!     ["adr",
+//!       { "type":"work" },
+//!       "text",
+//!       [
+//!         "",
+//!         "Suite 1234",
+//!         "4321 Rue Somewhere",
+//!         "Quebec",
+//!         "QC",
+//!         "G1V 2M2",
+//!         "Canada"
+//!       ]
+//!     ],
+//!     ["tel",
+//!       { "type":["work", "voice"], "pref":"1" },
+//!       "uri", "tel:+1-555-555-1234;ext=102"
+//!     ],
+//!     ["email",
+//!       { "type":"work" },
+//!       "text", "joe.user@example.com"
+//!     ]
+//!   ]
+//! ]"#;
+//!
+//! let data: Vec<Value> = serde_json::from_str(json).unwrap();
+//! let contact = Contact::from_vcard(&data);
+//! ```
 
 pub mod from_vcard;
 pub mod to_vcard;
@@ -23,6 +98,8 @@ use buildstructor::Builder;
 ///   .full_name("Bob Smurd")
 ///   .build();
 /// ```
+///
+///
 #[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
