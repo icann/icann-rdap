@@ -120,6 +120,9 @@ pub struct Contact {
     /// Titles.
     pub titles: Option<Vec<String>>,
 
+    /// Organizational Roles
+    pub roles: Option<Vec<String>>,
+
     /// Organization names.
     pub organization_names: Option<Vec<String>>,
 
@@ -134,6 +137,7 @@ pub struct Contact {
 }
 
 impl Contact {
+    /// Returns false if there is data in the Contact.
     pub fn is_non_empty(&self) -> bool {
         self.langs.is_some()
             || self.kind.is_some()
@@ -141,12 +145,14 @@ impl Contact {
             || self.name_parts.is_some()
             || self.nick_names.is_some()
             || self.titles.is_some()
+            || self.roles.is_some()
             || self.organization_names.is_some()
             || self.postal_addresses.is_some()
             || self.emails.is_some()
             || self.phones.is_some()
     }
 
+    /// Set the set of emails.
     pub fn set_emails(mut self, emails: &[impl ToString]) -> Self {
         let emails: Vec<Email> = emails
             .iter()
@@ -156,6 +162,7 @@ impl Contact {
         self
     }
 
+    /// Add a voice phone to the set of phones.
     pub fn add_voice_phones(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
@@ -174,6 +181,7 @@ impl Contact {
         self
     }
 
+    /// Add a facsimile phone to the set of phones.
     pub fn add_fax_phones(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
@@ -192,6 +200,7 @@ impl Contact {
         self
     }
 
+    /// Set the set of postal addresses to only be the passed in postal address.
     pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
         self.postal_addresses = Some(vec![postal_address]);
         self

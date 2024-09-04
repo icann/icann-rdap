@@ -64,6 +64,7 @@ impl Contact {
             .and_full_name(vcard.find_property("fn").get_text())
             .and_kind(vcard.find_property("kind").get_text())
             .and_titles(vcard.find_properties("title").get_texts())
+            .and_roles(vcard.find_properties("role").get_texts())
             .and_nick_names(vcard.find_properties("nickname").get_texts())
             .and_organization_names(vcard.find_properties("org").get_texts())
             .and_langs(vcard.find_properties("lang").get_langs())
@@ -551,6 +552,16 @@ mod tests {
                 .first()
                 .expect("titles empty"),
             "Research Scientist"
+        );
+
+        // roles
+        assert_eq!(
+            actual
+                .roles
+                .expect("no roles")
+                .first()
+                .expect("roles empty"),
+            "Project Lead"
         );
 
         // organization names
