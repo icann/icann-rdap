@@ -73,6 +73,7 @@ impl Contact {
             .and_postal_addresses(vcard.find_properties("adr").get_postal_addresses())
             .and_name_parts(vcard.find_property("n").get_name_parts())
             .and_contact_uris(vcard.find_properties("contact-uri").get_texts())
+            .and_urls(vcard.find_properties("url").get_texts())
             .build();
 
         contact.is_non_empty().then_some(contact)
@@ -526,11 +527,13 @@ mod tests {
               ],
               ["tz", {},
                 "utc-offset", "-05:00"],
-              ["url", { "type":"home" },
-                "uri", "https://example.org"],
               ["contact-uri", {},
                 "uri",
                 "https://example.com/contact-form"
+              ],
+              ["url", {},
+                "uri",
+                "https://example.com/some-url"
               ]
             ]
           ]
@@ -696,6 +699,16 @@ mod tests {
                 .first()
                 .expect("contact-uris empty"),
             "https://example.com/contact-form"
+        );
+
+        // urls
+        assert_eq!(
+            actual
+                .urls
+                .expect("no urls")
+                .first()
+                .expect("urls are empty"),
+            "https://example.com/some-url"
         );
     }
 }

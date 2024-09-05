@@ -137,6 +137,9 @@ pub struct Contact {
 
     /// Contact URIs.
     pub contact_uris: Option<Vec<String>>,
+
+    /// URLs
+    pub urls: Option<Vec<String>>,
 }
 
 impl Contact {
@@ -154,6 +157,7 @@ impl Contact {
             || self.emails.is_some()
             || self.phones.is_some()
             || self.contact_uris.is_some()
+            || self.urls.is_some()
     }
 
     /// Set the set of emails.

@@ -177,6 +177,12 @@ impl Contact {
             }
         }
 
+        if let Some(urls) = &self.urls {
+            for url in urls {
+                vcard.push(json!(["url", {}, "uri", url]));
+            }
+        }
+
         // return the vcard array
         vec![Value::String("vcard".to_string()), Value::from(vcard)]
     }
@@ -275,6 +281,7 @@ mod tests {
                 .contexts(vec!["work".to_string()])
                 .email("joe.user@example.com")
                 .build()])
+            .urls(vec!["https://example.com/some-url".to_string()])
             .build();
 
         // WHEN
@@ -292,5 +299,6 @@ mod tests {
         assert_eq!(contact.phones, actual.phones);
         assert_eq!(contact.emails, actual.emails);
         assert_eq!(contact.contact_uris, actual.contact_uris);
+        assert_eq!(contact.urls, actual.urls);
     }
 }
