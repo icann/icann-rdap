@@ -263,7 +263,17 @@ pub struct PostalAddress {
     /// Work, home, etc.... Known as "type" in JCard.
     pub contexts: Option<Vec<String>>,
 
-    /// An unstructured address.
+    /// An unstructured address. An unstructured postal address is
+    /// usually the complete postal address. That is, this string
+    /// would contain the street address, country, region, postal code, etc...
+    ///
+    /// Depending on how the postal address is given, it can either
+    /// be structured or unstructured. If it is given as unstructured,
+    /// then this value is populated.
+    ///
+    /// It is possible that a single postal address is given as both,
+    /// in which case this value is populated along with the other
+    /// values of the postal address.   
     pub full_address: Option<String>,
 
     /// Invidual street lines.
