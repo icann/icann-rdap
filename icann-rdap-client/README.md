@@ -6,6 +6,7 @@ by the Internet Corporation for Assigned Names and Numbers [(ICANN)](https://www
 RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
 More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
+General information on RDAP can be found [here](https://rdap.rcode3.com/).
 
 Installation
 ------------
@@ -19,10 +20,11 @@ Both icann-rdap-common and icann-rdap-client can be compiled for WASM targets.
 Usage
 -----
 
-In RDAP, bootstrapping is the process of finding the authoritative RDAP server to
+In RDAP, [bootstrapping](https://rdap.rcode3.com/bootstrapping/iana.html) 
+is the process of finding the authoritative RDAP server to
 query using the IANA RDAP bootstrap files. To make a query using bootstrapping:
 
-```no_run
+```rust,no_run
 use icann_rdap_client::*;
 use std::str::FromStr;
 use tokio::main;

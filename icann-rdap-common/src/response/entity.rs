@@ -10,7 +10,73 @@ use super::{
     GetSelfLink, SelfLink, ToChild,
 };
 
-/// Represents an RDAP entity response.
+/// Represents an RDAP [entity](https://rdap.rcode3.com/protocol/object_classes.html#entity) response.
+///
+/// Use of the builder is recommended when constructing this structure as it
+/// will fill-in the mandatory fields.
+/// The following is an example.
+///
+/// ```rust
+/// use icann_rdap_common::response::entity::Entity;
+/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::contact::Contact;
+///
+/// let contact = Contact::builder()
+///   .kind("individual")
+///   .full_name("Bob Smurd")
+///   .build();
+///
+/// let entity = Entity::basic()
+///   .handle("foo_example_com-1")
+///   .status("active")
+///   .role("registrant")
+///   .contact(contact)
+///   .build();
+/// let c = serde_json::to_string_pretty(&entity).unwrap();
+/// eprintln!("{c}");
+/// ```
+///
+/// This will produce the following.
+///
+/// ```norust
+/// {
+///   "rdapConformance": [
+///     "rdap_level_0"
+///   ],
+///   "objectClassName": "entity",
+///   "handle": "foo_example_com-1",
+///   "status": [
+///     "active"
+///   ],
+///   "vcardArray": [
+///     "vcard",
+///     [
+///       [
+///         "version",
+///         {},
+///         "text",
+///         "4.0"
+///       ],
+///       [
+///         "fn",
+///         {},
+///         "text",
+///         "Bob Smurd"
+///       ],
+///       [
+///         "kind",
+///         {},
+///         "text",
+///         "individual"
+///       ]
+///     ]
+///   ],
+///   "roles": [
+///     "registrant"
+///   ]
+/// }
+/// ```
+///
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
     #[serde(flatten)]
@@ -84,7 +150,7 @@ impl Entity {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0_with_options().and_notices(notices).build(),
             object_common: ObjectCommon::entity()
                 .handle(handle.into())
                 .and_remarks(remarks)

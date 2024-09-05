@@ -1,3 +1,5 @@
+//! DNS and DNSSEC types.
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]

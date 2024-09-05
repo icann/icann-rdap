@@ -580,14 +580,14 @@ mod tests {
         // THEN
         assert_eq!(
             actual,
-            r#"{"domain":{"object":{"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#
+            r#"{"domain":{"object":{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#
         );
     }
 
     #[test]
     fn GIVEN_template_domain_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let json_text = r#"{"domain":{"object":{"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
+        let json_text = r#"{"domain":{"object":{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(json_text).expect("deserializing template");

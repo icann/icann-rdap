@@ -1,3 +1,5 @@
+//! Functions to make RDAP requests.
+
 use icann_rdap_common::{cache::HttpData, iana::IanaRegistryType, response::RdapResponse};
 use reqwest::{
     header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION},

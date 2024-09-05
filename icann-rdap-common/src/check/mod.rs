@@ -1,3 +1,5 @@
+//! Conformance checks of RDAP structures.
+
 use std::any::TypeId;
 
 use crate::response::RdapResponse;

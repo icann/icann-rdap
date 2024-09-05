@@ -1,3 +1,5 @@
+//! Code for handling HTTP caching.
+
 use buildstructor::Builder;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};

@@ -25,6 +25,13 @@ impl std::fmt::Display for Cidr0Cidr {
     }
 }
 
+/// Represents a CIDR0 V4 CIDR. This structure allow both the prefix
+/// and length to be optional to handle misbehaving servers, however
+/// both are required according to the CIDR0 RDAP extension. To create
+/// a valid stucture, use the builder.
+///
+/// However, it is recommended to use the builder on `Network` which will
+/// create the appropriate CIDR0 structure.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V4Cidr {
     pub v4prefix: Option<String>,
@@ -58,6 +65,13 @@ impl std::fmt::Display for V4Cidr {
     }
 }
 
+/// Represents a CIDR0 V6 CIDR. This structure allow both the prefix
+/// and length to be optional to handle misbehaving servers, however
+/// both are required according to the CIDR0 RDAP extension. To create
+/// a valid stucture, use the builder.
+///
+/// However, it is recommended to use the builder on `Network` which will
+/// create the appropriate CIDR0 structure.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V6Cidr {
     pub v6prefix: Option<String>,
@@ -91,7 +105,47 @@ impl std::fmt::Display for V6Cidr {
     }
 }
 
-/// Represents an RDAP network response.
+/// Represents an RDAP [IP network](https://rdap.rcode3.com/protocol/object_classes.html#ip-network) response.
+///
+/// Use of the builder is recommended to create this structure.
+/// The builder will create the appropriate CIDR0 structures and
+/// is easier than specifying start and end IP addresses.
+///
+/// ```rust
+/// use icann_rdap_common::response::network::Network;
+/// use icann_rdap_common::response::types::StatusValue;
+///
+/// let net = Network::basic()
+///   .cidr("10.0.0.0/24")
+///   .handle("NET-10-0-0-0")
+///   .status("active")
+///   .build().unwrap();
+/// ```
+///
+/// This will create the following RDAP structure.
+///
+/// ```norust
+/// {
+///   "rdapConformance": [
+///     "cidr0",
+///     "rdap_level_0"
+///   ],
+///   "objectClassName": "ip network",
+///   "handle": "NET-10-0-0-0",
+///   "status": [
+///     "active"
+///   ],
+///   "startAddress": "10.0.0.0",
+///   "endAddress": "10.0.0.255",
+///   "ipVersion": "v4",
+///   "cidr0_cidrs": [
+///     {
+///       "v4prefix": "10.0.0.0",
+///       "length": 24
+///     }
+///   ]
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Network {
     #[serde(flatten)]

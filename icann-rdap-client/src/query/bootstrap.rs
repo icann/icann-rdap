@@ -1,3 +1,5 @@
+//! Does RDAP query bootstrapping.
+
 use std::sync::{Arc, RwLock};
 
 use icann_rdap_common::{
