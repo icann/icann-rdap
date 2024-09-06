@@ -2,7 +2,6 @@ use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::GetChecks;
-use tracing::debug;
 use tracing::error;
 use tracing::info;
 
@@ -108,7 +107,6 @@ async fn do_domain_query<'a, W: std::io::Write>(
             if let Some(url) = get_related_link(&response.rdap).first() {
                 info!("Querying domain name from registrar.");
                 let query_type = QueryType::Url(url.to_string());
-                debug!("issuing request with query type {query_type} for base URL {base_url}");
                 let registrar_response_result =
                     do_request(&base_url, &query_type, processing_params, client).await;
                 match registrar_response_result {
