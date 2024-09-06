@@ -1,3 +1,5 @@
+//! Creates a Reqwest client.
+
 use lazy_static::lazy_static;
 use reqwest::{
     header::{self, HeaderValue},

@@ -420,12 +420,16 @@ pub async fn trigger_update(data_dir: &str) -> Result<(), RdapServerError> {
 
 fn change_self_link<T: GetSelfLink + SelfLink>(mut object: T, segment: &str, id: &str) -> T {
     if let Some(self_link) = object.get_self_link() {
-        if let Some(self_href) = self_link.href.rsplit_once(segment) {
-            let mut new_self_link = self_link.clone();
-            new_self_link.href = format!("{}{segment}/{}", self_href.0, id);
-            object = object.set_self_link(new_self_link);
+        if let Some(self_href) = &self_link.href {
+            if let Some(self_href_split) = self_href.rsplit_once(segment) {
+                let mut new_self_link = self_link.clone();
+                new_self_link.href = Some(format!("{}{segment}/{}", self_href_split.0, id));
+                object = object.set_self_link(new_self_link);
+            } else {
+                warn!("Unable to rewrite self link for {segment} {}", id);
+            }
         } else {
-            warn!("Unable to rewrite self link for {segment} {}", id);
+            warn!("Unable to use self link because it has not href")
         }
     } else {
         warn!("No self link for {segment} {}", id);
@@ -480,8 +484,8 @@ fn make_network_from_template(
                 network.end_address = Some(v4.broadcast().to_string());
                 network.ip_version = Some("v4".to_string());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: v4.network().to_string(),
-                    length: v4.prefix_len(),
+                    v4prefix: Some(v4.network().to_string()),
+                    length: Some(v4.prefix_len()),
                 })]);
             }
             IpNet::V6(v6) => {
@@ -489,8 +493,8 @@ fn make_network_from_template(
                 network.end_address = Some(v6.broadcast().to_string());
                 network.ip_version = Some("v6".to_string());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: v6.network().to_string(),
-                    length: v6.prefix_len(),
+                    v6prefix: Some(v6.network().to_string()),
+                    length: Some(v6.prefix_len()),
                 })]);
             }
         },
@@ -505,8 +509,8 @@ fn make_network_from_template(
                     Ipv4Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
                             Cidr0Cidr::V4Cidr(V4Cidr {
-                                v4prefix: net.network().to_string(),
-                                length: net.prefix_len(),
+                                v4prefix: Some(net.network().to_string()),
+                                length: Some(net.prefix_len()),
                             })
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
@@ -517,8 +521,8 @@ fn make_network_from_template(
                     Ipv6Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
                             Cidr0Cidr::V6Cidr(V6Cidr {
-                                v6prefix: net.network().to_string(),
-                                length: net.prefix_len(),
+                                v6prefix: Some(net.network().to_string()),
+                                length: Some(net.prefix_len()),
                             })
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
@@ -535,10 +539,18 @@ fn make_network_from_template(
         .first()
         .map(|cidr| match cidr {
             Cidr0Cidr::V4Cidr(cidr) => {
-                format!("{}/{}", cidr.v4prefix, cidr.length)
+                format!(
+                    "{}/{}",
+                    cidr.v4prefix.as_ref().expect("no v4prefix"),
+                    cidr.length.expect("no v4 length")
+                )
             }
             Cidr0Cidr::V6Cidr(cidr) => {
-                format!("{}/{}", cidr.v6prefix, cidr.length)
+                format!(
+                    "{}/{}",
+                    cidr.v6prefix.as_ref().expect("no v6prefix"),
+                    cidr.length.expect("no v6 length")
+                )
             }
         })
         .expect("cidrs on network are empty");
@@ -568,14 +580,14 @@ mod tests {
         // THEN
         assert_eq!(
             actual,
-            r#"{"domain":{"object":{"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#
+            r#"{"domain":{"object":{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#
         );
     }
 
     #[test]
     fn GIVEN_template_domain_text_WHEN_deserialize_THEN_success() {
         // GIVEN
-        let json_text = r#"{"domain":{"object":{"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
+        let json_text = r#"{"domain":{"object":{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
 
         // WHEN
         let actual: Template = serde_json::from_str(json_text).expect("deserializing template");
@@ -771,6 +783,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/domain/foo.example")
+                    .value("http://reg.example/domain/foo.example")
                     .build(),
             )
             .build();
@@ -785,7 +798,10 @@ mod tests {
             "bar.example"
         );
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/domain/bar.example");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/domain/bar.example"
+        );
     }
 
     #[test]
@@ -797,6 +813,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/entity/foo")
+                    .value("http://reg.example/entity/foo")
                     .build(),
             )
             .build();
@@ -815,7 +832,10 @@ mod tests {
             "bar"
         );
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/entity/bar");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/entity/bar"
+        );
     }
 
     #[test]
@@ -827,6 +847,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/nameserver/ns.foo.example")
+                    .value("http://reg.example/nameserver/ns.foo.example")
                     .build(),
             )
             .build()
@@ -843,7 +864,7 @@ mod tests {
         );
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
-            self_link.href,
+            self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/nameserver/ns.bar.example"
         );
     }
@@ -857,6 +878,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/autnum/700")
+                    .value("http://reg.example/autnum/700")
                     .build(),
             )
             .build();
@@ -875,7 +897,10 @@ mod tests {
         );
         assert_eq!(*actual.end_autnum.as_ref().expect("no end on autnum"), 999);
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/autnum/900");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has href"),
+            "http://reg.example/autnum/900"
+        );
     }
 
     #[test]
@@ -887,6 +912,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/ip/10.0.0.0/24")
+                    .value("http://reg.example/ip/10.0.0.0/24")
                     .build(),
             )
             .build()
@@ -920,10 +946,13 @@ mod tests {
         let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
             panic!("no v4 cidr")
         };
-        assert_eq!(v4cidr.v4prefix, "11.0.0.0");
-        assert_eq!(v4cidr.length, 24);
+        assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
+        assert_eq!(v4cidr.length, Some(24));
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/ip/11.0.0.0/24");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/ip/11.0.0.0/24"
+        );
     }
 
     #[test]
@@ -935,6 +964,7 @@ mod tests {
                 Link::builder()
                     .rel("self")
                     .href("http://reg.example/ip/10.0.0.0/24")
+                    .value("http://reg.example/ip/10.0.0.0/24")
                     .build(),
             )
             .build()
@@ -967,9 +997,12 @@ mod tests {
         let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
             panic!("no v4 cidr")
         };
-        assert_eq!(v4cidr.v4prefix, "11.0.0.0");
-        assert_eq!(v4cidr.length, 24);
+        assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
+        assert_eq!(v4cidr.length, Some(24));
         let self_link = actual.get_self_link().expect("self link messing");
-        assert_eq!(self_link.href, "http://reg.example/ip/11.0.0.0/24");
+        assert_eq!(
+            self_link.href.as_ref().expect("link has no href"),
+            "http://reg.example/ip/11.0.0.0/24"
+        );
     }
 }

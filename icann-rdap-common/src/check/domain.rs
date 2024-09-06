@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use crate::response::domain::Domain;
 
-use super::{string::StringCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Domain {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -15,6 +15,9 @@ impl GetChecks for Domain {
                     .object_common
                     .get_sub_checks(params.from_parent(TypeId::of::<Domain>())),
             );
+            if let Some(public_ids) = &self.public_ids {
+                sub_checks.append(&mut public_ids.get_sub_checks(params));
+            }
             sub_checks
         } else {
             Vec::new()
@@ -31,14 +34,14 @@ impl GetChecks for Domain {
                 })
                 .count();
             if empty_count != 0 {
-                items.push(CheckItem::empty_domain_variant());
+                items.push(Check::VariantEmptyDomain.check_item());
             };
         };
 
         // check ldh
         if let Some(ldh) = &self.ldh_name {
             if !ldh.is_ldh_domain_name() {
-                items.push(CheckItem::invalid_ldh_name());
+                items.push(Check::LdhNameInvalid.check_item());
             }
             let name = ldh.trim_end_matches('.');
             if name.eq("example")
@@ -50,7 +53,7 @@ impl GetChecks for Domain {
                 || name.eq("example.org")
                 || name.ends_with(".example.org")
             {
-                items.push(CheckItem::documentation_name())
+                items.push(Check::LdhNameDocumentation.check_item())
             }
 
             // if there is also a unicodeName
@@ -58,7 +61,7 @@ impl GetChecks for Domain {
                 let expected = idna::domain_to_ascii(unicode_name);
                 if let Ok(expected) = expected {
                     if !expected.eq_ignore_ascii_case(ldh) {
-                        items.push(CheckItem::unicode_does_not_match_ldh())
+                        items.push(Check::LdhNameDoesNotMatchUnicode.check_item())
                     }
                 }
             }
@@ -67,11 +70,11 @@ impl GetChecks for Domain {
         // check unicode_name
         if let Some(unicode_name) = &self.unicode_name {
             if !unicode_name.is_unicode_domain_name() {
-                items.push(CheckItem::invalid_unicode_domain_name());
+                items.push(Check::UnicodeNameInvalidDomain.check_item());
             }
             let expected = idna::domain_to_ascii(unicode_name);
             if expected.is_err() {
-                items.push(CheckItem::invalid_unicode_name());
+                items.push(Check::UnicodeNameInvalidUnicode.check_item());
             }
         }
 
@@ -112,7 +115,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::InvalidLdhName));
+            .any(|c| c.check == Check::LdhNameInvalid));
     }
 
     #[rstest]
@@ -135,7 +138,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::InvalidUnicodeDomainName));
+            .any(|c| c.check == Check::UnicodeNameInvalidDomain));
     }
 
     #[test]
@@ -159,6 +162,6 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::UnicodeDoesNotMatchLdh));
+            .any(|c| c.check == Check::LdhNameDoesNotMatchUnicode));
     }
 }

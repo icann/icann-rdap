@@ -45,11 +45,14 @@ impl ToMd for Entity {
                 .and_data_ref_maybe(&"Kind", &contact.kind)
                 .and_data_ref_maybe(&"Full Name", &contact.full_name)
                 .and_data_ul(&"Titles", contact.titles)
+                .and_data_ul(&"Org Roles", contact.roles)
                 .and_data_ul(&"Nicknames", contact.nick_names)
                 .and_data_ul(&"Organization Names", contact.organization_names)
                 .and_data_ul(&"Languages", contact.langs)
                 .and_data_ul(&"Phones", contact.phones)
-                .and_data_ul(&"Emails", contact.emails);
+                .and_data_ul(&"Emails", contact.emails)
+                .and_data_ul(&"Web Contact", contact.contact_uris)
+                .and_data_ul(&"URLs", contact.urls);
             table = contact.postal_addresses.add_to_mptable(table, params);
             table = contact.name_parts.add_to_mptable(table, params)
         }

@@ -1,3 +1,4 @@
+//! Defines the various types of RDAP queries.
 use std::{net::IpAddr, str::FromStr};
 
 use cidr_utils::cidr::IpInet;

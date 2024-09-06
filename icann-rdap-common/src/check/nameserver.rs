@@ -5,7 +5,7 @@ use std::str::FromStr;
 use crate::response::nameserver::Nameserver;
 
 use super::string::StringListCheck;
-use super::{string::StringCheck, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
 impl GetChecks for Nameserver {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -28,25 +28,25 @@ impl GetChecks for Nameserver {
         // check ldh
         if let Some(ldh) = &self.ldh_name {
             if !ldh.is_ldh_domain_name() {
-                items.push(CheckItem::invalid_ldh_name());
+                items.push(Check::LdhNameInvalid.check_item());
             }
         }
 
         if let Some(ip_addresses) = &self.ip_addresses {
             if let Some(v6_addrs) = &ip_addresses.v6 {
                 if v6_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
-                    items.push(CheckItem::ip_address_list_is_empty())
+                    items.push(Check::IpAddressListIsEmpty.check_item())
                 }
                 if v6_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
-                    items.push(CheckItem::malformed_ip_address())
+                    items.push(Check::IpAddressMalformed.check_item())
                 }
             }
             if let Some(v4_addrs) = &ip_addresses.v4 {
                 if v4_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
-                    items.push(CheckItem::ip_address_list_is_empty())
+                    items.push(Check::IpAddressListIsEmpty.check_item())
                 }
                 if v4_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
-                    items.push(CheckItem::malformed_ip_address())
+                    items.push(Check::IpAddressMalformed.check_item())
                 }
             }
         }
@@ -92,7 +92,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::InvalidLdhName));
+            .any(|c| c.check == Check::LdhNameInvalid));
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MalformedIpAddress));
+            .any(|c| c.check == Check::IpAddressMalformed));
     }
 
     #[test]
@@ -196,6 +196,6 @@ mod tests {
         assert!(checks
             .items
             .iter()
-            .any(|c| c.check == Check::MalformedIpAddress));
+            .any(|c| c.check == Check::IpAddressMalformed));
     }
 }

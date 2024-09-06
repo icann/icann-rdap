@@ -50,19 +50,12 @@ impl ResponseUtil for RdapResponse {
 
     fn first_notice_link_href(&self) -> Option<&str> {
         if let RdapResponse::ErrorResponse(rdap_error) = self {
-            let Some(notices) = &rdap_error.common.notices else {
-                return None;
-            };
-            let Some(first_notice) = notices.first() else {
-                return None;
-            };
-            let Some(links) = &first_notice.0.links else {
-                return None;
-            };
-            let Some(first_link) = links.first() else {
-                return None;
-            };
-            Some(&first_link.href)
+            let notices = rdap_error.common.notices.as_ref()?;
+            let first_notice = notices.first()?;
+            let links = first_notice.0.links.as_ref()?;
+            let first_link = links.first()?;
+            let href = first_link.href.as_ref()?;
+            Some(href)
         } else {
             None
         }
@@ -151,6 +144,8 @@ mod tests {
                     NoticeOrRemark::builder()
                         .links(vec![Link::builder()
                             .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("related")
                             .build()])
                         .build(),
                 ))

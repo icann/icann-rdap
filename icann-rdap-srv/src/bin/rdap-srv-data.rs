@@ -48,6 +48,7 @@ use icann_rdap_srv::storage::data::NetworkOrError;
 use icann_rdap_srv::storage::data::Template;
 use icann_rdap_srv::storage::mem::config::MemConfig;
 use icann_rdap_srv::storage::mem::ops::Mem;
+use icann_rdap_srv::storage::CommonConfig;
 use icann_rdap_srv::storage::StoreOps;
 use icann_rdap_srv::util::bin::check::check_rdap;
 use icann_rdap_srv::util::bin::check::to_check_classes;
@@ -211,6 +212,7 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
         links = Some(vec![Link::builder()
             .media_type(link_type.as_str().to_string())
             .href(link_href.as_str().to_string())
+            .value(link_href.as_str().to_string())
             .rel(link_rel.as_str().to_string())
             .build()]);
     }
@@ -524,7 +526,11 @@ async fn main() -> Result<(), RdapServerError> {
 
     let data_dir = cli.data_dir.clone();
     let config = ServiceConfig::non_server().data_dir(&data_dir).build()?;
-    let storage = Mem::new(MemConfig::builder().build());
+    let storage = Mem::new(
+        MemConfig::builder()
+            .common_config(CommonConfig::default())
+            .build(),
+    );
     storage.init().await?;
     load_data(&config, &storage, false).await?;
 
@@ -1193,7 +1199,10 @@ mod tests {
         let actual = parse_notice_or_remark(arg).expect("parsing notice");
 
         // THEN
-        assert!(actual.description.contains(&arg.to_string()));
+        assert!(actual
+            .description
+            .expect("no description!")
+            .contains(&arg.to_string()));
     }
 
     #[test]
@@ -1209,7 +1218,10 @@ mod tests {
         let actual = parse_notice_or_remark(&arg).expect("parsing notice");
 
         // THEN
-        assert!(actual.description.contains(&description.to_string()));
+        assert!(actual
+            .description
+            .expect("no description!")
+            .contains(&description.to_string()));
         let Some(links) = actual.links else {
             panic!("no links in notice")
         };
@@ -1217,7 +1229,7 @@ mod tests {
             panic!("links are empty")
         };
         assert_eq!(link.rel.as_ref().expect("no rel in link"), rel);
-        assert_eq!(link.href, href);
+        assert_eq!(link.href.as_ref().expect("link has no href"), href);
         assert_eq!(
             link.media_type.as_ref().expect("no media_type in link"),
             media_type

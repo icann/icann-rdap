@@ -34,13 +34,17 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                                 // Special Sauce for Registrar IANA ID and Abuse Contact
                                 if let Some(public_ids) = &entity.public_ids {
                                     for public_id in public_ids {
-                                        if public_id.id_type.as_str() == "IANA Registrar ID"
-                                            && !public_id.identifier.is_empty()
-                                        {
-                                            front_formatted_data += &format!(
-                                                "Registrar IANA ID: {}\n",
-                                                public_id.identifier.clone()
-                                            );
+                                        if let Some(id_type) = &public_id.id_type {
+                                            if let Some(identifier) = &public_id.identifier {
+                                                if id_type.as_str() == "IANA Registrar ID"
+                                                    && !identifier.is_empty()
+                                                {
+                                                    front_formatted_data += &format!(
+                                                        "Registrar IANA ID: {}\n",
+                                                        identifier.clone()
+                                                    );
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -167,13 +171,10 @@ fn extract_role_info(
         if let Some(properties) = vcard.as_array() {
             for property in properties {
                 if let Some(property) = property.as_array() {
-                    match property[0].as_str().unwrap_or("") {
-                        "adr" => {
-                            if let Some(address_components) = property[3].as_array() {
-                                adr = format_address_with_label(params, address_components);
-                            }
+                    if let "adr" = property[0].as_str().unwrap_or("") {
+                        if let Some(address_components) = property[3].as_array() {
+                            adr = format_address_with_label(params, address_components);
                         }
-                        _ => {}
                     }
                 }
             }

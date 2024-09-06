@@ -19,13 +19,15 @@ use icann_rdap_srv::{
             NetworkId, NetworkIdType, NetworkOrError::NetworkObject, Template,
         },
         mem::{config::MemConfig, ops::Mem},
-        StoreOps,
+        CommonConfig, StoreOps,
     },
 };
 use test_dir::{DirBuilder, TestDir};
 
 async fn new_and_init_mem(data_dir: String) -> Mem {
-    let mem_config = MemConfig::builder().build();
+    let mem_config = MemConfig::builder()
+        .common_config(CommonConfig::default())
+        .build();
     let mem = Mem::new(mem_config.clone());
     mem.init().await.expect("initialzing memeory");
     load_data(
@@ -522,6 +524,8 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
     assert_eq!(
         notice
             .description
+            .as_ref()
+            .expect("no description!")
             .first()
             .expect("no description in notice"),
         "foo"
@@ -569,6 +573,8 @@ async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() 
     assert_eq!(
         notice
             .description
+            .as_ref()
+            .expect("no description!")
             .first()
             .expect("no description in notice"),
         "bar"

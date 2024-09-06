@@ -70,4 +70,7 @@ impl StoreOps for Pg {
     async fn get_srv_help(&self, _host: Option<&str>) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn search_domains_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
 }

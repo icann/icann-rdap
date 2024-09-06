@@ -1,3 +1,5 @@
+//! The IANA RDAP Bootstrap Registries.
+
 use ipnet::Ipv4Net;
 use ipnet::Ipv6Net;
 use prefix_trie::PrefixMap;

@@ -103,7 +103,40 @@ pub struct SecureDns {
     pub key_data: Option<Vec<KeyDatum>>,
 }
 
-/// Represents an RDAP domain response.
+/// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
+///
+/// Using the builder is recommended to construct this structure as it
+/// will fill-in many of the mandatory fields.
+/// The following is an example.
+///
+/// ```rust
+/// use icann_rdap_common::response::domain::Domain;
+/// use icann_rdap_common::response::types::StatusValue;
+///
+/// let domain = Domain::basic()
+///   .ldh_name("foo.example.com")
+///   .handle("foo_example_com-1")
+///   .status("active")
+///   .build();
+/// let c = serde_json::to_string_pretty(&domain).unwrap();
+/// eprintln!("{c}");
+/// ```
+///
+/// This will produce the following.
+///
+/// ```norust
+/// {
+///   "rdapConformance": [
+///     "rdap_level_0"
+///   ],
+///   "objectClassName": "domain",
+///   "handle": "foo_example_com-1",
+///   "status": [
+///     "active"
+///   ],
+///   "ldhName": "foo.example.com"
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     #[serde(flatten)]
@@ -173,7 +206,7 @@ impl Domain {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0_with_options().and_notices(notices).build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(remarks)
@@ -576,11 +609,23 @@ mod tests {
         // GIVEN
         let mut domain = Domain::basic()
             .ldh_name("foo.example")
-            .link(Link::builder().href("http://bar.example").build())
+            .link(
+                Link::builder()
+                    .href("http://bar.example")
+                    .value("http://bar.example")
+                    .rel("unknown")
+                    .build(),
+            )
             .build();
 
         // WHEN
-        domain = domain.set_self_link(Link::builder().href("http://foo.example").build());
+        domain = domain.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         assert_eq!(

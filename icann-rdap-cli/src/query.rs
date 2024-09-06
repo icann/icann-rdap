@@ -80,6 +80,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
     let mut transactions = RequestResponses::new();
     let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
     let response = do_request(&base_url, query_type, processing_params, client).await;
+    let registrar_response;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -106,11 +107,12 @@ async fn do_domain_query<'a, W: std::io::Write>(
             if let Some(url) = get_related_link(&response.rdap).first() {
                 info!("Querying domain name from registrar.");
                 let query_type = QueryType::Url(url.to_string());
-                let registrar_response =
+                let registrar_response_result =
                     do_request(&base_url, &query_type, processing_params, client).await;
-                match registrar_response {
-                    Ok(registrar_response) => {
-                        regr_source_host = registrar_response.http_data.host;
+                match registrar_response_result {
+                    Ok(response_data) => {
+                        registrar_response = response_data;
+                        regr_source_host = registrar_response.http_data.host.to_owned();
                         regr_req_data = RequestData {
                             req_number: 2,
                             source_host: &regr_source_host,
@@ -119,7 +121,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
                         transactions = do_output(
                             processing_params,
                             &regr_req_data,
-                            &response,
+                            &registrar_response,
                             write,
                             transactions,
                         )?;
@@ -363,10 +365,14 @@ fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
         let urls: Vec<&str> = links
             .iter()
             .filter(|l| {
-                if let Some(rel) = &l.rel {
-                    if let Some(media_type) = &l.media_type {
-                        rel.eq_ignore_ascii_case("related")
-                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                if l.href.as_ref().is_some() {
+                    if let Some(rel) = &l.rel {
+                        if let Some(media_type) = &l.media_type {
+                            rel.eq_ignore_ascii_case("related")
+                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     }
@@ -374,7 +380,7 @@ fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
                     false
                 }
             })
-            .map(|l| l.href.as_str())
+            .map(|l| l.href.as_ref().unwrap().as_str())
             .collect::<Vec<&str>>();
         urls
     } else {

@@ -24,11 +24,44 @@ impl std::ops::Deref for Extension {
 /// The RDAP conformance array.
 pub type RdapConformance = Vec<Extension>;
 
+/// HrefLang, either a string or an array of strings.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum HrefLang {
+    Langs(Vec<String>),
+    Lang(String),
+}
+
 /// An array of RDAP link structures.
 pub type Links = Vec<Link>;
 
 /// Represents and RDAP link structure.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+///
+/// This structure allows `value`, `rel`, and `href` to be
+/// optional to be tolerant of misbehaving servers,
+/// but those are fields required by RFC 9083.
+///
+/// To create an RFC valid structure, use the builder
+/// which will not allow omision of required fields.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::Link;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains?domain=foo.*")
+///   .rel("related")
+///   .href("https://example.com/domain/foo.example")
+///   .hreflang("ch")
+///   .title("Related Object")
+///   .media("print")
+///   .media_type("application/rdap+json")
+///   .build();
+/// ```
+///
+/// Note also that this structure allows for `hreflang` to
+/// be either a single string or an array of strings. However,
+/// the builder will always construct an array of strings.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Link {
     /// Represents the value part of a link in an RDAP response.
     /// According to RFC 9083, this field is required
@@ -44,10 +77,14 @@ pub struct Link {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rel: Option<String>,
 
-    pub href: String,
-
+    /// This is required by RDAP, both RFC 7043 and 9083,
+    /// but is optional because some servers do the wrong thing.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hreflang: Option<Vec<String>>,
+    pub href: Option<String>,
+
+    /// This can either be a string or an array of strings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hreflang: Option<HrefLang>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
@@ -60,12 +97,35 @@ pub struct Link {
     pub media_type: Option<String>,
 }
 
+#[buildstructor::buildstructor]
 impl Link {
     pub fn is_relation(&self, rel: &str) -> bool {
         let Some(link_rel) = &self.rel else {
             return false;
         };
         link_rel == rel
+    }
+
+    #[builder]
+    pub fn new(
+        value: String,
+        href: String,
+        rel: String,
+        hreflang: Option<String>,
+        title: Option<String>,
+        media: Option<String>,
+        media_type: Option<String>,
+    ) -> Self {
+        let hreflang = hreflang.map(HrefLang::Lang);
+        Link {
+            value: Some(value),
+            rel: Some(rel),
+            href: Some(href),
+            hreflang,
+            title,
+            media,
+            media_type,
+        }
     }
 }
 
@@ -100,25 +160,98 @@ impl std::ops::Deref for Remark {
 }
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+///
+/// RFC 9083 requires that `description` be required, but some servers
+/// do not follow this rule. Therefore, this structure allows `description`
+/// to be optional. It is recommended to use builder to construct an RFC valie
+/// structure.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::NoticeOrRemark;
+/// use icann_rdap_common::response::types::Link;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/tou.html")
+///   .hreflang("en")
+///   .title("ToU Link")
+///   .media_type("text/html")
+///   .build();
+///
+/// let nr = NoticeOrRemark::builder()
+///   .title("Terms of Use")
+///   .description_entry("Please read our terms of use.")
+///   .links(vec![link])
+///   .build();
+/// ```
+///
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
 
-    pub description: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<Vec<String>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+}
+
+#[buildstructor::buildstructor]
+impl NoticeOrRemark {
+    #[builder]
+    pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
+        NoticeOrRemark {
+            title,
+            description: Some(description),
+            links,
+        }
+    }
 }
 
 /// An array of events.
 pub type Events = Vec<Event>;
 
 /// Represents an RDAP event.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+///
+/// RFC 9083 requires `eventAction` (event_action) and `eventDate` (event_date), but
+/// this structure allows those to be optional to be able to parse responses from
+/// servers that do not strictly obey the RFC.
+///
+/// Use of the builder to contruct an RFC valid structure is recommended.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::Event;
+/// use icann_rdap_common::response::types::Link;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/registration-duration.html")
+///   .hreflang("en")
+///   .title("Domain Validity Period")
+///   .media_type("text/html")
+///   .build();
+///
+/// let nr = Event::builder()
+///   .event_action("expiration")
+///   .event_date("1990-12-31T23:59:59Z")
+///   .links(vec![link])
+///   .build();
+/// ```
+///
+/// NOTE: `event_date` is to be an RFC 3339 valid date and time.
+/// The builder does not enforce RFC 3339 validity.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Event {
+    /// This value is required by RFC 9083 (and 7483),
+    /// however some servers don't include it. Therefore
+    /// it is optional here to be compatible with these
+    /// types of non-compliant servers.
     #[serde(rename = "eventAction")]
-    pub event_action: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_action: Option<String>,
 
     #[serde(rename = "eventActor")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -134,6 +267,24 @@ pub struct Event {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+}
+
+#[buildstructor::buildstructor]
+impl Event {
+    #[builder]
+    pub fn new(
+        event_action: String,
+        event_date: String,
+        event_actor: Option<String>,
+        links: Option<Links>,
+    ) -> Self {
+        Event {
+            event_action: Some(event_action),
+            event_actor,
+            event_date: Some(event_date),
+            links,
+        }
+    }
 }
 
 /// Represents an item in an RDAP status array.
@@ -166,12 +317,42 @@ pub type Port43 = String;
 pub type PublicIds = Vec<PublicId>;
 
 /// An RDAP Public ID.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+///
+/// RFC 9083 requires `type` (id_type) and `identifier`, but
+/// this structure allows those to be optional to be able to parse responses from
+/// servers that do not strictly obey the RFC.
+///
+/// Use of the builder to contruct an RFC valid structure is recommended.
+///
+/// ```rust
+/// use icann_rdap_common::response::types::PublicId;
+///
+/// let public_id = PublicId::builder()
+///   .id_type("IANA Registrar ID")
+///   .identifier("1990")
+///   .build();
+/// ```
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicId {
+    /// This are manditory per RFC 9083.
     #[serde(rename = "type")]
-    pub id_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id_type: Option<String>,
 
-    pub identifier: String,
+    /// This are manditory per RFC 9083.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+}
+
+#[buildstructor::buildstructor]
+impl PublicId {
+    #[builder]
+    pub fn new(id_type: String, identifier: String) -> Self {
+        PublicId {
+            id_type: Some(id_type),
+            identifier: Some(identifier),
+        }
+    }
 }
 
 /// Holds those types that are common in all responses.
@@ -453,8 +634,70 @@ mod tests {
             actual_2.value.as_ref().unwrap(),
             "https://2.example.com/context_uri"
         );
-        assert_eq!(actual_1.href, "https://1.example.com/target_uri");
-        assert_eq!(actual_2.href, "https://2.example.com/target_uri");
+        assert_eq!(
+            actual_1.href.as_ref().unwrap(),
+            "https://1.example.com/target_uri"
+        );
+        assert_eq!(
+            actual_2.href.as_ref().unwrap(),
+            "https://2.example.com/target_uri"
+        );
+        assert_eq!(actual_1.title.as_ref().unwrap(), "title1");
+        assert_eq!(actual_2.title.as_ref().unwrap(), "title2");
+        assert_eq!(actual_1.media_type.as_ref().unwrap(), "application/json");
+        assert_eq!(actual_2.media_type.as_ref().unwrap(), "application/json");
+    }
+
+    #[test]
+    fn GIVEN_an_array_of_links_with_one_lang_WHEN_deserialize_THEN_success() {
+        // GIVEN
+        let expected = r#"
+        [
+            {
+                "value" : "https://1.example.com/context_uri",
+                "rel" : "self",
+                "href" : "https://1.example.com/target_uri",
+                "hreflang" : "en",
+                "title" : "title1",
+                "media" : "screen",
+                "type" : "application/json"
+            },
+            {
+                "value" : "https://2.example.com/context_uri",
+                "rel" : "self",
+                "href" : "https://2.example.com/target_uri",
+                "hreflang" : "ch",
+                "title" : "title2",
+                "media" : "screen",
+                "type" : "application/json"
+            }
+        ]   
+        "#;
+
+        // WHEN
+        let links = serde_json::from_str::<Links>(expected);
+
+        // THEN
+        let actual = links.unwrap();
+        assert_eq!(actual.len(), 2);
+        let actual_1 = actual.first().unwrap();
+        let actual_2 = actual.last().unwrap();
+        assert_eq!(
+            actual_1.value.as_ref().unwrap(),
+            "https://1.example.com/context_uri"
+        );
+        assert_eq!(
+            actual_2.value.as_ref().unwrap(),
+            "https://2.example.com/context_uri"
+        );
+        assert_eq!(
+            actual_1.href.as_ref().unwrap(),
+            "https://1.example.com/target_uri"
+        );
+        assert_eq!(
+            actual_2.href.as_ref().unwrap(),
+            "https://2.example.com/target_uri"
+        );
         assert_eq!(actual_1.title.as_ref().unwrap(), "title1");
         assert_eq!(actual_2.title.as_ref().unwrap(), "title2");
         assert_eq!(actual_1.media_type.as_ref().unwrap(), "application/json");
@@ -490,7 +733,7 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.title.as_ref().unwrap();
-        assert_eq!(actual.description.len(), 2);
+        assert_eq!(actual.description.expect("must have description").len(), 2);
         actual.links.unwrap();
     }
 
@@ -598,11 +841,21 @@ mod tests {
     fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
         // GIVEN
         let mut oc = ObjectCommon::domain()
-            .links(vec![Link::builder().href("http://bar.example").build()])
+            .links(vec![Link::builder()
+                .href("http://bar.example")
+                .value("http://bar.example")
+                .rel("unknown")
+                .build()])
             .build();
 
         // WHEN
-        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+        oc = oc.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         assert_eq!(
@@ -621,7 +874,13 @@ mod tests {
         let mut oc = ObjectCommon::domain().build();
 
         // WHEN
-        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+        oc = oc.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         assert_eq!(
@@ -640,12 +899,19 @@ mod tests {
         let mut oc = ObjectCommon::domain()
             .links(vec![Link::builder()
                 .href("http://bar.example")
+                .value("http://bar.example")
                 .rel("self")
                 .build()])
             .build();
 
         // WHEN
-        oc = oc.set_self_link(Link::builder().href("http://foo.example").build());
+        oc = oc.set_self_link(
+            Link::builder()
+                .href("http://foo.example")
+                .value("http://foo.example")
+                .rel("unknown")
+                .build(),
+        );
 
         // THEN
         // new link is in
@@ -654,7 +920,8 @@ mod tests {
                 .as_ref()
                 .expect("links are empty")
                 .iter()
-                .filter(|link| link.is_relation("self") && link.href == "http://foo.example")
+                .filter(|link| link.is_relation("self")
+                    && link.href.as_ref().unwrap() == "http://foo.example")
                 .count(),
             1
         );

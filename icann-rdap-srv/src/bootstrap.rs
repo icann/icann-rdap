@@ -336,7 +336,7 @@ async fn fetch_iana_registry(
 }
 
 /// Prefer HTTPS urls.
-fn get_preferred_url(urls: &Vec<String>) -> Option<String> {
+fn get_preferred_url(urls: &[String]) -> Option<String> {
     if urls.is_empty() {
         None
     } else {
@@ -379,7 +379,7 @@ mod tests {
         storage::{
             data::load_data,
             mem::{config::MemConfig, ops::Mem},
-            StoreOps,
+            CommonConfig, StoreOps,
         },
     };
 
@@ -618,7 +618,9 @@ mod tests {
     }
 
     async fn new_and_init_mem(data_dir: String) -> Mem {
-        let mem_config = MemConfig::builder().build();
+        let mem_config = MemConfig::builder()
+            .common_config(CommonConfig::default())
+            .build();
         let mem = Mem::new(mem_config.clone());
         mem.init().await.expect("initialzing memeory");
         load_data(
@@ -648,7 +650,10 @@ mod tests {
         let Some(first_link) = links.first() else {
             panic!("links are empty")
         };
-        first_link.href.to_owned()
+        let Some(href) = &first_link.href else {
+            panic!("link has no href")
+        };
+        href.clone()
     }
 
     #[tokio::test]

@@ -1,3 +1,84 @@
+//! Easy representation of contact information found in an Entity.
+//!
+//! This module converts contact information to and from vCard/jCard, which is hard to
+//! work with directly. It is also intended as a way of bridging the between vCard/jCard
+//! and any new contact model.
+//!
+//! This struct can be built using the builder.
+//!
+//! ```rust
+//! use icann_rdap_common::contact::Contact;
+//!
+//! let contact = Contact::builder()
+//!   .kind("individual")
+//!   .full_name("Bob Smurd")
+//!   .build();
+//! ```
+//!
+//! Once built, a Contact struct can be converted to an array of [serde_json::Value]'s,
+//! which can be used with serde to serialize to JSON.
+//!
+//! ```rust
+//! use icann_rdap_common::contact::Contact;
+//! use serde::Serialize;
+//! use serde_json::Value;
+//!
+//! let contact = Contact::builder()
+//!   .kind("individual")
+//!   .full_name("Bob Smurd")
+//!   .build();
+//!
+//! let v = contact.to_vcard();
+//! let json = serde_json::to_string(&v);
+//! ```
+//!
+//! To deserialize, use the `from_vcard` function.
+//!
+//! ```rust
+//! use icann_rdap_common::contact::Contact;
+//! use serde::Deserialize;
+//! use serde_json::Value;
+//!
+//! let json = r#"
+//! [
+//!   "vcard",
+//!   [
+//!     ["version", {}, "text", "4.0"],
+//!     ["fn", {}, "text", "Joe User"],
+//!     ["kind", {}, "text", "individual"],
+//!     ["org", {
+//!       "type":"work"
+//!     }, "text", "Example"],
+//!     ["title", {}, "text", "Research Scientist"],
+//!     ["role", {}, "text", "Project Lead"],
+//!     ["adr",
+//!       { "type":"work" },
+//!       "text",
+//!       [
+//!         "",
+//!         "Suite 1234",
+//!         "4321 Rue Somewhere",
+//!         "Quebec",
+//!         "QC",
+//!         "G1V 2M2",
+//!         "Canada"
+//!       ]
+//!     ],
+//!     ["tel",
+//!       { "type":["work", "voice"], "pref":"1" },
+//!       "uri", "tel:+1-555-555-1234;ext=102"
+//!     ],
+//!     ["email",
+//!       { "type":"work" },
+//!       "text", "joe.user@example.com"
+//!     ]
+//!   ]
+//! ]"#;
+//!
+//! let data: Vec<Value> = serde_json::from_str(json).unwrap();
+//! let contact = Contact::from_vcard(&data);
+//! ```
+
 pub mod from_vcard;
 pub mod to_vcard;
 
@@ -17,6 +98,8 @@ use buildstructor::Builder;
 ///   .full_name("Bob Smurd")
 ///   .build();
 /// ```
+///
+///
 #[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
@@ -37,6 +120,9 @@ pub struct Contact {
     /// Titles.
     pub titles: Option<Vec<String>>,
 
+    /// Organizational Roles
+    pub roles: Option<Vec<String>>,
+
     /// Organization names.
     pub organization_names: Option<Vec<String>>,
 
@@ -48,9 +134,16 @@ pub struct Contact {
 
     /// Phone numbers.
     pub phones: Option<Vec<Phone>>,
+
+    /// Contact URIs.
+    pub contact_uris: Option<Vec<String>>,
+
+    /// URLs
+    pub urls: Option<Vec<String>>,
 }
 
 impl Contact {
+    /// Returns false if there is data in the Contact.
     pub fn is_non_empty(&self) -> bool {
         self.langs.is_some()
             || self.kind.is_some()
@@ -58,12 +151,16 @@ impl Contact {
             || self.name_parts.is_some()
             || self.nick_names.is_some()
             || self.titles.is_some()
+            || self.roles.is_some()
             || self.organization_names.is_some()
             || self.postal_addresses.is_some()
             || self.emails.is_some()
             || self.phones.is_some()
+            || self.contact_uris.is_some()
+            || self.urls.is_some()
     }
 
+    /// Set the set of emails.
     pub fn set_emails(mut self, emails: &[impl ToString]) -> Self {
         let emails: Vec<Email> = emails
             .iter()
@@ -73,6 +170,7 @@ impl Contact {
         self
     }
 
+    /// Add a voice phone to the set of phones.
     pub fn add_voice_phones(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
@@ -91,6 +189,7 @@ impl Contact {
         self
     }
 
+    /// Add a facsimile phone to the set of phones.
     pub fn add_fax_phones(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
@@ -109,6 +208,7 @@ impl Contact {
         self
     }
 
+    /// Set the set of postal addresses to only be the passed in postal address.
     pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
         self.postal_addresses = Some(vec![postal_address]);
         self
@@ -163,7 +263,17 @@ pub struct PostalAddress {
     /// Work, home, etc.... Known as "type" in JCard.
     pub contexts: Option<Vec<String>>,
 
-    /// An unstructured address.
+    /// An unstructured address. An unstructured postal address is
+    /// usually the complete postal address. That is, this string
+    /// would contain the street address, country, region, postal code, etc...
+    ///
+    /// Depending on how the postal address is given, it can either
+    /// be structured or unstructured. If it is given as unstructured,
+    /// then this value is populated.
+    ///
+    /// It is possible that a single postal address is given as both,
+    /// in which case this value is populated along with the other
+    /// values of the postal address.   
     pub full_address: Option<String>,
 
     /// Invidual street lines.

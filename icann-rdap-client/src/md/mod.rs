@@ -1,3 +1,5 @@
+//! Converts RDAP to Markdown.
+
 use crate::request::RequestData;
 use icann_rdap_common::{check::CheckParams, response::RdapResponse};
 use std::{any::TypeId, char};

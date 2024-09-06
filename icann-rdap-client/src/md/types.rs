@@ -71,7 +71,9 @@ impl ToMd for Link {
         if let Some(rel) = &self.rel {
             md.push_str(&format!("[{rel}] "));
         };
-        md.push_str(&self.href.to_owned().to_inline(params.options));
+        if let Some(href) = &self.href {
+            md.push_str(&href.to_owned().to_inline(params.options));
+        }
         md.push(' ');
         if let Some(media_type) = &self.media_type {
             md.push_str(&format!("of type '{media_type}' "));
@@ -83,7 +85,14 @@ impl ToMd for Link {
             md.push_str(&format!("for {value} ",));
         };
         if let Some(hreflang) = &self.hreflang {
-            md.push_str(&format!("in languages {}", hreflang.join(", ")));
+            match hreflang {
+                icann_rdap_common::response::types::HrefLang::Lang(lang) => {
+                    md.push_str(&format!("in language {}", lang));
+                }
+                icann_rdap_common::response::types::HrefLang::Langs(langs) => {
+                    md.push_str(&format!("in languages {}", langs.join(", ")));
+                }
+            }
         };
         md.push('\n');
         let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
@@ -127,9 +136,11 @@ impl ToMd for NoticeOrRemark {
         if let Some(title) = &self.title {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
-        self.description
-            .iter()
-            .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
+        if let Some(description) = &self.description {
+            description
+                .iter()
+                .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
+        }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
             .iter()
@@ -216,7 +227,12 @@ pub(crate) fn public_ids_to_table(
     mut table: MultiPartTable,
 ) -> MultiPartTable {
     for pid in publid_ids {
-        table = table.data_ref(&pid.id_type, &pid.identifier);
+        table = table.data_ref(
+            pid.id_type.as_ref().unwrap_or(&"(not given)".to_string()),
+            pid.identifier
+                .as_ref()
+                .unwrap_or(&"(not given)".to_string()),
+        );
     }
     table
 }
@@ -239,7 +255,15 @@ pub(crate) fn events_to_table(
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);
         }
-        table = table.data_ul_ref(&event.event_action.to_owned().to_words_title_case(), ul);
+        table = table.data_ul_ref(
+            &event
+                .event_action
+                .as_ref()
+                .unwrap_or(&"action not given".to_string())
+                .to_owned()
+                .to_words_title_case(),
+            ul,
+        );
     }
     table
 }
@@ -259,7 +283,10 @@ pub(crate) fn links_to_table(
             .as_ref()
             .unwrap_or(&"Link".to_string())
             .to_title_case();
-        let mut ul: Vec<&String> = vec![&link.href];
+        let mut ul: Vec<&String> = vec![];
+        if let Some(href) = &link.href {
+            ul.push(href)
+        }
         if let Some(media_type) = &link.media_type {
             ul.push(media_type)
         };
@@ -271,7 +298,10 @@ pub(crate) fn links_to_table(
         };
         let hreflang_s;
         if let Some(hreflang) = &link.hreflang {
-            hreflang_s = hreflang.join(", ");
+            hreflang_s = match hreflang {
+                icann_rdap_common::response::types::HrefLang::Lang(lang) => lang.to_owned(),
+                icann_rdap_common::response::types::HrefLang::Langs(langs) => langs.join(", "),
+            };
             ul.push(&hreflang_s)
         };
         table = table.data_ul_ref(&rel, ul);

@@ -1,3 +1,4 @@
+//! Convert a Contact to jCard/vCard.
 use std::str::FromStr;
 
 use serde_json::{json, Map, Value};
@@ -5,7 +6,22 @@ use serde_json::{json, Map, Value};
 use super::Contact;
 
 impl Contact {
-    // Outputs the vcard array.
+    /// Output the Contact data as vCard in JSON values ([`Vec<Value>`]).
+    ///
+    /// ```rust
+    /// use icann_rdap_common::contact::Contact;
+    /// use serde::Serialize;
+    /// use serde_json::Value;
+    ///
+    /// let contact = Contact::builder()
+    ///   .kind("individual")
+    ///   .full_name("Bob Smurd")
+    ///   .build();
+    ///
+    /// let v = contact.to_vcard();
+    /// let json = serde_json::to_string(&v);
+    /// ```
+
     pub fn to_vcard(&self) -> Vec<Value> {
         // start the vcard with the version.
         let mut vcard: Vec<Value> = vec![json!(["version", {}, "text", "4.0"])];
@@ -56,6 +72,12 @@ impl Contact {
         if let Some(titles) = &self.titles {
             for title in titles {
                 vcard.push(json!(["title", {}, "text", title]));
+            }
+        }
+
+        if let Some(roles) = &self.roles {
+            for role in roles {
+                vcard.push(json!(["role", {}, "text", role]));
             }
         }
 
@@ -113,7 +135,7 @@ impl Contact {
                 }
                 let mut lines: Vec<String> = Vec::new();
                 if let Some(street_parts) = &addr.street_parts {
-                    lines.push(street_parts.get(0).cloned().unwrap_or("".to_string()));
+                    lines.push(street_parts.first().cloned().unwrap_or("".to_string()));
                     lines.push(street_parts.get(1).cloned().unwrap_or("".to_string()));
                     lines.push(street_parts.get(2).cloned().unwrap_or("".to_string()));
                 } else {
@@ -149,6 +171,18 @@ impl Contact {
             }
         }
 
+        if let Some(contact_uris) = &self.contact_uris {
+            for uri in contact_uris {
+                vcard.push(json!(["contact-uri", {}, "uri", uri]));
+            }
+        }
+
+        if let Some(urls) = &self.urls {
+            for url in urls {
+                vcard.push(json!(["url", {}, "uri", url]));
+            }
+        }
+
         // return the vcard array
         vec![Value::String("vcard".to_string()), Value::from(vcard)]
     }
@@ -174,7 +208,7 @@ fn vec_string_to_value(strings: &Option<Vec<String>>) -> Value {
     Value::from(strings.clone())
 }
 
-fn vec_string_to_param(strings: &Vec<String>) -> Value {
+fn vec_string_to_param(strings: &[String]) -> Value {
     if strings.is_empty() {
         return Value::String("".to_string());
     };
@@ -187,7 +221,7 @@ fn vec_string_to_param(strings: &Vec<String>) -> Value {
     };
 
     // else
-    Value::from(strings.clone())
+    Value::from(strings)
 }
 
 #[cfg(test)]
@@ -214,6 +248,8 @@ mod tests {
             ])
             .organization_names(vec!["Example".to_string()])
             .titles(vec!["Research Scientist".to_string()])
+            .roles(vec!["Project Lead".to_string()])
+            .contact_uris(vec!["https://example.com/contact-form".to_string()])
             .postal_addresses(vec![PostalAddress::builder()
                 .country_name("Canada")
                 .postal_code("G1V 2M2")
@@ -245,6 +281,7 @@ mod tests {
                 .contexts(vec!["work".to_string()])
                 .email("joe.user@example.com")
                 .build()])
+            .urls(vec!["https://example.com/some-url".to_string()])
             .build();
 
         // WHEN
@@ -257,8 +294,11 @@ mod tests {
         assert_eq!(contact.langs, actual.langs);
         assert_eq!(contact.organization_names, actual.organization_names);
         assert_eq!(contact.titles, actual.titles);
+        assert_eq!(contact.roles, actual.roles);
         assert_eq!(contact.postal_addresses, actual.postal_addresses);
         assert_eq!(contact.phones, actual.phones);
         assert_eq!(contact.emails, actual.emails);
+        assert_eq!(contact.contact_uris, actual.contact_uris);
+        assert_eq!(contact.urls, actual.urls);
     }
 }

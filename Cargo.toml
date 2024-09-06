@@ -8,13 +8,16 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.17"
+version = "0.0.18"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
 keywords = ["whois", "rdap"]
 
 [workspace.dependencies]
+
+# for suffix string searchs
+ab-radix-trie = "0.2.1"
 
 # easy error handling
 anyhow = "1.0"
