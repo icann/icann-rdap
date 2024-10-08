@@ -4,8 +4,10 @@ use clap::builder::Styles;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
+use query::ProcessType;
 use query::ProcessingParams;
 use std::io::IsTerminal;
+use std::process::Termination;
 use std::str::FromStr;
 use tracing::error;
 use tracing::info;
@@ -136,6 +138,18 @@ struct Cli {
     /// non-zero status.
     #[arg(long, env = "RDAP_ERROR_ON_CHECK")]
     error_on_checks: bool,
+
+    /// Process Type
+    ///
+    /// Specifies a process for handling the data.
+    #[arg(
+        short = 'p',
+        long,
+        required = false,
+        env = "RDAP_PROCESS_TYPE",
+        value_enum
+    )]
+    process_type: Option<ProcTypeArg>,
 
     /// Pager Usage.
     ///
@@ -333,6 +347,12 @@ enum LogLevel {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum ProcTypeArg {
+    /// Process Registrar Data.
+    Registrar,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum PagerType {
     /// Use the embedded pager.
     Embedded,
@@ -358,7 +378,16 @@ impl From<&LogLevel> for LevelFilter {
 }
 
 #[tokio::main]
-pub async fn main() -> anyhow::Result<()> {
+pub async fn main() -> CliError {
+    if let Err(e) = wrapped_main().await {
+        eprintln!("\n{e}\n");
+        return e;
+    } else {
+        return CliError::Success;
+    }
+}
+
+pub async fn wrapped_main() -> Result<(), CliError> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
@@ -398,6 +427,13 @@ pub async fn main() -> anyhow::Result<()> {
         OtypeArg::GtldWhois => OutputType::GtldWhois,
     };
 
+    let process_type = match cli.process_type {
+        Some(p) => match p {
+            ProcTypeArg::Registrar => ProcessType::Registrar,
+        },
+        None => ProcessType::Standard,
+    };
+
     let check_types = if cli.check_type.is_empty() {
         vec![
             CheckClass::Informational,
@@ -427,6 +463,7 @@ pub async fn main() -> anyhow::Result<()> {
         bootstrap_type,
         output_type,
         check_types,
+        process_type,
         error_on_checks: cli.error_on_checks,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
