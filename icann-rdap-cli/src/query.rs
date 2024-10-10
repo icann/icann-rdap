@@ -158,11 +158,19 @@ async fn do_domain_query<'a, W: std::io::Write>(
                         }
                         Err(error) => return Err(error),
                     }
+                } else if matches!(processing_params.process_type, ProcessType::Registrar) {
+                    return Err(CliError::NoRegistrarFound);
                 }
             }
             do_final_output(processing_params, write, transactions)?;
         }
-        Err(error) => return Err(error),
+        Err(error) => {
+            if matches!(processing_params.process_type, ProcessType::Registry) {
+                return Err(CliError::NoRegistryFound);
+            } else {
+                return Err(error);
+            }
+        }
     };
     Ok(())
 }

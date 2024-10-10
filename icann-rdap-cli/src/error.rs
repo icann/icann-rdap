@@ -31,6 +31,8 @@ pub enum CliError {
     BootstrapNotFound,
     #[error("No registrar found")]
     NoRegistrarFound,
+    #[error("No registry found")]
+    NoRegistryFound,
 }
 
 impl Termination for CliError {
@@ -53,6 +55,7 @@ impl Termination for CliError {
             CliError::InvalidBootstrap => 102,
             CliError::BootstrapNotFound => 103,
             CliError::NoRegistrarFound => 104,
+            CliError::NoRegistryFound => 105,
 
             // User Errors
             CliError::UnknownOutputType => 200,
