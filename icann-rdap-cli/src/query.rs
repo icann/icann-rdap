@@ -49,6 +49,9 @@ pub(crate) enum ProcessType {
 
     /// Process data specifically from a registrar.
     Registrar,
+
+    /// Process data specifically from a registry.
+    Registry,
 }
 
 pub(crate) struct ProcessingParams {
@@ -88,22 +91,6 @@ async fn do_domain_query<'a, W: std::io::Write>(
     client: &Client,
     write: &mut W,
 ) -> Result<(), CliError> {
-    match processing_params.process_type {
-        ProcessType::Standard => {
-            do_standard_domain_query(query_type, processing_params, client, write).await
-        }
-        ProcessType::Registrar => {
-            do_registrar_domain_query(query_type, processing_params, client, write).await
-        }
-    }
-}
-
-async fn do_standard_domain_query<'a, W: std::io::Write>(
-    query_type: &QueryType,
-    processing_params: &ProcessingParams,
-    client: &Client,
-    write: &mut W,
-) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
     let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
     let response = do_request(&base_url, query_type, processing_params, client).await;
@@ -122,97 +109,56 @@ async fn do_standard_domain_query<'a, W: std::io::Write>(
                 // copy other fields from `response`
                 ..response.clone()
             };
-            transactions = do_output(
-                processing_params,
-                &req_data,
-                &replaced_data,
-                write,
-                transactions,
-            )?;
-            let regr_source_host;
-            let regr_req_data: RequestData;
-            if let Some(url) = get_related_link(&response.rdap).first() {
-                info!("Querying domain name from registrar.");
-                debug!("Registrar RDAP Url: {url}");
-                let query_type = QueryType::Url(url.to_string());
-                let registrar_response_result =
-                    do_request(&base_url, &query_type, processing_params, client).await;
-                match registrar_response_result {
-                    Ok(response_data) => {
-                        registrar_response = response_data;
-                        regr_source_host = registrar_response.http_data.host.to_owned();
-                        regr_req_data = RequestData {
-                            req_number: 2,
-                            source_host: &regr_source_host,
-                            source_type: SourceType::DomainRegistrar,
-                        };
-                        transactions = do_output(
-                            processing_params,
-                            &regr_req_data,
-                            &registrar_response,
-                            write,
-                            transactions,
-                        )?;
-                    }
-                    Err(error) => return Err(error),
-                }
-            }
-            do_final_output(processing_params, write, transactions)?;
-        }
-        Err(error) => return Err(error),
-    };
-    Ok(())
-}
-
-async fn do_registrar_domain_query<'a, W: std::io::Write>(
-    query_type: &QueryType,
-    processing_params: &ProcessingParams,
-    client: &Client,
-    write: &mut W,
-) -> Result<(), CliError> {
-    let mut transactions = RequestResponses::new();
-    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
-    let response = do_request(&base_url, query_type, processing_params, client).await;
-    let registrar_response;
-    match response {
-        Ok(response) => {
-            let source_host = response.http_data.host.to_owned();
-            let req_data = RequestData {
-                req_number: 1,
-                source_host: &source_host,
-                source_type: SourceType::DomainRegistry,
-            };
-            transactions = do_no_output(processing_params, &req_data, &response, transactions);
-            let regr_source_host;
-            let regr_req_data: RequestData;
-            if let Some(url) = get_related_link(&response.rdap).first() {
-                info!("Querying domain name from registrar.");
-                info!("Registrar RDAP Url: {url}");
-                let query_type = QueryType::Url(url.to_string());
-                let registrar_response_result =
-                    do_request(&base_url, &query_type, processing_params, client).await;
-                match registrar_response_result {
-                    Ok(response_data) => {
-                        registrar_response = response_data;
-                        regr_source_host = registrar_response.http_data.host.to_owned();
-                        regr_req_data = RequestData {
-                            req_number: 2,
-                            source_host: &regr_source_host,
-                            source_type: SourceType::DomainRegistrar,
-                        };
-                        transactions = do_output(
-                            processing_params,
-                            &regr_req_data,
-                            &registrar_response,
-                            write,
-                            transactions,
-                        )?;
-                    }
-                    Err(error) => return Err(error),
-                }
+            if let ProcessType::Registrar = processing_params.process_type {
+                transactions =
+                    do_no_output(processing_params, &req_data, &replaced_data, transactions);
             } else {
-                error!("No registrar URL found.");
-                return Err(CliError::NoRegistrarFound);
+                transactions = do_output(
+                    processing_params,
+                    &req_data,
+                    &replaced_data,
+                    write,
+                    transactions,
+                )?;
+            }
+            let regr_source_host;
+            let regr_req_data: RequestData;
+            if !matches!(processing_params.process_type, ProcessType::Registry) {
+                if let Some(url) = get_related_link(&response.rdap).first() {
+                    info!("Querying domain name from registrar.");
+                    debug!("Registrar RDAP Url: {url}");
+                    let query_type = QueryType::Url(url.to_string());
+                    let registrar_response_result =
+                        do_request(&base_url, &query_type, processing_params, client).await;
+                    match registrar_response_result {
+                        Ok(response_data) => {
+                            registrar_response = response_data;
+                            regr_source_host = registrar_response.http_data.host.to_owned();
+                            regr_req_data = RequestData {
+                                req_number: 2,
+                                source_host: &regr_source_host,
+                                source_type: SourceType::DomainRegistrar,
+                            };
+                            if let ProcessType::Registry = processing_params.process_type {
+                                transactions = do_no_output(
+                                    processing_params,
+                                    &regr_req_data,
+                                    &registrar_response,
+                                    transactions,
+                                );
+                            } else {
+                                transactions = do_output(
+                                    processing_params,
+                                    &regr_req_data,
+                                    &registrar_response,
+                                    write,
+                                    transactions,
+                                )?;
+                            }
+                        }
+                        Err(error) => return Err(error),
+                    }
+                }
             }
             do_final_output(processing_params, write, transactions)?;
         }

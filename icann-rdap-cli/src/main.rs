@@ -347,8 +347,11 @@ enum LogLevel {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum ProcTypeArg {
-    /// Process Registrar Data.
+    /// Only display the data from the domain registrar.
     Registrar,
+
+    /// Only display the data from the domain registry.
+    Registry,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -429,6 +432,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
     let process_type = match cli.process_type {
         Some(p) => match p {
             ProcTypeArg::Registrar => ProcessType::Registrar,
+            ProcTypeArg::Registry => ProcessType::Registry,
         },
         None => ProcessType::Standard,
     };
