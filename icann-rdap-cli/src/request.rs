@@ -52,37 +52,37 @@ pub(crate) async fn do_request(
     }
     let response = rdap_url_request(&query_url, client).await?;
     if !processing_params.no_cache {
-        if let Some(self_link) = response.rdap.get_self_link() {
-            if let Some(self_link_href) = &self_link.href {
-                if response.http_data.should_cache() {
-                    let data = serde_json::to_string_pretty(&response)?;
-                    let cache_contents = response.http_data.to_lines(&data)?;
-                    let query_url = query_type.query_url(base_url)?;
-                    let file_name = format!(
-                        "{}.cache",
-                        PctString::encode(query_url.chars(), URIReserved)
-                    );
-                    debug!("Saving response to cache file {file_name}");
-                    let path = rdap_cache_path().join(file_name);
-                    fs::write(path, &cache_contents)?;
+        if response.http_data.should_cache() {
+            let data = serde_json::to_string_pretty(&response)?;
+            let cache_contents = response.http_data.to_lines(&data)?;
+            let query_url = query_type.query_url(base_url)?;
+            let file_name = format!(
+                "{}.cache",
+                PctString::encode(query_url.chars(), URIReserved)
+            );
+            debug!("Saving query response to cache file {file_name}");
+            let path = rdap_cache_path().join(file_name);
+            fs::write(path, &cache_contents)?;
+            if let Some(self_link) = response.rdap.get_self_link() {
+                if let Some(self_link_href) = &self_link.href {
                     if query_url != *self_link_href {
                         let file_name = format!(
                             "{}.cache",
                             PctString::encode(self_link_href.chars(), URIReserved)
                         );
-                        debug!("Saving response to cache file {file_name}");
+                        debug!("Saving object with self link to cache file {file_name}");
                         let path = rdap_cache_path().join(file_name);
                         fs::write(path, &cache_contents)?;
                     }
-                } else {
-                    debug!("Not caching data according to server policy.");
-                    debug!("Expires header: {:?}", &response.http_data.expires);
-                    debug!(
-                        "Cache-control header: {:?}",
-                        &response.http_data.cache_control
-                    );
                 }
             }
+        } else {
+            debug!("Not caching data according to server policy.");
+            debug!("Expires header: {:?}", &response.http_data.expires);
+            debug!(
+                "Cache-control header: {:?}",
+                &response.http_data.cache_control
+            );
         }
     }
     Ok(response)

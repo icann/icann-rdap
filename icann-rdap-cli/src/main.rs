@@ -7,7 +7,6 @@ use icann_rdap_common::client::ClientConfig;
 use query::ProcessType;
 use query::ProcessingParams;
 use std::io::IsTerminal;
-use std::process::Termination;
 use std::str::FromStr;
 use tracing::error;
 use tracing::info;
