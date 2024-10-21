@@ -13,6 +13,7 @@ use thiserror::Error;
 pub mod gtld;
 pub mod md;
 pub mod query;
+pub mod registered_redactions;
 pub mod request;
 
 #[doc(inline)]
