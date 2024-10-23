@@ -120,6 +120,14 @@ fn convert_redactions<'a>(
         let post_path = get_string_from_map(item_map, "postPath");
         let method = get_string_from_map(item_map, "method");
 
+        if let Some(path_lang) = item_map.get("pathLang") {
+            if let Some(path_lang) = path_lang.as_str() {
+                if !path_lang.eq_ignore_ascii_case("jsonpath") {
+                    continue;
+                }
+            }
+        }
+
         // if method doesn't equal emptyValue or partialValue, we don't need to do anything, we can skip to the next item
         if method != "emptyValue" && method != "partialValue" && !post_path.is_empty() {
             continue;
