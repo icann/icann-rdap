@@ -5,6 +5,9 @@ use icann_rdap_common::response::domain::{Domain, SecureDns, Variant};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
+use crate::registered_redactions::{self, text_or_registered_redaction};
+
+use super::redacted::REDACTED_TEXT;
 use super::types::{events_to_table, links_to_table, public_ids_to_table};
 use super::FromMd;
 use super::{
@@ -36,12 +39,19 @@ impl ToMd for Domain {
         // multipart data
         let mut table = MultiPartTable::new();
 
+        let domain_handle = text_or_registered_redaction(
+            params.root,
+            &registered_redactions::RedactedName::RegistryDomainId,
+            &self.object_common.handle,
+            REDACTED_TEXT,
+        );
+
         // identifiers
         table = table
             .header_ref(&"Identifiers")
             .and_data_ref(&"LDH Name", &self.ldh_name)
             .and_data_ref(&"Unicode Name", &self.unicode_name)
-            .and_data_ref(&"Handle", &self.object_common.handle);
+            .and_data_ref(&"Handle", &domain_handle);
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }

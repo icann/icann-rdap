@@ -2,6 +2,7 @@ use crate::contact::Contact;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use strum_macros::{Display, EnumString};
 
 use super::{
     autnum::Autnum,
@@ -194,6 +195,22 @@ impl ToChild for Entity {
         self.common = Common::builder().build();
         self
     }
+}
+
+#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum EntityRole {
+    Registrant,
+    Technical,
+    Administrative,
+    Abuse,
+    Billing,
+    Registrar,
+    Reseller,
+    Sponsor,
+    Proxy,
+    Notifications,
+    Noc,
 }
 
 #[cfg(test)]

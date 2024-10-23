@@ -9,6 +9,11 @@ use serde_json::{json, Value};
 use super::{string::StringUtil, table::MultiPartTable, MdOptions, MdParams, ToMd};
 use icann_rdap_common::response::RdapResponse;
 
+/// The text to appear if something is redacted.
+///
+/// This should be REDACTED in bold.
+pub const REDACTED_TEXT: &str = "*REDACTED*";
+
 impl ToMd for &[Redacted] {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
