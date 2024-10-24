@@ -65,37 +65,38 @@ impl ToMd for Link {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(title) = &self.title {
-            md.push_str(&format!("* {title}: "));
+            md.push_str(&format!("* {}:\n", title.replace_ws()));
         } else {
-            md.push_str("* Link: ")
-        };
-        if let Some(rel) = &self.rel {
-            md.push_str(&format!("[{rel}] "));
+            md.push_str("* Link:\n")
         };
         if let Some(href) = &self.href {
-            md.push_str(&href.to_owned().to_inline(params.options));
-        }
-        md.push(' ');
+            md.push_str(&format!(
+                "* {}\n",
+                href.to_owned().to_inline(params.options)
+            ));
+        };
+        if let Some(rel) = &self.rel {
+            md.push_str(&format!("* Relation:  {}\n", rel.replace_ws()));
+        };
         if let Some(media_type) = &self.media_type {
-            md.push_str(&format!("of type '{media_type}' "));
+            md.push_str(&format!("* Type:      {}\n", media_type.replace_ws()));
         };
         if let Some(media) = &self.media {
-            md.push_str(&format!("to be used with {media} ",));
+            md.push_str(&format!("* Media:     {}\n", media.replace_ws()));
         };
         if let Some(value) = &self.value {
-            md.push_str(&format!("for {value} ",));
+            md.push_str(&format!("* Value:     {}\n", value.replace_ws()));
         };
         if let Some(hreflang) = &self.hreflang {
             match hreflang {
                 icann_rdap_common::response::types::HrefLang::Lang(lang) => {
-                    md.push_str(&format!("in language {}", lang));
+                    md.push_str(&format!("* Language:  {}\n", lang.replace_ws()));
                 }
                 icann_rdap_common::response::types::HrefLang::Langs(langs) => {
-                    md.push_str(&format!("in languages {}", langs.join(", ")));
+                    md.push_str(&format!("* Languages: {}", langs.join(", ").replace_ws()));
                 }
             }
         };
-        md.push('\n');
         let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
         md.push_str(&checks_ul(&checks, params));
         md.push('\n');
