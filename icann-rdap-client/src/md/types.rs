@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::response::types::{
     Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
 };
@@ -137,9 +138,11 @@ impl ToMd for NoticeOrRemark {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         if let Some(description) = &self.description {
-            description
-                .iter()
-                .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
+            description.iter().for_each(|s| {
+                if !s.is_whitespace_or_empty() {
+                    md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
+                }
+            });
         }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
