@@ -3,6 +3,7 @@ use chrono::DateTime;
 use super::{MdOptions, MdParams};
 
 pub(crate) trait StringUtil {
+    fn replace_ws(self) -> String;
     fn to_em(self, options: &MdOptions) -> String;
     fn to_bold(self, options: &MdOptions) -> String;
     fn to_inline(self, options: &MdOptions) -> String;
@@ -23,11 +24,15 @@ pub(crate) trait StringUtil {
 }
 
 impl<T: ToString> StringUtil for T {
+    fn replace_ws(self) -> String {
+        self.to_string().replace(|c: char| c.is_whitespace(), " ")
+    }
+
     fn to_em(self, options: &MdOptions) -> String {
         format!(
             "{}{}{}",
             options.text_style_char,
-            self.to_string(),
+            self.to_string().replace_ws(),
             options.text_style_char
         )
     }
@@ -37,18 +42,18 @@ impl<T: ToString> StringUtil for T {
             "{}{}{}{}{}",
             options.text_style_char,
             options.text_style_char,
-            self.to_string(),
+            self.to_string().replace_ws(),
             options.text_style_char,
             options.text_style_char
         )
     }
 
     fn to_inline(self, _options: &MdOptions) -> String {
-        format!("`{}`", self.to_string(),)
+        format!("`{}`", self.to_string().replace_ws(),)
     }
 
     fn to_header(self, level: usize, options: &MdOptions) -> String {
-        let s = self.to_string();
+        let s = self.to_string().replace_ws();
         if options.hash_headers {
             format!("{} {s}\n\n", "#".repeat(level))
         } else {
@@ -62,7 +67,7 @@ impl<T: ToString> StringUtil for T {
     }
 
     fn to_right(self, width: usize, options: &MdOptions) -> String {
-        let str = self.to_string();
+        let str = self.to_string().replace_ws();
         if options.no_unicode_chars {
             format!("{str:>width$}")
         } else {
@@ -87,7 +92,7 @@ impl<T: ToString> StringUtil for T {
     }
 
     fn to_left(self, width: usize, options: &MdOptions) -> String {
-        let str = self.to_string();
+        let str = self.to_string().replace_ws();
         if options.no_unicode_chars {
             format!("{str:<width$}")
         } else {
@@ -112,7 +117,7 @@ impl<T: ToString> StringUtil for T {
     }
 
     fn to_center(self, width: usize, options: &MdOptions) -> String {
-        let str = self.to_string();
+        let str = self.to_string().replace_ws();
         if options.no_unicode_chars {
             format!("{str:^width$}")
         } else {
@@ -138,6 +143,7 @@ impl<T: ToString> StringUtil for T {
 
     fn to_title_case(self) -> String {
         self.to_string()
+            .replace_ws()
             .char_indices()
             .map(|(i, mut c)| {
                 if i == 0 {
@@ -152,6 +158,7 @@ impl<T: ToString> StringUtil for T {
 
     fn to_words_title_case(self) -> String {
         self.to_string()
+            .replace_ws()
             .split_whitespace()
             .map(|s| s.to_title_case())
             .collect::<Vec<String>>()
@@ -165,6 +172,7 @@ impl<T: ToString> StringUtil for T {
 
     fn to_cap_acronyms(self) -> String {
         self.to_string()
+            .replace_ws()
             .replace("rdap", "RDAP")
             .replace("icann", "ICANN")
             .replace("arin", "ARIN")

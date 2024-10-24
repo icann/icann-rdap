@@ -26,14 +26,18 @@ impl MultiPartTable {
     }
 
     pub(crate) fn data_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
-        self.rows
-            .push(Row::Data((name.to_string(), value.to_string())));
+        self.rows.push(Row::Data((
+            name.to_string(),
+            value.to_string().replace_ws(),
+        )));
         self
     }
 
     pub(crate) fn data(mut self, name: &impl ToString, value: impl ToString) -> Self {
-        self.rows
-            .push(Row::Data((name.to_string(), value.to_string())));
+        self.rows.push(Row::Data((
+            name.to_string(),
+            value.to_string().replace_ws(),
+        )));
         self
     }
 
@@ -42,12 +46,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::Data((
                     name.to_string(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             } else {
                 self.rows.push(Row::Data((
                     String::default(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             }
         });
@@ -59,12 +63,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::Data((
                     name.to_string(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             } else {
                 self.rows.push(Row::Data((
                     String::default(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             }
         });
@@ -74,7 +78,11 @@ impl MultiPartTable {
     pub(crate) fn and_data_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
         self.rows.push(Row::Data((
             name.to_string(),
-            value.as_deref().unwrap_or_default().to_string(),
+            value
+                .as_deref()
+                .unwrap_or_default()
+                .to_string()
+                .replace_ws(),
         )));
         self
     }
