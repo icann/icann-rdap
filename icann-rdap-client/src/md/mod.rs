@@ -1,6 +1,7 @@
 //! Converts RDAP to Markdown.
 
 use crate::request::RequestData;
+use buildstructor::Builder;
 use icann_rdap_common::{check::CheckParams, response::RdapResponse};
 use std::{any::TypeId, char};
 use strum::EnumMessage;
@@ -115,6 +116,39 @@ impl ToMd for RdapResponse {
         };
         md.push_str(&variant_md);
         md
+    }
+}
+
+pub(crate) trait MdUtil {
+    fn get_header_text(&self) -> MdHeaderText;
+}
+
+#[derive(Builder)]
+pub(crate) struct MdHeaderText {
+    header_text: String,
+    children: Vec<MdHeaderText>,
+}
+
+impl ToString for MdHeaderText {
+    fn to_string(&self) -> String {
+        self.header_text.clone()
+    }
+}
+
+impl MdUtil for RdapResponse {
+    fn get_header_text(&self) -> MdHeaderText {
+        match &self {
+            RdapResponse::Entity(entity) => entity.get_header_text(),
+            RdapResponse::Domain(domain) => domain.get_header_text(),
+            RdapResponse::Nameserver(nameserver) => nameserver.get_header_text(),
+            RdapResponse::Autnum(autnum) => autnum.get_header_text(),
+            RdapResponse::Network(network) => network.get_header_text(),
+            RdapResponse::DomainSearchResults(results) => results.get_header_text(),
+            RdapResponse::EntitySearchResults(results) => results.get_header_text(),
+            RdapResponse::NameserverSearchResults(results) => results.get_header_text(),
+            RdapResponse::ErrorResponse(error) => error.get_header_text(),
+            RdapResponse::Help(help) => help.get_header_text(),
+        }
     }
 }
 

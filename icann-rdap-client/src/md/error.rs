@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::response::error::Error;
 
-use super::{MdParams, ToMd, HR};
+use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
 
 impl ToMd for Error {
     fn to_md(&self, params: MdParams) -> String {
@@ -11,5 +11,11 @@ impl ToMd for Error {
         md.push_str(HR);
         md.push('\n');
         md
+    }
+}
+
+impl MdUtil for Error {
+    fn get_header_text(&self) -> MdHeaderText {
+        MdHeaderText::builder().header_text("RDAP Error").build()
     }
 }

@@ -12,13 +12,13 @@ use crate::registered_redactions::{
 
 use super::redacted::REDACTED_TEXT;
 use super::types::public_ids_to_table;
-use super::FromMd;
 use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
     MdParams, ToMd, HR,
 };
+use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Entity {
     fn to_md(&self, params: MdParams) -> String {
@@ -27,12 +27,12 @@ impl ToMd for Entity {
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 
         // header
-        let header_text = if let Some(roles) = &self.roles {
-            roles.first().unwrap_or(&String::default()).to_title_case()
-        } else {
-            "Entity".to_string()
-        };
-        md.push_str(&header_text.to_header(params.heading_level, params.options));
+        let header_text = self.get_header_text();
+        md.push_str(
+            &header_text
+                .to_string()
+                .to_header(params.heading_level, params.options),
+        );
 
         // A note about the RFC 9537 redactions. A lot of this code is to do RFC 9537 redactions
         // that are registered with the IANA. As RFC 9537 is horribly broken, it is likely only
@@ -62,10 +62,14 @@ impl ToMd for Entity {
         // multipart data
         let mut table = MultiPartTable::new();
 
+        // summary
+        table = table.summary(header_text);
+
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_data_ref(&"Handle", &entity_handle);
+            .and_data_ref(&"Handle", &entity_handle)
+            .and_data_ul(&"Roles", self.roles.to_owned());
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -314,5 +318,45 @@ impl ToMpTable for Option<NameParts> {
             }
         }
         table
+    }
+}
+
+impl MdUtil for Entity {
+    fn get_header_text(&self) -> MdHeaderText {
+        let role = self.roles.as_ref().map(|roles| {
+            roles
+                .first()
+                .unwrap_or(&String::default())
+                .replace_ws()
+                .to_title_case()
+        });
+        let header_text = if let Some(handle) = &self.object_common.handle {
+            if let Some(role) = role {
+                format!("{} ({})", handle.replace_ws(), role)
+            } else {
+                format!("Entity {}", handle)
+            }
+        } else if let Some(role) = role {
+            role.to_string()
+        } else {
+            "Entity".to_string()
+        };
+        let mut header_text = MdHeaderText::builder().header_text(header_text);
+        if let Some(entities) = &self.object_common.entities {
+            for entity in entities {
+                header_text = header_text.children_entry(entity.get_header_text());
+            }
+        };
+        if let Some(networks) = &self.networks {
+            for network in networks {
+                header_text = header_text.children_entry(network.get_header_text());
+            }
+        };
+        if let Some(autnums) = &self.autnums {
+            for autnum in autnums {
+                header_text = header_text.children_entry(autnum.get_header_text());
+            }
+        };
+        header_text.build()
     }
 }

@@ -4,7 +4,7 @@ use icann_rdap_common::response::search::{
     DomainSearchResults, EntitySearchResults, NameserverSearchResults,
 };
 
-use super::{MdParams, ToMd};
+use super::{MdHeaderText, MdParams, MdUtil, ToMd};
 
 impl ToMd for DomainSearchResults {
     fn to_md(&self, params: MdParams) -> String {
@@ -54,5 +54,29 @@ impl ToMd for EntitySearchResults {
         });
         md.push('\n');
         md
+    }
+}
+
+impl MdUtil for DomainSearchResults {
+    fn get_header_text(&self) -> MdHeaderText {
+        MdHeaderText::builder()
+            .header_text("Domain Search Results")
+            .build()
+    }
+}
+
+impl MdUtil for EntitySearchResults {
+    fn get_header_text(&self) -> MdHeaderText {
+        MdHeaderText::builder()
+            .header_text("Entity Search Results")
+            .build()
+    }
+}
+
+impl MdUtil for NameserverSearchResults {
+    fn get_header_text(&self) -> MdHeaderText {
+        MdHeaderText::builder()
+            .header_text("Nameserver Search Results")
+            .build()
     }
 }

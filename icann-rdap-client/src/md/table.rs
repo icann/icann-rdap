@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use super::{string::StringUtil, MdParams, ToMd};
+use super::{string::StringUtil, MdHeaderText, MdParams, ToMd};
 
 pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
@@ -117,6 +117,28 @@ impl MultiPartTable {
         } else {
             self
         }
+    }
+
+    pub(crate) fn summary(mut self, header_text: MdHeaderText) -> Self {
+        self.rows.push(Row::Data((
+            "Summary".to_string(),
+            header_text.to_string().replace_ws().to_string(),
+        )));
+        // note that termimad has limits on list depth, so we can't go too crazy.
+        // however, this seems perfectly reasonable for must RDAP use cases.
+        for level1 in header_text.children {
+            self.rows.push(Row::Data((
+                "".to_string(),
+                format!("* {}", level1.to_string().replace_ws()),
+            )));
+            for level2 in level1.children {
+                self.rows.push(Row::Data((
+                    "".to_string(),
+                    format!("  * {}", level2.to_string().replace_ws()),
+                )));
+            }
+        }
+        self
     }
 }
 
