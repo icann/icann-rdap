@@ -3,6 +3,8 @@
 use ipnet::Ipv4Net;
 use ipnet::Ipv6Net;
 use prefix_trie::PrefixMap;
+use reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN;
+use reqwest::header::STRICT_TRANSPORT_SECURITY;
 use reqwest::{
     header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION},
     Client,
@@ -250,6 +252,14 @@ pub async fn iana_request(
         .headers()
         .get(LOCATION)
         .map(|value| value.to_str().unwrap().to_string());
+    let access_control_allow_origin = response
+        .headers()
+        .get(ACCESS_CONTROL_ALLOW_ORIGIN)
+        .map(|value| value.to_str().unwrap().to_string());
+    let strict_transport_security = response
+        .headers()
+        .get(STRICT_TRANSPORT_SECURITY)
+        .map(|value| value.to_str().unwrap().to_string());
     let status_code = response.status().as_u16();
     let content_length = response.content_length();
     let url = response.url().to_owned();
@@ -267,6 +277,8 @@ pub async fn iana_request(
         .and_content_type(content_type)
         .and_expires(expires)
         .and_cache_control(cache_control)
+        .and_access_control_allow_origin(access_control_allow_origin)
+        .and_strict_transport_security(strict_transport_security)
         .build();
     Ok(IanaResponse {
         registry: IanaRegistry::RdapBootstrapRegistry(json),
