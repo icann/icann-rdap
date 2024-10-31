@@ -1,5 +1,6 @@
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
+use strum_macros::{AsRefStr, Display, EnumString};
 
 use super::{entity::Entity, redacted::Redacted};
 
@@ -22,7 +23,95 @@ impl std::ops::Deref for Extension {
 }
 
 /// The RDAP conformance array.
+///
+/// This is a vec of [Extension] specifically to be able to handle one or more
+/// unknown extension ids. Known extension identifiers are enumerated by [ExtensionId].
 pub type RdapConformance = Vec<Extension>;
+
+/// Extension Identifiers
+///
+/// This enum uses [EnumString] and [AsRefStr] to allow serialization
+/// and deserialization of the variant to the matching name in the IANA registry.
+///
+/// To get the variant from a string:
+///
+/// ```rust
+/// use std::str::FromStr;
+/// use icann_rdap_common::response::types::ExtensionId;
+///
+/// let cidr0 = ExtensionId::from_str("cidr0").unwrap();
+/// assert_eq!(cidr0, ExtensionId::Cidr0);
+/// println!("{}", cidr0.to_string());
+/// ```
+///
+/// To get the variants as a string:
+///
+/// ```rust
+/// use icann_rdap_common::response::types::ExtensionId;
+///
+/// let s = ExtensionId::Cidr0.to_string();
+/// ```
+///
+/// To get the variants as a &str:
+///
+/// ```rust
+/// use icann_rdap_common::response::types::ExtensionId;
+///
+/// let s = ExtensionId::Cidr0.as_ref();
+/// ```
+#[derive(Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr)]
+pub enum ExtensionId {
+    #[strum(serialize = "rdap_level_0")]
+    RdapLevel0,
+    #[strum(serialize = "arin_originas0")]
+    ArinOriginAs0,
+    #[strum(serialize = "artRecord")]
+    ArtRecord,
+    #[strum(serialize = "cidr0")]
+    Cidr0,
+    #[strum(serialize = "farv1")]
+    Farv1,
+    #[strum(serialize = "fred")]
+    Fred,
+    #[strum(serialize = "icann_rdap_response_profile_0")]
+    IcannRdapResponseProfile0,
+    #[strum(serialize = "icann_rdap_response_profile_1")]
+    IcannRdapResponseProfile1,
+    #[strum(serialize = "icann_rdap_technical_implementation_guide_0")]
+    IcannRdapTechnicalImplementationGuide0,
+    #[strum(serialize = "icann_rdap_technical_implementation_guide_1")]
+    IcannRdapTechnicalImplementationGuide1,
+    #[strum(serialize = "nro_rdap_profile_0")]
+    NroRdapProfile0,
+    #[strum(serialize = "nro_rdap_asn_flat_0")]
+    NroRdapProfileAsnFlat0,
+    #[strum(serialize = "nro_rdap_asn_hierarchical_0")]
+    NroRdapProfileAsnHierarchical0,
+    #[strum(serialize = "paging")]
+    Paging,
+    #[strum(serialize = "platformNS")]
+    PlatformNs,
+    #[strum(serialize = "rdap_objectTag")]
+    RdapObjectTag,
+    #[strum(serialize = "redacted")]
+    Redacted,
+    #[strum(serialize = "redirect_with_content")]
+    RedirectWithContent,
+    #[strum(serialize = "regType")]
+    RegType,
+    #[strum(serialize = "reverse_search")]
+    ReverseSearch,
+    #[strum(serialize = "sorting")]
+    Sorting,
+    #[strum(serialize = "subsetting")]
+    Subsetting,
+}
+
+impl ExtensionId {
+    pub fn to_extension(&self) -> Extension {
+        Extension(self.to_string())
+    }
+}
 
 /// HrefLang, either a string or an array of strings.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -379,7 +468,7 @@ impl Common {
         mut extensions: Vec<Extension>,
         notices: Option<Vec<Notice>>,
     ) -> Self {
-        let mut standard_extensions = vec![Extension("rdap_level_0".to_string())];
+        let mut standard_extensions = vec![ExtensionId::RdapLevel0.to_extension()];
         extensions.append(&mut standard_extensions);
         Self {
             rdap_conformance: Some(extensions),
