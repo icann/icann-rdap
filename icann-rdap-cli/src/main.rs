@@ -317,11 +317,14 @@ enum CheckTypeArg {
     /// Informational items.
     Info,
 
-    /// Checks for specification warnings.
+    /// Checks for STD 95 warnings.
     SpecWarn,
 
-    /// Checks for specficiation errors.
+    /// Checks for STD 95 errors.
     SpecError,
+
+    /// Cidr0 errors.
+    Cidr0Error,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -450,6 +453,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
                 CheckTypeArg::Info => CheckClass::Informational,
                 CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
                 CheckTypeArg::SpecError => CheckClass::SpecificationError,
+                CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
             })
             .collect::<Vec<CheckClass>>()
     };

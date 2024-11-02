@@ -194,7 +194,10 @@ impl ToMd for MultiPartTable {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{types::Common, RdapResponse};
+    use icann_rdap_common::{
+        cache::HttpData,
+        response::{types::Common, RdapResponse},
+    };
 
     use crate::{md::ToMd, request::RequestData};
 
@@ -220,6 +223,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -251,6 +255,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -283,6 +288,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -317,6 +323,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -349,6 +356,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -387,6 +395,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),

@@ -1,6 +1,7 @@
 use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
+use icann_rdap_common::check::Checks;
 use icann_rdap_common::check::GetChecks;
 use tracing::debug;
 use tracing::error;
@@ -287,6 +288,7 @@ fn do_output<'a, W: std::io::Write>(
                 &response.rdap.to_md(MdParams {
                     heading_level: 1,
                     root: &response.rdap,
+                    http_data: &response.http_data,
                     parent_type: response.rdap.get_type(),
                     check_types: &processing_params.check_types,
                     options: &MdOptions::default(),
@@ -301,6 +303,7 @@ fn do_output<'a, W: std::io::Write>(
                 response.rdap.to_md(MdParams {
                     heading_level: 1,
                     root: &response.rdap,
+                    http_data: &response.http_data,
                     parent_type: response.rdap.get_type(),
                     check_types: &processing_params.check_types,
                     options: &MdOptions {
@@ -323,14 +326,8 @@ fn do_output<'a, W: std::io::Write>(
         _ => {} // do nothing
     };
 
-    let checks = response.rdap.get_checks(CheckParams {
-        do_subchecks: true,
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-    });
-
     let req_res = RequestResponse {
-        checks,
+        checks: do_output_checks(response),
         req_data,
         res_data: response,
     };
@@ -344,18 +341,26 @@ fn do_no_output<'a>(
     response: &'a ResponseData,
     mut transactions: RequestResponses<'a>,
 ) -> RequestResponses<'a> {
-    let checks = response.rdap.get_checks(CheckParams {
-        do_subchecks: true,
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-    });
     let req_res = RequestResponse {
-        checks,
+        checks: do_output_checks(response),
         req_data,
         res_data: response,
     };
     transactions.push(req_res);
     transactions
+}
+
+fn do_output_checks(response: &ResponseData) -> Checks {
+    let md_params = CheckParams {
+        do_subchecks: true,
+        root: &response.rdap,
+        parent_type: response.rdap.get_type(),
+    };
+    let mut checks = response.rdap.get_checks(md_params);
+    checks
+        .items
+        .append(&mut response.http_data.get_checks(md_params).items);
+    checks
 }
 
 fn do_final_output<W: std::io::Write>(

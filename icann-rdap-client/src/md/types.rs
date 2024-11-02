@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use icann_rdap_common::cache::HttpData;
 use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::response::types::{
     Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
@@ -192,6 +193,43 @@ impl ToMd for Common {
         if not_empty {
             md.push_str(HR);
         };
+        md
+    }
+}
+
+impl ToMd for HttpData {
+    fn to_md(&self, params: MdParams) -> String {
+        let mut md = HR.to_string();
+        md.push_str(&format!(" * Host          : {}\n", &self.host));
+        if let Some(content_length) = &self.content_length {
+            md.push_str(&format!(" * Content length: {}\n", content_length));
+        }
+        if let Some(expires) = &self.expires {
+            md.push_str(&format!(" * Expires       : {}\n", expires));
+        }
+        if let Some(cache_control) = &self.cache_control {
+            md.push_str(&format!(" * Cache control : {}\n", cache_control));
+        }
+        if let Some(strict_transport_security) = &self.strict_transport_security {
+            md.push_str(&format!(
+                " * STS           : {}\n",
+                strict_transport_security
+            ));
+        }
+        md.push_str(&format!(" * Received      : {}\n", &self.received));
+        self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
+            .items
+            .iter()
+            .filter(|item| params.check_types.contains(&item.check_class))
+            .for_each(|item| {
+                md.push_str(&format!(
+                    "* {}: {}\n",
+                    &item.check_class.to_string().to_em(params.options),
+                    item.check
+                        .get_message()
+                        .expect("Check has no message. Coding error.")
+                ))
+            });
         md
     }
 }

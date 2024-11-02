@@ -9,6 +9,7 @@ use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 pub mod autnum;
+pub mod cache;
 pub mod domain;
 pub mod entity;
 pub mod error;
@@ -43,12 +44,21 @@ lazy_static! {
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum CheckClass {
+    /// Informational Checks
     #[strum(serialize = "Info")]
     Informational,
+    /// STD 95 Warnings
     #[strum(serialize = "SpecWarn")]
     SpecificationWarning,
+    /// STD 95 Errors
     #[strum(serialize = "SpecErr")]
     SpecificationError,
+    /// Cidr0 Errors
+    #[strum(serialize = "Cidr0Err")]
+    Cidr0Error,
+    /// ICANN Profile Errors
+    #[strum(serialize = "IcannErr")]
+    IcannError,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
@@ -315,6 +325,12 @@ pub enum Check {
     Cidr0V6PrefixIsAbsent,
     #[strum(message = "Cidr0 v6 length is absent")]
     Cidr0V6LengthIsAbsent,
+
+    // ICANN Profile
+    #[strum(message = "RDAP Service Must use HTTPS.")]
+    MustUseHttps,
+    #[strum(message = "access-control-allow-origin is not '*'")]
+    AllowOriginNotStar,
 }
 
 impl Check {
@@ -386,10 +402,13 @@ impl Check {
             Check::PublicIdTypeIsAbsent => CheckClass::SpecificationError,
             Check::PublicIdIdentifierIsAbsent => CheckClass::SpecificationError,
 
-            Check::Cidr0V4PrefixIsAbsent => CheckClass::SpecificationError,
-            Check::Cidr0V4LengthIsAbsent => CheckClass::SpecificationError,
-            Check::Cidr0V6PrefixIsAbsent => CheckClass::SpecificationError,
-            Check::Cidr0V6LengthIsAbsent => CheckClass::SpecificationError,
+            Check::Cidr0V4PrefixIsAbsent => CheckClass::Cidr0Error,
+            Check::Cidr0V4LengthIsAbsent => CheckClass::Cidr0Error,
+            Check::Cidr0V6PrefixIsAbsent => CheckClass::Cidr0Error,
+            Check::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
+
+            Check::MustUseHttps => CheckClass::IcannError,
+            Check::AllowOriginNotStar => CheckClass::IcannError,
         };
         CheckItem {
             check_class,

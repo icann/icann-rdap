@@ -85,6 +85,7 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
         .and_location(location)
         .and_content_length(content_length)
         .and_content_type(content_type)
+        .scheme(url.scheme())
         .host(
             url.host_str()
                 .expect("URL has no host. This shouldn't happen.")

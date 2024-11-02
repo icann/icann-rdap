@@ -266,6 +266,7 @@ pub async fn iana_request(
     let text = response.text().await?;
     let json: RdapBootstrapRegistry = serde_json::from_str(&text)?;
     let http_data = HttpData::now()
+        .scheme(url.scheme())
         .host(
             url.host_str()
                 .expect("URL has no host. This shouldn't happen.")
