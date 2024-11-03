@@ -143,7 +143,7 @@ impl GetChecks for NoticeOrRemark {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if let Some(description) = &self.description {
-            if matches!(description, StringOrStringArray::Many(_)) {
+            if matches!(description, StringOrStringArray::One(_)) {
                 items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
             }
         } else {

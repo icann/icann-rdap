@@ -325,6 +325,9 @@ enum CheckTypeArg {
 
     /// Cidr0 errors.
     Cidr0Error,
+
+    /// ICANN Profile errors.
+    IcannError,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -454,6 +457,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
                 CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
                 CheckTypeArg::SpecError => CheckClass::SpecificationError,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
+                CheckTypeArg::IcannError => CheckClass::IcannError,
             })
             .collect::<Vec<CheckClass>>()
     };
