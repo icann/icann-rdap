@@ -221,6 +221,8 @@ pub enum Check {
     // Notice Or Remark
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
     NoticeOrRemarkDescriptionIsAbsent,
+    #[strum(message = "RFC 9083 requires a description to be an array of strings")]
+    NoticeOrRemarkDescriptionIsString,
 
     // Handle
     #[strum(message = "handle appears to be empty or only whitespace")]
@@ -354,6 +356,7 @@ impl Check {
             Check::EventActionIsAbsent => CheckClass::SpecificationError,
 
             Check::NoticeOrRemarkDescriptionIsAbsent => CheckClass::SpecificationError,
+            Check::NoticeOrRemarkDescriptionIsString => CheckClass::SpecificationError,
 
             Check::HandleIsEmpty => CheckClass::SpecificationWarning,
 

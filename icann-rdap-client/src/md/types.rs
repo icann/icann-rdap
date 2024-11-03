@@ -1,11 +1,17 @@
 use std::any::TypeId;
 
+use lazy_static::lazy_static;
+
 use icann_rdap_common::cache::HttpData;
 use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::response::types::{
     Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
 };
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
+use reqwest::header::{
+    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
+    STRICT_TRANSPORT_SECURITY,
+};
 use strum::EnumMessage;
 
 use icann_rdap_common::check::{
@@ -140,7 +146,7 @@ impl ToMd for NoticeOrRemark {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         if let Some(description) = &self.description {
-            description.iter().for_each(|s| {
+            description.many().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
                     md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
                 }
@@ -197,26 +203,55 @@ impl ToMd for Common {
     }
 }
 
+const RECEIVED: &str = "Received";
+
+lazy_static! {
+    pub static ref NAMES: [String; 6] = [
+        HOST.to_string(),
+        reqwest::header::EXPIRES.to_string(),
+        reqwest::header::CACHE_CONTROL.to_string(),
+        reqwest::header::STRICT_TRANSPORT_SECURITY.to_string(),
+        reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
+        RECEIVED.to_string()
+    ];
+    pub static ref NAME_LEN: usize = NAMES
+        .iter()
+        .max_by_key(|x| x.to_string().len())
+        .map_or(8, |x| x.to_string().len());
+}
+
 impl ToMd for HttpData {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = HR.to_string();
-        md.push_str(&format!(" * Host          : {}\n", &self.host));
+        md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, &self.host));
         if let Some(content_length) = &self.content_length {
-            md.push_str(&format!(" * Content length: {}\n", content_length));
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                CONTENT_LENGTH, content_length
+            ));
         }
         if let Some(expires) = &self.expires {
-            md.push_str(&format!(" * Expires       : {}\n", expires));
+            md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", EXPIRES, expires));
         }
         if let Some(cache_control) = &self.cache_control {
-            md.push_str(&format!(" * Cache control : {}\n", cache_control));
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                CACHE_CONTROL, cache_control
+            ));
         }
         if let Some(strict_transport_security) = &self.strict_transport_security {
             md.push_str(&format!(
-                " * STS           : {}\n",
-                strict_transport_security
+                " * {:<NAME_LEN$}: {}\n",
+                STRICT_TRANSPORT_SECURITY, strict_transport_security
             ));
         }
-        md.push_str(&format!(" * Received      : {}\n", &self.received));
+        if let Some(access_control_allow_origin) = &self.access_control_allow_origin {
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                ACCESS_CONTROL_ALLOW_ORIGIN, access_control_allow_origin
+            ));
+        }
+        md.push_str(&format!(" * {RECEIVED:<NAME_LEN$}: {}\n", &self.received));
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
             .iter()

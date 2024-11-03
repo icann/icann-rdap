@@ -281,7 +281,7 @@ pub struct NoticeOrRemark {
     pub title: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<Vec<String>>,
+    pub description: Option<StringOrStringArray>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
@@ -293,7 +293,7 @@ impl NoticeOrRemark {
     pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
         NoticeOrRemark {
             title,
-            description: Some(description),
+            description: Some(StringOrStringArray::Many(description)),
             links,
         }
     }
@@ -658,11 +658,33 @@ impl ObjectCommon {
     }
 }
 
+/// Provides a choice between a string or an array of strings.
+///
+/// This is provided to be lenient with misbehaving RDAP servers that
+/// serve a string when they are suppose to be serving an array of
+/// strings. Usage of a string where an array of strings is an error.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum StringOrStringArray {
+    Many(Vec<String>),
+    One(String),
+}
+
+impl StringOrStringArray {
+    pub fn many(&self) -> Vec<String> {
+        match self {
+            StringOrStringArray::Many(many) => many.clone(),
+            StringOrStringArray::One(one) => vec![one.to_owned()],
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
     use crate::response::types::{
         Extension, Notice, Notices, RdapConformance, Remark, Remarks, Status, StatusValue,
+        StringOrStringArray,
     };
 
     use super::{Event, Link, Links, NoticeOrRemark, ObjectCommon, PublicId};
@@ -822,7 +844,12 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.title.as_ref().unwrap();
-        assert_eq!(actual.description.expect("must have description").len(), 2);
+        let StringOrStringArray::Many(description) =
+            actual.description.expect("must have description")
+        else {
+            panic!();
+        };
+        assert_eq!(description.len(), 2);
         actual.links.unwrap();
     }
 
