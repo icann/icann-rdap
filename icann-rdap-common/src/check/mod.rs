@@ -318,6 +318,14 @@ pub enum Check {
     #[strum(message = "publicId identifier is absent")]
     PublicIdIdentifierIsAbsent,
 
+    // HTTP
+    #[strum(message = "Use of access-control-allow-origin is recommended.")]
+    CorsAllowOriginRecommended,
+    #[strum(message = "Use of access-control-allow-origin with asterisk is recommended.")]
+    CorsAllowOriginStarRecommended,
+    #[strum(message = "Use of access-control-allow-credentials is not recommended.")]
+    CorsAllowCredentialsNotRecommended,
+
     // Cidr0
     #[strum(message = "Cidr0 v4 prefix is absent")]
     Cidr0V4PrefixIsAbsent,
@@ -331,7 +339,7 @@ pub enum Check {
     // ICANN Profile
     #[strum(message = "RDAP Service Must use HTTPS.")]
     MustUseHttps,
-    #[strum(message = "access-control-allow-origin is not '*'")]
+    #[strum(message = "access-control-allow-origin is not asterisk")]
     AllowOriginNotStar,
 }
 
@@ -404,6 +412,10 @@ impl Check {
 
             Check::PublicIdTypeIsAbsent => CheckClass::SpecificationError,
             Check::PublicIdIdentifierIsAbsent => CheckClass::SpecificationError,
+
+            Check::CorsAllowOriginRecommended => CheckClass::SpecificationWarning,
+            Check::CorsAllowOriginStarRecommended => CheckClass::SpecificationWarning,
+            Check::CorsAllowCredentialsNotRecommended => CheckClass::SpecificationWarning,
 
             Check::Cidr0V4PrefixIsAbsent => CheckClass::Cidr0Error,
             Check::Cidr0V4LengthIsAbsent => CheckClass::Cidr0Error,

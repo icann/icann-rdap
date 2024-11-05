@@ -5,6 +5,20 @@ use super::{Check, Checks, GetChecks};
 impl GetChecks for HttpData {
     fn get_checks(&self, params: crate::check::CheckParams) -> crate::check::Checks {
         let mut items = Vec::new();
+
+        // RFC checks
+        if let Some(allow_origin) = &self.access_control_allow_origin {
+            if !allow_origin.eq("*") {
+                items.push(Check::CorsAllowOriginStarRecommended.check_item())
+            }
+        } else {
+            items.push(Check::CorsAllowOriginRecommended.check_item())
+        }
+        if self.access_control_allow_credentials.is_some() {
+            items.push(Check::CorsAllowCredentialsNotRecommended.check_item())
+        }
+
+        // checks for ICANN profile
         if params
             .root
             .has_extension(ExtensionId::IcannRdapTechnicalImplementationGuide0)
@@ -27,6 +41,7 @@ impl GetChecks for HttpData {
                 items.push(Check::AllowOriginNotStar.check_item())
             }
         }
+
         Checks {
             struct_name: "HttpData",
             items,

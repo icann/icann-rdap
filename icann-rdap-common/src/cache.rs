@@ -16,6 +16,7 @@ pub struct HttpData {
     pub status_code: u16,
     pub location: Option<String>,
     pub access_control_allow_origin: Option<String>,
+    pub access_control_allow_credentials: Option<String>,
     pub strict_transport_security: Option<String>,
 }
 
@@ -32,6 +33,7 @@ impl HttpData {
         status_code: Option<u16>,
         location: Option<String>,
         access_control_allow_origin: Option<String>,
+        access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
     ) -> Self {
         Self {
@@ -45,6 +47,7 @@ impl HttpData {
             status_code: status_code.unwrap_or(200),
             location,
             access_control_allow_origin,
+            access_control_allow_credentials,
             strict_transport_security,
         }
     }
@@ -58,6 +61,7 @@ impl HttpData {
         status_code: Option<u16>,
         location: Option<String>,
         access_control_allow_origin: Option<String>,
+        access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
     ) -> Self {
         Self {
@@ -71,6 +75,7 @@ impl HttpData {
             status_code: status_code.unwrap_or(200),
             location,
             access_control_allow_origin,
+            access_control_allow_credentials,
             strict_transport_security,
         }
     }
