@@ -325,6 +325,10 @@ pub enum Check {
     CorsAllowOriginStarRecommended,
     #[strum(message = "Use of access-control-allow-credentials is not recommended.")]
     CorsAllowCredentialsNotRecommended,
+    #[strum(message = "No content-type header received.")]
+    ContentTypeIsAbsent,
+    #[strum(message = "Content-type is not application/rdap+json.")]
+    ContentTypeIsNotRdap,
 
     // Cidr0
     #[strum(message = "Cidr0 v4 prefix is absent")]
@@ -416,6 +420,8 @@ impl Check {
             Check::CorsAllowOriginRecommended => CheckClass::SpecificationWarning,
             Check::CorsAllowOriginStarRecommended => CheckClass::SpecificationWarning,
             Check::CorsAllowCredentialsNotRecommended => CheckClass::SpecificationWarning,
+            Check::ContentTypeIsAbsent => CheckClass::SpecificationError,
+            Check::ContentTypeIsNotRdap => CheckClass::SpecificationError,
 
             Check::Cidr0V4PrefixIsAbsent => CheckClass::Cidr0Error,
             Check::Cidr0V4LengthIsAbsent => CheckClass::Cidr0Error,

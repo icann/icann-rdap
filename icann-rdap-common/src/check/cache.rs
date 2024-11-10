@@ -1,4 +1,4 @@
-use crate::{cache::HttpData, response::types::ExtensionId};
+use crate::{cache::HttpData, media_types::RDAP_MEDIA_TYPE, response::types::ExtensionId};
 
 use super::{Check, Checks, GetChecks};
 
@@ -16,6 +16,13 @@ impl GetChecks for HttpData {
         }
         if self.access_control_allow_credentials.is_some() {
             items.push(Check::CorsAllowCredentialsNotRecommended.check_item())
+        }
+        if let Some(content_type) = &self.content_type {
+            if !content_type.eq(RDAP_MEDIA_TYPE) {
+                items.push(Check::ContentTypeIsNotRdap.check_item());
+            }
+        } else {
+            items.push(Check::ContentTypeIsAbsent.check_item());
         }
 
         // checks for ICANN profile
