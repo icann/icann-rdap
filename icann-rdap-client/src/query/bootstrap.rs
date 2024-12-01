@@ -3,7 +3,7 @@
 use std::sync::{Arc, RwLock};
 
 use icann_rdap_common::{
-    cache::HttpData,
+    httpdata::HttpData,
     iana::{
         get_preferred_url, iana_request, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
         IanaRegistryType,
@@ -356,7 +356,7 @@ where
 #[allow(non_snake_case)]
 mod test {
     use icann_rdap_common::{
-        cache::HttpData,
+        httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
     };
 

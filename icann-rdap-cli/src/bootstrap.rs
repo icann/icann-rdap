@@ -12,7 +12,7 @@ use icann_rdap_client::query::{
     qtype::QueryType,
 };
 use icann_rdap_common::{
-    cache::HttpData,
+    httpdata::HttpData,
     iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
 };
 use reqwest::Client;
@@ -138,7 +138,7 @@ where
 mod test {
     use icann_rdap_client::query::{bootstrap::PreferredUrl, qtype::QueryType};
     use icann_rdap_common::{
-        cache::HttpData,
+        httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
     };
     use serial_test::serial;

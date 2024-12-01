@@ -9,11 +9,11 @@ use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 pub mod autnum;
-pub mod cache;
 pub mod domain;
 pub mod entity;
 pub mod error;
 pub mod help;
+pub mod httpdata;
 pub mod nameserver;
 pub mod network;
 pub mod search;

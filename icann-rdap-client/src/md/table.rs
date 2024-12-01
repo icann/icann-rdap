@@ -195,7 +195,7 @@ impl ToMd for MultiPartTable {
 #[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::{
-        cache::HttpData,
+        httpdata::HttpData,
         response::{types::Common, RdapResponse},
     };
 

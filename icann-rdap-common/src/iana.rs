@@ -12,7 +12,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::cache::HttpData;
+use crate::httpdata::HttpData;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum IanaRegistryType {

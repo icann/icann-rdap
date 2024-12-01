@@ -2,7 +2,7 @@
 
 use crate::request::RequestData;
 use buildstructor::Builder;
-use icann_rdap_common::{cache::HttpData, check::CheckParams, response::RdapResponse};
+use icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse};
 use std::{any::TypeId, char};
 use strum::EnumMessage;
 

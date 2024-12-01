@@ -1,4 +1,4 @@
-use crate::{cache::HttpData, media_types::RDAP_MEDIA_TYPE, response::types::ExtensionId};
+use crate::{httpdata::HttpData, media_types::RDAP_MEDIA_TYPE, response::types::ExtensionId};
 
 use super::{Check, Checks, GetChecks};
 
@@ -61,8 +61,8 @@ impl GetChecks for HttpData {
 #[allow(non_snake_case)]
 mod tests {
     use crate::{
-        cache::HttpData,
         check::{Check, CheckParams, GetChecks},
+        httpdata::HttpData,
         response::{
             domain::Domain,
             types::{Common, ExtensionId, ObjectCommon},
