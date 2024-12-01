@@ -403,11 +403,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
     let cli = Cli::parse();
 
     if cli.reset {
-        // TODO uncomment once #10 is complete.
-        // info!("Removing cache files and resetting configuration.");
         dirs::reset()?;
-        // TODO uncomment once #10 is complete.
-        // info!("Exiting after reset.");
         return Ok(());
     }
 
