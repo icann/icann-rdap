@@ -93,9 +93,11 @@ struct Cli {
 
     /// An RDAP base signifier.
     ///
-    /// This option gets a base URL from the RDAP bootstrap registry maintained
+    /// This option gets a base URL from the RDAP bootstrap registries maintained
     /// by IANA. For example, using "com" will get the base URL for the .com
-    /// registry.
+    /// registry, and "arin" will get the base URL for the RDAP tags registry,
+    /// which points to the ARIN RIR. This option checks the bootstrap registries
+    /// in the following order: object tags, TLDs, IPv4, IPv6, ASN.
     #[arg(short = 'b', long, required = false, env = "RDAP_BASE")]
     base: Option<String>,
 
@@ -463,11 +465,11 @@ pub async fn wrapped_main() -> Result<(), CliError> {
     };
 
     let bootstrap_type = if let Some(tag) = cli.base {
-        BootstrapType::Tag(tag)
+        BootstrapType::Hint(tag)
     } else if let Some(base_url) = cli.base_url {
         BootstrapType::Url(base_url)
     } else {
-        BootstrapType::None
+        BootstrapType::Rfc9224
     };
 
     let processing_params = ProcessingParams {
