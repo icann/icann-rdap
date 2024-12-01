@@ -39,6 +39,9 @@ pub(crate) enum BootstrapType {
     /// bootstrap registries in the following order: object tags, TLDs, IP addresses,
     /// ASNs.
     Hint(String),
+
+    /// Use IANA.
+    Iana,
 }
 
 pub(crate) async fn get_base_url(
@@ -111,6 +114,7 @@ pub(crate) async fn get_base_url(
                 }
             }
         }
+        BootstrapType::Iana => Ok("https://rdap.iana.org".to_string()),
     }
 }
 

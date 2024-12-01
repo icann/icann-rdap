@@ -1,6 +1,7 @@
 use bootstrap::BootstrapType;
 use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
+use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
@@ -108,6 +109,18 @@ struct Cli {
     /// outlined in RFC 9224.
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
+
+    /// Default to IANA for TLD lookups.
+    ///
+    /// When querying for TLDs, use IANA as the authoritative server.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TLD_LOOKUP",
+        value_enum,
+        default_value_t = TldLookup::Iana,
+    )]
+    tld_lookup: TldLookup,
 
     /// Output format.
     ///
@@ -374,6 +387,15 @@ enum PagerType {
     Auto,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum TldLookup {
+    /// Use IANA for TLD lookups.
+    Iana,
+
+    /// No TLD specific lookups.
+    None,
+}
+
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
@@ -409,7 +431,15 @@ pub async fn wrapped_main() -> Result<(), CliError> {
 
     let level = LevelFilter::from(&cli.log_level);
 
-    let query_type = query_type_from_cli(&cli);
+    let mut query_type = query_type_from_cli(&cli);
+    // if using IANA for tld queries, adjust the domain name to not start with '.'
+    if let TldLookup::Iana = cli.tld_lookup {
+        if let QueryType::Domain(ref domain) = query_type {
+            if domain.is_tld() {
+                query_type = QueryType::Domain(domain.trim_start_matches('.').to_string())
+            }
+        }
+    }
 
     let use_pager = match cli.page_output {
         PagerType::Embedded => true,
@@ -464,6 +494,8 @@ pub async fn wrapped_main() -> Result<(), CliError> {
         BootstrapType::Hint(tag)
     } else if let Some(base_url) = cli.base_url {
         BootstrapType::Url(base_url)
+    } else if let TldLookup::Iana = cli.tld_lookup {
+        BootstrapType::Iana
     } else {
         BootstrapType::Rfc9224
     };
