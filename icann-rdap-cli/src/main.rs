@@ -1,12 +1,13 @@
 use bootstrap::BootstrapType;
 use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
-use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
+use query::InrBackupBootstrap;
 use query::ProcessType;
 use query::ProcessingParams;
+use query::TldLookup;
 use std::io::IsTerminal;
 use std::str::FromStr;
 use tracing::error;
@@ -110,17 +111,30 @@ struct Cli {
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
 
-    /// Default to IANA for TLD lookups.
+    /// Specify where to send TLD queries.
     ///
-    /// When querying for TLDs, use IANA as the authoritative server.
+    /// Defaults to IANA.
     #[arg(
         long,
         required = false,
         env = "RDAP_TLD_LOOKUP",
         value_enum,
-        default_value_t = TldLookup::Iana,
+        default_value_t = TldLookupArg::Iana,
     )]
-    tld_lookup: TldLookup,
+    tld_lookup: TldLookupArg,
+
+    /// Specify a backup INR bootstrap.
+    ///
+    /// This is used as a backup when the bootstrapping process cannot find an authoritative
+    /// server for IP addresses and Autonomous System Numbers. Defaults to ARIN.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_INR_BACKUP_BOOTSTRAP",
+        value_enum,
+        default_value_t = InrBackupBootstrapArg::Arin,
+    )]
+    inr_backup_bootstrap: InrBackupBootstrapArg,
 
     /// Output format.
     ///
@@ -388,11 +402,20 @@ enum PagerType {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum TldLookup {
+enum TldLookupArg {
     /// Use IANA for TLD lookups.
     Iana,
 
     /// No TLD specific lookups.
+    None,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum InrBackupBootstrapArg {
+    /// Use ARIN when no INR bootstrap can be found.
+    Arin,
+
+    /// No backup for INR bootstraps.
     None,
 }
 
@@ -431,24 +454,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
 
     let level = LevelFilter::from(&cli.log_level);
 
-    let mut bootstrap_type = if let Some(ref tag) = cli.base {
-        BootstrapType::Hint(tag.to_string())
-    } else if let Some(ref base_url) = cli.base_url {
-        BootstrapType::Url(base_url.to_string())
-    } else {
-        BootstrapType::Rfc9224
-    };
-
-    let mut query_type = query_type_from_cli(&cli);
-    // if using IANA for tld queries, adjust the domain name to not start with '.'
-    if let TldLookup::Iana = cli.tld_lookup {
-        if let QueryType::Domain(ref domain) = query_type {
-            if domain.is_tld() {
-                query_type = QueryType::Domain(domain.trim_start_matches('.').to_string());
-                bootstrap_type = BootstrapType::Iana;
-            }
-        }
-    }
+    let query_type = query_type_from_cli(&cli);
 
     let use_pager = match cli.page_output {
         PagerType::Embedded => true,
@@ -499,11 +505,31 @@ pub async fn wrapped_main() -> Result<(), CliError> {
             .collect::<Vec<CheckClass>>()
     };
 
+    let bootstrap_type = if let Some(ref tag) = cli.base {
+        BootstrapType::Hint(tag.to_string())
+    } else if let Some(ref base_url) = cli.base_url {
+        BootstrapType::Url(base_url.to_string())
+    } else {
+        BootstrapType::Rfc9224
+    };
+
+    let tld_lookup = match cli.tld_lookup {
+        TldLookupArg::Iana => TldLookup::Iana,
+        TldLookupArg::None => TldLookup::None,
+    };
+
+    let inr_backup_bootstrap = match cli.inr_backup_bootstrap {
+        InrBackupBootstrapArg::Arin => InrBackupBootstrap::Arin,
+        InrBackupBootstrapArg::None => InrBackupBootstrap::None,
+    };
+
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
         check_types,
         process_type,
+        tld_lookup,
+        inr_backup_bootstrap,
         error_on_checks: cli.error_on_checks,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
