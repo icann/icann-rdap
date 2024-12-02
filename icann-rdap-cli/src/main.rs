@@ -431,12 +431,21 @@ pub async fn wrapped_main() -> Result<(), CliError> {
 
     let level = LevelFilter::from(&cli.log_level);
 
+    let mut bootstrap_type = if let Some(ref tag) = cli.base {
+        BootstrapType::Hint(tag.to_string())
+    } else if let Some(ref base_url) = cli.base_url {
+        BootstrapType::Url(base_url.to_string())
+    } else {
+        BootstrapType::Rfc9224
+    };
+
     let mut query_type = query_type_from_cli(&cli);
     // if using IANA for tld queries, adjust the domain name to not start with '.'
     if let TldLookup::Iana = cli.tld_lookup {
         if let QueryType::Domain(ref domain) = query_type {
             if domain.is_tld() {
-                query_type = QueryType::Domain(domain.trim_start_matches('.').to_string())
+                query_type = QueryType::Domain(domain.trim_start_matches('.').to_string());
+                bootstrap_type = BootstrapType::Iana;
             }
         }
     }
@@ -488,16 +497,6 @@ pub async fn wrapped_main() -> Result<(), CliError> {
                 CheckTypeArg::IcannError => CheckClass::IcannError,
             })
             .collect::<Vec<CheckClass>>()
-    };
-
-    let bootstrap_type = if let Some(tag) = cli.base {
-        BootstrapType::Hint(tag)
-    } else if let Some(base_url) = cli.base_url {
-        BootstrapType::Url(base_url)
-    } else if let TldLookup::Iana = cli.tld_lookup {
-        BootstrapType::Iana
-    } else {
-        BootstrapType::Rfc9224
     };
 
     let processing_params = ProcessingParams {
