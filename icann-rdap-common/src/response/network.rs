@@ -5,7 +5,7 @@ use cidr_utils::cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    types::{to_option_status, Common, Link, ObjectCommon},
+    types::{to_option_status, Common, ExtensionId, Link, ObjectCommon},
     GetSelfLink, RdapResponseError, SelfLink, ToChild,
 };
 
@@ -259,7 +259,7 @@ impl Network {
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
             common: Common::level0_with_options()
-                .extension("cidr0")
+                .extension(ExtensionId::Cidr0.to_extension())
                 .and_notices(notices)
                 .build(),
             object_common: ObjectCommon::ip_network()

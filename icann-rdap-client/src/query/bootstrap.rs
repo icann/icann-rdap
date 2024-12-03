@@ -3,7 +3,7 @@
 use std::sync::{Arc, RwLock};
 
 use icann_rdap_common::{
-    cache::HttpData,
+    httpdata::HttpData,
     iana::{
         get_preferred_url, iana_request, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
         IanaRegistryType,
@@ -356,7 +356,7 @@ where
 #[allow(non_snake_case)]
 mod test {
     use icann_rdap_common::{
-        cache::HttpData,
+        httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
     };
 
@@ -394,7 +394,7 @@ mod test {
         mem.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapDns,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -446,7 +446,7 @@ mod test {
         mem.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapAsn,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -498,7 +498,7 @@ mod test {
         mem.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapIpv4,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -550,7 +550,7 @@ mod test {
         mem.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapIpv6,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -605,7 +605,7 @@ mod test {
         mem.put_bootstrap_registry(
             &IanaRegistryType::RdapObjectTags,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 

@@ -81,6 +81,10 @@ http = "1.0"
 # hyper (http implementation used by axum)
 hyper = { version = "1.0", features = ["full"] }
 
+# JSONPath
+jsonpath-rust = "=0.5.0"
+jsonpath_lib = "0.3.0"
+
 # internationalized domain names for applications
 idna = "0.5"
 

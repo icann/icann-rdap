@@ -31,27 +31,13 @@ impl GetChecks for Autnum {
                 if start_num > end_num {
                     items.push(Check::AutnumEndBeforeStart.check_item())
                 }
-                if *start_num == 0
-                    || *start_num == 65535
-                    || *start_num == 4294967295
-                    || *end_num == 0
-                    || *end_num == 65535
-                    || *end_num == 4294967295
-                {
+                if is_autnum_reserved(*start_num) || is_autnum_reserved(*end_num) {
                     items.push(Check::AutnumReserved.check_item())
                 }
-                if (64496..=64511).contains(start_num)
-                    || (64496..=64511).contains(end_num)
-                    || (65536..=65551).contains(start_num)
-                    || (65536..=65551).contains(end_num)
-                {
+                if is_autnum_documentation(*start_num) || is_autnum_documentation(*end_num) {
                     items.push(Check::AutnumDocumentation.check_item())
                 }
-                if (64512..=65534).contains(start_num)
-                    || (64512..=65534).contains(end_num)
-                    || (64512..=65534).contains(start_num)
-                    || (64512..=65534).contains(end_num)
-                {
+                if is_autnum_private_use(*start_num) || is_autnum_private_use(*end_num) {
                     items.push(Check::AutnumPrivateUse.check_item())
                 }
             }
@@ -77,14 +63,33 @@ impl GetChecks for Autnum {
     }
 }
 
+/// Returns true if the autnum is reserved.
+pub fn is_autnum_reserved(autnum: u32) -> bool {
+    autnum == 0 || autnum == 65535 || autnum == 4294967295 || (65552..=131071).contains(&autnum)
+}
+
+/// Returns true if the autnum is for documentation.
+pub fn is_autnum_documentation(autnum: u32) -> bool {
+    (64496..=64511).contains(&autnum) || (65536..=65551).contains(&autnum)
+}
+
+/// Returns true if the autnum is private use.
+pub fn is_autnum_private_use(autnum: u32) -> bool {
+    (64512..=65534).contains(&autnum) || (4200000000..=4294967294).contains(&autnum)
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+
+    use rstest::rstest;
 
     use crate::response::RdapResponse;
 
     use crate::check::{Check, CheckParams, GetChecks};
     use crate::response::autnum::Autnum;
+
+    use super::*;
 
     #[test]
     fn GIVEN_autnum_with_empty_name_WHEN_checked_THEN_empty_name_check() {
@@ -128,5 +133,74 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+    }
+
+    #[rstest]
+    #[case(0, true)]
+    #[case(65535, true)]
+    #[case(65552, true)]
+    #[case(131071, true)]
+    #[case(4294967295, true)]
+    #[case(1, false)]
+    #[case(65534, false)]
+    #[case(65551, false)]
+    #[case(131072, false)]
+    #[case(4294967294, false)]
+    fn GIVEN_autnum_WHEN_is_reserved_THEN_correct_result(
+        #[case] autnum: u32,
+        #[case] expected: bool,
+    ) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = is_autnum_reserved(autnum);
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case(64496, true)]
+    #[case(64511, true)]
+    #[case(65536, true)]
+    #[case(65551, true)]
+    #[case(64495, false)]
+    #[case(64512, false)]
+    #[case(65535, false)]
+    #[case(65552, false)]
+    fn GIVEN_autnum_WHEN_is_documentation_THEN_correct_result(
+        #[case] autnum: u32,
+        #[case] expected: bool,
+    ) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = is_autnum_documentation(autnum);
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case(64512, true)]
+    #[case(65534, true)]
+    #[case(4200000000, true)]
+    #[case(4294967294, true)]
+    #[case(65534, true)]
+    #[case(64511, false)]
+    #[case(65535, false)]
+    #[case(4199999999, false)]
+    #[case(4294967295, false)]
+    fn GIVEN_autnum_WHEN_is_private_use_THEN_correct_result(
+        #[case] autnum: u32,
+        #[case] expected: bool,
+    ) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = is_autnum_private_use(autnum);
+
+        // THEN
+        assert_eq!(actual, expected);
     }
 }

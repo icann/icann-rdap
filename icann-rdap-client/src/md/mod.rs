@@ -2,7 +2,7 @@
 
 use crate::request::RequestData;
 use buildstructor::Builder;
-use icann_rdap_common::{check::CheckParams, response::RdapResponse};
+use icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse};
 use std::{any::TypeId, char};
 use strum::EnumMessage;
 
@@ -69,6 +69,7 @@ impl MdOptions {
 pub struct MdParams<'a> {
     pub heading_level: usize,
     pub root: &'a RdapResponse,
+    pub http_data: &'a HttpData,
     pub parent_type: TypeId,
     pub check_types: &'a [CheckClass],
     pub options: &'a MdOptions,
@@ -81,6 +82,7 @@ impl<'a> MdParams<'a> {
             parent_type,
             heading_level: self.heading_level,
             root: self.root,
+            http_data: self.http_data,
             check_types: self.check_types,
             options: self.options,
             req_data: self.req_data,
@@ -102,6 +104,7 @@ pub trait ToMd {
 impl ToMd for RdapResponse {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
+        md.push_str(&params.http_data.to_md(params));
         let variant_md = match &self {
             RdapResponse::Entity(entity) => entity.to_md(params),
             RdapResponse::Domain(domain) => domain.to_md(params),

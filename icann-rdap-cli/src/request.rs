@@ -7,7 +7,7 @@ use icann_rdap_client::query::{
     qtype::QueryType,
     request::{rdap_url_request, ResponseData},
 };
-use icann_rdap_common::{cache::HttpData, response::GetSelfLink};
+use icann_rdap_common::{httpdata::HttpData, response::GetSelfLink};
 use pct_str::PctString;
 use pct_str::URIReserved;
 use reqwest::Client;

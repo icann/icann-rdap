@@ -12,7 +12,7 @@ use icann_rdap_client::query::{
     qtype::QueryType,
 };
 use icann_rdap_common::{
-    cache::HttpData,
+    httpdata::HttpData,
     iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
 };
 use reqwest::Client;
@@ -20,10 +20,25 @@ use tracing::debug;
 
 use crate::{dirs::bootstrap_cache_path, error::CliError};
 
+/// Defines the type of bootstrapping to use.
 pub(crate) enum BootstrapType {
-    None,
+    /// Use RFC 9224 bootstrapping.
+    ///
+    /// This is the typical bootstrapping for RDAP as defined by RFC 9224.
+    Rfc9224,
+
+    /// Use the supplied URL.
+    ///
+    /// Essentially, this means no bootstrapping as the client is being given
+    /// a full URL.
     Url(String),
-    Tag(String),
+
+    /// Use a hint.
+    ///
+    /// This will try to find an authoritative server by cycling through the various
+    /// bootstrap registries in the following order: object tags, TLDs, IP addresses,
+    /// ASNs.
+    Hint(String),
 }
 
 pub(crate) async fn get_base_url(
@@ -40,17 +55,61 @@ pub(crate) async fn get_base_url(
     let store = FileCacheBootstrapStore;
 
     match bootstrap_type {
-        BootstrapType::None => Ok(qtype_to_bootstrap_url(client, &store, query_type, |reg| {
+        BootstrapType::Rfc9224 => Ok(qtype_to_bootstrap_url(client, &store, query_type, |reg| {
             debug!("Fetching IANA registry {}", reg.url())
         })
         .await?),
         BootstrapType::Url(url) => Ok(url.to_owned()),
-        BootstrapType::Tag(tag) => {
+        BootstrapType::Hint(hint) => {
             fetch_bootstrap(&IanaRegistryType::RdapObjectTags, client, &store, |_reg| {
                 debug!("Fetching IANA RDAP Object Tag Registry")
             })
             .await?;
-            Ok(store.get_tag_urls(tag)?.preferred_url()?)
+            if let Ok(urls) = store.get_tag_urls(hint) {
+                Ok(urls.preferred_url()?)
+            } else {
+                fetch_bootstrap(
+                    &IanaRegistryType::RdapBootstrapDns,
+                    client,
+                    &store,
+                    |_reg| debug!("Fetching IANA RDAP DNS Registry"),
+                )
+                .await?;
+                if let Ok(urls) = store.get_dns_urls(hint) {
+                    Ok(urls.preferred_url()?)
+                } else {
+                    fetch_bootstrap(
+                        &IanaRegistryType::RdapBootstrapIpv4,
+                        client,
+                        &store,
+                        |_reg| debug!("Fetching IANA RDAP IPv4 Registry"),
+                    )
+                    .await?;
+                    if let Ok(urls) = store.get_ipv4_urls(hint) {
+                        Ok(urls.preferred_url()?)
+                    } else {
+                        fetch_bootstrap(
+                            &IanaRegistryType::RdapBootstrapIpv6,
+                            client,
+                            &store,
+                            |_reg| debug!("Fetching IANA RDAP IPv6 Registry"),
+                        )
+                        .await?;
+                        if let Ok(urls) = store.get_ipv6_urls(hint) {
+                            Ok(urls.preferred_url()?)
+                        } else {
+                            fetch_bootstrap(
+                                &IanaRegistryType::RdapBootstrapAsn,
+                                client,
+                                &store,
+                                |_reg| debug!("Fetching IANA RDAP ASN Registry"),
+                            )
+                            .await?;
+                            Ok(store.get_asn_urls(hint)?.preferred_url()?)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -138,7 +197,7 @@ where
 mod test {
     use icann_rdap_client::query::{bootstrap::PreferredUrl, qtype::QueryType};
     use icann_rdap_common::{
-        cache::HttpData,
+        httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
     };
     use serial_test::serial;
@@ -190,7 +249,7 @@ mod test {
         bs.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapDns,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -244,7 +303,7 @@ mod test {
         bs.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapAsn,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -298,7 +357,7 @@ mod test {
         bs.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapIpv4,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -352,7 +411,7 @@ mod test {
         bs.put_bootstrap_registry(
             &IanaRegistryType::RdapBootstrapIpv6,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 
@@ -409,7 +468,7 @@ mod test {
         bs.put_bootstrap_registry(
             &IanaRegistryType::RdapObjectTags,
             iana,
-            HttpData::now().host("example.com").build(),
+            HttpData::example().build(),
         )
         .expect("put iana registry");
 

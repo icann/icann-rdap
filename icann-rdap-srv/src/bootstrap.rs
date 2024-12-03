@@ -1,8 +1,8 @@
 use std::{path::PathBuf, time::Duration};
 
 use icann_rdap_common::{
-    cache::HttpData,
     client::{create_client, ClientConfig},
+    httpdata::HttpData,
     iana::{iana_request, IanaRegistry, IanaRegistryType},
 };
 use reqwest::Client;

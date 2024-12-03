@@ -11,6 +11,9 @@ pub trait StringCheck {
 
     /// Tests if a string is a Unicode domain name.
     fn is_unicode_domain_name(&self) -> bool;
+
+    /// Tests if a string is begins with a period and only has one label.
+    fn is_tld(&self) -> bool;
 }
 
 impl<T: ToString> StringCheck for T {
@@ -37,6 +40,17 @@ impl<T: ToString> StringCheck for T {
                     s.chars()
                         .all(|c| c == '-' || (!c.is_ascii_punctuation() && !c.is_whitespace()))
                 }))
+    }
+
+    fn is_tld(&self) -> bool {
+        let s = self.to_string();
+        s.starts_with('.')
+            && s.len() > 2
+            && s.matches('.').count() == 1
+            && s.split_terminator('.').all(|s| {
+                s.chars()
+                    .all(|c| !c.is_ascii_punctuation() && !c.is_whitespace())
+            })
     }
 }
 
@@ -156,6 +170,27 @@ mod tests {
 
         // WHEN
         let actual = test_string.is_ldh_string();
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("foo", false)]
+    #[case("", false)]
+    #[case("foo-bar", false)]
+    #[case("foo bar", false)]
+    #[case(".", false)]
+    #[case(".foo.bar", false)]
+    #[case(".foo", true)]
+    fn GIVEN_string_WHEN_is_tld_THEN_correct_result(
+        #[case] test_string: &str,
+        #[case] expected: bool,
+    ) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = test_string.is_tld();
 
         // THEN
         assert_eq!(actual, expected);
