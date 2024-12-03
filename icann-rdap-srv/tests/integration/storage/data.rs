@@ -526,6 +526,7 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
             .description
             .as_ref()
             .expect("no description!")
+            .many()
             .first()
             .expect("no description in notice"),
         "foo"
@@ -575,6 +576,7 @@ async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() 
             .description
             .as_ref()
             .expect("no description!")
+            .many()
             .first()
             .expect("no description in notice"),
         "bar"

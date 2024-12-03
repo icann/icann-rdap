@@ -4,7 +4,10 @@ use clap::builder::Styles;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::client::create_client;
 use icann_rdap_common::client::ClientConfig;
+use query::InrBackupBootstrap;
+use query::ProcessType;
 use query::ProcessingParams;
+use query::TldLookup;
 use std::io::IsTerminal;
 use std::str::FromStr;
 use tracing::error;
@@ -92,9 +95,11 @@ struct Cli {
 
     /// An RDAP base signifier.
     ///
-    /// This option gets a base URL from the RDAP bootstrap registry maintained
+    /// This option gets a base URL from the RDAP bootstrap registries maintained
     /// by IANA. For example, using "com" will get the base URL for the .com
-    /// registry.
+    /// registry, and "arin" will get the base URL for the RDAP tags registry,
+    /// which points to the ARIN RIR. This option checks the bootstrap registries
+    /// in the following order: object tags, TLDs, IPv4, IPv6, ASN.
     #[arg(short = 'b', long, required = false, env = "RDAP_BASE")]
     base: Option<String>,
 
@@ -105,6 +110,31 @@ struct Cli {
     /// outlined in RFC 9224.
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
+
+    /// Specify where to send TLD queries.
+    ///
+    /// Defaults to IANA.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TLD_LOOKUP",
+        value_enum,
+        default_value_t = TldLookupArg::Iana,
+    )]
+    tld_lookup: TldLookupArg,
+
+    /// Specify a backup INR bootstrap.
+    ///
+    /// This is used as a backup when the bootstrapping process cannot find an authoritative
+    /// server for IP addresses and Autonomous System Numbers. Defaults to ARIN.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_INR_BACKUP_BOOTSTRAP",
+        value_enum,
+        default_value_t = InrBackupBootstrapArg::Arin,
+    )]
+    inr_backup_bootstrap: InrBackupBootstrapArg,
 
     /// Output format.
     ///
@@ -136,6 +166,18 @@ struct Cli {
     /// non-zero status.
     #[arg(long, env = "RDAP_ERROR_ON_CHECK")]
     error_on_checks: bool,
+
+    /// Process Type
+    ///
+    /// Specifies a process for handling the data.
+    #[arg(
+        short = 'p',
+        long,
+        required = false,
+        env = "RDAP_PROCESS_TYPE",
+        value_enum
+    )]
+    process_type: Option<ProcTypeArg>,
 
     /// Pager Usage.
     ///
@@ -304,11 +346,17 @@ enum CheckTypeArg {
     /// Informational items.
     Info,
 
-    /// Checks for specification warnings.
+    /// Checks for STD 95 warnings.
     SpecWarn,
 
-    /// Checks for specficiation errors.
+    /// Checks for STD 95 errors.
     SpecError,
+
+    /// Cidr0 errors.
+    Cidr0Error,
+
+    /// ICANN Profile errors.
+    IcannError,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -333,6 +381,15 @@ enum LogLevel {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum ProcTypeArg {
+    /// Only display the data from the domain registrar.
+    Registrar,
+
+    /// Only display the data from the domain registry.
+    Registry,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum PagerType {
     /// Use the embedded pager.
     Embedded,
@@ -342,6 +399,24 @@ enum PagerType {
 
     /// Automatically determine pager use.
     Auto,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum TldLookupArg {
+    /// Use IANA for TLD lookups.
+    Iana,
+
+    /// No TLD specific lookups.
+    None,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum InrBackupBootstrapArg {
+    /// Use ARIN when no INR bootstrap can be found.
+    Arin,
+
+    /// No backup for INR bootstraps.
+    None,
 }
 
 impl From<&LogLevel> for LevelFilter {
@@ -358,17 +433,22 @@ impl From<&LogLevel> for LevelFilter {
 }
 
 #[tokio::main]
-pub async fn main() -> anyhow::Result<()> {
+pub async fn main() -> CliError {
+    if let Err(e) = wrapped_main().await {
+        eprintln!("\n{e}\n");
+        return e;
+    } else {
+        return CliError::Success;
+    }
+}
+
+pub async fn wrapped_main() -> Result<(), CliError> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
 
     if cli.reset {
-        // TODO uncomment once #10 is complete.
-        // info!("Removing cache files and resetting configuration.");
         dirs::reset()?;
-        // TODO uncomment once #10 is complete.
-        // info!("Exiting after reset.");
         return Ok(());
     }
 
@@ -398,6 +478,14 @@ pub async fn main() -> anyhow::Result<()> {
         OtypeArg::GtldWhois => OutputType::GtldWhois,
     };
 
+    let process_type = match cli.process_type {
+        Some(p) => match p {
+            ProcTypeArg::Registrar => ProcessType::Registrar,
+            ProcTypeArg::Registry => ProcessType::Registry,
+        },
+        None => ProcessType::Standard,
+    };
+
     let check_types = if cli.check_type.is_empty() {
         vec![
             CheckClass::Informational,
@@ -411,22 +499,37 @@ pub async fn main() -> anyhow::Result<()> {
                 CheckTypeArg::Info => CheckClass::Informational,
                 CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
                 CheckTypeArg::SpecError => CheckClass::SpecificationError,
+                CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
+                CheckTypeArg::IcannError => CheckClass::IcannError,
             })
             .collect::<Vec<CheckClass>>()
     };
 
-    let bootstrap_type = if let Some(tag) = cli.base {
-        BootstrapType::Tag(tag)
-    } else if let Some(base_url) = cli.base_url {
-        BootstrapType::Url(base_url)
+    let bootstrap_type = if let Some(ref tag) = cli.base {
+        BootstrapType::Hint(tag.to_string())
+    } else if let Some(ref base_url) = cli.base_url {
+        BootstrapType::Url(base_url.to_string())
     } else {
-        BootstrapType::None
+        BootstrapType::Rfc9224
+    };
+
+    let tld_lookup = match cli.tld_lookup {
+        TldLookupArg::Iana => TldLookup::Iana,
+        TldLookupArg::None => TldLookup::None,
+    };
+
+    let inr_backup_bootstrap = match cli.inr_backup_bootstrap {
+        InrBackupBootstrapArg::Arin => InrBackupBootstrap::Arin,
+        InrBackupBootstrapArg::None => InrBackupBootstrap::None,
     };
 
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
         check_types,
+        process_type,
+        tld_lookup,
+        inr_backup_bootstrap,
         error_on_checks: cli.error_on_checks,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,

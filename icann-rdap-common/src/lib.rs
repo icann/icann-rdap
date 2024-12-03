@@ -1,10 +1,10 @@
 #![allow(rustdoc::bare_urls)]
 #![doc = include_str!("../README.md")]
-pub mod cache;
 pub mod check;
 pub mod client;
 pub mod contact;
 pub mod dns_types;
+pub mod httpdata;
 pub mod iana;
 pub mod media_types;
 pub mod response;

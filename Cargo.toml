@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.18"
+version = "0.0.19"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -81,6 +81,10 @@ http = "1.0"
 # hyper (http implementation used by axum)
 hyper = { version = "1.0", features = ["full"] }
 
+# JSONPath
+jsonpath-rust = "=0.5.0"
+jsonpath_lib = "0.3.0"
+
 # internationalized domain names for applications
 idna = "0.5"
 
@@ -122,7 +126,7 @@ strum = "0.24"
 strum_macros = "0.24"
 
 # terminal markdown generator
-termimad = "0.26"
+termimad = "0.31"
 
 # error macros
 thiserror = "1.0"

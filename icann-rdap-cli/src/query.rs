@@ -1,7 +1,10 @@
+use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
+use icann_rdap_common::check::Checks;
 use icann_rdap_common::check::GetChecks;
+use tracing::debug;
 use tracing::error;
 use tracing::info;
 
@@ -41,10 +44,45 @@ pub(crate) enum OutputType {
     JsonExtra,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum ProcessType {
+    /// Standard data processing.
+    Standard,
+
+    /// Process data specifically from a registrar.
+    Registrar,
+
+    /// Process data specifically from a registry.
+    Registry,
+}
+
+/// Used for doing TLD Lookups.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum TldLookup {
+    /// Use IANA for TLD lookups.
+    Iana,
+
+    /// No TLD specific lookups.
+    None,
+}
+
+/// Used for doing TLD Lookups.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum InrBackupBootstrap {
+    /// Use ARIN if no bootstraps can be found for INR queries.
+    Arin,
+
+    /// No INR bootstrap backup.
+    None,
+}
+
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
     pub check_types: Vec<CheckClass>,
+    pub process_type: ProcessType,
+    pub tld_lookup: TldLookup,
+    pub inr_backup_bootstrap: InrBackupBootstrap,
     pub error_on_checks: bool,
     pub no_cache: bool,
     pub max_cache_age: u32,
@@ -78,7 +116,26 @@ async fn do_domain_query<'a, W: std::io::Write>(
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
+
+    // special processing for TLD Lookups
+    let temp_query_type;
+    let (base_url, query_type) = if let QueryType::Domain(ref domain) = query_type {
+        if domain.is_tld() && matches!(processing_params.tld_lookup, TldLookup::Iana) {
+            temp_query_type = QueryType::Domain(domain.trim_start_matches('.').to_string());
+            ("https://rdap.iana.org".to_string(), &temp_query_type)
+        } else {
+            (
+                get_base_url(&processing_params.bootstrap_type, client, query_type).await?,
+                query_type,
+            )
+        }
+    } else {
+        (
+            get_base_url(&processing_params.bootstrap_type, client, query_type).await?,
+            query_type,
+        )
+    };
+
     let response = do_request(&base_url, query_type, processing_params, client).await;
     let registrar_response;
     match response {
@@ -95,43 +152,68 @@ async fn do_domain_query<'a, W: std::io::Write>(
                 // copy other fields from `response`
                 ..response.clone()
             };
-            transactions = do_output(
-                processing_params,
-                &req_data,
-                &replaced_data,
-                write,
-                transactions,
-            )?;
+            if let ProcessType::Registrar = processing_params.process_type {
+                transactions =
+                    do_no_output(processing_params, &req_data, &replaced_data, transactions);
+            } else {
+                transactions = do_output(
+                    processing_params,
+                    &req_data,
+                    &replaced_data,
+                    write,
+                    transactions,
+                )?;
+            }
             let regr_source_host;
             let regr_req_data: RequestData;
-            if let Some(url) = get_related_link(&response.rdap).first() {
-                info!("Querying domain name from registrar.");
-                let query_type = QueryType::Url(url.to_string());
-                let registrar_response_result =
-                    do_request(&base_url, &query_type, processing_params, client).await;
-                match registrar_response_result {
-                    Ok(response_data) => {
-                        registrar_response = response_data;
-                        regr_source_host = registrar_response.http_data.host.to_owned();
-                        regr_req_data = RequestData {
-                            req_number: 2,
-                            source_host: &regr_source_host,
-                            source_type: SourceType::DomainRegistrar,
-                        };
-                        transactions = do_output(
-                            processing_params,
-                            &regr_req_data,
-                            &registrar_response,
-                            write,
-                            transactions,
-                        )?;
+            if !matches!(processing_params.process_type, ProcessType::Registry) {
+                if let Some(url) = get_related_link(&response.rdap).first() {
+                    info!("Querying domain name from registrar.");
+                    debug!("Registrar RDAP Url: {url}");
+                    let query_type = QueryType::Url(url.to_string());
+                    let registrar_response_result =
+                        do_request(&base_url, &query_type, processing_params, client).await;
+                    match registrar_response_result {
+                        Ok(response_data) => {
+                            registrar_response = response_data;
+                            regr_source_host = registrar_response.http_data.host.to_owned();
+                            regr_req_data = RequestData {
+                                req_number: 2,
+                                source_host: &regr_source_host,
+                                source_type: SourceType::DomainRegistrar,
+                            };
+                            if let ProcessType::Registry = processing_params.process_type {
+                                transactions = do_no_output(
+                                    processing_params,
+                                    &regr_req_data,
+                                    &registrar_response,
+                                    transactions,
+                                );
+                            } else {
+                                transactions = do_output(
+                                    processing_params,
+                                    &regr_req_data,
+                                    &registrar_response,
+                                    write,
+                                    transactions,
+                                )?;
+                            }
+                        }
+                        Err(error) => return Err(error),
                     }
-                    Err(error) => return Err(error),
+                } else if matches!(processing_params.process_type, ProcessType::Registrar) {
+                    return Err(CliError::NoRegistrarFound);
                 }
             }
             do_final_output(processing_params, write, transactions)?;
         }
-        Err(error) => return Err(error),
+        Err(error) => {
+            if matches!(processing_params.process_type, ProcessType::Registry) {
+                return Err(CliError::NoRegistryFound);
+            } else {
+                return Err(error);
+            }
+        }
     };
     Ok(())
 }
@@ -143,8 +225,16 @@ async fn do_inr_query<'a, W: std::io::Write>(
     write: &mut W,
 ) -> Result<(), CliError> {
     let mut transactions = RequestResponses::new();
-    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
-    let response = do_request(&base_url, query_type, processing_params, client).await;
+    let mut base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await;
+    if base_url.is_err()
+        && matches!(
+            processing_params.inr_backup_bootstrap,
+            InrBackupBootstrap::Arin
+        )
+    {
+        base_url = Ok("https://rdap.arin.net/registry".to_string());
+    };
+    let response = do_request(&base_url?, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -248,6 +338,7 @@ fn do_output<'a, W: std::io::Write>(
                 &response.rdap.to_md(MdParams {
                     heading_level: 1,
                     root: &response.rdap,
+                    http_data: &response.http_data,
                     parent_type: response.rdap.get_type(),
                     check_types: &processing_params.check_types,
                     options: &MdOptions::default(),
@@ -262,6 +353,7 @@ fn do_output<'a, W: std::io::Write>(
                 response.rdap.to_md(MdParams {
                     heading_level: 1,
                     root: &response.rdap,
+                    http_data: &response.http_data,
                     parent_type: response.rdap.get_type(),
                     check_types: &processing_params.check_types,
                     options: &MdOptions {
@@ -284,19 +376,41 @@ fn do_output<'a, W: std::io::Write>(
         _ => {} // do nothing
     };
 
-    let checks = response.rdap.get_checks(CheckParams {
-        do_subchecks: true,
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-    });
-
     let req_res = RequestResponse {
-        checks,
+        checks: do_output_checks(response),
         req_data,
         res_data: response,
     };
     transactions.push(req_res);
     Ok(transactions)
+}
+
+fn do_no_output<'a>(
+    _processing_params: &ProcessingParams,
+    req_data: &'a RequestData,
+    response: &'a ResponseData,
+    mut transactions: RequestResponses<'a>,
+) -> RequestResponses<'a> {
+    let req_res = RequestResponse {
+        checks: do_output_checks(response),
+        req_data,
+        res_data: response,
+    };
+    transactions.push(req_res);
+    transactions
+}
+
+fn do_output_checks(response: &ResponseData) -> Checks {
+    let md_params = CheckParams {
+        do_subchecks: true,
+        root: &response.rdap,
+        parent_type: response.rdap.get_type(),
+    };
+    let mut checks = response.rdap.get_checks(md_params);
+    checks
+        .items
+        .append(&mut response.http_data.get_checks(md_params).items);
+    checks
 }
 
 fn do_final_output<W: std::io::Write>(

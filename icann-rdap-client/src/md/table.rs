@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use super::{string::StringUtil, MdParams, ToMd};
+use super::{string::StringUtil, MdHeaderText, MdParams, ToMd};
 
 pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
@@ -26,14 +26,18 @@ impl MultiPartTable {
     }
 
     pub(crate) fn data_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
-        self.rows
-            .push(Row::Data((name.to_string(), value.to_string())));
+        self.rows.push(Row::Data((
+            name.to_string(),
+            value.to_string().replace_ws(),
+        )));
         self
     }
 
     pub(crate) fn data(mut self, name: &impl ToString, value: impl ToString) -> Self {
-        self.rows
-            .push(Row::Data((name.to_string(), value.to_string())));
+        self.rows.push(Row::Data((
+            name.to_string(),
+            value.to_string().replace_ws(),
+        )));
         self
     }
 
@@ -42,12 +46,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::Data((
                     name.to_string(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             } else {
                 self.rows.push(Row::Data((
                     String::default(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             }
         });
@@ -59,12 +63,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::Data((
                     name.to_string(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             } else {
                 self.rows.push(Row::Data((
                     String::default(),
-                    format!("* {}", v.to_string()),
+                    format!("* {}", v.to_string().replace_ws()),
                 )))
             }
         });
@@ -74,7 +78,11 @@ impl MultiPartTable {
     pub(crate) fn and_data_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
         self.rows.push(Row::Data((
             name.to_string(),
-            value.as_deref().unwrap_or_default().to_string(),
+            value
+                .as_deref()
+                .unwrap_or_default()
+                .to_string()
+                .replace_ws(),
         )));
         self
     }
@@ -109,6 +117,28 @@ impl MultiPartTable {
         } else {
             self
         }
+    }
+
+    pub(crate) fn summary(mut self, header_text: MdHeaderText) -> Self {
+        self.rows.push(Row::Data((
+            "Summary".to_string(),
+            header_text.to_string().replace_ws().to_string(),
+        )));
+        // note that termimad has limits on list depth, so we can't go too crazy.
+        // however, this seems perfectly reasonable for must RDAP use cases.
+        for level1 in header_text.children {
+            self.rows.push(Row::Data((
+                "".to_string(),
+                format!("* {}", level1.to_string().replace_ws()),
+            )));
+            for level2 in level1.children {
+                self.rows.push(Row::Data((
+                    "".to_string(),
+                    format!("  * {}", level2.to_string().replace_ws()),
+                )));
+            }
+        }
+        self
     }
 }
 
@@ -164,7 +194,10 @@ impl ToMd for MultiPartTable {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{types::Common, RdapResponse};
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        response::{types::Common, RdapResponse},
+    };
 
     use crate::{md::ToMd, request::RequestData};
 
@@ -190,6 +223,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -221,6 +255,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -253,6 +288,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -287,6 +323,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -319,6 +356,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
@@ -357,6 +395,7 @@ mod tests {
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
+            http_data: &HttpData::example().build(),
             parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
             check_types: &[],
             options: &crate::md::MdOptions::plain_text(),

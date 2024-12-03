@@ -5,8 +5,10 @@ use icann_rdap_common::response::domain::{Domain, SecureDns, Variant};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
+use crate::registered_redactions::{self, text_or_registered_redaction};
+
+use super::redacted::REDACTED_TEXT;
 use super::types::{events_to_table, links_to_table, public_ids_to_table};
-use super::FromMd;
 use super::{
     string::StringListUtil,
     string::StringUtil,
@@ -14,6 +16,7 @@ use super::{
     types::checks_to_table,
     MdParams, ToMd, HR,
 };
+use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {
@@ -22,26 +25,32 @@ impl ToMd for Domain {
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 
         // header
-        let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Domain {unicode_name}")
-        } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Domain {ldh_name}")
-        } else if let Some(handle) = &self.object_common.handle {
-            format!("Domain {handle}")
-        } else {
-            "Domain".to_string()
-        };
-        md.push_str(&header_text.to_header(params.heading_level, params.options));
+        let header_text = self.get_header_text();
+        md.push_str(
+            &header_text
+                .to_string()
+                .to_header(params.heading_level, params.options),
+        );
 
         // multipart data
         let mut table = MultiPartTable::new();
+
+        let domain_handle = text_or_registered_redaction(
+            params.root,
+            &registered_redactions::RedactedName::RegistryDomainId,
+            &self.object_common.handle,
+            REDACTED_TEXT,
+        );
+
+        // summary
+        table = table.summary(header_text);
 
         // identifiers
         table = table
             .header_ref(&"Identifiers")
             .and_data_ref(&"LDH Name", &self.ldh_name)
             .and_data_ref(&"Unicode Name", &self.unicode_name)
-            .and_data_ref(&"Handle", &self.object_common.handle);
+            .and_data_ref(&"Handle", &domain_handle);
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -215,4 +224,33 @@ fn dns_digest_type(dt: &Option<u8>) -> Option<String> {
             format!("{dt} - {a}")
         })
     })
+}
+
+impl MdUtil for Domain {
+    fn get_header_text(&self) -> MdHeaderText {
+        let header_text = if let Some(unicode_name) = &self.unicode_name {
+            format!("Domain {}", unicode_name.replace_ws())
+        } else if let Some(ldh_name) = &self.ldh_name {
+            format!("Domain {}", ldh_name.replace_ws())
+        } else if let Some(handle) = &self.object_common.handle {
+            format!("Domain {}", handle.replace_ws())
+        } else {
+            "Domain".to_string()
+        };
+        let mut header_text = MdHeaderText::builder().header_text(header_text);
+        if let Some(entities) = &self.object_common.entities {
+            for entity in entities {
+                header_text = header_text.children_entry(entity.get_header_text());
+            }
+        };
+        if let Some(nameservers) = &self.nameservers {
+            for ns in nameservers {
+                header_text = header_text.children_entry(ns.get_header_text());
+            }
+        };
+        if let Some(network) = &self.network {
+            header_text = header_text.children_entry(network.get_header_text());
+        }
+        header_text.build()
+    }
 }

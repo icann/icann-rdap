@@ -1,18 +1,24 @@
 use std::any::TypeId;
 
 use icann_rdap_common::contact::{NameParts, PostalAddress};
-use icann_rdap_common::response::entity::Entity;
+use icann_rdap_common::response::entity::{Entity, EntityRole};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
+use crate::registered_redactions::{
+    are_redactions_registered_for_roles, is_redaction_registered_for_role,
+    text_or_registered_redaction_for_role, RedactedName,
+};
+
+use super::redacted::REDACTED_TEXT;
 use super::types::public_ids_to_table;
-use super::FromMd;
 use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
     MdParams, ToMd, HR,
 };
+use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Entity {
     fn to_md(&self, params: MdParams) -> String {
@@ -21,39 +27,147 @@ impl ToMd for Entity {
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 
         // header
-        let header_text = if let Some(roles) = &self.roles {
-            roles.first().unwrap_or(&String::default()).to_title_case()
-        } else {
-            "Entity".to_string()
-        };
-        md.push_str(&header_text.to_header(params.heading_level, params.options));
+        let header_text = self.get_header_text();
+        md.push_str(
+            &header_text
+                .to_string()
+                .to_header(params.heading_level, params.options),
+        );
+
+        // A note about the RFC 9537 redactions. A lot of this code is to do RFC 9537 redactions
+        // that are registered with the IANA. As RFC 9537 is horribly broken, it is likely only
+        // gTLD registries will use registered redactions, and when they do they will use all
+        // of them. Therefore, as horribly complicated as this logic is, it attempts to simplify
+        // things by assuming all the registrations will be used at once, which will be the case
+        // in the gTLD space.
+
+        // check if registrant or tech ids are RFC 9537 redacted
+        let mut entity_handle = text_or_registered_redaction_for_role(
+            params.root,
+            &RedactedName::RegistryRegistrantId,
+            self,
+            &EntityRole::Registrant,
+            &self.object_common.handle,
+            REDACTED_TEXT,
+        );
+        entity_handle = text_or_registered_redaction_for_role(
+            params.root,
+            &RedactedName::RegistryTechId,
+            self,
+            &EntityRole::Technical,
+            &entity_handle,
+            REDACTED_TEXT,
+        );
 
         // multipart data
         let mut table = MultiPartTable::new();
 
+        // summary
+        table = table.summary(header_text);
+
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_data_ref(&"Handle", &self.object_common.handle);
+            .and_data_ref(&"Handle", &entity_handle)
+            .and_data_ul(&"Roles", self.roles.to_owned());
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
 
         if let Some(contact) = self.contact() {
+            // nutty RFC 9537 redaction stuff
+
+            // check if registrant or tech name are redacted
+            let mut registrant_name = text_or_registered_redaction_for_role(
+                params.root,
+                &RedactedName::RegistrantName,
+                self,
+                &EntityRole::Registrant,
+                &contact.full_name,
+                REDACTED_TEXT,
+            );
+            registrant_name = text_or_registered_redaction_for_role(
+                params.root,
+                &RedactedName::TechName,
+                self,
+                &EntityRole::Technical,
+                &registrant_name,
+                REDACTED_TEXT,
+            );
+
+            // check to see if registrant postal address parts are redacted
+            let postal_addresses = if are_redactions_registered_for_roles(
+                params.root,
+                &[
+                    &RedactedName::RegistrantStreet,
+                    &RedactedName::RegistrantCity,
+                    &RedactedName::RegistrantPostalCode,
+                ],
+                self,
+                &[&EntityRole::Registrant],
+            ) {
+                let mut new_pas = contact.postal_addresses.clone();
+                if let Some(ref mut new_pas) = new_pas {
+                    new_pas.iter_mut().for_each(|pa| {
+                        pa.street_parts = Some(vec![REDACTED_TEXT.to_string()]);
+                        pa.locality = Some(REDACTED_TEXT.to_string());
+                        pa.postal_code = Some(REDACTED_TEXT.to_string());
+                    })
+                }
+                new_pas
+            } else {
+                contact.postal_addresses
+            };
+
             table = table
                 .header_ref(&"Contact")
                 .and_data_ref_maybe(&"Kind", &contact.kind)
-                .and_data_ref_maybe(&"Full Name", &contact.full_name)
+                .and_data_ref_maybe(&"Full Name", &registrant_name)
                 .and_data_ul(&"Titles", contact.titles)
                 .and_data_ul(&"Org Roles", contact.roles)
-                .and_data_ul(&"Nicknames", contact.nick_names)
-                .and_data_ul(&"Organization Names", contact.organization_names)
-                .and_data_ul(&"Languages", contact.langs)
-                .and_data_ul(&"Phones", contact.phones)
-                .and_data_ul(&"Emails", contact.emails)
+                .and_data_ul(&"Nicknames", contact.nick_names);
+            if is_redaction_registered_for_role(
+                params.root,
+                &RedactedName::RegistrantOrganization,
+                self,
+                &EntityRole::Registrant,
+            ) {
+                table = table.data_ref(&"Organization Name", &REDACTED_TEXT.to_string());
+            } else {
+                table = table.and_data_ul(&"Organization Names", contact.organization_names);
+            }
+            table = table.and_data_ul(&"Languages", contact.langs);
+            if are_redactions_registered_for_roles(
+                params.root,
+                &[
+                    &RedactedName::RegistrantPhone,
+                    &RedactedName::RegistrantPhoneExt,
+                    &RedactedName::RegistrantFax,
+                    &RedactedName::RegistrantFaxExt,
+                    &RedactedName::TechPhone,
+                    &RedactedName::TechPhoneExt,
+                ],
+                self,
+                &[&EntityRole::Registrant, &EntityRole::Technical],
+            ) {
+                table = table.data_ref(&"Phones", &REDACTED_TEXT.to_string());
+            } else {
+                table = table.and_data_ul(&"Phones", contact.phones);
+            }
+            if are_redactions_registered_for_roles(
+                params.root,
+                &[&RedactedName::TechEmail, &RedactedName::RegistrantEmail],
+                self,
+                &[&EntityRole::Registrant, &EntityRole::Technical],
+            ) {
+                table = table.data_ref(&"Emails", &REDACTED_TEXT.to_string());
+            } else {
+                table = table.and_data_ul(&"Emails", contact.emails);
+            }
+            table = table
                 .and_data_ul(&"Web Contact", contact.contact_uris)
                 .and_data_ul(&"URLs", contact.urls);
-            table = contact.postal_addresses.add_to_mptable(table, params);
+            table = postal_addresses.add_to_mptable(table, params);
             table = contact.name_parts.add_to_mptable(table, params)
         }
 
@@ -204,5 +318,45 @@ impl ToMpTable for Option<NameParts> {
             }
         }
         table
+    }
+}
+
+impl MdUtil for Entity {
+    fn get_header_text(&self) -> MdHeaderText {
+        let role = self.roles.as_ref().map(|roles| {
+            roles
+                .first()
+                .unwrap_or(&String::default())
+                .replace_ws()
+                .to_title_case()
+        });
+        let header_text = if let Some(handle) = &self.object_common.handle {
+            if let Some(role) = role {
+                format!("{} ({})", handle.replace_ws(), role)
+            } else {
+                format!("Entity {}", handle)
+            }
+        } else if let Some(role) = role {
+            role.to_string()
+        } else {
+            "Entity".to_string()
+        };
+        let mut header_text = MdHeaderText::builder().header_text(header_text);
+        if let Some(entities) = &self.object_common.entities {
+            for entity in entities {
+                header_text = header_text.children_entry(entity.get_header_text());
+            }
+        };
+        if let Some(networks) = &self.networks {
+            for network in networks {
+                header_text = header_text.children_entry(network.get_header_text());
+            }
+        };
+        if let Some(autnums) = &self.autnums {
+            for autnum in autnums {
+                header_text = header_text.children_entry(autnum.get_header_text());
+            }
+        };
+        header_text.build()
     }
 }

@@ -4,7 +4,7 @@
 use std::{fmt::Display, sync::PoisonError};
 
 use icann_rdap_common::{
-    cache::HttpData,
+    httpdata::HttpData,
     iana::{BootstrapRegistryError, IanaResponseError},
     response::RdapResponseError,
 };
@@ -13,6 +13,7 @@ use thiserror::Error;
 pub mod gtld;
 pub mod md;
 pub mod query;
+pub mod registered_redactions;
 pub mod request;
 
 #[doc(inline)]

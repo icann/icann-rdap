@@ -9,6 +9,11 @@ use serde_json::{json, Value};
 use super::{string::StringUtil, table::MultiPartTable, MdOptions, MdParams, ToMd};
 use icann_rdap_common::response::RdapResponse;
 
+/// The text to appear if something is redacted.
+///
+/// This should be REDACTED in bold.
+pub const REDACTED_TEXT: &str = "*REDACTED*";
+
 impl ToMd for &[Redacted] {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
@@ -114,6 +119,14 @@ fn convert_redactions<'a>(
         let item_map = item.as_object().unwrap();
         let post_path = get_string_from_map(item_map, "postPath");
         let method = get_string_from_map(item_map, "method");
+
+        if let Some(path_lang) = item_map.get("pathLang") {
+            if let Some(path_lang) = path_lang.as_str() {
+                if !path_lang.eq_ignore_ascii_case("jsonpath") {
+                    continue;
+                }
+            }
+        }
 
         // if method doesn't equal emptyValue or partialValue, we don't need to do anything, we can skip to the next item
         if method != "emptyValue" && method != "partialValue" && !post_path.is_empty() {

@@ -16,7 +16,7 @@ use self::{
     nameserver::Nameserver,
     network::Network,
     search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
-    types::{Link, Links, RdapConformance},
+    types::{ExtensionId, Link, Links, RdapConformance},
 };
 
 pub mod autnum;
@@ -241,6 +241,12 @@ impl RdapResponse {
         }
     }
 
+    pub fn has_extension(&self, extension_id: ExtensionId) -> bool {
+        self.get_conformance().map_or(false, |conformance| {
+            conformance.contains(&extension_id.to_extension())
+        })
+    }
+
     pub fn is_redirect(&self) -> bool {
         match self {
             RdapResponse::ErrorResponse(e) => e.is_redirect(),
@@ -284,7 +290,7 @@ mod tests {
     use super::RdapResponse;
 
     #[test]
-    fn GIVEN_redaction_response_when_try_from_THEN_response_is_lookup_with_redaction() {
+    fn GIVEN_redaction_response_WHEN_try_from_THEN_response_is_lookup_with_redaction() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/lookup_with_redaction.json")).unwrap();
@@ -297,7 +303,20 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_response_when_try_from_THEN_response_is_domain_search_results_with_redaction(
+    fn GIVEN_redaction_response_WHEN_has_extension_THEN_true() {
+        // GIVEN
+        let expected: Value =
+            serde_json::from_str(include_str!("test_files/lookup_with_redaction.json")).unwrap();
+
+        // WHEN
+        let actual = RdapResponse::try_from(expected).unwrap();
+
+        // THEN
+        assert!(actual.has_extension(crate::response::types::ExtensionId::Redacted));
+    }
+
+    #[test]
+    fn GIVEN_redaction_response_WHEN_try_from_THEN_response_is_domain_search_results_with_redaction(
     ) {
         // GIVEN
         let expected: Value =

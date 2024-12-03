@@ -1,9 +1,17 @@
 use std::any::TypeId;
 
+use lazy_static::lazy_static;
+
+use icann_rdap_common::check::string::StringCheck;
+use icann_rdap_common::httpdata::HttpData;
 use icann_rdap_common::response::types::{
     Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
 };
 use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
+use reqwest::header::{
+    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
+    STRICT_TRANSPORT_SECURITY,
+};
 use strum::EnumMessage;
 
 use icann_rdap_common::check::{
@@ -64,37 +72,38 @@ impl ToMd for Link {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(title) = &self.title {
-            md.push_str(&format!("* {title}: "));
+            md.push_str(&format!("* {}:\n", title.replace_ws()));
         } else {
-            md.push_str("* Link: ")
-        };
-        if let Some(rel) = &self.rel {
-            md.push_str(&format!("[{rel}] "));
+            md.push_str("* Link:\n")
         };
         if let Some(href) = &self.href {
-            md.push_str(&href.to_owned().to_inline(params.options));
-        }
-        md.push(' ');
+            md.push_str(&format!(
+                "* {}\n",
+                href.to_owned().to_inline(params.options)
+            ));
+        };
+        if let Some(rel) = &self.rel {
+            md.push_str(&format!("* Relation:  {}\n", rel.replace_ws()));
+        };
         if let Some(media_type) = &self.media_type {
-            md.push_str(&format!("of type '{media_type}' "));
+            md.push_str(&format!("* Type:      {}\n", media_type.replace_ws()));
         };
         if let Some(media) = &self.media {
-            md.push_str(&format!("to be used with {media} ",));
+            md.push_str(&format!("* Media:     {}\n", media.replace_ws()));
         };
         if let Some(value) = &self.value {
-            md.push_str(&format!("for {value} ",));
+            md.push_str(&format!("* Value:     {}\n", value.replace_ws()));
         };
         if let Some(hreflang) = &self.hreflang {
             match hreflang {
                 icann_rdap_common::response::types::HrefLang::Lang(lang) => {
-                    md.push_str(&format!("in language {}", lang));
+                    md.push_str(&format!("* Language:  {}\n", lang.replace_ws()));
                 }
                 icann_rdap_common::response::types::HrefLang::Langs(langs) => {
-                    md.push_str(&format!("in languages {}", langs.join(", ")));
+                    md.push_str(&format!("* Languages: {}", langs.join(", ").replace_ws()));
                 }
             }
         };
-        md.push('\n');
         let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
         md.push_str(&checks_ul(&checks, params));
         md.push('\n');
@@ -137,9 +146,11 @@ impl ToMd for NoticeOrRemark {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         if let Some(description) = &self.description {
-            description
-                .iter()
-                .for_each(|s| md.push_str(&format!("> {}\n\n", s.trim())));
+            description.many().iter().for_each(|s| {
+                if !s.is_whitespace_or_empty() {
+                    md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
+                }
+            });
         }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
             .items
@@ -188,6 +199,72 @@ impl ToMd for Common {
         if not_empty {
             md.push_str(HR);
         };
+        md
+    }
+}
+
+const RECEIVED: &str = "Received";
+
+lazy_static! {
+    pub static ref NAMES: [String; 6] = [
+        HOST.to_string(),
+        reqwest::header::EXPIRES.to_string(),
+        reqwest::header::CACHE_CONTROL.to_string(),
+        reqwest::header::STRICT_TRANSPORT_SECURITY.to_string(),
+        reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
+        RECEIVED.to_string()
+    ];
+    pub static ref NAME_LEN: usize = NAMES
+        .iter()
+        .max_by_key(|x| x.to_string().len())
+        .map_or(8, |x| x.to_string().len());
+}
+
+impl ToMd for HttpData {
+    fn to_md(&self, params: MdParams) -> String {
+        let mut md = HR.to_string();
+        md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, &self.host));
+        if let Some(content_length) = &self.content_length {
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                CONTENT_LENGTH, content_length
+            ));
+        }
+        if let Some(expires) = &self.expires {
+            md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", EXPIRES, expires));
+        }
+        if let Some(cache_control) = &self.cache_control {
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                CACHE_CONTROL, cache_control
+            ));
+        }
+        if let Some(strict_transport_security) = &self.strict_transport_security {
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                STRICT_TRANSPORT_SECURITY, strict_transport_security
+            ));
+        }
+        if let Some(access_control_allow_origin) = &self.access_control_allow_origin {
+            md.push_str(&format!(
+                " * {:<NAME_LEN$}: {}\n",
+                ACCESS_CONTROL_ALLOW_ORIGIN, access_control_allow_origin
+            ));
+        }
+        md.push_str(&format!(" * {RECEIVED:<NAME_LEN$}: {}\n", &self.received));
+        self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
+            .items
+            .iter()
+            .filter(|item| params.check_types.contains(&item.check_class))
+            .for_each(|item| {
+                md.push_str(&format!(
+                    "* {}: {}\n",
+                    &item.check_class.to_string().to_em(params.options),
+                    item.check
+                        .get_message()
+                        .expect("Check has no message. Coding error.")
+                ))
+            });
         md
     }
 }

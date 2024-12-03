@@ -1202,6 +1202,7 @@ mod tests {
         assert!(actual
             .description
             .expect("no description!")
+            .many()
             .contains(&arg.to_string()));
     }
 
@@ -1221,6 +1222,7 @@ mod tests {
         assert!(actual
             .description
             .expect("no description!")
+            .many()
             .contains(&description.to_string()));
         let Some(links) = actual.links else {
             panic!("no links in notice")

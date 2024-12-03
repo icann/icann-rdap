@@ -9,7 +9,7 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
-    FromMd, MdParams, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
 
 impl ToMd for Network {
@@ -17,25 +17,19 @@ impl ToMd for Network {
         let typeid = TypeId::of::<Network>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params));
-        let header_text = if self.start_address.is_some() && self.end_address.is_some() {
-            format!(
-                "IP Network {}-{}",
-                &self.start_address.as_ref().unwrap(),
-                &self.end_address.as_ref().unwrap()
-            )
-        } else if let Some(start_address) = &self.start_address {
-            format!("IP Network {start_address}")
-        } else if let Some(handle) = &self.object_common.handle {
-            format!("IP Network {handle}")
-        } else if let Some(name) = &self.name {
-            format!("IP Network {name}")
-        } else {
-            "IP Network".to_string()
-        };
-        md.push_str(&header_text.to_header(params.heading_level, params.options));
+
+        let header_text = self.get_header_text();
+        md.push_str(
+            &header_text
+                .to_string()
+                .to_header(params.heading_level, params.options),
+        );
 
         // multipart data
         let mut table = MultiPartTable::new();
+
+        // summary
+        table = table.summary(header_text);
 
         // identifiers
         table = table
@@ -83,5 +77,32 @@ impl ToMd for Network {
 
         md.push('\n');
         md
+    }
+}
+
+impl MdUtil for Network {
+    fn get_header_text(&self) -> MdHeaderText {
+        let header_text = if self.start_address.is_some() && self.end_address.is_some() {
+            format!(
+                "IP Network {} - {}",
+                &self.start_address.as_ref().unwrap().replace_ws(),
+                &self.end_address.as_ref().unwrap().replace_ws()
+            )
+        } else if let Some(start_address) = &self.start_address {
+            format!("IP Network {}", start_address.replace_ws())
+        } else if let Some(handle) = &self.object_common.handle {
+            format!("IP Network {}", handle.replace_ws())
+        } else if let Some(name) = &self.name {
+            format!("IP Network {}", name.replace_ws())
+        } else {
+            "IP Network".to_string()
+        };
+        let mut header_text = MdHeaderText::builder().header_text(header_text);
+        if let Some(entities) = &self.object_common.entities {
+            for entity in entities {
+                header_text = header_text.children_entry(entity.get_header_text());
+            }
+        };
+        header_text.build()
     }
 }

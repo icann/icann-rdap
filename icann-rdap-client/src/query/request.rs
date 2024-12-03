@@ -1,8 +1,11 @@
 //! Functions to make RDAP requests.
 
-use icann_rdap_common::{cache::HttpData, iana::IanaRegistryType, response::RdapResponse};
+use icann_rdap_common::{httpdata::HttpData, iana::IanaRegistryType, response::RdapResponse};
 use reqwest::{
-    header::{CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION},
+    header::{
+        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION,
+        STRICT_TRANSPORT_SECURITY,
+    },
     Client,
 };
 use serde::{Deserialize, Serialize};
@@ -64,6 +67,14 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
         .headers()
         .get(LOCATION)
         .map(|value| value.to_str().unwrap().to_string());
+    let access_control_allow_origin = response
+        .headers()
+        .get(ACCESS_CONTROL_ALLOW_ORIGIN)
+        .map(|value| value.to_str().unwrap().to_string());
+    let strict_transport_security = response
+        .headers()
+        .get(STRICT_TRANSPORT_SECURITY)
+        .map(|value| value.to_str().unwrap().to_string());
     let content_length = response.content_length();
     let status_code = response.status().as_u16();
     let url = response.url().to_owned();
@@ -74,6 +85,7 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
         .and_location(location)
         .and_content_length(content_length)
         .and_content_type(content_type)
+        .scheme(url.scheme())
         .host(
             url.host_str()
                 .expect("URL has no host. This shouldn't happen.")
@@ -81,6 +93,8 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
         )
         .and_expires(expires)
         .and_cache_control(cache_control)
+        .and_access_control_allow_origin(access_control_allow_origin)
+        .and_strict_transport_security(strict_transport_security)
         .build();
 
     let json: Result<Value, serde_json::Error> = serde_json::from_str(&text);

@@ -6,13 +6,14 @@ use crate::response::RdapResponse;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use strum::{EnumMessage, IntoEnumIterator};
-use strum_macros::{Display, EnumIter, EnumMessage};
+use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
 
 pub mod autnum;
 pub mod domain;
 pub mod entity;
 pub mod error;
 pub mod help;
+pub mod httpdata;
 pub mod nameserver;
 pub mod network;
 pub mod search;
@@ -27,15 +28,37 @@ lazy_static! {
 
 /// Describes the calls of checks.
 #[derive(
-    EnumIter, Debug, Display, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Clone, Copy,
+    EnumIter,
+    EnumString,
+    Debug,
+    Display,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
 )]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum CheckClass {
+    /// Informational Checks
     #[strum(serialize = "Info")]
     Informational,
+    /// STD 95 Warnings
     #[strum(serialize = "SpecWarn")]
     SpecificationWarning,
+    /// STD 95 Errors
     #[strum(serialize = "SpecErr")]
     SpecificationError,
+    /// Cidr0 Errors
+    #[strum(serialize = "Cidr0Err")]
+    Cidr0Error,
+    /// ICANN Profile Errors
+    #[strum(serialize = "IcannErr")]
+    IcannError,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
@@ -62,8 +85,9 @@ pub struct CheckItem {
 impl std::fmt::Display for CheckItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "{} : {}",
+            "{} : {} -- {}",
             self.check_class,
+            self.check,
             self.check
                 .get_message()
                 .unwrap_or("[Check has no description]"),
@@ -144,8 +168,21 @@ where
 }
 
 #[derive(
-    Debug, EnumMessage, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord, Clone, Copy,
+    Debug,
+    EnumMessage,
+    EnumString,
+    Display,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Ord,
+    Clone,
+    Copy,
 )]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Check {
     // RDAP Conformance
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
@@ -184,6 +221,8 @@ pub enum Check {
     // Notice Or Remark
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
     NoticeOrRemarkDescriptionIsAbsent,
+    #[strum(message = "RFC 9083 requires a description to be an array of strings")]
+    NoticeOrRemarkDescriptionIsString,
 
     // Handle
     #[strum(message = "handle appears to be empty or only whitespace")]
@@ -279,6 +318,18 @@ pub enum Check {
     #[strum(message = "publicId identifier is absent")]
     PublicIdIdentifierIsAbsent,
 
+    // HTTP
+    #[strum(message = "Use of access-control-allow-origin is recommended.")]
+    CorsAllowOriginRecommended,
+    #[strum(message = "Use of access-control-allow-origin with asterisk is recommended.")]
+    CorsAllowOriginStarRecommended,
+    #[strum(message = "Use of access-control-allow-credentials is not recommended.")]
+    CorsAllowCredentialsNotRecommended,
+    #[strum(message = "No content-type header received.")]
+    ContentTypeIsAbsent,
+    #[strum(message = "Content-type is not application/rdap+json.")]
+    ContentTypeIsNotRdap,
+
     // Cidr0
     #[strum(message = "Cidr0 v4 prefix is absent")]
     Cidr0V4PrefixIsAbsent,
@@ -288,6 +339,12 @@ pub enum Check {
     Cidr0V6PrefixIsAbsent,
     #[strum(message = "Cidr0 v6 length is absent")]
     Cidr0V6LengthIsAbsent,
+
+    // ICANN Profile
+    #[strum(message = "RDAP Service Must use HTTPS.")]
+    MustUseHttps,
+    #[strum(message = "access-control-allow-origin is not asterisk")]
+    AllowOriginNotStar,
 }
 
 impl Check {
@@ -311,6 +368,7 @@ impl Check {
             Check::EventActionIsAbsent => CheckClass::SpecificationError,
 
             Check::NoticeOrRemarkDescriptionIsAbsent => CheckClass::SpecificationError,
+            Check::NoticeOrRemarkDescriptionIsString => CheckClass::SpecificationError,
 
             Check::HandleIsEmpty => CheckClass::SpecificationWarning,
 
@@ -359,10 +417,19 @@ impl Check {
             Check::PublicIdTypeIsAbsent => CheckClass::SpecificationError,
             Check::PublicIdIdentifierIsAbsent => CheckClass::SpecificationError,
 
-            Check::Cidr0V4PrefixIsAbsent => CheckClass::SpecificationError,
-            Check::Cidr0V4LengthIsAbsent => CheckClass::SpecificationError,
-            Check::Cidr0V6PrefixIsAbsent => CheckClass::SpecificationError,
-            Check::Cidr0V6LengthIsAbsent => CheckClass::SpecificationError,
+            Check::CorsAllowOriginRecommended => CheckClass::SpecificationWarning,
+            Check::CorsAllowOriginStarRecommended => CheckClass::SpecificationWarning,
+            Check::CorsAllowCredentialsNotRecommended => CheckClass::SpecificationWarning,
+            Check::ContentTypeIsAbsent => CheckClass::SpecificationError,
+            Check::ContentTypeIsNotRdap => CheckClass::SpecificationError,
+
+            Check::Cidr0V4PrefixIsAbsent => CheckClass::Cidr0Error,
+            Check::Cidr0V4LengthIsAbsent => CheckClass::Cidr0Error,
+            Check::Cidr0V6PrefixIsAbsent => CheckClass::Cidr0Error,
+            Check::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
+
+            Check::MustUseHttps => CheckClass::IcannError,
+            Check::AllowOriginNotStar => CheckClass::IcannError,
         };
         CheckItem {
             check_class,

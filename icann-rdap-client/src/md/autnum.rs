@@ -9,7 +9,7 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
-    FromMd, MdParams, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
 
 impl ToMd for Autnum {
@@ -17,25 +17,19 @@ impl ToMd for Autnum {
         let typeid = TypeId::of::<Autnum>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
-        let header_text = if self.start_autnum.is_some() && self.end_autnum.is_some() {
-            format!(
-                "Autonomous Systems {}-{}",
-                &self.start_autnum.unwrap(),
-                &self.end_autnum.unwrap()
-            )
-        } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {start_autnum}")
-        } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {handle}")
-        } else if let Some(name) = &self.name {
-            format!("Autonomous System {name}")
-        } else {
-            "Autonomous System".to_string()
-        };
-        md.push_str(&header_text.to_header(params.heading_level, params.options));
+
+        let header_text = self.get_header_text();
+        md.push_str(
+            &header_text
+                .to_string()
+                .to_header(params.heading_level, params.options),
+        );
 
         // multipart data
         let mut table = MultiPartTable::new();
+
+        // summary
+        table = table.summary(header_text);
 
         // identifiers
         table = table
@@ -83,5 +77,32 @@ impl ToMd for Autnum {
 
         md.push('\n');
         md
+    }
+}
+
+impl MdUtil for Autnum {
+    fn get_header_text(&self) -> MdHeaderText {
+        let header_text = if self.start_autnum.is_some() && self.end_autnum.is_some() {
+            format!(
+                "Autonomous Systems {} - {}",
+                &self.start_autnum.unwrap().replace_ws(),
+                &self.end_autnum.unwrap().replace_ws()
+            )
+        } else if let Some(start_autnum) = &self.start_autnum {
+            format!("Autonomous System {}", start_autnum.replace_ws())
+        } else if let Some(handle) = &self.object_common.handle {
+            format!("Autonomous System {}", handle.replace_ws())
+        } else if let Some(name) = &self.name {
+            format!("Autonomous System {}", name.replace_ws())
+        } else {
+            "Autonomous System".to_string()
+        };
+        let mut header_text = MdHeaderText::builder().header_text(header_text);
+        if let Some(entities) = &self.object_common.entities {
+            for entity in entities {
+                header_text = header_text.children_entry(entity.get_header_text());
+            }
+        };
+        header_text.build()
     }
 }

@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::response::help::Help;
 
-use super::{MdParams, ToMd, HR};
+use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
 
 impl ToMd for Help {
     fn to_md(&self, params: MdParams) -> String {
@@ -11,5 +11,11 @@ impl ToMd for Help {
         md.push_str(HR);
         md.push('\n');
         md
+    }
+}
+
+impl MdUtil for Help {
+    fn get_header_text(&self) -> MdHeaderText {
+        MdHeaderText::builder().header_text("Server Help").build()
     }
 }

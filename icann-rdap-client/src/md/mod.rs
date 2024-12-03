@@ -1,7 +1,8 @@
 //! Converts RDAP to Markdown.
 
 use crate::request::RequestData;
-use icann_rdap_common::{check::CheckParams, response::RdapResponse};
+use buildstructor::Builder;
+use icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse};
 use std::{any::TypeId, char};
 use strum::EnumMessage;
 
@@ -68,6 +69,7 @@ impl MdOptions {
 pub struct MdParams<'a> {
     pub heading_level: usize,
     pub root: &'a RdapResponse,
+    pub http_data: &'a HttpData,
     pub parent_type: TypeId,
     pub check_types: &'a [CheckClass],
     pub options: &'a MdOptions,
@@ -80,6 +82,7 @@ impl<'a> MdParams<'a> {
             parent_type,
             heading_level: self.heading_level,
             root: self.root,
+            http_data: self.http_data,
             check_types: self.check_types,
             options: self.options,
             req_data: self.req_data,
@@ -101,6 +104,7 @@ pub trait ToMd {
 impl ToMd for RdapResponse {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
+        md.push_str(&params.http_data.to_md(params));
         let variant_md = match &self {
             RdapResponse::Entity(entity) => entity.to_md(params),
             RdapResponse::Domain(domain) => domain.to_md(params),
@@ -115,6 +119,39 @@ impl ToMd for RdapResponse {
         };
         md.push_str(&variant_md);
         md
+    }
+}
+
+pub(crate) trait MdUtil {
+    fn get_header_text(&self) -> MdHeaderText;
+}
+
+#[derive(Builder)]
+pub(crate) struct MdHeaderText {
+    header_text: String,
+    children: Vec<MdHeaderText>,
+}
+
+impl ToString for MdHeaderText {
+    fn to_string(&self) -> String {
+        self.header_text.clone()
+    }
+}
+
+impl MdUtil for RdapResponse {
+    fn get_header_text(&self) -> MdHeaderText {
+        match &self {
+            RdapResponse::Entity(entity) => entity.get_header_text(),
+            RdapResponse::Domain(domain) => domain.get_header_text(),
+            RdapResponse::Nameserver(nameserver) => nameserver.get_header_text(),
+            RdapResponse::Autnum(autnum) => autnum.get_header_text(),
+            RdapResponse::Network(network) => network.get_header_text(),
+            RdapResponse::DomainSearchResults(results) => results.get_header_text(),
+            RdapResponse::EntitySearchResults(results) => results.get_header_text(),
+            RdapResponse::NameserverSearchResults(results) => results.get_header_text(),
+            RdapResponse::ErrorResponse(error) => error.get_header_text(),
+            RdapResponse::Help(help) => help.get_header_text(),
+        }
     }
 }
 
