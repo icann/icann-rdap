@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use buildstructor::Builder;
-use cidr_utils::cidr::IpInet;
+use cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
 use super::{

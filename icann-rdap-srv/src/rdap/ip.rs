@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     response::Response,
 };
-use cidr_utils::cidr::IpInet;
+use cidr::IpInet;
 use tracing::debug;
 
 use crate::{

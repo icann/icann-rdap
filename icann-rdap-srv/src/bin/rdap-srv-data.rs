@@ -1,8 +1,8 @@
 use chrono::DateTime;
 use chrono::FixedOffset;
 use chrono::Utc;
-use cidr_utils::cidr::IpCidr;
-use cidr_utils::cidr::IpInet;
+use cidr::IpCidr;
+use cidr::IpInet;
 use clap::{Args, Parser, Subcommand};
 use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::contact::Contact;
