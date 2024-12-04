@@ -32,6 +32,25 @@ async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn GIVEN_tld_WHEN_query_THEN_success() {
+    // GIVEN
+    let mut test_jig = TestJig::new().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::basic().ldh_name("example").build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    // without "--tld-lookup=none" then this attempts to query IANA instead of the test server
+    test_jig.cmd.arg("--tld-lookup=none").arg(".example");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_entity_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new().await;

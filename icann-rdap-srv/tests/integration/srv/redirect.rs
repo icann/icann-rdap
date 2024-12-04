@@ -48,7 +48,7 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("foo.example".to_string());
+    let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -98,7 +98,7 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Nameserver("ns.foo.example".to_string());
+    let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -197,7 +197,7 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::AsNumber("700".to_string());
+    let query = QueryType::autnum("700").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -246,7 +246,7 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::IpV4Addr("10.0.0.1".to_string());
+    let query = QueryType::ipv4("10.0.0.1").expect("invalid IP address");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -298,7 +298,7 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::IpV4Addr("10.0.0.1".to_string());
+    let query = QueryType::ipv4("10.0.0.1").expect("invalid IP address");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");

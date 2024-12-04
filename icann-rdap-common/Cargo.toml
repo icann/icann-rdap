@@ -10,6 +10,7 @@ Common RDAP data structures.
 
 [dependencies]
 chrono.workspace = true
+cidr.workspace = true
 cidr-utils.workspace = true
 const_format.workspace = true
 buildstructor.workspace = true

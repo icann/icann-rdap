@@ -47,7 +47,6 @@ impl Termination for CliError {
 
             // I/O Errors
             CliError::IoError(_) => 40,
-            CliError::RdapClient(_) => 41,
 
             // RDAP Errors
             CliError::Json(_) => 100,
@@ -60,6 +59,32 @@ impl Termination for CliError {
             // User Errors
             CliError::UnknownOutputType => 200,
             CliError::ErrorOnChecks => 201,
+
+            // RDAP Client Errrors
+            CliError::RdapClient(e) => match e {
+                // I/O Errors
+                RdapClientError::Client(_) => 41,
+                RdapClientError::IoError(_) => 42,
+
+                // RDAP Server Errors
+                RdapClientError::Response(_) => 60,
+                RdapClientError::ParsingError(_) => 62,
+                RdapClientError::Json(_) => 63,
+
+                // Bootstrap Errors
+                RdapClientError::BootstrapUnavailable => 70,
+                RdapClientError::BootstrapError(_) => 71,
+                RdapClientError::IanaResponse(_) => 72,
+
+                // User Errors
+                RdapClientError::InvalidQueryValue => 202,
+                RdapClientError::AmbiquousQueryType => 203,
+                RdapClientError::DomainNameError(_) => 204,
+
+                // Internal Errors
+                RdapClientError::Poison => 250,
+                // _ => 255,
+            },
         };
         ExitCode::from(exit_code)
     }

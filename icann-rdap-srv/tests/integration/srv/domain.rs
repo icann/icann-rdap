@@ -28,7 +28,7 @@ async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("foo.example".to_string());
+    let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -58,7 +58,7 @@ async fn GIVEN_server_with_idn_WHEN_query_domain_THEN_status_code_200() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("café.example".to_string());
+    let query = QueryType::domain("café.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");

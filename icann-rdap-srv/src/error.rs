@@ -6,6 +6,7 @@ use axum::{
 };
 use envmnt::errors::EnvmntError;
 use http::StatusCode;
+use icann_rdap_client::RdapClientError;
 use icann_rdap_common::{
     iana::IanaResponseError,
     response::{types::Common, RdapResponse, RdapResponseError},
@@ -58,6 +59,8 @@ pub enum RdapServerError {
     Iana(#[from] IanaResponseError),
     #[error("Bootstrap error: {0}")]
     Bootstrap(String),
+    #[error(transparent)]
+    RdapClientError(#[from] RdapClientError),
 }
 
 impl IntoResponse for RdapServerError {

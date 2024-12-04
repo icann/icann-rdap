@@ -22,6 +22,7 @@ axum-client-ip.workspace = true
 btree-range-map.workspace = true
 buildstructor.workspace = true
 chrono.workspace = true
+cidr.workspace = true
 cidr-utils.workspace = true
 clap.workspace = true
 dotenv.workspace = true

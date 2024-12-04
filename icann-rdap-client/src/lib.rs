@@ -4,6 +4,7 @@
 use std::{fmt::Display, sync::PoisonError};
 
 use icann_rdap_common::{
+    dns_types::DomainNameError,
     httpdata::HttpData,
     iana::{BootstrapRegistryError, IanaResponseError},
     response::RdapResponseError,
@@ -56,6 +57,8 @@ pub enum RdapClientError {
     IanaResponse(#[from] IanaResponseError),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    #[error(transparent)]
+    DomainNameError(#[from] DomainNameError),
 }
 
 impl<T> From<PoisonError<T>> for RdapClientError {

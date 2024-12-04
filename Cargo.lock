@@ -438,6 +438,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bdf600c45bd958cf2945c445264471cca8b6c8e67bc87b71affd6d7e5682621"
 
 [[package]]
+name = "cidr"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfc95a0c21d5409adc146dbbb152b5c65aaea32bc2d2f57cf12f850bffdd7ab8"
+
+[[package]]
 name = "cidr-utils"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -456,7 +462,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25c0a9fb70c2c2cc2a520aa259b1d1345650046a07df1b6da1d3cefcd327f43e"
 dependencies = [
- "cidr",
+ "cidr 0.2.3",
  "num-bigint",
  "num-traits",
 ]
@@ -1426,7 +1432,6 @@ dependencies = [
  "icann-rdap-client",
  "icann-rdap-common",
  "icann-rdap-srv",
- "ipnet",
  "lazy_static",
  "minus",
  "pct-str",
@@ -1450,10 +1455,12 @@ version = "0.0.19"
 dependencies = [
  "buildstructor",
  "chrono",
+ "cidr 0.3.0",
  "cidr-utils 0.6.1",
  "const_format",
  "icann-rdap-common",
  "idna",
+ "ipnet",
  "jsonpath-rust",
  "jsonpath_lib",
  "lazy_static",
@@ -1475,6 +1482,7 @@ version = "0.0.19"
 dependencies = [
  "buildstructor",
  "chrono",
+ "cidr 0.3.0",
  "cidr-utils 0.6.1",
  "const_format",
  "idna",
@@ -1504,6 +1512,7 @@ dependencies = [
  "btree-range-map",
  "buildstructor",
  "chrono",
+ "cidr 0.3.0",
  "cidr-utils 0.6.1",
  "clap",
  "dotenv",

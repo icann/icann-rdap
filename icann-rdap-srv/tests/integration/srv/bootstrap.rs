@@ -31,7 +31,7 @@ async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("foo.example".to_string());
+    let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -70,7 +70,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_sho
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("foo.example".to_string());
+    let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
@@ -98,7 +98,7 @@ async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Nameserver("ns.foo.example".to_string());
+    let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -137,7 +137,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_pani
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Nameserver("ns.foo.example".to_string());
+    let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
@@ -169,7 +169,7 @@ async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::IpV4Cidr("10.0.0.0/24".to_string());
+    let query = QueryType::ipv4cidr("10.0.0.0/24").expect("invalid CIDR");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -212,7 +212,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_pani
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::IpV4Cidr("11.0.0.0/24".to_string());
+    let query = QueryType::ipv4cidr("11.0.0.0/24").expect("invalid CIDR");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
@@ -244,7 +244,7 @@ async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::AsNumber("AS710".to_string());
+    let query = QueryType::autnum("AS710").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -286,7 +286,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_sho
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::AsNumber("AS1000".to_string());
+    let query = QueryType::autnum("AS1000").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
