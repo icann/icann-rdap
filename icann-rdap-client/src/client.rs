@@ -6,9 +6,10 @@ use reqwest::{
     Client,
 };
 
-use crate::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
+use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
+
 #[cfg(not(target_arch = "wasm32"))]
-use crate::VERSION;
+use icann_rdap_common::VERSION;
 
 lazy_static! {
     static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");

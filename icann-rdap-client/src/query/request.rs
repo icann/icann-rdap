@@ -25,8 +25,8 @@ use super::{
 /// * client - a reference to a [reqwest::Client].
 ///
 /// ```no_run
-/// use icann_rdap_common::client::ClientConfig;
-/// use icann_rdap_common::client::create_client;
+/// use icann_rdap_client::client::ClientConfig;
+/// use icann_rdap_client::client::create_client;
 /// use icann_rdap_client::query::request::rdap_url_request;
 /// use icann_rdap_client::RdapClientError;
 /// use std::str::FromStr;
@@ -124,8 +124,8 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
 /// * client - a reference to a [reqwest::Client].
 ///
 /// ```no_run
-/// use icann_rdap_common::client::ClientConfig;
-/// use icann_rdap_common::client::create_client;
+/// use icann_rdap_client::client::ClientConfig;
+/// use icann_rdap_client::client::create_client;
 /// use icann_rdap_client::query::request::rdap_request;
 /// use icann_rdap_client::query::qtype::QueryType;
 /// use icann_rdap_client::RdapClientError;
@@ -179,8 +179,8 @@ pub async fn rdap_request(
 /// registry with each request which is most likely not the desired behavior.
 ///
 /// ```no_run
-/// use icann_rdap_common::client::ClientConfig;
-/// use icann_rdap_common::client::create_client;
+/// use icann_rdap_client::client::ClientConfig;
+/// use icann_rdap_client::client::create_client;
 /// use icann_rdap_client::query::request::rdap_bootstrapped_request;
 /// use icann_rdap_client::query::qtype::QueryType;
 /// use icann_rdap_client::query::bootstrap::MemoryBootstrapStore;

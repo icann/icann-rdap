@@ -3,20 +3,25 @@
 #![doc = include_str!("../README.md")]
 use std::{fmt::Display, sync::PoisonError};
 
+use iana_request::IanaResponseError;
 use icann_rdap_common::{
-    dns_types::DomainNameError,
-    httpdata::HttpData,
-    iana::{BootstrapRegistryError, IanaResponseError},
+    dns_types::DomainNameError, httpdata::HttpData, iana::BootstrapRegistryError,
     response::RdapResponseError,
 };
 use thiserror::Error;
 
+pub mod client;
 pub mod gtld;
+pub mod iana_request;
 pub mod md;
 pub mod query;
 pub mod registered_redactions;
 pub mod request;
 
+#[doc(inline)]
+pub use crate::client::create_client;
+#[doc(inline)]
+pub use crate::client::ClientConfig;
 #[doc(inline)]
 pub use crate::query::bootstrap::MemoryBootstrapStore;
 #[doc(inline)]
@@ -27,10 +32,6 @@ pub use crate::query::request::rdap_bootstrapped_request;
 pub use crate::query::request::rdap_request;
 #[doc(inline)]
 pub use crate::query::request::rdap_url_request;
-#[doc(inline)]
-pub use icann_rdap_common::client::create_client;
-#[doc(inline)]
-pub use icann_rdap_common::client::ClientConfig;
 
 /// Error returned by RDAP client functions and methods.
 #[derive(Error, Debug)]

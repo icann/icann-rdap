@@ -1470,7 +1470,6 @@ dependencies = [
  "ipnet",
  "lazy_static",
  "prefix-trie",
- "reqwest",
  "rstest",
  "serde",
  "serde_json",

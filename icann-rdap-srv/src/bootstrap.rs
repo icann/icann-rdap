@@ -1,9 +1,9 @@
 use std::{path::PathBuf, time::Duration};
 
+use icann_rdap_client::{create_client, iana_request::iana_request, ClientConfig};
 use icann_rdap_common::{
-    client::{create_client, ClientConfig},
     httpdata::HttpData,
-    iana::{iana_request, IanaRegistry, IanaRegistryType},
+    iana::{IanaRegistry, IanaRegistryType},
 };
 use reqwest::Client;
 use tokio::{

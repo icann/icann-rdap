@@ -5,13 +5,13 @@ use std::sync::{Arc, RwLock};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{
-        get_preferred_url, iana_request, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
+        get_preferred_url, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
         IanaRegistryType,
     },
 };
 use reqwest::Client;
 
-use crate::RdapClientError;
+use crate::{iana_request::iana_request, RdapClientError};
 
 use super::qtype::QueryType;
 

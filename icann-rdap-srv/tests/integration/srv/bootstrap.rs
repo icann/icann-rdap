@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
+use icann_rdap_client::client::{create_client, ClientConfig};
 use icann_rdap_client::query::{qtype::QueryType, request::rdap_request};
-use icann_rdap_common::client::{create_client, ClientConfig};
 use icann_rdap_srv::storage::{
     data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
     StoreOps,

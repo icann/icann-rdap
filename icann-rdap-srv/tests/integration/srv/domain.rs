@@ -1,13 +1,11 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
+    create_client,
     query::{qtype::QueryType, request::rdap_request},
-    RdapClientError,
+    ClientConfig, RdapClientError,
 };
-use icann_rdap_common::{
-    client::{create_client, ClientConfig},
-    response::domain::Domain,
-};
+use icann_rdap_common::response::domain::Domain;
 use icann_rdap_srv::storage::{CommonConfig, StoreOps};
 
 use crate::test_jig::SrvTestJig;

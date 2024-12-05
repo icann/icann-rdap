@@ -1,9 +1,9 @@
 use bootstrap::BootstrapType;
 use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
+use icann_rdap_client::client::create_client;
+use icann_rdap_client::client::ClientConfig;
 use icann_rdap_common::check::CheckClass;
-use icann_rdap_common::client::create_client;
-use icann_rdap_common::client::ClientConfig;
 use query::InrBackupBootstrap;
 use query::ProcessType;
 use query::ProcessingParams;

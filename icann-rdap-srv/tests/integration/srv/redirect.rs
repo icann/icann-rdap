@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::query::{qtype::QueryType, request::rdap_request};
-use icann_rdap_common::{
-    client::{create_client, ClientConfig},
-    response::{
-        error::Error,
-        types::{Link, Notice, NoticeOrRemark},
-    },
+use icann_rdap_client::{
+    create_client,
+    query::{qtype::QueryType, request::rdap_request},
+    ClientConfig,
+};
+use icann_rdap_common::response::{
+    error::Error,
+    types::{Link, Notice, NoticeOrRemark},
 };
 use icann_rdap_srv::storage::{
     data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
