@@ -1,6 +1,11 @@
 //! DNS and DNSSEC types.
 
+use std::str::{Chars, FromStr};
+
+use idna::domain_to_ascii;
 use thiserror::Error;
+
+use crate::check::string::StringCheck;
 
 #[derive(Debug, Error)]
 pub enum DnsTypeError {
@@ -244,5 +249,82 @@ impl DnsDigestType {
             DnsDigestType::Sha384(d) => d.mnemonic,
         };
         Ok(d)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum DomainNameError {
+    #[error("Invalid Domain Name")]
+    InvalidDomainName,
+    #[error(transparent)]
+    IdnaError(#[from] idna::Errors),
+}
+
+/// Represents a Domain name.
+#[derive(Debug)]
+pub struct DomainName {
+    domain_name: String,
+    ascii: String,
+}
+
+impl DomainName {
+    /// Iterate over the characters of the domain name.
+    pub fn chars(&self) -> Chars<'_> {
+        self.domain_name.chars()
+    }
+
+    /// Is this domain name a TLD.
+    pub fn is_tld(&self) -> bool {
+        self.domain_name.is_tld()
+    }
+
+    /// Gets the ASCII version of the domain, which is different if this is an IDN.
+    pub fn to_ascii(&self) -> &str {
+        &self.ascii
+    }
+
+    /// Is this domain name an IDN.
+    pub fn is_idn(&self) -> bool {
+        !self.ascii.eq(&self.domain_name)
+    }
+
+    /// Is this the DNS root.
+    pub fn is_root(&self) -> bool {
+        self.domain_name.eq(".")
+    }
+
+    /// Get this domain name with a leading dot.
+    pub fn with_leading_dot(&self) -> String {
+        if !self.is_root() {
+            format!(".{}", self.domain_name)
+        } else {
+            self.domain_name.to_string()
+        }
+    }
+
+    /// Trim leading dot.
+    pub fn trim_leading_dot(&self) -> &str {
+        if !self.is_root() {
+            self.domain_name.trim_start_matches('.')
+        } else {
+            &self.domain_name
+        }
+    }
+}
+
+impl FromStr for DomainName {
+    type Err = DomainNameError;
+
+    /// Create a new DomainName from a string.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.is_unicode_domain_name() {
+            return Err(DomainNameError::InvalidDomainName);
+        }
+        let ascii = domain_to_ascii(s)?;
+        let retval = DomainName {
+            domain_name: s.to_string(),
+            ascii,
+        };
+        Ok(retval)
     }
 }

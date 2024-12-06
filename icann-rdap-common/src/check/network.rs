@@ -1,6 +1,6 @@
 use std::{any::TypeId, net::IpAddr, str::FromStr};
 
-use cidr_utils::cidr::IpCidr;
+use cidr::IpCidr;
 
 use crate::response::network::{Cidr0Cidr, Network};
 

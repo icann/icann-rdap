@@ -13,10 +13,11 @@ An RDAP client library.
 icann-rdap-common = { version = "0.0.19", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
-cidr-utils.workspace = true
+cidr.workspace = true
 chrono.workspace = true
 const_format.workspace = true
 idna.workspace = true
+ipnet.workspace = true
 jsonpath-rust.workspace = true
 jsonpath_lib.workspace = true
 lazy_static.workspace = true

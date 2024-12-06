@@ -1,4 +1,3 @@
-use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
@@ -118,22 +117,14 @@ async fn do_domain_query<'a, W: std::io::Write>(
     let mut transactions = RequestResponses::new();
 
     // special processing for TLD Lookups
-    let temp_query_type;
-    let (base_url, query_type) = if let QueryType::Domain(ref domain) = query_type {
+    let base_url = if let QueryType::Domain(ref domain) = query_type {
         if domain.is_tld() && matches!(processing_params.tld_lookup, TldLookup::Iana) {
-            temp_query_type = QueryType::Domain(domain.trim_start_matches('.').to_string());
-            ("https://rdap.iana.org".to_string(), &temp_query_type)
+            "https://rdap.iana.org".to_string()
         } else {
-            (
-                get_base_url(&processing_params.bootstrap_type, client, query_type).await?,
-                query_type,
-            )
+            get_base_url(&processing_params.bootstrap_type, client, query_type).await?
         }
     } else {
-        (
-            get_base_url(&processing_params.bootstrap_type, client, query_type).await?,
-            query_type,
-        )
+        get_base_url(&processing_params.bootstrap_type, client, query_type).await?
     };
 
     let response = do_request(&base_url, query_type, processing_params, client).await;

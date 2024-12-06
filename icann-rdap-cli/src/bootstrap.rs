@@ -255,7 +255,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_domain_query_urls(&QueryType::Domain("example.org".to_string()))
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -309,7 +309,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_autnum_query_urls(&QueryType::AsNumber("as64512".to_string()))
+            .get_autnum_query_urls(&QueryType::autnum("as64512").expect("invalid autnum"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -363,7 +363,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_ipv4_query_urls(&QueryType::IpV4Addr("198.51.100.1".to_string()))
+            .get_ipv4_query_urls(&QueryType::ipv4("198.51.100.1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -417,7 +417,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_ipv6_query_urls(&QueryType::IpV6Addr("2001:db8::1".to_string()))
+            .get_ipv6_query_urls(&QueryType::ipv6("2001:db8::1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");

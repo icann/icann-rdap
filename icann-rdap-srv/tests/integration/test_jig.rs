@@ -11,6 +11,7 @@ use test_dir::TestDir;
 
 pub struct RdapSrvStoreTestJig {
     pub cmd: Command,
+    #[allow(dead_code)]
     pub source_dir: TestDir,
     pub data_dir: TestDir,
 }

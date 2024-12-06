@@ -1,8 +1,8 @@
 use chrono::DateTime;
 use chrono::FixedOffset;
 use chrono::Utc;
-use cidr_utils::cidr::IpCidr;
-use cidr_utils::cidr::IpInet;
+use cidr::IpCidr;
+use cidr::IpInet;
 use clap::{Args, Parser, Subcommand};
 use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::contact::Contact;
@@ -957,7 +957,7 @@ async fn make_nameserver(
     args: Box<NameserverArgs>,
     store: &dyn StoreOps,
 ) -> Result<Output, RdapServerError> {
-    let self_href = QueryType::Nameserver(args.ldh.to_owned())
+    let self_href = QueryType::ns(&args.ldh)?
         .query_url(&args.object_args.base_url)
         .expect("nameserver self href");
     let v4s = (!args.v4.is_empty()).then_some(args.v4);
@@ -1024,7 +1024,7 @@ async fn make_domain(
         unicode_name = idna::domain_to_unicode(&ldh).0;
     };
 
-    let self_href = QueryType::Domain(ldh.to_owned())
+    let self_href = QueryType::domain(&ldh)?
         .query_url(&args.object_args.base_url)
         .expect("domain self href");
     let secure_dns = if !args.ds.is_empty()
@@ -1082,7 +1082,7 @@ async fn make_autnum(
     args: Box<AutnumArgs>,
     store: &dyn StoreOps,
 ) -> Result<Output, RdapServerError> {
-    let self_href = QueryType::AsNumber(args.start_autnum.to_string())
+    let self_href = QueryType::AsNumber(args.start_autnum)
         .query_url(&args.object_args.base_url)
         .expect("autnum self href");
     let autnum = Autnum::builder()
@@ -1124,10 +1124,10 @@ async fn make_network(
     store: &dyn StoreOps,
 ) -> Result<Output, RdapServerError> {
     let self_href = match &args.cidr {
-        IpCidr::V4(cidr) => QueryType::IpV4Cidr(cidr.to_string())
+        IpCidr::V4(cidr) => QueryType::ipv4cidr(&cidr.to_string())?
             .query_url(&args.object_args.base_url)
             .expect("ipv4 network self href"),
-        IpCidr::V6(cidr) => QueryType::IpV6Cidr(cidr.to_string())
+        IpCidr::V6(cidr) => QueryType::ipv6cidr(&cidr.to_string())?
             .query_url(&args.object_args.base_url)
             .expect("ipv6 network self href"),
     };

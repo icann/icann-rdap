@@ -1,9 +1,9 @@
 use bootstrap::BootstrapType;
 use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
+use icann_rdap_client::client::create_client;
+use icann_rdap_client::client::ClientConfig;
 use icann_rdap_common::check::CheckClass;
-use icann_rdap_common::client::create_client;
-use icann_rdap_common::client::ClientConfig;
 use query::InrBackupBootstrap;
 use query::ProcessType;
 use query::ProcessingParams;
@@ -454,7 +454,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
 
     let level = LevelFilter::from(&cli.log_level);
 
-    let query_type = query_type_from_cli(&cli);
+    let query_type = query_type_from_cli(&cli)?;
 
     let use_pager = match cli.page_output {
         PagerType::Embedded => true,
@@ -620,33 +620,34 @@ async fn exec<W: std::io::Write>(
     }
 }
 
-fn query_type_from_cli(cli: &Cli) -> QueryType {
+fn query_type_from_cli(cli: &Cli) -> Result<QueryType, CliError> {
     if let Some(query_value) = cli.query_value.clone() {
         if let Some(query_type) = cli.query_type {
-            match query_type {
-                QtypeArg::V4 => QueryType::IpV4Addr(query_value),
-                QtypeArg::V6 => QueryType::IpV6Addr(query_value),
-                QtypeArg::V4Cidr => QueryType::IpV4Cidr(query_value),
-                QtypeArg::V6Cidr => QueryType::IpV6Cidr(query_value),
-                QtypeArg::Autnum => QueryType::AsNumber(query_value),
-                QtypeArg::Domain => QueryType::Domain(query_value),
-                QtypeArg::ALabel => QueryType::ALable(query_value),
+            let q = match query_type {
+                QtypeArg::V4 => QueryType::ipv4(&query_value)?,
+                QtypeArg::V6 => QueryType::ipv6(&query_value)?,
+                QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
+                QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
+                QtypeArg::Autnum => QueryType::autnum(&query_value)?,
+                QtypeArg::Domain => QueryType::domain(&query_value)?,
+                QtypeArg::ALabel => QueryType::alabel(&query_value)?,
                 QtypeArg::Entity => QueryType::Entity(query_value),
-                QtypeArg::Ns => QueryType::Nameserver(query_value),
+                QtypeArg::Ns => QueryType::ns(&query_value)?,
                 QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
                 QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
                 QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
                 QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
-                QtypeArg::DomainNsIp => QueryType::DomainNsIpSearch(query_value),
+                QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
                 QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
-                QtypeArg::NsIp => QueryType::NameserverIpSearch(query_value),
+                QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
                 QtypeArg::Url => QueryType::Url(query_value),
-            }
+            };
+            Ok(q)
         } else {
-            QueryType::from_str(&query_value).unwrap()
+            Ok(QueryType::from_str(&query_value)?)
         }
     } else {
-        QueryType::Help
+        Ok(QueryType::Help)
     }
 }
 

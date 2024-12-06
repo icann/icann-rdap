@@ -1,13 +1,11 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
+    create_client,
     query::{qtype::QueryType, request::rdap_request},
-    RdapClientError,
+    ClientConfig, RdapClientError,
 };
-use icann_rdap_common::{
-    client::{create_client, ClientConfig},
-    response::domain::Domain,
-};
+use icann_rdap_common::response::domain::Domain;
 use icann_rdap_srv::storage::{CommonConfig, StoreOps};
 
 use crate::test_jig::SrvTestJig;
@@ -28,7 +26,7 @@ async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("foo.example".to_string());
+    let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");
@@ -58,7 +56,7 @@ async fn GIVEN_server_with_idn_WHEN_query_domain_THEN_status_code_200() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::Domain("café.example".to_string());
+    let query = QueryType::domain("café.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("quering server");

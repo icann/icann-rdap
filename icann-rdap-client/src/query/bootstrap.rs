@@ -5,13 +5,13 @@ use std::sync::{Arc, RwLock};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{
-        get_preferred_url, iana_request, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
+        get_preferred_url, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
         IanaRegistryType,
     },
 };
 use reqwest::Client;
 
-use crate::RdapClientError;
+use crate::{iana_request::iana_request, RdapClientError};
 
 use super::qtype::QueryType;
 
@@ -42,8 +42,8 @@ pub trait BootstrapStore: Send + Sync {
         query_type: &QueryType,
     ) -> Result<Vec<String>, RdapClientError> {
         let domain_name = match query_type {
-            QueryType::Domain(domain) => domain,
-            QueryType::Nameserver(ns) => ns,
+            QueryType::Domain(domain) => domain.to_ascii(),
+            QueryType::Nameserver(ns) => ns.to_ascii(),
             _ => panic!("invalid domain query type"),
         };
         self.get_dns_urls(domain_name)
@@ -59,7 +59,7 @@ pub trait BootstrapStore: Send + Sync {
         let QueryType::AsNumber(asn) = query_type else {
             panic!("invalid query type")
         };
-        self.get_asn_urls(asn)
+        self.get_asn_urls(asn.to_string().as_str())
     }
 
     /// Get the urls for an IPv4 query type.
@@ -68,7 +68,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_ipv4_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV4Addr(addr) => format!("{addr}/32"),
-            QueryType::IpV4Cidr(cidr) => cidr.to_owned(),
+            QueryType::IpV4Cidr(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv4_urls(&ip)
@@ -80,7 +80,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_ipv6_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV6Addr(addr) => format!("{addr}/128"),
-            QueryType::IpV6Cidr(cidr) => cidr.to_owned(),
+            QueryType::IpV6Cidr(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv6_urls(&ip)
@@ -400,7 +400,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_domain_query_urls(&QueryType::Domain("example.org".to_string()))
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -452,7 +452,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_autnum_query_urls(&QueryType::AsNumber("as64512".to_string()))
+            .get_autnum_query_urls(&QueryType::autnum("as64512").expect("invalid autnum"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -504,7 +504,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_ipv4_query_urls(&QueryType::IpV4Addr("198.51.100.1".to_string()))
+            .get_ipv4_query_urls(&QueryType::ipv4("198.51.100.1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -556,7 +556,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_ipv6_query_urls(&QueryType::IpV6Addr("2001:db8::1".to_string()))
+            .get_ipv6_query_urls(&QueryType::ipv6("2001:db8::1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
