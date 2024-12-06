@@ -19,7 +19,7 @@ use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
 use crate::bootstrap::get_base_url;
 use crate::bootstrap::BootstrapType;
-use crate::error::CliError;
+use crate::error::RdapCliError;
 use crate::request::do_request;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -92,7 +92,7 @@ pub(crate) async fn do_query<'a, W: std::io::Write>(
     processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     match query_type {
         QueryType::IpV4Addr(_)
         | QueryType::IpV6Addr(_)
@@ -113,7 +113,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
     processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     let mut transactions = RequestResponses::new();
 
     // special processing for TLD Lookups
@@ -193,14 +193,14 @@ async fn do_domain_query<'a, W: std::io::Write>(
                         Err(error) => return Err(error),
                     }
                 } else if matches!(processing_params.process_type, ProcessType::Registrar) {
-                    return Err(CliError::NoRegistrarFound);
+                    return Err(RdapCliError::NoRegistrarFound);
                 }
             }
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => {
             if matches!(processing_params.process_type, ProcessType::Registry) {
-                return Err(CliError::NoRegistryFound);
+                return Err(RdapCliError::NoRegistryFound);
             } else {
                 return Err(error);
             }
@@ -214,7 +214,7 @@ async fn do_inr_query<'a, W: std::io::Write>(
     processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     let mut transactions = RequestResponses::new();
     let mut base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await;
     if base_url.is_err()
@@ -260,7 +260,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
     req_data: Option<&'a RequestData<'a>>,
     client: &Client,
     write: &mut W,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     let mut transactions = RequestResponses::new();
     let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
     let response = do_request(&base_url, query_type, processing_params, client).await;
@@ -306,7 +306,7 @@ fn do_output<'a, W: std::io::Write>(
     response: &'a ResponseData,
     write: &mut W,
     mut transactions: RequestResponses<'a>,
-) -> Result<RequestResponses<'a>, CliError> {
+) -> Result<RequestResponses<'a>, RdapCliError> {
     match processing_params.output_type {
         OutputType::RenderedMarkdown => {
             let mut skin = MadSkin::default_dark();
@@ -408,7 +408,7 @@ fn do_final_output<W: std::io::Write>(
     processing_params: &ProcessingParams,
     write: &mut W,
     transactions: RequestResponses<'_>,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     match processing_params.output_type {
         OutputType::Json => {
             for req_res in &transactions {
@@ -459,7 +459,7 @@ fn do_final_output<W: std::io::Write>(
         }
     }
     if checks_found && processing_params.error_on_checks {
-        return Err(CliError::ErrorOnChecks);
+        return Err(RdapCliError::ErrorOnChecks);
     }
 
     Ok(())

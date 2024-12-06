@@ -4,6 +4,8 @@ use std::{
     path::PathBuf,
 };
 
+use crate::error::RdapCliError;
+use icann_rdap_cli::dirs::bootstrap_cache_path;
 use icann_rdap_client::query::{
     bootstrap::{
         fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl,
@@ -17,8 +19,6 @@ use icann_rdap_common::{
 };
 use reqwest::Client;
 use tracing::debug;
-
-use crate::{dirs::bootstrap_cache_path, error::CliError};
 
 /// Defines the type of bootstrapping to use.
 pub(crate) enum BootstrapType {
@@ -45,7 +45,7 @@ pub(crate) async fn get_base_url(
     bootstrap_type: &BootstrapType,
     client: &Client,
     query_type: &QueryType,
-) -> Result<String, CliError> {
+) -> Result<String, RdapCliError> {
     if let QueryType::Url(url) = query_type {
         // this is ultimately ignored without this logic a bootstrap not found error is thrown
         // which is wrong for URL queries.
@@ -195,6 +195,7 @@ where
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod test {
+    use icann_rdap_cli::dirs;
     use icann_rdap_client::query::{bootstrap::PreferredUrl, qtype::QueryType};
     use icann_rdap_common::{
         httpdata::HttpData,
@@ -213,7 +214,7 @@ mod test {
             .create("config", FileType::Dir);
         std::env::set_var("XDG_CACHE_HOME", test_dir.path("cache"));
         std::env::set_var("XDG_CONFIG_HOME", test_dir.path("config"));
-        crate::dirs::init().expect("unable to init directories");
+        dirs::init().expect("unable to init directories");
         test_dir
     }
 

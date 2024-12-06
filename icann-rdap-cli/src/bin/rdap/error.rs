@@ -1,0 +1,100 @@
+use std::process::{ExitCode, Termination};
+
+use icann_rdap_cli::error::CliError;
+use icann_rdap_client::iana_request::IanaResponseError;
+use icann_rdap_client::RdapClientError;
+use minus::MinusError;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum RdapCliError {
+    #[error("No errors encountered")]
+    Success,
+    #[error(transparent)]
+    CliError(#[from] CliError),
+    #[error(transparent)]
+    RdapClient(#[from] RdapClientError),
+    #[error(transparent)]
+    Termimad(#[from] termimad::Error),
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+    #[error(transparent)]
+    Minus(#[from] MinusError),
+    #[error("Unknown output type")]
+    UnknownOutputType,
+    #[error("RDAP response failed checks.")]
+    ErrorOnChecks,
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Iana(#[from] IanaResponseError),
+    #[error("Invalid IANA bootsrap file")]
+    InvalidBootstrap,
+    #[error("Bootstrap not found")]
+    BootstrapNotFound,
+    #[error("No registrar found")]
+    NoRegistrarFound,
+    #[error("No registry found")]
+    NoRegistryFound,
+}
+
+impl Termination for RdapCliError {
+    fn report(self) -> std::process::ExitCode {
+        let exit_code: u8 = match self {
+            // Success
+            RdapCliError::Success => 0,
+
+            // Internal Errors
+            RdapCliError::Termimad(_) => 10,
+            RdapCliError::Minus(_) => 11,
+
+            // I/O Errors
+            RdapCliError::IoError(_) => 40,
+
+            // RDAP Errors
+            RdapCliError::Json(_) => 100,
+            RdapCliError::Iana(_) => 101,
+            RdapCliError::InvalidBootstrap => 102,
+            RdapCliError::BootstrapNotFound => 103,
+            RdapCliError::NoRegistrarFound => 104,
+            RdapCliError::NoRegistryFound => 105,
+
+            // User Errors
+            RdapCliError::UnknownOutputType => 200,
+            RdapCliError::ErrorOnChecks => 201,
+
+            // Cli Errors
+            RdapCliError::CliError(e) => match e {
+                // I/O Errors
+                CliError::IoError(_) => 41,
+            },
+
+            // RDAP Client Errrors
+            RdapCliError::RdapClient(e) => match e {
+                // I/O Errors
+                RdapClientError::Client(_) => 42,
+                RdapClientError::IoError(_) => 43,
+
+                // RDAP Server Errors
+                RdapClientError::Response(_) => 60,
+                RdapClientError::ParsingError(_) => 62,
+                RdapClientError::Json(_) => 63,
+
+                // Bootstrap Errors
+                RdapClientError::BootstrapUnavailable => 70,
+                RdapClientError::BootstrapError(_) => 71,
+                RdapClientError::IanaResponse(_) => 72,
+
+                // User Errors
+                RdapClientError::InvalidQueryValue => 202,
+                RdapClientError::AmbiquousQueryType => 203,
+                RdapClientError::DomainNameError(_) => 204,
+
+                // Internal Errors
+                RdapClientError::Poison => 250,
+                // _ => 255,
+            },
+        };
+        ExitCode::from(exit_code)
+    }
+}

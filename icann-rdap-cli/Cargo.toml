@@ -8,10 +8,6 @@ description = """
 An RDAP Command Line Interface client.
 """
 
-[[bin]]
-name = "rdap"
-path = "src/main.rs"
-
 [dependencies]
 
 icann-rdap-client = { version = "0.0.19", path = "../icann-rdap-client" }
