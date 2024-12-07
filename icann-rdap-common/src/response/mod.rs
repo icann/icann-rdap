@@ -34,12 +34,16 @@ pub mod types;
 pub enum RdapResponseError {
     #[error("Wrong JSON type: {0}")]
     WrongJsonType(String),
+
     #[error("Unknown RDAP response.")]
     UnknownRdapResponse,
+
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+
     #[error(transparent)]
     AddrParse(#[from] std::net::AddrParseError),
+
     #[error(transparent)]
     CidrParse(#[from] cidr::errors::NetworkParseError),
 }

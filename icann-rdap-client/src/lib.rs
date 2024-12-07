@@ -38,26 +38,37 @@ pub use crate::query::request::rdap_url_request;
 pub enum RdapClientError {
     #[error("Query value is not valid.")]
     InvalidQueryValue,
+
     #[error("Ambiquous query type.")]
     AmbiquousQueryType,
+
     #[error(transparent)]
     Response(#[from] RdapResponseError),
+
     #[error(transparent)]
     Client(#[from] reqwest::Error),
+
     #[error("Error parsing response")]
     ParsingError(Box<ParsingErrorInfo>),
+
     #[error(transparent)]
     Json(#[from] serde_json::Error),
+
     #[error("RwLock Poison Error")]
     Poison,
+
     #[error("Bootstrap unavailable")]
     BootstrapUnavailable,
+
     #[error(transparent)]
     BootstrapError(#[from] BootstrapRegistryError),
+
     #[error(transparent)]
     IanaResponse(#[from] IanaResponseError),
+
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+
     #[error(transparent)]
     DomainNameError(#[from] DomainNameError),
 }

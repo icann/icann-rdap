@@ -1,22 +1,22 @@
 use std::process::{ExitCode, Termination};
 
+use icann_rdap_cli::rt::exec::TestError;
 use icann_rdap_client::iana_request::IanaResponseError;
 use icann_rdap_client::RdapClientError;
-use minus::MinusError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum RdapCliError {
+pub enum RdapTestError {
     #[error("No errors encountered")]
     Success,
     #[error(transparent)]
     RdapClient(#[from] RdapClientError),
     #[error(transparent)]
+    TestError(#[from] TestError),
+    #[error(transparent)]
     Termimad(#[from] termimad::Error),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
-    #[error(transparent)]
-    Minus(#[from] MinusError),
     #[error("Unknown output type")]
     UnknownOutputType,
     #[error("RDAP response failed checks.")]
@@ -35,33 +35,33 @@ pub enum RdapCliError {
     NoRegistryFound,
 }
 
-impl Termination for RdapCliError {
+impl Termination for RdapTestError {
     fn report(self) -> std::process::ExitCode {
         let exit_code: u8 = match self {
             // Success
-            RdapCliError::Success => 0,
+            RdapTestError::Success => 0,
 
             // Internal Errors
-            RdapCliError::Termimad(_) => 10,
-            RdapCliError::Minus(_) => 11,
+            RdapTestError::Termimad(_) => 10,
 
             // I/O Errors
-            RdapCliError::IoError(_) => 40,
+            RdapTestError::IoError(_) => 40,
+            RdapTestError::TestError(_) => 40,
 
             // RDAP Errors
-            RdapCliError::Json(_) => 100,
-            RdapCliError::Iana(_) => 101,
-            RdapCliError::InvalidBootstrap => 102,
-            RdapCliError::BootstrapNotFound => 103,
-            RdapCliError::NoRegistrarFound => 104,
-            RdapCliError::NoRegistryFound => 105,
+            RdapTestError::Json(_) => 100,
+            RdapTestError::Iana(_) => 101,
+            RdapTestError::InvalidBootstrap => 102,
+            RdapTestError::BootstrapNotFound => 103,
+            RdapTestError::NoRegistrarFound => 104,
+            RdapTestError::NoRegistryFound => 105,
 
             // User Errors
-            RdapCliError::UnknownOutputType => 200,
-            RdapCliError::ErrorOnChecks => 201,
+            RdapTestError::UnknownOutputType => 200,
+            RdapTestError::ErrorOnChecks => 201,
 
             // RDAP Client Errrors
-            RdapCliError::RdapClient(e) => match e {
+            RdapTestError::RdapClient(e) => match e {
                 // I/O Errors
                 RdapClientError::Client(_) => 42,
                 RdapClientError::IoError(_) => 43,

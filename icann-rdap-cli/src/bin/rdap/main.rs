@@ -491,6 +491,8 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             CheckClass::Informational,
             CheckClass::SpecificationWarning,
             CheckClass::SpecificationError,
+            CheckClass::Cidr0Error,
+            CheckClass::IcannError,
         ]
     } else {
         cli.check_type
