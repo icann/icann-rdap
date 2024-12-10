@@ -7,7 +7,7 @@ use icann_rdap_client::{
     query::request::ResponseData,
     RdapClientError,
 };
-use icann_rdap_common::check::{CheckParams, Checks, GetChecks};
+use icann_rdap_common::check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks};
 use serde::Serialize;
 use strum_macros::Display;
 
@@ -39,7 +39,7 @@ impl TestResults {
         self.test_runs.push(test_run);
     }
 
-    pub fn to_md(&self, options: &MdOptions) -> String {
+    pub fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
         let mut md = String::new();
 
         // h1
@@ -102,6 +102,12 @@ impl TestResults {
             table = test_run.add_summary(table, options);
         }
         md.push_str(&table.to_md_table(options));
+
+        md.push('\n');
+
+        for run in &self.test_runs {
+            md.push_str(&run.to_md(options, check_classes));
+        }
         md
     }
 }
@@ -209,6 +215,44 @@ impl TestRun {
             self.outcome.to_md(options),
         ]);
         table
+    }
+
+    fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
+        let mut md = String::new();
+
+        if matches!(self.outcome, RunOutcome::Tested) {
+            // h1
+            md.push_str(&format!(
+                "\n{}\n",
+                self.socket_addr.to_string().to_header(1, options)
+            ));
+
+            // table
+            let mut table = MultiPartTable::new();
+            table = table.multi(vec![
+                "RDAP Structure".to_inline(options),
+                "Message".to_inline(options),
+            ]);
+            let mut check_v: Vec<(String, String)> = Vec::new();
+            if let Some(ref checks) = self.checks {
+                traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
+                    let message = if !matches!(item.check_class, CheckClass::Informational)
+                        && !matches!(item.check_class, CheckClass::SpecificationWarning)
+                    {
+                        item.to_string().to_em(options)
+                    } else {
+                        item.to_string()
+                    };
+                    check_v.push((struct_name.to_string(), message))
+                });
+            };
+            for c in check_v {
+                table = table.nv(&c.0, c.1);
+            }
+            md.push_str(&table.to_md_table(options));
+        }
+
+        md
     }
 }
 

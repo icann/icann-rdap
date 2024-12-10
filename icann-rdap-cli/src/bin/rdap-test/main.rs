@@ -111,6 +111,14 @@ struct Cli {
     )]
     allow_invalid_certificates: bool,
 
+    /// Skip testing of IPv4 connections.
+    #[arg(long, required = false)]
+    skip_v4: bool,
+
+    /// Skip testing of IPv6 connections.
+    #[arg(long, required = false)]
+    skip_v6: bool,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -214,7 +222,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
 
     let query_type = QueryType::from_str(&cli.query_value)?;
 
-    let _check_types = if cli.check_type.is_empty() {
+    let check_classes = if cli.check_type.is_empty() {
         vec![
             CheckClass::SpecificationWarning,
             CheckClass::SpecificationError,
@@ -236,7 +244,10 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
 
     let bs = FileCacheBootstrapStore;
 
-    let options = TestOptions::default();
+    let options = TestOptions {
+        skip_v4: cli.skip_v4,
+        skip_v6: cli.skip_v6,
+    };
 
     let client_config = ClientConfig::builder()
         .user_agent_suffix("RT")
@@ -267,10 +278,13 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             skin.table.set_fg(DarkGreen);
             skin.table.align = Alignment::Center;
             skin.inline_code.set_fgbg(Cyan, Reset);
-            skin.write_text_on(&mut stdout(), &test_results.to_md(&md_options))?;
+            skin.write_text_on(
+                &mut stdout(),
+                &test_results.to_md(&md_options, &check_classes),
+            )?;
         }
         OtypeArg::Markdown => {
-            println!("{}", test_results.to_md(&md_options));
+            println!("{}", test_results.to_md(&md_options, &check_classes));
         }
         OtypeArg::Json => {
             println!("{}", serde_json::to_string(&test_results).unwrap());

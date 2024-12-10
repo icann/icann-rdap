@@ -21,7 +21,10 @@ use crate::rt::results::TestRun;
 use super::results::{DnsData, TestResults};
 
 #[derive(Default)]
-pub struct TestOptions {}
+pub struct TestOptions {
+    pub skip_v4: bool,
+    pub skip_v6: bool,
+}
 
 #[derive(Debug, Error)]
 pub enum TestError {
@@ -39,20 +42,29 @@ pub enum TestError {
     BadRdata,
     #[error(transparent)]
     Client(#[from] reqwest::Error),
+    #[error("UnsupporteQueryType")]
+    UnsupportedQueryType,
 }
 
 pub async fn execute_tests<'a, BS: BootstrapStore>(
     bs: &BS,
     value: &QueryType,
-    _options: &TestOptions,
+    options: &TestOptions,
     client_config: &ClientConfig,
 ) -> Result<TestResults, TestError> {
     let bs_client = create_client(client_config)?;
-    let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
-        debug!("Fetching IANA registry {} for value {value}", reg.url())
-    })
-    .await?;
-    let parsed_url = Url::parse(&base_url)?;
+    let query_url = match value {
+        QueryType::Help => return Err(TestError::UnsupportedQueryType),
+        QueryType::Url(url) => url.to_owned(),
+        _ => {
+            let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
+                debug!("Fetching IANA registry {} for value {value}", reg.url())
+            })
+            .await?;
+            value.query_url(&base_url)?
+        }
+    };
+    let parsed_url = Url::parse(&query_url)?;
     let port = parsed_url.port().unwrap_or_else(|| {
         if parsed_url.scheme().eq("https") {
             443
@@ -61,25 +73,27 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         }
     });
     let host = parsed_url.host_str().ok_or(TestError::NoHostToResolve)?;
-    debug!("Using base URL {base_url}");
 
-    let query_url = value.query_url(&base_url)?;
     info!("Testing {query_url}");
     let dns_data = get_dns_records(host).await?;
     let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
 
     for v4 in dns_data.v4_addrs {
         let mut test_run = TestRun::new_v4(v4, port);
-        let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
-        let rdap_response = rdap_url_request(&query_url, &client).await;
-        test_run = test_run.end(rdap_response);
+        if !options.skip_v4 {
+            let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            let rdap_response = rdap_url_request(&query_url, &client).await;
+            test_run = test_run.end(rdap_response);
+        }
         test_results.add_test_run(test_run);
     }
     for v6 in dns_data.v6_addrs {
         let mut test_run = TestRun::new_v6(v6, port);
-        let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
-        let rdap_response = rdap_url_request(&query_url, &client).await;
-        test_run = test_run.end(rdap_response);
+        if !options.skip_v6 {
+            let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            let rdap_response = rdap_url_request(&query_url, &client).await;
+            test_run = test_run.end(rdap_response);
+        }
         test_results.add_test_run(test_run);
     }
 
