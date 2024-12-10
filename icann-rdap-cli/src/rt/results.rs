@@ -53,10 +53,10 @@ impl TestResults {
 
         // test results summary
         table = table.multi(vec![
-            "Start Time".to_bold(options),
-            "End Time".to_bold(options),
-            "Duration".to_bold(options),
-            "Runs".to_bold(options),
+            "Start Time".to_inline(options),
+            "End Time".to_inline(options),
+            "Duration".to_inline(options),
+            "Runs".to_inline(options),
         ]);
         let (end_time_s, duration_s) = if let Some(end_time) = self.end_time {
             (
@@ -74,26 +74,29 @@ impl TestResults {
         ]);
 
         // dns data
-        table = table.multi(vec!["Query".to_bold(options), "CNAME".to_bold(options)]);
+        table = table.multi(vec![
+            "DNS Query".to_inline(options),
+            "DNS Answer".to_inline(options),
+        ]);
         let v4_cname = if let Some(ref cname) = self.dns_data.v4_cname {
             cname.to_owned()
         } else {
-            "A records only".to_string()
+            format!("{} A records", self.dns_data.v4_addrs.len())
         };
         table = table.multi(vec!["A (v4)".to_string(), v4_cname]);
         let v6_cname = if let Some(ref cname) = self.dns_data.v6_cname {
             cname.to_owned()
         } else {
-            "AAAA records only".to_string()
+            format!("{} AAAA records", self.dns_data.v6_addrs.len())
         };
         table = table.multi(vec!["AAAA (v6)".to_string(), v6_cname]);
 
         // summary of each run
         table = table.multi(vec![
-            "Address".to_bold(options),
-            "Start Time".to_bold(options),
-            "Duration".to_bold(options),
-            "Outcome".to_bold(options),
+            "Address".to_inline(options),
+            "Start Time".to_inline(options),
+            "Duration".to_inline(options),
+            "Outcome".to_inline(options),
         ]);
         for test_run in &self.test_runs {
             table = test_run.add_summary(table, options);
