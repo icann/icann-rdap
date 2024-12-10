@@ -1450,6 +1450,8 @@ dependencies = [
  "serde",
  "serde_json",
  "serial_test",
+ "strum",
+ "strum_macros",
  "termimad",
  "test_dir",
  "thiserror",

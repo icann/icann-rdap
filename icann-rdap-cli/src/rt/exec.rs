@@ -42,12 +42,12 @@ pub enum TestError {
     Client(#[from] reqwest::Error),
 }
 
-pub async fn execute_tests<BS: BootstrapStore>(
+pub async fn execute_tests<'a, BS: BootstrapStore>(
     bs: &BS,
     value: &QueryType,
     _options: &TestOptions,
     client_config: &ClientConfig,
-) -> Result<TestResults, TestError> {
+) -> Result<TestResults<'a>, TestError> {
     let bs_client = create_client(client_config)?;
     let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
         debug!("Fetching IANA registry {} for value {value}", reg.url())
@@ -64,19 +64,22 @@ pub async fn execute_tests<BS: BootstrapStore>(
     let host = parsed_url.host_str().ok_or(TestError::NoHostToResolve)?;
     debug!("Using base URL {base_url}");
 
-    let mut test_results = TestResults::new();
+    let query_url = value.query_url(&base_url)?;
+    let mut test_results = TestResults::new(query_url.clone());
 
     let (v4s, v6s) = get_dns_records(host).await?;
     for v4 in v4s {
-        let test_run = TestRun::new_v4(v4, port);
+        let mut test_run = TestRun::new_v4(v4, port);
         let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
-        let _rdap_response = rdap_url_request(&value.query_url(&base_url)?, &client).await;
+        let rdap_response = rdap_url_request(&query_url, &client).await;
+        test_run = test_run.end(rdap_response);
         test_results.add_test_run(test_run);
     }
     for v6 in v6s {
-        let test_run = TestRun::new_v6(v6, port);
+        let mut test_run = TestRun::new_v6(v6, port);
         let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
-        let _rdap_response = rdap_url_request(&value.query_url(&base_url)?, &client).await;
+        let rdap_response = rdap_url_request(&query_url, &client).await;
+        test_run = test_run.end(rdap_response);
         test_results.add_test_run(test_run);
     }
 

@@ -1,3 +1,4 @@
+use std::io::stdout;
 use std::str::FromStr;
 
 use clap::builder::styling::AnsiColor;
@@ -8,8 +9,12 @@ use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
 use icann_rdap_cli::rt::exec::execute_tests;
 use icann_rdap_cli::rt::exec::TestOptions;
 use icann_rdap_client::client::ClientConfig;
+use icann_rdap_client::md::MdOptions;
 use icann_rdap_client::QueryType;
 use icann_rdap_common::check::CheckClass;
+use termimad::crossterm::style::Color::*;
+use termimad::Alignment;
+use termimad::MadSkin;
 use tracing_subscriber::filter::LevelFilter;
 
 use clap::{Parser, ValueEnum};
@@ -239,7 +244,42 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
         .build();
-    execute_tests(&bs, &query_type, &options, &client_config).await?;
+
+    // execute tests
+    let test_results = execute_tests(&bs, &query_type, &options, &client_config).await?;
+
+    // output results
+    let md_options = MdOptions::default();
+    match cli.output_type {
+        OtypeArg::RenderedMarkdown => {
+            let mut skin = MadSkin::default_dark();
+            skin.set_headers_fg(Yellow);
+            skin.headers[1].align = Alignment::Center;
+            skin.headers[2].align = Alignment::Center;
+            skin.headers[3].align = Alignment::Center;
+            skin.headers[4].compound_style.set_fg(DarkGreen);
+            skin.headers[5].compound_style.set_fg(Magenta);
+            skin.headers[6].compound_style.set_fg(Cyan);
+            skin.headers[7].compound_style.set_fg(Red);
+            skin.bold.set_fg(DarkBlue);
+            skin.italic.set_fg(Red);
+            skin.quote_mark.set_fg(DarkBlue);
+            skin.table.set_fg(DarkGreen);
+            skin.table.align = Alignment::Center;
+            skin.inline_code.set_fgbg(Cyan, Reset);
+            skin.write_text_on(&mut stdout(), &test_results.to_md(&md_options))?;
+        }
+        OtypeArg::Markdown => {
+            println!("{}", test_results.to_md(&md_options));
+        }
+        OtypeArg::Json => {
+            println!("{}", serde_json::to_string(&test_results).unwrap());
+        }
+        OtypeArg::PrettyJson => {
+            println!("{}", serde_json::to_string_pretty(&test_results).unwrap());
+        }
+    }
+
     Ok(())
 }
 

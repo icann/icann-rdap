@@ -122,12 +122,12 @@ impl ToMd for RdapResponse {
     }
 }
 
-pub(crate) trait MdUtil {
+pub trait MdUtil {
     fn get_header_text(&self) -> MdHeaderText;
 }
 
 #[derive(Builder)]
-pub(crate) struct MdHeaderText {
+pub struct MdHeaderText {
     header_text: String,
     children: Vec<MdHeaderText>,
 }

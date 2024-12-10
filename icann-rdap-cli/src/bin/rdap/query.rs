@@ -392,15 +392,15 @@ fn do_no_output<'a>(
 }
 
 fn do_output_checks(response: &ResponseData) -> Checks {
-    let md_params = CheckParams {
+    let check_params = CheckParams {
         do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
     };
-    let mut checks = response.rdap.get_checks(md_params);
+    let mut checks = response.rdap.get_checks(check_params);
     checks
         .items
-        .append(&mut response.http_data.get_checks(md_params).items);
+        .append(&mut response.http_data.get_checks(check_params).items);
     checks
 }
 

@@ -1,12 +1,12 @@
 use std::cmp::max;
 
-use super::{string::StringUtil, MdHeaderText, MdParams, ToMd};
+use super::{string::StringUtil, MdHeaderText, MdOptions, MdParams, ToMd};
 
 pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
 }
 
-pub(crate) struct MultiPartTable {
+pub struct MultiPartTable {
     rows: Vec<Row>,
 }
 
@@ -16,16 +16,16 @@ enum Row {
 }
 
 impl MultiPartTable {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self { rows: Vec::new() }
     }
 
-    pub(crate) fn header_ref(mut self, name: &impl ToString) -> Self {
+    pub fn header_ref(mut self, name: &impl ToString) -> Self {
         self.rows.push(Row::Header(name.to_string()));
         self
     }
 
-    pub(crate) fn data_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
+    pub fn data_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
         self.rows.push(Row::Data((
             name.to_string(),
             value.to_string().replace_ws(),
@@ -33,7 +33,7 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn data(mut self, name: &impl ToString, value: impl ToString) -> Self {
+    pub fn data(mut self, name: &impl ToString, value: impl ToString) -> Self {
         self.rows.push(Row::Data((
             name.to_string(),
             value.to_string().replace_ws(),
@@ -41,7 +41,7 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn data_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
+    pub fn data_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::Data((
@@ -58,7 +58,7 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn data_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
+    pub fn data_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::Data((
@@ -75,7 +75,7 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn and_data_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
+    pub fn and_data_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
         self.rows.push(Row::Data((
             name.to_string(),
             value
@@ -87,7 +87,7 @@ impl MultiPartTable {
         self
     }
 
-    pub(crate) fn and_data_ref_maybe(self, name: &impl ToString, value: &Option<String>) -> Self {
+    pub fn and_data_ref_maybe(self, name: &impl ToString, value: &Option<String>) -> Self {
         if let Some(value) = value {
             self.data_ref(name, value)
         } else {
@@ -95,11 +95,7 @@ impl MultiPartTable {
         }
     }
 
-    pub(crate) fn and_data_ul_ref(
-        self,
-        name: &impl ToString,
-        value: Option<Vec<&impl ToString>>,
-    ) -> Self {
+    pub fn and_data_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
         if let Some(value) = value {
             self.data_ul_ref(name, value)
         } else {
@@ -107,11 +103,7 @@ impl MultiPartTable {
         }
     }
 
-    pub(crate) fn and_data_ul(
-        self,
-        name: &impl ToString,
-        value: Option<Vec<impl ToString>>,
-    ) -> Self {
+    pub fn and_data_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
         if let Some(value) = value {
             self.data_ul(name, value)
         } else {
@@ -119,7 +111,7 @@ impl MultiPartTable {
         }
     }
 
-    pub(crate) fn summary(mut self, header_text: MdHeaderText) -> Self {
+    pub fn summary(mut self, header_text: MdHeaderText) -> Self {
         self.rows.push(Row::Data((
             "Summary".to_string(),
             header_text.to_string().replace_ws().to_string(),
@@ -140,10 +132,8 @@ impl MultiPartTable {
         }
         self
     }
-}
 
-impl ToMd for MultiPartTable {
-    fn to_md(&self, params: super::MdParams) -> String {
+    pub fn to_md_table(&self, options: &MdOptions) -> String {
         let mut md = String::new();
 
         let col_type_width = max(
@@ -165,7 +155,7 @@ impl ToMd for MultiPartTable {
                     Row::Header(name) => {
                         md.push_str(&format!(
                             "|:-:|\n|{}|\n",
-                            name.to_center_bold(col_type_width, params.options)
+                            name.to_center_bold(col_type_width, options)
                         ));
                         true
                     }
@@ -175,7 +165,7 @@ impl ToMd for MultiPartTable {
                         };
                         md.push_str(&format!(
                             "|{}|{}|\n",
-                            name.to_right(col_type_width, params.options),
+                            name.to_right(col_type_width, options),
                             value
                         ));
                         false
@@ -188,6 +178,12 @@ impl ToMd for MultiPartTable {
 
         md.push_str("|\n\n");
         md
+    }
+}
+
+impl ToMd for MultiPartTable {
+    fn to_md(&self, params: super::MdParams) -> String {
+        self.to_md_table(params.options)
     }
 }
 
