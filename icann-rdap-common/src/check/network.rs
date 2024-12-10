@@ -22,14 +22,14 @@ impl GetChecks for Network {
                     Cidr0Cidr::V4Cidr(v4) => {
                         if v4.v4prefix.is_none() {
                             sub_checks.push(Checks {
-                                struct_name: "Cidr0",
+                                rdap_struct: super::CheckRdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V4PrefixIsAbsent.check_item()],
                                 sub_checks: Vec::new(),
                             })
                         }
                         if v4.length.is_none() {
                             sub_checks.push(Checks {
-                                struct_name: "Cidr0",
+                                rdap_struct: super::CheckRdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V4LengthIsAbsent.check_item()],
                                 sub_checks: Vec::new(),
                             })
@@ -38,14 +38,14 @@ impl GetChecks for Network {
                     Cidr0Cidr::V6Cidr(v6) => {
                         if v6.v6prefix.is_none() {
                             sub_checks.push(Checks {
-                                struct_name: "Cidr0",
+                                rdap_struct: super::CheckRdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V6PrefixIsAbsent.check_item()],
                                 sub_checks: Vec::new(),
                             })
                         }
                         if v6.length.is_none() {
                             sub_checks.push(Checks {
-                                struct_name: "Cidr0",
+                                rdap_struct: super::CheckRdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V6LengthIsAbsent.check_item()],
                                 sub_checks: Vec::new(),
                             })
@@ -168,7 +168,7 @@ impl GetChecks for Network {
         }
 
         Checks {
-            struct_name: "Network",
+            rdap_struct: super::CheckRdapStructure::IpNetwork,
             items,
             sub_checks,
         }
@@ -449,7 +449,7 @@ mod tests {
         // THEN
         dbg!(&checks);
         assert!(checks
-            .sub("Cidr0")
+            .sub(crate::check::CheckRdapStructure::Cidr0)
             .expect("Cidr0")
             .items
             .iter()
@@ -479,7 +479,7 @@ mod tests {
         // THEN
         dbg!(&checks);
         assert!(checks
-            .sub("Cidr0")
+            .sub(crate::check::CheckRdapStructure::Cidr0)
             .expect("Cidr0")
             .items
             .iter()
@@ -509,7 +509,7 @@ mod tests {
         // THEN
         dbg!(&checks);
         assert!(checks
-            .sub("Cidr0")
+            .sub(crate::check::CheckRdapStructure::Cidr0)
             .expect("Cidr0")
             .items
             .iter()
@@ -539,7 +539,7 @@ mod tests {
         // THEN
         dbg!(&checks);
         assert!(checks
-            .sub("Cidr0")
+            .sub(crate::check::CheckRdapStructure::Cidr0)
             .expect("Cidr0")
             .items
             .iter()

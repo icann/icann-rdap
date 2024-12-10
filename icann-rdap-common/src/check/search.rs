@@ -20,7 +20,7 @@ impl GetChecks for DomainSearchResults {
             Vec::new()
         };
         Checks {
-            struct_name: "Domain Search Results",
+            rdap_struct: super::CheckRdapStructure::DomainSearchResults,
             items: Vec::new(),
             sub_checks,
         }
@@ -43,7 +43,7 @@ impl GetChecks for NameserverSearchResults {
             Vec::new()
         };
         Checks {
-            struct_name: "Nameserver Search Results",
+            rdap_struct: super::CheckRdapStructure::NameserverSearchResults,
             items: Vec::new(),
             sub_checks,
         }
@@ -66,7 +66,7 @@ impl GetChecks for EntitySearchResults {
             Vec::new()
         };
         Checks {
-            struct_name: "Entity Search Results",
+            rdap_struct: super::CheckRdapStructure::EntitySearchResults,
             items: Vec::new(),
             sub_checks,
         }

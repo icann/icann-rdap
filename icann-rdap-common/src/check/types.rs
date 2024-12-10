@@ -29,7 +29,7 @@ impl GetChecks for RdapConformance {
             items.push(Check::RdapConformanceInvalidParent.check_item())
         };
         Checks {
-            struct_name: "RDAP Conformance",
+            rdap_struct: super::CheckRdapStructure::RdapConformance,
             items,
             sub_checks: Vec::new(),
         }
@@ -44,7 +44,7 @@ impl GetChecks for Links {
                 .for_each(|link| sub_checks.push(link.get_checks(params)));
         }
         Checks {
-            struct_name: "Links",
+            rdap_struct: super::CheckRdapStructure::Links,
             items: Vec::new(),
             sub_checks,
         }
@@ -102,7 +102,7 @@ impl GetChecks for Link {
             items.push(Check::LinkMissingRelProperty.check_item())
         }
         Checks {
-            struct_name: "Link",
+            rdap_struct: super::CheckRdapStructure::Link,
             items,
             sub_checks: Vec::new(),
         }
@@ -117,7 +117,7 @@ impl GetChecks for Notices {
                 .for_each(|note| sub_checks.push(note.0.get_checks(params)));
         }
         Checks {
-            struct_name: "Notices",
+            rdap_struct: super::CheckRdapStructure::Notices,
             items: Vec::new(),
             sub_checks,
         }
@@ -132,7 +132,7 @@ impl GetChecks for Remarks {
                 .for_each(|remark| sub_checks.push(remark.0.get_checks(params)));
         }
         Checks {
-            struct_name: "Remarks",
+            rdap_struct: super::CheckRdapStructure::Remarks,
             items: Vec::new(),
             sub_checks,
         }
@@ -159,7 +159,7 @@ impl GetChecks for NoticeOrRemark {
             };
         };
         Checks {
-            struct_name: "Notice/Remark",
+            rdap_struct: super::CheckRdapStructure::NoticeOrRemark,
             items,
             sub_checks,
         }
@@ -172,14 +172,14 @@ impl GetSubChecks for PublicIds {
         self.iter().for_each(|pid| {
             if pid.id_type.is_none() {
                 sub_checks.push(Checks {
-                    struct_name: "Public IDs",
+                    rdap_struct: super::CheckRdapStructure::PublidIds,
                     items: vec![Check::PublicIdTypeIsAbsent.check_item()],
                     sub_checks: Vec::new(),
                 });
             }
             if pid.identifier.is_none() {
                 sub_checks.push(Checks {
-                    struct_name: "Public IDs",
+                    rdap_struct: super::CheckRdapStructure::PublidIds,
                     items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
                     sub_checks: Vec::new(),
                 });
@@ -229,7 +229,7 @@ impl GetSubChecks for ObjectCommon {
         // the top most object (i.e. a first class object).
         {
             sub_checks.push(Checks {
-                struct_name: "Links",
+                rdap_struct: super::CheckRdapStructure::Links,
                 items: vec![Check::LinkObjectClassHasNoSelf.check_item()],
                 sub_checks: Vec::new(),
             })
@@ -247,21 +247,21 @@ impl GetSubChecks for ObjectCommon {
                     let date = DateTime::parse_from_rfc3339(date);
                     if date.is_err() {
                         sub_checks.push(Checks {
-                            struct_name: "Events",
+                            rdap_struct: super::CheckRdapStructure::Events,
                             items: vec![Check::EventDateIsNotRfc3339.check_item()],
                             sub_checks: Vec::new(),
                         })
                     }
                 } else {
                     sub_checks.push(Checks {
-                        struct_name: "Events",
+                        rdap_struct: super::CheckRdapStructure::Events,
                         items: vec![Check::EventDateIsAbsent.check_item()],
                         sub_checks: Vec::new(),
                     })
                 }
                 if e.event_action.is_none() {
                     sub_checks.push(Checks {
-                        struct_name: "Events",
+                        rdap_struct: super::CheckRdapStructure::Events,
                         items: vec![Check::EventActionIsAbsent.check_item()],
                         sub_checks: Vec::new(),
                     })
@@ -273,7 +273,7 @@ impl GetSubChecks for ObjectCommon {
         if let Some(handle) = &self.handle {
             if handle.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
-                    struct_name: "Handle",
+                    rdap_struct: super::CheckRdapStructure::Handle,
                     items: vec![Check::HandleIsEmpty.check_item()],
                     sub_checks: Vec::new(),
                 })
@@ -285,7 +285,7 @@ impl GetSubChecks for ObjectCommon {
             let status: Vec<&str> = status.iter().map(|s| s.0.as_str()).collect();
             if status.as_slice().is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
-                    struct_name: "Status",
+                    rdap_struct: super::CheckRdapStructure::Status,
                     items: vec![Check::StatusIsEmpty.check_item()],
                     sub_checks: Vec::new(),
                 })
@@ -296,7 +296,7 @@ impl GetSubChecks for ObjectCommon {
         if let Some(port43) = &self.port_43 {
             if port43.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
-                    struct_name: "Port43",
+                    rdap_struct: super::CheckRdapStructure::Port43,
                     items: vec![Check::Port43IsEmpty.check_item()],
                     sub_checks: Vec::new(),
                 })
@@ -359,9 +359,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -400,9 +400,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -441,9 +441,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -478,9 +478,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -516,9 +516,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -553,9 +553,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -771,9 +771,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
-            .sub("Link")
+            .sub(crate::check::CheckRdapStructure::Link)
             .expect("Link not found")
             .items
             .iter()
@@ -800,7 +800,7 @@ mod tests {
 
         // THEN
         checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
             .items
             .iter()
@@ -836,7 +836,7 @@ mod tests {
 
         // THEN
         checks
-            .sub("Events")
+            .sub(crate::check::CheckRdapStructure::Events)
             .expect("Events not found")
             .items
             .iter()
@@ -872,7 +872,7 @@ mod tests {
 
         // THEN
         checks
-            .sub("Events")
+            .sub(crate::check::CheckRdapStructure::Events)
             .expect("Events not found")
             .items
             .iter()
@@ -906,7 +906,7 @@ mod tests {
 
         // THEN
         checks
-            .sub("Events")
+            .sub(crate::check::CheckRdapStructure::Events)
             .expect("Events not found")
             .items
             .iter()
@@ -937,7 +937,7 @@ mod tests {
 
         // THEN
         checks
-            .sub("Public IDs")
+            .sub(crate::check::CheckRdapStructure::PublidIds)
             .expect("Public Ids not found")
             .items
             .iter()
@@ -968,7 +968,7 @@ mod tests {
 
         // THEN
         checks
-            .sub("Public IDs")
+            .sub(crate::check::CheckRdapStructure::PublidIds)
             .expect("Public Ids not found")
             .items
             .iter()
@@ -1001,9 +1001,9 @@ mod tests {
         // THEN
         dbg!(&checks);
         checks
-            .sub("Notices")
+            .sub(crate::check::CheckRdapStructure::Notices)
             .expect("Notices not found")
-            .sub("Notice/Remark")
+            .sub(crate::check::CheckRdapStructure::NoticeOrRemark)
             .expect("Notice/Remark not found")
             .items
             .iter()
@@ -1029,7 +1029,9 @@ mod tests {
         });
 
         // THEN
-        assert!(checks.sub("Links").is_none());
+        assert!(checks
+            .sub(crate::check::CheckRdapStructure::Links)
+            .is_none());
     }
 
     #[test]
@@ -1061,7 +1063,7 @@ mod tests {
 
         // THEN
         assert!(!checks
-            .sub("Links")
+            .sub(crate::check::CheckRdapStructure::Links)
             .expect("Links not found")
             .items
             .iter()
@@ -1094,7 +1096,7 @@ mod tests {
 
         // THEN
         assert!(checks
-            .sub("Status")
+            .sub(crate::check::CheckRdapStructure::Status)
             .expect("status not found")
             .items
             .iter()
@@ -1123,7 +1125,7 @@ mod tests {
 
         // THEN
         assert!(checks
-            .sub("Handle")
+            .sub(crate::check::CheckRdapStructure::Handle)
             .expect("handle not found")
             .items
             .iter()
@@ -1164,9 +1166,9 @@ mod tests {
 
         // THEN
         checks
-            .sub("Entity")
+            .sub(crate::check::CheckRdapStructure::Entity)
             .expect("entity not found")
-            .sub("RDAP Conformance")
+            .sub(crate::check::CheckRdapStructure::RdapConformance)
             .expect("rdap conformance not found")
             .items
             .iter()

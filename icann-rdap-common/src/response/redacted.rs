@@ -106,12 +106,9 @@ impl fmt::Display for Method {
 }
 
 impl Redacted {
-    pub fn get_checks(
-        &self,
-        _check_params: crate::check::CheckParams<'_>,
-    ) -> crate::check::Checks<'_> {
+    pub fn get_checks(&self, _check_params: crate::check::CheckParams<'_>) -> crate::check::Checks {
         Checks {
-            struct_name: "RDAP Conformance",
+            rdap_struct: crate::check::CheckRdapStructure::Redacted,
             items: Vec::new(),
             sub_checks: Vec::new(),
         }

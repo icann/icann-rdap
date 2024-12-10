@@ -15,7 +15,7 @@ impl GetChecks for Help {
             Vec::new()
         };
         Checks {
-            struct_name: "Help",
+            rdap_struct: super::CheckRdapStructure::Help,
             items: Vec::new(),
             sub_checks,
         }

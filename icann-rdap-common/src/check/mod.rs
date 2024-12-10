@@ -61,18 +61,55 @@ pub enum CheckClass {
     IcannError,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub struct Checks<'a> {
-    pub struct_name: &'a str,
-    pub items: Vec<CheckItem>,
-    pub sub_checks: Vec<Checks<'a>>,
+/// Represents the name of an RDAP structure for which a check appears.
+///
+/// An RDAP data structure is not the same as a Rust struct in that RDAP
+/// data structures may consist of arrays and sometimes structured data
+/// within a string.
+#[derive(
+    Debug, Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Display, EnumString,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum CheckRdapStructure {
+    Autnum,
+    Cidr0,
+    Domain,
+    DomainSearchResults,
+    Entity,
+    EntitySearchResults,
+    Events,
+    Error,
+    Help,
+    Handle,
+    HttpData,
+    IpNetwork,
+    Link,
+    Links,
+    Nameserver,
+    NameserverSearchResults,
+    NoticeOrRemark,
+    Notices,
+    PublidIds,
+    Port43,
+    RdapConformance,
+    Redacted,
+    Remarks,
+    Status,
 }
 
-impl<'a> Checks<'a> {
-    pub fn sub(&self, struct_name: &str) -> Option<&Self> {
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
+pub struct Checks {
+    pub rdap_struct: CheckRdapStructure,
+    pub items: Vec<CheckItem>,
+    pub sub_checks: Vec<Checks>,
+}
+
+impl Checks {
+    pub fn sub(&self, rdap_struct: CheckRdapStructure) -> Option<&Self> {
         self.sub_checks
             .iter()
-            .find(|check| check.struct_name.eq_ignore_ascii_case(struct_name))
+            .find(|check| check.rdap_struct == rdap_struct)
     }
 }
 
@@ -106,7 +143,7 @@ pub struct CheckParams<'a> {
     pub parent_type: TypeId,
 }
 
-impl<'a> CheckParams<'a> {
+impl CheckParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
         CheckParams {
             do_subchecks: self.do_subchecks,
@@ -139,7 +176,7 @@ pub trait GetSubChecks {
 
 /// Traverse the checks, and return true if one is found.
 pub fn traverse_checks<F>(
-    checks: &Checks<'_>,
+    checks: &Checks,
     classes: &[CheckClass],
     parent_tree: Option<String>,
     f: &mut F,
@@ -151,7 +188,7 @@ where
     let struct_tree = format!(
         "{}/{}",
         parent_tree.unwrap_or_else(|| "[ROOT]".to_string()),
-        checks.struct_name
+        checks.rdap_struct
     );
     for item in &checks.items {
         if classes.contains(&item.check_class) {
@@ -441,13 +478,15 @@ impl Check {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+    use crate::check::CheckRdapStructure;
+
     use super::{traverse_checks, Check, CheckClass, CheckItem, Checks};
 
     #[test]
     fn GIVEN_info_checks_WHEN_traversed_for_info_THEN_found() {
         // GIVEN
         let checks = Checks {
-            struct_name: "foo",
+            rdap_struct: CheckRdapStructure::Entity,
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
                 check: Check::VariantEmptyDomain,
@@ -471,7 +510,7 @@ mod tests {
     fn GIVEN_specwarn_checks_WHEN_traversed_for_info_THEN_not_found() {
         // GIVEN
         let checks = Checks {
-            struct_name: "foo",
+            rdap_struct: CheckRdapStructure::Entity,
             items: vec![CheckItem {
                 check_class: CheckClass::SpecificationWarning,
                 check: Check::VariantEmptyDomain,
@@ -495,10 +534,10 @@ mod tests {
     fn GIVEN_info_subchecks_WHEN_traversed_for_info_THEN_found() {
         // GIVEN
         let checks = Checks {
-            struct_name: "foo",
+            rdap_struct: CheckRdapStructure::Entity,
             items: vec![],
             sub_checks: vec![Checks {
-                struct_name: "bar",
+                rdap_struct: CheckRdapStructure::Autnum,
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
                     check: Check::VariantEmptyDomain,
@@ -523,10 +562,10 @@ mod tests {
     fn GIVEN_specwarn_subchecks_WHEN_traversed_for_info_THEN_not_found() {
         // GIVEN
         let checks = Checks {
-            struct_name: "foo",
+            rdap_struct: CheckRdapStructure::Entity,
             items: vec![],
             sub_checks: vec![Checks {
-                struct_name: "bar",
+                rdap_struct: CheckRdapStructure::Autnum,
                 items: vec![CheckItem {
                     check_class: CheckClass::SpecificationWarning,
                     check: Check::VariantEmptyDomain,
@@ -551,13 +590,13 @@ mod tests {
     fn GIVEN_checks_and_subchecks_WHEN_traversed_THEN_tree_structure_shows_tree() {
         // GIVEN
         let checks = Checks {
-            struct_name: "foo",
+            rdap_struct: CheckRdapStructure::Entity,
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
                 check: Check::RdapConformanceInvalidParent,
             }],
             sub_checks: vec![Checks {
-                struct_name: "bar",
+                rdap_struct: CheckRdapStructure::Autnum,
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
                     check: Check::VariantEmptyDomain,
@@ -577,7 +616,8 @@ mod tests {
 
         // THEN
         assert!(found);
-        assert!(structs.contains(&"[ROOT]/foo".to_string()));
-        assert!(structs.contains(&"[ROOT]/foo/bar".to_string()));
+        dbg!(&structs);
+        assert!(structs.contains(&"[ROOT]/entity".to_string()));
+        assert!(structs.contains(&"[ROOT]/entity/autnum".to_string()));
     }
 }

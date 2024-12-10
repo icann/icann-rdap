@@ -79,7 +79,7 @@ impl GetChecks for Domain {
         }
 
         Checks {
-            struct_name: "Domain",
+            rdap_struct: super::CheckRdapStructure::Domain,
             items,
             sub_checks,
         }

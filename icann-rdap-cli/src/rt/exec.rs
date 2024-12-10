@@ -47,7 +47,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     value: &QueryType,
     _options: &TestOptions,
     client_config: &ClientConfig,
-) -> Result<TestResults<'a>, TestError> {
+) -> Result<TestResults, TestError> {
     let bs_client = create_client(client_config)?;
     let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
         debug!("Fetching IANA registry {} for value {value}", reg.url())

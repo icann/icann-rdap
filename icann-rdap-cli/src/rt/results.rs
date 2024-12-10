@@ -12,14 +12,14 @@ use serde::Serialize;
 use strum_macros::Display;
 
 #[derive(Debug, Serialize)]
-pub struct TestResults<'a> {
+pub struct TestResults {
     pub query_url: String,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
-    pub test_runs: Vec<TestRun<'a>>,
+    pub test_runs: Vec<TestRun>,
 }
 
-impl<'a> TestResults<'a> {
+impl<'a> TestResults {
     pub fn new(query_url: String) -> Self {
         TestResults {
             query_url,
@@ -33,7 +33,7 @@ impl<'a> TestResults<'a> {
         self.end_time = Some(Utc::now());
     }
 
-    pub fn add_test_run(&mut self, test_run: TestRun<'a>) {
+    pub fn add_test_run(&mut self, test_run: TestRun) {
         self.test_runs.push(test_run);
     }
 
@@ -66,16 +66,16 @@ pub enum RunOutcome {
 }
 
 #[derive(Debug, Serialize)]
-pub struct TestRun<'a> {
+pub struct TestRun {
     pub socket_addr: SocketAddr,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
     pub response_data: Option<ResponseData>,
     pub outcome: RunOutcome,
-    pub checks: Option<Checks<'a>>,
+    pub checks: Option<Checks>,
 }
 
-impl<'a> TestRun<'a> {
+impl TestRun {
     pub fn new_v4(ipv4: Ipv4Addr, port: u16) -> Self {
         TestRun {
             start_time: Utc::now(),
@@ -102,6 +102,7 @@ impl<'a> TestRun<'a> {
         if let Ok(response_data) = rdap_response {
             self.end_time = Some(Utc::now());
             self.outcome = RunOutcome::NoErrors;
+            self.checks = Some(do_checks(&response_data));
             self.response_data = Some(response_data);
         } else {
             self.outcome = match rdap_response.err().unwrap() {
@@ -123,12 +124,6 @@ impl<'a> TestRun<'a> {
             self.end_time = Some(Utc::now());
         };
         self
-    }
-
-    pub fn calc_checks(&'a mut self) {
-        if let Some(ref response_data) = self.response_data {
-            self.checks = Some(do_checks(response_data));
-        }
     }
 
     fn add_summary(&self, mut table: MultiPartTable) -> MultiPartTable {
