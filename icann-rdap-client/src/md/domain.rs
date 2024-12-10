@@ -48,9 +48,9 @@ impl ToMd for Domain {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_data_ref(&"LDH Name", &self.ldh_name)
-            .and_data_ref(&"Unicode Name", &self.unicode_name)
-            .and_data_ref(&"Handle", &domain_handle);
+            .and_nv_ref(&"LDH Name", &self.ldh_name)
+            .and_nv_ref(&"Unicode Name", &self.unicode_name)
+            .and_nv_ref(&"Handle", &domain_handle);
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -152,15 +152,15 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
 
     table = table
         .header_ref(&"DNSSEC Information")
-        .and_data_ref(
+        .and_nv_ref(
             &"Zone Signed",
             &secure_dns.zone_signed.map(|b| b.to_string()),
         )
-        .and_data_ref(
+        .and_nv_ref(
             &"Delegation Signed",
             &secure_dns.delegation_signed.map(|b| b.to_string()),
         )
-        .and_data_ref(
+        .and_nv_ref(
             &"Max Sig Life",
             &secure_dns.max_sig_life.map(|u| u.to_string()),
         );
@@ -170,10 +170,10 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
             let header = format!("DS Data ({i})");
             table = table
                 .header_ref(&header)
-                .and_data_ref(&"Key Tag", &ds.key_tag.map(|k| k.to_string()))
-                .and_data_ref(&"Algorithm", &dns_algorithm(&ds.algorithm))
-                .and_data_ref(&"Digest", &ds.digest)
-                .and_data_ref(&"Digest Type", &dns_digest_type(&ds.digest_type));
+                .and_nv_ref(&"Key Tag", &ds.key_tag.map(|k| k.to_string()))
+                .and_nv_ref(&"Algorithm", &dns_algorithm(&ds.algorithm))
+                .and_nv_ref(&"Digest", &ds.digest)
+                .and_nv_ref(&"Digest Type", &dns_digest_type(&ds.digest_type));
             if let Some(events) = &ds.events {
                 let ds_header = format!("DS ({i}) Events");
                 table = events_to_table(events, table, &ds_header, params);
@@ -190,10 +190,10 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
             let header = format!("Key Data ({i})");
             table = table
                 .header_ref(&header)
-                .and_data_ref(&"Flags", &key.flags.map(|k| k.to_string()))
-                .and_data_ref(&"Protocol", &key.protocol.map(|a| a.to_string()))
-                .and_data_ref(&"Public Key", &key.public_key)
-                .and_data_ref(&"Algorithm", &dns_algorithm(&key.algorithm));
+                .and_nv_ref(&"Flags", &key.flags.map(|k| k.to_string()))
+                .and_nv_ref(&"Protocol", &key.protocol.map(|a| a.to_string()))
+                .and_nv_ref(&"Public Key", &key.public_key)
+                .and_nv_ref(&"Algorithm", &dns_algorithm(&key.algorithm));
             if let Some(events) = &key.events {
                 let key_header = format!("Key ({i}) Events");
                 table = events_to_table(events, table, &key_header, params);

@@ -1,6 +1,5 @@
 //! Function to execute tests.
 
-use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
 use hickory_client::client::{AsyncClient, ClientConnection, ClientHandle};
@@ -14,12 +13,12 @@ use icann_rdap_client::{
 };
 use reqwest::Url;
 use thiserror::Error;
-use tracing::debug;
+use tracing::{debug, info};
 use url::ParseError;
 
 use crate::rt::results::TestRun;
 
-use super::results::TestResults;
+use super::results::{DnsData, TestResults};
 
 #[derive(Default)]
 pub struct TestOptions {}
@@ -65,17 +64,18 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     debug!("Using base URL {base_url}");
 
     let query_url = value.query_url(&base_url)?;
-    let mut test_results = TestResults::new(query_url.clone());
+    info!("Testing {query_url}");
+    let dns_data = get_dns_records(host).await?;
+    let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
 
-    let (v4s, v6s) = get_dns_records(host).await?;
-    for v4 in v4s {
+    for v4 in dns_data.v4_addrs {
         let mut test_run = TestRun::new_v4(v4, port);
         let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
         let rdap_response = rdap_url_request(&query_url, &client).await;
         test_run = test_run.end(rdap_response);
         test_results.add_test_run(test_run);
     }
-    for v6 in v6s {
+    for v6 in dns_data.v6_addrs {
         let mut test_run = TestRun::new_v6(v6, port);
         let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
         let rdap_response = rdap_url_request(&query_url, &client).await;
@@ -84,13 +84,11 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     }
 
     test_results.end();
+    info!("Testing complete.");
     Ok(test_results)
 }
 
-async fn get_dns_records(host: &str) -> Result<(Vec<Ipv4Addr>, Vec<Ipv6Addr>), TestError> {
-    let mut v4s = vec![];
-    let mut v6s = vec![];
-
+async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
     let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)
         .unwrap()
         .new_stream(None);
@@ -99,6 +97,8 @@ async fn get_dns_records(host: &str) -> Result<(Vec<Ipv4Addr>, Vec<Ipv6Addr>), T
     // make sure to run the background task
     tokio::spawn(bg);
 
+    let mut dns_data = DnsData::default();
+
     // Create a query future
     let query = client.query(Name::from_str(host).unwrap(), DNSClass::IN, RecordType::A);
 
@@ -106,15 +106,34 @@ async fn get_dns_records(host: &str) -> Result<(Vec<Ipv4Addr>, Vec<Ipv6Addr>), T
     let response = query.await.unwrap();
 
     for answer in response.answers() {
-        let addr = answer
-            .data()
-            .ok_or(TestError::NoRdata)?
-            .clone()
-            .into_a()
-            .map_err(|_e| TestError::BadRdata)?
-            .0;
-        v4s.push(addr);
-        debug!("Found {addr}");
+        match answer.record_type() {
+            RecordType::CNAME => {
+                let cname = answer
+                    .data()
+                    .ok_or(TestError::NoRdata)?
+                    .clone()
+                    .into_cname()
+                    .map_err(|_e| TestError::BadRdata)?
+                    .0
+                    .to_string();
+                debug!("Found cname {cname}");
+                dns_data.v4_cname = Some(cname);
+            }
+            RecordType::A => {
+                let addr = answer
+                    .data()
+                    .ok_or(TestError::NoRdata)?
+                    .clone()
+                    .into_a()
+                    .map_err(|_e| TestError::BadRdata)?
+                    .0;
+                debug!("Found IPv4 {addr}");
+                dns_data.v4_addrs.push(addr);
+            }
+            _ => {
+                // do nothing
+            }
+        };
     }
 
     // Create a query future
@@ -128,16 +147,35 @@ async fn get_dns_records(host: &str) -> Result<(Vec<Ipv4Addr>, Vec<Ipv6Addr>), T
     let response = query.await.unwrap();
 
     for answer in response.answers() {
-        let addr = answer
-            .data()
-            .ok_or(TestError::NoRdata)?
-            .clone()
-            .into_aaaa()
-            .map_err(|_e| TestError::BadRdata)?
-            .0;
-        v6s.push(addr);
-        debug!("Found {addr}");
+        match answer.record_type() {
+            RecordType::CNAME => {
+                let cname = answer
+                    .data()
+                    .ok_or(TestError::NoRdata)?
+                    .clone()
+                    .into_cname()
+                    .map_err(|_e| TestError::BadRdata)?
+                    .0
+                    .to_string();
+                debug!("Found cname {cname}");
+                dns_data.v6_cname = Some(cname);
+            }
+            RecordType::AAAA => {
+                let addr = answer
+                    .data()
+                    .ok_or(TestError::NoRdata)?
+                    .clone()
+                    .into_aaaa()
+                    .map_err(|_e| TestError::BadRdata)?
+                    .0;
+                debug!("Found IPv6 {addr}");
+                dns_data.v6_addrs.push(addr);
+            }
+            _ => {
+                // do nothing
+            }
+        };
     }
 
-    Ok((v4s, v6s))
+    Ok(dns_data)
 }

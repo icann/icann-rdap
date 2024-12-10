@@ -14,15 +14,17 @@ use strum_macros::Display;
 #[derive(Debug, Serialize)]
 pub struct TestResults {
     pub query_url: String,
+    pub dns_data: DnsData,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
     pub test_runs: Vec<TestRun>,
 }
 
-impl<'a> TestResults {
-    pub fn new(query_url: String) -> Self {
+impl TestResults {
+    pub fn new(query_url: String, dns_data: DnsData) -> Self {
         TestResults {
             query_url,
+            dns_data,
             start_time: Utc::now(),
             end_time: None,
             test_runs: vec![],
@@ -39,30 +41,95 @@ impl<'a> TestResults {
 
     pub fn to_md(&self, options: &MdOptions) -> String {
         let mut md = String::new();
+
+        // h1
         md.push_str(&format!(
             "\n{}\n",
             self.query_url.to_owned().to_header(1, options)
         ));
 
+        // table
         let mut table = MultiPartTable::new();
-        table = table.data(&"Summary", format!("{} Test Runs", self.test_runs.len()));
+
+        // test results summary
+        table = table.multi(vec![
+            "Start Time".to_bold(options),
+            "End Time".to_bold(options),
+            "Duration".to_bold(options),
+            "Runs".to_bold(options),
+        ]);
+        let (end_time_s, duration_s) = if let Some(end_time) = self.end_time {
+            (
+                format_date_time(end_time),
+                format!("{} s", (end_time - self.start_time).num_seconds()),
+            )
+        } else {
+            ("FATAL".to_em(options), "N/A".to_string())
+        };
+        table = table.multi(vec![
+            format_date_time(self.start_time),
+            end_time_s,
+            duration_s,
+            self.test_runs.len().to_string(),
+        ]);
+
+        // dns data
+        table = table.multi(vec!["Query".to_bold(options), "CNAME".to_bold(options)]);
+        let v4_cname = if let Some(ref cname) = self.dns_data.v4_cname {
+            cname.to_owned()
+        } else {
+            "A records only".to_string()
+        };
+        table = table.multi(vec!["A (v4)".to_string(), v4_cname]);
+        let v6_cname = if let Some(ref cname) = self.dns_data.v6_cname {
+            cname.to_owned()
+        } else {
+            "AAAA records only".to_string()
+        };
+        table = table.multi(vec!["AAAA (v6)".to_string(), v6_cname]);
+
+        // summary of each run
+        table = table.multi(vec![
+            "Address".to_bold(options),
+            "Start Time".to_bold(options),
+            "Duration".to_bold(options),
+            "Outcome".to_bold(options),
+        ]);
         for test_run in &self.test_runs {
-            table = test_run.add_summary(table);
+            table = test_run.add_summary(table, options);
         }
         md.push_str(&table.to_md_table(options));
         md
     }
 }
 
+#[derive(Debug, Serialize, Clone, Default)]
+pub struct DnsData {
+    pub v4_cname: Option<String>,
+    pub v6_cname: Option<String>,
+    pub v4_addrs: Vec<Ipv4Addr>,
+    pub v6_addrs: Vec<Ipv6Addr>,
+}
+
 #[derive(Debug, Serialize, Display)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum RunOutcome {
-    NoErrors,
+    Tested,
     NetworkError,
     JsonError,
     RdapDataError,
     InternalError,
     Skipped,
+}
+
+impl RunOutcome {
+    pub fn to_md(&self, options: &MdOptions) -> String {
+        match self {
+            RunOutcome::Tested => self.to_bold(options),
+            RunOutcome::Skipped => self.to_string(),
+            _ => self.to_em(options),
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -101,7 +168,7 @@ impl TestRun {
     pub fn end(mut self, rdap_response: Result<ResponseData, RdapClientError>) -> Self {
         if let Ok(response_data) = rdap_response {
             self.end_time = Some(Utc::now());
-            self.outcome = RunOutcome::NoErrors;
+            self.outcome = RunOutcome::Tested;
             self.checks = Some(do_checks(&response_data));
             self.response_data = Some(response_data);
         } else {
@@ -126,18 +193,18 @@ impl TestRun {
         self
     }
 
-    fn add_summary(&self, mut table: MultiPartTable) -> MultiPartTable {
-        table = table.header_ref(&self.socket_addr.to_string());
-        table = table.data(&"Start Time", format_date_time(self.start_time));
-        if let Some(ref end_time) = self.end_time {
-            table = table.data(&"End Time", format_date_time(*end_time));
-            table = table.data(
-                &"Duration",
-                format!("{} ms", (*end_time - self.start_time).num_milliseconds()),
-            );
+    fn add_summary(&self, mut table: MultiPartTable, options: &MdOptions) -> MultiPartTable {
+        let duration_s = if let Some(end_time) = self.end_time {
+            format!("{} ms", (end_time - self.start_time).num_milliseconds())
         } else {
-            table = table.data(&"Status", "Skipped");
-        }
+            "n/a".to_string()
+        };
+        table = table.multi(vec![
+            self.socket_addr.to_string(),
+            format_date_time(self.start_time),
+            duration_s,
+            self.outcome.to_md(options),
+        ]);
         table
     }
 }

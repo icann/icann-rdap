@@ -6,13 +6,23 @@ pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
 }
 
+/// A datastructue to hold various row types for a markdown table.
+///
+/// This datastructure has the following types of rows:
+/// * header - just the left most column which is centered and bolded text
+/// * name/value - first column is the name and the second column is data.
+///
+/// For name/value rows, the name is right justified. Name/value rows may also
+/// have unordered (bulleted) lists. In markdown, there is no such thing as a
+/// multiline row, so this creates multiple rows where the name is left blank.
 pub struct MultiPartTable {
     rows: Vec<Row>,
 }
 
 enum Row {
     Header(String),
-    Data((String, String)),
+    NameValue((String, String)),
+    MultiValue(Vec<String>),
 }
 
 impl MultiPartTable {
@@ -20,36 +30,40 @@ impl MultiPartTable {
         Self { rows: Vec::new() }
     }
 
+    /// Add a header row.
     pub fn header_ref(mut self, name: &impl ToString) -> Self {
         self.rows.push(Row::Header(name.to_string()));
         self
     }
 
-    pub fn data_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
-        self.rows.push(Row::Data((
+    /// Add a name/value row.
+    pub fn nv_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
+        self.rows.push(Row::NameValue((
             name.to_string(),
             value.to_string().replace_ws(),
         )));
         self
     }
 
-    pub fn data(mut self, name: &impl ToString, value: impl ToString) -> Self {
-        self.rows.push(Row::Data((
+    /// Add a name/value row.
+    pub fn nv(mut self, name: &impl ToString, value: impl ToString) -> Self {
+        self.rows.push(Row::NameValue((
             name.to_string(),
             value.to_string().replace_ws(),
         )));
         self
     }
 
-    pub fn data_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
+    /// Add a name/value row with unordered list.
+    pub fn nv_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
-                self.rows.push(Row::Data((
+                self.rows.push(Row::NameValue((
                     name.to_string(),
                     format!("* {}", v.to_string().replace_ws()),
                 )))
             } else {
-                self.rows.push(Row::Data((
+                self.rows.push(Row::NameValue((
                     String::default(),
                     format!("* {}", v.to_string().replace_ws()),
                 )))
@@ -58,15 +72,16 @@ impl MultiPartTable {
         self
     }
 
-    pub fn data_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
+    /// Add a name/value row with unordered list.
+    pub fn nv_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
-                self.rows.push(Row::Data((
+                self.rows.push(Row::NameValue((
                     name.to_string(),
                     format!("* {}", v.to_string().replace_ws()),
                 )))
             } else {
-                self.rows.push(Row::Data((
+                self.rows.push(Row::NameValue((
                     String::default(),
                     format!("* {}", v.to_string().replace_ws()),
                 )))
@@ -75,8 +90,9 @@ impl MultiPartTable {
         self
     }
 
-    pub fn and_data_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
-        self.rows.push(Row::Data((
+    /// Add a name/value row.
+    pub fn and_nv_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
+        self.rows.push(Row::NameValue((
             name.to_string(),
             value
                 .as_deref()
@@ -87,49 +103,70 @@ impl MultiPartTable {
         self
     }
 
-    pub fn and_data_ref_maybe(self, name: &impl ToString, value: &Option<String>) -> Self {
+    /// Add a name/value row.
+    pub fn and_nv_ref_maybe(self, name: &impl ToString, value: &Option<String>) -> Self {
         if let Some(value) = value {
-            self.data_ref(name, value)
+            self.nv_ref(name, value)
         } else {
             self
         }
     }
 
-    pub fn and_data_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
+    /// Add a name/value row with unordered list.
+    pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
         if let Some(value) = value {
-            self.data_ul_ref(name, value)
+            self.nv_ul_ref(name, value)
         } else {
             self
         }
     }
 
-    pub fn and_data_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
+    /// Add a name/value row with unordered list.
+    pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
         if let Some(value) = value {
-            self.data_ul(name, value)
+            self.nv_ul(name, value)
         } else {
             self
         }
     }
 
+    /// A summary row is a special type of name/value row that has an unordered (bulleted) list
+    /// that is output in a tree structure (max 3 levels).
     pub fn summary(mut self, header_text: MdHeaderText) -> Self {
-        self.rows.push(Row::Data((
+        self.rows.push(Row::NameValue((
             "Summary".to_string(),
             header_text.to_string().replace_ws().to_string(),
         )));
         // note that termimad has limits on list depth, so we can't go too crazy.
         // however, this seems perfectly reasonable for must RDAP use cases.
         for level1 in header_text.children {
-            self.rows.push(Row::Data((
+            self.rows.push(Row::NameValue((
                 "".to_string(),
                 format!("* {}", level1.to_string().replace_ws()),
             )));
             for level2 in level1.children {
-                self.rows.push(Row::Data((
+                self.rows.push(Row::NameValue((
                     "".to_string(),
                     format!("  * {}", level2.to_string().replace_ws()),
                 )));
             }
         }
+        self
+    }
+
+    /// Adds a multivalue row.
+    pub fn multi(mut self, values: Vec<String>) -> Self {
+        self.rows.push(Row::MultiValue(
+            values.iter().map(|s| s.replace_ws()).collect(),
+        ));
+        self
+    }
+
+    /// Adds a multivalue row.
+    pub fn multi_ref(mut self, values: &[&str]) -> Self {
+        self.rows.push(Row::MultiValue(
+            values.iter().map(|s| s.replace_ws()).collect(),
+        ));
         self
     }
 
@@ -141,7 +178,8 @@ impl MultiPartTable {
                 .iter()
                 .map(|row| match row {
                     Row::Header(header) => header.len(),
-                    Row::Data((name, _value)) => name.len(),
+                    Row::NameValue((name, _value)) => name.len(),
+                    Row::MultiValue(_) => 1,
                 })
                 .max()
                 .unwrap_or(1),
@@ -159,7 +197,7 @@ impl MultiPartTable {
                         ));
                         true
                     }
-                    Row::Data((name, value)) => {
+                    Row::NameValue((name, value)) => {
                         if *state {
                             md.push_str("|-:|:-|\n");
                         };
@@ -169,6 +207,22 @@ impl MultiPartTable {
                             value
                         ));
                         false
+                    }
+                    Row::MultiValue(values) => {
+                        // column formatting
+                        md.push('|');
+                        for _col in values {
+                            md.push_str(":--:|");
+                        }
+                        md.push('\n');
+
+                        // the actual data
+                        md.push('|');
+                        for col in values {
+                            md.push_str(&format!("{col}|"));
+                        }
+                        md.push('\n');
+                        true
                     }
                 };
                 *state = new_state;
@@ -234,7 +288,7 @@ mod tests {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
-            .data_ref(&"bizz", &"buzz");
+            .nv_ref(&"bizz", &"buzz");
 
         // WHEN
         let req_data = RequestData {
@@ -266,8 +320,8 @@ mod tests {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
-            .data_ref(&"bizz", &"buzz")
-            .data_ref(&"bar", &"baz");
+            .nv_ref(&"bizz", &"buzz")
+            .nv_ref(&"bar", &"baz");
 
         // WHEN
         let req_data = RequestData {
@@ -302,7 +356,7 @@ mod tests {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
-            .data(&"bizz", "buzz".to_string());
+            .nv(&"bizz", "buzz".to_string());
 
         // WHEN
         let req_data = RequestData {
@@ -334,8 +388,8 @@ mod tests {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
-            .data(&"bizz", "buzz")
-            .data(&"bar", "baz");
+            .nv(&"bizz", "buzz")
+            .nv(&"bar", "baz");
 
         // WHEN
         let req_data = RequestData {
@@ -370,11 +424,11 @@ mod tests {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
-            .data_ref(&"bizz", &"buzz")
-            .data_ref(&"bar", &"baz")
+            .nv_ref(&"bizz", &"buzz")
+            .nv_ref(&"bar", &"baz")
             .header_ref(&"foo")
-            .data_ref(&"bizz", &"buzz")
-            .data_ref(&"bar", &"baz");
+            .nv_ref(&"bizz", &"buzz")
+            .nv_ref(&"bar", &"baz");
 
         // WHEN
         let req_data = RequestData {

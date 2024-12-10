@@ -34,15 +34,15 @@ impl ToMd for Network {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_data_ref(&"Start Address", &self.start_address)
-            .and_data_ref(&"End Address", &self.end_address)
-            .and_data_ref(&"IP Version", &self.ip_version)
-            .and_data_ul(&"CIDR", self.cidr0_cidrs.clone())
-            .and_data_ref(&"Handle", &self.object_common.handle)
-            .and_data_ref(&"Parent Handle", &self.parent_handle)
-            .and_data_ref(&"Network Type", &self.network_type)
-            .and_data_ref(&"Network Name", &self.name)
-            .and_data_ref(&"Country", &self.country);
+            .and_nv_ref(&"Start Address", &self.start_address)
+            .and_nv_ref(&"End Address", &self.end_address)
+            .and_nv_ref(&"IP Version", &self.ip_version)
+            .and_nv_ul(&"CIDR", self.cidr0_cidrs.clone())
+            .and_nv_ref(&"Handle", &self.object_common.handle)
+            .and_nv_ref(&"Parent Handle", &self.parent_handle)
+            .and_nv_ref(&"Network Type", &self.network_type)
+            .and_nv_ref(&"Network Name", &self.name)
+            .and_nv_ref(&"Country", &self.country);
 
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);

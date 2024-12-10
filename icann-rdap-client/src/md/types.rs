@@ -277,11 +277,11 @@ impl ToMpTable for ObjectCommon {
             // Status
             if let Some(status) = &self.status {
                 let values = status.iter().map(|v| v.0.as_str()).collect::<Vec<&str>>();
-                table = table.data_ul(&"Status", values.make_list_all_title_case());
+                table = table.nv_ul(&"Status", values.make_list_all_title_case());
             }
 
             // Port 43
-            table = table.and_data_ref(&"Whois", &self.port_43);
+            table = table.and_nv_ref(&"Whois", &self.port_43);
         }
 
         // Events
@@ -304,7 +304,7 @@ pub(crate) fn public_ids_to_table(
     mut table: MultiPartTable,
 ) -> MultiPartTable {
     for pid in publid_ids {
-        table = table.data_ref(
+        table = table.nv_ref(
             pid.id_type.as_ref().unwrap_or(&"(not given)".to_string()),
             pid.identifier
                 .as_ref()
@@ -332,7 +332,7 @@ pub(crate) fn events_to_table(
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);
         }
-        table = table.data_ul_ref(
+        table = table.nv_ul_ref(
             &event
                 .event_action
                 .as_ref()
@@ -353,7 +353,7 @@ pub(crate) fn links_to_table(
     table = table.header_ref(&header_name.to_string());
     for link in links {
         if let Some(title) = &link.title {
-            table = table.data_ref(&"Title", &title.trim());
+            table = table.nv_ref(&"Title", &title.trim());
         };
         let rel = link
             .rel
@@ -381,7 +381,7 @@ pub(crate) fn links_to_table(
             };
             ul.push(&hreflang_s)
         };
-        table = table.data_ul_ref(&rel, ul);
+        table = table.nv_ul_ref(&rel, ul);
     }
     table
 }
@@ -409,7 +409,7 @@ pub(crate) fn checks_to_table(
             .filter(|item| item.check_class == class)
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
-        table = table.data_ul_ref(
+        table = table.nv_ul_ref(
             &&class
                 .to_string()
                 .to_right_em(*CHECK_CLASS_LEN, params.options),
@@ -423,7 +423,7 @@ pub(crate) fn checks_to_table(
             .filter(|item| item.check_class == class)
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
-        table = table.data_ul_ref(
+        table = table.nv_ul_ref(
             &class
                 .to_string()
                 .to_right_em(*CHECK_CLASS_LEN, params.options),
@@ -437,7 +437,7 @@ pub(crate) fn checks_to_table(
             .filter(|item| item.check_class == class)
             .map(|item| item.check.get_message().unwrap_or_default().to_owned())
             .collect();
-        table = table.data_ul_ref(
+        table = table.nv_ul_ref(
             &&class
                 .to_string()
                 .to_right_em(*CHECK_CLASS_LEN, params.options),
