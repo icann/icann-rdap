@@ -56,7 +56,7 @@ impl TestResults {
             "Start Time".to_inline(options),
             "End Time".to_inline(options),
             "Duration".to_inline(options),
-            "Runs".to_inline(options),
+            "Tested".to_inline(options),
         ]);
         let (end_time_s, duration_s) = if let Some(end_time) = self.end_time {
             (
@@ -66,11 +66,16 @@ impl TestResults {
         } else {
             ("FATAL".to_em(options), "N/A".to_string())
         };
+        let tested = self
+            .test_runs
+            .iter()
+            .filter(|r| matches!(r.outcome, RunOutcome::Tested))
+            .count();
         table = table.multi(vec![
             format_date_time(self.start_time),
             end_time_s,
             duration_s,
-            self.test_runs.len().to_string(),
+            format!("{tested} of {}", self.test_runs.len()),
         ]);
 
         // dns data
