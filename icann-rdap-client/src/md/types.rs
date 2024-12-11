@@ -417,7 +417,7 @@ pub(crate) fn checks_to_table(
         );
 
         // Specification Warning
-        let class = CheckClass::SpecificationWarning;
+        let class = CheckClass::StdWarning;
         let ul: Vec<String> = filtered_checks
             .iter()
             .filter(|item| item.check_class == class)
@@ -431,7 +431,7 @@ pub(crate) fn checks_to_table(
         );
 
         // Specification Error
-        let class = CheckClass::SpecificationError;
+        let class = CheckClass::StdError;
         let ul: Vec<String> = filtered_checks
             .iter()
             .filter(|item| item.check_class == class)

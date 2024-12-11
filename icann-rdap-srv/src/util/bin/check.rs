@@ -30,16 +30,13 @@ pub enum CheckTypeArg {
 
 pub fn to_check_classes(args: &CheckArgs) -> Vec<CheckClass> {
     if args.check_type.is_empty() {
-        vec![
-            CheckClass::SpecificationWarning,
-            CheckClass::SpecificationError,
-        ]
+        vec![CheckClass::StdWarning, CheckClass::StdError]
     } else {
         args.check_type
             .iter()
             .map(|c| match c {
-                CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
-                CheckTypeArg::SpecError => CheckClass::SpecificationError,
+                CheckTypeArg::SpecWarn => CheckClass::StdWarning,
+                CheckTypeArg::SpecError => CheckClass::StdError,
             })
             .collect::<Vec<CheckClass>>()
     }

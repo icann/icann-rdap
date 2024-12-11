@@ -52,7 +52,7 @@ impl GetChecks for Nameserver {
         }
 
         Checks {
-            rdap_struct: super::CheckRdapStructure::Nameserver,
+            rdap_struct: super::RdapStructure::Nameserver,
             items,
             sub_checks,
         }

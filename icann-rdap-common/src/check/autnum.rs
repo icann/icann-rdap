@@ -3,7 +3,7 @@ use std::any::TypeId;
 use crate::response::autnum::Autnum;
 
 use super::{
-    string::StringCheck, Check, CheckParams, CheckRdapStructure, Checks, GetChecks, GetSubChecks,
+    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks, RdapStructure,
 };
 
 impl GetChecks for Autnum {
@@ -58,7 +58,7 @@ impl GetChecks for Autnum {
         }
 
         Checks {
-            rdap_struct: CheckRdapStructure::Autnum,
+            rdap_struct: RdapStructure::Autnum,
             items,
             sub_checks,
         }

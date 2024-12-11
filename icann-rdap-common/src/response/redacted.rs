@@ -108,7 +108,7 @@ impl fmt::Display for Method {
 impl Redacted {
     pub fn get_checks(&self, _check_params: crate::check::CheckParams<'_>) -> crate::check::Checks {
         Checks {
-            rdap_struct: crate::check::CheckRdapStructure::Redacted,
+            rdap_struct: crate::check::RdapStructure::Redacted,
             items: Vec::new(),
             sub_checks: Vec::new(),
         }

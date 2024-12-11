@@ -4,7 +4,7 @@ use crate::{contact::Contact, response::entity::Entity};
 
 use super::{
     string::{StringCheck, StringListCheck},
-    Check, CheckParams, CheckRdapStructure, Checks, GetChecks, GetSubChecks,
+    Check, CheckParams, Checks, GetChecks, GetSubChecks, RdapStructure,
 };
 
 impl GetChecks for Entity {
@@ -49,7 +49,7 @@ impl GetChecks for Entity {
         }
 
         Checks {
-            rdap_struct: CheckRdapStructure::Entity,
+            rdap_struct: RdapStructure::Entity,
             items,
             sub_checks,
         }

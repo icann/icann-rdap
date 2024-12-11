@@ -144,14 +144,20 @@ enum OtypeArg {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum CheckTypeArg {
+    /// All checks.
+    All,
+
     /// Informational items.
     Info,
 
+    /// Specification Notes
+    SpecNote,
+
     /// Checks for STD 95 warnings.
-    SpecWarn,
+    StdWarn,
 
     /// Checks for STD 95 errors.
-    SpecError,
+    StdError,
 
     /// Cidr0 errors.
     Cidr0Error,
@@ -224,8 +230,17 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
 
     let check_classes = if cli.check_type.is_empty() {
         vec![
-            CheckClass::SpecificationWarning,
-            CheckClass::SpecificationError,
+            CheckClass::StdWarning,
+            CheckClass::StdError,
+            CheckClass::Cidr0Error,
+            CheckClass::IcannError,
+        ]
+    } else if cli.check_type.contains(&CheckTypeArg::All) {
+        vec![
+            CheckClass::Informational,
+            CheckClass::SpecificationNote,
+            CheckClass::StdWarning,
+            CheckClass::StdError,
             CheckClass::Cidr0Error,
             CheckClass::IcannError,
         ]
@@ -234,10 +249,12 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             .iter()
             .map(|c| match c {
                 CheckTypeArg::Info => CheckClass::Informational,
-                CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
-                CheckTypeArg::SpecError => CheckClass::SpecificationError,
+                CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
+                CheckTypeArg::StdWarn => CheckClass::StdWarning,
+                CheckTypeArg::StdError => CheckClass::StdError,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
                 CheckTypeArg::IcannError => CheckClass::IcannError,
+                CheckTypeArg::All => panic!("check type for all should have been handled."),
             })
             .collect::<Vec<CheckClass>>()
     };

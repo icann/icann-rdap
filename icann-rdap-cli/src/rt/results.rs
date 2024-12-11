@@ -232,17 +232,12 @@ impl TestRun {
                 self.socket_addr.to_string().to_header(1, options)
             ));
 
-            // table
-            let mut table = MultiPartTable::new();
-            table = table.multi(vec![
-                "RDAP Structure".to_inline(options),
-                "Message".to_inline(options),
-            ]);
+            // get check items according to class
             let mut check_v: Vec<(String, String)> = Vec::new();
             if let Some(ref checks) = self.checks {
                 traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
                     let message = if !matches!(item.check_class, CheckClass::Informational)
-                        && !matches!(item.check_class, CheckClass::SpecificationWarning)
+                        && !matches!(item.check_class, CheckClass::SpecificationNote)
                     {
                         item.to_string().to_em(options)
                     } else {
@@ -251,8 +246,20 @@ impl TestRun {
                     check_v.push((struct_name.to_string(), message))
                 });
             };
-            for c in check_v {
-                table = table.nv(&c.0, c.1);
+
+            // table
+            let mut table = MultiPartTable::new();
+
+            if check_v.is_empty() {
+                table = table.header_ref(&"No issues or errors.");
+            } else {
+                table = table.multi(vec![
+                    "RDAP Structure".to_inline(options),
+                    "Message".to_inline(options),
+                ]);
+                for c in check_v {
+                    table = table.nv(&c.0, c.1);
+                }
             }
             md.push_str(&table.to_md_table(options));
         }

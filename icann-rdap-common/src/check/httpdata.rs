@@ -50,7 +50,7 @@ impl GetChecks for HttpData {
         }
 
         Checks {
-            rdap_struct: super::CheckRdapStructure::HttpData,
+            rdap_struct: super::RdapStructure::HttpData,
             items,
             sub_checks: Vec::new(),
         }
