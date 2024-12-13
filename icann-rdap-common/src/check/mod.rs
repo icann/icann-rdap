@@ -6,7 +6,7 @@ use crate::response::RdapResponse;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use strum::{EnumMessage, IntoEnumIterator};
-use strum_macros::{Display, EnumIter, EnumMessage, EnumString};
+use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
 
 pub mod autnum;
 pub mod domain;
@@ -144,9 +144,9 @@ pub struct CheckItem {
 impl std::fmt::Display for CheckItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "{} : {} -- {}",
+            "{}:({:0>4}) {}",
             self.check_class,
-            self.check,
+            self.check as usize,
             self.check
                 .get_message()
                 .unwrap_or("[Check has no description]"),
@@ -239,173 +239,174 @@ where
     Ord,
     Clone,
     Copy,
+    FromRepr,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Check {
-    // RDAP Conformance
+    // RDAP Conformance 100 - 199
     #[strum(message = "RFC 9083 requires 'rdapConformance' on the root object.")]
-    RdapConformanceMissing,
+    RdapConformanceMissing = 100,
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
-    RdapConformanceInvalidParent,
+    RdapConformanceInvalidParent = 101,
 
-    // Link
+    // Link 200 - 299
     #[strum(message = "'value' property not found in Link structure as required by RFC 9083")]
-    LinkMissingValueProperty,
+    LinkMissingValueProperty = 200,
     #[strum(message = "'rel' property not found in Link structure as required by RFC 9083")]
-    LinkMissingRelProperty,
+    LinkMissingRelProperty = 201,
     #[strum(message = "ambiguous follow because related link has no 'type' property")]
-    LinkRelatedHasNoType,
+    LinkRelatedHasNoType = 202,
     #[strum(message = "ambiguous follow because related link does not have RDAP media type")]
-    LinkRelatedIsNotRdap,
+    LinkRelatedIsNotRdap = 203,
     #[strum(message = "self link has no 'type' property")]
-    LinkSelfHasNoType,
+    LinkSelfHasNoType = 204,
     #[strum(message = "self link does not have RDAP media type")]
-    LinkSelfIsNotRdap,
+    LinkSelfIsNotRdap = 205,
     #[strum(message = "RFC 9083 recommends self links for all object classes")]
-    LinkObjectClassHasNoSelf,
+    LinkObjectClassHasNoSelf = 206,
     #[strum(message = "'href' property not found in Link structure as required by RFC 9083")]
-    LinkMissingHrefProperty,
+    LinkMissingHrefProperty = 207,
 
-    // Variant
+    // Domain Variant 300 - 399
     #[strum(message = "empty domain variant is ambiguous")]
-    VariantEmptyDomain,
+    VariantEmptyDomain = 300,
 
-    // Event
+    // Event 400 - 499
     #[strum(message = "event date is absent")]
-    EventDateIsAbsent,
+    EventDateIsAbsent = 400,
     #[strum(message = "event date is not RFC 3339 compliant")]
-    EventDateIsNotRfc3339,
+    EventDateIsNotRfc3339 = 401,
     #[strum(message = "event action is absent")]
-    EventActionIsAbsent,
+    EventActionIsAbsent = 402,
 
-    // Notice Or Remark
+    // Notice Or Remark 500 - 599
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
-    NoticeOrRemarkDescriptionIsAbsent,
+    NoticeOrRemarkDescriptionIsAbsent = 500,
     #[strum(message = "RFC 9083 requires a description to be an array of strings")]
-    NoticeOrRemarkDescriptionIsString,
+    NoticeOrRemarkDescriptionIsString = 501,
 
-    // Handle
+    // Handle 600 - 699
     #[strum(message = "handle appears to be empty or only whitespace")]
-    HandleIsEmpty,
+    HandleIsEmpty = 600,
 
-    // Status
+    // Status 700 - 799
     #[strum(message = "status appears to be empty or only whitespace")]
-    StatusIsEmpty,
+    StatusIsEmpty = 700,
 
-    // Role
+    // Role 800 - 899
     #[strum(message = "role appears to be empty or only whitespace")]
-    RoleIsEmpty,
+    RoleIsEmpty = 800,
 
-    // LDH Name
+    // LDH Name 900 - 999
     #[strum(message = "ldhName does not appear to be an LDH name")]
-    LdhNameInvalid,
+    LdhNameInvalid = 900,
     #[strum(message = "Documentation domain name. See RFC 6761")]
-    LdhNameDocumentation,
+    LdhNameDocumentation = 901,
     #[strum(message = "Unicode name does not match LDH")]
-    LdhNameDoesNotMatchUnicode,
+    LdhNameDoesNotMatchUnicode = 902,
 
-    // Unicode Nmae
+    // Unicode Nmae 1000 - 1099
     #[strum(message = "unicodeName does not appear to be a domain name")]
-    UnicodeNameInvalidDomain,
+    UnicodeNameInvalidDomain = 1000,
     #[strum(message = "unicodeName does not appear to be valid Unicode")]
-    UnicodeNameInvalidUnicode,
+    UnicodeNameInvalidUnicode = 1001,
 
-    // Network Or Autnum Name
+    // Network Or Autnum Name 1100 - 1199
     #[strum(message = "name appears to be empty or only whitespace")]
-    NetworkOrAutnumNameIsEmpty,
+    NetworkOrAutnumNameIsEmpty = 1100,
 
-    // Network or Autnum Type
+    // Network or Autnum Type 1200 - 1299
     #[strum(message = "type appears to be empty or only whitespace")]
-    NetworkOrAutnumTypeIsEmpty,
+    NetworkOrAutnumTypeIsEmpty = 1200,
 
-    // IP Address
+    // IP Address 1300 - 1399
     #[strum(message = "start or end IP address is missing")]
-    IpAddressMissing,
+    IpAddressMissing = 1300,
     #[strum(message = "IP address is malformed")]
-    IpAddressMalformed,
+    IpAddressMalformed = 1301,
     #[strum(message = "end IP address comes before start IP address")]
-    IpAddressEndBeforeStart,
+    IpAddressEndBeforeStart = 1302,
     #[strum(message = "IP version does not match IP address")]
-    IpAddressVersionMismatch,
+    IpAddressVersionMismatch = 1303,
     #[strum(message = "IP version is malformed")]
-    IpAddressMalformedVersion,
+    IpAddressMalformedVersion = 1304,
     #[strum(message = "IP address list is empty")]
-    IpAddressListIsEmpty,
+    IpAddressListIsEmpty = 1305,
     #[strum(message = "\"This network.\" See RFC 791")]
-    IpAddressThisNetwork,
+    IpAddressThisNetwork = 1306,
     #[strum(message = "Private use. See RFC 1918")]
-    IpAddressPrivateUse,
+    IpAddressPrivateUse = 1307,
     #[strum(message = "Shared NAT network. See RFC 6598")]
-    IpAddressSharedNat,
+    IpAddressSharedNat = 1308,
     #[strum(message = "Loopback network. See RFC 1122")]
-    IpAddressLoopback,
+    IpAddressLoopback = 1309,
     #[strum(message = "Link local network. See RFC 3927")]
-    IpAddressLinkLocal,
+    IpAddressLinkLocal = 1310,
     #[strum(message = "Unique local network. See RFC 8190")]
-    IpAddressUniqueLocal,
+    IpAddressUniqueLocal = 1311,
     #[strum(message = "Documentation network. See RFC 5737")]
-    IpAddressDocumentationNet,
+    IpAddressDocumentationNet = 1312,
     #[strum(message = "Reserved network. See RFC 1112")]
-    IpAddressReservedNet,
+    IpAddressReservedNet = 1313,
 
-    // Autnum
+    // Autnum 1400 - 1499
     #[strum(message = "start or end autnum is missing")]
-    AutnumMissing,
+    AutnumMissing = 1400,
     #[strum(message = "end AS number comes before start AS number")]
-    AutnumEndBeforeStart,
+    AutnumEndBeforeStart = 1401,
     #[strum(message = "Private use. See RFC 6996")]
-    AutnumPrivateUse,
+    AutnumPrivateUse = 1402,
     #[strum(message = "Documentation AS number. See RFC 5398")]
-    AutnumDocumentation,
+    AutnumDocumentation = 1403,
     #[strum(message = "Reserved AS number. See RFC 6996")]
-    AutnumReserved,
+    AutnumReserved = 1404,
 
-    // Vcard
+    // Vcard 1500 - 1599
     #[strum(message = "vCard array does not contain a vCard")]
-    VcardArrayIsEmpty,
+    VcardArrayIsEmpty = 1500,
     #[strum(message = "vCard has no fn property")]
-    VcardHasNoFn,
+    VcardHasNoFn = 1501,
     #[strum(message = "vCard fn property is empty")]
-    VcardFnIsEmpty,
+    VcardFnIsEmpty = 1502,
 
-    // Port 43
+    // Port 43 1600 - 1699
     #[strum(message = "port43 appears to be empty or only whitespace")]
-    Port43IsEmpty,
+    Port43IsEmpty = 1600,
 
-    // Public Id
+    // Public Id 1700 - 1799
     #[strum(message = "publicId type is absent")]
-    PublicIdTypeIsAbsent,
+    PublicIdTypeIsAbsent = 1700,
     #[strum(message = "publicId identifier is absent")]
-    PublicIdIdentifierIsAbsent,
+    PublicIdIdentifierIsAbsent = 1701,
 
-    // HTTP
+    // HTTP 1800 - 1899
     #[strum(message = "Use of access-control-allow-origin is recommended.")]
-    CorsAllowOriginRecommended,
+    CorsAllowOriginRecommended = 1800,
     #[strum(message = "Use of access-control-allow-origin with asterisk is recommended.")]
-    CorsAllowOriginStarRecommended,
+    CorsAllowOriginStarRecommended = 1801,
     #[strum(message = "Use of access-control-allow-credentials is not recommended.")]
-    CorsAllowCredentialsNotRecommended,
+    CorsAllowCredentialsNotRecommended = 1802,
     #[strum(message = "No content-type header received.")]
-    ContentTypeIsAbsent,
+    ContentTypeIsAbsent = 1803,
     #[strum(message = "Content-type is not application/rdap+json.")]
-    ContentTypeIsNotRdap,
+    ContentTypeIsNotRdap = 1804,
 
-    // Cidr0
+    // Cidr0 1900 - 1999
     #[strum(message = "Cidr0 v4 prefix is absent")]
-    Cidr0V4PrefixIsAbsent,
+    Cidr0V4PrefixIsAbsent = 1900,
     #[strum(message = "Cidr0 v4 length is absent")]
-    Cidr0V4LengthIsAbsent,
+    Cidr0V4LengthIsAbsent = 1901,
     #[strum(message = "Cidr0 v6 prefix is absent")]
-    Cidr0V6PrefixIsAbsent,
+    Cidr0V6PrefixIsAbsent = 1902,
     #[strum(message = "Cidr0 v6 length is absent")]
-    Cidr0V6LengthIsAbsent,
+    Cidr0V6LengthIsAbsent = 1903,
 
-    // ICANN Profile
+    // ICANN Profile 2000 - 2099
     #[strum(message = "RDAP Service Must use HTTPS.")]
-    MustUseHttps,
+    MustUseHttps = 2000,
     #[strum(message = "access-control-allow-origin is not asterisk")]
-    AllowOriginNotStar,
+    AllowOriginNotStar = 2001,
 }
 
 impl Check {
