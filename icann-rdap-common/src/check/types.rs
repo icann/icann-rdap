@@ -200,6 +200,13 @@ impl GetSubChecks for Common {
                 sub_checks.push(notices.get_checks(params))
             };
         };
+        if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {
+            sub_checks.push(Checks {
+                rdap_struct: super::RdapStructure::RdapConformance,
+                items: vec![Check::RdapConformanceMissing.check_item()],
+                sub_checks: Vec::new(),
+            });
+        }
         sub_checks
     }
 }
@@ -1029,9 +1036,7 @@ mod tests {
         });
 
         // THEN
-        assert!(checks
-            .sub(crate::check::RdapStructure::Links)
-            .is_none());
+        assert!(checks.sub(crate::check::RdapStructure::Links).is_none());
     }
 
     #[test]

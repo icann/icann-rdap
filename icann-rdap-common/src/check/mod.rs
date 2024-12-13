@@ -244,6 +244,8 @@ where
 #[serde(rename_all = "snake_case")]
 pub enum Check {
     // RDAP Conformance
+    #[strum(message = "RFC 9083 requires 'rdapConformance' on the root object.")]
+    RdapConformanceMissing,
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
     RdapConformanceInvalidParent,
 
@@ -409,6 +411,7 @@ pub enum Check {
 impl Check {
     fn check_item(self) -> CheckItem {
         let check_class = match self {
+            Check::RdapConformanceMissing => CheckClass::StdError,
             Check::RdapConformanceInvalidParent => CheckClass::StdError,
 
             Check::LinkMissingValueProperty => CheckClass::StdError,
