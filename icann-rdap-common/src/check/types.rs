@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::{any::TypeId, str::FromStr};
 
 use crate::{
     media_types::RDAP_MEDIA_TYPE,
@@ -9,8 +9,8 @@ use crate::{
         nameserver::Nameserver,
         network::Network,
         types::{
-            Common, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds, RdapConformance,
-            Remarks, StringOrStringArray,
+            Common, ExtensionId, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds,
+            RdapConformance, Remarks, StringOrStringArray,
         },
     },
 };
@@ -28,6 +28,12 @@ impl GetChecks for RdapConformance {
         if params.parent_type != params.root.get_type() {
             items.push(Check::RdapConformanceInvalidParent.check_item())
         };
+        for ext in self {
+            let id = ExtensionId::from_str(ext);
+            if id.is_err() {
+                items.push(Check::UnknownExtention.check_item())
+            }
+        }
         Checks {
             rdap_struct: super::RdapStructure::RdapConformance,
             items,
