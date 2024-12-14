@@ -7,6 +7,8 @@ use serde_json::Value;
 use strum_macros::Display;
 use thiserror::Error;
 
+use crate::media_types::RDAP_MEDIA_TYPE;
+
 use self::{
     autnum::Autnum,
     domain::Domain,
@@ -278,6 +280,34 @@ pub trait GetSelfLink {
 pub trait SelfLink: GetSelfLink {
     /// See [crate::response::types::ObjectCommon::get_self_link()].
     fn set_self_link(self, link: Link) -> Self;
+}
+
+pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
+    if let Some(links) = rdap_response.get_links() {
+        let urls: Vec<&str> = links
+            .iter()
+            .filter(|l| {
+                if l.href.as_ref().is_some() {
+                    if let Some(rel) = &l.rel {
+                        if let Some(media_type) = &l.media_type {
+                            rel.eq_ignore_ascii_case("related")
+                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            })
+            .map(|l| l.href.as_ref().unwrap().as_str())
+            .collect::<Vec<&str>>();
+        urls
+    } else {
+        Vec::new()
+    }
 }
 
 pub trait ToChild {

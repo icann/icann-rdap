@@ -119,6 +119,12 @@ struct Cli {
     #[arg(long, required = false)]
     skip_v6: bool,
 
+    /// Get a referral in the first response and use that for testing. This is useful
+    /// for testing registrars by using the normal bootstrapping process to get the
+    /// referral to the registrar from the registry.
+    #[arg(short = 'r', long, required = false)]
+    referral: bool,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -264,6 +270,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     let options = TestOptions {
         skip_v4: cli.skip_v4,
         skip_v6: cli.skip_v6,
+        chase_referral: cli.referral,
     };
 
     let client_config = ClientConfig::builder()

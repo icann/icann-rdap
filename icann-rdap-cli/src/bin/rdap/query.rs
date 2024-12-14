@@ -3,6 +3,7 @@ use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
 use icann_rdap_common::check::Checks;
 use icann_rdap_common::check::GetChecks;
+use icann_rdap_common::response::get_related_links;
 use tracing::debug;
 use tracing::error;
 use tracing::info;
@@ -13,7 +14,6 @@ use icann_rdap_client::{
     query::{qtype::QueryType, request::ResponseData},
     request::{RequestData, RequestResponse, RequestResponses, SourceType},
 };
-use icann_rdap_common::{media_types::RDAP_MEDIA_TYPE, response::RdapResponse};
 use reqwest::Client;
 use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
@@ -158,7 +158,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
             let regr_source_host;
             let regr_req_data: RequestData;
             if !matches!(processing_params.process_type, ProcessType::Registry) {
-                if let Some(url) = get_related_link(&response.rdap).first() {
+                if let Some(url) = get_related_links(&response.rdap).first() {
                     info!("Querying domain name from registrar.");
                     debug!("Registrar RDAP Url: {url}");
                     let query_type = QueryType::Url(url.to_string());
@@ -463,32 +463,4 @@ fn do_final_output<W: std::io::Write>(
     }
 
     Ok(())
-}
-
-fn get_related_link(rdap_response: &RdapResponse) -> Vec<&str> {
-    if let Some(links) = rdap_response.get_links() {
-        let urls: Vec<&str> = links
-            .iter()
-            .filter(|l| {
-                if l.href.as_ref().is_some() {
-                    if let Some(rel) = &l.rel {
-                        if let Some(media_type) = &l.media_type {
-                            rel.eq_ignore_ascii_case("related")
-                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            })
-            .map(|l| l.href.as_ref().unwrap().as_str())
-            .collect::<Vec<&str>>();
-        urls
-    } else {
-        Vec::new()
-    }
 }

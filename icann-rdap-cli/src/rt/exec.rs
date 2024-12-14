@@ -11,6 +11,7 @@ use icann_rdap_client::{
     query::bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
     QueryType, RdapClientError,
 };
+use icann_rdap_common::response::get_related_links;
 use reqwest::Url;
 use thiserror::Error;
 use tracing::{debug, info};
@@ -24,6 +25,7 @@ use super::results::{DnsData, TestResults};
 pub struct TestOptions {
     pub skip_v4: bool,
     pub skip_v6: bool,
+    pub chase_referral: bool,
 }
 
 #[derive(Debug, Error)]
@@ -42,8 +44,10 @@ pub enum TestError {
     BadRdata,
     #[error(transparent)]
     Client(#[from] reqwest::Error),
-    #[error("UnsupporteQueryType")]
+    #[error("Unsupporte Query Type")]
     UnsupportedQueryType,
+    #[error("No referral to chase")]
+    NoReferralToChase,
 }
 
 pub async fn execute_tests<'a, BS: BootstrapStore>(
@@ -53,7 +57,9 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     client_config: &ClientConfig,
 ) -> Result<TestResults, TestError> {
     let bs_client = create_client(client_config)?;
-    let query_url = match value {
+
+    // get the query url
+    let mut query_url = match value {
         QueryType::Help => return Err(TestError::UnsupportedQueryType),
         QueryType::Url(url) => url.to_owned(),
         _ => {
@@ -64,6 +70,17 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             value.query_url(&base_url)?
         }
     };
+    // if they URL to test is a referral
+    if options.chase_referral {
+        let client = create_client(client_config)?;
+        let response_data = rdap_url_request(&query_url, &client).await?;
+        query_url = get_related_links(&response_data.rdap)
+            .first()
+            .ok_or(TestError::NoReferralToChase)?
+            .to_string();
+        debug!("Chasing referral {query_url}");
+    }
+
     let parsed_url = Url::parse(&query_url)?;
     let port = parsed_url.port().unwrap_or_else(|| {
         if parsed_url.scheme().eq("https") {
