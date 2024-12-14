@@ -299,6 +299,8 @@ pub enum Check {
     // Role 800 - 899
     #[strum(message = "role appears to be empty or only whitespace")]
     RoleIsEmpty = 800,
+    #[strum(message = "entity role may not be registered")]
+    UnknownRole = 801,
 
     // LDH Name 900 - 999
     #[strum(message = "ldhName does not appear to be an LDH name")]
@@ -441,6 +443,7 @@ impl Check {
             Check::StatusIsEmpty => CheckClass::StdError,
 
             Check::RoleIsEmpty => CheckClass::StdError,
+            Check::UnknownRole => CheckClass::StdWarning,
 
             Check::LdhNameInvalid => CheckClass::StdError,
             Check::LdhNameDocumentation => CheckClass::Informational,

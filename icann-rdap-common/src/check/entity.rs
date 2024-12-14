@@ -1,6 +1,9 @@
-use std::any::TypeId;
+use std::{any::TypeId, str::FromStr};
 
-use crate::{contact::Contact, response::entity::Entity};
+use crate::{
+    contact::Contact,
+    response::entity::{Entity, EntityRole},
+};
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -31,6 +34,13 @@ impl GetChecks for Entity {
         if let Some(roles) = &self.roles {
             if roles.as_slice().is_empty_or_any_empty_or_whitespace() {
                 items.push(Check::RoleIsEmpty.check_item());
+            } else {
+                for role in roles {
+                    let r = EntityRole::from_str(role);
+                    if r.is_err() {
+                        items.push(Check::UnknownRole.check_item());
+                    }
+                }
             }
         }
 
