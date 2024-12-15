@@ -411,10 +411,20 @@ pub enum Check {
     MustUseHttps = 2000,
     #[strum(message = "access-control-allow-origin is not asterisk")]
     AllowOriginNotStar = 2001,
+
+    // Explicit Testing Errors 2100 - 2199
+    #[strum(message = "CNAME without A records.")]
+    CnameWithoutARecords = 2100,
+    #[strum(message = "CNAME without AAAA records.")]
+    CnameWithoutAAAARecords = 2101,
+    #[strum(message = "No A records.")]
+    NoARecords = 2102,
+    #[strum(message = "No AAAA records.")]
+    NoAAAARecords = 2103,
 }
 
 impl Check {
-    fn check_item(self) -> CheckItem {
+    pub fn check_item(self) -> CheckItem {
         let check_class = match self {
             Check::RdapConformanceMissing => CheckClass::StdError,
             Check::RdapConformanceInvalidParent => CheckClass::StdError,
@@ -499,6 +509,11 @@ impl Check {
 
             Check::MustUseHttps => CheckClass::IcannError,
             Check::AllowOriginNotStar => CheckClass::IcannError,
+
+            Check::CnameWithoutARecords => CheckClass::StdError,
+            Check::CnameWithoutAAAARecords => CheckClass::StdError,
+            Check::NoARecords => CheckClass::SpecificationNote,
+            Check::NoAAAARecords => CheckClass::SpecificationNote,
         };
         CheckItem {
             check_class,

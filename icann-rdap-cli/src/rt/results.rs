@@ -7,7 +7,9 @@ use icann_rdap_client::{
     query::request::ResponseData,
     RdapClientError,
 };
-use icann_rdap_common::check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks};
+use icann_rdap_common::check::{
+    traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks,
+};
 use serde::Serialize;
 use strum_macros::Display;
 
@@ -17,6 +19,7 @@ pub struct TestResults {
     pub dns_data: DnsData,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
+    pub service_checks: Vec<CheckItem>,
     pub test_runs: Vec<TestRun>,
 }
 
@@ -27,12 +30,29 @@ impl TestResults {
             dns_data,
             start_time: Utc::now(),
             end_time: None,
+            service_checks: vec![],
             test_runs: vec![],
         }
     }
 
     pub fn end(&mut self) {
         self.end_time = Some(Utc::now());
+
+        //service checks
+        if self.dns_data.v4_cname.is_some() && self.dns_data.v4_addrs.is_empty() {
+            self.service_checks
+                .push(Check::CnameWithoutARecords.check_item());
+        }
+        if self.dns_data.v6_cname.is_some() && self.dns_data.v6_addrs.is_empty() {
+            self.service_checks
+                .push(Check::CnameWithoutAAAARecords.check_item());
+        }
+        if self.dns_data.v4_addrs.is_empty() {
+            self.service_checks.push(Check::NoARecords.check_item());
+        }
+        if self.dns_data.v6_addrs.is_empty() {
+            self.service_checks.push(Check::NoAAAARecords.check_item());
+        }
     }
 
     pub fn add_test_run(&mut self, test_run: TestRun) {
@@ -109,6 +129,19 @@ impl TestResults {
         md.push_str(&table.to_md_table(options));
 
         md.push('\n');
+
+        if !self.service_checks.is_empty() {
+            md.push_str(&"Service Checks".to_string().to_header(1, options));
+            let mut table = MultiPartTable::new();
+
+            table = table.multi(vec!["Message".to_inline(options)]);
+            for c in &self.service_checks {
+                let message = check_item_md(c, options);
+                table = table.multi(vec![message]);
+            }
+            md.push_str(&table.to_md_table(options));
+            md.push('\n');
+        }
 
         for run in &self.test_runs {
             md.push_str(&run.to_md(options, check_classes));
@@ -236,13 +269,7 @@ impl TestRun {
             let mut check_v: Vec<(String, String)> = Vec::new();
             if let Some(ref checks) = self.checks {
                 traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
-                    let message = if !matches!(item.check_class, CheckClass::Informational)
-                        && !matches!(item.check_class, CheckClass::SpecificationNote)
-                    {
-                        item.to_string().to_em(options)
-                    } else {
-                        item.to_string()
-                    };
+                    let message = check_item_md(item, options);
                     check_v.push((struct_name.to_string(), message))
                 });
             };
@@ -265,6 +292,16 @@ impl TestRun {
         }
 
         md
+    }
+}
+
+fn check_item_md(item: &CheckItem, options: &MdOptions) -> String {
+    if !matches!(item.check_class, CheckClass::Informational)
+        && !matches!(item.check_class, CheckClass::SpecificationNote)
+    {
+        item.to_string().to_em(options)
+    } else {
+        item.to_string()
     }
 }
 
