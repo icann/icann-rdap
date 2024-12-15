@@ -12,6 +12,7 @@ use icann_rdap_client::{
     QueryType, RdapClientError,
 };
 use icann_rdap_common::response::get_related_links;
+use icann_rdap_common::response::types::ExtensionId;
 use reqwest::Url;
 use thiserror::Error;
 use tracing::{debug, info};
@@ -26,6 +27,16 @@ pub struct TestOptions {
     pub skip_v4: bool,
     pub skip_v6: bool,
     pub chase_referral: bool,
+    pub expect_extensions: Vec<String>,
+    pub expect_groups: Vec<ExtensionGroup>,
+    pub allow_unregistered_extensions: bool,
+}
+
+#[derive(Clone)]
+pub enum ExtensionGroup {
+    Gtld,
+    Nro,
+    NroAsn,
 }
 
 #[derive(Debug, Error)]
@@ -48,6 +59,8 @@ pub enum TestError {
     UnsupportedQueryType,
     #[error("No referral to chase")]
     NoReferralToChase,
+    #[error("Unregistered extension")]
+    UnregisteredExtension,
 }
 
 pub async fn execute_tests<'a, BS: BootstrapStore>(
@@ -57,6 +70,14 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     client_config: &ClientConfig,
 ) -> Result<TestResults, TestError> {
     let bs_client = create_client(client_config)?;
+
+    // normalize extensions
+    let extensions = normalize_extension_ids(options)?;
+    let options = &TestOptions {
+        expect_extensions: extensions,
+        expect_groups: options.expect_groups.clone(),
+        ..*options
+    };
 
     // get the query url
     let mut query_url = match value {
@@ -100,7 +121,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         if !options.skip_v4 {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
-            test_run = test_run.end(rdap_response);
+            test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
     }
@@ -109,7 +130,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         if !options.skip_v6 {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
-            test_run = test_run.end(rdap_response);
+            test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
     }
@@ -209,4 +230,160 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
     }
 
     Ok(dns_data)
+}
+
+// this function looks for short cuts and substitutes them
+fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestError> {
+    let mut retval = options.expect_extensions.clone();
+
+    // check for unregistered extensions
+    if !options.allow_unregistered_extensions {
+        for ext in &retval {
+            if ExtensionId::from_str(ext).is_err() {
+                return Err(TestError::UnregisteredExtension);
+            }
+        }
+    }
+
+    // put the groups in
+    for group in &options.expect_groups {
+        match group {
+            ExtensionGroup::Gtld => {
+                retval.push(format!(
+                    "{}|{}",
+                    ExtensionId::IcannRdapResponseProfile0,
+                    ExtensionId::IcannRdapResponseProfile1
+                ));
+                retval.push(format!(
+                    "{}|{}",
+                    ExtensionId::IcannRdapTechnicalImplementationGuide0,
+                    ExtensionId::IcannRdapTechnicalImplementationGuide1
+                ));
+            }
+            ExtensionGroup::Nro => {
+                retval.push(ExtensionId::NroRdapProfile0.to_string());
+                retval.push(ExtensionId::Cidr0.to_string());
+            }
+            ExtensionGroup::NroAsn => {
+                retval.push(ExtensionId::NroRdapProfile0.to_string());
+                retval.push(format!(
+                    "{}|{}",
+                    ExtensionId::NroRdapProfileAsnFlat0,
+                    ExtensionId::NroRdapProfileAsnHierarchical0
+                ));
+            }
+        }
+    }
+    Ok(retval)
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use icann_rdap_common::response::types::ExtensionId;
+
+    use crate::rt::exec::{ExtensionGroup, TestOptions};
+
+    use super::normalize_extension_ids;
+
+    #[test]
+    fn GIVEN_gtld_WHEN_normalize_extensions_THEN_list_contains_gtld_ids() {
+        // GIVEN
+        let given = vec![ExtensionGroup::Gtld];
+
+        // WHEN
+        let options = TestOptions {
+            expect_groups: given,
+            ..Default::default()
+        };
+        let actual = normalize_extension_ids(&options).unwrap();
+
+        // THEN
+        let expected1 = format!(
+            "{}|{}",
+            ExtensionId::IcannRdapResponseProfile0,
+            ExtensionId::IcannRdapResponseProfile1
+        );
+        assert!(actual.contains(&expected1));
+
+        let expected2 = format!(
+            "{}|{}",
+            ExtensionId::IcannRdapTechnicalImplementationGuide0,
+            ExtensionId::IcannRdapTechnicalImplementationGuide1
+        );
+        assert!(actual.contains(&expected2));
+    }
+
+    #[test]
+    fn GIVEN_nro_and_foo_WHEN_normalize_extensions_THEN_list_contains_nro_ids_and_foo() {
+        // GIVEN
+        let groups = vec![ExtensionGroup::Nro];
+        let exts = vec!["foo1".to_string()];
+
+        // WHEN
+        let options = TestOptions {
+            allow_unregistered_extensions: true,
+            expect_extensions: exts,
+            expect_groups: groups,
+            ..Default::default()
+        };
+        let actual = normalize_extension_ids(&options).unwrap();
+        dbg!(&actual);
+
+        // THEN
+        assert!(actual.contains(&ExtensionId::NroRdapProfile0.to_string()));
+        assert!(actual.contains(&ExtensionId::Cidr0.to_string()));
+        assert!(actual.contains(&"foo1".to_string()));
+    }
+
+    #[test]
+    fn GIVEN_nro_and_foo_WHEN_unreg_disallowed_THEN_err() {
+        // GIVEN
+        let groups = vec![ExtensionGroup::Nro];
+        let exts = vec!["foo1".to_string()];
+
+        // WHEN
+        let options = TestOptions {
+            expect_extensions: exts,
+            expect_groups: groups,
+            ..Default::default()
+        };
+        let actual = normalize_extension_ids(&options);
+
+        // THEN
+        assert!(actual.is_err())
+    }
+
+    #[test]
+    fn GIVEN_unregistered_ext_WHEN_normalize_extensions_THEN_error() {
+        // GIVEN
+        let given = vec!["foo".to_string()];
+
+        // WHEN
+        let options = TestOptions {
+            expect_extensions: given,
+            ..Default::default()
+        };
+        let actual = normalize_extension_ids(&options);
+
+        // THEN
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn GIVEN_unregistered_ext_WHEN_allowed_THEN_no_error() {
+        // GIVEN
+        let given = vec!["foo".to_string()];
+
+        // WHEN
+        let options = TestOptions {
+            expect_extensions: given,
+            allow_unregistered_extensions: true,
+            ..Default::default()
+        };
+        let actual = normalize_extension_ids(&options);
+
+        // THEN
+        assert!(actual.is_ok());
+    }
 }

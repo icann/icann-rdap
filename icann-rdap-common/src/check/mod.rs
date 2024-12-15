@@ -421,6 +421,8 @@ pub enum Check {
     NoARecords = 2102,
     #[strum(message = "No AAAA records.")]
     NoAAAARecords = 2103,
+    #[strum(message = "Expected extension not found.")]
+    ExpectedExtensionNotFound = 2104,
 }
 
 impl Check {
@@ -514,6 +516,7 @@ impl Check {
             Check::CnameWithoutAAAARecords => CheckClass::StdError,
             Check::NoARecords => CheckClass::SpecificationNote,
             Check::NoAAAARecords => CheckClass::SpecificationNote,
+            Check::ExpectedExtensionNotFound => CheckClass::StdError,
         };
         CheckItem {
             check_class,

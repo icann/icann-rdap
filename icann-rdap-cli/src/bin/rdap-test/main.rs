@@ -7,6 +7,7 @@ use error::RdapTestError;
 use icann_rdap_cli::dirs;
 use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
 use icann_rdap_cli::rt::exec::execute_tests;
+use icann_rdap_cli::rt::exec::ExtensionGroup;
 use icann_rdap_cli::rt::exec::TestOptions;
 use icann_rdap_client::client::ClientConfig;
 use icann_rdap_client::md::MdOptions;
@@ -111,19 +112,67 @@ struct Cli {
     )]
     allow_invalid_certificates: bool,
 
+    /// Skip v4.
+    ///
     /// Skip testing of IPv4 connections.
-    #[arg(long, required = false)]
+    #[arg(long, required = false, env = "RDAP_TEST_SKIP_v4")]
     skip_v4: bool,
 
+    /// Skip v6.
+    ///
     /// Skip testing of IPv6 connections.
-    #[arg(long, required = false)]
+    #[arg(long, required = false, env = "RDAP_TEST_SKIP_V6")]
     skip_v6: bool,
 
+    /// Chase a referral.
+    ///
     /// Get a referral in the first response and use that for testing. This is useful
     /// for testing registrars by using the normal bootstrapping process to get the
     /// referral to the registrar from the registry.
     #[arg(short = 'r', long, required = false)]
     referral: bool,
+
+    /// Expect extension.
+    ///
+    /// Expect the RDAP response to contain a specific extension ID.
+    /// If a response does not contain the expected RDAP extension ID,
+    /// it will be added as an failed check. This parameter may also
+    /// take the form of "foo1|foo2" to be mean either expect "foo1" or
+    /// "foo2".
+    ///
+    /// This value may be repeated more than once.
+    #[arg(
+        short = 'e',
+        long,
+        required = false,
+        env = "RDAP_TEST_EXPECT_EXTENSIONS"
+    )]
+    expect_extensions: Vec<String>,
+
+    /// Expect extension group.
+    ///
+    /// Extension groups are known sets of extensions.
+    ///
+    /// This value may be repeated more than once.
+    #[arg(
+        short = 'g',
+        long,
+        required = false,
+        value_enum,
+        env = "RDAP_TEST_EXPECT_EXTENSION_GROUP"
+    )]
+    expect_group: Vec<ExtensionGroupArg>,
+
+    /// Allow unregistered extensions.
+    ///
+    /// Do not flag unregistered extensions.
+    #[arg(
+        short = 'E',
+        long,
+        required = false,
+        env = "RDAP_TEST_ALLOW_UNREGISTERED_EXTENSIONS"
+    )]
+    allow_unregistered_extensions: bool,
 
     /// Reset.
     ///
@@ -170,6 +219,18 @@ enum CheckTypeArg {
 
     /// ICANN Profile errors.
     IcannError,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum ExtensionGroupArg {
+    /// The gTLD RDAP profiles.
+    Gtld,
+
+    /// The base NRO profiles.
+    Nro,
+
+    /// The NRO ASN profiles including the base profile.
+    NroAsn,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -265,12 +326,24 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             .collect::<Vec<CheckClass>>()
     };
 
+    let mut expect_groups = vec![];
+    for g in cli.expect_group {
+        match g {
+            ExtensionGroupArg::Gtld => expect_groups.push(ExtensionGroup::Gtld),
+            ExtensionGroupArg::Nro => expect_groups.push(ExtensionGroup::Nro),
+            ExtensionGroupArg::NroAsn => expect_groups.push(ExtensionGroup::NroAsn),
+        }
+    }
+
     let bs = FileCacheBootstrapStore;
 
     let options = TestOptions {
         skip_v4: cli.skip_v4,
         skip_v6: cli.skip_v6,
         chase_referral: cli.referral,
+        expect_extensions: cli.expect_extensions,
+        expect_groups,
+        allow_unregistered_extensions: cli.allow_unregistered_extensions,
     };
 
     let client_config = ClientConfig::builder()

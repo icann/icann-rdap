@@ -28,10 +28,10 @@ impl GetChecks for HttpData {
         // checks for ICANN profile
         if params
             .root
-            .has_extension(ExtensionId::IcannRdapTechnicalImplementationGuide0)
+            .has_extension_id(ExtensionId::IcannRdapTechnicalImplementationGuide0)
             || params
                 .root
-                .has_extension(ExtensionId::IcannRdapTechnicalImplementationGuide1)
+                .has_extension_id(ExtensionId::IcannRdapTechnicalImplementationGuide1)
         {
             if let Some(scheme) = &self.scheme {
                 if !scheme.eq_ignore_ascii_case("HTTPS") {

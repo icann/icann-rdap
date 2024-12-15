@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::Display;
 use thiserror::Error;
+use types::Extension;
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
@@ -247,9 +248,15 @@ impl RdapResponse {
         }
     }
 
-    pub fn has_extension(&self, extension_id: ExtensionId) -> bool {
+    pub fn has_extension_id(&self, extension_id: ExtensionId) -> bool {
         self.get_conformance().map_or(false, |conformance| {
             conformance.contains(&extension_id.to_extension())
+        })
+    }
+
+    pub fn has_extension(&self, extension: &str) -> bool {
+        self.get_conformance().map_or(false, |conformance| {
+            conformance.contains(&Extension::from(extension))
         })
     }
 
@@ -346,7 +353,7 @@ mod tests {
         let actual = RdapResponse::try_from(expected).unwrap();
 
         // THEN
-        assert!(actual.has_extension(crate::response::types::ExtensionId::Redacted));
+        assert!(actual.has_extension_id(crate::response::types::ExtensionId::Redacted));
     }
 
     #[test]

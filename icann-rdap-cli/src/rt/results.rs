@@ -7,11 +7,14 @@ use icann_rdap_client::{
     query::request::ResponseData,
     RdapClientError,
 };
-use icann_rdap_common::check::{
-    traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks,
+use icann_rdap_common::{
+    check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
+    response::RdapResponse,
 };
 use serde::Serialize;
 use strum_macros::Display;
+
+use super::exec::TestOptions;
 
 #[derive(Debug, Serialize)]
 pub struct TestResults {
@@ -212,11 +215,15 @@ impl TestRun {
         }
     }
 
-    pub fn end(mut self, rdap_response: Result<ResponseData, RdapClientError>) -> Self {
+    pub fn end(
+        mut self,
+        rdap_response: Result<ResponseData, RdapClientError>,
+        options: &TestOptions,
+    ) -> Self {
         if let Ok(response_data) = rdap_response {
             self.end_time = Some(Utc::now());
             self.outcome = RunOutcome::Tested;
-            self.checks = Some(do_checks(&response_data));
+            self.checks = Some(do_checks(&response_data, options));
             self.response_data = Some(response_data);
         } else {
             self.outcome = match rdap_response.err().unwrap() {
@@ -309,15 +316,102 @@ fn format_date_time(date: DateTime<Utc>) -> String {
     date.format("%a, %v %X %Z").to_string()
 }
 
-fn do_checks(response: &ResponseData) -> Checks {
+fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
     let check_params = CheckParams {
         do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
     };
     let mut checks = response.rdap.get_checks(check_params);
+
+    // httpdata checks
     checks
         .items
         .append(&mut response.http_data.get_checks(check_params).items);
+
+    // add expected extension checks
+    for ext in &options.expect_extensions {
+        if !rdap_has_expected_extension(&response.rdap, ext) {
+            checks
+                .items
+                .push(Check::ExpectedExtensionNotFound.check_item());
+        }
+    }
+
+    //return
     checks
+}
+
+fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
+    let count = ext.split('|').filter(|s| rdap.has_extension(s)).count();
+    count > 0
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use icann_rdap_common::response::{
+        domain::Domain,
+        types::{Common, Extension},
+        RdapResponse,
+    };
+
+    use super::rdap_has_expected_extension;
+
+    #[test]
+    fn GIVEN_expected_extension_WHEN_rdap_has_THEN_true() {
+        // GIVEN
+        let domain = Domain::basic().ldh_name("foo.example.com").build();
+        let domain = Domain {
+            common: Common::level0_with_options()
+                .extension(Extension::from("foo0"))
+                .build(),
+            ..domain
+        };
+        let rdap = RdapResponse::Domain(domain);
+
+        // WHEN
+        let actual = rdap_has_expected_extension(&rdap, "foo0");
+
+        // THEN
+        assert!(actual);
+    }
+
+    #[test]
+    fn GIVEN_expected_extension_WHEN_rdap_does_not_have_THEN_false() {
+        // GIVEN
+        let domain = Domain::basic().ldh_name("foo.example.com").build();
+        let domain = Domain {
+            common: Common::level0_with_options()
+                .extension(Extension::from("foo0"))
+                .build(),
+            ..domain
+        };
+        let rdap = RdapResponse::Domain(domain);
+
+        // WHEN
+        let actual = rdap_has_expected_extension(&rdap, "foo1");
+
+        // THEN
+        assert!(!actual);
+    }
+
+    #[test]
+    fn GIVEN_compound_expected_extension_WHEN_rdap_has_THEN_true() {
+        // GIVEN
+        let domain = Domain::basic().ldh_name("foo.example.com").build();
+        let domain = Domain {
+            common: Common::level0_with_options()
+                .extension(Extension::from("foo0"))
+                .build(),
+            ..domain
+        };
+        let rdap = RdapResponse::Domain(domain);
+
+        // WHEN
+        let actual = rdap_has_expected_extension(&rdap, "foo0|foo1");
+
+        // THEN
+        assert!(actual);
+    }
 }

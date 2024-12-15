@@ -83,9 +83,9 @@ pub enum ExtensionId {
     IcannRdapTechnicalImplementationGuide1,
     #[strum(serialize = "nro_rdap_profile_0")]
     NroRdapProfile0,
-    #[strum(serialize = "nro_rdap_asn_flat_0")]
+    #[strum(serialize = "nro_rdap_profile_asn_flat_0")]
     NroRdapProfileAsnFlat0,
-    #[strum(serialize = "nro_rdap_asn_hierarchical_0")]
+    #[strum(serialize = "nro_rdap_profile_asn_hierarchical_0")]
     NroRdapProfileAsnHierarchical0,
     #[strum(serialize = "paging")]
     Paging,
