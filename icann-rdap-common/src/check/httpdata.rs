@@ -90,11 +90,7 @@ mod tests {
         let http_data = HttpData::example().access_control_allow_origin("*").build();
 
         // WHEN
-        let checks = http_data.get_checks(CheckParams {
-            do_subchecks: false,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(!checks
@@ -125,11 +121,7 @@ mod tests {
             .build();
 
         // WHEN
-        let checks = http_data.get_checks(CheckParams {
-            do_subchecks: false,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -158,11 +150,7 @@ mod tests {
         let http_data = HttpData::example().build();
 
         // WHEN
-        let checks = http_data.get_checks(CheckParams {
-            do_subchecks: false,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -192,11 +180,7 @@ mod tests {
         let http_data = HttpData::now().scheme("https").host("example.com").build();
 
         // WHEN
-        let checks = http_data.get_checks(CheckParams {
-            do_subchecks: false,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(!checks.items.iter().any(|c| c.check == Check::MustUseHttps));
@@ -222,11 +206,7 @@ mod tests {
         let http_data = HttpData::now().scheme("http").host("example.com").build();
 
         // WHEN
-        let checks = http_data.get_checks(CheckParams {
-            do_subchecks: false,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks.items.iter().any(|c| c.check == Check::MustUseHttps));

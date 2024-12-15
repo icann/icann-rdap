@@ -48,6 +48,7 @@ pub fn check_rdap(rdap: RdapResponse, check_types: &[CheckClass]) -> bool {
         do_subchecks: true,
         root: &rdap,
         parent_type: rdap.get_type(),
+        allow_unreg_ext: true,
     });
     traverse_checks(
         &checks,

@@ -104,11 +104,7 @@ mod tests {
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -127,11 +123,7 @@ mod tests {
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -151,11 +143,7 @@ mod tests {
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);

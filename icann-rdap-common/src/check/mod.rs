@@ -163,6 +163,7 @@ pub struct CheckParams<'a> {
     pub do_subchecks: bool,
     pub root: &'a RdapResponse,
     pub parent_type: TypeId,
+    pub allow_unreg_ext: bool,
 }
 
 impl CheckParams<'_> {
@@ -171,6 +172,16 @@ impl CheckParams<'_> {
             do_subchecks: self.do_subchecks,
             root: self.root,
             parent_type,
+            allow_unreg_ext: self.allow_unreg_ext,
+        }
+    }
+
+    pub fn for_rdap(rdap: &RdapResponse) -> CheckParams<'_> {
+        CheckParams {
+            do_subchecks: true,
+            root: rdap,
+            parent_type: rdap.get_type(),
+            allow_unreg_ext: false,
         }
     }
 }

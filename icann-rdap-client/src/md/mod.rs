@@ -187,6 +187,7 @@ impl<'a> FromMd<'a> for CheckParams<'a> {
             do_subchecks: false,
             root: md_params.root,
             parent_type,
+            allow_unreg_ext: false,
         }
     }
 
@@ -195,6 +196,7 @@ impl<'a> FromMd<'a> for CheckParams<'a> {
             do_subchecks: false,
             root: md_params.root,
             parent_type: md_params.parent_type,
+            allow_unreg_ext: false,
         }
     }
 }

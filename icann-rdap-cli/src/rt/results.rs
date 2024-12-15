@@ -321,6 +321,7 @@ fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
         do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
+        allow_unreg_ext: options.allow_unregistered_extensions,
     };
     let mut checks = response.rdap.get_checks(check_params);
 

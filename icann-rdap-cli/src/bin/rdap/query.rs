@@ -396,6 +396,7 @@ fn do_output_checks(response: &ResponseData) -> Checks {
         do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
+        allow_unreg_ext: false,
     };
     let mut checks = response.rdap.get_checks(check_params);
     checks

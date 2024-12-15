@@ -29,9 +29,11 @@ impl GetChecks for RdapConformance {
             items.push(Check::RdapConformanceInvalidParent.check_item())
         };
         for ext in self {
-            let id = ExtensionId::from_str(ext);
-            if id.is_err() {
-                items.push(Check::UnknownExtention.check_item())
+            if !params.allow_unreg_ext {
+                let id = ExtensionId::from_str(ext);
+                if id.is_err() {
+                    items.push(Check::UnknownExtention.check_item())
+                }
             }
         }
         Checks {
@@ -364,11 +366,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -405,11 +403,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -446,11 +440,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -483,11 +473,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -521,11 +507,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -558,11 +540,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -596,11 +574,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(find_any_check(&checks, Check::LinkSelfIsNotRdap));
@@ -626,11 +600,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -657,11 +627,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
@@ -702,11 +668,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -745,11 +707,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -776,11 +734,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -805,11 +759,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -841,11 +791,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -877,11 +823,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -911,11 +853,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -942,11 +880,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -973,11 +907,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -1005,11 +935,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -1035,11 +961,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks.sub(crate::check::RdapStructure::Links).is_none());
@@ -1066,11 +988,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(!checks
@@ -1099,11 +1017,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -1128,11 +1042,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -1169,11 +1079,7 @@ mod tests {
         );
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
