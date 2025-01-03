@@ -9,9 +9,12 @@ use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
 use icann_rdap_cli::rt::exec::execute_tests;
 use icann_rdap_cli::rt::exec::ExtensionGroup;
 use icann_rdap_cli::rt::exec::TestOptions;
+use icann_rdap_cli::rt::results::RunOutcome;
+use icann_rdap_cli::rt::results::TestResults;
 use icann_rdap_client::client::ClientConfig;
 use icann_rdap_client::md::MdOptions;
 use icann_rdap_client::QueryType;
+use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use termimad::crossterm::style::Color::*;
 use termimad::Alignment;
@@ -412,7 +415,71 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         }
     }
 
+    // if some tests could not execute
+    //
+    let execution_errors = test_results
+        .test_runs
+        .iter()
+        .filter(|r| !matches!(r.outcome, RunOutcome::Tested | RunOutcome::Skipped))
+        .count();
+    if execution_errors != 0 {
+        return Err(RdapTestError::TestsCompletedExecutionErrors);
+    }
+
+    // if tests had check errors
+    //
+    // get the error classes but only if they were specified.
+    let error_classes = check_classes
+        .iter()
+        .filter(|c| {
+            matches!(
+                c,
+                CheckClass::StdError | CheckClass::Cidr0Error | CheckClass::IcannError
+            )
+        })
+        .copied()
+        .collect::<Vec<CheckClass>>();
+    // return proper exit code if errors found
+    if are_there_checks(error_classes, &test_results) {
+        return Err(RdapTestError::TestsCompletedErrorsFound);
+    }
+
+    // if tests had check warnings
+    //
+    // get the warning classes but only if they were specified.
+    let warning_classes = check_classes
+        .iter()
+        .filter(|c| matches!(c, CheckClass::StdWarning))
+        .copied()
+        .collect::<Vec<CheckClass>>();
+    // return proper exit code if errors found
+    if are_there_checks(warning_classes, &test_results) {
+        return Err(RdapTestError::TestsCompletedWarningsFound);
+    }
+
     Ok(())
+}
+
+fn are_there_checks(classes: Vec<CheckClass>, test_results: &TestResults) -> bool {
+    // see if there are any checks in the test runs
+    let run_count = test_results
+        .test_runs
+        .iter()
+        .filter(|r| {
+            if let Some(checks) = &r.checks {
+                traverse_checks(checks, &classes, None, &mut |_, _| {})
+            } else {
+                false
+            }
+        })
+        .count();
+    // see if there are any classes in the service checks
+    let service_count = test_results
+        .service_checks
+        .iter()
+        .filter(|c| classes.contains(&c.check_class))
+        .count();
+    run_count + service_count != 0
 }
 
 #[cfg(test)]

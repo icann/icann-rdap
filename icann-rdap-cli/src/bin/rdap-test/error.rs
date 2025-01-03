@@ -1,6 +1,6 @@
 use std::process::{ExitCode, Termination};
 
-use icann_rdap_cli::rt::exec::TestError;
+use icann_rdap_cli::rt::exec::TestExecutionError;
 use icann_rdap_client::iana_request::IanaResponseError;
 use icann_rdap_client::RdapClientError;
 use thiserror::Error;
@@ -9,18 +9,22 @@ use thiserror::Error;
 pub enum RdapTestError {
     #[error("No errors encountered")]
     Success,
+    #[error("Tests completed with execution errors.")]
+    TestsCompletedExecutionErrors,
+    #[error("Tests completed, warning checks found.")]
+    TestsCompletedWarningsFound,
+    #[error("Tests completed, error checks found.")]
+    TestsCompletedErrorsFound,
     #[error(transparent)]
     RdapClient(#[from] RdapClientError),
     #[error(transparent)]
-    TestError(#[from] TestError),
+    TestExecutionError(#[from] TestExecutionError),
     #[error(transparent)]
     Termimad(#[from] termimad::Error),
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[error("Unknown output type")]
     UnknownOutputType,
-    #[error("RDAP response failed checks.")]
-    ErrorOnChecks,
     #[error(transparent)]
     Json(#[from] serde_json::Error),
     #[error(transparent)]
@@ -40,13 +44,16 @@ impl Termination for RdapTestError {
         let exit_code: u8 = match self {
             // Success
             RdapTestError::Success => 0,
+            RdapTestError::TestsCompletedExecutionErrors => 1,
+            RdapTestError::TestsCompletedWarningsFound => 2,
+            RdapTestError::TestsCompletedErrorsFound => 3,
 
             // Internal Errors
             RdapTestError::Termimad(_) => 10,
 
             // I/O Errors
             RdapTestError::IoError(_) => 40,
-            RdapTestError::TestError(_) => 40,
+            RdapTestError::TestExecutionError(_) => 40,
 
             // RDAP Errors
             RdapTestError::Json(_) => 100,
@@ -58,7 +65,6 @@ impl Termination for RdapTestError {
 
             // User Errors
             RdapTestError::UnknownOutputType => 200,
-            RdapTestError::ErrorOnChecks => 201,
 
             // RDAP Client Errrors
             RdapTestError::RdapClient(e) => match e {

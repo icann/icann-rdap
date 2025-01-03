@@ -43,7 +43,7 @@ pub enum ExtensionGroup {
 }
 
 #[derive(Debug, Error)]
-pub enum TestError {
+pub enum TestExecutionError {
     #[error(transparent)]
     RdapClient(#[from] RdapClientError),
     #[error(transparent)]
@@ -73,7 +73,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     value: &QueryType,
     options: &TestOptions,
     client_config: &ClientConfig,
-) -> Result<TestResults, TestError> {
+) -> Result<TestResults, TestExecutionError> {
     let bs_client = create_client(client_config)?;
 
     // normalize extensions
@@ -87,7 +87,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
 
     // get the query url
     let mut query_url = match value {
-        QueryType::Help => return Err(TestError::UnsupportedQueryType),
+        QueryType::Help => return Err(TestExecutionError::UnsupportedQueryType),
         QueryType::Url(url) => url.to_owned(),
         _ => {
             let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
@@ -103,7 +103,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         let response_data = rdap_url_request(&query_url, &client).await?;
         query_url = get_related_links(&response_data.rdap)
             .first()
-            .ok_or(TestError::NoReferralToChase)?
+            .ok_or(TestExecutionError::NoReferralToChase)?
             .to_string();
         debug!("Chasing referral {query_url}");
     }
@@ -116,7 +116,9 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             80
         }
     });
-    let host = parsed_url.host_str().ok_or(TestError::NoHostToResolve)?;
+    let host = parsed_url
+        .host_str()
+        .ok_or(TestExecutionError::NoHostToResolve)?;
 
     info!("Testing {query_url}");
     let dns_data = get_dns_records(host).await?;
@@ -172,7 +174,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     Ok(test_results)
 }
 
-async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
+async fn get_dns_records(host: &str) -> Result<DnsData, TestExecutionError> {
     let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)
         .unwrap()
         .new_stream(None);
@@ -194,10 +196,10 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
             RecordType::CNAME => {
                 let cname = answer
                     .data()
-                    .ok_or(TestError::NoRdata)?
+                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_cname()
-                    .map_err(|_e| TestError::BadRdata)?
+                    .map_err(|_e| TestExecutionError::BadRdata)?
                     .0
                     .to_string();
                 debug!("Found cname {cname}");
@@ -206,10 +208,10 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
             RecordType::A => {
                 let addr = answer
                     .data()
-                    .ok_or(TestError::NoRdata)?
+                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_a()
-                    .map_err(|_e| TestError::BadRdata)?
+                    .map_err(|_e| TestExecutionError::BadRdata)?
                     .0;
                 debug!("Found IPv4 {addr}");
                 dns_data.v4_addrs.push(addr);
@@ -235,10 +237,10 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
             RecordType::CNAME => {
                 let cname = answer
                     .data()
-                    .ok_or(TestError::NoRdata)?
+                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_cname()
-                    .map_err(|_e| TestError::BadRdata)?
+                    .map_err(|_e| TestExecutionError::BadRdata)?
                     .0
                     .to_string();
                 debug!("Found cname {cname}");
@@ -247,10 +249,10 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
             RecordType::AAAA => {
                 let addr = answer
                     .data()
-                    .ok_or(TestError::NoRdata)?
+                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_aaaa()
-                    .map_err(|_e| TestError::BadRdata)?
+                    .map_err(|_e| TestExecutionError::BadRdata)?
                     .0;
                 debug!("Found IPv6 {addr}");
                 dns_data.v6_addrs.push(addr);
@@ -264,14 +266,14 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
     Ok(dns_data)
 }
 
-fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestError> {
+fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestExecutionError> {
     let mut retval = options.expect_extensions.clone();
 
     // check for unregistered extensions
     if !options.allow_unregistered_extensions {
         for ext in &retval {
             if ExtensionId::from_str(ext).is_err() {
-                return Err(TestError::UnregisteredExtension);
+                return Err(TestExecutionError::UnregisteredExtension);
             }
         }
     }
