@@ -35,6 +35,11 @@ pub struct ClientConfig {
 
     /// Specify Host
     pub host: Option<HeaderValue>,
+
+    /// Specify the value of the origin header.
+    ///
+    /// Most browsers ignore this by default.
+    pub origin: Option<HeaderValue>,
 }
 
 impl Default for ClientConfig {
@@ -46,6 +51,7 @@ impl Default for ClientConfig {
             accept_invalid_certificates: false,
             follow_redirects: true,
             host: None,
+            origin: None,
         }
     }
 }
@@ -60,6 +66,7 @@ impl ClientConfig {
         accept_invalid_certificates: Option<bool>,
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
+        origin: Option<HeaderValue>,
     ) -> Self {
         let default = ClientConfig::default();
         Self {
@@ -71,6 +78,32 @@ impl ClientConfig {
                 .unwrap_or(default.accept_invalid_certificates),
             follow_redirects: follow_redirects.unwrap_or(default.follow_redirects),
             host,
+            origin,
+        }
+    }
+
+    #[builder(entry = "from_config", exit = "build")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_from_config(
+        &self,
+        user_agent_suffix: Option<String>,
+        https_only: Option<bool>,
+        accept_invalid_host_names: Option<bool>,
+        accept_invalid_certificates: Option<bool>,
+        follow_redirects: Option<bool>,
+        host: Option<HeaderValue>,
+        origin: Option<HeaderValue>,
+    ) -> Self {
+        Self {
+            user_agent_suffix: user_agent_suffix.unwrap_or(self.user_agent_suffix.clone()),
+            https_only: https_only.unwrap_or(self.https_only),
+            accept_invalid_host_names: accept_invalid_host_names
+                .unwrap_or(self.accept_invalid_host_names),
+            accept_invalid_certificates: accept_invalid_certificates
+                .unwrap_or(self.accept_invalid_certificates),
+            follow_redirects: follow_redirects.unwrap_or(self.follow_redirects),
+            host: host.map_or(self.host.clone(), Some),
+            origin: origin.map_or(self.origin.clone(), Some),
         }
     }
 }
@@ -163,5 +196,8 @@ fn default_headers(config: &ClientConfig) -> header::HeaderMap {
     if let Some(host) = &config.host {
         default_headers.insert(header::HOST, host.into());
     };
+    if let Some(origin) = &config.origin {
+        default_headers.insert(header::ORIGIN, origin.into());
+    }
     default_headers
 }

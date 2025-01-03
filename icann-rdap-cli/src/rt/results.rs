@@ -122,7 +122,7 @@ impl TestResults {
         // summary of each run
         table = table.multi(vec![
             "Address".to_inline(options),
-            "Start Time".to_inline(options),
+            "Attributes".to_inline(options),
             "Duration".to_inline(options),
             "Outcome".to_inline(options),
         ]);
@@ -133,6 +133,7 @@ impl TestResults {
 
         md.push('\n');
 
+        // checks that are about the service and not a particular test run
         if !self.service_checks.is_empty() {
             md.push_str(&"Service Checks".to_string().to_header(1, options));
             let mut table = MultiPartTable::new();
@@ -146,6 +147,7 @@ impl TestResults {
             md.push('\n');
         }
 
+        // each run in detail
         for run in &self.test_runs {
             md.push_str(&run.to_md(options, check_classes));
         }
@@ -172,6 +174,12 @@ pub enum RunOutcome {
     Skipped,
 }
 
+#[derive(Debug, Serialize, Display)]
+#[strum(serialize_all = "snake_case")]
+pub enum RunFeature {
+    OriginHeader,
+}
+
 impl RunOutcome {
     pub fn to_md(&self, options: &MdOptions) -> String {
         match self {
@@ -184,6 +192,7 @@ impl RunOutcome {
 
 #[derive(Debug, Serialize)]
 pub struct TestRun {
+    pub features: Vec<RunFeature>,
     pub socket_addr: SocketAddr,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
@@ -193,8 +202,9 @@ pub struct TestRun {
 }
 
 impl TestRun {
-    pub fn new_v4(ipv4: Ipv4Addr, port: u16) -> Self {
+    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
         TestRun {
+            features,
             start_time: Utc::now(),
             socket_addr: SocketAddr::new(IpAddr::V4(ipv4), port),
             end_time: None,
@@ -204,8 +214,9 @@ impl TestRun {
         }
     }
 
-    pub fn new_v6(ipv6: Ipv6Addr, port: u16) -> Self {
+    pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
         TestRun {
+            features,
             start_time: Utc::now(),
             socket_addr: SocketAddr::new(IpAddr::V6(ipv6), port),
             end_time: None,
@@ -255,7 +266,7 @@ impl TestRun {
         };
         table = table.multi(vec![
             self.socket_addr.to_string(),
-            format_date_time(self.start_time),
+            self.attribute_set(),
             duration_s,
             self.outcome.to_md(options),
         ]);
@@ -265,13 +276,12 @@ impl TestRun {
     fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
         let mut md = String::new();
 
-        if matches!(self.outcome, RunOutcome::Tested) {
-            // h1
-            md.push_str(&format!(
-                "\n{}\n",
-                self.socket_addr.to_string().to_header(1, options)
-            ));
+        // h1
+        let header_value = format!("{} - {}", self.socket_addr, self.attribute_set());
+        md.push_str(&format!("\n{}\n", header_value.to_header(1, options)));
 
+        // if outcome is tested
+        if matches!(self.outcome, RunOutcome::Tested) {
             // get check items according to class
             let mut check_v: Vec<(String, String)> = Vec::new();
             if let Some(ref checks) = self.checks {
@@ -296,9 +306,33 @@ impl TestRun {
                 }
             }
             md.push_str(&table.to_md_table(options));
+        } else {
+            let mut table = MultiPartTable::new();
+            table = table.multi(vec![self.outcome.to_md(options)]);
+            md.push_str(&table.to_md_table(options));
         }
 
         md
+    }
+
+    fn attribute_set(&self) -> String {
+        let socket_type = if self.socket_addr.is_ipv4() {
+            "v4"
+        } else {
+            "v6"
+        };
+        if !self.features.is_empty() {
+            format!(
+                "{socket_type}, {}",
+                self.features
+                    .iter()
+                    .map(|f| f.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        } else {
+            socket_type.to_string()
+        }
     }
 }
 

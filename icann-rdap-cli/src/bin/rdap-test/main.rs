@@ -124,6 +124,24 @@ struct Cli {
     #[arg(long, required = false, env = "RDAP_TEST_SKIP_V6")]
     skip_v6: bool,
 
+    /// Skip origin tests.
+    ///
+    /// Skip testing with the HTTP origin header.
+    #[arg(long, required = false, env = "RDAP_TEST_SKIP_ORIGIN")]
+    skip_origin: bool,
+
+    /// Origin header value.
+    ///
+    /// Specifies the origin header value.
+    /// This value is not used if the 'skip-origin' option is used.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TEST_ORIGIN_VALUE",
+        default_value = "https://example.com"
+    )]
+    origin_value: String,
+
     /// Chase a referral.
     ///
     /// Get a referral in the first response and use that for testing. This is useful
@@ -340,6 +358,8 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     let options = TestOptions {
         skip_v4: cli.skip_v4,
         skip_v6: cli.skip_v6,
+        skip_origin: cli.skip_origin,
+        origin_value: cli.origin_value,
         chase_referral: cli.referral,
         expect_extensions: cli.expect_extensions,
         expect_groups,

@@ -13,12 +13,13 @@ use icann_rdap_client::{
 };
 use icann_rdap_common::response::get_related_links;
 use icann_rdap_common::response::types::ExtensionId;
+use reqwest::header::HeaderValue;
 use reqwest::Url;
 use thiserror::Error;
 use tracing::{debug, info};
 use url::ParseError;
 
-use crate::rt::results::TestRun;
+use crate::rt::results::{RunFeature, TestRun};
 
 use super::results::{DnsData, TestResults};
 
@@ -26,6 +27,8 @@ use super::results::{DnsData, TestResults};
 pub struct TestOptions {
     pub skip_v4: bool,
     pub skip_v6: bool,
+    pub skip_origin: bool,
+    pub origin_value: String,
     pub chase_referral: bool,
     pub expect_extensions: Vec<String>,
     pub expect_groups: Vec<ExtensionGroup>,
@@ -55,6 +58,8 @@ pub enum TestError {
     BadRdata,
     #[error(transparent)]
     Client(#[from] reqwest::Error),
+    #[error(transparent)]
+    InvalidHeader(#[from] reqwest::header::InvalidHeaderValue),
     #[error("Unsupporte Query Type")]
     UnsupportedQueryType,
     #[error("No referral to chase")]
@@ -76,6 +81,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     let options = &TestOptions {
         expect_extensions: extensions,
         expect_groups: options.expect_groups.clone(),
+        origin_value: options.origin_value.clone(),
         ..*options
     };
 
@@ -117,18 +123,44 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
 
     for v4 in dns_data.v4_addrs {
-        let mut test_run = TestRun::new_v4(v4, port);
+        // test run without origin
+        let mut test_run = TestRun::new_v4(vec![], v4, port);
         if !options.skip_v4 {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
+
+        // test run with origin
+        let mut test_run = TestRun::new_v4(vec![RunFeature::OriginHeader], v4, port);
+        if !options.skip_v4 && !options.skip_origin {
+            let client_config = ClientConfig::from_config(client_config)
+                .origin(HeaderValue::from_str(&options.origin_value)?)
+                .build();
+            let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            let rdap_response = rdap_url_request(&query_url, &client).await;
+            test_run = test_run.end(rdap_response, options);
+        }
+        test_results.add_test_run(test_run);
     }
     for v6 in dns_data.v6_addrs {
-        let mut test_run = TestRun::new_v6(v6, port);
+        // test run without origin
+        let mut test_run = TestRun::new_v6(vec![], v6, port);
         if !options.skip_v6 {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            let rdap_response = rdap_url_request(&query_url, &client).await;
+            test_run = test_run.end(rdap_response, options);
+        }
+        test_results.add_test_run(test_run);
+
+        // test run with origin
+        let mut test_run = TestRun::new_v6(vec![RunFeature::OriginHeader], v6, port);
+        if !options.skip_v6 {
+            let client_config = ClientConfig::from_config(client_config)
+                .origin(HeaderValue::from_str(&options.origin_value)?)
+                .build();
+            let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -232,7 +264,6 @@ async fn get_dns_records(host: &str) -> Result<DnsData, TestError> {
     Ok(dns_data)
 }
 
-// this function looks for short cuts and substitutes them
 fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestError> {
     let mut retval = options.expect_extensions.clone();
 
