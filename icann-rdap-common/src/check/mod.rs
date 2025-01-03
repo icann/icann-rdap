@@ -434,6 +434,8 @@ pub enum Check {
     NoAAAARecords = 2103,
     #[strum(message = "Expected extension not found.")]
     ExpectedExtensionNotFound = 2104,
+    #[strum(message = "IPv6 Support Required.")]
+    Ipv6SupportRequiredByIcann = 2105,
 }
 
 impl Check {
@@ -528,6 +530,7 @@ impl Check {
             Check::NoARecords => CheckClass::SpecificationNote,
             Check::NoAAAARecords => CheckClass::SpecificationNote,
             Check::ExpectedExtensionNotFound => CheckClass::StdError,
+            Check::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
         };
         CheckItem {
             check_class,

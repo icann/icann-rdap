@@ -9,7 +9,7 @@ use icann_rdap_client::{
 };
 use icann_rdap_common::{
     check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-    response::RdapResponse,
+    response::{types::ExtensionId, RdapResponse},
 };
 use reqwest::StatusCode;
 use serde::Serialize;
@@ -39,7 +39,7 @@ impl TestResults {
         }
     }
 
-    pub fn end(&mut self) {
+    pub fn end(&mut self, options: &TestOptions) {
         self.end_time = Some(Utc::now());
 
         //service checks
@@ -56,6 +56,18 @@ impl TestResults {
         }
         if self.dns_data.v6_addrs.is_empty() {
             self.service_checks.push(Check::NoAAAARecords.check_item());
+
+            // see if required by ICANN
+            let tig0 = ExtensionId::IcannRdapTechnicalImplementationGuide0.to_string();
+            let tig1 = ExtensionId::IcannRdapTechnicalImplementationGuide1.to_string();
+            let both_tigs = format!("{tig0}|{tig1}");
+            if options.expect_extensions.contains(&tig0)
+                || options.expect_extensions.contains(&tig1)
+                || options.expect_extensions.contains(&both_tigs)
+            {
+                self.service_checks
+                    .push(Check::Ipv6SupportRequiredByIcann.check_item())
+            }
         }
     }
 

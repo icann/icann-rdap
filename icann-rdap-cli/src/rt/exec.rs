@@ -167,7 +167,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         test_results.add_test_run(test_run);
     }
 
-    test_results.end();
+    test_results.end(options);
     info!("Testing complete.");
     Ok(test_results)
 }
