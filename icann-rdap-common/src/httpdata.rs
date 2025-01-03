@@ -18,11 +18,13 @@ pub struct HttpData {
     pub access_control_allow_origin: Option<String>,
     pub access_control_allow_credentials: Option<String>,
     pub strict_transport_security: Option<String>,
+    pub retry_after: Option<String>,
 }
 
 #[buildstructor::buildstructor]
 impl HttpData {
     #[builder(entry = "now")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_now(
         content_length: Option<u64>,
         content_type: Option<String>,
@@ -35,6 +37,7 @@ impl HttpData {
         access_control_allow_origin: Option<String>,
         access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
+        retry_after: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -49,10 +52,12 @@ impl HttpData {
             access_control_allow_origin,
             access_control_allow_credentials,
             strict_transport_security,
+            retry_after,
         }
     }
 
     #[builder(entry = "example")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_example(
         content_length: Option<u64>,
         content_type: Option<String>,
@@ -63,6 +68,7 @@ impl HttpData {
         access_control_allow_origin: Option<String>,
         access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
+        retry_after: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -77,6 +83,7 @@ impl HttpData {
             access_control_allow_origin,
             access_control_allow_credentials,
             strict_transport_security,
+            retry_after,
         }
     }
 

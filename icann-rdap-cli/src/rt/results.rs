@@ -11,6 +11,7 @@ use icann_rdap_common::{
     check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
     response::RdapResponse,
 };
+use reqwest::StatusCode;
 use serde::Serialize;
 use strum_macros::Display;
 
@@ -168,6 +169,16 @@ pub struct DnsData {
 pub enum RunOutcome {
     Tested,
     NetworkError,
+    HttpProtocolError,
+    HttpConnectError,
+    HttpRedirectError,
+    HttpTimeoutError,
+    HttpNon200Error,
+    HttpTooManyRequestsError,
+    HttpNotFoundError,
+    HttpBadRequestError,
+    HttpUnauthorizedError,
+    HttpForbiddenError,
     JsonError,
     RdapDataError,
     InternalError,
@@ -249,8 +260,26 @@ impl TestRun {
                 RdapClientError::Json(_) | RdapClientError::ParsingError(_) => {
                     RunOutcome::JsonError
                 }
-                RdapClientError::IoError(_) | RdapClientError::Client(_) => {
-                    RunOutcome::NetworkError
+                RdapClientError::IoError(_) => RunOutcome::NetworkError,
+                RdapClientError::Client(e) => {
+                    if e.is_redirect() {
+                        RunOutcome::HttpRedirectError
+                    } else if e.is_connect() {
+                        RunOutcome::HttpConnectError
+                    } else if e.is_timeout() {
+                        RunOutcome::HttpTimeoutError
+                    } else if e.is_status() {
+                        match e.status().unwrap() {
+                            StatusCode::TOO_MANY_REQUESTS => RunOutcome::HttpTooManyRequestsError,
+                            StatusCode::NOT_FOUND => RunOutcome::HttpNotFoundError,
+                            StatusCode::BAD_REQUEST => RunOutcome::HttpBadRequestError,
+                            StatusCode::UNAUTHORIZED => RunOutcome::HttpUnauthorizedError,
+                            StatusCode::FORBIDDEN => RunOutcome::HttpForbiddenError,
+                            _ => RunOutcome::HttpNon200Error,
+                        }
+                    } else {
+                        RunOutcome::HttpProtocolError
+                    }
                 }
             };
             self.end_time = Some(Utc::now());
