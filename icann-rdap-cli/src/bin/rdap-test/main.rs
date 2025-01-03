@@ -142,6 +142,17 @@ struct Cli {
     )]
     origin_value: String,
 
+    /// Follow redirects.
+    ///
+    /// When set, follows HTTP redirects.
+    #[arg(
+        short = 'R',
+        long,
+        required = false,
+        env = "RDAP_TEST_FOLLOW_REDIRECTS"
+    )]
+    follow_redirects: bool,
+
     /// Chase a referral.
     ///
     /// Get a referral in the first response and use that for testing. This is useful
@@ -360,6 +371,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .https_only(!cli.allow_http)
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
+        .follow_redirects(cli.follow_redirects)
         .build();
 
     // execute tests
