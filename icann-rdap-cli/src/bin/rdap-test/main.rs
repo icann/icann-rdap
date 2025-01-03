@@ -191,12 +191,6 @@ struct Cli {
         env = "RDAP_TEST_ALLOW_UNREGISTERED_EXTENSIONS"
     )]
     allow_unregistered_extensions: bool,
-
-    /// Reset.
-    ///
-    /// Removes the cache files and resets the config file.
-    #[arg(long, required = false)]
-    reset: bool,
 }
 
 /// Represents the output type possibilities.
@@ -299,11 +293,6 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
-
-    if cli.reset {
-        dirs::reset()?;
-        return Ok(());
-    }
 
     let level = LevelFilter::from(&cli.log_level);
     tracing_subscriber::fmt()
