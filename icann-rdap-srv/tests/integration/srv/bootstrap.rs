@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::http::{create_client, ClientConfig};
+use icann_rdap_client::http::{create_reqwest_client, ReqwestClientConfig};
 use icann_rdap_client::rdap::{rdap_request, QueryType};
 use icann_rdap_srv::storage::{
     data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
@@ -26,11 +26,11 @@ async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -65,11 +65,11 @@ async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_sho
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
@@ -93,11 +93,11 @@ async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -132,11 +132,11 @@ async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_pani
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
@@ -164,11 +164,11 @@ async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::ipv4cidr("10.0.0.0/24").expect("invalid CIDR");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -207,11 +207,11 @@ async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_pani
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::ipv4cidr("11.0.0.0/24").expect("invalid CIDR");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
@@ -239,11 +239,11 @@ async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::autnum("AS710").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -281,11 +281,11 @@ async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_sho
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::autnum("AS1000").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
@@ -309,11 +309,11 @@ async fn GIVEN_bootstrap_with_specific_tag_WHEN_query_entity_THEN_status_code_is
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::Entity("foo-ARIN".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -348,11 +348,11 @@ async fn GIVEN_bootstrap_with_specific_tag_lowercase_WHEN_query_entity_THEN_stat
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::Entity("foo-arin".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -387,11 +387,11 @@ async fn GIVEN_bootstrap_with_no_specific_tag_WHEN_query_entity_THEN_should_pani
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ClientConfig::builder()
+    let client_config = ReqwestClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_client(&client_config).expect("creating client");
+    let client = create_reqwest_client(&client_config).expect("creating client");
     let query = QueryType::Entity("foo-arin".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 

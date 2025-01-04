@@ -5,9 +5,11 @@ use std::str::FromStr;
 use hickory_client::client::{AsyncClient, ClientConnection, ClientHandle};
 use hickory_client::rr::{DNSClass, Name, RecordType};
 use hickory_client::udp::UdpClientConnection;
-use icann_rdap_client::http::create_client_with_addr;
+use icann_rdap_client::http::create_reqwest_client_with_addr;
 use icann_rdap_client::iana::{qtype_to_bootstrap_url, BootstrapStore};
-use icann_rdap_client::{http::create_client, http::ClientConfig, rdap::rdap_url_request};
+use icann_rdap_client::{
+    http::create_reqwest_client, http::ReqwestClientConfig, rdap::rdap_url_request,
+};
 use icann_rdap_client::{rdap::QueryType, RdapClientError};
 use icann_rdap_common::response::get_related_links;
 use icann_rdap_common::response::types::ExtensionId;
@@ -70,9 +72,9 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     bs: &BS,
     value: &QueryType,
     options: &TestOptions,
-    client_config: &ClientConfig,
+    client_config: &ReqwestClientConfig,
 ) -> Result<TestResults, TestExecutionError> {
-    let bs_client = create_client(client_config)?;
+    let bs_client = create_reqwest_client(client_config)?;
 
     // normalize extensions
     let extensions = normalize_extension_ids(options)?;
@@ -97,7 +99,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     };
     // if they URL to test is a referral
     if options.chase_referral {
-        let client = create_client(client_config)?;
+        let client = create_reqwest_client(client_config)?;
         let response_data = rdap_url_request(&query_url, &client).await?;
         query_url = get_related_links(&response_data.rdap)
             .first()
@@ -126,7 +128,8 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         // test run without origin
         let mut test_run = TestRun::new_v4(vec![], v4, port);
         if !options.skip_v4 {
-            let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            let client =
+                create_reqwest_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -135,10 +138,11 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         // test run with origin
         let mut test_run = TestRun::new_v4(vec![RunFeature::OriginHeader], v4, port);
         if !options.skip_v4 && !options.skip_origin {
-            let client_config = ClientConfig::from_config(client_config)
+            let client_config = ReqwestClientConfig::from_config(client_config)
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
-            let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            let client =
+                create_reqwest_client_with_addr(&client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -148,7 +152,8 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         // test run without origin
         let mut test_run = TestRun::new_v6(vec![], v6, port);
         if !options.skip_v6 {
-            let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            let client =
+                create_reqwest_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -157,10 +162,11 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         // test run with origin
         let mut test_run = TestRun::new_v6(vec![RunFeature::OriginHeader], v6, port);
         if !options.skip_v6 {
-            let client_config = ClientConfig::from_config(client_config)
+            let client_config = ReqwestClientConfig::from_config(client_config)
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
-            let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            let client =
+                create_reqwest_client_with_addr(&client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }

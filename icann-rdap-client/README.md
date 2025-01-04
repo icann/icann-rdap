@@ -38,8 +38,8 @@ async fn main() -> Result<(), RdapClientError> {
     let query = QueryType::from_str("icann.org")?;
 
     // create a client (from icann-rdap-common)
-    let config = ClientConfig::default();
-    let client = create_client(&config)?;
+    let config = ReqwestClientConfig::default();
+    let client = create_reqwest_client(&config)?;
     // ideally, keep store in same context as client
     let store = MemoryBootstrapStore::new();
 
@@ -72,8 +72,8 @@ async fn main() -> Result<(), RdapClientError> {
     let query = QueryType::from_str("icann.org")?;
 
     // create a client (from icann-rdap-common)
-    let config = ClientConfig::default();
-    let client = create_client(&config)?;
+    let config = ReqwestClientConfig::default();
+    let client = create_reqwest_client(&config)?;
 
     // issue the RDAP query
     let base_url = "https://rdap-bootstrap.arin.net/bootstrap";

@@ -1,10 +1,9 @@
 //! Creates a Reqwest client.
 
 use lazy_static::lazy_static;
-use reqwest::{
-    header::{self, HeaderValue},
-    Client,
-};
+pub use reqwest::header::{self, HeaderValue};
+pub use reqwest::Client as ReqwestClient;
+pub use reqwest::Error as ReqwestError;
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
 
@@ -16,7 +15,7 @@ lazy_static! {
 }
 
 /// Configures the HTTP client.
-pub struct ClientConfig {
+pub struct ReqwestClientConfig {
     /// This string is appended to the user agent. It is provided so
     /// library users may identify their programs.
     pub user_agent_suffix: String,
@@ -42,9 +41,9 @@ pub struct ClientConfig {
     pub origin: Option<HeaderValue>,
 }
 
-impl Default for ClientConfig {
+impl Default for ReqwestClientConfig {
     fn default() -> Self {
-        ClientConfig {
+        ReqwestClientConfig {
             user_agent_suffix: "library".to_string(),
             https_only: true,
             accept_invalid_host_names: false,
@@ -57,7 +56,7 @@ impl Default for ClientConfig {
 }
 
 #[buildstructor::buildstructor]
-impl ClientConfig {
+impl ReqwestClientConfig {
     #[builder]
     pub fn new(
         user_agent_suffix: Option<String>,
@@ -68,7 +67,7 @@ impl ClientConfig {
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
     ) -> Self {
-        let default = ClientConfig::default();
+        let default = ReqwestClientConfig::default();
         Self {
             user_agent_suffix: user_agent_suffix.unwrap_or(default.user_agent_suffix),
             https_only: https_only.unwrap_or(default.https_only),
@@ -113,7 +112,7 @@ impl ClientConfig {
 /// uses cases creating only one client per process is
 /// necessary.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
+pub fn create_reqwest_client(config: &ReqwestClientConfig) -> Result<ReqwestClient, ReqwestError> {
     let default_headers = default_headers(config);
 
     let mut client = reqwest::Client::builder();
@@ -142,11 +141,11 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
 /// uses cases creating only one client per process is
 /// necessary.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn create_client_with_addr(
-    config: &ClientConfig,
+pub fn create_reqwest_client_with_addr(
+    config: &ReqwestClientConfig,
     domain: &str,
     addr: SocketAddr,
-) -> Result<Client, reqwest::Error> {
+) -> Result<ReqwestClient, ReqwestError> {
     let default_headers = default_headers(config);
 
     let mut client = reqwest::Client::builder();
@@ -178,7 +177,7 @@ pub fn create_client_with_addr(
 /// Note that the WASM version does not set redirect policy,
 /// https_only, or TLS settings.
 #[cfg(target_arch = "wasm32")]
-pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
+pub fn create_reqwest_client(config: &ReqwestClientConfig) -> Result<ReqwestClient, ReqwestError> {
     let default_headers = default_headers(config);
 
     let client = reqwest::Client::builder();
@@ -187,7 +186,7 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
     Ok(client)
 }
 
-fn default_headers(config: &ClientConfig) -> header::HeaderMap {
+fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,

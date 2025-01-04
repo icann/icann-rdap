@@ -33,8 +33,8 @@ use super::qtype::QueryType;
 /// async fn main() -> Result<(), RdapClientError> {
 ///
 ///     // create a client (from icann-rdap-common)
-///     let config = ClientConfig::default();
-///     let client = create_client(&config)?;
+///     let config = ReqwestClientConfig::default();
+///     let client = create_reqwest_client(&config)?;
 ///
 ///     // issue the RDAP query
 ///     let response =
@@ -139,8 +139,8 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
 ///     let query = QueryType::from_str("icann.org")?;
 ///
 ///     // create a client (from icann-rdap-common)
-///     let config = ClientConfig::default();
-///     let client = create_client(&config)?;
+///     let config = ReqwestClientConfig::default();
+///     let client = create_reqwest_client(&config)?;
 ///
 ///     // issue the RDAP query
 ///     let response =
@@ -190,8 +190,8 @@ pub async fn rdap_request(
 ///     let query = QueryType::from_str("icann.org")?;
 ///
 ///     // create a client (from icann-rdap-common)
-///     let config = ClientConfig::default();
-///     let client = create_client(&config)?;
+///     let config = ReqwestClientConfig::default();
+///     let client = create_reqwest_client(&config)?;
 ///     let store = MemoryBootstrapStore::new();
 ///
 ///     // issue the RDAP query

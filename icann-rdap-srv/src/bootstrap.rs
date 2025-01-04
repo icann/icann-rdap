@@ -1,6 +1,8 @@
 use std::{path::PathBuf, time::Duration};
 
-use icann_rdap_client::{http::create_client, http::ClientConfig, iana::iana_request};
+use icann_rdap_client::{
+    http::create_reqwest_client, http::ReqwestClientConfig, iana::iana_request,
+};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{IanaRegistry, IanaRegistryType},
@@ -27,10 +29,10 @@ const IANA_JSON_SUFFIX: &str = ".iana_cache";
 pub async fn init_bootstrap(config: &ServiceConfig) -> Result<(), RdapServerError> {
     if config.bootstrap {
         info!("Initializing IANA Bootstrap.");
-        let client_config = ClientConfig::builder()
+        let client_config = ReqwestClientConfig::builder()
             .user_agent_suffix("icann-rdap-srv")
             .build();
-        let client = create_client(&client_config)?;
+        let client = create_reqwest_client(&client_config)?;
 
         // do one run of the bootstrapping before starting the thread.
         process_bootstrap(config, &client).await?;

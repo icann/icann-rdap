@@ -19,9 +19,9 @@ pub mod rdap;
 /// Basics necesasry for a simple clients.
 pub mod prelude {
     #[doc(inline)]
-    pub use crate::http::create_client;
+    pub use crate::http::create_reqwest_client;
     #[doc(inline)]
-    pub use crate::http::ClientConfig;
+    pub use crate::http::ReqwestClientConfig;
     #[doc(inline)]
     pub use crate::iana::MemoryBootstrapStore;
     #[doc(inline)]
