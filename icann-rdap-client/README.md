@@ -15,7 +15,7 @@ Add the library to your Cargo.toml: `cargo add icann-rdap-client`
 
 Also, add the commons library: `cargo add icann-rdap-common`.
 
-Both icann-rdap-common and icann-rdap-client can be compiled for WASM targets.
+Both [icann_rdap_common] and this crate can be compiled for WASM targets.
 
 Usage
 -----
@@ -26,6 +26,7 @@ query using the IANA RDAP bootstrap files. To make a query using bootstrapping:
 
 ```rust,no_run
 use icann_rdap_client::*;
+use icann_rdap_client::iana::MemoryBootstrapStore;
 use std::str::FromStr;
 use tokio::main;
 

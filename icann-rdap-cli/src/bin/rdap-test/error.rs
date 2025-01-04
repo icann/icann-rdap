@@ -1,7 +1,7 @@
 use std::process::{ExitCode, Termination};
 
 use icann_rdap_cli::rt::exec::TestExecutionError;
-use icann_rdap_client::iana::iana_request::IanaResponseError;
+use icann_rdap_client::iana::IanaResponseError;
 use icann_rdap_client::RdapClientError;
 use thiserror::Error;
 

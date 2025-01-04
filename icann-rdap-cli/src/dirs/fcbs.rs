@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use icann_rdap_client::iana::bootstrap::{BootstrapStore, RegistryHasNotExpired};
+use icann_rdap_client::iana::{BootstrapStore, RegistryHasNotExpired};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
@@ -95,7 +95,7 @@ where
 #[allow(non_snake_case)]
 mod test {
     use icann_rdap_client::{
-        iana::bootstrap::{BootstrapStore, PreferredUrl},
+        iana::{BootstrapStore, PreferredUrl},
         rdap::qtype::QueryType,
     };
     use icann_rdap_common::{

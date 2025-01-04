@@ -6,7 +6,7 @@ use axum::{
 };
 use envmnt::errors::EnvmntError;
 use http::StatusCode;
-use icann_rdap_client::{iana::iana_request::IanaResponseError, RdapClientError};
+use icann_rdap_client::{iana::IanaResponseError, RdapClientError};
 use icann_rdap_common::response::{types::Common, RdapResponse, RdapResponseError};
 use ipnet::PrefixLenError;
 use thiserror::Error;

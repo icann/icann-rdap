@@ -138,6 +138,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError>;
 }
 
+/// A trait to find the preferred URL from a bootstrap service.
 pub trait PreferredUrl {
     fn preferred_url(self) -> Result<String, RdapClientError>;
 }
@@ -267,6 +268,7 @@ impl BootstrapStore for MemoryBootstrapStore {
     }
 }
 
+/// Trait to determine if a bootstrap registry is past its expiration (i.e. needs to be rechecked).
 pub trait RegistryHasNotExpired {
     fn registry_has_not_expired(&self) -> bool;
 }
@@ -281,6 +283,7 @@ impl RegistryHasNotExpired for Option<(IanaRegistry, HttpData)> {
     }
 }
 
+/// Given a [QueryType], it will get the bootstrap URL.
 pub async fn qtype_to_bootstrap_url<F>(
     client: &Client,
     store: &dyn BootstrapStore,
@@ -333,6 +336,7 @@ where
     }
 }
 
+/// Fetches a bootstrap registry for a [BootstrapStore].
 pub async fn fetch_bootstrap<F>(
     reg_type: &IanaRegistryType,
     client: &Client,

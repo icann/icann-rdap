@@ -21,8 +21,6 @@ pub use crate::client::create_client;
 #[doc(inline)]
 pub use crate::client::ClientConfig;
 #[doc(inline)]
-pub use crate::iana::bootstrap::MemoryBootstrapStore;
-#[doc(inline)]
 pub use crate::rdap::qtype::QueryType;
 #[doc(inline)]
 pub use crate::rdap::request::rdap_bootstrapped_request;

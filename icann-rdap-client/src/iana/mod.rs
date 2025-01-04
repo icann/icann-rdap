@@ -1,4 +1,9 @@
 //! IANA and RDAP Bootstrapping
 
-pub mod bootstrap;
-pub mod iana_request;
+#[doc(inline)]
+pub use bootstrap::*;
+#[doc(inline)]
+pub use iana_request::*;
+
+pub(crate) mod bootstrap;
+pub(crate) mod iana_request;

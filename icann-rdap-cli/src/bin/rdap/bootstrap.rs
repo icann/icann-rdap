@@ -1,9 +1,9 @@
 use crate::error::RdapCliError;
 use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
-use icann_rdap_client::iana::bootstrap::BootstrapStore;
-use icann_rdap_client::iana::bootstrap::PreferredUrl;
+use icann_rdap_client::iana::BootstrapStore;
+use icann_rdap_client::iana::PreferredUrl;
 use icann_rdap_client::{
-    iana::bootstrap::{fetch_bootstrap, qtype_to_bootstrap_url},
+    iana::{fetch_bootstrap, qtype_to_bootstrap_url},
     rdap::qtype::QueryType,
 };
 use icann_rdap_common::iana::IanaRegistryType;

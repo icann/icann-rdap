@@ -1,6 +1,6 @@
 use std::{path::PathBuf, time::Duration};
 
-use icann_rdap_client::{create_client, iana::iana_request::iana_request, ClientConfig};
+use icann_rdap_client::{create_client, iana::iana_request, ClientConfig};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{IanaRegistry, IanaRegistryType},

@@ -188,7 +188,7 @@ pub async fn rdap_request(
 /// use icann_rdap_client::client::create_client;
 /// use icann_rdap_client::rdap::request::rdap_bootstrapped_request;
 /// use icann_rdap_client::rdap::qtype::QueryType;
-/// use icann_rdap_client::iana::bootstrap::MemoryBootstrapStore;
+/// use icann_rdap_client::iana::MemoryBootstrapStore;
 /// use icann_rdap_client::RdapClientError;
 /// use std::str::FromStr;
 /// use tokio::main;

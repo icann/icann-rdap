@@ -14,6 +14,7 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Response from getting an IANA registry.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IanaResponse {
     pub registry: IanaRegistry,
@@ -21,6 +22,7 @@ pub struct IanaResponse {
     pub http_data: HttpData,
 }
 
+/// Errors from issuing a request to get an IANA registry.
 #[derive(Debug, Error)]
 pub enum IanaResponseError {
     #[error(transparent)]
@@ -29,6 +31,7 @@ pub enum IanaResponseError {
     SerdeJson(#[from] serde_json::Error),
 }
 
+/// Issues the HTTP request to get an IANA registry.
 pub async fn iana_request(
     registry_type: IanaRegistryType,
     client: &Client,
