@@ -1,6 +1,6 @@
 //! Converts RDAP to Markdown.
 
-use crate::request::RequestData;
+use crate::rr::RequestData;
 use buildstructor::Builder;
 use icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse};
 use std::{any::TypeId, char};

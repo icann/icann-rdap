@@ -16,7 +16,7 @@ pub mod iana_request;
 pub mod md;
 pub mod query;
 pub mod registered_redactions;
-pub mod request;
+pub mod rr;
 
 #[doc(inline)]
 pub use crate::client::create_client;

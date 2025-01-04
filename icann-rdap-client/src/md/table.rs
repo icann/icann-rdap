@@ -249,7 +249,10 @@ mod tests {
         response::{types::Common, RdapResponse},
     };
 
-    use crate::{md::ToMd, request::RequestData};
+    use crate::{
+        md::ToMd,
+        rr::{RequestData, SourceType},
+    };
 
     use super::MultiPartTable;
 
@@ -262,7 +265,7 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             source_host: "",
-            source_type: crate::request::SourceType::UncategorizedRegistry,
+            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
             icann_rdap_common::response::error::Error::builder()
@@ -294,7 +297,7 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             source_host: "",
-            source_type: crate::request::SourceType::UncategorizedRegistry,
+            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
             icann_rdap_common::response::error::Error::builder()
@@ -327,7 +330,7 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             source_host: "",
-            source_type: crate::request::SourceType::UncategorizedRegistry,
+            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
             icann_rdap_common::response::error::Error::builder()
@@ -362,7 +365,7 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             source_host: "",
-            source_type: crate::request::SourceType::UncategorizedRegistry,
+            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
             icann_rdap_common::response::error::Error::builder()
@@ -395,7 +398,7 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             source_host: "",
-            source_type: crate::request::SourceType::UncategorizedRegistry,
+            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
             icann_rdap_common::response::error::Error::builder()
@@ -434,7 +437,7 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             source_host: "",
-            source_type: crate::request::SourceType::UncategorizedRegistry,
+            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
             icann_rdap_common::response::error::Error::builder()

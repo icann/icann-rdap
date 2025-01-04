@@ -1,4 +1,4 @@
-//! Structures that describe a request.
+//! Structures that describe a request/response.
 
 use icann_rdap_common::check::Checks;
 use serde::{Deserialize, Serialize};
