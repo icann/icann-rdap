@@ -14,9 +14,7 @@ pub mod client;
 pub mod gtld;
 pub mod iana;
 pub mod md;
-pub mod query;
-pub mod registered_redactions;
-pub mod rr;
+pub mod rdap;
 
 #[doc(inline)]
 pub use crate::client::create_client;
@@ -25,13 +23,13 @@ pub use crate::client::ClientConfig;
 #[doc(inline)]
 pub use crate::iana::bootstrap::MemoryBootstrapStore;
 #[doc(inline)]
-pub use crate::query::qtype::QueryType;
+pub use crate::rdap::qtype::QueryType;
 #[doc(inline)]
-pub use crate::query::request::rdap_bootstrapped_request;
+pub use crate::rdap::request::rdap_bootstrapped_request;
 #[doc(inline)]
-pub use crate::query::request::rdap_request;
+pub use crate::rdap::request::rdap_request;
 #[doc(inline)]
-pub use crate::query::request::rdap_url_request;
+pub use crate::rdap::request::rdap_url_request;
 
 /// Error returned by RDAP client functions and methods.
 #[derive(Error, Debug)]

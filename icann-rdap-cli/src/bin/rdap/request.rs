@@ -3,7 +3,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use icann_rdap_client::query::{
+use icann_rdap_client::rdap::{
     qtype::QueryType,
     request::{rdap_url_request, ResponseData},
 };

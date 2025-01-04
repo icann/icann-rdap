@@ -5,7 +5,7 @@ use icann_rdap_common::response::domain::{Domain, SecureDns, Variant};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
-use crate::registered_redactions::{self, text_or_registered_redaction};
+use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
 
 use super::redacted::REDACTED_TEXT;
 use super::types::{events_to_table, links_to_table, public_ids_to_table};

@@ -5,7 +5,7 @@ use icann_rdap_common::response::entity::{Entity, EntityRole};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
-use crate::registered_redactions::{
+use crate::rdap::registered_redactions::{
     are_redactions_registered_for_roles, is_redaction_registered_for_role,
     text_or_registered_redaction_for_role, RedactedName,
 };

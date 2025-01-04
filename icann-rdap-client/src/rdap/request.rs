@@ -27,7 +27,7 @@ use super::qtype::QueryType;
 /// ```no_run
 /// use icann_rdap_client::client::ClientConfig;
 /// use icann_rdap_client::client::create_client;
-/// use icann_rdap_client::query::request::rdap_url_request;
+/// use icann_rdap_client::rdap::request::rdap_url_request;
 /// use icann_rdap_client::RdapClientError;
 /// use std::str::FromStr;
 /// use tokio::main;
@@ -131,8 +131,8 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
 /// ```no_run
 /// use icann_rdap_client::client::ClientConfig;
 /// use icann_rdap_client::client::create_client;
-/// use icann_rdap_client::query::request::rdap_request;
-/// use icann_rdap_client::query::qtype::QueryType;
+/// use icann_rdap_client::rdap::request::rdap_request;
+/// use icann_rdap_client::rdap::qtype::QueryType;
 /// use icann_rdap_client::RdapClientError;
 /// use std::str::FromStr;
 /// use tokio::main;
@@ -186,8 +186,8 @@ pub async fn rdap_request(
 /// ```no_run
 /// use icann_rdap_client::client::ClientConfig;
 /// use icann_rdap_client::client::create_client;
-/// use icann_rdap_client::query::request::rdap_bootstrapped_request;
-/// use icann_rdap_client::query::qtype::QueryType;
+/// use icann_rdap_client::rdap::request::rdap_bootstrapped_request;
+/// use icann_rdap_client::rdap::qtype::QueryType;
 /// use icann_rdap_client::iana::bootstrap::MemoryBootstrapStore;
 /// use icann_rdap_client::RdapClientError;
 /// use std::str::FromStr;

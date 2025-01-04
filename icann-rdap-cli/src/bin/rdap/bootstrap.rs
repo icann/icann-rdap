@@ -4,7 +4,7 @@ use icann_rdap_client::iana::bootstrap::BootstrapStore;
 use icann_rdap_client::iana::bootstrap::PreferredUrl;
 use icann_rdap_client::{
     iana::bootstrap::{fetch_bootstrap, qtype_to_bootstrap_url},
-    query::qtype::QueryType,
+    rdap::qtype::QueryType,
 };
 use icann_rdap_common::iana::IanaRegistryType;
 use reqwest::Client;

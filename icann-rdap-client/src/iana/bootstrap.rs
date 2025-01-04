@@ -152,7 +152,7 @@ impl PreferredUrl for Vec<String> {
 ///
 /// This implementation of [BootstrapStore] keeps registries in memory. Every new instance starts with
 /// no registries in memory. They are added and maintained over time by calls to [MemoryBootstrapStore::put_bootstrap_registry()] by the
-/// machinery of [crate::query::request::rdap_bootstrapped_request()] and [crate::iana::bootstrap::qtype_to_bootstrap_url()].
+/// machinery of [crate::rdap::request::rdap_bootstrapped_request()] and [crate::iana::bootstrap::qtype_to_bootstrap_url()].
 ///
 /// Ideally, this should be kept in the same scope as [reqwest::Client].
 pub struct MemoryBootstrapStore {
