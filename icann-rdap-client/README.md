@@ -25,9 +25,7 @@ is the process of finding the authoritative RDAP server to
 query using the IANA RDAP bootstrap files. To make a query using bootstrapping:
 
 ```rust,no_run
-use icann_rdap_client::*;
-use icann_rdap_client::iana::*;
-use icann_rdap_client::rdap::*;
+use icann_rdap_client::prelude::*;
 use std::str::FromStr;
 use tokio::main;
 
@@ -61,8 +59,7 @@ async fn main() -> Result<(), RdapClientError> {
 To specify a base URL:
 
 ```rust,no_run
-use icann_rdap_client::*;
-use icann_rdap_client::rdap::*;
+use icann_rdap_client::prelude::*;
 use std::str::FromStr;
 use tokio::main;
 
