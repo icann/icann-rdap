@@ -11,9 +11,7 @@ use icann_rdap_common::{
 };
 use reqwest::Client;
 
-use crate::{iana_request::iana_request, RdapClientError};
-
-use super::qtype::QueryType;
+use crate::{iana::iana_request::iana_request, QueryType, RdapClientError};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
@@ -154,7 +152,7 @@ impl PreferredUrl for Vec<String> {
 ///
 /// This implementation of [BootstrapStore] keeps registries in memory. Every new instance starts with
 /// no registries in memory. They are added and maintained over time by calls to [MemoryBootstrapStore::put_bootstrap_registry()] by the
-/// machinery of [crate::query::request::rdap_bootstrapped_request()] and [crate::query::bootstrap::qtype_to_bootstrap_url()].
+/// machinery of [crate::query::request::rdap_bootstrapped_request()] and [crate::iana::bootstrap::qtype_to_bootstrap_url()].
 ///
 /// Ideally, this should be kept in the same scope as [reqwest::Client].
 pub struct MemoryBootstrapStore {
@@ -360,7 +358,7 @@ mod test {
         iana::{IanaRegistry, IanaRegistryType},
     };
 
-    use crate::query::{bootstrap::PreferredUrl, qtype::QueryType};
+    use crate::{iana::bootstrap::PreferredUrl, QueryType};
 
     use super::{BootstrapStore, MemoryBootstrapStore};
 

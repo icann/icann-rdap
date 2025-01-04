@@ -3,7 +3,7 @@
 #![doc = include_str!("../README.md")]
 use std::{fmt::Display, sync::PoisonError};
 
-use iana_request::IanaResponseError;
+use iana::iana_request::IanaResponseError;
 use icann_rdap_common::{
     dns_types::DomainNameError, httpdata::HttpData, iana::BootstrapRegistryError,
     response::RdapResponseError,
@@ -12,7 +12,7 @@ use thiserror::Error;
 
 pub mod client;
 pub mod gtld;
-pub mod iana_request;
+pub mod iana;
 pub mod md;
 pub mod query;
 pub mod registered_redactions;
@@ -23,7 +23,7 @@ pub use crate::client::create_client;
 #[doc(inline)]
 pub use crate::client::ClientConfig;
 #[doc(inline)]
-pub use crate::query::bootstrap::MemoryBootstrapStore;
+pub use crate::iana::bootstrap::MemoryBootstrapStore;
 #[doc(inline)]
 pub use crate::query::qtype::QueryType;
 #[doc(inline)]

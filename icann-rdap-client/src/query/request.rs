@@ -11,12 +11,12 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::RdapClientError;
-
-use super::{
-    bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
-    qtype::QueryType,
+use crate::{
+    iana::bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
+    RdapClientError,
 };
+
+use super::qtype::QueryType;
 
 /// Makes an RDAP request with a full RDAP URL.
 ///
@@ -179,7 +179,7 @@ pub async fn rdap_request(
 ///
 /// The [BootstrapStore] is responsible for holding IANA RDAP bootstrap registries.
 /// It will be populated with IANA registries as needed. Ideally, the calling code
-/// would be kept it in the same scope as `client`. When using the [crate::query::bootstrap::MemoryBootstrapStore],
+/// would be kept it in the same scope as `client`. When using the [crate::iana::bootstrap::MemoryBootstrapStore],
 /// creating a new store for each request will result it fetching the appropriate IANA
 /// registry with each request which is most likely not the desired behavior.
 ///
@@ -188,7 +188,7 @@ pub async fn rdap_request(
 /// use icann_rdap_client::client::create_client;
 /// use icann_rdap_client::query::request::rdap_bootstrapped_request;
 /// use icann_rdap_client::query::qtype::QueryType;
-/// use icann_rdap_client::query::bootstrap::MemoryBootstrapStore;
+/// use icann_rdap_client::iana::bootstrap::MemoryBootstrapStore;
 /// use icann_rdap_client::RdapClientError;
 /// use std::str::FromStr;
 /// use tokio::main;

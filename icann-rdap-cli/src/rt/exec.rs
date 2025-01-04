@@ -6,11 +6,9 @@ use hickory_client::client::{AsyncClient, ClientConnection, ClientHandle};
 use hickory_client::rr::{DNSClass, Name, RecordType};
 use hickory_client::udp::UdpClientConnection;
 use icann_rdap_client::client::create_client_with_addr;
+use icann_rdap_client::iana::bootstrap::{qtype_to_bootstrap_url, BootstrapStore};
 use icann_rdap_client::{create_client, rdap_url_request, ClientConfig};
-use icann_rdap_client::{
-    query::bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
-    QueryType, RdapClientError,
-};
+use icann_rdap_client::{QueryType, RdapClientError};
 use icann_rdap_common::response::get_related_links;
 use icann_rdap_common::response::types::ExtensionId;
 use reqwest::header::HeaderValue;
