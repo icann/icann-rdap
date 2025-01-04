@@ -11,7 +11,7 @@ use icann_rdap_cli::rt::exec::ExtensionGroup;
 use icann_rdap_cli::rt::exec::TestOptions;
 use icann_rdap_cli::rt::results::RunOutcome;
 use icann_rdap_cli::rt::results::TestResults;
-use icann_rdap_client::client::ClientConfig;
+use icann_rdap_client::http::ClientConfig;
 use icann_rdap_client::md::MdOptions;
 use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::check::traverse_checks;

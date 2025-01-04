@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::client::{create_client, ClientConfig};
+use icann_rdap_client::http::{create_client, ClientConfig};
 use icann_rdap_client::rdap::{rdap_request, QueryType};
 use icann_rdap_srv::storage::{
     data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},

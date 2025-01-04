@@ -10,8 +10,8 @@ use icann_rdap_common::{
 };
 use thiserror::Error;
 
-pub mod client;
 pub mod gtld;
+pub mod http;
 pub mod iana;
 pub mod md;
 pub mod rdap;
@@ -19,9 +19,9 @@ pub mod rdap;
 /// Basics necesasry for a simple clients.
 pub mod prelude {
     #[doc(inline)]
-    pub use crate::client::create_client;
+    pub use crate::http::create_client;
     #[doc(inline)]
-    pub use crate::client::ClientConfig;
+    pub use crate::http::ClientConfig;
     #[doc(inline)]
     pub use crate::iana::MemoryBootstrapStore;
     #[doc(inline)]
@@ -35,11 +35,6 @@ pub mod prelude {
     #[doc(inline)]
     pub use crate::RdapClientError;
 }
-
-#[doc(inline)]
-pub use crate::client::create_client;
-#[doc(inline)]
-pub use crate::client::ClientConfig;
 
 /// Error returned by RDAP client functions and methods.
 #[derive(Error, Debug)]
