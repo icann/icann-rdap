@@ -1,6 +1,6 @@
 //! Converts RDAP to Markdown.
 
-use crate::request::RequestData;
+use crate::rr::RequestData;
 use buildstructor::Builder;
 use icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse};
 use std::{any::TypeId, char};
@@ -122,12 +122,12 @@ impl ToMd for RdapResponse {
     }
 }
 
-pub(crate) trait MdUtil {
+pub trait MdUtil {
     fn get_header_text(&self) -> MdHeaderText;
 }
 
 #[derive(Builder)]
-pub(crate) struct MdHeaderText {
+pub struct MdHeaderText {
     header_text: String,
     children: Vec<MdHeaderText>,
 }
@@ -187,6 +187,7 @@ impl<'a> FromMd<'a> for CheckParams<'a> {
             do_subchecks: false,
             root: md_params.root,
             parent_type,
+            allow_unreg_ext: false,
         }
     }
 
@@ -195,6 +196,7 @@ impl<'a> FromMd<'a> for CheckParams<'a> {
             do_subchecks: false,
             root: md_params.root,
             parent_type: md_params.parent_type,
+            allow_unreg_ext: false,
         }
     }
 }

@@ -6,6 +6,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::Display;
 use thiserror::Error;
+use types::Extension;
+
+use crate::media_types::RDAP_MEDIA_TYPE;
 
 use self::{
     autnum::Autnum,
@@ -34,12 +37,16 @@ pub mod types;
 pub enum RdapResponseError {
     #[error("Wrong JSON type: {0}")]
     WrongJsonType(String),
+
     #[error("Unknown RDAP response.")]
     UnknownRdapResponse,
+
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+
     #[error(transparent)]
     AddrParse(#[from] std::net::AddrParseError),
+
     #[error(transparent)]
     CidrParse(#[from] cidr::errors::NetworkParseError),
 }
@@ -241,9 +248,15 @@ impl RdapResponse {
         }
     }
 
-    pub fn has_extension(&self, extension_id: ExtensionId) -> bool {
+    pub fn has_extension_id(&self, extension_id: ExtensionId) -> bool {
         self.get_conformance().map_or(false, |conformance| {
             conformance.contains(&extension_id.to_extension())
+        })
+    }
+
+    pub fn has_extension(&self, extension: &str) -> bool {
+        self.get_conformance().map_or(false, |conformance| {
+            conformance.contains(&Extension::from(extension))
         })
     }
 
@@ -274,6 +287,34 @@ pub trait GetSelfLink {
 pub trait SelfLink: GetSelfLink {
     /// See [crate::response::types::ObjectCommon::get_self_link()].
     fn set_self_link(self, link: Link) -> Self;
+}
+
+pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
+    if let Some(links) = rdap_response.get_links() {
+        let urls: Vec<&str> = links
+            .iter()
+            .filter(|l| {
+                if l.href.as_ref().is_some() {
+                    if let Some(rel) = &l.rel {
+                        if let Some(media_type) = &l.media_type {
+                            rel.eq_ignore_ascii_case("related")
+                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            })
+            .map(|l| l.href.as_ref().unwrap().as_str())
+            .collect::<Vec<&str>>();
+        urls
+    } else {
+        Vec::new()
+    }
 }
 
 pub trait ToChild {
@@ -312,7 +353,7 @@ mod tests {
         let actual = RdapResponse::try_from(expected).unwrap();
 
         // THEN
-        assert!(actual.has_extension(crate::response::types::ExtensionId::Redacted));
+        assert!(actual.has_extension_id(crate::response::types::ExtensionId::Redacted));
     }
 
     #[test]

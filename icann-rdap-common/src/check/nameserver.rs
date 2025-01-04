@@ -52,7 +52,7 @@ impl GetChecks for Nameserver {
         }
 
         Checks {
-            struct_name: "Nameserver",
+            rdap_struct: super::RdapStructure::Nameserver,
             items,
             sub_checks,
         }
@@ -81,11 +81,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -107,11 +103,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -133,11 +125,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -159,11 +147,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -185,11 +169,7 @@ mod tests {
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);

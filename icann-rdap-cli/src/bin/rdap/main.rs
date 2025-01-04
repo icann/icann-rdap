@@ -1,6 +1,8 @@
 use bootstrap::BootstrapType;
 use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
+use error::RdapCliError;
+use icann_rdap_cli::dirs;
 use icann_rdap_client::client::create_client;
 use icann_rdap_client::client::ClientConfig;
 use icann_rdap_common::check::CheckClass;
@@ -19,7 +21,6 @@ use write::FmtWrite;
 use write::PagerWrite;
 
 use clap::{ArgGroup, Parser, ValueEnum};
-use error::CliError;
 use icann_rdap_client::query::qtype::QueryType;
 use icann_rdap_common::VERSION;
 use query::OutputType;
@@ -29,7 +30,6 @@ use tokio::{join, task::spawn_blocking};
 use crate::query::do_query;
 
 pub mod bootstrap;
-pub mod dirs;
 pub mod error;
 pub mod query;
 pub mod request;
@@ -343,14 +343,20 @@ enum OtypeArg {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum CheckTypeArg {
+    /// All checks.
+    All,
+
     /// Informational items.
     Info,
 
+    /// Specification Notes
+    SpecNote,
+
     /// Checks for STD 95 warnings.
-    SpecWarn,
+    StdWarn,
 
     /// Checks for STD 95 errors.
-    SpecError,
+    StdError,
 
     /// Cidr0 errors.
     Cidr0Error,
@@ -433,16 +439,16 @@ impl From<&LogLevel> for LevelFilter {
 }
 
 #[tokio::main]
-pub async fn main() -> CliError {
+pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
         eprintln!("\n{e}\n");
         return e;
     } else {
-        return CliError::Success;
+        return RdapCliError::Success;
     }
 }
 
-pub async fn wrapped_main() -> Result<(), CliError> {
+pub async fn wrapped_main() -> Result<(), RdapCliError> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
@@ -489,18 +495,31 @@ pub async fn wrapped_main() -> Result<(), CliError> {
     let check_types = if cli.check_type.is_empty() {
         vec![
             CheckClass::Informational,
-            CheckClass::SpecificationWarning,
-            CheckClass::SpecificationError,
+            CheckClass::StdWarning,
+            CheckClass::StdError,
+            CheckClass::Cidr0Error,
+            CheckClass::IcannError,
+        ]
+    } else if cli.check_type.contains(&CheckTypeArg::All) {
+        vec![
+            CheckClass::Informational,
+            CheckClass::SpecificationNote,
+            CheckClass::StdWarning,
+            CheckClass::StdError,
+            CheckClass::Cidr0Error,
+            CheckClass::IcannError,
         ]
     } else {
         cli.check_type
             .iter()
             .map(|c| match c {
                 CheckTypeArg::Info => CheckClass::Informational,
-                CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
-                CheckTypeArg::SpecError => CheckClass::SpecificationError,
+                CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
+                CheckTypeArg::StdWarn => CheckClass::StdWarning,
+                CheckTypeArg::StdError => CheckClass::StdError,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
                 CheckTypeArg::IcannError => CheckClass::IcannError,
+                CheckTypeArg::All => panic!("check type for all should have been handled."),
             })
             .collect::<Vec<CheckClass>>()
     };
@@ -599,7 +618,7 @@ async fn exec<W: std::io::Write>(
     processing_params: &ProcessingParams,
     client: &Client,
     mut output: W,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     info!("ICANN RDAP {} Command Line Interface", VERSION);
 
     #[cfg(debug_assertions)]
@@ -620,7 +639,7 @@ async fn exec<W: std::io::Write>(
     }
 }
 
-fn query_type_from_cli(cli: &Cli) -> Result<QueryType, CliError> {
+fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
     if let Some(query_value) = cli.query_value.clone() {
         if let Some(query_type) = cli.query_type {
             let q = match query_type {

@@ -9,7 +9,7 @@ use reqwest::{
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
 
 #[cfg(not(target_arch = "wasm32"))]
-use icann_rdap_common::VERSION;
+use {icann_rdap_common::VERSION, std::net::SocketAddr};
 
 lazy_static! {
     static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
@@ -35,6 +35,11 @@ pub struct ClientConfig {
 
     /// Specify Host
     pub host: Option<HeaderValue>,
+
+    /// Specify the value of the origin header.
+    ///
+    /// Most browsers ignore this by default.
+    pub origin: Option<HeaderValue>,
 }
 
 impl Default for ClientConfig {
@@ -46,6 +51,7 @@ impl Default for ClientConfig {
             accept_invalid_certificates: false,
             follow_redirects: true,
             host: None,
+            origin: None,
         }
     }
 }
@@ -60,6 +66,7 @@ impl ClientConfig {
         accept_invalid_certificates: Option<bool>,
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
+        origin: Option<HeaderValue>,
     ) -> Self {
         let default = ClientConfig::default();
         Self {
@@ -71,6 +78,32 @@ impl ClientConfig {
                 .unwrap_or(default.accept_invalid_certificates),
             follow_redirects: follow_redirects.unwrap_or(default.follow_redirects),
             host,
+            origin,
+        }
+    }
+
+    #[builder(entry = "from_config", exit = "build")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_from_config(
+        &self,
+        user_agent_suffix: Option<String>,
+        https_only: Option<bool>,
+        accept_invalid_host_names: Option<bool>,
+        accept_invalid_certificates: Option<bool>,
+        follow_redirects: Option<bool>,
+        host: Option<HeaderValue>,
+        origin: Option<HeaderValue>,
+    ) -> Self {
+        Self {
+            user_agent_suffix: user_agent_suffix.unwrap_or(self.user_agent_suffix.clone()),
+            https_only: https_only.unwrap_or(self.https_only),
+            accept_invalid_host_names: accept_invalid_host_names
+                .unwrap_or(self.accept_invalid_host_names),
+            accept_invalid_certificates: accept_invalid_certificates
+                .unwrap_or(self.accept_invalid_certificates),
+            follow_redirects: follow_redirects.unwrap_or(self.follow_redirects),
+            host: host.map_or(self.host.clone(), Some),
+            origin: origin.map_or(self.origin.clone(), Some),
         }
     }
 }
@@ -79,9 +112,82 @@ impl ClientConfig {
 /// client holds its own connection pools, so in many
 /// uses cases creating only one client per process is
 /// necessary.
-// TODO create a wasm and non-wasm verion. wasm version should not take the config.
-#[allow(unused_variables)] // for config and wasm32
+#[cfg(not(target_arch = "wasm32"))]
 pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
+    let default_headers = default_headers(config);
+
+    let mut client = reqwest::Client::builder();
+
+    let redirects = if config.follow_redirects {
+        reqwest::redirect::Policy::default()
+    } else {
+        reqwest::redirect::Policy::none()
+    };
+    client = client
+        .user_agent(format!(
+            "icann_rdap client {VERSION} {}",
+            config.user_agent_suffix
+        ))
+        .redirect(redirects)
+        .https_only(config.https_only)
+        .danger_accept_invalid_hostnames(config.accept_invalid_host_names)
+        .danger_accept_invalid_certs(config.accept_invalid_certificates);
+
+    let client = client.default_headers(default_headers).build()?;
+    Ok(client)
+}
+
+/// Creates an HTTP client using Reqwest. The Reqwest
+/// client holds its own connection pools, so in many
+/// uses cases creating only one client per process is
+/// necessary.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn create_client_with_addr(
+    config: &ClientConfig,
+    domain: &str,
+    addr: SocketAddr,
+) -> Result<Client, reqwest::Error> {
+    let default_headers = default_headers(config);
+
+    let mut client = reqwest::Client::builder();
+
+    let redirects = if config.follow_redirects {
+        reqwest::redirect::Policy::default()
+    } else {
+        reqwest::redirect::Policy::none()
+    };
+    client = client
+        .user_agent(format!(
+            "icann_rdap client {VERSION} {}",
+            config.user_agent_suffix
+        ))
+        .redirect(redirects)
+        .https_only(config.https_only)
+        .danger_accept_invalid_hostnames(config.accept_invalid_host_names)
+        .danger_accept_invalid_certs(config.accept_invalid_certificates)
+        .resolve(domain, addr);
+
+    let client = client.default_headers(default_headers).build()?;
+    Ok(client)
+}
+
+/// Creates an HTTP client using Reqwest. The Reqwest
+/// client holds its own connection pools, so in many
+/// uses cases creating only one client per process is
+/// necessary.
+/// Note that the WASM version does not set redirect policy,
+/// https_only, or TLS settings.
+#[cfg(target_arch = "wasm32")]
+pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
+    let default_headers = default_headers(config);
+
+    let client = reqwest::Client::builder();
+
+    let client = client.default_headers(default_headers).build()?;
+    Ok(client)
+}
+
+fn default_headers(config: &ClientConfig) -> header::HeaderMap {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,
@@ -90,28 +196,8 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
     if let Some(host) = &config.host {
         default_headers.insert(header::HOST, host.into());
     };
-
-    #[allow(unused_mut)]
-    let mut client = reqwest::Client::builder();
-
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let redirects = if config.follow_redirects {
-            reqwest::redirect::Policy::default()
-        } else {
-            reqwest::redirect::Policy::none()
-        };
-        client = client
-            .user_agent(format!(
-                "icann_rdap client {VERSION} {}",
-                config.user_agent_suffix
-            ))
-            .redirect(redirects)
-            .https_only(config.https_only)
-            .danger_accept_invalid_hostnames(config.accept_invalid_host_names)
-            .danger_accept_invalid_certs(config.accept_invalid_certificates);
+    if let Some(origin) = &config.origin {
+        default_headers.insert(header::ORIGIN, origin.into());
     }
-
-    let client = client.default_headers(default_headers).build()?;
-    Ok(client)
+    default_headers
 }

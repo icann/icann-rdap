@@ -2,7 +2,7 @@ use chrono::DateTime;
 
 use super::{MdOptions, MdParams};
 
-pub(crate) trait StringUtil {
+pub trait StringUtil {
     fn replace_ws(self) -> String;
     fn to_em(self, options: &MdOptions) -> String;
     fn to_bold(self, options: &MdOptions) -> String;

@@ -6,7 +6,7 @@ use minus::MinusError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum CliError {
+pub enum RdapCliError {
     #[error("No errors encountered")]
     Success,
     #[error(transparent)]
@@ -35,36 +35,36 @@ pub enum CliError {
     NoRegistryFound,
 }
 
-impl Termination for CliError {
+impl Termination for RdapCliError {
     fn report(self) -> std::process::ExitCode {
         let exit_code: u8 = match self {
             // Success
-            CliError::Success => 0,
+            RdapCliError::Success => 0,
 
             // Internal Errors
-            CliError::Termimad(_) => 10,
-            CliError::Minus(_) => 11,
+            RdapCliError::Termimad(_) => 10,
+            RdapCliError::Minus(_) => 11,
 
             // I/O Errors
-            CliError::IoError(_) => 40,
+            RdapCliError::IoError(_) => 40,
 
             // RDAP Errors
-            CliError::Json(_) => 100,
-            CliError::Iana(_) => 101,
-            CliError::InvalidBootstrap => 102,
-            CliError::BootstrapNotFound => 103,
-            CliError::NoRegistrarFound => 104,
-            CliError::NoRegistryFound => 105,
+            RdapCliError::Json(_) => 100,
+            RdapCliError::Iana(_) => 101,
+            RdapCliError::InvalidBootstrap => 102,
+            RdapCliError::BootstrapNotFound => 103,
+            RdapCliError::NoRegistrarFound => 104,
+            RdapCliError::NoRegistryFound => 105,
 
             // User Errors
-            CliError::UnknownOutputType => 200,
-            CliError::ErrorOnChecks => 201,
+            RdapCliError::UnknownOutputType => 200,
+            RdapCliError::ErrorOnChecks => 201,
 
             // RDAP Client Errrors
-            CliError::RdapClient(e) => match e {
+            RdapCliError::RdapClient(e) => match e {
                 // I/O Errors
-                RdapClientError::Client(_) => 41,
-                RdapClientError::IoError(_) => 42,
+                RdapClientError::Client(_) => 42,
+                RdapClientError::IoError(_) => 43,
 
                 // RDAP Server Errors
                 RdapClientError::Response(_) => 60,
