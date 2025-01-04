@@ -13,7 +13,7 @@ use icann_rdap_cli::rt::results::RunOutcome;
 use icann_rdap_cli::rt::results::TestResults;
 use icann_rdap_client::client::ClientConfig;
 use icann_rdap_client::md::MdOptions;
-use icann_rdap_client::QueryType;
+use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use termimad::crossterm::style::Color::*;

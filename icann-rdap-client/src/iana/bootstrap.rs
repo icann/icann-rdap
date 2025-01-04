@@ -11,7 +11,7 @@ use icann_rdap_common::{
 };
 use reqwest::Client;
 
-use crate::{iana::iana_request::iana_request, QueryType, RdapClientError};
+use crate::{iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
@@ -362,7 +362,7 @@ mod test {
         iana::{IanaRegistry, IanaRegistryType},
     };
 
-    use crate::{iana::bootstrap::PreferredUrl, QueryType};
+    use crate::{iana::bootstrap::PreferredUrl, rdap::QueryType};
 
     use super::{BootstrapStore, MemoryBootstrapStore};
 

@@ -11,8 +11,8 @@ use tracing::info;
 use icann_rdap_client::{
     gtld::{GtldParams, ToGtldWhois},
     md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
-    rdap::rr::{RequestData, RequestResponse, RequestResponses, SourceType},
-    rdap::{qtype::QueryType, request::ResponseData},
+    rdap::{QueryType, ResponseData},
+    rdap::{RequestData, RequestResponse, RequestResponses, SourceType},
 };
 use reqwest::Client;
 use termimad::{crossterm::style::Color::*, Alignment, MadSkin};

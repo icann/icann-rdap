@@ -21,7 +21,7 @@ use write::FmtWrite;
 use write::PagerWrite;
 
 use clap::{ArgGroup, Parser, ValueEnum};
-use icann_rdap_client::rdap::qtype::QueryType;
+use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::VERSION;
 use query::OutputType;
 use reqwest::Client;

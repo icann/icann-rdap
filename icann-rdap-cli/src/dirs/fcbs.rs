@@ -96,7 +96,7 @@ where
 mod test {
     use icann_rdap_client::{
         iana::{BootstrapStore, PreferredUrl},
-        rdap::qtype::QueryType,
+        rdap::QueryType,
     };
     use icann_rdap_common::{
         httpdata::HttpData,

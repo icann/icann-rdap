@@ -4,8 +4,7 @@ use std::{
 };
 
 use icann_rdap_client::rdap::{
-    qtype::QueryType,
-    request::{rdap_url_request, ResponseData},
+    QueryType, {rdap_url_request, ResponseData},
 };
 use icann_rdap_common::{httpdata::HttpData, response::GetSelfLink};
 use pct_str::PctString;

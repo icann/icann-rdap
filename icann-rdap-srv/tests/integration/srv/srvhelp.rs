@@ -2,7 +2,7 @@
 
 use icann_rdap_client::{
     create_client,
-    rdap::{qtype::QueryType, request::rdap_request},
+    rdap::{rdap_request, QueryType},
     ClientConfig,
 };
 use icann_rdap_common::response::{

@@ -54,4 +54,5 @@ pub struct RequestResponseOwned<'a> {
     pub checks: Checks,
 }
 
+/// A [Vec] of [RequestResponse].
 pub type RequestResponses<'a> = Vec<RequestResponse<'a>>;
