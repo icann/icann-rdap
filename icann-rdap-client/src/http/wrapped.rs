@@ -10,25 +10,29 @@ pub use reqwest::Client as ReqwestClient;
 pub use reqwest::Error as ReqwestError;
 
 use super::create_reqwest_client;
-#[cfg(not(target_arch = "wasm32"))]
-use super::create_reqwest_client_with_addr;
 use super::ReqwestClientConfig;
 use crate::RdapClientError;
+
 #[cfg(not(target_arch = "wasm32"))]
-use std::net::SocketAddr;
+use {
+    super::create_reqwest_client_with_addr, chrono::DateTime, chrono::Utc, reqwest::StatusCode,
+    std::net::SocketAddr, tracing::debug, tracing::info,
+};
 
 /// Used by the request functions.
 #[derive(Clone, Copy)]
 pub struct RequestOptions {
-    pub retry_seconds: u16,
-    pub max_retries: u16,
+    pub(crate) max_retry_seconds: u32,
+    pub(crate) default_retry_seconds: u32,
+    pub(crate) max_retries: u16,
 }
 
 impl Default for RequestOptions {
     fn default() -> Self {
         Self {
-            retry_seconds: 120,
-            max_retries: 2,
+            max_retry_seconds: 120,
+            default_retry_seconds: 120,
+            max_retries: 1,
         }
     }
 }
@@ -55,8 +59,10 @@ impl ClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
-        retry_seconds: Option<u16>,
-        max_retries: Option<u16>,
+        // TODO uncomment after deciding to expose this in the API.
+        // max_retry_seconds: Option<u32>,
+        // default_retry_seconds: Option<u32>,
+        // max_retries: Option<u16>,
     ) -> Self {
         let default_cc = ReqwestClientConfig::default();
         let default_ro = RequestOptions::default();
@@ -72,10 +78,14 @@ impl ClientConfig {
                 host,
                 origin,
             },
-            request_options: RequestOptions {
-                retry_seconds: retry_seconds.unwrap_or(default_ro.retry_seconds),
-                max_retries: max_retries.unwrap_or(default_ro.max_retries),
-            },
+            request_options: default_ro,
+            // TODO uncomment after deciding to expose this in the API.
+            // request_options: RequestOptions {
+            //     max_retry_seconds: max_retry_seconds.unwrap_or(default_ro.max_retry_seconds),
+            //     default_retry_seconds: default_retry_seconds
+            //         .unwrap_or(default_ro.default_retry_seconds),
+            //     max_retries: max_retries.unwrap_or(default_ro.max_retries),
+            // },
         }
     }
 
@@ -90,8 +100,10 @@ impl ClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
-        retry_seconds: Option<u16>,
-        max_retries: Option<u16>,
+        // TODO uncomment after deciding to expose this in the API.
+        // max_retry_seconds: Option<u32>,
+        // default_retry_seconds: Option<u32>,
+        // max_retries: Option<u16>,
     ) -> Self {
         Self {
             client_config: ReqwestClientConfig {
@@ -106,10 +118,15 @@ impl ClientConfig {
                 host: host.map_or(self.client_config.host.clone(), Some),
                 origin: origin.map_or(self.client_config.origin.clone(), Some),
             },
-            request_options: RequestOptions {
-                retry_seconds: retry_seconds.unwrap_or(self.request_options.retry_seconds),
-                max_retries: max_retries.unwrap_or(self.request_options.max_retries),
-            },
+            request_options: RequestOptions::default(),
+            // TODO uncomment after deciding to expose this in the API.
+            // request_options: RequestOptions {
+            //     max_retry_seconds: max_retry_seconds
+            //         .unwrap_or(self.request_options.max_retry_seconds),
+            //     default_retry_seconds: default_retry_seconds
+            //         .unwrap_or(self.request_options.default_retry_seconds),
+            //     max_retries: max_retries.unwrap_or(self.request_options.max_retries),
+            // },
         }
     }
 }
@@ -162,12 +179,68 @@ pub(crate) async fn wrapped_request(
     url: &str,
     client: &Client,
 ) -> Result<WrappedResponse, ReqwestError> {
-    let response = client
-        .reqwest_client
-        .get(url)
-        .send()
-        .await?
-        .error_for_status()?;
+    // send request and loop for possible retries
+    #[allow(unused_mut)] //because of wasm32 exclusion below
+    let mut response = client.reqwest_client.get(url).send().await?;
+
+    // this doesn't work on wasm32 because tokio doesn't work on wasm
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let mut tries: u16 = 0;
+        loop {
+            debug!("HTTP version: {:?}", response.version());
+            // loop if HTTP 429
+            if matches!(response.status(), StatusCode::TOO_MANY_REQUESTS) {
+                let retry_after = response
+                    .headers()
+                    .get(RETRY_AFTER)
+                    .map(|value| value.to_str().unwrap().to_string())
+                    .unwrap_or(client.request_options.default_retry_seconds.to_string());
+                let mut wait_time_seconds =
+                    if let Ok(date) = DateTime::parse_from_rfc2822(&retry_after) {
+                        (date.with_timezone(&Utc) - Utc::now()).num_seconds() as u64
+                    } else if let Ok(seconds) = retry_after.parse::<u64>() {
+                        seconds
+                    } else {
+                        debug!(
+                            "Unable to parse retry-after header value. Using {}",
+                            client.request_options.default_retry_seconds
+                        );
+                        client.request_options.default_retry_seconds.into()
+                    };
+                if wait_time_seconds == 0 {
+                    debug!("Given {wait_time_seconds} for retry-after. Does not make sense.");
+                    break;
+                }
+                if wait_time_seconds > client.request_options.max_retry_seconds as u64 {
+                    info!(
+                        "Server is asking to wait longer than configured max of {}.",
+                        client.request_options.max_retry_seconds
+                    );
+                    wait_time_seconds = client.request_options.max_retry_seconds as u64;
+                }
+                info!("Server says to wait {wait_time_seconds} seconds.");
+                tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_seconds + 1)).await;
+                tries += 1;
+                if tries > client.request_options.max_retries {
+                    info!("Max query retries reached.");
+                    break;
+                } else {
+                    // send the query again
+                    response = client.reqwest_client.get(url).send().await?;
+                }
+
+            // else don't repeat the request
+            } else {
+                break;
+            }
+        }
+    }
+
+    // throw an error if not 200 OK
+    let response = response.error_for_status()?;
+
+    // get the response
     let content_type = response
         .headers()
         .get(CONTENT_TYPE)
