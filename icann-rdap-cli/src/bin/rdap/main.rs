@@ -3,8 +3,9 @@ use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
 use error::RdapCliError;
 use icann_rdap_cli::dirs;
-use icann_rdap_client::http::create_reqwest_client;
-use icann_rdap_client::http::ReqwestClientConfig;
+use icann_rdap_client::http::create_client;
+use icann_rdap_client::http::Client;
+use icann_rdap_client::http::ClientConfig;
 use icann_rdap_common::check::CheckClass;
 use query::InrBackupBootstrap;
 use query::ProcessType;
@@ -24,7 +25,6 @@ use clap::{ArgGroup, Parser, ValueEnum};
 use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::VERSION;
 use query::OutputType;
-use reqwest::Client;
 use tokio::{join, task::spawn_blocking};
 
 use crate::query::do_query;
@@ -554,13 +554,13 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         max_cache_age: cli.max_cache_age,
     };
 
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .user_agent_suffix("CLI")
         .https_only(!cli.allow_http)
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
         .build();
-    let rdap_client = create_reqwest_client(&client_config);
+    let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
         if !use_pager {
             tracing_subscriber::fmt()

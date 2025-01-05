@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
-    http::create_reqwest_client,
-    http::ReqwestClientConfig,
+    http::create_client,
+    http::ClientConfig,
     rdap::{rdap_request, QueryType},
     RdapClientError,
 };
@@ -22,11 +22,11 @@ async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -52,11 +52,11 @@ async fn GIVEN_server_with_idn_WHEN_query_domain_THEN_status_code_200() {
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::domain("café.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -80,11 +80,11 @@ async fn GIVEN_server_with_domain_and_search_disabled_WHEN_query_domain_THEN_sta
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::DomainNameSearch("foo.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
@@ -109,11 +109,11 @@ async fn GIVEN_server_with_domain_and_search_enabled_WHEN_query_domain_THEN_stat
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::DomainNameSearch("foo.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await

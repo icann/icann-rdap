@@ -1,7 +1,13 @@
 //! Wrapped Client.
 
+use icann_rdap_common::httpdata::HttpData;
 pub use reqwest::header::HeaderValue;
+use reqwest::header::{
+    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION, RETRY_AFTER,
+    STRICT_TRANSPORT_SECURITY,
+};
 pub use reqwest::Client as ReqwestClient;
+pub use reqwest::Error as ReqwestError;
 
 use super::create_reqwest_client;
 #[cfg(not(target_arch = "wasm32"))]
@@ -145,4 +151,73 @@ pub fn create_client_with_addr(
 ) -> Result<Client, RdapClientError> {
     let client = create_reqwest_client_with_addr(&config.client_config, domain, addr)?;
     Ok(Client::new(client, config.request_options))
+}
+
+pub(crate) struct WrappedResponse {
+    pub(crate) http_data: HttpData,
+    pub(crate) text: String,
+}
+
+pub(crate) async fn wrapped_request(
+    url: &str,
+    client: &Client,
+) -> Result<WrappedResponse, ReqwestError> {
+    let response = client
+        .reqwest_client
+        .get(url)
+        .send()
+        .await?
+        .error_for_status()?;
+    let content_type = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .map(|value| value.to_str().unwrap().to_string());
+    let expires = response
+        .headers()
+        .get(EXPIRES)
+        .map(|value| value.to_str().unwrap().to_string());
+    let cache_control = response
+        .headers()
+        .get(CACHE_CONTROL)
+        .map(|value| value.to_str().unwrap().to_string());
+    let location = response
+        .headers()
+        .get(LOCATION)
+        .map(|value| value.to_str().unwrap().to_string());
+    let access_control_allow_origin = response
+        .headers()
+        .get(ACCESS_CONTROL_ALLOW_ORIGIN)
+        .map(|value| value.to_str().unwrap().to_string());
+    let strict_transport_security = response
+        .headers()
+        .get(STRICT_TRANSPORT_SECURITY)
+        .map(|value| value.to_str().unwrap().to_string());
+    let retry_after = response
+        .headers()
+        .get(RETRY_AFTER)
+        .map(|value| value.to_str().unwrap().to_string());
+    let content_length = response.content_length();
+    let status_code = response.status().as_u16();
+    let url = response.url().to_owned();
+    let text = response.text().await?;
+
+    let http_data = HttpData::now()
+        .status_code(status_code)
+        .and_location(location)
+        .and_content_length(content_length)
+        .and_content_type(content_type)
+        .scheme(url.scheme())
+        .host(
+            url.host_str()
+                .expect("URL has no host. This shouldn't happen.")
+                .to_owned(),
+        )
+        .and_expires(expires)
+        .and_cache_control(cache_control)
+        .and_access_control_allow_origin(access_control_allow_origin)
+        .and_strict_transport_security(strict_transport_security)
+        .and_retry_after(retry_after)
+        .build();
+
+    Ok(WrappedResponse { http_data, text })
 }

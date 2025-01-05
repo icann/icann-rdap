@@ -3,13 +3,13 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use icann_rdap_client::rdap::{
-    QueryType, {rdap_url_request, ResponseData},
+use icann_rdap_client::{
+    http::Client,
+    rdap::{rdap_url_request, QueryType, ResponseData},
 };
 use icann_rdap_common::{httpdata::HttpData, response::GetSelfLink};
 use pct_str::PctString;
 use pct_str::URIReserved;
-use reqwest::Client;
 use tracing::{debug, info};
 
 use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};

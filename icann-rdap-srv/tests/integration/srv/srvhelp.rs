@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
-    http::create_reqwest_client,
-    http::ReqwestClientConfig,
+    http::{create_client, ClientConfig},
     rdap::{rdap_request, QueryType},
 };
 use icann_rdap_common::response::{
@@ -32,11 +31,11 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::Help;
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -65,12 +64,12 @@ async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .host(reqwest::header::HeaderValue::from_static("foo.example.com"))
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::Help;
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await

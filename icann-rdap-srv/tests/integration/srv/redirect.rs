@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
-    http::create_reqwest_client,
-    http::ReqwestClientConfig,
+    http::{create_client, ClientConfig},
     rdap::{rdap_request, QueryType},
 };
 use icann_rdap_common::response::{
@@ -44,11 +43,11 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -94,11 +93,11 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -143,11 +142,11 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::Entity("foo".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -193,11 +192,11 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::autnum("700").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -242,11 +241,11 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::ipv4("10.0.0.1").expect("invalid IP address");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
@@ -294,11 +293,11 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
         .build();
-    let client = create_reqwest_client(&client_config).expect("creating client");
+    let client = create_client(&client_config).expect("creating client");
     let query = QueryType::ipv4("10.0.0.1").expect("invalid IP address");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await

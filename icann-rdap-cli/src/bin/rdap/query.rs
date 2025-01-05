@@ -1,3 +1,4 @@
+use icann_rdap_client::http::Client;
 use icann_rdap_common::check::traverse_checks;
 use icann_rdap_common::check::CheckClass;
 use icann_rdap_common::check::CheckParams;
@@ -14,7 +15,6 @@ use icann_rdap_client::{
     rdap::{QueryType, ResponseData},
     rdap::{RequestData, RequestResponse, RequestResponses, SourceType},
 };
-use reqwest::Client;
 use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
 use crate::bootstrap::get_base_url;

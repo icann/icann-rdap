@@ -11,7 +11,7 @@ use icann_rdap_cli::rt::exec::ExtensionGroup;
 use icann_rdap_cli::rt::exec::TestOptions;
 use icann_rdap_cli::rt::results::RunOutcome;
 use icann_rdap_cli::rt::results::TestResults;
-use icann_rdap_client::http::ReqwestClientConfig;
+use icann_rdap_client::http::ClientConfig;
 use icann_rdap_client::md::MdOptions;
 use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::check::traverse_checks;
@@ -369,7 +369,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         allow_unregistered_extensions: cli.allow_unregistered_extensions,
     };
 
-    let client_config = ReqwestClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .user_agent_suffix("RT")
         .https_only(!cli.allow_http)
         .accept_invalid_host_names(cli.allow_invalid_host_names)

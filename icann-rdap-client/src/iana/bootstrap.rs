@@ -9,9 +9,8 @@ use icann_rdap_common::{
         IanaRegistryType,
     },
 };
-use reqwest::Client;
 
-use crate::{iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
+use crate::{http::Client, iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
