@@ -115,6 +115,18 @@ struct Cli {
     )]
     allow_invalid_certificates: bool,
 
+    /// Set the query timeout.
+    ///
+    /// This values specifies, in seconds, the total time to connect and read all
+    /// the data from a connection.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TEST_TIMEOUT_SECS",
+        default_value = "60"
+    )]
+    timeout_secs: u64,
+
     /// Skip v4.
     ///
     /// Skip testing of IPv4 connections.
@@ -382,6 +394,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
         .follow_redirects(cli.follow_redirects)
+        .timeout_secs(cli.timeout_secs)
         .build();
 
     // execute tests

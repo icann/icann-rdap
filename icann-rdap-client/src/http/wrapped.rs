@@ -59,6 +59,7 @@ impl ClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
+        timeout_secs: Option<u64>,
         // TODO uncomment after deciding to expose this in the API.
         // max_retry_seconds: Option<u32>,
         // default_retry_seconds: Option<u32>,
@@ -77,6 +78,7 @@ impl ClientConfig {
                 follow_redirects: follow_redirects.unwrap_or(default_cc.follow_redirects),
                 host,
                 origin,
+                timeout_secs: timeout_secs.unwrap_or(default_cc.timeout_secs),
             },
             request_options: default_ro,
             // TODO uncomment after deciding to expose this in the API.
@@ -100,6 +102,7 @@ impl ClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
+        timeout_secs: Option<u64>,
         // TODO uncomment after deciding to expose this in the API.
         // max_retry_seconds: Option<u32>,
         // default_retry_seconds: Option<u32>,
@@ -117,6 +120,7 @@ impl ClientConfig {
                 follow_redirects: follow_redirects.unwrap_or(self.client_config.follow_redirects),
                 host: host.map_or(self.client_config.host.clone(), Some),
                 origin: origin.map_or(self.client_config.origin.clone(), Some),
+                timeout_secs: timeout_secs.unwrap_or(self.client_config.timeout_secs),
             },
             request_options: RequestOptions::default(),
             // TODO uncomment after deciding to expose this in the API.
@@ -191,25 +195,31 @@ pub(crate) async fn wrapped_request(
             debug!("HTTP version: {:?}", response.version());
             // loop if HTTP 429
             if matches!(response.status(), StatusCode::TOO_MANY_REQUESTS) {
-                let retry_after = response
+                let retry_after_header = response
                     .headers()
                     .get(RETRY_AFTER)
-                    .map(|value| value.to_str().unwrap().to_string())
-                    .unwrap_or(client.request_options.default_retry_seconds.to_string());
+                    .map(|value| value.to_str().unwrap().to_string());
+                let retry_after = if let Some(rt) = retry_after_header {
+                    info!("Server says too many requests and to retry-after '{rt}'.");
+                    rt
+                } else {
+                    info!("Server says too many requests but does not offer 'retry-after' value.");
+                    client.request_options.default_retry_seconds.to_string()
+                };
                 let mut wait_time_seconds =
                     if let Ok(date) = DateTime::parse_from_rfc2822(&retry_after) {
                         (date.with_timezone(&Utc) - Utc::now()).num_seconds() as u64
                     } else if let Ok(seconds) = retry_after.parse::<u64>() {
                         seconds
                     } else {
-                        debug!(
+                        info!(
                             "Unable to parse retry-after header value. Using {}",
                             client.request_options.default_retry_seconds
                         );
                         client.request_options.default_retry_seconds.into()
                     };
                 if wait_time_seconds == 0 {
-                    debug!("Given {wait_time_seconds} for retry-after. Does not make sense.");
+                    info!("Given {wait_time_seconds} for retry-after. Does not make sense.");
                     break;
                 }
                 if wait_time_seconds > client.request_options.max_retry_seconds as u64 {
@@ -219,7 +229,7 @@ pub(crate) async fn wrapped_request(
                     );
                     wait_time_seconds = client.request_options.max_retry_seconds as u64;
                 }
-                info!("Server says to wait {wait_time_seconds} seconds.");
+                info!("Waiting {wait_time_seconds} seconds to retry.");
                 tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_seconds + 1)).await;
                 tries += 1;
                 if tries > client.request_options.max_retries {

@@ -1,14 +1,14 @@
 //! Creates a Reqwest client.
 
-use lazy_static::lazy_static;
 pub use reqwest::header::{self, HeaderValue};
 pub use reqwest::Client as ReqwestClient;
 pub use reqwest::Error as ReqwestError;
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
+use lazy_static::lazy_static;
 
 #[cfg(not(target_arch = "wasm32"))]
-use {icann_rdap_common::VERSION, std::net::SocketAddr};
+use {icann_rdap_common::VERSION, std::net::SocketAddr, std::time::Duration};
 
 lazy_static! {
     static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
@@ -16,20 +16,31 @@ lazy_static! {
 
 /// Configures the HTTP client.
 pub struct ReqwestClientConfig {
-    /// This string is appended to the user agent. It is provided so
+    /// This string is appended to the user agent.
+    ///
+    /// It is provided so
     /// library users may identify their programs.
+    /// This is ignored on wasm32.
     pub user_agent_suffix: String,
 
     /// If set to true, connections will be required to use HTTPS.
+    ///
+    /// This is ignored on wasm32.
     pub https_only: bool,
 
     /// If set to true, invalid host names will be accepted.
+    ///
+    /// This is ignored on wasm32.
     pub accept_invalid_host_names: bool,
 
     /// If set to true, invalid certificates will be accepted.
+    ///
+    /// This is ignored on wasm32.
     pub accept_invalid_certificates: bool,
 
     /// If true, HTTP redirects will be followed.
+    ///
+    /// This is ignored on wasm32.
     pub follow_redirects: bool,
 
     /// Specify Host
@@ -39,6 +50,13 @@ pub struct ReqwestClientConfig {
     ///
     /// Most browsers ignore this by default.
     pub origin: Option<HeaderValue>,
+
+    /// Query timeout in seconds.
+    ///
+    /// This corresponds to the total timeout of the request (connection plus reading all the data).
+    ///
+    /// This is ignored on wasm32.
+    pub timeout_secs: u64,
 }
 
 impl Default for ReqwestClientConfig {
@@ -51,6 +69,7 @@ impl Default for ReqwestClientConfig {
             follow_redirects: true,
             host: None,
             origin: None,
+            timeout_secs: 60,
         }
     }
 }
@@ -66,6 +85,7 @@ impl ReqwestClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
+        timeout_secs: Option<u64>,
     ) -> Self {
         let default = ReqwestClientConfig::default();
         Self {
@@ -78,6 +98,7 @@ impl ReqwestClientConfig {
             follow_redirects: follow_redirects.unwrap_or(default.follow_redirects),
             host,
             origin,
+            timeout_secs: timeout_secs.unwrap_or(default.timeout_secs),
         }
     }
 
@@ -92,6 +113,7 @@ impl ReqwestClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
+        timeout_secs: Option<u64>,
     ) -> Self {
         Self {
             user_agent_suffix: user_agent_suffix.unwrap_or(self.user_agent_suffix.clone()),
@@ -103,6 +125,7 @@ impl ReqwestClientConfig {
             follow_redirects: follow_redirects.unwrap_or(self.follow_redirects),
             host: host.map_or(self.host.clone(), Some),
             origin: origin.map_or(self.origin.clone(), Some),
+            timeout_secs: timeout_secs.unwrap_or(self.timeout_secs),
         }
     }
 }
@@ -123,6 +146,7 @@ pub fn create_reqwest_client(config: &ReqwestClientConfig) -> Result<ReqwestClie
         reqwest::redirect::Policy::none()
     };
     client = client
+        .timeout(Duration::from_secs(config.timeout_secs))
         .user_agent(format!(
             "icann_rdap client {VERSION} {}",
             config.user_agent_suffix
@@ -156,6 +180,7 @@ pub fn create_reqwest_client_with_addr(
         reqwest::redirect::Policy::none()
     };
     client = client
+        .timeout(Duration::from_secs(config.timeout_secs))
         .user_agent(format!(
             "icann_rdap client {VERSION} {}",
             config.user_agent_suffix

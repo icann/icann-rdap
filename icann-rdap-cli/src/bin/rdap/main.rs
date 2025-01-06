@@ -255,6 +255,18 @@ struct Cli {
     )]
     allow_invalid_certificates: bool,
 
+    /// Set the query timeout.
+    ///
+    /// This values specifies, in seconds, the total time to connect and read all
+    /// the data from a connection.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TIMEOUT_SECS",
+        default_value = "60"
+    )]
+    timeout_secs: u64,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -559,6 +571,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         .https_only(!cli.allow_http)
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
+        .timeout_secs(cli.timeout_secs)
         .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
