@@ -133,6 +133,12 @@ struct Cli {
     #[arg(long, required = false, env = "RDAP_TEST_SKIP_ORIGIN")]
     skip_origin: bool,
 
+    /// Only test one address.
+    ///
+    /// Only test one address per address family.
+    #[arg(long, required = false, env = "RDAP_TEST_ONE_ADDR")]
+    one_addr: bool,
+
     /// Origin header value.
     ///
     /// Specifies the origin header value.
@@ -367,6 +373,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         expect_extensions: cli.expect_extensions,
         expect_groups,
         allow_unregistered_extensions: cli.allow_unregistered_extensions,
+        one_addr: cli.one_addr,
     };
 
     let client_config = ClientConfig::builder()

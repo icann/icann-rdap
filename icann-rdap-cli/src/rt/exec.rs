@@ -31,6 +31,7 @@ pub struct TestOptions {
     pub expect_extensions: Vec<String>,
     pub expect_groups: Vec<ExtensionGroup>,
     pub allow_unregistered_extensions: bool,
+    pub one_addr: bool,
 }
 
 #[derive(Clone)]
@@ -122,10 +123,11 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     let dns_data = get_dns_records(host).await?;
     let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
 
+    let mut more_runs = true;
     for v4 in dns_data.v4_addrs {
         // test run without origin
         let mut test_run = TestRun::new_v4(vec![], v4, port);
-        if !options.skip_v4 {
+        if !options.skip_v4 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
@@ -134,7 +136,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
 
         // test run with origin
         let mut test_run = TestRun::new_v4(vec![RunFeature::OriginHeader], v4, port);
-        if !options.skip_v4 && !options.skip_origin {
+        if !options.skip_v4 && !options.skip_origin && more_runs {
             let client_config = ClientConfig::from_config(client_config)
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
@@ -143,11 +145,16 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
+        if options.one_addr {
+            more_runs = false;
+        }
     }
+
+    let mut more_runs = true;
     for v6 in dns_data.v6_addrs {
         // test run without origin
         let mut test_run = TestRun::new_v6(vec![], v6, port);
-        if !options.skip_v6 {
+        if !options.skip_v6 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
@@ -156,7 +163,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
 
         // test run with origin
         let mut test_run = TestRun::new_v6(vec![RunFeature::OriginHeader], v6, port);
-        if !options.skip_v6 {
+        if !options.skip_v6 && !options.skip_origin && more_runs {
             let client_config = ClientConfig::from_config(client_config)
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
@@ -165,6 +172,9 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
+        if options.one_addr {
+            more_runs = false;
+        }
     }
 
     test_results.end(options);
