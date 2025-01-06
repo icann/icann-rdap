@@ -22,16 +22,16 @@ use {
 /// Used by the request functions.
 #[derive(Clone, Copy)]
 pub struct RequestOptions {
-    pub(crate) max_retry_seconds: u32,
-    pub(crate) default_retry_seconds: u32,
+    pub(crate) max_retry_secs: u32,
+    pub(crate) def_retry_secs: u32,
     pub(crate) max_retries: u16,
 }
 
 impl Default for RequestOptions {
     fn default() -> Self {
         Self {
-            max_retry_seconds: 120,
-            default_retry_seconds: 120,
+            max_retry_secs: 120,
+            def_retry_secs: 60,
             max_retries: 1,
         }
     }
@@ -60,10 +60,9 @@ impl ClientConfig {
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
         timeout_secs: Option<u64>,
-        // TODO uncomment after deciding to expose this in the API.
-        // max_retry_seconds: Option<u32>,
-        // default_retry_seconds: Option<u32>,
-        // max_retries: Option<u16>,
+        max_retry_secs: Option<u32>,
+        def_retry_secs: Option<u32>,
+        max_retries: Option<u16>,
     ) -> Self {
         let default_cc = ReqwestClientConfig::default();
         let default_ro = RequestOptions::default();
@@ -80,14 +79,11 @@ impl ClientConfig {
                 origin,
                 timeout_secs: timeout_secs.unwrap_or(default_cc.timeout_secs),
             },
-            request_options: default_ro,
-            // TODO uncomment after deciding to expose this in the API.
-            // request_options: RequestOptions {
-            //     max_retry_seconds: max_retry_seconds.unwrap_or(default_ro.max_retry_seconds),
-            //     default_retry_seconds: default_retry_seconds
-            //         .unwrap_or(default_ro.default_retry_seconds),
-            //     max_retries: max_retries.unwrap_or(default_ro.max_retries),
-            // },
+            request_options: RequestOptions {
+                max_retry_secs: max_retry_secs.unwrap_or(default_ro.max_retry_secs),
+                def_retry_secs: def_retry_secs.unwrap_or(default_ro.def_retry_secs),
+                max_retries: max_retries.unwrap_or(default_ro.max_retries),
+            },
         }
     }
 
@@ -103,10 +99,9 @@ impl ClientConfig {
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
         timeout_secs: Option<u64>,
-        // TODO uncomment after deciding to expose this in the API.
-        // max_retry_seconds: Option<u32>,
-        // default_retry_seconds: Option<u32>,
-        // max_retries: Option<u16>,
+        max_retry_secs: Option<u32>,
+        def_retry_secs: Option<u32>,
+        max_retries: Option<u16>,
     ) -> Self {
         Self {
             client_config: ReqwestClientConfig {
@@ -122,15 +117,11 @@ impl ClientConfig {
                 origin: origin.map_or(self.client_config.origin.clone(), Some),
                 timeout_secs: timeout_secs.unwrap_or(self.client_config.timeout_secs),
             },
-            request_options: RequestOptions::default(),
-            // TODO uncomment after deciding to expose this in the API.
-            // request_options: RequestOptions {
-            //     max_retry_seconds: max_retry_seconds
-            //         .unwrap_or(self.request_options.max_retry_seconds),
-            //     default_retry_seconds: default_retry_seconds
-            //         .unwrap_or(self.request_options.default_retry_seconds),
-            //     max_retries: max_retries.unwrap_or(self.request_options.max_retries),
-            // },
+            request_options: RequestOptions {
+                max_retry_secs: max_retry_secs.unwrap_or(self.request_options.max_retry_secs),
+                def_retry_secs: def_retry_secs.unwrap_or(self.request_options.def_retry_secs),
+                max_retries: max_retries.unwrap_or(self.request_options.max_retries),
+            },
         }
     }
 }
@@ -204,7 +195,7 @@ pub(crate) async fn wrapped_request(
                     rt
                 } else {
                     info!("Server says too many requests but does not offer 'retry-after' value.");
-                    client.request_options.default_retry_seconds.to_string()
+                    client.request_options.def_retry_secs.to_string()
                 };
                 let mut wait_time_seconds =
                     if let Ok(date) = DateTime::parse_from_rfc2822(&retry_after) {
@@ -214,20 +205,20 @@ pub(crate) async fn wrapped_request(
                     } else {
                         info!(
                             "Unable to parse retry-after header value. Using {}",
-                            client.request_options.default_retry_seconds
+                            client.request_options.def_retry_secs
                         );
-                        client.request_options.default_retry_seconds.into()
+                        client.request_options.def_retry_secs.into()
                     };
                 if wait_time_seconds == 0 {
                     info!("Given {wait_time_seconds} for retry-after. Does not make sense.");
-                    break;
+                    wait_time_seconds = client.request_options.def_retry_secs as u64;
                 }
-                if wait_time_seconds > client.request_options.max_retry_seconds as u64 {
+                if wait_time_seconds > client.request_options.max_retry_secs as u64 {
                     info!(
                         "Server is asking to wait longer than configured max of {}.",
-                        client.request_options.max_retry_seconds
+                        client.request_options.max_retry_secs
                     );
-                    wait_time_seconds = client.request_options.max_retry_seconds as u64;
+                    wait_time_seconds = client.request_options.max_retry_secs as u64;
                 }
                 info!("Waiting {wait_time_seconds} seconds to retry.");
                 tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_seconds + 1)).await;

@@ -267,6 +267,39 @@ struct Cli {
     )]
     timeout_secs: u64,
 
+    /// Maximum retry wait time.
+    ///
+    /// Sets the maximum number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code with a retry-after value.
+    /// That is, the value to used is no greater than this setting.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_MAX_RETRY_SECS",
+        default_value = "120"
+    )]
+    max_retry_secs: u32,
+
+    /// Default retry wait time.
+    ///
+    /// Sets the number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code without a retry-after value
+    /// or when the retry-after value does not make sense.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_DEF_RETRY_SECS",
+        default_value = "60"
+    )]
+    def_retry_secs: u32,
+
+    /// Maximum number of retries.
+    ///
+    /// This sets the maximum number of retries when a server signals too many
+    /// requests have been sent using an HTTP 429 status code.
+    #[arg(long, required = false, env = "RDAP_MAX_RETRIES", default_value = "1")]
+    max_retries: u16,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -572,6 +605,9 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
         .timeout_secs(cli.timeout_secs)
+        .max_retry_secs(cli.max_retry_secs)
+        .def_retry_secs(cli.def_retry_secs)
+        .max_retries(cli.max_retries)
         .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {

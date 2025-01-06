@@ -88,7 +88,7 @@ struct Cli {
     ///
     /// When given, allows connections to RDAP servers using HTTP.
     /// Otherwise, only HTTPS is allowed.
-    #[arg(short = 'T', long, required = false, env = "RDAP_ALLOW_HTTP")]
+    #[arg(short = 'T', long, required = false, env = "RDAP_TEST_ALLOW_HTTP")]
     allow_http: bool,
 
     /// Allow invalid host names.
@@ -114,6 +114,44 @@ struct Cli {
         env = "RDAP_TEST_ALLOW_INVALID_CERTIFICATES"
     )]
     allow_invalid_certificates: bool,
+
+    /// Maximum retry wait time.
+    ///
+    /// Sets the maximum number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code with a retry-after value.
+    /// That is, the value to used is no greater than this setting.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TEST_MAX_RETRY_SECS",
+        default_value = "120"
+    )]
+    max_retry_secs: u32,
+
+    /// Default retry wait time.
+    ///
+    /// Sets the number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code without a retry-after value
+    /// or when the retry-after value does not make sense.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TEST_DEF_RETRY_SECS",
+        default_value = "60"
+    )]
+    def_retry_secs: u32,
+
+    /// Maximum number of retries.
+    ///
+    /// This sets the maximum number of retries when a server signals too many
+    /// requests have been sent using an HTTP 429 status code.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TEST_MAX_RETRIES",
+        default_value = "1"
+    )]
+    max_retries: u16,
 
     /// Set the query timeout.
     ///
@@ -395,6 +433,9 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .accept_invalid_certificates(cli.allow_invalid_certificates)
         .follow_redirects(cli.follow_redirects)
         .timeout_secs(cli.timeout_secs)
+        .max_retry_secs(cli.max_retry_secs)
+        .def_retry_secs(cli.def_retry_secs)
+        .max_retries(cli.max_retries)
         .build();
 
     // execute tests
