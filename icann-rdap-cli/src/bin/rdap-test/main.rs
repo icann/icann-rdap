@@ -84,6 +84,17 @@ struct Cli {
     )]
     log_level: LogLevel,
 
+    /// DNS Resolver
+    ///
+    /// Specifies the address and port of the DNS resolver to query.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TEST_DNS_RESOLVER",
+        default_value = "8.8.8.8:53"
+    )]
+    dns_resolver: String,
+
     /// Allow HTTP connections.
     ///
     /// When given, allows connections to RDAP servers using HTTP.
@@ -424,6 +435,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         expect_groups,
         allow_unregistered_extensions: cli.allow_unregistered_extensions,
         one_addr: cli.one_addr,
+        dns_resolver: Some(cli.dns_resolver),
     };
 
     let client_config = ClientConfig::builder()

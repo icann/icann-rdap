@@ -32,6 +32,7 @@ pub struct TestOptions {
     pub expect_groups: Vec<ExtensionGroup>,
     pub allow_unregistered_extensions: bool,
     pub one_addr: bool,
+    pub dns_resolver: Option<String>,
 }
 
 #[derive(Clone)]
@@ -81,6 +82,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         expect_extensions: extensions,
         expect_groups: options.expect_groups.clone(),
         origin_value: options.origin_value.clone(),
+        dns_resolver: options.dns_resolver.clone(),
         ..*options
     };
 
@@ -120,7 +122,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         .ok_or(TestExecutionError::NoHostToResolve)?;
 
     info!("Testing {query_url}");
-    let dns_data = get_dns_records(host).await?;
+    let dns_data = get_dns_records(host, options).await?;
     let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
 
     let mut more_runs = true;
@@ -182,8 +184,10 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     Ok(test_results)
 }
 
-async fn get_dns_records(host: &str) -> Result<DnsData, TestExecutionError> {
-    let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)
+async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, TestExecutionError> {
+    let def_dns_resolver = "8.8.8.8:53".to_string();
+    let dns_resolver = options.dns_resolver.as_ref().unwrap_or(&def_dns_resolver);
+    let conn = UdpClientConnection::new(dns_resolver.parse()?)
         .unwrap()
         .new_stream(None);
     let (mut client, bg) = AsyncClient::connect(conn).await.unwrap();
