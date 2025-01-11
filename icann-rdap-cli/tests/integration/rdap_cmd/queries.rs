@@ -16,7 +16,7 @@ use crate::test_jig::TestJig;
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q_domain: &str) {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name(db_domain).build())
         .await
@@ -34,7 +34,7 @@ async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_tld_WHEN_query_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name("example").build())
         .await
@@ -53,7 +53,7 @@ async fn GIVEN_tld_WHEN_query_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_entity_WHEN_query_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_entity(&Entity::basic().handle("foo").build())
         .await
@@ -71,7 +71,7 @@ async fn GIVEN_entity_WHEN_query_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_nameserver_WHEN_query_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
         &Nameserver::basic()
@@ -94,7 +94,7 @@ async fn GIVEN_nameserver_WHEN_query_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_autnum_WHEN_query_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
         .await
@@ -112,7 +112,7 @@ async fn GIVEN_autnum_WHEN_query_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_network_ip_WHEN_query_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
@@ -138,7 +138,7 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[case] q_cidr: &str) {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
         &Network::basic()
@@ -161,7 +161,7 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_url_WHEN_query_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
         .await
@@ -180,7 +180,7 @@ async fn GIVEN_url_WHEN_query_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new().await;
+    let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name("xn--caf-dma.example").build())
         .await
@@ -198,7 +198,7 @@ async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
 #[tokio::test(flavor = "multi_thread")]
 async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
     // GIVEN
-    let mut test_jig = TestJig::new_with_enable_domain_name_search().await;
+    let mut test_jig = TestJig::new_rdap_with_dn_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
         .await

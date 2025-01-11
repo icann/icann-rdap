@@ -4,7 +4,7 @@ use chrono::Utc;
 use cidr::IpCidr;
 use cidr::IpInet;
 use clap::{Args, Parser, Subcommand};
-use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::contact::Contact;
 use icann_rdap_common::contact::PostalAddress;
 use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;

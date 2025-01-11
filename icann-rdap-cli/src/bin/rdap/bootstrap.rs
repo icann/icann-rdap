@@ -1,11 +1,13 @@
 use crate::error::RdapCliError;
 use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
-use icann_rdap_client::query::{
-    bootstrap::{fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl},
-    qtype::QueryType,
+use icann_rdap_client::http::Client;
+use icann_rdap_client::iana::BootstrapStore;
+use icann_rdap_client::iana::PreferredUrl;
+use icann_rdap_client::{
+    iana::{fetch_bootstrap, qtype_to_bootstrap_url},
+    rdap::QueryType,
 };
 use icann_rdap_common::iana::IanaRegistryType;
-use reqwest::Client;
 use tracing::debug;
 
 /// Defines the type of bootstrapping to use.

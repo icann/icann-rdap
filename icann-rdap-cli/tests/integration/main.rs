@@ -1,6 +1,3 @@
-mod cache;
-mod check;
-mod queries;
-mod source;
+mod rdap_cmd;
+mod rdap_test_cmd;
 mod test_jig;
-mod url;

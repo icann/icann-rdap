@@ -1,36 +1,46 @@
 //! Creates a Reqwest client.
 
-use lazy_static::lazy_static;
-use reqwest::{
-    header::{self, HeaderValue},
-    Client,
-};
+pub use reqwest::header::{self, HeaderValue};
+pub use reqwest::Client as ReqwestClient;
+pub use reqwest::Error as ReqwestError;
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
+use lazy_static::lazy_static;
 
 #[cfg(not(target_arch = "wasm32"))]
-use {icann_rdap_common::VERSION, std::net::SocketAddr};
+use {icann_rdap_common::VERSION, std::net::SocketAddr, std::time::Duration};
 
 lazy_static! {
     static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
 }
 
 /// Configures the HTTP client.
-pub struct ClientConfig {
-    /// This string is appended to the user agent. It is provided so
+pub struct ReqwestClientConfig {
+    /// This string is appended to the user agent.
+    ///
+    /// It is provided so
     /// library users may identify their programs.
+    /// This is ignored on wasm32.
     pub user_agent_suffix: String,
 
     /// If set to true, connections will be required to use HTTPS.
+    ///
+    /// This is ignored on wasm32.
     pub https_only: bool,
 
     /// If set to true, invalid host names will be accepted.
+    ///
+    /// This is ignored on wasm32.
     pub accept_invalid_host_names: bool,
 
     /// If set to true, invalid certificates will be accepted.
+    ///
+    /// This is ignored on wasm32.
     pub accept_invalid_certificates: bool,
 
     /// If true, HTTP redirects will be followed.
+    ///
+    /// This is ignored on wasm32.
     pub follow_redirects: bool,
 
     /// Specify Host
@@ -40,11 +50,18 @@ pub struct ClientConfig {
     ///
     /// Most browsers ignore this by default.
     pub origin: Option<HeaderValue>,
+
+    /// Query timeout in seconds.
+    ///
+    /// This corresponds to the total timeout of the request (connection plus reading all the data).
+    ///
+    /// This is ignored on wasm32.
+    pub timeout_secs: u64,
 }
 
-impl Default for ClientConfig {
+impl Default for ReqwestClientConfig {
     fn default() -> Self {
-        ClientConfig {
+        ReqwestClientConfig {
             user_agent_suffix: "library".to_string(),
             https_only: true,
             accept_invalid_host_names: false,
@@ -52,12 +69,13 @@ impl Default for ClientConfig {
             follow_redirects: true,
             host: None,
             origin: None,
+            timeout_secs: 60,
         }
     }
 }
 
 #[buildstructor::buildstructor]
-impl ClientConfig {
+impl ReqwestClientConfig {
     #[builder]
     pub fn new(
         user_agent_suffix: Option<String>,
@@ -67,8 +85,9 @@ impl ClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
+        timeout_secs: Option<u64>,
     ) -> Self {
-        let default = ClientConfig::default();
+        let default = ReqwestClientConfig::default();
         Self {
             user_agent_suffix: user_agent_suffix.unwrap_or(default.user_agent_suffix),
             https_only: https_only.unwrap_or(default.https_only),
@@ -79,6 +98,7 @@ impl ClientConfig {
             follow_redirects: follow_redirects.unwrap_or(default.follow_redirects),
             host,
             origin,
+            timeout_secs: timeout_secs.unwrap_or(default.timeout_secs),
         }
     }
 
@@ -93,6 +113,7 @@ impl ClientConfig {
         follow_redirects: Option<bool>,
         host: Option<HeaderValue>,
         origin: Option<HeaderValue>,
+        timeout_secs: Option<u64>,
     ) -> Self {
         Self {
             user_agent_suffix: user_agent_suffix.unwrap_or(self.user_agent_suffix.clone()),
@@ -104,6 +125,7 @@ impl ClientConfig {
             follow_redirects: follow_redirects.unwrap_or(self.follow_redirects),
             host: host.map_or(self.host.clone(), Some),
             origin: origin.map_or(self.origin.clone(), Some),
+            timeout_secs: timeout_secs.unwrap_or(self.timeout_secs),
         }
     }
 }
@@ -113,7 +135,7 @@ impl ClientConfig {
 /// uses cases creating only one client per process is
 /// necessary.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
+pub fn create_reqwest_client(config: &ReqwestClientConfig) -> Result<ReqwestClient, ReqwestError> {
     let default_headers = default_headers(config);
 
     let mut client = reqwest::Client::builder();
@@ -124,6 +146,7 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
         reqwest::redirect::Policy::none()
     };
     client = client
+        .timeout(Duration::from_secs(config.timeout_secs))
         .user_agent(format!(
             "icann_rdap client {VERSION} {}",
             config.user_agent_suffix
@@ -142,11 +165,11 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
 /// uses cases creating only one client per process is
 /// necessary.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn create_client_with_addr(
-    config: &ClientConfig,
+pub fn create_reqwest_client_with_addr(
+    config: &ReqwestClientConfig,
     domain: &str,
     addr: SocketAddr,
-) -> Result<Client, reqwest::Error> {
+) -> Result<ReqwestClient, ReqwestError> {
     let default_headers = default_headers(config);
 
     let mut client = reqwest::Client::builder();
@@ -157,6 +180,7 @@ pub fn create_client_with_addr(
         reqwest::redirect::Policy::none()
     };
     client = client
+        .timeout(Duration::from_secs(config.timeout_secs))
         .user_agent(format!(
             "icann_rdap client {VERSION} {}",
             config.user_agent_suffix
@@ -178,7 +202,7 @@ pub fn create_client_with_addr(
 /// Note that the WASM version does not set redirect policy,
 /// https_only, or TLS settings.
 #[cfg(target_arch = "wasm32")]
-pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
+pub fn create_reqwest_client(config: &ReqwestClientConfig) -> Result<ReqwestClient, ReqwestError> {
     let default_headers = default_headers(config);
 
     let client = reqwest::Client::builder();
@@ -187,7 +211,7 @@ pub fn create_client(config: &ClientConfig) -> Result<Client, reqwest::Error> {
     Ok(client)
 }
 
-fn default_headers(config: &ClientConfig) -> header::HeaderMap {
+fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,

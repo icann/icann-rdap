@@ -77,7 +77,7 @@ pub fn is_redaction_registered(
 }
 
 /// This function takes a set of [RedactedName]s instead of just one,
-/// and runs them through [is_redacted_name].
+/// and runs them through [is_redaction_registered].
 pub fn are_redactions_registered(
     rdap_response: &RdapResponse,
     redaction_types: &[&RedactedName],
@@ -125,6 +125,7 @@ pub fn is_redaction_registered_for_role(
     false
 }
 
+/// Same as [is_redaction_registered_for_role] but takes an array of [EntityRole] references.
 pub fn are_redactions_registered_for_roles(
     rdap_response: &RdapResponse,
     redaction_type: &[&RedactedName],

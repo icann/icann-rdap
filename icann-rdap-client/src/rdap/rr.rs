@@ -4,7 +4,7 @@ use icann_rdap_common::check::Checks;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
-use crate::query::request::ResponseData;
+use crate::rdap::request::ResponseData;
 
 /// Types of RDAP servers.
 #[derive(Serialize, Deserialize, Display, Clone, Copy)]
@@ -54,4 +54,5 @@ pub struct RequestResponseOwned<'a> {
     pub checks: Checks,
 }
 
+/// A [Vec] of [RequestResponse].
 pub type RequestResponses<'a> = Vec<RequestResponse<'a>>;

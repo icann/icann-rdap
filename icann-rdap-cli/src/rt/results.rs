@@ -4,7 +4,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use chrono::{DateTime, Utc};
 use icann_rdap_client::{
     md::{string::StringUtil, table::MultiPartTable, MdOptions},
-    query::request::ResponseData,
+    rdap::ResponseData,
     RdapClientError,
 };
 use icann_rdap_common::{

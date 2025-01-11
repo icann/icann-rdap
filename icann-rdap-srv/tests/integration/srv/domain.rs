@@ -1,9 +1,10 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
-    create_client,
-    query::{qtype::QueryType, request::rdap_request},
-    ClientConfig, RdapClientError,
+    http::create_client,
+    http::ClientConfig,
+    rdap::{rdap_request, QueryType},
+    RdapClientError,
 };
 use icann_rdap_common::response::domain::Domain;
 use icann_rdap_srv::storage::{CommonConfig, StoreOps};

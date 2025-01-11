@@ -9,11 +9,8 @@ use icann_rdap_common::{
         IanaRegistryType,
     },
 };
-use reqwest::Client;
 
-use crate::{iana_request::iana_request, RdapClientError};
-
-use super::qtype::QueryType;
+use crate::{http::Client, iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
@@ -140,6 +137,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError>;
 }
 
+/// A trait to find the preferred URL from a bootstrap service.
 pub trait PreferredUrl {
     fn preferred_url(self) -> Result<String, RdapClientError>;
 }
@@ -154,7 +152,7 @@ impl PreferredUrl for Vec<String> {
 ///
 /// This implementation of [BootstrapStore] keeps registries in memory. Every new instance starts with
 /// no registries in memory. They are added and maintained over time by calls to [MemoryBootstrapStore::put_bootstrap_registry()] by the
-/// machinery of [crate::query::request::rdap_bootstrapped_request()] and [crate::query::bootstrap::qtype_to_bootstrap_url()].
+/// machinery of [crate::rdap::request::rdap_bootstrapped_request()] and [crate::iana::bootstrap::qtype_to_bootstrap_url()].
 ///
 /// Ideally, this should be kept in the same scope as [reqwest::Client].
 pub struct MemoryBootstrapStore {
@@ -269,6 +267,7 @@ impl BootstrapStore for MemoryBootstrapStore {
     }
 }
 
+/// Trait to determine if a bootstrap registry is past its expiration (i.e. needs to be rechecked).
 pub trait RegistryHasNotExpired {
     fn registry_has_not_expired(&self) -> bool;
 }
@@ -283,6 +282,7 @@ impl RegistryHasNotExpired for Option<(IanaRegistry, HttpData)> {
     }
 }
 
+/// Given a [QueryType], it will get the bootstrap URL.
 pub async fn qtype_to_bootstrap_url<F>(
     client: &Client,
     store: &dyn BootstrapStore,
@@ -335,6 +335,7 @@ where
     }
 }
 
+/// Fetches a bootstrap registry for a [BootstrapStore].
 pub async fn fetch_bootstrap<F>(
     reg_type: &IanaRegistryType,
     client: &Client,
@@ -360,7 +361,7 @@ mod test {
         iana::{IanaRegistry, IanaRegistryType},
     };
 
-    use crate::query::{bootstrap::PreferredUrl, qtype::QueryType};
+    use crate::{iana::bootstrap::PreferredUrl, rdap::QueryType};
 
     use super::{BootstrapStore, MemoryBootstrapStore};
 

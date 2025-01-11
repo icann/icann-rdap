@@ -3,8 +3,9 @@ use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
 use error::RdapCliError;
 use icann_rdap_cli::dirs;
-use icann_rdap_client::client::create_client;
-use icann_rdap_client::client::ClientConfig;
+use icann_rdap_client::http::create_client;
+use icann_rdap_client::http::Client;
+use icann_rdap_client::http::ClientConfig;
 use icann_rdap_common::check::CheckClass;
 use query::InrBackupBootstrap;
 use query::ProcessType;
@@ -21,10 +22,9 @@ use write::FmtWrite;
 use write::PagerWrite;
 
 use clap::{ArgGroup, Parser, ValueEnum};
-use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::VERSION;
 use query::OutputType;
-use reqwest::Client;
 use tokio::{join, task::spawn_blocking};
 
 use crate::query::do_query;
@@ -254,6 +254,51 @@ struct Cli {
         env = "RDAP_ALLOW_INVALID_CERTIFICATES"
     )]
     allow_invalid_certificates: bool,
+
+    /// Set the query timeout.
+    ///
+    /// This values specifies, in seconds, the total time to connect and read all
+    /// the data from a connection.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TIMEOUT_SECS",
+        default_value = "60"
+    )]
+    timeout_secs: u64,
+
+    /// Maximum retry wait time.
+    ///
+    /// Sets the maximum number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code with a retry-after value.
+    /// That is, the value to used is no greater than this setting.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_MAX_RETRY_SECS",
+        default_value = "120"
+    )]
+    max_retry_secs: u32,
+
+    /// Default retry wait time.
+    ///
+    /// Sets the number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code without a retry-after value
+    /// or when the retry-after value does not make sense.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_DEF_RETRY_SECS",
+        default_value = "60"
+    )]
+    def_retry_secs: u32,
+
+    /// Maximum number of retries.
+    ///
+    /// This sets the maximum number of retries when a server signals too many
+    /// requests have been sent using an HTTP 429 status code.
+    #[arg(long, required = false, env = "RDAP_MAX_RETRIES", default_value = "1")]
+    max_retries: u16,
 
     /// Reset.
     ///
@@ -559,6 +604,10 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         .https_only(!cli.allow_http)
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
+        .timeout_secs(cli.timeout_secs)
+        .max_retry_secs(cli.max_retry_secs)
+        .def_retry_secs(cli.def_retry_secs)
+        .max_retries(cli.max_retries)
         .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {

@@ -1,16 +1,15 @@
 //! Function to execute tests.
 
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
 use hickory_client::client::{AsyncClient, ClientConnection, ClientHandle};
 use hickory_client::rr::{DNSClass, Name, RecordType};
 use hickory_client::udp::UdpClientConnection;
-use icann_rdap_client::client::create_client_with_addr;
-use icann_rdap_client::{create_client, rdap_url_request, ClientConfig};
-use icann_rdap_client::{
-    query::bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
-    QueryType, RdapClientError,
-};
+use icann_rdap_client::http::create_client_with_addr;
+use icann_rdap_client::iana::{qtype_to_bootstrap_url, BootstrapStore};
+use icann_rdap_client::{http::create_client, http::ClientConfig, rdap::rdap_url_request};
+use icann_rdap_client::{rdap::QueryType, RdapClientError};
 use icann_rdap_common::response::get_related_links;
 use icann_rdap_common::response::types::ExtensionId;
 use reqwest::header::HeaderValue;
@@ -33,6 +32,8 @@ pub struct TestOptions {
     pub expect_extensions: Vec<String>,
     pub expect_groups: Vec<ExtensionGroup>,
     pub allow_unregistered_extensions: bool,
+    pub one_addr: bool,
+    pub dns_resolver: Option<String>,
 }
 
 #[derive(Clone)]
@@ -82,6 +83,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         expect_extensions: extensions,
         expect_groups: options.expect_groups.clone(),
         origin_value: options.origin_value.clone(),
+        dns_resolver: options.dns_resolver.clone(),
         ..*options
     };
 
@@ -121,13 +123,14 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         .ok_or(TestExecutionError::NoHostToResolve)?;
 
     info!("Testing {query_url}");
-    let dns_data = get_dns_records(host).await?;
+    let dns_data = get_dns_records(host, options).await?;
     let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
 
+    let mut more_runs = true;
     for v4 in dns_data.v4_addrs {
         // test run without origin
         let mut test_run = TestRun::new_v4(vec![], v4, port);
-        if !options.skip_v4 {
+        if !options.skip_v4 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
@@ -136,7 +139,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
 
         // test run with origin
         let mut test_run = TestRun::new_v4(vec![RunFeature::OriginHeader], v4, port);
-        if !options.skip_v4 && !options.skip_origin {
+        if !options.skip_v4 && !options.skip_origin && more_runs {
             let client_config = ClientConfig::from_config(client_config)
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
@@ -145,11 +148,16 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
+        if options.one_addr {
+            more_runs = false;
+        }
     }
+
+    let mut more_runs = true;
     for v6 in dns_data.v6_addrs {
         // test run without origin
         let mut test_run = TestRun::new_v6(vec![], v6, port);
-        if !options.skip_v6 {
+        if !options.skip_v6 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
@@ -158,7 +166,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
 
         // test run with origin
         let mut test_run = TestRun::new_v6(vec![RunFeature::OriginHeader], v6, port);
-        if !options.skip_v6 {
+        if !options.skip_v6 && !options.skip_origin && more_runs {
             let client_config = ClientConfig::from_config(client_config)
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
@@ -167,6 +175,9 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             test_run = test_run.end(rdap_response, options);
         }
         test_results.add_test_run(test_run);
+        if options.one_addr {
+            more_runs = false;
+        }
     }
 
     test_results.end(options);
@@ -174,8 +185,27 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     Ok(test_results)
 }
 
-async fn get_dns_records(host: &str) -> Result<DnsData, TestExecutionError> {
-    let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)
+async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, TestExecutionError> {
+    // short circuit dns if these are ip addresses
+    if let Ok(ip4) = Ipv4Addr::from_str(host) {
+        return Ok(DnsData {
+            v4_cname: None,
+            v6_cname: None,
+            v4_addrs: vec![ip4],
+            v6_addrs: vec![],
+        });
+    } else if let Ok(ip6) = Ipv6Addr::from_str(host.trim_start_matches('[').trim_end_matches(']')) {
+        return Ok(DnsData {
+            v4_cname: None,
+            v6_cname: None,
+            v4_addrs: vec![],
+            v6_addrs: vec![ip6],
+        });
+    }
+
+    let def_dns_resolver = "8.8.8.8:53".to_string();
+    let dns_resolver = options.dns_resolver.as_ref().unwrap_or(&def_dns_resolver);
+    let conn = UdpClientConnection::new(dns_resolver.parse()?)
         .unwrap()
         .new_stream(None);
     let (mut client, bg) = AsyncClient::connect(conn).await.unwrap();

@@ -251,7 +251,7 @@ mod tests {
 
     use crate::{
         md::ToMd,
-        rr::{RequestData, SourceType},
+        rdap::rr::{RequestData, SourceType},
     };
 
     use super::MultiPartTable;
