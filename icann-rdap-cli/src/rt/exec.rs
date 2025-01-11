@@ -1,5 +1,6 @@
 //! Function to execute tests.
 
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
 use hickory_client::client::{AsyncClient, ClientConnection, ClientHandle};
@@ -185,6 +186,23 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
 }
 
 async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, TestExecutionError> {
+    // short circuit dns if these are ip addresses
+    if let Ok(ip4) = Ipv4Addr::from_str(host) {
+        return Ok(DnsData {
+            v4_cname: None,
+            v6_cname: None,
+            v4_addrs: vec![ip4],
+            v6_addrs: vec![],
+        });
+    } else if let Ok(ip6) = Ipv6Addr::from_str(host.trim_start_matches('[').trim_end_matches(']')) {
+        return Ok(DnsData {
+            v4_cname: None,
+            v6_cname: None,
+            v4_addrs: vec![],
+            v6_addrs: vec![ip6],
+        });
+    }
+
     let def_dns_resolver = "8.8.8.8:53".to_string();
     let dns_resolver = options.dns_resolver.as_ref().unwrap_or(&def_dns_resolver);
     let conn = UdpClientConnection::new(dns_resolver.parse()?)
