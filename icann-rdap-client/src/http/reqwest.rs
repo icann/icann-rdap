@@ -77,6 +77,7 @@ impl Default for ReqwestClientConfig {
 #[buildstructor::buildstructor]
 impl ReqwestClientConfig {
     #[builder]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_agent_suffix: Option<String>,
         https_only: Option<bool>,

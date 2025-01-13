@@ -141,7 +141,7 @@ fn do_variants(variants: &[Variant], params: MdParams) -> String {
                 .join(", "),
         ))
     });
-    md.push_str("\n");
+    md.push('\n');
     md
 }
 
