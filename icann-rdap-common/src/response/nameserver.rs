@@ -131,6 +131,7 @@ impl Nameserver {
     ///   .build().unwrap();
     /// ```
     #[builder(entry = "basic")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_ldh<T: Into<String>>(
         ldh_name: T,
         addresses: Vec<String>,

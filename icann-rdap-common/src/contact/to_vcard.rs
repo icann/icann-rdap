@@ -21,7 +21,6 @@ impl Contact {
     /// let v = contact.to_vcard();
     /// let json = serde_json::to_string(&v);
     /// ```
-
     pub fn to_vcard(&self) -> Vec<Value> {
         // start the vcard with the version.
         let mut vcard: Vec<Value> = vec![json!(["version", {}, "text", "4.0"])];

@@ -33,7 +33,7 @@ impl<'a> PgTx<'a> {
 }
 
 #[async_trait]
-impl<'a> TxHandle for PgTx<'a> {
+impl TxHandle for PgTx<'_> {
     async fn add_entity(&mut self, _entity: &Entity) -> Result<(), RdapServerError> {
         todo!()
     }

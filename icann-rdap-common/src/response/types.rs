@@ -512,6 +512,7 @@ pub struct ObjectCommon {
 #[buildstructor::buildstructor]
 impl ObjectCommon {
     #[builder(entry = "domain")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_domain(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -536,6 +537,7 @@ impl ObjectCommon {
     }
 
     #[builder(entry = "ip_network")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_ip_network(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -560,6 +562,7 @@ impl ObjectCommon {
     }
 
     #[builder(entry = "autnum")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_autnum(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -584,6 +587,7 @@ impl ObjectCommon {
     }
 
     #[builder(entry = "nameserver")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_nameserver(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -608,6 +612,7 @@ impl ObjectCommon {
     }
 
     #[builder(entry = "entity")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_entity(
         handle: Option<String>,
         remarks: Option<Remarks>,

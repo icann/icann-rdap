@@ -76,7 +76,7 @@ pub struct MdParams<'a> {
     pub req_data: &'a RequestData<'a>,
 }
 
-impl<'a> MdParams<'a> {
+impl MdParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
         MdParams {
             parent_type,

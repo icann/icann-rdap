@@ -199,6 +199,7 @@ impl Network {
     ///   .build().unwrap();
     /// ```
     #[builder(entry = "basic")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_network(
         cidr: String,
         handle: Option<String>,
@@ -240,6 +241,7 @@ impl Network {
     }
 
     #[builder(entry = "with_options")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_network_with_options(
         cidr: String,
         handle: Option<String>,
