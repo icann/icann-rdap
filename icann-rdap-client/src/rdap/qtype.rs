@@ -1,8 +1,11 @@
 //! Defines the various types of RDAP queries.
-use std::{net::IpAddr, str::FromStr};
+use std::{
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
 
-use cidr_utils::cidr::IpInet;
-use icann_rdap_common::check::string::StringCheck;
+use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
+use icann_rdap_common::{check::string::StringCheck, dns_types::DomainName};
 use lazy_static::lazy_static;
 use pct_str::{PctString, URIReserved};
 use regex::Regex;
@@ -14,31 +17,31 @@ use crate::RdapClientError;
 #[derive(Display, Debug)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]
-    IpV4Addr(String),
+    IpV4Addr(Ipv4Addr),
 
     #[strum(serialize = "IpV6 Address Lookup")]
-    IpV6Addr(String),
+    IpV6Addr(Ipv6Addr),
 
     #[strum(serialize = "IpV4 CIDR Lookup")]
-    IpV4Cidr(String),
+    IpV4Cidr(Ipv4Cidr),
 
     #[strum(serialize = "IpV6 CIDR Lookup")]
-    IpV6Cidr(String),
+    IpV6Cidr(Ipv6Cidr),
 
     #[strum(serialize = "Autonomous System Number Lookup")]
-    AsNumber(String),
+    AsNumber(u32),
 
     #[strum(serialize = "Domain Lookup")]
-    Domain(String),
+    Domain(DomainName),
 
     #[strum(serialize = "A-Label Domain Lookup")]
-    ALable(String),
+    ALabel(DomainName),
 
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
 
     #[strum(serialize = "Nameserver Lookup")]
-    Nameserver(String),
+    Nameserver(DomainName),
 
     #[strum(serialize = "Entity Name Search")]
     EntityNameSearch(String),
@@ -53,13 +56,13 @@ pub enum QueryType {
     DomainNsNameSearch(String),
 
     #[strum(serialize = "Domain Nameserver IP Address Search")]
-    DomainNsIpSearch(String),
+    DomainNsIpSearch(IpAddr),
 
     #[strum(serialize = "Nameserver Name Search")]
     NameserverNameSearch(String),
 
     #[strum(serialize = "Nameserver IP Address Search")]
-    NameserverIpSearch(String),
+    NameserverIpSearch(IpAddr),
 
     #[strum(serialize = "Server Help Lookup")]
     Help,
@@ -74,34 +77,41 @@ impl QueryType {
         match self {
             QueryType::IpV4Addr(value) => Ok(format!(
                 "{base_url}/ip/{}",
-                PctString::encode(value.chars(), URIReserved)
+                PctString::encode(value.to_string().chars(), URIReserved)
             )),
             QueryType::IpV6Addr(value) => Ok(format!(
                 "{base_url}/ip/{}",
-                PctString::encode(value.chars(), URIReserved)
+                PctString::encode(value.to_string().chars(), URIReserved)
             )),
-            QueryType::IpV4Cidr(value) => ip_cidr_query(value, base_url),
-            QueryType::IpV6Cidr(value) => ip_cidr_query(value, base_url),
-            QueryType::AsNumber(value) => {
-                let autnum =
-                    value.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
-                Ok(format!(
-                    "{base_url}/autnum/{}",
-                    PctString::encode(autnum.chars(), URIReserved)
-                ))
-            }
+            QueryType::IpV4Cidr(value) => Ok(format!(
+                "{base_url}/ip/{}/{}",
+                PctString::encode(value.first_address().to_string().chars(), URIReserved),
+                PctString::encode(value.network_length().to_string().chars(), URIReserved)
+            )),
+            QueryType::IpV6Cidr(value) => Ok(format!(
+                "{base_url}/ip/{}/{}",
+                PctString::encode(value.first_address().to_string().chars(), URIReserved),
+                PctString::encode(value.network_length().to_string().chars(), URIReserved)
+            )),
+            QueryType::AsNumber(value) => Ok(format!(
+                "{base_url}/autnum/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
             QueryType::Domain(value) => Ok(format!(
                 "{base_url}/domain/{}",
-                PctString::encode(value.chars(), URIReserved)
+                PctString::encode(value.trim_leading_dot().chars(), URIReserved)
             )),
-            QueryType::ALable(value) => a_label_query(value, base_url),
+            QueryType::ALabel(value) => Ok(format!(
+                "{base_url}/domain/{}",
+                PctString::encode(value.to_ascii().chars(), URIReserved),
+            )),
             QueryType::Entity(value) => Ok(format!(
                 "{base_url}/entity/{}",
                 PctString::encode(value.chars(), URIReserved)
             )),
             QueryType::Nameserver(value) => Ok(format!(
                 "{base_url}/nameserver/{}",
-                PctString::encode(value.chars(), URIReserved)
+                PctString::encode(value.to_ascii().chars(), URIReserved)
             )),
             QueryType::EntityNameSearch(value) => search_query(value, "entities?fn", base_url),
             QueryType::EntityHandleSearch(value) => {
@@ -111,34 +121,85 @@ impl QueryType {
             QueryType::DomainNsNameSearch(value) => {
                 search_query(value, "domains?nsLdhName", base_url)
             }
-            QueryType::DomainNsIpSearch(value) => search_query(value, "domains?nsIp", base_url),
+            QueryType::DomainNsIpSearch(value) => {
+                search_query(&value.to_string(), "domains?nsIp", base_url)
+            }
             QueryType::NameserverNameSearch(value) => {
                 search_query(value, "nameserver?name=", base_url)
             }
-            QueryType::NameserverIpSearch(value) => search_query(value, "nameservers?ip", base_url),
+            QueryType::NameserverIpSearch(value) => {
+                search_query(&value.to_string(), "nameservers?ip", base_url)
+            }
             QueryType::Help => Ok(format!("{base_url}/help")),
             QueryType::Url(url) => Ok(url.to_owned()),
         }
     }
-}
 
-fn a_label_query(value: &str, base_url: &str) -> Result<String, RdapClientError> {
-    let domain = idna::domain_to_ascii(value).map_err(|_| RdapClientError::InvalidQueryValue)?;
-    Ok(format!(
-        "{base_url}/domain/{}",
-        PctString::encode(domain.chars(), URIReserved),
-    ))
-}
+    pub fn domain(domain_name: &str) -> Result<QueryType, RdapClientError> {
+        Ok(QueryType::Domain(DomainName::from_str(domain_name)?))
+    }
 
-fn ip_cidr_query(value: &str, base_url: &str) -> Result<String, RdapClientError> {
-    let values = value
-        .split_once('/')
-        .ok_or(RdapClientError::InvalidQueryValue)?;
-    Ok(format!(
-        "{base_url}/ip/{}/{}",
-        PctString::encode(values.0.chars(), URIReserved),
-        PctString::encode(values.1.chars(), URIReserved)
-    ))
+    pub fn alabel(alabel: &str) -> Result<QueryType, RdapClientError> {
+        Ok(QueryType::ALabel(DomainName::from_str(alabel)?))
+    }
+
+    pub fn ns(nameserver: &str) -> Result<QueryType, RdapClientError> {
+        Ok(QueryType::Nameserver(DomainName::from_str(nameserver)?))
+    }
+
+    pub fn autnum(autnum: &str) -> Result<QueryType, RdapClientError> {
+        let value = autnum
+            .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
+            .parse::<u32>()
+            .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(QueryType::AsNumber(value))
+    }
+
+    pub fn ipv4(ip: &str) -> Result<QueryType, RdapClientError> {
+        let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(QueryType::IpV4Addr(value))
+    }
+
+    pub fn ipv6(ip: &str) -> Result<QueryType, RdapClientError> {
+        let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(QueryType::IpV6Addr(value))
+    }
+
+    pub fn ipv4cidr(cidr: &str) -> Result<QueryType, RdapClientError> {
+        let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+            cidr,
+            cidr::parsers::parse_loose_ip,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        if let IpCidr::V4(v4) = value {
+            Ok(QueryType::IpV4Cidr(v4))
+        } else {
+            Err(RdapClientError::AmbiquousQueryType)
+        }
+    }
+
+    pub fn ipv6cidr(cidr: &str) -> Result<QueryType, RdapClientError> {
+        let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+            cidr,
+            cidr::parsers::parse_loose_ip,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        if let IpCidr::V6(v6) = value {
+            Ok(QueryType::IpV6Cidr(v6))
+        } else {
+            Err(RdapClientError::AmbiquousQueryType)
+        }
+    }
+
+    pub fn domain_ns_ip_search(ip: &str) -> Result<QueryType, RdapClientError> {
+        let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(QueryType::DomainNsIpSearch(value))
+    }
+
+    pub fn ns_ip_search(ip: &str) -> Result<QueryType, RdapClientError> {
+        let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(QueryType::NameserverIpSearch(value))
+    }
 }
 
 fn search_query(value: &str, path_query: &str, base_url: &str) -> Result<String, RdapClientError> {
@@ -160,32 +221,32 @@ impl FromStr for QueryType {
         // if looks like an autnum
         let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
         if let Ok(_autnum) = u32::from_str(autnum) {
-            return Ok(QueryType::AsNumber(s.to_owned()));
+            return QueryType::autnum(s);
         }
 
         // If it's an IP address
         if let Ok(ip_addr) = IpAddr::from_str(s) {
             if ip_addr.is_ipv4() {
-                return Ok(QueryType::IpV4Addr(s.to_owned()));
+                return QueryType::ipv4(s);
             } else {
-                return Ok(QueryType::IpV6Addr(s.to_owned()));
+                return QueryType::ipv6(s);
             }
         }
 
         // if it is a cidr
-        if let Ok(ip_cidr) = IpInet::from_str(s) {
+        if let Ok(ip_cidr) = parse_cidr(s) {
             return match ip_cidr {
-                IpInet::V4(_) => Ok(QueryType::IpV4Cidr(s.to_owned())),
-                IpInet::V6(_) => Ok(QueryType::IpV6Cidr(s.to_owned())),
+                IpCidr::V4(cidr) => Ok(QueryType::IpV4Cidr(cidr)),
+                IpCidr::V6(cidr) => Ok(QueryType::IpV6Cidr(cidr)),
             };
         }
 
         // if it looks like a domain name
         if is_domain_name(s) {
             if is_nameserver(s) {
-                return Ok(QueryType::Nameserver(s.to_owned()));
+                return QueryType::ns(s);
             } else {
-                return Ok(QueryType::Domain(s.to_owned()));
+                return QueryType::domain(s);
             }
         }
 
@@ -196,6 +257,27 @@ impl FromStr for QueryType {
 
         // The query type cannot be deteremined.
         Err(RdapClientError::AmbiquousQueryType)
+    }
+}
+
+fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
+    if let Some((prefix, suffix)) = s.split_once('/') {
+        if prefix.chars().all(|c: char| c.is_ascii_alphanumeric()) {
+            let cidr = cidr::parsers::parse_short_ip_address_as_cidr(prefix)
+                .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+            IpCidr::new(
+                cidr.first_address(),
+                suffix
+                    .parse::<u8>()
+                    .map_err(|_e| RdapClientError::InvalidQueryValue)?,
+            )
+            .map_err(|_e| RdapClientError::InvalidQueryValue)
+        } else {
+            cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(s, cidr::parsers::parse_loose_ip)
+                .map_err(|_e| RdapClientError::InvalidQueryValue)
+        }
+    } else {
+        Err(RdapClientError::InvalidQueryValue)
     }
 }
 
@@ -226,7 +308,7 @@ mod tests {
 
     use rstest::rstest;
 
-    use super::QueryType;
+    use super::*;
 
     #[test]
     fn GIVEN_ipv4_WHEN_query_type_from_str_THEN_query_is_ipv4() {
@@ -367,5 +449,27 @@ mod tests {
 
         // THEN
         assert!(q.is_err());
+    }
+
+    #[rstest]
+    #[case("10.0.0.0/8", "10.0.0.0/8")]
+    #[case("10.0.0/8", "10.0.0.0/8")]
+    #[case("10.0/8", "10.0.0.0/8")]
+    #[case("10/8", "10.0.0.0/8")]
+    #[case("10.0.0.0/24", "10.0.0.0/24")]
+    #[case("10.0.0/24", "10.0.0.0/24")]
+    #[case("10.0/24", "10.0.0.0/24")]
+    #[case("10/24", "10.0.0.0/24")]
+    #[case("129.129.1.1/8", "129.0.0.0/8")]
+    #[case("2001::1/32", "2001::/32")]
+    fn GIVEN_cidr_WHEN_parse_cidr_THEN_error(#[case] actual: &str, #[case] expected: &str) {
+        // GIVEN case input
+
+        // WHEN
+
+        let q = parse_cidr(actual);
+
+        // THEN
+        assert_eq!(q.unwrap().to_string(), expected)
     }
 }

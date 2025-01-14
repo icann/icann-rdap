@@ -15,7 +15,7 @@ impl GetChecks for Error {
             Vec::new()
         };
         Checks {
-            struct_name: "Error",
+            rdap_struct: super::RdapStructure::Error,
             items: Vec::new(),
             sub_checks,
         }

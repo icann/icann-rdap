@@ -10,8 +10,8 @@ An RDAP Server.
 
 [dependencies]
 
-icann-rdap-client = { version = "0.0.19", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.19", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.20", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.20", path = "../icann-rdap-common" }
 
 ab-radix-trie.workspace = true
 async-trait.workspace = true
@@ -22,7 +22,7 @@ axum-client-ip.workspace = true
 btree-range-map.workspace = true
 buildstructor.workspace = true
 chrono.workspace = true
-cidr-utils.workspace = true
+cidr.workspace = true
 clap.workspace = true
 dotenv.workspace = true
 envmnt.workspace = true

@@ -5,15 +5,12 @@ use std::sync::{Arc, RwLock};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{
-        get_preferred_url, iana_request, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
+        get_preferred_url, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
         IanaRegistryType,
     },
 };
-use reqwest::Client;
 
-use crate::RdapClientError;
-
-use super::qtype::QueryType;
+use crate::{http::Client, iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
@@ -42,8 +39,8 @@ pub trait BootstrapStore: Send + Sync {
         query_type: &QueryType,
     ) -> Result<Vec<String>, RdapClientError> {
         let domain_name = match query_type {
-            QueryType::Domain(domain) => domain,
-            QueryType::Nameserver(ns) => ns,
+            QueryType::Domain(domain) => domain.to_ascii(),
+            QueryType::Nameserver(ns) => ns.to_ascii(),
             _ => panic!("invalid domain query type"),
         };
         self.get_dns_urls(domain_name)
@@ -59,7 +56,7 @@ pub trait BootstrapStore: Send + Sync {
         let QueryType::AsNumber(asn) = query_type else {
             panic!("invalid query type")
         };
-        self.get_asn_urls(asn)
+        self.get_asn_urls(asn.to_string().as_str())
     }
 
     /// Get the urls for an IPv4 query type.
@@ -68,7 +65,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_ipv4_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV4Addr(addr) => format!("{addr}/32"),
-            QueryType::IpV4Cidr(cidr) => cidr.to_owned(),
+            QueryType::IpV4Cidr(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv4_urls(&ip)
@@ -80,7 +77,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_ipv6_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV6Addr(addr) => format!("{addr}/128"),
-            QueryType::IpV6Cidr(cidr) => cidr.to_owned(),
+            QueryType::IpV6Cidr(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv6_urls(&ip)
@@ -140,6 +137,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError>;
 }
 
+/// A trait to find the preferred URL from a bootstrap service.
 pub trait PreferredUrl {
     fn preferred_url(self) -> Result<String, RdapClientError>;
 }
@@ -154,7 +152,7 @@ impl PreferredUrl for Vec<String> {
 ///
 /// This implementation of [BootstrapStore] keeps registries in memory. Every new instance starts with
 /// no registries in memory. They are added and maintained over time by calls to [MemoryBootstrapStore::put_bootstrap_registry()] by the
-/// machinery of [crate::query::request::rdap_bootstrapped_request()] and [crate::query::bootstrap::qtype_to_bootstrap_url()].
+/// machinery of [crate::rdap::request::rdap_bootstrapped_request()] and [crate::iana::bootstrap::qtype_to_bootstrap_url()].
 ///
 /// Ideally, this should be kept in the same scope as [reqwest::Client].
 pub struct MemoryBootstrapStore {
@@ -269,6 +267,7 @@ impl BootstrapStore for MemoryBootstrapStore {
     }
 }
 
+/// Trait to determine if a bootstrap registry is past its expiration (i.e. needs to be rechecked).
 pub trait RegistryHasNotExpired {
     fn registry_has_not_expired(&self) -> bool;
 }
@@ -283,6 +282,7 @@ impl RegistryHasNotExpired for Option<(IanaRegistry, HttpData)> {
     }
 }
 
+/// Given a [QueryType], it will get the bootstrap URL.
 pub async fn qtype_to_bootstrap_url<F>(
     client: &Client,
     store: &dyn BootstrapStore,
@@ -335,6 +335,7 @@ where
     }
 }
 
+/// Fetches a bootstrap registry for a [BootstrapStore].
 pub async fn fetch_bootstrap<F>(
     reg_type: &IanaRegistryType,
     client: &Client,
@@ -360,7 +361,7 @@ mod test {
         iana::{IanaRegistry, IanaRegistryType},
     };
 
-    use crate::query::{bootstrap::PreferredUrl, qtype::QueryType};
+    use crate::{iana::bootstrap::PreferredUrl, rdap::QueryType};
 
     use super::{BootstrapStore, MemoryBootstrapStore};
 
@@ -400,7 +401,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_domain_query_urls(&QueryType::Domain("example.org".to_string()))
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -452,7 +453,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_autnum_query_urls(&QueryType::AsNumber("as64512".to_string()))
+            .get_autnum_query_urls(&QueryType::autnum("as64512").expect("invalid autnum"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -504,7 +505,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_ipv4_query_urls(&QueryType::IpV4Addr("198.51.100.1".to_string()))
+            .get_ipv4_query_urls(&QueryType::ipv4("198.51.100.1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -556,7 +557,7 @@ mod test {
 
         // WHEN
         let actual = mem
-            .get_ipv6_query_urls(&QueryType::IpV6Addr("2001:db8::1".to_string()))
+            .get_ipv6_query_urls(&QueryType::ipv6("2001:db8::1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");

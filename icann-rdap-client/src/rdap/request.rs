@@ -1,22 +1,16 @@
 //! Functions to make RDAP requests.
 
 use icann_rdap_common::{httpdata::HttpData, iana::IanaRegistryType, response::RdapResponse};
-use reqwest::{
-    header::{
-        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION,
-        STRICT_TRANSPORT_SECURITY,
-    },
-    Client,
-};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::RdapClientError;
-
-use super::{
-    bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
-    qtype::QueryType,
+use crate::{
+    http::{wrapped_request, Client},
+    iana::bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
+    RdapClientError,
 };
+
+use super::qtype::QueryType;
 
 /// Makes an RDAP request with a full RDAP URL.
 ///
@@ -25,10 +19,7 @@ use super::{
 /// * client - a reference to a [reqwest::Client].
 ///
 /// ```no_run
-/// use icann_rdap_common::client::ClientConfig;
-/// use icann_rdap_common::client::create_client;
-/// use icann_rdap_client::query::request::rdap_url_request;
-/// use icann_rdap_client::RdapClientError;
+/// use icann_rdap_client::prelude::*;
 /// use std::str::FromStr;
 /// use tokio::main;
 ///
@@ -50,52 +41,10 @@ use super::{
 /// }
 /// ```
 pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData, RdapClientError> {
-    let response = client.get(url).send().await?.error_for_status()?;
-    let content_type = response
-        .headers()
-        .get(CONTENT_TYPE)
-        .map(|value| value.to_str().unwrap().to_string());
-    let expires = response
-        .headers()
-        .get(EXPIRES)
-        .map(|value| value.to_str().unwrap().to_string());
-    let cache_control = response
-        .headers()
-        .get(CACHE_CONTROL)
-        .map(|value| value.to_str().unwrap().to_string());
-    let location = response
-        .headers()
-        .get(LOCATION)
-        .map(|value| value.to_str().unwrap().to_string());
-    let access_control_allow_origin = response
-        .headers()
-        .get(ACCESS_CONTROL_ALLOW_ORIGIN)
-        .map(|value| value.to_str().unwrap().to_string());
-    let strict_transport_security = response
-        .headers()
-        .get(STRICT_TRANSPORT_SECURITY)
-        .map(|value| value.to_str().unwrap().to_string());
-    let content_length = response.content_length();
-    let status_code = response.status().as_u16();
-    let url = response.url().to_owned();
-    let text = response.text().await?;
-
-    let http_data = HttpData::now()
-        .status_code(status_code)
-        .and_location(location)
-        .and_content_length(content_length)
-        .and_content_type(content_type)
-        .scheme(url.scheme())
-        .host(
-            url.host_str()
-                .expect("URL has no host. This shouldn't happen.")
-                .to_owned(),
-        )
-        .and_expires(expires)
-        .and_cache_control(cache_control)
-        .and_access_control_allow_origin(access_control_allow_origin)
-        .and_strict_transport_security(strict_transport_security)
-        .build();
+    let wrapped_response = wrapped_request(url, client).await?;
+    // for convenience purposes
+    let text = wrapped_response.text;
+    let http_data = wrapped_response.http_data;
 
     let json: Result<Value, serde_json::Error> = serde_json::from_str(&text);
     if let Ok(rdap_json) = json {
@@ -124,11 +73,7 @@ pub async fn rdap_url_request(url: &str, client: &Client) -> Result<ResponseData
 /// * client - a reference to a [reqwest::Client].
 ///
 /// ```no_run
-/// use icann_rdap_common::client::ClientConfig;
-/// use icann_rdap_common::client::create_client;
-/// use icann_rdap_client::query::request::rdap_request;
-/// use icann_rdap_client::query::qtype::QueryType;
-/// use icann_rdap_client::RdapClientError;
+/// use icann_rdap_client::prelude::*;
 /// use std::str::FromStr;
 /// use tokio::main;
 ///
@@ -174,17 +119,12 @@ pub async fn rdap_request(
 ///
 /// The [BootstrapStore] is responsible for holding IANA RDAP bootstrap registries.
 /// It will be populated with IANA registries as needed. Ideally, the calling code
-/// would be kept it in the same scope as `client`. When using the [crate::query::bootstrap::MemoryBootstrapStore],
+/// would be kept it in the same scope as `client`. When using the [crate::iana::bootstrap::MemoryBootstrapStore],
 /// creating a new store for each request will result it fetching the appropriate IANA
 /// registry with each request which is most likely not the desired behavior.
 ///
 /// ```no_run
-/// use icann_rdap_common::client::ClientConfig;
-/// use icann_rdap_common::client::create_client;
-/// use icann_rdap_client::query::request::rdap_bootstrapped_request;
-/// use icann_rdap_client::query::qtype::QueryType;
-/// use icann_rdap_client::query::bootstrap::MemoryBootstrapStore;
-/// use icann_rdap_client::RdapClientError;
+/// use icann_rdap_client::prelude::*;
 /// use std::str::FromStr;
 /// use tokio::main;
 ///
@@ -226,6 +166,7 @@ where
     rdap_request(&base_url, query_type, client).await
 }
 
+/// The data returned from an rdap request.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ResponseData {
     pub rdap: RdapResponse,

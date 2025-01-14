@@ -1,10 +1,10 @@
-//! Structures that describe a request.
+//! Structures that describe a request/response.
 
 use icann_rdap_common::check::Checks;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 
-use crate::query::request::ResponseData;
+use crate::rdap::request::ResponseData;
 
 /// Types of RDAP servers.
 #[derive(Serialize, Deserialize, Display, Clone, Copy)]
@@ -40,7 +40,7 @@ pub struct RequestData<'a> {
 pub struct RequestResponse<'a> {
     pub req_data: &'a RequestData<'a>,
     pub res_data: &'a ResponseData,
-    pub checks: Checks<'a>,
+    pub checks: Checks,
 }
 
 /// The primary purpose for this struct is to allow deserialization for testing.
@@ -51,7 +51,8 @@ pub struct RequestResponseOwned<'a> {
     #[serde(borrow)]
     pub req_data: RequestData<'a>,
     pub res_data: ResponseData,
-    pub checks: Checks<'a>,
+    pub checks: Checks,
 }
 
+/// A [Vec] of [RequestResponse].
 pub type RequestResponses<'a> = Vec<RequestResponse<'a>>;

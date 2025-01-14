@@ -17,7 +17,7 @@ pub struct GtldParams<'a> {
     pub label: String,
 }
 
-impl<'a> GtldParams<'a> {
+impl GtldParams<'_> {
     pub fn from_parent(&mut self, parent_type: TypeId) -> Self {
         GtldParams {
             parent_type,

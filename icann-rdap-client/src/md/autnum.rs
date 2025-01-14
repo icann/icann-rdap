@@ -34,15 +34,15 @@ impl ToMd for Autnum {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_data_ref(
+            .and_nv_ref(
                 &"Start AS Number",
                 &self.start_autnum.map(|n| n.to_string()),
             )
-            .and_data_ref(&"End AS Number", &self.end_autnum.map(|n| n.to_string()))
-            .and_data_ref(&"Handle", &self.object_common.handle)
-            .and_data_ref(&"Autnum Type", &self.autnum_type)
-            .and_data_ref(&"Autnum Name", &self.name)
-            .and_data_ref(&"Country", &self.country);
+            .and_nv_ref(&"End AS Number", &self.end_autnum.map(|n| n.to_string()))
+            .and_nv_ref(&"Handle", &self.object_common.handle)
+            .and_nv_ref(&"Autnum Type", &self.autnum_type)
+            .and_nv_ref(&"Autnum Name", &self.name)
+            .and_nv_ref(&"Country", &self.country);
 
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);

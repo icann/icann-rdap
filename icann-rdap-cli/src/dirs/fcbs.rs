@@ -4,117 +4,16 @@ use std::{
     path::PathBuf,
 };
 
-use icann_rdap_client::query::{
-    bootstrap::{
-        fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl,
-        RegistryHasNotExpired,
-    },
-    qtype::QueryType,
-};
+use icann_rdap_client::iana::{BootstrapStore, RegistryHasNotExpired};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
 };
-use reqwest::Client;
 use tracing::debug;
 
-use crate::{dirs::bootstrap_cache_path, error::CliError};
+use super::bootstrap_cache_path;
 
-/// Defines the type of bootstrapping to use.
-pub(crate) enum BootstrapType {
-    /// Use RFC 9224 bootstrapping.
-    ///
-    /// This is the typical bootstrapping for RDAP as defined by RFC 9224.
-    Rfc9224,
-
-    /// Use the supplied URL.
-    ///
-    /// Essentially, this means no bootstrapping as the client is being given
-    /// a full URL.
-    Url(String),
-
-    /// Use a hint.
-    ///
-    /// This will try to find an authoritative server by cycling through the various
-    /// bootstrap registries in the following order: object tags, TLDs, IP addresses,
-    /// ASNs.
-    Hint(String),
-}
-
-pub(crate) async fn get_base_url(
-    bootstrap_type: &BootstrapType,
-    client: &Client,
-    query_type: &QueryType,
-) -> Result<String, CliError> {
-    if let QueryType::Url(url) = query_type {
-        // this is ultimately ignored without this logic a bootstrap not found error is thrown
-        // which is wrong for URL queries.
-        return Ok(url.to_owned());
-    }
-
-    let store = FileCacheBootstrapStore;
-
-    match bootstrap_type {
-        BootstrapType::Rfc9224 => Ok(qtype_to_bootstrap_url(client, &store, query_type, |reg| {
-            debug!("Fetching IANA registry {}", reg.url())
-        })
-        .await?),
-        BootstrapType::Url(url) => Ok(url.to_owned()),
-        BootstrapType::Hint(hint) => {
-            fetch_bootstrap(&IanaRegistryType::RdapObjectTags, client, &store, |_reg| {
-                debug!("Fetching IANA RDAP Object Tag Registry")
-            })
-            .await?;
-            if let Ok(urls) = store.get_tag_urls(hint) {
-                Ok(urls.preferred_url()?)
-            } else {
-                fetch_bootstrap(
-                    &IanaRegistryType::RdapBootstrapDns,
-                    client,
-                    &store,
-                    |_reg| debug!("Fetching IANA RDAP DNS Registry"),
-                )
-                .await?;
-                if let Ok(urls) = store.get_dns_urls(hint) {
-                    Ok(urls.preferred_url()?)
-                } else {
-                    fetch_bootstrap(
-                        &IanaRegistryType::RdapBootstrapIpv4,
-                        client,
-                        &store,
-                        |_reg| debug!("Fetching IANA RDAP IPv4 Registry"),
-                    )
-                    .await?;
-                    if let Ok(urls) = store.get_ipv4_urls(hint) {
-                        Ok(urls.preferred_url()?)
-                    } else {
-                        fetch_bootstrap(
-                            &IanaRegistryType::RdapBootstrapIpv6,
-                            client,
-                            &store,
-                            |_reg| debug!("Fetching IANA RDAP IPv6 Registry"),
-                        )
-                        .await?;
-                        if let Ok(urls) = store.get_ipv6_urls(hint) {
-                            Ok(urls.preferred_url()?)
-                        } else {
-                            fetch_bootstrap(
-                                &IanaRegistryType::RdapBootstrapAsn,
-                                client,
-                                &store,
-                                |_reg| debug!("Fetching IANA RDAP ASN Registry"),
-                            )
-                            .await?;
-                            Ok(store.get_asn_urls(hint)?.preferred_url()?)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct FileCacheBootstrapStore;
+pub struct FileCacheBootstrapStore;
 
 impl BootstrapStore for FileCacheBootstrapStore {
     fn has_bootstrap_registry(
@@ -173,7 +72,7 @@ impl BootstrapStore for FileCacheBootstrapStore {
     }
 }
 
-fn fetch_file_cache_bootstrap<F>(
+pub fn fetch_file_cache_bootstrap<F>(
     path: PathBuf,
     callback: F,
 ) -> Result<(IanaRegistry, HttpData), std::io::Error>
@@ -195,7 +94,10 @@ where
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod test {
-    use icann_rdap_client::query::{bootstrap::PreferredUrl, qtype::QueryType};
+    use icann_rdap_client::{
+        iana::{BootstrapStore, PreferredUrl},
+        rdap::QueryType,
+    };
     use icann_rdap_common::{
         httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
@@ -203,9 +105,7 @@ mod test {
     use serial_test::serial;
     use test_dir::{DirBuilder, FileType, TestDir};
 
-    use crate::bootstrap::FileCacheBootstrapStore;
-
-    use super::BootstrapStore;
+    use crate::dirs::{self, fcbs::FileCacheBootstrapStore};
 
     fn test_dir() -> TestDir {
         let test_dir = TestDir::temp()
@@ -213,7 +113,7 @@ mod test {
             .create("config", FileType::Dir);
         std::env::set_var("XDG_CACHE_HOME", test_dir.path("cache"));
         std::env::set_var("XDG_CONFIG_HOME", test_dir.path("config"));
-        crate::dirs::init().expect("unable to init directories");
+        dirs::init().expect("unable to init directories");
         test_dir
     }
 
@@ -255,7 +155,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_domain_query_urls(&QueryType::Domain("example.org".to_string()))
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -309,7 +209,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_autnum_query_urls(&QueryType::AsNumber("as64512".to_string()))
+            .get_autnum_query_urls(&QueryType::autnum("as64512").expect("invalid autnum"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -363,7 +263,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_ipv4_query_urls(&QueryType::IpV4Addr("198.51.100.1".to_string()))
+            .get_ipv4_query_urls(&QueryType::ipv4("198.51.100.1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
@@ -417,7 +317,7 @@ mod test {
 
         // WHEN
         let actual = bs
-            .get_ipv6_query_urls(&QueryType::IpV6Addr("2001:db8::1".to_string()))
+            .get_ipv6_query_urls(&QueryType::ipv6("2001:db8::1").expect("invalid IP address"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");

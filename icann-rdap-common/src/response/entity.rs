@@ -130,6 +130,7 @@ impl Entity {
     ///   .build();
     /// ```
     #[builder(entry = "basic")]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_handle<T: Into<String>>(
         handle: T,
         remarks: Vec<crate::response::types::Remark>,

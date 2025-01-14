@@ -8,14 +8,10 @@ description = """
 An RDAP Command Line Interface client.
 """
 
-[[bin]]
-name = "rdap"
-path = "src/main.rs"
-
 [dependencies]
 
-icann-rdap-client = { version = "0.0.19", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.19", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.20", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.20", path = "../icann-rdap-common" }
 
 anyhow.workspace = true
 clap.workspace = true
@@ -23,7 +19,7 @@ chrono.workspace = true
 const_format.workspace = true
 directories.workspace = true
 dotenv.workspace = true
-ipnet.workspace = true
+hickory-client.workspace = true
 lazy_static.workspace = true
 minus.workspace = true
 pct-str.workspace = true
@@ -31,11 +27,14 @@ prefix-trie.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
 termimad.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 

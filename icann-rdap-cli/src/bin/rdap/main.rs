@@ -1,9 +1,12 @@
 use bootstrap::BootstrapType;
 use clap::builder::styling::AnsiColor;
 use clap::builder::Styles;
+use error::RdapCliError;
+use icann_rdap_cli::dirs;
+use icann_rdap_client::http::create_client;
+use icann_rdap_client::http::Client;
+use icann_rdap_client::http::ClientConfig;
 use icann_rdap_common::check::CheckClass;
-use icann_rdap_common::client::create_client;
-use icann_rdap_common::client::ClientConfig;
 use query::InrBackupBootstrap;
 use query::ProcessType;
 use query::ProcessingParams;
@@ -19,17 +22,14 @@ use write::FmtWrite;
 use write::PagerWrite;
 
 use clap::{ArgGroup, Parser, ValueEnum};
-use error::CliError;
-use icann_rdap_client::query::qtype::QueryType;
+use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::VERSION;
 use query::OutputType;
-use reqwest::Client;
 use tokio::{join, task::spawn_blocking};
 
 use crate::query::do_query;
 
 pub mod bootstrap;
-pub mod dirs;
 pub mod error;
 pub mod query;
 pub mod request;
@@ -255,6 +255,51 @@ struct Cli {
     )]
     allow_invalid_certificates: bool,
 
+    /// Set the query timeout.
+    ///
+    /// This values specifies, in seconds, the total time to connect and read all
+    /// the data from a connection.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TIMEOUT_SECS",
+        default_value = "60"
+    )]
+    timeout_secs: u64,
+
+    /// Maximum retry wait time.
+    ///
+    /// Sets the maximum number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code with a retry-after value.
+    /// That is, the value to used is no greater than this setting.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_MAX_RETRY_SECS",
+        default_value = "120"
+    )]
+    max_retry_secs: u32,
+
+    /// Default retry wait time.
+    ///
+    /// Sets the number of seconds to wait before retrying a query when
+    /// a server has sent an HTTP 429 status code without a retry-after value
+    /// or when the retry-after value does not make sense.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_DEF_RETRY_SECS",
+        default_value = "60"
+    )]
+    def_retry_secs: u32,
+
+    /// Maximum number of retries.
+    ///
+    /// This sets the maximum number of retries when a server signals too many
+    /// requests have been sent using an HTTP 429 status code.
+    #[arg(long, required = false, env = "RDAP_MAX_RETRIES", default_value = "1")]
+    max_retries: u16,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -343,14 +388,20 @@ enum OtypeArg {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum CheckTypeArg {
+    /// All checks.
+    All,
+
     /// Informational items.
     Info,
 
+    /// Specification Notes
+    SpecNote,
+
     /// Checks for STD 95 warnings.
-    SpecWarn,
+    StdWarn,
 
     /// Checks for STD 95 errors.
-    SpecError,
+    StdError,
 
     /// Cidr0 errors.
     Cidr0Error,
@@ -433,16 +484,16 @@ impl From<&LogLevel> for LevelFilter {
 }
 
 #[tokio::main]
-pub async fn main() -> CliError {
+pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
         eprintln!("\n{e}\n");
         return e;
     } else {
-        return CliError::Success;
+        return RdapCliError::Success;
     }
 }
 
-pub async fn wrapped_main() -> Result<(), CliError> {
+pub async fn wrapped_main() -> Result<(), RdapCliError> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
@@ -454,7 +505,7 @@ pub async fn wrapped_main() -> Result<(), CliError> {
 
     let level = LevelFilter::from(&cli.log_level);
 
-    let query_type = query_type_from_cli(&cli);
+    let query_type = query_type_from_cli(&cli)?;
 
     let use_pager = match cli.page_output {
         PagerType::Embedded => true,
@@ -489,18 +540,31 @@ pub async fn wrapped_main() -> Result<(), CliError> {
     let check_types = if cli.check_type.is_empty() {
         vec![
             CheckClass::Informational,
-            CheckClass::SpecificationWarning,
-            CheckClass::SpecificationError,
+            CheckClass::StdWarning,
+            CheckClass::StdError,
+            CheckClass::Cidr0Error,
+            CheckClass::IcannError,
+        ]
+    } else if cli.check_type.contains(&CheckTypeArg::All) {
+        vec![
+            CheckClass::Informational,
+            CheckClass::SpecificationNote,
+            CheckClass::StdWarning,
+            CheckClass::StdError,
+            CheckClass::Cidr0Error,
+            CheckClass::IcannError,
         ]
     } else {
         cli.check_type
             .iter()
             .map(|c| match c {
                 CheckTypeArg::Info => CheckClass::Informational,
-                CheckTypeArg::SpecWarn => CheckClass::SpecificationWarning,
-                CheckTypeArg::SpecError => CheckClass::SpecificationError,
+                CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
+                CheckTypeArg::StdWarn => CheckClass::StdWarning,
+                CheckTypeArg::StdError => CheckClass::StdError,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
                 CheckTypeArg::IcannError => CheckClass::IcannError,
+                CheckTypeArg::All => panic!("check type for all should have been handled."),
             })
             .collect::<Vec<CheckClass>>()
     };
@@ -540,6 +604,10 @@ pub async fn wrapped_main() -> Result<(), CliError> {
         .https_only(!cli.allow_http)
         .accept_invalid_host_names(cli.allow_invalid_host_names)
         .accept_invalid_certificates(cli.allow_invalid_certificates)
+        .timeout_secs(cli.timeout_secs)
+        .max_retry_secs(cli.max_retry_secs)
+        .def_retry_secs(cli.def_retry_secs)
+        .max_retries(cli.max_retries)
         .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
@@ -599,7 +667,7 @@ async fn exec<W: std::io::Write>(
     processing_params: &ProcessingParams,
     client: &Client,
     mut output: W,
-) -> Result<(), CliError> {
+) -> Result<(), RdapCliError> {
     info!("ICANN RDAP {} Command Line Interface", VERSION);
 
     #[cfg(debug_assertions)]
@@ -620,33 +688,34 @@ async fn exec<W: std::io::Write>(
     }
 }
 
-fn query_type_from_cli(cli: &Cli) -> QueryType {
+fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
     if let Some(query_value) = cli.query_value.clone() {
         if let Some(query_type) = cli.query_type {
-            match query_type {
-                QtypeArg::V4 => QueryType::IpV4Addr(query_value),
-                QtypeArg::V6 => QueryType::IpV6Addr(query_value),
-                QtypeArg::V4Cidr => QueryType::IpV4Cidr(query_value),
-                QtypeArg::V6Cidr => QueryType::IpV6Cidr(query_value),
-                QtypeArg::Autnum => QueryType::AsNumber(query_value),
-                QtypeArg::Domain => QueryType::Domain(query_value),
-                QtypeArg::ALabel => QueryType::ALable(query_value),
+            let q = match query_type {
+                QtypeArg::V4 => QueryType::ipv4(&query_value)?,
+                QtypeArg::V6 => QueryType::ipv6(&query_value)?,
+                QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
+                QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
+                QtypeArg::Autnum => QueryType::autnum(&query_value)?,
+                QtypeArg::Domain => QueryType::domain(&query_value)?,
+                QtypeArg::ALabel => QueryType::alabel(&query_value)?,
                 QtypeArg::Entity => QueryType::Entity(query_value),
-                QtypeArg::Ns => QueryType::Nameserver(query_value),
+                QtypeArg::Ns => QueryType::ns(&query_value)?,
                 QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
                 QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
                 QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
                 QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
-                QtypeArg::DomainNsIp => QueryType::DomainNsIpSearch(query_value),
+                QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
                 QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
-                QtypeArg::NsIp => QueryType::NameserverIpSearch(query_value),
+                QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
                 QtypeArg::Url => QueryType::Url(query_value),
-            }
+            };
+            Ok(q)
         } else {
-            QueryType::from_str(&query_value).unwrap()
+            Ok(QueryType::from_str(&query_value)?)
         }
     } else {
-        QueryType::Help
+        Ok(QueryType::Help)
     }
 }
 

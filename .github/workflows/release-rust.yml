@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           cd target/${{ matrix.target }}/release          
-          tar czvf ../../../icann-rdap-${{ matrix.target }}.tar.gz rdap rdap-srv rdap-srv-data rdap-srv-store rdap-srv-test-data 
+          tar czvf ../../../icann-rdap-${{ matrix.target }}.tar.gz rdap rdap-test rdap-srv rdap-srv-data rdap-srv-store rdap-srv-test-data 
           cd -
       - name: Publish
         uses: softprops/action-gh-release@v1

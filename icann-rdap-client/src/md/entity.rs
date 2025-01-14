@@ -5,7 +5,7 @@ use icann_rdap_common::response::entity::{Entity, EntityRole};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
-use crate::registered_redactions::{
+use crate::rdap::registered_redactions::{
     are_redactions_registered_for_roles, is_redaction_registered_for_role,
     text_or_registered_redaction_for_role, RedactedName,
 };
@@ -68,8 +68,8 @@ impl ToMd for Entity {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_data_ref(&"Handle", &entity_handle)
-            .and_data_ul(&"Roles", self.roles.to_owned());
+            .and_nv_ref(&"Handle", &entity_handle)
+            .and_nv_ul(&"Roles", self.roles.to_owned());
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -121,22 +121,22 @@ impl ToMd for Entity {
 
             table = table
                 .header_ref(&"Contact")
-                .and_data_ref_maybe(&"Kind", &contact.kind)
-                .and_data_ref_maybe(&"Full Name", &registrant_name)
-                .and_data_ul(&"Titles", contact.titles)
-                .and_data_ul(&"Org Roles", contact.roles)
-                .and_data_ul(&"Nicknames", contact.nick_names);
+                .and_nv_ref_maybe(&"Kind", &contact.kind)
+                .and_nv_ref_maybe(&"Full Name", &registrant_name)
+                .and_nv_ul(&"Titles", contact.titles)
+                .and_nv_ul(&"Org Roles", contact.roles)
+                .and_nv_ul(&"Nicknames", contact.nick_names);
             if is_redaction_registered_for_role(
                 params.root,
                 &RedactedName::RegistrantOrganization,
                 self,
                 &EntityRole::Registrant,
             ) {
-                table = table.data_ref(&"Organization Name", &REDACTED_TEXT.to_string());
+                table = table.nv_ref(&"Organization Name", &REDACTED_TEXT.to_string());
             } else {
-                table = table.and_data_ul(&"Organization Names", contact.organization_names);
+                table = table.and_nv_ul(&"Organization Names", contact.organization_names);
             }
-            table = table.and_data_ul(&"Languages", contact.langs);
+            table = table.and_nv_ul(&"Languages", contact.langs);
             if are_redactions_registered_for_roles(
                 params.root,
                 &[
@@ -150,9 +150,9 @@ impl ToMd for Entity {
                 self,
                 &[&EntityRole::Registrant, &EntityRole::Technical],
             ) {
-                table = table.data_ref(&"Phones", &REDACTED_TEXT.to_string());
+                table = table.nv_ref(&"Phones", &REDACTED_TEXT.to_string());
             } else {
-                table = table.and_data_ul(&"Phones", contact.phones);
+                table = table.and_nv_ul(&"Phones", contact.phones);
             }
             if are_redactions_registered_for_roles(
                 params.root,
@@ -160,13 +160,13 @@ impl ToMd for Entity {
                 self,
                 &[&EntityRole::Registrant, &EntityRole::Technical],
             ) {
-                table = table.data_ref(&"Emails", &REDACTED_TEXT.to_string());
+                table = table.nv_ref(&"Emails", &REDACTED_TEXT.to_string());
             } else {
-                table = table.and_data_ul(&"Emails", contact.emails);
+                table = table.and_nv_ul(&"Emails", contact.emails);
             }
             table = table
-                .and_data_ul(&"Web Contact", contact.contact_uris)
-                .and_data_ul(&"URLs", contact.urls);
+                .and_nv_ul(&"Web Contact", contact.contact_uris)
+                .and_nv_ul(&"URLs", contact.urls);
             table = postal_addresses.add_to_mptable(table, params);
             table = contact.name_parts.add_to_mptable(table, params)
         }
@@ -233,7 +233,7 @@ impl ToMpTable for Option<Vec<PostalAddress>> {
 impl ToMpTable for PostalAddress {
     fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
         if self.contexts.is_some() && self.preference.is_some() {
-            table = table.data(
+            table = table.nv(
                 &"Address",
                 format!(
                     "{} (pref: {})",
@@ -242,23 +242,23 @@ impl ToMpTable for PostalAddress {
                 ),
             );
         } else if self.contexts.is_some() {
-            table = table.data(&"Address", self.contexts.as_ref().unwrap().join(" "));
+            table = table.nv(&"Address", self.contexts.as_ref().unwrap().join(" "));
         } else if self.preference.is_some() {
-            table = table.data(
+            table = table.nv(
                 &"Address",
                 format!("preference: {}", self.preference.unwrap()),
             );
         } else {
-            table = table.data(&"Address", "");
+            table = table.nv(&"Address", "");
         }
         if let Some(street_parts) = &self.street_parts {
-            table = table.data_ul_ref(&"Street", street_parts.iter().collect());
+            table = table.nv_ul_ref(&"Street", street_parts.iter().collect());
         }
         if let Some(locality) = &self.locality {
-            table = table.data_ref(&"Locality", locality);
+            table = table.nv_ref(&"Locality", locality);
         }
         if self.region_name.is_some() && self.region_code.is_some() {
-            table = table.data(
+            table = table.nv(
                 &"Region",
                 format!(
                     "{} ({})",
@@ -267,12 +267,12 @@ impl ToMpTable for PostalAddress {
                 ),
             );
         } else if let Some(region_name) = &self.region_name {
-            table = table.data_ref(&"Region", region_name);
+            table = table.nv_ref(&"Region", region_name);
         } else if let Some(region_code) = &self.region_code {
-            table = table.data_ref(&"Region", region_code);
+            table = table.nv_ref(&"Region", region_code);
         }
         if self.country_name.is_some() && self.country_code.is_some() {
-            table = table.data(
+            table = table.nv(
                 &"Country",
                 format!(
                     "{} ({})",
@@ -281,17 +281,17 @@ impl ToMpTable for PostalAddress {
                 ),
             );
         } else if let Some(country_name) = &self.country_name {
-            table = table.data_ref(&"Country", country_name);
+            table = table.nv_ref(&"Country", country_name);
         } else if let Some(country_code) = &self.country_code {
-            table = table.data_ref(&"Country", country_code);
+            table = table.nv_ref(&"Country", country_code);
         }
         if let Some(postal_code) = &self.postal_code {
-            table = table.data_ref(&"Postal Code", postal_code);
+            table = table.nv_ref(&"Postal Code", postal_code);
         }
         if let Some(full_address) = &self.full_address {
             let parts = full_address.split('\n').collect::<Vec<&str>>();
             for (i, p) in parts.iter().enumerate() {
-                table = table.data_ref(&i.to_string(), p);
+                table = table.nv_ref(&i.to_string(), p);
             }
         }
         table
@@ -302,19 +302,19 @@ impl ToMpTable for Option<NameParts> {
     fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
         if let Some(parts) = self {
             if let Some(prefixes) = &parts.prefixes {
-                table = table.data(&"Honorifics", prefixes.join(", "));
+                table = table.nv(&"Honorifics", prefixes.join(", "));
             }
             if let Some(given_names) = &parts.given_names {
-                table = table.data_ul(&"Given Names", given_names.to_vec());
+                table = table.nv_ul(&"Given Names", given_names.to_vec());
             }
             if let Some(middle_names) = &parts.middle_names {
-                table = table.data_ul(&"Middle Names", middle_names.to_vec());
+                table = table.nv_ul(&"Middle Names", middle_names.to_vec());
             }
             if let Some(surnames) = &parts.surnames {
-                table = table.data_ul(&"Surnames", surnames.to_vec());
+                table = table.nv_ul(&"Surnames", surnames.to_vec());
             }
             if let Some(suffixes) = &parts.suffixes {
-                table = table.data(&"Suffixes", suffixes.join(", "));
+                table = table.nv(&"Suffixes", suffixes.join(", "));
             }
         }
         table

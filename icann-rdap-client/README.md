@@ -15,7 +15,7 @@ Add the library to your Cargo.toml: `cargo add icann-rdap-client`
 
 Also, add the commons library: `cargo add icann-rdap-common`.
 
-Both icann-rdap-common and icann-rdap-client can be compiled for WASM targets.
+Both [icann_rdap_common] and this crate can be compiled for WASM targets.
 
 Usage
 -----
@@ -25,7 +25,7 @@ is the process of finding the authoritative RDAP server to
 query using the IANA RDAP bootstrap files. To make a query using bootstrapping:
 
 ```rust,no_run
-use icann_rdap_client::*;
+use icann_rdap_client::prelude::*;
 use std::str::FromStr;
 use tokio::main;
 
@@ -39,7 +39,10 @@ async fn main() -> Result<(), RdapClientError> {
 
     // create a client (from icann-rdap-common)
     let config = ClientConfig::default();
+    // or let config = ClientConfig::builder().build();
+
     let client = create_client(&config)?;
+
     // ideally, keep store in same context as client
     let store = MemoryBootstrapStore::new();
 
@@ -59,7 +62,7 @@ async fn main() -> Result<(), RdapClientError> {
 To specify a base URL:
 
 ```rust,no_run
-use icann_rdap_client::*;
+use icann_rdap_client::prelude::*;
 use std::str::FromStr;
 use tokio::main;
 
@@ -72,7 +75,9 @@ async fn main() -> Result<(), RdapClientError> {
     let query = QueryType::from_str("icann.org")?;
 
     // create a client (from icann-rdap-common)
-    let config = ClientConfig::default();
+    let config = ClientConfig::builder().build();
+    // or let config = ClientConfig::default();
+    
     let client = create_client(&config)?;
 
     // issue the RDAP query

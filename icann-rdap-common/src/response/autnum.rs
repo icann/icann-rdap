@@ -82,7 +82,7 @@ impl Autnum {
     ///   .build();
     /// ```
     #[builder(entry = "basic")]
-
+    #[allow(clippy::too_many_arguments)]
     pub fn new_autnum(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,

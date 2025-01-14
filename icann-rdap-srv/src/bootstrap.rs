@@ -1,11 +1,13 @@
 use std::{path::PathBuf, time::Duration};
 
-use icann_rdap_common::{
-    client::{create_client, ClientConfig},
-    httpdata::HttpData,
-    iana::{iana_request, IanaRegistry, IanaRegistryType},
+use icann_rdap_client::{
+    http::{create_client, Client, ClientConfig},
+    iana::iana_request,
 };
-use reqwest::Client;
+use icann_rdap_common::{
+    httpdata::HttpData,
+    iana::{IanaRegistry, IanaRegistryType},
+};
 use tokio::{
     fs::{self, File},
     io::{AsyncBufReadExt, BufReader},

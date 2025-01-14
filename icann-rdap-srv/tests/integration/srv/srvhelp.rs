@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::query::{qtype::QueryType, request::rdap_request};
-use icann_rdap_common::{
-    client::{create_client, ClientConfig},
-    response::{
-        help::Help,
-        types::{Notice, NoticeOrRemark},
-    },
+use icann_rdap_client::{
+    http::{create_client, ClientConfig},
+    rdap::{rdap_request, QueryType},
+};
+use icann_rdap_common::response::{
+    help::Help,
+    types::{Notice, NoticeOrRemark},
 };
 use icann_rdap_srv::storage::StoreOps;
 

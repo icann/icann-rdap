@@ -2,7 +2,9 @@ use std::any::TypeId;
 
 use crate::response::autnum::Autnum;
 
-use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{
+    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks, RdapStructure,
+};
 
 impl GetChecks for Autnum {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
@@ -56,7 +58,7 @@ impl GetChecks for Autnum {
         }
 
         Checks {
-            struct_name: "Autnum",
+            rdap_struct: RdapStructure::Autnum,
             items,
             sub_checks,
         }
@@ -99,11 +101,7 @@ mod tests {
         let rdap = RdapResponse::Autnum(autnum);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -121,11 +119,7 @@ mod tests {
         let rdap = RdapResponse::Autnum(autnum);
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams {
-            do_subchecks: true,
-            root: &rdap,
-            parent_type: rdap.get_type(),
-        });
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);

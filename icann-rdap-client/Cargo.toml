@@ -10,13 +10,14 @@ An RDAP client library.
 
 [dependencies]
 
-icann-rdap-common = { version = "0.0.19", path = "../icann-rdap-common" }
+icann-rdap-common = { version = "0.0.20", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
-cidr-utils.workspace = true
+cidr.workspace = true
 chrono.workspace = true
 const_format.workspace = true
 idna.workspace = true
+ipnet.workspace = true
 jsonpath-rust.workspace = true
 jsonpath_lib.workspace = true
 lazy_static.workspace = true
@@ -28,7 +29,10 @@ serde_json.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio.workspace = true
 
 [dev-dependencies]
 

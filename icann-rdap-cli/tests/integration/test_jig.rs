@@ -10,28 +10,39 @@ use test_dir::DirBuilder;
 use test_dir::FileType;
 use test_dir::TestDir;
 
+pub enum CommandType {
+    Rdap,
+    RdapTest,
+}
+
 pub struct TestJig {
     pub mem: Mem,
     pub cmd: Command,
+    pub cmd_type: CommandType,
     pub rdap_base: String,
     // pass ownership to the test so the directories are dropped when the test is done.
-    _test_dir: TestDir,
+    test_dir: TestDir,
 }
 
 impl TestJig {
-    pub async fn new() -> TestJig {
+    pub async fn new_rdap() -> TestJig {
         let common_config = CommonConfig::default();
-        TestJig::new_common_config(common_config).await
+        TestJig::new_common_config(common_config, CommandType::Rdap).await
     }
 
-    pub async fn new_with_enable_domain_name_search() -> TestJig {
+    pub async fn new_rdap_with_dn_search() -> TestJig {
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(true)
             .build();
-        TestJig::new_common_config(common_config).await
+        TestJig::new_common_config(common_config, CommandType::Rdap).await
     }
 
-    pub async fn new_common_config(common_config: CommonConfig) -> TestJig {
+    pub async fn new_rdap_test() -> TestJig {
+        let common_config = CommonConfig::default();
+        TestJig::new_common_config(common_config, CommandType::RdapTest).await
+    }
+
+    pub async fn new_common_config(common_config: CommonConfig, cmd_type: CommandType) -> TestJig {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
@@ -51,35 +62,46 @@ impl TestJig {
         let test_dir = TestDir::temp()
             .create("cache", FileType::Dir)
             .create("config", FileType::Dir);
-        let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
-        cmd.env_clear()
-            .timeout(Duration::from_secs(2))
-            .env("RDAP_BASE_URL", rdap_base.clone())
-            .env("RDAP_PAGING", "none")
-            .env("RDAP_OUTPUT", "json-extra")
-            .env("RDAP_LOG", "debug")
-            .env("RDAP_ALLOW_HTTP", "true")
-            .env("XDG_CACHE_HOME", test_dir.path("cache"))
-            .env("XDG_CONFIG_HOME", test_dir.path("config"));
-        TestJig {
+        let cmd = Command::new("sh"); //throw away
+        let jig = TestJig {
             mem,
             cmd,
+            cmd_type,
             rdap_base,
-            _test_dir: test_dir,
-        }
+            test_dir,
+        };
+        jig.new_cmd()
     }
 
+    /// Creates a new command from an existing one but resetting necessary environment variables.
+    ///
+    /// Using the function allows the test jig to stay up but a new command to be executed.
     pub fn new_cmd(self) -> TestJig {
-        let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
-        cmd.env_clear()
-            .timeout(Duration::from_secs(2))
-            .env("RDAP_BASE_URL", self.rdap_base.clone())
-            .env("RDAP_PAGING", "none")
-            .env("RDAP_OUTPUT", "json-extra")
-            .env("RDAP_LOG", "debug")
-            .env("RDAP_ALLOW_HTTP", "true")
-            .env("XDG_CACHE_HOME", self._test_dir.path("cache"))
-            .env("XDG_CONFIG_HOME", self._test_dir.path("config"));
+        let cmd = match self.cmd_type {
+            CommandType::Rdap => {
+                let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
+                cmd.env_clear()
+                    .timeout(Duration::from_secs(2))
+                    .env("RDAP_BASE_URL", self.rdap_base.clone())
+                    .env("RDAP_PAGING", "none")
+                    .env("RDAP_OUTPUT", "json-extra")
+                    .env("RDAP_LOG", "debug")
+                    .env("RDAP_ALLOW_HTTP", "true")
+                    .env("XDG_CACHE_HOME", self.test_dir.path("cache"))
+                    .env("XDG_CONFIG_HOME", self.test_dir.path("config"));
+                cmd
+            }
+            CommandType::RdapTest => {
+                let mut cmd = Command::cargo_bin("rdap-test").expect("cannot find rdap-test cmd");
+                cmd.env_clear()
+                    .timeout(Duration::from_secs(2))
+                    .env("RDAP_TEST_LOG", "debug")
+                    .env("RDAP_TEST_ALLOW_HTTP", "true")
+                    .env("XDG_CACHE_HOME", self.test_dir.path("cache"))
+                    .env("XDG_CONFIG_HOME", self.test_dir.path("config"));
+                cmd
+            }
+        };
         TestJig { cmd, ..self }
     }
 }

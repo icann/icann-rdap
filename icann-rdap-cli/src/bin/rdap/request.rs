@@ -3,24 +3,23 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use icann_rdap_client::query::{
-    qtype::QueryType,
-    request::{rdap_url_request, ResponseData},
+use icann_rdap_client::{
+    http::Client,
+    rdap::{rdap_url_request, QueryType, ResponseData},
 };
 use icann_rdap_common::{httpdata::HttpData, response::GetSelfLink};
 use pct_str::PctString;
 use pct_str::URIReserved;
-use reqwest::Client;
 use tracing::{debug, info};
 
-use crate::{dirs::rdap_cache_path, error::CliError, query::ProcessingParams};
+use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};
 
 pub(crate) async fn do_request(
     base_url: &str,
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
-) -> Result<ResponseData, CliError> {
+) -> Result<ResponseData, RdapCliError> {
     if processing_params.no_cache {
         info!("Cache has been disabled.")
     }

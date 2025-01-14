@@ -36,7 +36,7 @@ impl ToMd for &[Redacted] {
             let name = "Redaction";
             let b_name = name.to_bold(&options);
             // build the table
-            table = table.and_data_ref(&b_name, &Some((index + 1).to_string()));
+            table = table.and_nv_ref(&b_name, &Some((index + 1).to_string()));
 
             // Get the data itself
             let name_data = redacted
@@ -49,16 +49,16 @@ impl ToMd for &[Redacted] {
 
             // Special case the 'column' fields
             table = table
-                .and_data_ref(&"name".to_title_case(), &name_data)
-                .and_data_ref(&"prePath".to_title_case(), &redacted.pre_path)
-                .and_data_ref(&"postPath".to_title_case(), &redacted.post_path)
-                .and_data_ref(
+                .and_nv_ref(&"name".to_title_case(), &name_data)
+                .and_nv_ref(&"prePath".to_title_case(), &redacted.pre_path)
+                .and_nv_ref(&"postPath".to_title_case(), &redacted.post_path)
+                .and_nv_ref(
                     &"replacementPath".to_title_case(),
                     &redacted.replacement_path,
                 )
-                .and_data_ref(&"pathLang".to_title_case(), &redacted.path_lang)
-                .and_data_ref(&"method".to_title_case(), &method_data)
-                .and_data_ref(&"reason".to_title_case(), &reason_data);
+                .and_nv_ref(&"pathLang".to_title_case(), &redacted.path_lang)
+                .and_nv_ref(&"method".to_title_case(), &method_data)
+                .and_nv_ref(&"reason".to_title_case(), &reason_data);
 
             // we don't have these right now but if we put them in later we will need them
             // let check_params = CheckParams::from_md(params, typeid);

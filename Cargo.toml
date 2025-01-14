@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.19"
+version = "0.0.20"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -40,7 +40,7 @@ btree-range-map = "0.7.2"
 buildstructor = "0.5"
 
 # CIDR utilities
-cidr-utils = "0.6"
+cidr = "0.3.0"
 
 # command line options parser
 clap = { version = "4.4", features = [ "std", "derive", "env", "unstable-styles" ] }
@@ -75,6 +75,9 @@ lazy_static = "1.4"
 # headers (http headers)
 headers = "0.4"
 
+# Hickory DNS client
+hickory-client = "0.24"
+
 # http constructs
 http = "1.0"
 
@@ -104,7 +107,7 @@ prefix-trie = "0.2.4"
 regex = "1.10"
 
 # http client library
-reqwest = {version = "0.11", features = ["json", "stream", "native-tls-vendored"]}
+reqwest = {version = "0.12", features = ["json", "stream", "native-tls-vendored"]}
 
 # serialization / deserialization library
 serde = { version = "1.0", features = [ "derive" ] }
@@ -146,3 +149,5 @@ tower-http = { version = "0.5", features = [
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# url
+url = "2.5"
