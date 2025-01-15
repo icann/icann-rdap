@@ -132,6 +132,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         let mut test_run = TestRun::new_v4(vec![], v4, port);
         if !options.skip_v4 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -144,6 +145,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
             let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -159,6 +161,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         let mut test_run = TestRun::new_v6(vec![], v6, port);
         if !options.skip_v6 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -171,6 +174,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
             let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
