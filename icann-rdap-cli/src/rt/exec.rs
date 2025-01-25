@@ -93,7 +93,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         QueryType::Url(url) => url.to_owned(),
         _ => {
             let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
-                debug!("Fetching IANA registry {} for value {value}", reg.url())
+                info!("Fetching IANA registry {} for value {value}", reg.url())
             })
             .await?;
             value.query_url(&base_url)?
@@ -102,12 +102,13 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
     // if they URL to test is a referral
     if options.chase_referral {
         let client = create_client(client_config)?;
+        info!("Fetching referral from {query_url}");
         let response_data = rdap_url_request(&query_url, &client).await?;
         query_url = get_related_links(&response_data.rdap)
             .first()
             .ok_or(TestExecutionError::NoReferralToChase)?
             .to_string();
-        debug!("Chasing referral {query_url}");
+        info!("Referral is {query_url}");
     }
 
     let parsed_url = Url::parse(&query_url)?;
@@ -132,6 +133,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         let mut test_run = TestRun::new_v4(vec![], v4, port);
         if !options.skip_v4 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -144,6 +146,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
             let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -159,6 +162,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
         let mut test_run = TestRun::new_v6(vec![], v6, port);
         if !options.skip_v6 && more_runs {
             let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
@@ -171,6 +175,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
                 .origin(HeaderValue::from_str(&options.origin_value)?)
                 .build();
             let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
+            info!("Sending request to {}", test_run.socket_addr);
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }

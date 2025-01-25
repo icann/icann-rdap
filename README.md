@@ -12,10 +12,18 @@ About
 
 This repository hosts 4 separate packages (i.e. Rust crates):
 
-* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client. This package produces an executable binary.
-* [icann-rdap-client](icann-rdap-client/README.md) is a library handling making RDAP requests.
-* [icann-rdap-common](icann-rdap-common/README.md) is a library of RDAP structures.
+* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client and testing tool.
+* [icann-rdap-client](icann-rdap-client/README.md) is a Rust library handling making RDAP requests.
+* [icann-rdap-common](icann-rdap-common/README.md) is a Rust library of RDAP structures.
 * [icann-rdap-srv](icann-rdap-srv/README.md) is a simple, in-memory RDAP server. This package produces multiple executable binaries.
+
+![Example of rdap command](https://github.com/icann/icann-rdap/wiki/images/rdap_command.png)
+
+Installation and Usage
+----------------------
+
+See the [project wiki](https://github.com/icann/icann-rdap/wiki) for information on installation
+and usage of this software.
 
 License
 -------
