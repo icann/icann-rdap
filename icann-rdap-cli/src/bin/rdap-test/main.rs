@@ -20,6 +20,7 @@ use termimad::crossterm::style::Color::*;
 use termimad::Alignment;
 use termimad::MadSkin;
 use tracing::info;
+use tracing::warn;
 use tracing_subscriber::filter::LevelFilter;
 
 use clap::{Parser, ValueEnum};
@@ -383,6 +384,9 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .init();
 
     info!("ICANN RDAP {} Testing Tool", VERSION);
+
+    #[cfg(debug_assertions)]
+    warn!("This is a development build of this software.");
 
     let query_type = QueryType::from_str(&cli.query_value)?;
 
