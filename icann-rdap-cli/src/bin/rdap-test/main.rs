@@ -19,6 +19,7 @@ use icann_rdap_common::check::CheckClass;
 use termimad::crossterm::style::Color::*;
 use termimad::Alignment;
 use termimad::MadSkin;
+use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 
 use clap::{Parser, ValueEnum};
@@ -380,6 +381,8 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .with_max_level(level)
         .with_writer(std::io::stderr)
         .init();
+
+    info!("ICANN RDAP {} Testing Tool", VERSION);
 
     let query_type = QueryType::from_str(&cli.query_value)?;
 
