@@ -1199,11 +1199,10 @@ mod tests {
         let actual = parse_notice_or_remark(arg).expect("parsing notice");
 
         // THEN
-        assert!(actual
-            .description
-            .expect("no description!")
-            .many()
-            .contains(&arg.to_string()));
+        assert!(
+            Into::<Vec<String>>::into(actual.description.expect("no description!"))
+                .contains(&arg.to_string())
+        );
     }
 
     #[test]
@@ -1222,7 +1221,7 @@ mod tests {
         assert!(actual
             .description
             .expect("no description!")
-            .many()
+            .into_vec_string()
             .contains(&description.to_string()));
         let Some(links) = actual.links else {
             panic!("no links in notice")

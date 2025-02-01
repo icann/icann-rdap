@@ -27,6 +27,7 @@ pub mod domain;
 pub mod entity;
 pub mod error;
 pub mod help;
+pub mod lenient;
 pub mod nameserver;
 pub mod network;
 pub mod redacted;

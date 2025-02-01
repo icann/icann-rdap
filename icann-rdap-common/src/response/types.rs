@@ -2,7 +2,7 @@ use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumString};
 
-use super::{entity::Entity, redacted::Redacted};
+use super::{entity::Entity, lenient::VectorStringish, redacted::Redacted};
 
 /// Represents an RDAP extension identifier.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -252,7 +252,7 @@ impl std::ops::Deref for Remark {
 ///
 /// RFC 9083 requires that `description` be required, but some servers
 /// do not follow this rule. Therefore, this structure allows `description`
-/// to be optional. It is recommended to use builder to construct an RFC valie
+/// to be optional. It is recommended to use builder to construct an RFC valid
 /// structure.
 ///
 /// ```rust
@@ -271,6 +271,7 @@ impl std::ops::Deref for Remark {
 /// let nr = NoticeOrRemark::builder()
 ///   .title("Terms of Use")
 ///   .description_entry("Please read our terms of use.")
+///   .description_entry("TOS can be found in the link.")
 ///   .links(vec![link])
 ///   .build();
 /// ```
@@ -281,7 +282,7 @@ pub struct NoticeOrRemark {
     pub title: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<StringOrStringArray>,
+    pub description: Option<VectorStringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
@@ -293,7 +294,7 @@ impl NoticeOrRemark {
     pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
         NoticeOrRemark {
             title,
-            description: Some(StringOrStringArray::Many(description)),
+            description: Some(VectorStringish::from(description)),
             links,
         }
     }
@@ -663,33 +664,11 @@ impl ObjectCommon {
     }
 }
 
-/// Provides a choice between a string or an array of strings.
-///
-/// This is provided to be lenient with misbehaving RDAP servers that
-/// serve a string when they are suppose to be serving an array of
-/// strings. Usage of a string where an array of strings is an error.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum StringOrStringArray {
-    Many(Vec<String>),
-    One(String),
-}
-
-impl StringOrStringArray {
-    pub fn many(&self) -> Vec<String> {
-        match self {
-            StringOrStringArray::Many(many) => many.clone(),
-            StringOrStringArray::One(one) => vec![one.to_owned()],
-        }
-    }
-}
-
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
     use crate::response::types::{
         Extension, Notice, Notices, RdapConformance, Remark, Remarks, Status, StatusValue,
-        StringOrStringArray,
     };
 
     use super::{Event, Link, Links, NoticeOrRemark, ObjectCommon, PublicId};
@@ -849,11 +828,7 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.title.as_ref().unwrap();
-        let StringOrStringArray::Many(description) =
-            actual.description.expect("must have description")
-        else {
-            panic!();
-        };
+        let description: Vec<String> = actual.description.expect("must have description").into();
         assert_eq!(description.len(), 2);
         actual.links.unwrap();
     }

@@ -10,7 +10,7 @@ use crate::{
         network::Network,
         types::{
             Common, ExtensionId, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds,
-            RdapConformance, Remarks, StringOrStringArray,
+            RdapConformance, Remarks,
         },
     },
 };
@@ -151,7 +151,7 @@ impl GetChecks for NoticeOrRemark {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = Vec::new();
         if let Some(description) = &self.description {
-            if matches!(description, StringOrStringArray::One(_)) {
+            if description.is_string() {
                 items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
             }
         } else {

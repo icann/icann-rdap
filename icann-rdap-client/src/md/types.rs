@@ -146,7 +146,7 @@ impl ToMd for NoticeOrRemark {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         if let Some(description) = &self.description {
-            description.many().iter().for_each(|s| {
+            description.into_vec_string_owned().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
                     md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
                 }
