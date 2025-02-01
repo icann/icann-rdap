@@ -96,13 +96,102 @@ impl VectorStringish {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+enum BoolishInner {
+    /// Valid RDAP.
+    Bool(bool),
+
+    /// Invalide RDAP.
+    String(String),
+}
+
+/// A type that is suppose to be a boolean.
+///
+/// Provides a choice between a boolean or a string representation of a boolean for deserialization.
+///
+/// This type is provided to be lenient with misbehaving RDAP servers that
+/// serve a string representation of a boolean when they are suppose to be serving a boolean
+/// Usage of a string where a boolean is an error.
+///
+/// Use one of the From methods for construction.
+/// ```rust
+/// use icann_rdap_common::response::lenient::Boolish;
+///
+/// let v = Boolish::from("true".to_string());
+///
+/// // or
+///
+/// let v = Boolish::from("true");
+///
+/// // or
+///
+/// let v = Boolish::from(true);
+/// ````
+///
+/// When converting from a string (as would happen with deserialization),
+/// the values "true", "t", "yes", and "y" (case-insensitive with whitespace trimmed)
+/// will be true, all other values will be false.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(transparent)]
+pub struct Boolish {
+    inner: BoolishInner,
+}
+
+impl From<bool> for Boolish {
+    fn from(value: bool) -> Self {
+        Boolish {
+            inner: BoolishInner::Bool(value),
+        }
+    }
+}
+
+impl From<&str> for Boolish {
+    fn from(value: &str) -> Self {
+        Boolish {
+            inner: BoolishInner::Bool(Boolish::is_true(value)),
+        }
+    }
+}
+
+impl From<String> for Boolish {
+    fn from(value: String) -> Self {
+        Boolish {
+            inner: BoolishInner::Bool(Boolish::is_true(&value)),
+        }
+    }
+}
+
+impl Boolish {
+    /// Converts to a bool.
+    pub fn into_bool(&self) -> bool {
+        match &self.inner {
+            BoolishInner::Bool(value) => *value,
+            BoolishInner::String(value) => Boolish::is_true(value),
+        }
+    }
+
+    /// Returns true if the deserialization was as a string.
+    pub fn is_string(&self) -> bool {
+        match &self.inner {
+            BoolishInner::Bool(_) => false,
+            BoolishInner::String(_) => true,
+        }
+    }
+
+    fn is_true(value: &str) -> bool {
+        let s = value.trim().to_lowercase();
+        s == "true" || s == "t" || s == "yes" || s == "y"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::{from_str, to_string};
 
     #[test]
-    fn test_stringorstringarray_serialize_many() {
+    fn test_vectorstringish_serialize_many() {
         // GIVEN
         let many = VectorStringish::from(vec!["one".to_string(), "two".to_string()]);
 
@@ -114,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stringorstringarray_serialize_one() {
+    fn test_vectorstringish_serialize_one() {
         // GIVEN
         let one = VectorStringish::from("one".to_string());
 
@@ -126,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stringorstringarray_deserialize_many() {
+    fn test_vectorstringish_deserialize_many() {
         // GIVEN
         let json_str = r#"["one","two"]"#;
 
@@ -144,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn test_stringorstringarray_deserialize_one() {
+    fn test_vectorstringish_deserialize_one() {
         // GIVEN
         let json_str = r#""one""#;
 
@@ -159,5 +248,121 @@ mod tests {
 
         // and THEN is string
         assert!(deserialized.is_string())
+    }
+
+    #[test]
+    fn test_boolish_serialize_bool() {
+        // GIVEN
+        let b = Boolish::from(true);
+
+        // WHEN
+        let serialized = to_string(&b).unwrap();
+
+        // THEN
+        assert_eq!(serialized, "true");
+    }
+
+    #[test]
+    fn test_boolish_serialize_string() {
+        // GIVEN
+        let b = Boolish::from("true");
+
+        // WHEN
+        let serialized = to_string(&b).unwrap();
+
+        // THEN
+        assert_eq!(serialized, "true");
+    }
+
+    #[test]
+    fn test_boolish_deserialize_bool_true() {
+        // GIVEN
+        let json_str = "true";
+
+        // WHEN
+        let deserialized: Boolish = from_str(json_str).unwrap();
+
+        // THEN
+        assert!(deserialized.into_bool());
+        assert!(!deserialized.is_string());
+    }
+
+    #[test]
+    fn test_boolish_deserialize_bool_false() {
+        // GIVEN
+        let json_str = "false";
+
+        // WHEN
+        let deserialized: Boolish = from_str(json_str).unwrap();
+
+        // THEN
+        assert!(!deserialized.into_bool());
+        assert!(!deserialized.is_string());
+    }
+
+    #[test]
+    fn test_boolish_deserialize_string_true() {
+        // GIVEN
+        let json_str = r#""true""#;
+
+        // WHEN
+        let deserialized: Boolish = from_str(json_str).unwrap();
+
+        // THEN
+        assert!(deserialized.into_bool());
+        assert!(deserialized.is_string());
+    }
+
+    #[test]
+    fn test_boolish_deserialize_string_false() {
+        // GIVEN
+        let json_str = r#""false""#;
+
+        // WHEN
+        let deserialized: Boolish = from_str(json_str).unwrap();
+
+        // THEN
+        assert!(!deserialized.into_bool());
+        assert!(deserialized.is_string());
+    }
+
+    #[test]
+    fn test_boolish_is_true() {
+        // GIVEN various true values
+        let true_values = ["true", "t", "yes", "y", " True ", " T ", " Yes ", " Y "];
+
+        // THEN all are true
+        for value in true_values {
+            assert!(Boolish::is_true(value));
+        }
+    }
+
+    #[test]
+    fn test_boolish_is_false() {
+        // GIVEN various false values
+        let false_values = ["false", "f", "no", "n", "False", "blah", "1", "0", ""];
+
+        // THEN all are false
+        for value in false_values {
+            assert!(!Boolish::is_true(value));
+        }
+    }
+
+    #[test]
+    fn test_boolish_from_str() {
+        assert!(Boolish::from("true").into_bool());
+        assert!(!Boolish::from("false").into_bool());
+    }
+
+    #[test]
+    fn test_boolish_from_string() {
+        assert!(Boolish::from("true".to_string()).into_bool());
+        assert!(!Boolish::from("false".to_string()).into_bool());
+    }
+
+    #[test]
+    fn test_boolish_from_bool() {
+        assert!(Boolish::from(true).into_bool());
+        assert!(!Boolish::from(false).into_bool());
     }
 }
