@@ -117,6 +117,7 @@ pub enum RdapStructure {
     RdapConformance,
     Redacted,
     Remarks,
+    SecureDns,
     Status,
 }
 
@@ -436,6 +437,12 @@ pub enum Check {
     ExpectedExtensionNotFound = 2104,
     #[strum(message = "IPv6 Support Required.")]
     Ipv6SupportRequiredByIcann = 2105,
+
+    // Secure DNS 2200 - 2299
+    #[strum(message = "delegation_signed is a string not a bool.")]
+    DelegationSignedIsString = 2200,
+    #[strum(message = "zone_signed is a string not a bool.")]
+    ZoneSignedIsString = 2201,
 }
 
 impl Check {
@@ -531,6 +538,9 @@ impl Check {
             Check::NoAAAARecords => CheckClass::SpecificationNote,
             Check::ExpectedExtensionNotFound => CheckClass::StdError,
             Check::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
+
+            Check::DelegationSignedIsString => CheckClass::StdError,
+            Check::ZoneSignedIsString => CheckClass::StdError,
         };
         CheckItem {
             check_class,

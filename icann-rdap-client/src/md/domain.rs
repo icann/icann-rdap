@@ -205,6 +205,12 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
         }
     }
 
+    // checks
+    let typeid = TypeId::of::<Domain>();
+    let check_params = CheckParams::from_md(params, typeid);
+    let checks = secure_dns.get_sub_checks(check_params);
+    table = checks_to_table(checks, table, params);
+
     // render table
     md.push_str(&table.to_md(params));
     md

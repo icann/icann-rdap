@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::response::domain::Domain;
+use crate::response::domain::{Domain, SecureDns};
 
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
@@ -17,6 +17,9 @@ impl GetChecks for Domain {
             );
             if let Some(public_ids) = &self.public_ids {
                 sub_checks.append(&mut public_ids.get_sub_checks(params));
+            }
+            if let Some(secure_dns) = &self.secure_dns {
+                sub_checks.append(&mut secure_dns.get_sub_checks(params));
             }
             sub_checks
         } else {
@@ -86,10 +89,42 @@ impl GetChecks for Domain {
     }
 }
 
+impl GetSubChecks for SecureDns {
+    fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
+        let mut sub_checks = Vec::new();
+        if let Some(delegation_signed) = &self.delegation_signed {
+            if delegation_signed.is_string() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::SecureDns,
+                    items: vec![Check::DelegationSignedIsString.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        }
+        if let Some(zone_signed) = &self.zone_signed {
+            if zone_signed.is_string() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::SecureDns,
+                    items: vec![Check::ZoneSignedIsString.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        }
+        sub_checks
+    }
+}
+
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
-    use crate::response::{domain::Domain, RdapResponse};
+    use std::any::TypeId;
+
+    use crate::{
+        check::GetSubChecks,
+        response::{
+            domain::{Domain, SecureDns},
+            RdapResponse,
+        },
+    };
     use rstest::rstest;
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -98,7 +133,7 @@ mod tests {
     #[case("")]
     #[case("  ")]
     #[case("_.")]
-    fn GIVEN_domain_with_bad_ldh_WHEN_checked_THEN_invalid_ldh(#[case] ldh: &str) {
+    fn test_check_for_bad_ldh(#[case] ldh: &str) {
         // GIVEN
         let domain = Domain::basic().ldh_name(ldh).build();
         let rdap = RdapResponse::Domain(domain);
@@ -117,7 +152,7 @@ mod tests {
     #[rstest]
     #[case("")]
     #[case("  ")]
-    fn GIVEN_domain_with_bad_unicode_WHEN_checked_THEN_invalid_ldh(#[case] unicode: &str) {
+    fn test_check_for_bad_unicode(#[case] unicode: &str) {
         // GIVEN
         let domain = Domain::idn().unicode_name(unicode).build();
         let rdap = RdapResponse::Domain(domain);
@@ -134,7 +169,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_with_mismatch_ldh_and_unicode_WHEN_checked_THEN_unicode_does_not_match() {
+    fn test_check_for_ldh_unicode_mismatch() {
         // GIVEN
         let domain = Domain::idn()
             .unicode_name("foo.com")
@@ -151,5 +186,101 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::LdhNameDoesNotMatchUnicode));
+    }
+
+    #[test]
+    fn test_delegation_signed_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "delegationSigned": "true"
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::DelegationSignedIsString));
+    }
+
+    #[test]
+    fn test_delegation_signed_as_bool() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "delegationSigned": true
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_zone_signed_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "zoneSigned": "false"
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::ZoneSignedIsString));
+    }
+
+    #[test]
+    fn test_zone_signed_as_bool() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "zoneSigned": true
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
     }
 }
