@@ -1,6 +1,7 @@
 use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::domain::Domain;
 use icann_rdap_common::response::domain::SecureDns;
+use icann_rdap_common::response::lenient::Boolish;
 use icann_rdap_common::response::nameserver::Nameserver;
 use icann_rdap_common::response::network::Network;
 use icann_rdap_common::response::types::{Event, StatusValue};
@@ -142,7 +143,12 @@ fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
     let mut dnssec_info = String::new();
 
     if let Some(secure_dns) = secure_dns {
-        if secure_dns.delegation_signed.unwrap_or(false) {
+        if secure_dns
+            .delegation_signed
+            .as_ref()
+            .unwrap_or(&Boolish::from(false))
+            .into_bool()
+        {
             dnssec_info.push_str("DNSSEC: signedDelegation\n");
             if let Some(ds_data) = &secure_dns.ds_data {
                 for ds in ds_data {

@@ -1,5 +1,7 @@
 //! Types for more lenient processing of invalid RDAP
 
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -159,6 +161,12 @@ impl From<String> for Boolish {
         Boolish {
             inner: BoolishInner::Bool(Boolish::is_true(&value)),
         }
+    }
+}
+
+impl Display for Boolish {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.into_bool())
     }
 }
 

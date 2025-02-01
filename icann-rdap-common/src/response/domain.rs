@@ -2,6 +2,7 @@ use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
+    lenient::Boolish,
     nameserver::Nameserver,
     network::Network,
     types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
@@ -84,11 +85,11 @@ pub struct KeyDatum {
 pub struct SecureDns {
     #[serde(rename = "zoneSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zone_signed: Option<bool>,
+    pub zone_signed: Option<Boolish>,
 
     #[serde(rename = "delegationSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub delegation_signed: Option<bool>,
+    pub delegation_signed: Option<Boolish>,
 
     #[serde(rename = "maxSigLife")]
     #[serde(skip_serializing_if = "Option::is_none")]

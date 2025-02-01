@@ -154,11 +154,11 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
         .header_ref(&"DNSSEC Information")
         .and_nv_ref(
             &"Zone Signed",
-            &secure_dns.zone_signed.map(|b| b.to_string()),
+            &secure_dns.zone_signed.as_ref().map(|b| b.to_string()),
         )
         .and_nv_ref(
             &"Delegation Signed",
-            &secure_dns.delegation_signed.map(|b| b.to_string()),
+            &secure_dns.delegation_signed.as_ref().map(|b| b.to_string()),
         )
         .and_nv_ref(
             &"Max Sig Life",
