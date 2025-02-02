@@ -193,7 +193,10 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
                 .and_nv_ref(&"Flags", &key.flags.map(|k| k.to_string()))
                 .and_nv_ref(&"Protocol", &key.protocol.map(|a| a.to_string()))
                 .and_nv_ref(&"Public Key", &key.public_key)
-                .and_nv_ref(&"Algorithm", &dns_algorithm(&key.algorithm));
+                .and_nv_ref(
+                    &"Algorithm",
+                    &dns_algorithm(&key.algorithm.as_ref().and_then(|a| a.as_u8())),
+                );
             if let Some(events) = &key.events {
                 let key_header = format!("Key ({i}) Events");
                 table = events_to_table(events, table, &key_header, params);

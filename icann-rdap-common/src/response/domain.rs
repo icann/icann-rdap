@@ -58,7 +58,7 @@ pub struct DsDatum {
     pub events: Option<Events>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct KeyDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub flags: Option<u16>,
@@ -71,13 +71,35 @@ pub struct KeyDatum {
     pub public_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub algorithm: Option<u8>,
+    pub algorithm: Option<Numberish<u8>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub events: Option<Events>,
+}
+
+#[buildstructor::buildstructor]
+impl KeyDatum {
+    #[builder]
+    pub fn new(
+        flags: Option<u16>,
+        protocol: Option<u8>,
+        public_key: Option<String>,
+        algorithm: Option<u8>,
+        links: Option<Links>,
+        events: Option<Events>,
+    ) -> Self {
+        Self {
+            flags,
+            protocol,
+            public_key,
+            algorithm: algorithm.map(Numberish::<u8>::from),
+            links,
+            events,
+        }
+    }
 }
 
 /// Represents the DNSSEC information of a domain.
