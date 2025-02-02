@@ -445,6 +445,10 @@ pub enum Check {
     ZoneSignedIsString = 2201,
     #[strum(message = "maxSigLife is a string not a number.")]
     MaxSigLifeIsString = 2202,
+    #[strum(message = "keyData algorithm is a string not a number.")]
+    KeyDatumAlgorithmIsString = 2203,
+    #[strum(message = "keyData algorithm is out of range.")]
+    KeyDatumAlgorithmIsOutOfRange = 2204,
 }
 
 impl Check {
@@ -544,6 +548,8 @@ impl Check {
             Check::DelegationSignedIsString => CheckClass::StdError,
             Check::ZoneSignedIsString => CheckClass::StdError,
             Check::MaxSigLifeIsString => CheckClass::StdError,
+            Check::KeyDatumAlgorithmIsString => CheckClass::StdError,
+            Check::KeyDatumAlgorithmIsOutOfRange => CheckClass::StdError,
         };
         CheckItem {
             check_class,
