@@ -152,9 +152,12 @@ fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
             dnssec_info.push_str("DNSSEC: signedDelegation\n");
             if let Some(ds_data) = &secure_dns.ds_data {
                 for ds in ds_data {
-                    if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) =
-                        (ds.key_tag, ds.algorithm, ds.digest_type, ds.digest.as_ref())
-                    {
+                    if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) = (
+                        ds.key_tag,
+                        ds.algorithm.as_ref(),
+                        ds.digest_type,
+                        ds.digest.as_ref(),
+                    ) {
                         dnssec_info.push_str(&format!(
                             "DNSSEC DS Data: {} {} {} {}\n",
                             key_tag, algorithm, digest_type, digest

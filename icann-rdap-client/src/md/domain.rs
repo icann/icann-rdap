@@ -171,7 +171,10 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
             table = table
                 .header_ref(&header)
                 .and_nv_ref(&"Key Tag", &ds.key_tag.map(|k| k.to_string()))
-                .and_nv_ref(&"Algorithm", &dns_algorithm(&ds.algorithm))
+                .and_nv_ref(
+                    &"Algorithm",
+                    &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
+                )
                 .and_nv_ref(&"Digest", &ds.digest)
                 .and_nv_ref(&"Digest Type", &dns_digest_type(&ds.digest_type));
             if let Some(events) = &ds.events {

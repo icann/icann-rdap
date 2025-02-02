@@ -35,14 +35,14 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct DsDatum {
     #[serde(rename = "keyTag")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_tag: Option<u32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub algorithm: Option<u8>,
+    pub algorithm: Option<Numberish<u8>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digest: Option<String>,
@@ -56,6 +56,28 @@ pub struct DsDatum {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub events: Option<Events>,
+}
+
+#[buildstructor::buildstructor]
+impl DsDatum {
+    #[builder]
+    pub fn new(
+        key_tag: Option<u32>,
+        algorithm: Option<u8>,
+        digest: Option<String>,
+        digest_type: Option<u8>,
+        links: Option<Links>,
+        events: Option<Events>,
+    ) -> Self {
+        Self {
+            key_tag,
+            algorithm: algorithm.map(Numberish::<u8>::from),
+            digest,
+            digest_type,
+            links,
+            events,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
