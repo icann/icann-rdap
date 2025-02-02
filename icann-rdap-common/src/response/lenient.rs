@@ -120,14 +120,6 @@ enum BoolishInner {
 /// ```rust
 /// use icann_rdap_common::response::lenient::Boolish;
 ///
-/// let v = Boolish::from("true".to_string());
-///
-/// // or
-///
-/// let v = Boolish::from("true");
-///
-/// // or
-///
 /// let v = Boolish::from(true);
 /// ````
 ///
@@ -144,22 +136,6 @@ impl From<bool> for Boolish {
     fn from(value: bool) -> Self {
         Boolish {
             inner: BoolishInner::Bool(value),
-        }
-    }
-}
-
-impl From<&str> for Boolish {
-    fn from(value: &str) -> Self {
-        Boolish {
-            inner: BoolishInner::Bool(Boolish::is_true(value)),
-        }
-    }
-}
-
-impl From<String> for Boolish {
-    fn from(value: String) -> Self {
-        Boolish {
-            inner: BoolishInner::Bool(Boolish::is_true(&value)),
         }
     }
 }
@@ -381,18 +357,6 @@ mod tests {
     }
 
     #[test]
-    fn test_boolish_serialize_string() {
-        // GIVEN
-        let b = Boolish::from("true");
-
-        // WHEN
-        let serialized = to_string(&b).unwrap();
-
-        // THEN
-        assert_eq!(serialized, "true");
-    }
-
-    #[test]
     fn test_boolish_deserialize_bool_true() {
         // GIVEN
         let json_str = "true";
@@ -464,18 +428,6 @@ mod tests {
         for value in false_values {
             assert!(!Boolish::is_true(value));
         }
-    }
-
-    #[test]
-    fn test_boolish_from_str() {
-        assert!(Boolish::from("true").into_bool());
-        assert!(!Boolish::from("false").into_bool());
-    }
-
-    #[test]
-    fn test_boolish_from_string() {
-        assert!(Boolish::from("true".to_string()).into_bool());
-        assert!(!Boolish::from("false".to_string()).into_bool());
     }
 
     #[test]
