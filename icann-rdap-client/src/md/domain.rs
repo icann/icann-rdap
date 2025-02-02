@@ -162,7 +162,7 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
         )
         .and_nv_ref(
             &"Max Sig Life",
-            &secure_dns.max_sig_life.map(|u| u.to_string()),
+            &secure_dns.max_sig_life.as_ref().map(|u| u.to_string()),
         );
 
     if let Some(ds_data) = &secure_dns.ds_data {

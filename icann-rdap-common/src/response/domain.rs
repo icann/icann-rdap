@@ -2,7 +2,7 @@ use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    lenient::Boolish,
+    lenient::{Boolish, Numberish},
     nameserver::Nameserver,
     network::Network,
     types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
@@ -81,7 +81,7 @@ pub struct KeyDatum {
 }
 
 /// Represents the DNSSEC information of a domain.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct SecureDns {
     #[serde(rename = "zoneSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -93,7 +93,7 @@ pub struct SecureDns {
 
     #[serde(rename = "maxSigLife")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_sig_life: Option<u64>,
+    pub max_sig_life: Option<Numberish<u64>>,
 
     #[serde(rename = "dsData")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -102,6 +102,26 @@ pub struct SecureDns {
     #[serde(rename = "keyData")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_data: Option<Vec<KeyDatum>>,
+}
+
+#[buildstructor::buildstructor]
+impl SecureDns {
+    #[builder]
+    pub fn new(
+        zone_signed: Option<bool>,
+        delegation_signed: Option<bool>,
+        max_sig_life: Option<u64>,
+        ds_data: Option<Vec<DsDatum>>,
+        key_data: Option<Vec<KeyDatum>>,
+    ) -> Self {
+        Self {
+            zone_signed: zone_signed.map(Boolish::from),
+            delegation_signed: delegation_signed.map(Boolish::from),
+            max_sig_life: max_sig_life.map(Numberish::<u64>::from),
+            ds_data,
+            key_data,
+        }
+    }
 }
 
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
