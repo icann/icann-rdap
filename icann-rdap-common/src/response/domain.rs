@@ -39,7 +39,7 @@ pub struct Variant {
 pub struct DsDatum {
     #[serde(rename = "keyTag")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub key_tag: Option<u32>,
+    pub key_tag: Option<Numberish<u32>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub algorithm: Option<Numberish<u8>>,
@@ -70,7 +70,7 @@ impl DsDatum {
         events: Option<Events>,
     ) -> Self {
         Self {
-            key_tag,
+            key_tag: key_tag.map(Numberish::<u32>::from),
             algorithm: algorithm.map(Numberish::<u8>::from),
             digest,
             digest_type,
