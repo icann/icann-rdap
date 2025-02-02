@@ -110,6 +110,15 @@ impl GetSubChecks for SecureDns {
                 });
             }
         }
+        if let Some(max_sig_life) = &self.max_sig_life {
+            if max_sig_life.is_string() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::SecureDns,
+                    items: vec![Check::MaxSigLifeIsString.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        }
         sub_checks
     }
 }
@@ -268,6 +277,54 @@ mod tests {
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "zoneSigned": true
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_max_sig_life_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "maxSigLife": "123"
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::MaxSigLifeIsString));
+    }
+
+    #[test]
+    fn test_max_sig_life_as_number() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "maxSigLife": 123
             }"#,
         )
         .unwrap();

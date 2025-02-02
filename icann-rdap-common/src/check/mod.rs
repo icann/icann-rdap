@@ -439,10 +439,12 @@ pub enum Check {
     Ipv6SupportRequiredByIcann = 2105,
 
     // Secure DNS 2200 - 2299
-    #[strum(message = "delegation_signed is a string not a bool.")]
+    #[strum(message = "delegationSigned is a string not a bool.")]
     DelegationSignedIsString = 2200,
-    #[strum(message = "zone_signed is a string not a bool.")]
+    #[strum(message = "zoneSigned is a string not a bool.")]
     ZoneSignedIsString = 2201,
+    #[strum(message = "maxSigLife is a string not a number.")]
+    MaxSigLifeIsString = 2202,
 }
 
 impl Check {
@@ -541,6 +543,7 @@ impl Check {
 
             Check::DelegationSignedIsString => CheckClass::StdError,
             Check::ZoneSignedIsString => CheckClass::StdError,
+            Check::MaxSigLifeIsString => CheckClass::StdError,
         };
         CheckItem {
             check_class,
