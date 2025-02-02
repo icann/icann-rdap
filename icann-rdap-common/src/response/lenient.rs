@@ -1,8 +1,9 @@
 //! Types for more lenient processing of invalid RDAP
 
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData, str::FromStr};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Number;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
@@ -20,7 +21,7 @@ enum VectorStringishInner {
 ///
 /// This type is provided to be lenient with misbehaving RDAP servers that
 /// serve a string when they are suppose to be serving an array of
-/// strings. Usage of a string where an array of strings is an error.
+/// strings.
 ///
 /// Use one of the From methods for construction.
 /// ```rust
@@ -114,7 +115,6 @@ enum BoolishInner {
 ///
 /// This type is provided to be lenient with misbehaving RDAP servers that
 /// serve a string representation of a boolean when they are suppose to be serving a boolean
-/// Usage of a string where a boolean is an error.
 ///
 /// Use one of the From methods for construction.
 /// ```rust
@@ -193,10 +193,116 @@ impl Boolish {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+enum NumberishInner {
+    /// Valid RDAP.
+    Number(Number),
+
+    /// Invalide RDAP.
+    String(String),
+}
+
+/// A type that is suppose to be a number.
+///
+/// Provides a choice between a number or a string representation of a number for deserialization.
+///
+/// This type is provided to be lenient with misbehaving RDAP servers that
+/// serve a string representation of a number when they are suppose to be serving a number.
+///
+/// Use the From methods for construction.
+/// ```rust
+/// use icann_rdap_common::response::lenient::Numberish;
+///
+/// let v = Numberish::from(123);
+/// ````
+///
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(transparent)]
+pub struct Numberish<T> {
+    inner: NumberishInner,
+    phatom: PhantomData<T>,
+}
+
+impl<T> From<T> for Numberish<T>
+where
+    Number: From<T>,
+{
+    fn from(value: T) -> Self {
+        Numberish {
+            inner: NumberishInner::Number(Number::from(value)),
+            phatom: PhantomData,
+        }
+    }
+}
+
+impl<T> Display for Numberish<T>
+where
+    Number: From<T>,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.as_u64()
+                .map_or("RANGE_ERRROR".to_string(), |u| u.to_string())
+        )
+    }
+}
+
+impl<T> Numberish<T>
+where
+    Number: From<T>,
+{
+    /// Returns true if the deserialization was as a string.
+    pub fn is_string(&self) -> bool {
+        match &self.inner {
+            NumberishInner::Number(_) => false,
+            NumberishInner::String(_) => true,
+        }
+    }
+
+    /// If the `Number` is an integer, represent it as u64 if possible. Returns None otherwise.
+    pub fn as_u64(&self) -> Option<u64> {
+        match &self.inner {
+            NumberishInner::Number(n) => n.as_u64(),
+            NumberishInner::String(s) => Number::from_str(s).ok()?.as_u64(),
+        }
+    }
+
+    /// If the `Number` is an integer, represent it as u32 if possible. Returns None otherwise.
+    pub fn as_u32(&self) -> Option<u32> {
+        match &self.inner {
+            NumberishInner::Number(n) => n.as_u64()?.try_into().ok(),
+            NumberishInner::String(s) => Number::from_str(s).ok()?.as_u64()?.try_into().ok(),
+        }
+    }
+
+    /// If the `Number` is an integer, represent it as u16 if possible. Returns None otherwise.
+    pub fn as_u16(&self) -> Option<u16> {
+        match &self.inner {
+            NumberishInner::Number(n) => n.as_u64()?.try_into().ok(),
+            NumberishInner::String(s) => Number::from_str(s).ok()?.as_u64()?.try_into().ok(),
+        }
+    }
+
+    /// If the `Number` is an integer, represent it as u8 if possible. Returns None otherwise.
+    pub fn as_u8(&self) -> Option<u8> {
+        match &self.inner {
+            NumberishInner::Number(n) => n.as_u64()?.try_into().ok(),
+            NumberishInner::String(s) => Number::from_str(s).ok()?.as_u64()?.try_into().ok(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::{from_str, to_string};
+
+    //
+    // VectorStringish tests
+    //
 
     #[test]
     fn test_vectorstringish_serialize_many() {
@@ -257,6 +363,10 @@ mod tests {
         // and THEN is string
         assert!(deserialized.is_string())
     }
+
+    //
+    // Boolish tests
+    //
 
     #[test]
     fn test_boolish_serialize_bool() {
@@ -372,5 +482,137 @@ mod tests {
     fn test_boolish_from_bool() {
         assert!(Boolish::from(true).into_bool());
         assert!(!Boolish::from(false).into_bool());
+    }
+
+    //
+    // Numberish Tests
+    //
+
+    #[test]
+    fn test_numberish_serialize_number() {
+        // GIVEN a Numberish from a number
+        let n = Numberish::<u32>::from(123);
+
+        // WHEN serialized
+        let serialized = to_string(&n).unwrap();
+
+        // THEN it is the correct string
+        assert_eq!(serialized, "123");
+    }
+
+    #[test]
+    fn test_numberish_deserialize_number() {
+        // GIVEN a JSON string representing a number
+        let json_str = "123";
+
+        // WHEN deserialized
+        let deserialized: Numberish<u32> = from_str(json_str).unwrap();
+
+        // THEN the value is correct and it's not a string
+        assert_eq!(deserialized.as_u32(), Some(123));
+        assert!(!deserialized.is_string());
+    }
+
+    #[test]
+    fn test_numberish_deserialize_string() {
+        // GIVEN a JSON string representing a number as a string
+        let json_str = r#""123""#;
+
+        // WHEN deserialized
+        let deserialized: Numberish<u32> = from_str(json_str).unwrap();
+
+        // THEN the value is correct and it's a string
+        assert_eq!(deserialized.as_u32(), Some(123));
+        assert!(deserialized.is_string());
+    }
+
+    #[test]
+    fn test_numberish_as_u64_number() {
+        // GIVEN a Numberish from a u64
+        let n = Numberish::from(123u64);
+
+        // WHEN as_u64 is called
+        let result = n.as_u64();
+
+        // THEN the result is Some(123)
+        assert_eq!(result, Some(123));
+    }
+
+    #[test]
+    fn test_numberish_as_u64_string_invalid() {
+        // GIVEN a Numberish from a string that does not represent a u64
+        let n = Numberish {
+            inner: NumberishInner::String("abc".to_string()),
+            phatom: PhantomData::<u64>,
+        };
+
+        // WHEN as_u64 is called
+        let result = n.as_u64();
+
+        // THEN the result is None
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_numberish_as_smaller_types() {
+        // GIVEN a valid number
+        let n = Numberish::from(123u64);
+
+        // THEN smaller type conversions work
+        assert_eq!(n.as_u32(), Some(123));
+        assert_eq!(n.as_u16(), Some(123));
+        assert_eq!(n.as_u8(), Some(123));
+
+        // GIVEN a number too large
+        let n = Numberish::from(u32::MAX as u64 + 1);
+
+        // THEN smaller type conversions fail
+        assert_eq!(n.as_u32(), None);
+        assert_eq!(n.as_u16(), None);
+        assert_eq!(n.as_u8(), None);
+
+        // GIVEN a valid number string
+        let n = Numberish {
+            inner: NumberishInner::String("123".to_string()),
+            phatom: PhantomData::<u64>,
+        };
+
+        // THEN smaller type conversions work
+        assert_eq!(n.as_u32(), Some(123));
+        assert_eq!(n.as_u16(), Some(123));
+        assert_eq!(n.as_u8(), Some(123));
+
+        // GIVEN a number string too large
+        let n = Numberish {
+            inner: NumberishInner::String((u32::MAX as u64 + 1).to_string()),
+            phatom: PhantomData::<u64>,
+        };
+
+        // THEN smaller type conversions fail
+        assert_eq!(n.as_u32(), None);
+    }
+
+    #[test]
+    fn test_numberish_display_number() {
+        let n = Numberish::<u32>::from(123);
+        assert_eq!(format!("{}", n), "123");
+    }
+
+    #[test]
+    fn test_numberish_display_string_valid() {
+        let n = Numberish {
+            inner: NumberishInner::String("123".to_string()),
+            phatom: PhantomData::<u32>,
+        };
+        assert_eq!(format!("{}", n), "123");
+    }
+
+    #[test]
+    fn test_numberish_display_string_invalid() {
+        let n = Numberish {
+            inner: NumberishInner::String("abc".to_string()),
+            phatom: PhantomData::<u32>,
+        };
+        assert_eq!(format!("{}", n), "RANGE_ERRROR");
     }
 }
