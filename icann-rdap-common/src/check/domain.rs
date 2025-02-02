@@ -138,6 +138,22 @@ impl GetSubChecks for SecureDns {
                         });
                     }
                 }
+                if let Some(flags) = &key_datum.flags {
+                    if flags.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumFlagsIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if flags.as_u16().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumFlagsIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
             }
         }
 
@@ -554,5 +570,91 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::DsDatumAlgorithmIsOutOfRange));
+    }
+
+    #[test]
+    fn test_key_data_flags_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "flags": "13"
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::KeyDatumFlagsIsString));
+    }
+
+    #[test]
+    fn test_key_data_flags_as_number() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "flags": 13
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_key_data_flags_as_range() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "flags": 130000
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::KeyDatumFlagsIsOutOfRange));
     }
 }
