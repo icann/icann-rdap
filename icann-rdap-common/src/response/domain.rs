@@ -83,7 +83,7 @@ impl DsDatum {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct KeyDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub flags: Option<u16>,
+    pub flags: Option<Numberish<u16>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<u8>,
@@ -114,7 +114,7 @@ impl KeyDatum {
         events: Option<Events>,
     ) -> Self {
         Self {
-            flags,
+            flags: flags.map(Numberish::<u16>::from),
             protocol,
             public_key,
             algorithm: algorithm.map(Numberish::<u8>::from),
