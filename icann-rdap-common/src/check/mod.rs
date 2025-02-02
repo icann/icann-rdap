@@ -457,6 +457,10 @@ pub enum Check {
     KeyDatumFlagsIsString = 2207,
     #[strum(message = "keyData flags is out of range.")]
     KeyDatumFlagsIsOutOfRange = 2208,
+    #[strum(message = "dsData keyTag is a string not a number.")]
+    DsDatumKeyTagIsString = 2209,
+    #[strum(message = "dsData keyTag is out of range.")]
+    DsDatumKeyTagIsOutOfRange = 2210,
 }
 
 impl Check {
@@ -562,6 +566,8 @@ impl Check {
             Check::DsDatumAlgorithmIsOutOfRange => CheckClass::StdError,
             Check::KeyDatumFlagsIsString => CheckClass::StdError,
             Check::KeyDatumFlagsIsOutOfRange => CheckClass::StdError,
+            Check::DsDatumKeyTagIsString => CheckClass::StdError,
+            Check::DsDatumKeyTagIsOutOfRange => CheckClass::StdError,
         };
         CheckItem {
             check_class,

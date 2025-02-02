@@ -175,6 +175,22 @@ impl GetSubChecks for SecureDns {
                         });
                     }
                 }
+                if let Some(key_tag) = &ds_datum.key_tag {
+                    if key_tag.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumKeyTagIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if key_tag.as_u32().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumKeyTagIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
             }
         }
 
@@ -656,5 +672,91 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::KeyDatumFlagsIsOutOfRange));
+    }
+
+    #[test]
+    fn test_ds_data_key_tag_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "keyTag": "13"
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::DsDatumKeyTagIsString));
+    }
+
+    #[test]
+    fn test_ds_data_key_tag_as_number() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "keyTag": 13
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_ds_data_key_tag_as_range() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "keyTag": 13000000000
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(checks[0]
+            .items
+            .iter()
+            .any(|c| c.check == Check::DsDatumKeyTagIsOutOfRange));
     }
 }
