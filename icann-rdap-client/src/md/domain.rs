@@ -197,7 +197,7 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
             table = table
                 .header_ref(&header)
                 .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
-                .and_nv_ref(&"Protocol", &key.protocol.map(|a| a.to_string()))
+                .and_nv_ref(&"Protocol", &key.protocol.as_ref().map(|a| a.to_string()))
                 .and_nv_ref(&"Public Key", &key.public_key)
                 .and_nv_ref(
                     &"Algorithm",

@@ -86,7 +86,7 @@ pub struct KeyDatum {
     pub flags: Option<Numberish<u16>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol: Option<u8>,
+    pub protocol: Option<Numberish<u8>>,
 
     #[serde(rename = "publicKey")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -115,7 +115,7 @@ impl KeyDatum {
     ) -> Self {
         Self {
             flags: flags.map(Numberish::<u16>::from),
-            protocol,
+            protocol: protocol.map(Numberish::<u8>::from),
             public_key,
             algorithm: algorithm.map(Numberish::<u8>::from),
             links,
