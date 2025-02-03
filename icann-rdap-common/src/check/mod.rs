@@ -238,6 +238,16 @@ where
     found
 }
 
+/// Returns true if the check is in a check list
+pub fn is_checked(check: Check, checks: &[Checks]) -> bool {
+    checks.iter().any(|c| is_checked_item(check, c))
+}
+
+/// Returns true if the check is in a list of check items.
+pub fn is_checked_item(check: Check, checks: &Checks) -> bool {
+    checks.items.iter().any(|c| c.check == check)
+}
+
 #[derive(
     Debug,
     EnumMessage,

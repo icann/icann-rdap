@@ -203,7 +203,7 @@ mod tests {
     use std::any::TypeId;
 
     use crate::{
-        check::GetSubChecks,
+        check::{is_checked, is_checked_item, GetSubChecks},
         response::{
             domain::{Domain, SecureDns},
             RdapResponse,
@@ -227,10 +227,7 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::LdhNameInvalid));
+        assert!(is_checked_item(Check::LdhNameInvalid, &checks));
     }
 
     #[rstest]
@@ -246,10 +243,7 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::UnicodeNameInvalidDomain));
+        assert!(is_checked_item(Check::UnicodeNameInvalidDomain, &checks));
     }
 
     #[test]
@@ -266,10 +260,7 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::LdhNameDoesNotMatchUnicode));
+        assert!(is_checked_item(Check::LdhNameDoesNotMatchUnicode, &checks));
     }
 
     #[test]
@@ -292,10 +283,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::DelegationSignedIsString));
+        assert!(is_checked(Check::DelegationSignedIsString, &checks));
     }
 
     #[test]
@@ -340,10 +328,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::ZoneSignedIsString));
+        assert!(is_checked(Check::ZoneSignedIsString, &checks));
     }
 
     #[test]
@@ -388,10 +373,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::MaxSigLifeIsString));
+        assert!(is_checked(Check::MaxSigLifeIsString, &checks));
     }
 
     #[test]
@@ -440,10 +422,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::KeyDatumAlgorithmIsString));
+        assert!(is_checked(Check::KeyDatumAlgorithmIsString, &checks));
     }
 
     #[test]
@@ -496,10 +475,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::KeyDatumAlgorithmIsOutOfRange));
+        assert!(is_checked(Check::KeyDatumAlgorithmIsOutOfRange, &checks));
     }
 
     #[test]
@@ -526,10 +502,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::DsDatumAlgorithmIsString));
+        assert!(is_checked(Check::DsDatumAlgorithmIsString, &checks));
     }
 
     #[test]
@@ -582,10 +555,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::DsDatumAlgorithmIsOutOfRange));
+        assert!(is_checked(Check::DsDatumAlgorithmIsOutOfRange, &checks));
     }
 
     #[test]
@@ -612,10 +582,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::KeyDatumFlagsIsString));
+        assert!(is_checked(Check::KeyDatumFlagsIsString, &checks));
     }
 
     #[test]
@@ -668,10 +635,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::KeyDatumFlagsIsOutOfRange));
+        assert!(is_checked(Check::KeyDatumFlagsIsOutOfRange, &checks));
     }
 
     #[test]
@@ -698,10 +662,7 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::DsDatumKeyTagIsString));
+        assert!(is_checked(Check::DsDatumKeyTagIsString, &checks));
     }
 
     #[test]
@@ -754,9 +715,6 @@ mod tests {
 
         // THEN
         assert_eq!(checks.len(), 1);
-        assert!(checks[0]
-            .items
-            .iter()
-            .any(|c| c.check == Check::DsDatumKeyTagIsOutOfRange));
+        assert!(is_checked(Check::DsDatumKeyTagIsOutOfRange, &checks));
     }
 }
