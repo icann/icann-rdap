@@ -399,172 +399,13 @@ mod tests {
     }
 
     #[test]
-    fn test_key_data_algorithm_as_string() {
+    fn test_key_data_attributes_as_string() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "keyData": [
                     {
-                        "algorithm": "13"
-                    }
-                ]
-            }"#,
-        )
-        .unwrap();
-
-        // WHEN
-        let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
-
-        // THEN
-        assert_eq!(checks.len(), 1);
-        assert!(is_checked(Check::KeyDatumAlgorithmIsString, &checks));
-    }
-
-    #[test]
-    fn test_key_data_algorithm_as_number() {
-        // GIVEN
-        let secure_dns = serde_json::from_str::<SecureDns>(
-            r#"{
-                "keyData": [
-                    {
-                        "algorithm": 13
-                    }
-                ]
-            }"#,
-        )
-        .unwrap();
-
-        // WHEN
-        let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
-
-        // THEN
-        assert!(checks.is_empty());
-    }
-
-    #[test]
-    fn test_key_data_algorithm_as_range() {
-        // GIVEN
-        let secure_dns = serde_json::from_str::<SecureDns>(
-            r#"{
-                "keyData": [
-                    {
-                        "algorithm": 1300
-                    }
-                ]
-            }"#,
-        )
-        .unwrap();
-
-        // WHEN
-        let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
-
-        // THEN
-        assert_eq!(checks.len(), 1);
-        assert!(is_checked(Check::KeyDatumAlgorithmIsOutOfRange, &checks));
-    }
-
-    #[test]
-    fn test_ds_data_algorithm_as_string() {
-        // GIVEN
-        let secure_dns = serde_json::from_str::<SecureDns>(
-            r#"{
-                "dsData": [
-                    {
-                        "algorithm": "13"
-                    }
-                ]
-            }"#,
-        )
-        .unwrap();
-
-        // WHEN
-        let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
-
-        // THEN
-        assert_eq!(checks.len(), 1);
-        assert!(is_checked(Check::DsDatumAlgorithmIsString, &checks));
-    }
-
-    #[test]
-    fn test_ds_data_algorithm_as_number() {
-        // GIVEN
-        let secure_dns = serde_json::from_str::<SecureDns>(
-            r#"{
-                "dsData": [
-                    {
-                        "algorithm": 13
-                    }
-                ]
-            }"#,
-        )
-        .unwrap();
-
-        // WHEN
-        let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
-
-        // THEN
-        assert!(checks.is_empty());
-    }
-
-    #[test]
-    fn test_ds_data_algorithm_as_range() {
-        // GIVEN
-        let secure_dns = serde_json::from_str::<SecureDns>(
-            r#"{
-                "dsData": [
-                    {
-                        "algorithm": 1300
-                    }
-                ]
-            }"#,
-        )
-        .unwrap();
-
-        // WHEN
-        let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
-
-        // THEN
-        assert_eq!(checks.len(), 1);
-        assert!(is_checked(Check::DsDatumAlgorithmIsOutOfRange, &checks));
-    }
-
-    #[test]
-    fn test_key_data_flags_as_string() {
-        // GIVEN
-        let secure_dns = serde_json::from_str::<SecureDns>(
-            r#"{
-                "keyData": [
-                    {
+                        "algorithm": "13",
                         "flags": "13"
                     }
                 ]
@@ -581,17 +422,19 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 1);
+        assert_eq!(checks.len(), 2);
+        assert!(is_checked(Check::KeyDatumAlgorithmIsString, &checks));
         assert!(is_checked(Check::KeyDatumFlagsIsString, &checks));
     }
 
     #[test]
-    fn test_key_data_flags_as_number() {
+    fn test_key_data_attributes_as_number() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "keyData": [
                     {
+                        "algorithm": 13,
                         "flags": 13
                     }
                 ]
@@ -612,12 +455,13 @@ mod tests {
     }
 
     #[test]
-    fn test_key_data_flags_as_range() {
+    fn test_key_data_attributes_out_of_range() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "keyData": [
                     {
+                        "algorithm": 1300,
                         "flags": 130000
                     }
                 ]
@@ -634,17 +478,19 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 1);
+        assert_eq!(checks.len(), 2);
+        assert!(is_checked(Check::KeyDatumAlgorithmIsOutOfRange, &checks));
         assert!(is_checked(Check::KeyDatumFlagsIsOutOfRange, &checks));
     }
 
     #[test]
-    fn test_ds_data_key_tag_as_string() {
+    fn test_ds_data_attributes_as_string() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "dsData": [
                     {
+                        "algorithm": "13",
                         "keyTag": "13"
                     }
                 ]
@@ -661,17 +507,19 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 1);
+        assert_eq!(checks.len(), 2);
+        assert!(is_checked(Check::DsDatumAlgorithmIsString, &checks));
         assert!(is_checked(Check::DsDatumKeyTagIsString, &checks));
     }
 
     #[test]
-    fn test_ds_data_key_tag_as_number() {
+    fn test_ds_data_attributes_as_number() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "dsData": [
                     {
+                        "algorithm": 13,
                         "keyTag": 13
                     }
                 ]
@@ -692,12 +540,13 @@ mod tests {
     }
 
     #[test]
-    fn test_ds_data_key_tag_as_range() {
+    fn test_ds_data_attributes_out_of_range() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
             r#"{
                 "dsData": [
                     {
+                        "algorithm": 1300,
                         "keyTag": 13000000000
                     }
                 ]
@@ -714,7 +563,8 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 1);
+        assert_eq!(checks.len(), 2);
+        assert!(is_checked(Check::DsDatumAlgorithmIsOutOfRange, &checks));
         assert!(is_checked(Check::DsDatumKeyTagIsOutOfRange, &checks));
     }
 }
