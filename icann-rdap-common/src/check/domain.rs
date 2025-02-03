@@ -154,6 +154,22 @@ impl GetSubChecks for SecureDns {
                         });
                     }
                 }
+                if let Some(protocol) = &key_datum.protocol {
+                    if protocol.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumProtocolIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if protocol.as_u8().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumProtocolIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
             }
         }
 
@@ -422,7 +438,8 @@ mod tests {
                 "keyData": [
                     {
                         "algorithm": "13",
-                        "flags": "13"
+                        "flags": "13",
+                        "protocol": "13"
                     }
                 ]
             }"#,
@@ -438,9 +455,10 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 2);
+        assert_eq!(checks.len(), 3);
         assert!(is_checked(Check::KeyDatumAlgorithmIsString, &checks));
         assert!(is_checked(Check::KeyDatumFlagsIsString, &checks));
+        assert!(is_checked(Check::KeyDatumProtocolIsString, &checks));
     }
 
     #[test]
@@ -451,7 +469,8 @@ mod tests {
                 "keyData": [
                     {
                         "algorithm": 13,
-                        "flags": 13
+                        "flags": 13,
+                        "protocol": 13
                     }
                 ]
             }"#,
@@ -478,7 +497,8 @@ mod tests {
                 "keyData": [
                     {
                         "algorithm": 1300,
-                        "flags": 130000
+                        "flags": 130000,
+                        "protocol": 1300
                     }
                 ]
             }"#,
@@ -494,9 +514,10 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 2);
+        assert_eq!(checks.len(), 3);
         assert!(is_checked(Check::KeyDatumAlgorithmIsOutOfRange, &checks));
         assert!(is_checked(Check::KeyDatumFlagsIsOutOfRange, &checks));
+        assert!(is_checked(Check::KeyDatumProtocolIsOutOfRange, &checks));
     }
 
     #[test]
@@ -538,7 +559,8 @@ mod tests {
                 "dsData": [
                     {
                         "algorithm": 13,
-                        "keyTag": 13
+                        "keyTag": 13,
+                        "digestType": 13
                     }
                 ]
             }"#,

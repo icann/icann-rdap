@@ -455,7 +455,7 @@ pub enum Check {
     ZoneSignedIsString = 2201,
     #[strum(message = "maxSigLife is a string not a number.")]
     MaxSigLifeIsString = 2202,
-
+    // key data
     #[strum(message = "keyData algorithm is a string not a number.")]
     KeyDatumAlgorithmIsString = 2203,
     #[strum(message = "keyData algorithm is out of range.")]
@@ -464,6 +464,11 @@ pub enum Check {
     KeyDatumFlagsIsString = 2205,
     #[strum(message = "keyData flags is out of range.")]
     KeyDatumFlagsIsOutOfRange = 2206,
+    #[strum(message = "keyData protocol is a string not a number.")]
+    KeyDatumProtocolIsString = 2207,
+    #[strum(message = "keyData protocol is out of range.")]
+    KeyDatumProtocolIsOutOfRange = 2208,
+    // ds data
     #[strum(message = "dsData algorithm is a string not a number.")]
     DsDatumAlgorithmIsString = 2213,
     #[strum(message = "dsData algorithm is out of range.")]
@@ -579,6 +584,8 @@ impl Check {
             Check::KeyDatumAlgorithmIsOutOfRange => CheckClass::StdError,
             Check::KeyDatumFlagsIsString => CheckClass::StdError,
             Check::KeyDatumFlagsIsOutOfRange => CheckClass::StdError,
+            Check::KeyDatumProtocolIsString => CheckClass::StdError,
+            Check::KeyDatumProtocolIsOutOfRange => CheckClass::StdError,
             Check::DsDatumAlgorithmIsString => CheckClass::StdError,
             Check::DsDatumAlgorithmIsOutOfRange => CheckClass::StdError,
             Check::DsDatumKeyTagIsString => CheckClass::StdError,
