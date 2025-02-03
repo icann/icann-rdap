@@ -455,22 +455,27 @@ pub enum Check {
     ZoneSignedIsString = 2201,
     #[strum(message = "maxSigLife is a string not a number.")]
     MaxSigLifeIsString = 2202,
+
     #[strum(message = "keyData algorithm is a string not a number.")]
     KeyDatumAlgorithmIsString = 2203,
     #[strum(message = "keyData algorithm is out of range.")]
     KeyDatumAlgorithmIsOutOfRange = 2204,
-    #[strum(message = "dsData algorithm is a string not a number.")]
-    DsDatumAlgorithmIsString = 2205,
-    #[strum(message = "dsData algorithm is out of range.")]
-    DsDatumAlgorithmIsOutOfRange = 2206,
     #[strum(message = "keyData flags is a string not a number.")]
-    KeyDatumFlagsIsString = 2207,
+    KeyDatumFlagsIsString = 2205,
     #[strum(message = "keyData flags is out of range.")]
-    KeyDatumFlagsIsOutOfRange = 2208,
+    KeyDatumFlagsIsOutOfRange = 2206,
+    #[strum(message = "dsData algorithm is a string not a number.")]
+    DsDatumAlgorithmIsString = 2213,
+    #[strum(message = "dsData algorithm is out of range.")]
+    DsDatumAlgorithmIsOutOfRange = 2214,
     #[strum(message = "dsData keyTag is a string not a number.")]
-    DsDatumKeyTagIsString = 2209,
+    DsDatumKeyTagIsString = 2215,
     #[strum(message = "dsData keyTag is out of range.")]
-    DsDatumKeyTagIsOutOfRange = 2210,
+    DsDatumKeyTagIsOutOfRange = 2216,
+    #[strum(message = "dsData digestType is a string not a number.")]
+    DsDatumDigestTypeIsString = 2217,
+    #[strum(message = "dsData digestType is out of range.")]
+    DsDatumDigestTypeIsOutOfRange = 2218,
 }
 
 impl Check {
@@ -572,12 +577,14 @@ impl Check {
             Check::MaxSigLifeIsString => CheckClass::StdError,
             Check::KeyDatumAlgorithmIsString => CheckClass::StdError,
             Check::KeyDatumAlgorithmIsOutOfRange => CheckClass::StdError,
-            Check::DsDatumAlgorithmIsString => CheckClass::StdError,
-            Check::DsDatumAlgorithmIsOutOfRange => CheckClass::StdError,
             Check::KeyDatumFlagsIsString => CheckClass::StdError,
             Check::KeyDatumFlagsIsOutOfRange => CheckClass::StdError,
+            Check::DsDatumAlgorithmIsString => CheckClass::StdError,
+            Check::DsDatumAlgorithmIsOutOfRange => CheckClass::StdError,
             Check::DsDatumKeyTagIsString => CheckClass::StdError,
             Check::DsDatumKeyTagIsOutOfRange => CheckClass::StdError,
+            Check::DsDatumDigestTypeIsString => CheckClass::StdError,
+            Check::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
         };
         CheckItem {
             check_class,

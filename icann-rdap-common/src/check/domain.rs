@@ -191,6 +191,22 @@ impl GetSubChecks for SecureDns {
                         });
                     }
                 }
+                if let Some(digest_type) = &ds_datum.digest_type {
+                    if digest_type.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumDigestTypeIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if digest_type.as_u8().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumDigestTypeIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
             }
         }
 
@@ -491,7 +507,8 @@ mod tests {
                 "dsData": [
                     {
                         "algorithm": "13",
-                        "keyTag": "13"
+                        "keyTag": "13",
+                        "digestType": "13"
                     }
                 ]
             }"#,
@@ -507,9 +524,10 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 2);
+        assert_eq!(checks.len(), 3);
         assert!(is_checked(Check::DsDatumAlgorithmIsString, &checks));
         assert!(is_checked(Check::DsDatumKeyTagIsString, &checks));
+        assert!(is_checked(Check::DsDatumDigestTypeIsString, &checks));
     }
 
     #[test]
@@ -547,7 +565,8 @@ mod tests {
                 "dsData": [
                     {
                         "algorithm": 1300,
-                        "keyTag": 13000000000
+                        "keyTag": 13000000000,
+                        "digestType": 1300
                     }
                 ]
             }"#,
@@ -563,8 +582,9 @@ mod tests {
         });
 
         // THEN
-        assert_eq!(checks.len(), 2);
+        assert_eq!(checks.len(), 3);
         assert!(is_checked(Check::DsDatumAlgorithmIsOutOfRange, &checks));
         assert!(is_checked(Check::DsDatumKeyTagIsOutOfRange, &checks));
+        assert!(is_checked(Check::DsDatumDigestTypeIsOutOfRange, &checks));
     }
 }
