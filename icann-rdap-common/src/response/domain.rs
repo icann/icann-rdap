@@ -49,7 +49,7 @@ pub struct DsDatum {
 
     #[serde(rename = "digestType")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub digest_type: Option<u8>,
+    pub digest_type: Option<Numberish<u8>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
@@ -73,7 +73,7 @@ impl DsDatum {
             key_tag: key_tag.map(Numberish::<u32>::from),
             algorithm: algorithm.map(Numberish::<u8>::from),
             digest,
-            digest_type,
+            digest_type: digest_type.map(Numberish::<u8>::from),
             links,
             events,
         }

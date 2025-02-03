@@ -176,7 +176,10 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
                     &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
                 )
                 .and_nv_ref(&"Digest", &ds.digest)
-                .and_nv_ref(&"Digest Type", &dns_digest_type(&ds.digest_type));
+                .and_nv_ref(
+                    &"Digest Type",
+                    &dns_digest_type(&ds.digest_type.as_ref().and_then(|d| d.as_u8())),
+                );
             if let Some(events) = &ds.events {
                 let ds_header = format!("DS ({i}) Events");
                 table = events_to_table(events, table, &ds_header, params);

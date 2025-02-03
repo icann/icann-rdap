@@ -155,7 +155,7 @@ fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
                     if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) = (
                         ds.key_tag.as_ref(),
                         ds.algorithm.as_ref(),
-                        ds.digest_type,
+                        ds.digest_type.as_ref(),
                         ds.digest.as_ref(),
                     ) {
                         dnssec_info.push_str(&format!(
