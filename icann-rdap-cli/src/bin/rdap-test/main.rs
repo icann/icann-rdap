@@ -20,6 +20,7 @@ use termimad::crossterm::style::Color::*;
 use termimad::Alignment;
 use termimad::MadSkin;
 use tracing::info;
+#[cfg(debug_assertions)]
 use tracing::warn;
 use tracing_subscriber::filter::LevelFilter;
 

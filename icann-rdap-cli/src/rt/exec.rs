@@ -99,7 +99,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             value.query_url(&base_url)?
         }
     };
-    // if they URL to test is a referral
+    // if the URL to test is a referral
     if options.chase_referral {
         let client = create_client(client_config)?;
         info!("Fetching referral from {query_url}");
