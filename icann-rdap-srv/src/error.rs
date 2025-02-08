@@ -63,7 +63,7 @@ pub enum RdapServerError {
 impl IntoResponse for RdapServerError {
     fn into_response(self) -> Response {
         let response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
+            icann_rdap_common::response::error::Rfc9083Error::builder()
                 .error_code(500)
                 .common(Common::builder().build())
                 .build(),

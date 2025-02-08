@@ -41,7 +41,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_entity_err(
         &mut self,
         _entity_id: &EntityId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &icann_rdap_common::response::error::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -58,7 +58,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_domain_err(
         &mut self,
         _domain_id: &DomainId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &icann_rdap_common::response::error::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -70,7 +70,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_nameserver_err(
         &mut self,
         _nameserver_id: &NameserverId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &icann_rdap_common::response::error::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -82,7 +82,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_autnum_err(
         &mut self,
         _autnum_id: &AutnumId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &icann_rdap_common::response::error::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -94,7 +94,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_network_err(
         &mut self,
         _network_id: &NetworkId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &icann_rdap_common::response::error::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }

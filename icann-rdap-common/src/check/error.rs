@@ -1,15 +1,15 @@
 use std::any::TypeId;
 
-use crate::response::error::Error;
+use crate::response::error::Rfc9083Error;
 
 use super::{CheckParams, Checks, GetChecks, GetSubChecks};
 
-impl GetChecks for Error {
+impl GetChecks for Rfc9083Error {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = if params.do_subchecks {
             let sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Error>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Rfc9083Error>()));
             sub_checks
         } else {
             Vec::new()

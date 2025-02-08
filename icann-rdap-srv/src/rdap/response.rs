@@ -5,26 +5,26 @@ use axum::{
 use http::StatusCode;
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
-    response::{error::Error, types::Common, RdapResponse},
+    response::{error::Rfc9083Error, types::Common, RdapResponse},
 };
 use lazy_static::lazy_static;
 use tracing::warn;
 
 lazy_static! {
     pub static ref NOT_FOUND: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
+        Rfc9083Error::builder()
             .error_code(404)
             .common(Common::builder().build())
             .build()
     );
     pub static ref NOT_IMPLEMENTED: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
+        Rfc9083Error::builder()
             .error_code(501)
             .common(Common::builder().build())
             .build()
     );
     pub static ref BAD_REQUEST: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
+        Rfc9083Error::builder()
             .error_code(400)
             .common(Common::builder().build())
             .build()
@@ -93,7 +93,7 @@ mod tests {
     use http::StatusCode;
     use icann_rdap_common::response::{
         domain::Domain,
-        error::Error,
+        error::Rfc9083Error,
         types::{Link, Notice, NoticeOrRemark},
         RdapResponse,
     };
@@ -138,7 +138,7 @@ mod tests {
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
         let given = RdapResponse::ErrorResponse(
-            Error::basic()
+            Rfc9083Error::basic()
                 .error_code(307)
                 .notice(Notice(
                     NoticeOrRemark::builder()

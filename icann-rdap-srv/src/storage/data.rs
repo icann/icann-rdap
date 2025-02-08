@@ -59,7 +59,7 @@ pub enum DomainOrError {
     #[serde(rename = "object")]
     DomainObject(Domain),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Error),
+    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -67,7 +67,7 @@ pub enum EntityOrError {
     #[serde(rename = "object")]
     EntityObject(Entity),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Error),
+    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -75,7 +75,7 @@ pub enum NameserverOrError {
     #[serde(rename = "object")]
     NameserverObject(Nameserver),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Error),
+    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -83,7 +83,7 @@ pub enum AutnumOrError {
     #[serde(rename = "object")]
     AutnumObject(Autnum),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Error),
+    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -91,7 +91,7 @@ pub enum NetworkOrError {
     #[serde(rename = "object")]
     NetworkObject(Network),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Error),
+    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
 }
 
 #[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]

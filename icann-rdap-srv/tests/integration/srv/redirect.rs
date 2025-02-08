@@ -5,7 +5,7 @@ use icann_rdap_client::{
     rdap::{rdap_request, QueryType},
 };
 use icann_rdap_common::response::{
-    error::Error,
+    error::Rfc9083Error,
     types::{Link, Notice, NoticeOrRemark},
 };
 use icann_rdap_srv::storage::{
@@ -25,7 +25,7 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             ldh_name: "foo.example".to_string(),
             unicode_name: None,
         },
-        &Error::basic()
+        &Rfc9083Error::basic()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -75,7 +75,7 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
             ldh_name: "ns.foo.example".to_string(),
             unicode_name: None,
         },
-        &Error::basic()
+        &Rfc9083Error::basic()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -124,7 +124,7 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
         &EntityId {
             handle: "foo".to_string(),
         },
-        &Error::basic()
+        &Rfc9083Error::basic()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -174,7 +174,7 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             start_autnum: 700,
             end_autnum: 710,
         },
-        &Error::basic()
+        &Rfc9083Error::basic()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -223,7 +223,7 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
         &NetworkId {
             network_id: NetworkIdType::Cidr("10.0.0.0/16".parse().expect("parsing cidr")),
         },
-        &Error::basic()
+        &Rfc9083Error::basic()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -275,7 +275,7 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
                 end_address: "10.0.0.255".to_string(),
             },
         },
-        &Error::basic()
+        &Rfc9083Error::basic()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()

@@ -1,3 +1,4 @@
+//! RFC 9083 Error
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -5,9 +6,15 @@ use crate::media_types::RDAP_MEDIA_TYPE;
 
 use super::types::{Common, Link, Notice, NoticeOrRemark};
 
-/// Represents an RDAP error response.
+/// Represents an error response from an RDAP server.
+///
+/// This structure represents the JSON returned by an RDAP server
+/// describing an error.
+/// See [RFC 9083, Section 6](https://datatracker.ietf.org/doc/html/rfc9083#name-error-response-body).
+///
+/// Do not confuse this with [crate::response::RdapResponseError].
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
-pub struct Error {
+pub struct Rfc9083Error {
     #[serde(flatten)]
     pub common: Common,
 
@@ -22,9 +29,10 @@ pub struct Error {
 }
 
 #[buildstructor::buildstructor]
-impl Error {
-    #[builder(entry = "basic")]
-    pub fn new_error_code(error_code: u16, notices: Vec<crate::response::types::Notice>) -> Self {
+impl Rfc9083Error {
+    /// Creates a new RFC 9083 Error for a specific HTTP error code.
+    #[builder(entry = "basic", visibility = "pub")]
+    fn new_error_code(error_code: u16, notices: Vec<crate::response::types::Notice>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
             common: Common::builder().and_notices(notices).build(),
@@ -34,8 +42,9 @@ impl Error {
         }
     }
 
-    #[builder(entry = "redirect")]
-    pub fn new_redirect(url: String) -> Self {
+    /// Creates an RFC 9083 error for an HTTP redirect.
+    #[builder(entry = "redirect", visibility = "pub")]
+    fn new_redirect(url: String) -> Self {
         let links = vec![Link::builder()
             .href(&url)
             .value(&url)
@@ -59,12 +68,12 @@ impl Error {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use super::Error;
+    use super::Rfc9083Error;
 
     #[test]
     fn GIVEN_error_code_301_WHEN_is_redirect_THEN_true() {
         // GIVEN
-        let e = Error::redirect().url("https://foo.example").build();
+        let e = Rfc9083Error::redirect().url("https://foo.example").build();
 
         // WHEN
         let actual = e.is_redirect();
@@ -76,7 +85,7 @@ mod tests {
     #[test]
     fn GIVEN_error_code_404_WHEN_is_redirect_THEN_false() {
         // GIVEN
-        let e = Error::basic().error_code(404).build();
+        let e = Rfc9083Error::basic().error_code(404).build();
 
         // WHEN
         let actual = e.is_redirect();

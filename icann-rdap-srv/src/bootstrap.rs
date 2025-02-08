@@ -142,7 +142,7 @@ async fn make_dns_bootstrap(
             .collect::<Vec<DomainId>>();
         let template = Template::Domain {
             domain: DomainOrError::ErrorResponse(
-                icann_rdap_common::response::error::Error::redirect()
+                icann_rdap_common::response::error::Rfc9083Error::redirect()
                     .url(url)
                     .build(),
             ),
@@ -198,7 +198,7 @@ async fn make_asn_bootstrap(
             .collect::<Result<Vec<AutnumId>, RdapServerError>>()?;
         let template = Template::Autnum {
             autnum: AutnumOrError::ErrorResponse(
-                icann_rdap_common::response::error::Error::redirect()
+                icann_rdap_common::response::error::Rfc9083Error::redirect()
                     .url(url)
                     .build(),
             ),
@@ -245,7 +245,7 @@ async fn make_ip_bootstrap(
             .collect::<Result<Vec<NetworkId>, RdapServerError>>()?;
         let template = Template::Network {
             network: NetworkOrError::ErrorResponse(
-                icann_rdap_common::response::error::Error::redirect()
+                icann_rdap_common::response::error::Rfc9083Error::redirect()
                     .url(url)
                     .build(),
             ),
@@ -291,7 +291,7 @@ async fn make_tag_registry(
             .collect::<Vec<EntityId>>();
         let template = Template::Entity {
             entity: EntityOrError::ErrorResponse(
-                icann_rdap_common::response::error::Error::redirect()
+                icann_rdap_common::response::error::Rfc9083Error::redirect()
                     .url(url)
                     .build(),
             ),
@@ -639,7 +639,7 @@ mod tests {
         mem
     }
 
-    fn get_redirect_link(error: icann_rdap_common::response::error::Error) -> String {
+    fn get_redirect_link(error: icann_rdap_common::response::error::Rfc9083Error) -> String {
         let Some(notices) = error.common.notices else {
             panic!("no notices in error")
         };

@@ -14,7 +14,7 @@ use self::{
     autnum::Autnum,
     domain::Domain,
     entity::Entity,
-    error::Error,
+    error::Rfc9083Error,
     help::Help,
     nameserver::Nameserver,
     network::Network,
@@ -34,20 +34,31 @@ pub mod redacted;
 pub mod search;
 pub mod types;
 
+/// An error caused be processing an RDAP response.
+///
+/// This is caused because the JSON constituting the
+/// RDAP response has a problem that cannot be overcome.
+///
+/// Do not confuse this with [Rfc9083Error].
 #[derive(Debug, Error)]
 pub enum RdapResponseError {
+    /// The JSON type is incorrect.
     #[error("Wrong JSON type: {0}")]
     WrongJsonType(String),
 
+    /// The type of RDAP response is unknown.
     #[error("Unknown RDAP response.")]
     UnknownRdapResponse,
 
+    /// An error has occurred parsing the JSON.
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
 
+    /// An error with parsing an IP address.
     #[error(transparent)]
     AddrParse(#[from] std::net::AddrParseError),
 
+    /// An error caused with parsing a CIDR address.
     #[error(transparent)]
     CidrParse(#[from] cidr::errors::NetworkParseError),
 }
@@ -105,7 +116,7 @@ pub enum RdapResponse {
     NameserverSearchResults(NameserverSearchResults),
 
     // Error
-    ErrorResponse(Error),
+    ErrorResponse(Rfc9083Error),
 
     // Help
     Help(Help),
@@ -214,7 +225,7 @@ impl RdapResponse {
             RdapResponse::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
             RdapResponse::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
             RdapResponse::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
-            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Error>(),
+            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             RdapResponse::Help(_) => TypeId::of::<Help>(),
         }
     }
