@@ -1,3 +1,4 @@
+//! RDAP Autonomous System Number.
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -81,9 +82,9 @@ impl Autnum {
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(entry = "basic", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_autnum(
+    fn new_autnum(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,
         remarks: Vec<crate::response::types::Remark>,

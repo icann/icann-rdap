@@ -1,3 +1,4 @@
+//! RDAP IP Network.
 use std::str::FromStr;
 
 use buildstructor::Builder;
@@ -9,6 +10,7 @@ use super::{
     GetSelfLink, RdapResponseError, SelfLink, ToChild,
 };
 
+/// Cidr0 structure from the Cidr0 extension.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum Cidr0Cidr {
@@ -25,7 +27,9 @@ impl std::fmt::Display for Cidr0Cidr {
     }
 }
 
-/// Represents a CIDR0 V4 CIDR. This structure allow both the prefix
+/// Represents a CIDR0 V4 CIDR.
+///
+/// This structure allow both the prefix
 /// and length to be optional to handle misbehaving servers, however
 /// both are required according to the CIDR0 RDAP extension. To create
 /// a valid stucture, use the builder.
@@ -40,8 +44,9 @@ pub struct V4Cidr {
 
 #[buildstructor::buildstructor]
 impl V4Cidr {
-    #[builder]
-    pub fn new(v4prefix: String, length: u8) -> Self {
+    /// Builds an Ipv4 CIDR0.
+    #[builder(visibility = "pub")]
+    fn new(v4prefix: String, length: u8) -> Self {
         V4Cidr {
             v4prefix: Some(v4prefix),
             length: Some(length),
@@ -65,7 +70,9 @@ impl std::fmt::Display for V4Cidr {
     }
 }
 
-/// Represents a CIDR0 V6 CIDR. This structure allow both the prefix
+/// Represents a CIDR0 V6 CIDR.
+///
+/// This structure allow both the prefix
 /// and length to be optional to handle misbehaving servers, however
 /// both are required according to the CIDR0 RDAP extension. To create
 /// a valid stucture, use the builder.
@@ -80,8 +87,9 @@ pub struct V6Cidr {
 
 #[buildstructor::buildstructor]
 impl V6Cidr {
-    #[builder]
-    pub fn new(v6prefix: String, length: u8) -> Self {
+    /// Builds an IPv6 CIDR0.
+    #[builder(visibility = "pub")]
+    fn new(v6prefix: String, length: u8) -> Self {
         V6Cidr {
             v6prefix: Some(v6prefix),
             length: Some(length),
@@ -198,9 +206,9 @@ impl Network {
     ///   .status("active")
     ///   .build().unwrap();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(entry = "basic", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_network(
+    fn new_network(
         cidr: String,
         handle: Option<String>,
         country: Option<String>,
@@ -240,9 +248,9 @@ impl Network {
         )
     }
 
-    #[builder(entry = "with_options")]
+    #[builder(entry = "with_options", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_network_with_options(
+    fn new_network_with_options(
         cidr: String,
         handle: Option<String>,
         country: Option<String>,
