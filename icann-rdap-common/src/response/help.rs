@@ -1,3 +1,4 @@
+//! Server Help Response.
 use crate::response::RdapResponseError;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
@@ -13,16 +14,16 @@ pub struct Help {
 
 #[buildstructor::buildstructor]
 impl Help {
-    #[builder(entry = "basic")]
-    pub fn new_help(
-        notices: Vec<crate::response::types::Notice>,
-    ) -> Result<Self, RdapResponseError> {
+    /// Builds a basic help response.
+    #[builder(entry = "basic", visibility = "pub")]
+    fn new_help(notices: Vec<crate::response::types::Notice>) -> Result<Self, RdapResponseError> {
         let notices = (!notices.is_empty()).then_some(notices);
         Help::new_help_with_options(notices)
     }
 
-    #[builder(entry = "with_options")]
-    pub fn new_help_with_options(
+    /// Builds a help response with options.
+    #[builder(entry = "with_options", visibility = "pub")]
+    fn new_help_with_options(
         notices: Option<Vec<crate::response::types::Notice>>,
     ) -> Result<Self, RdapResponseError> {
         Ok(Self {
