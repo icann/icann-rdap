@@ -1,3 +1,4 @@
+//! RDAP Domain Object Class
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +36,7 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
+/// Represents `dsData`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct DsDatum {
     #[serde(rename = "keyTag")]
@@ -60,8 +62,9 @@ pub struct DsDatum {
 
 #[buildstructor::buildstructor]
 impl DsDatum {
-    #[builder]
-    pub fn new(
+    /// Builder for `dsData`
+    #[builder(visibility = "pub")]
+    fn new(
         key_tag: Option<u32>,
         algorithm: Option<u8>,
         digest: Option<String>,
@@ -80,6 +83,7 @@ impl DsDatum {
     }
 }
 
+/// Represents `keyData`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct KeyDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -104,8 +108,9 @@ pub struct KeyDatum {
 
 #[buildstructor::buildstructor]
 impl KeyDatum {
-    #[builder]
-    pub fn new(
+    /// Builder for `keyData`
+    #[builder(visibility = "pub")]
+    fn new(
         flags: Option<u16>,
         protocol: Option<u8>,
         public_key: Option<String>,
@@ -150,8 +155,9 @@ pub struct SecureDns {
 
 #[buildstructor::buildstructor]
 impl SecureDns {
-    #[builder]
-    pub fn new(
+    /// Builder for `secureDNS`.
+    #[builder(visibility = "pub")]
+    fn new(
         zone_signed: Option<bool>,
         delegation_signed: Option<bool>,
         max_sig_life: Option<u64>,
@@ -250,9 +256,9 @@ impl Domain {
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(entry = "basic", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_ldh<T: Into<String>>(
+    fn new_ldh<T: Into<String>>(
         ldh_name: T,
         unicode_name: Option<String>,
         nameservers: Option<Vec<Nameserver>>,
@@ -305,9 +311,9 @@ impl Domain {
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "idn")]
+    #[builder(entry = "idn", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_idn<T: Into<String>>(
+    fn new_idn<T: Into<String>>(
         ldh_name: Option<String>,
         unicode_name: T,
         nameservers: Option<Vec<Nameserver>>,
