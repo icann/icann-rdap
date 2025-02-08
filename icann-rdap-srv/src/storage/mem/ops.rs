@@ -191,7 +191,7 @@ impl StoreOps for Mem {
             .collect::<Vec<Domain>>();
         let response = RdapResponse::DomainSearchResults(
             DomainSearchResults::builder()
-                .common(Common::new_level0(vec![], vec![]))
+                .common(Common::level0().extensions(vec![]).build())
                 .results(results)
                 .build(),
         );

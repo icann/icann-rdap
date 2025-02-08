@@ -1,3 +1,4 @@
+//! Common data structures, etc...
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumString};
@@ -108,6 +109,7 @@ pub enum ExtensionId {
 }
 
 impl ExtensionId {
+    /// Gets an [Extension] from an Extension ID.
     pub fn to_extension(&self) -> Extension {
         Extension(self.to_string())
     }
@@ -188,6 +190,7 @@ pub struct Link {
 
 #[buildstructor::buildstructor]
 impl Link {
+    /// True if the link `rel` property is equal to the given value.
     pub fn is_relation(&self, rel: &str) -> bool {
         let Some(link_rel) = &self.rel else {
             return false;
@@ -195,8 +198,9 @@ impl Link {
         link_rel == rel
     }
 
-    #[builder]
-    pub fn new(
+    /// Builds an RDAP link.
+    #[builder(visibility = "pub")]
+    fn new(
         value: String,
         href: String,
         rel: String,
@@ -290,8 +294,9 @@ pub struct NoticeOrRemark {
 
 #[buildstructor::buildstructor]
 impl NoticeOrRemark {
-    #[builder]
-    pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
+    /// Builds an RDAP notice/remark.
+    #[builder(visibility = "pub")]
+    fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
         NoticeOrRemark {
             title,
             description: Some(VectorStringish::from(description)),
@@ -361,8 +366,9 @@ pub struct Event {
 
 #[buildstructor::buildstructor]
 impl Event {
-    #[builder]
-    pub fn new(
+    /// Builds an Event.
+    #[builder(visibility = "pub")]
+    fn new(
         event_action: String,
         event_date: String,
         event_actor: Option<String>,
@@ -392,6 +398,10 @@ impl std::ops::Deref for StatusValue {
 /// An array of status values.
 pub type Status = Vec<StatusValue>;
 
+/// Converts a vector of strings to a [Status].
+///
+/// If the vector is empty, returns None. Otherwise returns
+/// `Some(`[Status]`)`.
 pub fn to_option_status(values: Vec<String>) -> Option<Status> {
     if !values.is_empty() {
         Some(values.into_iter().map(StatusValue).collect::<Status>())
@@ -436,8 +446,9 @@ pub struct PublicId {
 
 #[buildstructor::buildstructor]
 impl PublicId {
-    #[builder]
-    pub fn new(id_type: String, identifier: String) -> Self {
+    /// Builds a public ID.
+    #[builder(visibility = "pub")]
+    fn new(id_type: String, identifier: String) -> Self {
         PublicId {
             id_type: Some(id_type),
             identifier: Some(identifier),
@@ -458,14 +469,14 @@ pub struct Common {
 
 #[buildstructor::buildstructor]
 impl Common {
-    #[builder(entry = "level0")]
-    pub fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
+    #[builder(entry = "level0", visibility = "pub")]
+    fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Common::new_level0_with_options(extensions, notices)
     }
 
-    #[builder(entry = "level0_with_options")]
-    pub fn new_level0_with_options(
+    #[builder(entry = "level0_with_options", visibility = "pub")]
+    fn new_level0_with_options(
         mut extensions: Vec<Extension>,
         notices: Option<Vec<Notice>>,
     ) -> Self {
@@ -512,9 +523,10 @@ pub struct ObjectCommon {
 
 #[buildstructor::buildstructor]
 impl ObjectCommon {
-    #[builder(entry = "domain")]
+    /// Builds [ObjectCommon] for a [crate::response::domain::Domain].
+    #[builder(entry = "domain", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_domain(
+    fn new_domain(
         handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
@@ -537,9 +549,10 @@ impl ObjectCommon {
         }
     }
 
-    #[builder(entry = "ip_network")]
+    /// Builds [ObjectCommon] for a [crate::response::network::Network].
+    #[builder(entry = "ip_network", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_ip_network(
+    fn new_ip_network(
         handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
@@ -562,9 +575,10 @@ impl ObjectCommon {
         }
     }
 
-    #[builder(entry = "autnum")]
+    /// Builds an [ObjectCommon] for an [crate::response::autnum::Autnum].
+    #[builder(entry = "autnum", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_autnum(
+    fn new_autnum(
         handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
@@ -587,9 +601,10 @@ impl ObjectCommon {
         }
     }
 
-    #[builder(entry = "nameserver")]
+    /// Builds an [ObjectCommon] for a [crate::response::nameserver::Nameserver].
+    #[builder(entry = "nameserver", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_nameserver(
+    fn new_nameserver(
         handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
@@ -612,9 +627,10 @@ impl ObjectCommon {
         }
     }
 
-    #[builder(entry = "entity")]
+    /// Builds an [ObjectCommon] for an [crate::response::entity::Entity].
+    #[builder(entry = "entity", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_entity(
+    fn new_entity(
         handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
@@ -655,6 +671,7 @@ impl ObjectCommon {
         self
     }
 
+    /// Get the link with a `rel` of "self".
     pub fn get_self_link(&self) -> Option<&Link> {
         if let Some(links) = &self.links {
             links.iter().find(|link| link.is_relation("self"))
