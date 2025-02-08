@@ -290,17 +290,20 @@ impl GetSelfLink for RdapResponse {
     }
 }
 
+/// Trait for getting a link with a `rel` of "self".
 pub trait GetSelfLink {
     /// Get's the first self link.
     /// See [crate::response::types::ObjectCommon::get_self_link()].
     fn get_self_link(&self) -> Option<&Link>;
 }
 
+/// Train for setting a link with a `rel` of "self".
 pub trait SelfLink: GetSelfLink {
     /// See [crate::response::types::ObjectCommon::get_self_link()].
     fn set_self_link(self, link: Link) -> Self;
 }
 
+/// Gets the `href` of a link with `rel` of "related" and `type` with the RDAP media type.
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
     if let Some(links) = rdap_response.get_links() {
         let urls: Vec<&str> = links
@@ -329,6 +332,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
     }
 }
 
+/// Makes a root object class suitable for being embedded in another object class.
 pub trait ToChild {
     /// Removes notices and rdapConformance so this object can be a child
     /// of another object.
