@@ -1,8 +1,7 @@
 //! Determines of an RFC 9537 registered redaction is present.
 
 use icann_rdap_common::response::{
-    entity::{Entity, EntityRole},
-    RdapResponse,
+    RdapResponse, {Entity, EntityRole},
 };
 use strum_macros::{Display, EnumString};
 
@@ -164,8 +163,8 @@ pub fn text_or_registered_redaction_for_role(
 #[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::response::{
-        domain::Domain,
         redacted::{Name, Redacted},
+        Domain,
     };
 
     use super::*;

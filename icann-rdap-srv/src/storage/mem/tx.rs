@@ -3,8 +3,7 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, help::Help, nameserver::Nameserver,
-    network::Network, RdapResponse,
+    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse,
 };
 use ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
@@ -92,7 +91,7 @@ impl TxHandle for MemTx {
     async fn add_entity_err(
         &mut self,
         entity_id: &EntityId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.entities.insert(
             entity_id.handle.to_owned(),
@@ -128,7 +127,7 @@ impl TxHandle for MemTx {
     async fn add_domain_err(
         &mut self,
         domain_id: &DomainId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.domains.insert(
             domain_id.ldh_name.to_owned(),
@@ -152,7 +151,7 @@ impl TxHandle for MemTx {
     async fn add_nameserver_err(
         &mut self,
         nameserver_id: &NameserverId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.nameservers.insert(
             nameserver_id.ldh_name.to_owned(),
@@ -180,7 +179,7 @@ impl TxHandle for MemTx {
     async fn add_autnum_err(
         &mut self,
         autnum_id: &AutnumId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.autnums.insert(
             (autnum_id.start_autnum)..=(autnum_id.end_autnum),
@@ -222,7 +221,7 @@ impl TxHandle for MemTx {
     async fn add_network_err(
         &mut self,
         network_id: &NetworkId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         let subnets = match &network_id.network_id {
             crate::storage::data::NetworkIdType::Cidr(cidr) => cidr.subnets(cidr.prefix_len())?,

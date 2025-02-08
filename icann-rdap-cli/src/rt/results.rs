@@ -9,7 +9,7 @@ use icann_rdap_client::{
 };
 use icann_rdap_common::{
     check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-    response::{types::ExtensionId, RdapResponse},
+    response::{ExtensionId, RdapResponse},
 };
 use reqwest::StatusCode;
 use serde::Serialize;
@@ -427,9 +427,7 @@ fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
 #[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::response::{
-        domain::Domain,
-        types::{Common, Extension},
-        RdapResponse,
+        Domain, RdapResponse, {Common, Extension},
     };
 
     use super::rdap_has_expected_extension;

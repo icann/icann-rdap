@@ -6,7 +6,7 @@ use icann_rdap_client::{
     rdap::{rdap_request, QueryType},
     RdapClientError,
 };
-use icann_rdap_common::response::domain::Domain;
+use icann_rdap_common::response::Domain;
 use icann_rdap_srv::storage::{CommonConfig, StoreOps};
 
 use crate::test_jig::SrvTestJig;

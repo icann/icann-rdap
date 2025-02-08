@@ -1,7 +1,7 @@
 use std::any::TypeId;
 
 use icann_rdap_common::contact::{NameParts, PostalAddress};
-use icann_rdap_common::response::entity::{Entity, EntityRole};
+use icann_rdap_common::response::{Entity, EntityRole};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 

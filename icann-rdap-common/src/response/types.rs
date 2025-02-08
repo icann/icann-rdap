@@ -38,7 +38,7 @@ pub type RdapConformance = Vec<Extension>;
 ///
 /// ```rust
 /// use std::str::FromStr;
-/// use icann_rdap_common::response::types::ExtensionId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let cidr0 = ExtensionId::from_str("cidr0").unwrap();
 /// assert_eq!(cidr0, ExtensionId::Cidr0);
@@ -48,7 +48,7 @@ pub type RdapConformance = Vec<Extension>;
 /// To get the variants as a string:
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::ExtensionId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let s = ExtensionId::Cidr0.to_string();
 /// ```
@@ -56,7 +56,7 @@ pub type RdapConformance = Vec<Extension>;
 /// To get the variants as a &str:
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::ExtensionId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let s = ExtensionId::Cidr0.as_ref();
 /// ```
@@ -136,7 +136,7 @@ pub type Links = Vec<Link>;
 /// which will not allow omision of required fields.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::Link;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let link = Link::builder()
 ///   .value("https://example.com/domains?domain=foo.*")
@@ -260,8 +260,7 @@ impl std::ops::Deref for Remark {
 /// structure.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::NoticeOrRemark;
-/// use icann_rdap_common::response::types::Link;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let link = Link::builder()
 ///   .value("https://example.com/domains/foo.example")
@@ -317,8 +316,7 @@ pub type Events = Vec<Event>;
 /// Use of the builder to contruct an RFC valid structure is recommended.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::Event;
-/// use icann_rdap_common::response::types::Link;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let link = Link::builder()
 ///   .value("https://example.com/domains/foo.example")
@@ -425,7 +423,7 @@ pub type PublicIds = Vec<PublicId>;
 /// Use of the builder to contruct an RFC valid structure is recommended.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::PublicId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let public_id = PublicId::builder()
 ///   .id_type("IANA Registrar ID")

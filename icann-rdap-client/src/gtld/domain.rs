@@ -1,10 +1,10 @@
 use super::{GtldParams, ToGtldWhois};
-use icann_rdap_common::response::domain::Domain;
-use icann_rdap_common::response::domain::SecureDns;
-use icann_rdap_common::response::lenient::Boolish;
-use icann_rdap_common::response::nameserver::Nameserver;
-use icann_rdap_common::response::network::Network;
-use icann_rdap_common::response::types::{Event, StatusValue};
+use icann_rdap_common::response::Boolish;
+use icann_rdap_common::response::Domain;
+use icann_rdap_common::response::Nameserver;
+use icann_rdap_common::response::Network;
+use icann_rdap_common::response::SecureDns;
+use icann_rdap_common::response::{Event, StatusValue};
 
 impl ToGtldWhois for Domain {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
@@ -192,8 +192,10 @@ fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use super::{GtldParams, ToGtldWhois};
-    use icann_rdap_common::response::domain::Domain;
+    use crate::gtld::ToGtldWhois;
+
+    use super::GtldParams;
+    use icann_rdap_common::response::Domain;
     use icann_rdap_common::response::RdapResponse;
     use serde_json::Value;
     use std::any::TypeId;

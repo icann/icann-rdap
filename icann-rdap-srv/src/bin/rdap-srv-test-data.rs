@@ -5,12 +5,7 @@ use icann_rdap_common::{
     contact::{Contact, Email, Phone, PostalAddress},
     media_types::RDAP_MEDIA_TYPE,
     response::{
-        autnum::Autnum,
-        domain::Domain,
-        entity::Entity,
-        nameserver::Nameserver,
-        network::Network,
-        types::{Link, Notice, NoticeOrRemark, Remark},
+        Autnum, Domain, Entity, Nameserver, Network, {Link, Notice, NoticeOrRemark, Remark},
     },
     VERSION,
 };

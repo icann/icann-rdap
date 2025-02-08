@@ -25,7 +25,7 @@ enum VectorStringishInner {
 ///
 /// Use one of the From methods for construction.
 /// ```rust
-/// use icann_rdap_common::response::lenient::VectorStringish;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let v = VectorStringish::from(vec!["one".to_string(), "two".to_string()]);
 ///
@@ -118,7 +118,7 @@ enum BoolishInner {
 ///
 /// Use one of the From methods for construction.
 /// ```rust
-/// use icann_rdap_common::response::lenient::Boolish;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let v = Boolish::from(true);
 /// ````
@@ -188,7 +188,7 @@ enum NumberishInner {
 ///
 /// Use the From methods for construction.
 /// ```rust
-/// use icann_rdap_common::response::lenient::Numberish;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let v = Numberish::from(123);
 /// ````

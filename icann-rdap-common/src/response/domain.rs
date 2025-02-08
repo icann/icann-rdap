@@ -181,8 +181,7 @@ impl SecureDns {
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::domain::Domain;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let domain = Domain::basic()
 ///   .ldh_name("foo.example.com")
@@ -247,8 +246,7 @@ impl Domain {
     /// Builds a basic domain object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::domain::Domain;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let domain = Domain::basic()
     ///   .ldh_name("foo.example.com")
@@ -302,8 +300,7 @@ impl Domain {
     /// Builds an IDN object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::domain::Domain;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let domain = Domain::idn()
     ///   .unicode_name("foo.example.com")

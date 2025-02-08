@@ -14,8 +14,7 @@ use super::{
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::autnum::Autnum;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let autnum = Autnum::basic()
 ///   .autnum_range(700..710) // the range of autnums
@@ -73,8 +72,7 @@ impl Autnum {
     /// Builds a basic autnum object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::autnum::Autnum;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let autnum = Autnum::basic()
     ///   .autnum_range(700..710)

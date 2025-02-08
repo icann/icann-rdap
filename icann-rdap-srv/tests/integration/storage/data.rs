@@ -1,14 +1,7 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_common::response::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    help::Help,
-    nameserver::Nameserver,
-    network::Network,
-    types::{Notice, NoticeOrRemark},
-    RdapResponse,
+    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, {Notice, NoticeOrRemark},
 };
 use icann_rdap_srv::{
     config::{ServiceConfig, StorageType},

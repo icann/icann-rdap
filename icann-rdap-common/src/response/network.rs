@@ -120,8 +120,7 @@ impl std::fmt::Display for V6Cidr {
 /// is easier than specifying start and end IP addresses.
 ///
 /// ```rust
-/// use icann_rdap_common::response::network::Network;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let net = Network::basic()
 ///   .cidr("10.0.0.0/24")
@@ -197,8 +196,7 @@ impl Network {
     /// Builds a basic IP network object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::network::Network;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let net = Network::basic()
     ///   .cidr("10.0.0.0/24")

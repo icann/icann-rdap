@@ -1,8 +1,6 @@
 #![allow(clippy::diverging_sub_expression)]
 use async_trait::async_trait;
-use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
-};
+use icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network};
 use sqlx::{PgPool, Postgres};
 
 use crate::{
@@ -41,7 +39,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_entity_err(
         &mut self,
         _entity_id: &EntityId,
-        _error: &icann_rdap_common::response::error::Rfc9083Error,
+        _error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -58,7 +56,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_domain_err(
         &mut self,
         _domain_id: &DomainId,
-        _error: &icann_rdap_common::response::error::Rfc9083Error,
+        _error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -70,7 +68,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_nameserver_err(
         &mut self,
         _nameserver_id: &NameserverId,
-        _error: &icann_rdap_common::response::error::Rfc9083Error,
+        _error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -82,7 +80,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_autnum_err(
         &mut self,
         _autnum_id: &AutnumId,
-        _error: &icann_rdap_common::response::error::Rfc9083Error,
+        _error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -94,14 +92,14 @@ impl TxHandle for PgTx<'_> {
     async fn add_network_err(
         &mut self,
         _network_id: &NetworkId,
-        _error: &icann_rdap_common::response::error::Rfc9083Error,
+        _error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
 
     async fn add_srv_help(
         &mut self,
-        _help: &icann_rdap_common::response::help::Help,
+        _help: &icann_rdap_common::response::Help,
         _host: Option<&str>,
     ) -> Result<(), RdapServerError> {
         todo!()

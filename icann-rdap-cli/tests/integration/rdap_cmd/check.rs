@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::domain::Domain;
+use icann_rdap_common::response::Domain;
 use icann_rdap_srv::storage::StoreOps;
 
 use crate::test_jig::TestJig;

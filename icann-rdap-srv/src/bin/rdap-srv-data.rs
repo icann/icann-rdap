@@ -8,29 +8,29 @@ use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::contact::Contact;
 use icann_rdap_common::contact::PostalAddress;
 use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
-use icann_rdap_common::response::autnum::Autnum;
-use icann_rdap_common::response::domain::Domain;
-use icann_rdap_common::response::domain::DsDatum;
-use icann_rdap_common::response::domain::SecureDns;
-use icann_rdap_common::response::entity::Entity;
-use icann_rdap_common::response::help::Help;
-use icann_rdap_common::response::nameserver::IpAddresses;
-use icann_rdap_common::response::nameserver::Nameserver;
-use icann_rdap_common::response::network::Network;
-use icann_rdap_common::response::types::Common;
-use icann_rdap_common::response::types::Event;
-use icann_rdap_common::response::types::Events;
-use icann_rdap_common::response::types::Link;
-use icann_rdap_common::response::types::Links;
-use icann_rdap_common::response::types::Notice;
-use icann_rdap_common::response::types::NoticeOrRemark;
-use icann_rdap_common::response::types::Notices;
-use icann_rdap_common::response::types::ObjectCommon;
-use icann_rdap_common::response::types::Remark;
-use icann_rdap_common::response::types::Remarks;
-use icann_rdap_common::response::types::Status;
-use icann_rdap_common::response::types::StatusValue;
+use icann_rdap_common::response::Autnum;
+use icann_rdap_common::response::Common;
+use icann_rdap_common::response::Domain;
+use icann_rdap_common::response::DsDatum;
+use icann_rdap_common::response::Entity;
+use icann_rdap_common::response::Event;
+use icann_rdap_common::response::Events;
+use icann_rdap_common::response::Help;
+use icann_rdap_common::response::IpAddresses;
+use icann_rdap_common::response::Link;
+use icann_rdap_common::response::Links;
+use icann_rdap_common::response::Nameserver;
+use icann_rdap_common::response::Network;
+use icann_rdap_common::response::Notice;
+use icann_rdap_common::response::NoticeOrRemark;
+use icann_rdap_common::response::Notices;
+use icann_rdap_common::response::ObjectCommon;
 use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::response::Remark;
+use icann_rdap_common::response::Remarks;
+use icann_rdap_common::response::SecureDns;
+use icann_rdap_common::response::Status;
+use icann_rdap_common::response::StatusValue;
 use icann_rdap_common::response::ToChild;
 use icann_rdap_common::VERSION;
 use icann_rdap_srv::config::ServiceConfig;
@@ -641,7 +641,7 @@ fn create_redirect_file(
     let file_name = create_file_name(self_href, "template");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
-    let error = icann_rdap_common::response::error::Rfc9083Error::basic()
+    let error = icann_rdap_common::response::Rfc9083Error::basic()
         .error_code(307)
         .notice(Notice(
             NoticeOrRemark::builder()
@@ -1180,7 +1180,7 @@ fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::domain::DsDatum;
+    use icann_rdap_common::response::DsDatum;
 
     use crate::{parse_ds_datum, parse_notice_or_remark};
 

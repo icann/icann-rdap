@@ -47,9 +47,7 @@ impl IpAddresses {
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::nameserver::Nameserver;
-/// use icann_rdap_common::response::entity::Entity;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let ns = Nameserver::basic()
 ///   .ldh_name("ns1.example.com")
@@ -119,9 +117,7 @@ impl Nameserver {
     /// Builds a basic nameserver object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::nameserver::Nameserver;
-    /// use icann_rdap_common::response::entity::Entity;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let ns = Nameserver::basic()
     ///   .ldh_name("ns1.example.com")

@@ -5,7 +5,7 @@ use axum::{
 use http::StatusCode;
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
-    response::{error::Rfc9083Error, types::Common, RdapResponse},
+    response::{Common, RdapResponse, Rfc9083Error},
 };
 use lazy_static::lazy_static;
 use tracing::warn;
@@ -92,10 +92,7 @@ mod tests {
     use axum::response::IntoResponse;
     use http::StatusCode;
     use icann_rdap_common::response::{
-        domain::Domain,
-        error::Rfc9083Error,
-        types::{Link, Notice, NoticeOrRemark},
-        RdapResponse,
+        Domain, RdapResponse, Rfc9083Error, {Link, Notice, NoticeOrRemark},
     };
 
     use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};

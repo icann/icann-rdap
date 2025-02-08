@@ -6,33 +6,41 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::Display;
 use thiserror::Error;
-use types::Extension;
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
-use self::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    error::Rfc9083Error,
-    help::Help,
-    nameserver::Nameserver,
-    network::Network,
-    search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
-    types::{ExtensionId, Link, Links, RdapConformance},
-};
+#[doc(inline)]
+pub use autnum::*;
+#[doc(inline)]
+pub use domain::*;
+#[doc(inline)]
+pub use entity::*;
+#[doc(inline)]
+pub use error::*;
+#[doc(inline)]
+pub use help::*;
+#[doc(inline)]
+pub use lenient::*;
+#[doc(inline)]
+pub use nameserver::*;
+#[doc(inline)]
+pub use network::*;
+#[doc(inline)]
+pub use search::*;
+#[doc(inline)]
+pub use types::*;
 
-pub mod autnum;
-pub mod domain;
-pub mod entity;
-pub mod error;
-pub mod help;
-pub mod lenient;
-pub mod nameserver;
-pub mod network;
-pub mod redacted;
-pub mod search;
-pub mod types;
+pub(crate) mod autnum;
+pub(crate) mod domain;
+pub(crate) mod entity;
+pub(crate) mod error;
+pub(crate) mod help;
+pub(crate) mod lenient;
+pub(crate) mod nameserver;
+pub(crate) mod network;
+pub mod redacted; // RFC 9537 is not a mainstream extension.
+pub(crate) mod search;
+pub(crate) mod types;
 
 /// An error caused be processing an RDAP response.
 ///

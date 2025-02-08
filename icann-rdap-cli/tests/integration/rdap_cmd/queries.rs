@@ -1,8 +1,6 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
-};
+use icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network};
 use icann_rdap_srv::storage::StoreOps;
 use rstest::rstest;
 

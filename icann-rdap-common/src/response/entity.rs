@@ -19,9 +19,7 @@ use super::{
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::entity::Entity;
-/// use icann_rdap_common::response::types::StatusValue;
-/// use icann_rdap_common::contact::Contact;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let contact = Contact::builder()
 ///   .kind("individual")
@@ -114,9 +112,7 @@ impl Entity {
     /// Builds a basic autnum object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::entity::Entity;
-    /// use icann_rdap_common::response::types::StatusValue;
-    /// use icann_rdap_common::contact::Contact;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let contact = Contact::builder()
     ///   .kind("individual")

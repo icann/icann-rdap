@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::error::Rfc9083Error;
+use icann_rdap_common::response::Rfc9083Error;
 
 use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
 

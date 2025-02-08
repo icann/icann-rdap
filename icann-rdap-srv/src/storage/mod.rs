@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use buildstructor::Builder;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, help::Help, nameserver::Nameserver,
-    network::Network, RdapResponse,
+    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse,
 };
 
 use crate::error::RdapServerError;
@@ -70,7 +69,7 @@ pub trait TxHandle: Send {
     async fn add_domain_err(
         &mut self,
         domain_id: &DomainId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError>;
 
     /// Add an entitty to storage.
@@ -80,7 +79,7 @@ pub trait TxHandle: Send {
     async fn add_entity_err(
         &mut self,
         entity_id: &EntityId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError>;
 
     /// Add a nameserver to storage.
@@ -90,7 +89,7 @@ pub trait TxHandle: Send {
     async fn add_nameserver_err(
         &mut self,
         nameserver_id: &NameserverId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError>;
 
     /// Add a nameserver to storage.
@@ -100,7 +99,7 @@ pub trait TxHandle: Send {
     async fn add_autnum_err(
         &mut self,
         autnum_id: &AutnumId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError>;
 
     /// Add a network to storage.
@@ -110,7 +109,7 @@ pub trait TxHandle: Send {
     async fn add_network_err(
         &mut self,
         network_id: &NetworkId,
-        error: &icann_rdap_common::response::error::Rfc9083Error,
+        error: &icann_rdap_common::response::Rfc9083Error,
     ) -> Result<(), RdapServerError>;
 
     async fn add_srv_help(

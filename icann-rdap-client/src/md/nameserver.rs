@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::nameserver::Nameserver;
+use icann_rdap_common::response::Nameserver;
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 

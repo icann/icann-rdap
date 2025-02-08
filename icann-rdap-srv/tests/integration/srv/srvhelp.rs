@@ -5,8 +5,7 @@ use icann_rdap_client::{
     rdap::{rdap_request, QueryType},
 };
 use icann_rdap_common::response::{
-    help::Help,
-    types::{Notice, NoticeOrRemark},
+    Help, {Notice, NoticeOrRemark},
 };
 use icann_rdap_srv::storage::StoreOps;
 

@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::help::Help;
+use icann_rdap_common::response::Help;
 
 use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
 

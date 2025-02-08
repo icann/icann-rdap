@@ -2,9 +2,7 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
-use icann_rdap_common::response::{
-    domain::Domain, search::DomainSearchResults, types::Common, RdapResponse,
-};
+use icann_rdap_common::response::{Common, Domain, DomainSearchResults, RdapResponse};
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use prefix_trie::PrefixMap;
 use tokio::sync::RwLock;

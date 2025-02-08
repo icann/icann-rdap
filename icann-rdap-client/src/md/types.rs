@@ -4,10 +4,10 @@ use lazy_static::lazy_static;
 
 use icann_rdap_common::check::string::StringCheck;
 use icann_rdap_common::httpdata::HttpData;
-use icann_rdap_common::response::types::{
+use icann_rdap_common::response::{
     Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
 };
-use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
+use icann_rdap_common::response::{NoticeOrRemark, RdapConformance};
 use reqwest::header::{
     ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
     STRICT_TRANSPORT_SECURITY,
@@ -96,10 +96,10 @@ impl ToMd for Link {
         };
         if let Some(hreflang) = &self.hreflang {
             match hreflang {
-                icann_rdap_common::response::types::HrefLang::Lang(lang) => {
+                icann_rdap_common::response::HrefLang::Lang(lang) => {
                     md.push_str(&format!("* Language:  {}\n", lang.replace_ws()));
                 }
-                icann_rdap_common::response::types::HrefLang::Langs(langs) => {
+                icann_rdap_common::response::HrefLang::Langs(langs) => {
                     md.push_str(&format!("* Languages: {}", langs.join(", ").replace_ws()));
                 }
             }
@@ -376,8 +376,8 @@ pub(crate) fn links_to_table(
         let hreflang_s;
         if let Some(hreflang) = &link.hreflang {
             hreflang_s = match hreflang {
-                icann_rdap_common::response::types::HrefLang::Lang(lang) => lang.to_owned(),
-                icann_rdap_common::response::types::HrefLang::Langs(langs) => langs.join(", "),
+                icann_rdap_common::response::HrefLang::Lang(lang) => lang.to_owned(),
+                icann_rdap_common::response::HrefLang::Langs(langs) => langs.join(", "),
             };
             ul.push(&hreflang_s)
         };

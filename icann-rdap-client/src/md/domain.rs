@@ -1,7 +1,7 @@
 use std::any::TypeId;
 
 use icann_rdap_common::dns_types::{DnsAlgorithmType, DnsDigestType};
-use icann_rdap_common::response::domain::{Domain, SecureDns, Variant};
+use icann_rdap_common::response::{Domain, SecureDns, Variant};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 

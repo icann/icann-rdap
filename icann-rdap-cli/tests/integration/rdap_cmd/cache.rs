@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::rdap::RequestResponseOwned;
-use icann_rdap_common::response::{domain::Domain, entity::Entity, RdapResponse};
+use icann_rdap_common::response::{Domain, Entity, RdapResponse};
 use icann_rdap_srv::storage::StoreOps;
 
 use crate::test_jig::TestJig;

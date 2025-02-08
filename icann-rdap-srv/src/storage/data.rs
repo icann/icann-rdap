@@ -6,12 +6,8 @@ use std::{
 
 use buildstructor::Builder;
 use icann_rdap_common::response::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    nameserver::Nameserver,
-    network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
-    GetSelfLink, RdapResponse, SelfLink,
+    Autnum, Domain, Entity, GetSelfLink, Nameserver, RdapResponse, SelfLink,
+    {Cidr0Cidr, Network, V4Cidr, V6Cidr},
 };
 use ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets};
 use serde::{Deserialize, Serialize};
@@ -59,7 +55,7 @@ pub enum DomainOrError {
     #[serde(rename = "object")]
     DomainObject(Domain),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
+    ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -67,7 +63,7 @@ pub enum EntityOrError {
     #[serde(rename = "object")]
     EntityObject(Entity),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
+    ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -75,7 +71,7 @@ pub enum NameserverOrError {
     #[serde(rename = "object")]
     NameserverObject(Nameserver),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
+    ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -83,7 +79,7 @@ pub enum AutnumOrError {
     #[serde(rename = "object")]
     AutnumObject(Autnum),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
+    ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -91,7 +87,7 @@ pub enum NetworkOrError {
     #[serde(rename = "object")]
     NetworkObject(Network),
     #[serde(rename = "error")]
-    ErrorResponse(icann_rdap_common::response::error::Rfc9083Error),
+    ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
 
 #[derive(Clone, Serialize, Deserialize, Builder, Debug, PartialEq, Eq)]
@@ -562,7 +558,7 @@ fn make_network_from_template(
 #[allow(non_snake_case)]
 mod tests {
 
-    use icann_rdap_common::response::{domain::Domain, types::Link};
+    use icann_rdap_common::response::{Domain, Link};
 
     use super::*;
 

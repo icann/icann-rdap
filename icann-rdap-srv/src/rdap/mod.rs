@@ -1,4 +1,4 @@
-use icann_rdap_common::response::{error::Rfc9083Error, RdapResponse};
+use icann_rdap_common::response::{RdapResponse, Rfc9083Error};
 
 pub mod autnum;
 pub mod domain;
