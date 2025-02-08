@@ -79,8 +79,8 @@
 //! let contact = Contact::from_vcard(&data);
 //! ```
 
-pub mod from_vcard;
-pub mod to_vcard;
+mod from_vcard;
+mod to_vcard;
 
 use std::fmt::Display;
 
