@@ -1,3 +1,4 @@
+//! RDAP Search Results.
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -15,8 +16,9 @@ pub struct DomainSearchResults {
 
 #[buildstructor::buildstructor]
 impl DomainSearchResults {
-    #[builder(entry = "basic")]
-    pub fn new_empty() -> Self {
+    /// Builds a domain search result.
+    #[builder(entry = "basic", visibility = "pub")]
+    fn new_empty() -> Self {
         Self {
             common: Common::builder().build(),
             results: Vec::new(),
@@ -36,8 +38,9 @@ pub struct NameserverSearchResults {
 
 #[buildstructor::buildstructor]
 impl NameserverSearchResults {
-    #[builder(entry = "basic")]
-    pub fn new_empty() -> Self {
+    /// Builds a nameserver search result.
+    #[builder(entry = "basic", visibility = "pub")]
+    fn new_empty() -> Self {
         Self {
             common: Common::builder().build(),
             results: Vec::new(),
@@ -57,8 +60,9 @@ pub struct EntitySearchResults {
 
 #[buildstructor::buildstructor]
 impl EntitySearchResults {
-    #[builder(entry = "basic")]
-    pub fn new_empty() -> Self {
+    /// Builds an entity search result.
+    #[builder(entry = "basic", visibility = "pub")]
+    fn new_empty() -> Self {
         Self {
             common: Common::builder().build(),
             results: Vec::new(),
