@@ -1,3 +1,4 @@
+//! RDAP Nameserver object class.
 use std::{net::IpAddr, str::FromStr};
 
 use buildstructor::Builder;
@@ -20,8 +21,9 @@ pub struct IpAddresses {
 
 #[buildstructor::buildstructor]
 impl IpAddresses {
-    #[builder(entry = "basic")]
-    pub fn new_basic(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
+    /// Builds nameserver IP address.
+    #[builder(entry = "basic", visibility = "pub")]
+    fn new_basic(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
         let mut v4: Vec<String> = Vec::new();
         let mut v6: Vec<String> = Vec::new();
         for addr in addresses {
@@ -130,9 +132,9 @@ impl Nameserver {
     ///   .entity(Entity::basic().handle("FOO").build())
     ///   .build().unwrap();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(entry = "basic", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_ldh<T: Into<String>>(
+    fn new_ldh<T: Into<String>>(
         ldh_name: T,
         addresses: Vec<String>,
         handle: Option<String>,
