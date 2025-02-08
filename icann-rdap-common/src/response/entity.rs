@@ -1,3 +1,4 @@
+//! Entity object class.
 use crate::contact::Contact;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
@@ -129,9 +130,9 @@ impl Entity {
     ///   .contact(contact)
     ///   .build();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(entry = "basic", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_handle<T: Into<String>>(
+    fn new_handle<T: Into<String>>(
         handle: T,
         remarks: Vec<crate::response::types::Remark>,
         links: Vec<crate::response::types::Link>,
@@ -198,6 +199,7 @@ impl ToChild for Entity {
     }
 }
 
+/// IANA registered roles for entities.
 #[derive(PartialEq, Eq, Debug, EnumString, Display)]
 #[strum(serialize_all = "lowercase")]
 pub enum EntityRole {
