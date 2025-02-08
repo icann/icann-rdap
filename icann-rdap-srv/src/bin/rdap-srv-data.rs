@@ -28,6 +28,7 @@ use icann_rdap_common::response::ObjectCommon;
 use icann_rdap_common::response::RdapResponse;
 use icann_rdap_common::response::Remark;
 use icann_rdap_common::response::Remarks;
+use icann_rdap_common::response::Rfc9083Error;
 use icann_rdap_common::response::SecureDns;
 use icann_rdap_common::response::Status;
 use icann_rdap_common::response::StatusValue;
@@ -641,7 +642,7 @@ fn create_redirect_file(
     let file_name = create_file_name(self_href, "template");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
-    let error = icann_rdap_common::response::Rfc9083Error::basic()
+    let error = Rfc9083Error::basic()
         .error_code(307)
         .notice(Notice(
             NoticeOrRemark::builder()

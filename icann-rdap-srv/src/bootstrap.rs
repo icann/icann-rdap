@@ -7,6 +7,7 @@ use icann_rdap_client::{
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{IanaRegistry, IanaRegistryType},
+    response::Rfc9083Error,
 };
 use tokio::{
     fs::{self, File},
@@ -141,11 +142,7 @@ async fn make_dns_bootstrap(
             .map(|tld| DomainId::builder().ldh_name(tld).build())
             .collect::<Vec<DomainId>>();
         let template = Template::Domain {
-            domain: DomainOrError::ErrorResponse(
-                icann_rdap_common::response::Rfc9083Error::redirect()
-                    .url(url)
-                    .build(),
-            ),
+            domain: DomainOrError::ErrorResponse(Rfc9083Error::redirect().url(url).build()),
             ids,
         };
         let content = serde_json::to_string_pretty(&template)?;
@@ -197,11 +194,7 @@ async fn make_asn_bootstrap(
             })
             .collect::<Result<Vec<AutnumId>, RdapServerError>>()?;
         let template = Template::Autnum {
-            autnum: AutnumOrError::ErrorResponse(
-                icann_rdap_common::response::Rfc9083Error::redirect()
-                    .url(url)
-                    .build(),
-            ),
+            autnum: AutnumOrError::ErrorResponse(Rfc9083Error::redirect().url(url).build()),
             ids,
         };
         let content = serde_json::to_string_pretty(&template)?;
@@ -244,11 +237,7 @@ async fn make_ip_bootstrap(
             })
             .collect::<Result<Vec<NetworkId>, RdapServerError>>()?;
         let template = Template::Network {
-            network: NetworkOrError::ErrorResponse(
-                icann_rdap_common::response::Rfc9083Error::redirect()
-                    .url(url)
-                    .build(),
-            ),
+            network: NetworkOrError::ErrorResponse(Rfc9083Error::redirect().url(url).build()),
             ids,
         };
         let content = serde_json::to_string_pretty(&template)?;
@@ -290,11 +279,7 @@ async fn make_tag_registry(
             })
             .collect::<Vec<EntityId>>();
         let template = Template::Entity {
-            entity: EntityOrError::ErrorResponse(
-                icann_rdap_common::response::Rfc9083Error::redirect()
-                    .url(url)
-                    .build(),
-            ),
+            entity: EntityOrError::ErrorResponse(Rfc9083Error::redirect().url(url).build()),
             ids,
         };
         let content = serde_json::to_string_pretty(&template)?;
@@ -373,7 +358,10 @@ impl BootstrapPrefix for IanaRegistryType {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::{iana::IanaRegistry, response::RdapResponse};
+    use icann_rdap_common::{
+        iana::IanaRegistry,
+        response::{RdapResponse, Rfc9083Error},
+    };
     use test_dir::{DirBuilder, TestDir};
 
     use crate::{
@@ -639,7 +627,7 @@ mod tests {
         mem
     }
 
-    fn get_redirect_link(error: icann_rdap_common::response::Rfc9083Error) -> String {
+    fn get_redirect_link(error: Rfc9083Error) -> String {
         let Some(notices) = error.common.notices else {
             panic!("no notices in error")
         };

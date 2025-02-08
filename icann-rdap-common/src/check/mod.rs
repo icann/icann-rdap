@@ -8,25 +8,29 @@ use serde::{Deserialize, Serialize};
 use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
 
-pub mod autnum;
-pub mod domain;
-pub mod entity;
-pub mod error;
-pub mod help;
-pub mod httpdata;
-pub mod nameserver;
-pub mod network;
-pub mod search;
-pub mod string;
-pub mod types;
+#[doc(inline)]
+pub use string::*;
+
+mod autnum;
+mod domain;
+mod entity;
+mod error;
+mod help;
+mod httpdata;
+mod nameserver;
+mod network;
+mod search;
+mod string;
+mod types;
 
 lazy_static! {
+    /// The max length of the check class string representations.
     pub static ref CHECK_CLASS_LEN: usize = CheckClass::iter()
         .max_by_key(|x| x.to_string().len())
         .map_or(8, |x| x.to_string().len());
 }
 
-/// Describes the calls of checks.
+/// Describes the classes of checks.
 #[derive(
     EnumIter,
     EnumString,
@@ -121,6 +125,9 @@ pub enum RdapStructure {
     Status,
 }
 
+/// Contains many [CheckItem] structures and sub checks.
+///
+/// Checks are found on object classes and structures defined in [RdapStructure].
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Checks {
     pub rdap_struct: RdapStructure,
@@ -136,6 +143,7 @@ impl Checks {
     }
 }
 
+/// A specific check item.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CheckItem {
     pub check_class: CheckClass,
@@ -155,10 +163,12 @@ impl std::fmt::Display for CheckItem {
     }
 }
 
+/// Trait for an item that can get checks.
 pub trait GetChecks {
     fn get_checks(&self, params: CheckParams) -> Checks;
 }
 
+/// Parameters for finding checks.
 #[derive(Clone, Copy)]
 pub struct CheckParams<'a> {
     pub do_subchecks: bool,
@@ -204,6 +214,7 @@ impl GetChecks for RdapResponse {
     }
 }
 
+/// Trait to get checks for structures below that of the object class.
 pub trait GetSubChecks {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
@@ -248,6 +259,7 @@ pub fn is_checked_item(check: Check, checks: &Checks) -> bool {
     checks.items.iter().any(|c| c.check == check)
 }
 
+/// The variant check types.
 #[derive(
     Debug,
     EnumMessage,

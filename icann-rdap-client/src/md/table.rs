@@ -246,7 +246,7 @@ impl ToMd for MultiPartTable {
 mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
-        response::{Common, RdapResponse},
+        response::{Common, RdapResponse, Rfc9083Error},
     };
 
     use crate::{
@@ -268,7 +268,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::Rfc9083Error::builder()
+            Rfc9083Error::builder()
                 .common(Common::builder().build())
                 .error_code(500)
                 .build(),
@@ -300,7 +300,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::Rfc9083Error::builder()
+            Rfc9083Error::builder()
                 .common(Common::builder().build())
                 .error_code(500)
                 .build(),
@@ -333,7 +333,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::Rfc9083Error::builder()
+            Rfc9083Error::builder()
                 .common(Common::builder().build())
                 .error_code(500)
                 .build(),
@@ -368,7 +368,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::Rfc9083Error::builder()
+            Rfc9083Error::builder()
                 .common(Common::builder().build())
                 .error_code(500)
                 .build(),
@@ -401,7 +401,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::Rfc9083Error::builder()
+            Rfc9083Error::builder()
                 .common(Common::builder().build())
                 .error_code(500)
                 .build(),
@@ -440,7 +440,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::Rfc9083Error::builder()
+            Rfc9083Error::builder()
                 .common(Common::builder().build())
                 .error_code(500)
                 .build(),

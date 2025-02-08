@@ -5,7 +5,7 @@ use std::{
 };
 
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
-use icann_rdap_common::{check::string::StringCheck, dns_types::DomainName};
+use icann_rdap_common::{check::StringCheck, dns_types::DomainName};
 use lazy_static::lazy_static;
 use pct_str::{PctString, URIReserved};
 use regex::Regex;

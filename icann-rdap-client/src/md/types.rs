@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use lazy_static::lazy_static;
 
-use icann_rdap_common::check::string::StringCheck;
+use icann_rdap_common::check::StringCheck;
 use icann_rdap_common::httpdata::HttpData;
 use icann_rdap_common::response::{
     Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,

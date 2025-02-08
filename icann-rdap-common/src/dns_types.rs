@@ -5,7 +5,7 @@ use std::str::{Chars, FromStr};
 use idna::domain_to_ascii;
 use thiserror::Error;
 
-use crate::check::string::StringCheck;
+use crate::check::StringCheck;
 
 #[derive(Debug, Error)]
 pub enum DnsTypeError {
