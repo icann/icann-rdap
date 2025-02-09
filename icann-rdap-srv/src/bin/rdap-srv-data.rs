@@ -922,24 +922,19 @@ async fn make_entity(
         .and_postal_code(args.postal_code)
         .build();
     contact = contact.set_postal_address(postal_address);
-    let vcard = contact.is_non_empty().then_some(contact.to_vcard());
-    let entity = Entity::builder()
-        .and_vcard_array(vcard)
-        .common(
-            Common::level0_with_options()
-                .and_notices(notices(&args.object_args.notice))
-                .build(),
+    let entity = Entity::basic()
+        .contact(contact)
+        .notices(args.object_args.notice.clone().to_notices())
+        .remarks(args.object_args.remark.clone().to_remarks())
+        .entities(
+            entities(store, &args.object_args)
+                .await?
+                .unwrap_or_default(),
         )
-        .object_common(
-            ObjectCommon::entity()
-                .and_entities(entities(store, &args.object_args).await?)
-                .and_remarks(remarks(&args.object_args.remark))
-                .and_status(status(&args.object_args))
-                .and_events(events(&args.object_args))
-                .and_links(links(&self_href))
-                .handle(args.handle.clone())
-                .build(),
-        );
+        .statuses(args.object_args.status.clone())
+        .events(events(&args.object_args).unwrap_or_default())
+        .links(links(&self_href).unwrap_or_default())
+        .handle(args.handle);
     let entity = entity.build();
     let id = RdapId::Entity(EntityId {
         handle: entity

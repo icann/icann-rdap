@@ -1,6 +1,5 @@
 //! Entity object class.
 use crate::contact::Contact;
-use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
@@ -8,8 +7,9 @@ use strum_macros::{Display, EnumString};
 use super::{
     autnum::Autnum,
     network::Network,
+    to_opt_vec,
     types::{to_option_status, Common, Events, Link, ObjectCommon, PublicIds},
-    GetSelfLink, SelfLink, ToChild,
+    Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 
 /// Represents an RDAP [entity](https://rdap.rcode3.com/protocol/object_classes.html#entity) response.
@@ -77,7 +77,7 @@ use super::{
 /// }
 /// ```
 ///
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
     #[serde(flatten)]
     pub common: Common,
@@ -130,42 +130,41 @@ impl Entity {
     #[allow(clippy::too_many_arguments)]
     fn new_handle<T: Into<String>>(
         handle: T,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
+        port_43: Option<Port43>,
         entities: Vec<Entity>,
+        as_event_actors: Vec<Event>,
         contact: Option<Contact>,
         roles: Vec<String>,
-        public_ids: Option<PublicIds>,
-        notices: Vec<crate::response::types::Notice>,
+        public_ids: Vec<PublicId>,
+        notices: Vec<Notice>,
+        networks: Vec<Network>,
+        autnums: Vec<Autnum>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
-        let roles = (!roles.is_empty()).then_some(roles);
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0_with_options()
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::entity()
                 .handle(handle.into())
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             vcard_array: contact.map(|c| c.to_vcard()),
-            roles,
-            public_ids,
-            as_event_actor: None,
-            autnums: None,
-            networks: None,
+            roles: to_opt_vec(roles),
+            public_ids: to_opt_vec(public_ids),
+            as_event_actor: to_opt_vec(as_event_actors),
+            autnums: to_opt_vec(autnums),
+            networks: to_opt_vec(networks),
         }
     }
 
