@@ -220,6 +220,30 @@ impl Link {
             media_type,
         }
     }
+
+    /// Builds a potentially illegal RDAP link.
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(
+        value: Option<String>,
+        href: Option<String>,
+        rel: Option<String>,
+        hreflang: Option<String>,
+        title: Option<String>,
+        media: Option<String>,
+        media_type: Option<String>,
+    ) -> Self {
+        let hreflang = hreflang.map(HrefLang::Lang);
+        Link {
+            value,
+            rel,
+            href,
+            hreflang,
+            title,
+            media,
+            media_type,
+        }
+    }
 }
 
 /// An array of notices.
@@ -295,11 +319,11 @@ pub struct NoticeOrRemark {
 impl NoticeOrRemark {
     /// Builds an RDAP notice/remark.
     #[builder(visibility = "pub")]
-    fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
+    fn new(title: Option<String>, description: Vec<String>, links: Vec<Link>) -> Self {
         NoticeOrRemark {
             title,
             description: Some(VectorStringish::from(description)),
-            links,
+            links: (!links.is_empty()).then_some(links),
         }
     }
 }
@@ -379,6 +403,22 @@ impl Event {
             links,
         }
     }
+
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(
+        event_action: Option<String>,
+        event_date: Option<String>,
+        event_actor: Option<String>,
+        links: Option<Links>,
+    ) -> Self {
+        Event {
+            event_action,
+            event_actor,
+            event_date,
+            links,
+        }
+    }
 }
 
 /// Represents an item in an RDAP status array.
@@ -450,6 +490,16 @@ impl PublicId {
         PublicId {
             id_type: Some(id_type),
             identifier: Some(identifier),
+        }
+    }
+
+    /// Builds an illegal public ID.
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(id_type: Option<String>, identifier: Option<String>) -> Self {
+        PublicId {
+            id_type,
+            identifier,
         }
     }
 }

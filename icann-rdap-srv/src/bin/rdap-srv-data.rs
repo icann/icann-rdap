@@ -186,7 +186,7 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
             "Unable to parse Notice/Remark description".to_string(),
         ));
     };
-    let mut links: Option<Links> = None;
+    let mut links = vec![];
     if let Some(link_data) = cap.name("l") {
         let link_re =
             Regex::new(r"^\((?P<r>\w+);(?P<t>\S+)\)\[(?P<h>\S+)\]$").expect("creating link regex");
@@ -210,16 +210,16 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
                 "unable to parse link href in Notice/Remark".to_string(),
             ));
         };
-        links = Some(vec![Link::builder()
+        links = vec![Link::builder()
             .media_type(link_type.as_str().to_string())
             .href(link_href.as_str().to_string())
             .value(link_href.as_str().to_string())
             .rel(link_rel.as_str().to_string())
-            .build()]);
+            .build()];
     }
     let not_rem = NoticeOrRemark::builder()
         .description(vec![description.as_str().to_string()])
-        .and_links(links)
+        .links(links)
         .build();
     Ok(not_rem)
 }

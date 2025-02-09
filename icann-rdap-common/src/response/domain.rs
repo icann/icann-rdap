@@ -268,6 +268,7 @@ impl Domain {
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
+        public_ids: Vec<crate::prelude::PublicId>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
@@ -275,6 +276,7 @@ impl Domain {
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
+        let public_ids = (!public_ids.is_empty()).then_some(public_ids);
         Self {
             common: Common::level0_with_options().and_notices(notices).build(),
             object_common: ObjectCommon::domain()
@@ -292,7 +294,7 @@ impl Domain {
             variants: None,
             secure_dns: None,
             nameservers,
-            public_ids: None,
+            public_ids,
             network: None,
         }
     }
@@ -322,12 +324,14 @@ impl Domain {
         port_43: Option<crate::response::types::Port43>,
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
+        public_ids: Vec<crate::prelude::PublicId>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
+        let public_ids = (!public_ids.is_empty()).then_some(public_ids);
         Self {
             common: Common::builder().and_notices(notices).build(),
             object_common: ObjectCommon::domain()
@@ -344,7 +348,7 @@ impl Domain {
             variants: None,
             secure_dns: None,
             nameservers,
-            public_ids: None,
+            public_ids,
             network: None,
         }
     }
