@@ -847,9 +847,9 @@ mod tests {
             links: None,
         };
         let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().notices(vec![Notice(notice)]).build())
-                .object_common(ObjectCommon::domain().build())
+            Domain::basic()
+                .ldh_name("example.com")
+                .notice(Notice(notice))
                 .build(),
         );
 
