@@ -1,10 +1,10 @@
 //! RDAP Autonomous System Number.
-use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
+    to_opt_vec,
     types::{to_option_status, Common, Link, ObjectCommon},
-    GetSelfLink, SelfLink, ToChild,
+    Entity, Event, GetSelfLink, Notice, Port43, Remark, SelfLink, ToChild,
 };
 
 /// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.
@@ -40,7 +40,7 @@ use super::{
 ///   "endAutnum": 710
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Autnum {
     #[serde(flatten)]
     pub common: Common,
@@ -85,37 +85,37 @@ impl Autnum {
     fn new_autnum(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        country: Option<String>,
+        autnum_type: Option<String>,
+        name: Option<String>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0_with_options()
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             start_autnum: Some(autnum_range.start),
             end_autnum: Some(autnum_range.end),
-            name: None,
-            autnum_type: None,
-            country: None,
+            name,
+            autnum_type,
+            country,
         }
     }
 }

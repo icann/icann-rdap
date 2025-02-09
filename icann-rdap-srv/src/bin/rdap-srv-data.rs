@@ -1079,27 +1079,23 @@ async fn make_autnum(
     let self_href = QueryType::AsNumber(args.start_autnum)
         .query_url(&args.object_args.base_url)
         .expect("autnum self href");
-    let autnum = Autnum::builder()
-        .start_autnum(args.start_autnum)
-        .end_autnum(args.end_autnum.unwrap_or(args.start_autnum))
+    let autnum_range = args.start_autnum..args.end_autnum.unwrap_or(args.start_autnum);
+    let autnum = Autnum::basic()
+        .autnum_range(autnum_range)
         .and_autnum_type(args.autnum_type)
         .and_country(args.country)
         .and_name(args.name)
-        .common(
-            Common::level0_with_options()
-                .and_notices(notices(&args.object_args.notice))
-                .build(),
+        .notices(args.object_args.notice.clone().to_notices())
+        .remarks(args.object_args.remark.clone().to_remarks())
+        .entities(
+            entities(store, &args.object_args)
+                .await?
+                .unwrap_or_default(),
         )
-        .object_common(
-            ObjectCommon::autnum()
-                .and_entities(entities(store, &args.object_args).await?)
-                .and_remarks(remarks(&args.object_args.remark))
-                .and_status(status(&args.object_args))
-                .and_events(events(&args.object_args))
-                .and_links(links(&self_href))
-                .and_handle(args.handle)
-                .build(),
-        );
+        .statuses(args.object_args.status.clone())
+        .events(events(&args.object_args).unwrap_or_default())
+        .links(links(&self_href).unwrap_or_default())
+        .and_handle(args.handle);
     let autnum = autnum.build();
     let id = RdapId::Autnum(AutnumId {
         start_autnum: autnum.start_autnum.expect("autnum created with no start"),
