@@ -326,6 +326,24 @@ impl NoticeOrRemark {
             links: (!links.is_empty()).then_some(links),
         }
     }
+
+    /// Builds an illegal RDAP notice/remark.
+    #[builder(entry = "illegal", visibility = "pub")]
+    #[allow(dead_code)]
+    fn new_illegal(
+        title: Option<String>,
+        description: Option<Vec<String>>,
+        links: Option<Vec<Link>>,
+    ) -> Self {
+        let d = description
+            .is_some()
+            .then_some(VectorStringish::from(description.unwrap()));
+        NoticeOrRemark {
+            title,
+            description: d,
+            links,
+        }
+    }
 }
 
 /// An array of events.

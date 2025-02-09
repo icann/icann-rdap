@@ -207,7 +207,7 @@ impl SecureDns {
 ///   "ldhName": "foo.example.com"
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     #[serde(flatten)]
     pub common: Common,
@@ -269,6 +269,7 @@ impl Domain {
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
         public_ids: Vec<crate::prelude::PublicId>,
+        secure_dns: Option<SecureDns>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
@@ -292,7 +293,7 @@ impl Domain {
             ldh_name: Some(ldh_name.into()),
             unicode_name,
             variants: None,
-            secure_dns: None,
+            secure_dns,
             nameservers,
             public_ids,
             network: None,
@@ -325,6 +326,7 @@ impl Domain {
         entities: Vec<crate::response::entity::Entity>,
         notices: Vec<crate::response::types::Notice>,
         public_ids: Vec<crate::prelude::PublicId>,
+        secure_dns: Option<SecureDns>,
     ) -> Self {
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
@@ -346,7 +348,7 @@ impl Domain {
             ldh_name,
             unicode_name: Some(unicode_name.into()),
             variants: None,
-            secure_dns: None,
+            secure_dns,
             nameservers,
             public_ids,
             network: None,
