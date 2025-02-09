@@ -706,6 +706,7 @@ mod tests {
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
+        dbg!(&rdap);
         checks
             .sub(crate::check::RdapStructure::Links)
             .expect("Links not found")

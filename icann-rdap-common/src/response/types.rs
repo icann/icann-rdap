@@ -328,7 +328,7 @@ impl NoticeOrRemark {
     }
 
     /// Builds an illegal RDAP notice/remark.
-    #[builder(entry = "illegal", visibility = "pub")]
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
     #[allow(dead_code)]
     fn new_illegal(
         title: Option<String>,
@@ -524,7 +524,7 @@ impl std::ops::Deref for StatusValue {
 /// An array of status values.
 pub type Status = Vec<StatusValue>;
 
-/// Converts a vector of strings to a [Status].
+/// Converts a vector of strings to a Option<[Status]>.
 ///
 /// If the vector is empty, returns None. Otherwise returns
 /// `Some(`[Status]`)`.
@@ -534,6 +534,11 @@ pub fn to_option_status(values: Vec<String>) -> Option<Status> {
     } else {
         None
     }
+}
+
+/// Converts a vector of strings to a [Status].
+pub fn to_status(values: Vec<String>) -> Status {
+    values.into_iter().map(StatusValue).collect::<Status>()
 }
 
 /// An RDAP port53 type.

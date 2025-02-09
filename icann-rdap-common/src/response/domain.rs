@@ -6,8 +6,9 @@ use super::{
     lenient::{Boolish, Numberish},
     nameserver::Nameserver,
     network::Network,
+    to_opt_vec,
     types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
-    GetSelfLink, SelfLink, ToChild,
+    Entity, Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 
 /// Represents an RDAP variant name.
@@ -261,45 +262,39 @@ impl Domain {
         unicode_name: Option<String>,
         nameservers: Vec<Nameserver>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
-        public_ids: Vec<crate::prelude::PublicId>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        public_ids: Vec<PublicId>,
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
-        let nameservers = (!nameservers.is_empty()).then_some(nameservers);
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
-        let public_ids = (!public_ids.is_empty()).then_some(public_ids);
-        let variants = (!variants.is_empty()).then_some(variants);
         Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0_with_options()
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name,
-            variants,
+            variants: to_opt_vec(variants),
             secure_dns,
-            nameservers,
-            public_ids,
+            nameservers: to_opt_vec(nameservers),
+            public_ids: to_opt_vec(public_ids),
             network,
         }
     }
@@ -322,43 +317,35 @@ impl Domain {
         unicode_name: T,
         nameservers: Vec<Nameserver>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
-        public_ids: Vec<crate::prelude::PublicId>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        public_ids: Vec<PublicId>,
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
     ) -> Self {
-        let nameservers = (!nameservers.is_empty()).then_some(nameservers);
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
-        let public_ids = (!public_ids.is_empty()).then_some(public_ids);
-        let variants = (!variants.is_empty()).then_some(variants);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::builder().and_notices(to_opt_vec(notices)).build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .build(),
             ldh_name,
             unicode_name: Some(unicode_name.into()),
-            variants,
+            variants: to_opt_vec(variants),
             secure_dns,
-            nameservers,
-            public_ids,
+            nameservers: to_opt_vec(nameservers),
+            public_ids: to_opt_vec(public_ids),
             network,
         }
     }

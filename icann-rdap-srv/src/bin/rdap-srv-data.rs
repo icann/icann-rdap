@@ -1052,7 +1052,11 @@ async fn make_domain(
         .nameservers(nameservers(store, args.ns).await?)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
-        .entities(entities(store, &args.object_args).await?.unwrap_or(vec![]))
+        .entities(
+            entities(store, &args.object_args)
+                .await?
+                .unwrap_or_default(),
+        )
         .statuses(args.object_args.status.clone())
         .events(events(&args.object_args).unwrap_or_default())
         .links(links(&self_href).unwrap_or_default())
