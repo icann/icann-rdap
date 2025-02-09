@@ -344,6 +344,76 @@ impl NoticeOrRemark {
             links,
         }
     }
+
+    /// Converts to a [Notice].
+    pub fn notice(self) -> Notice {
+        Notice(self)
+    }
+
+    /// Converts to a [Remark].
+    pub fn remark(self) -> Remark {
+        Remark(self)
+    }
+}
+
+/// Conversion for collection of notices.
+pub trait ToNotices {
+    /// Convert to a collection of notices.
+    fn to_notices(self) -> Vec<Notice>;
+    /// Convert to a collection if some, otherwise none.
+    fn to_opt_notices(self) -> Option<Vec<Notice>>;
+}
+
+impl ToNotices for &[NoticeOrRemark] {
+    fn to_notices(self) -> Vec<Notice> {
+        self.iter().map(|n| Notice(n.clone())).collect::<Notices>()
+    }
+
+    fn to_opt_notices(self) -> Option<Vec<Notice>> {
+        let notices = self.to_notices();
+        (!notices.is_empty()).then_some(notices)
+    }
+}
+
+impl ToNotices for Vec<NoticeOrRemark> {
+    fn to_notices(self) -> Vec<Notice> {
+        self.into_iter().map(Notice).collect::<Notices>()
+    }
+
+    fn to_opt_notices(self) -> Option<Vec<Notice>> {
+        let notices = self.to_notices();
+        (!notices.is_empty()).then_some(notices)
+    }
+}
+
+/// Conversion for collection of remarks.
+pub trait ToRemarks {
+    /// Convert to a collection of remarks.
+    fn to_remarks(self) -> Vec<Remark>;
+    /// Convert to a collection if some, otherwise none.
+    fn to_opt_remarks(self) -> Option<Vec<Remark>>;
+}
+
+impl ToRemarks for &[NoticeOrRemark] {
+    fn to_remarks(self) -> Vec<Remark> {
+        self.iter().map(|n| Remark(n.clone())).collect::<Remarks>()
+    }
+
+    fn to_opt_remarks(self) -> Option<Vec<Remark>> {
+        let remarks = self.to_remarks();
+        (!remarks.is_empty()).then_some(remarks)
+    }
+}
+
+impl ToRemarks for Vec<NoticeOrRemark> {
+    fn to_remarks(self) -> Vec<Remark> {
+        self.into_iter().map(Remark).collect::<Remarks>()
+    }
+
+    fn to_opt_remarks(self) -> Option<Vec<Remark>> {
+        let remarks = self.to_remarks();
+        (!remarks.is_empty()).then_some(remarks)
+    }
 }
 
 /// An array of events.

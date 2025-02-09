@@ -8,6 +8,8 @@ use icann_rdap_client::rdap::QueryType;
 use icann_rdap_common::contact::Contact;
 use icann_rdap_common::contact::PostalAddress;
 use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
+use icann_rdap_common::prelude::ToNotices;
+use icann_rdap_common::prelude::ToRemarks;
 use icann_rdap_common::response::Autnum;
 use icann_rdap_common::response::Common;
 use icann_rdap_common::response::Domain;
@@ -819,13 +821,13 @@ async fn get_entity(
 async fn nameservers(
     store: &dyn StoreOps,
     ns_names: Vec<String>,
-) -> Result<Option<Vec<Nameserver>>, RdapServerError> {
+) -> Result<Vec<Nameserver>, RdapServerError> {
     let mut nameservers: Vec<Nameserver> = Vec::new();
     for ns in ns_names {
         let ns = get_ns(store, &ns).await?;
         nameservers.push(ns);
     }
-    Ok((!nameservers.is_empty()).then_some(nameservers))
+    Ok(nameservers)
 }
 
 async fn get_ns(store: &dyn StoreOps, ldh: &str) -> Result<Nameserver, RdapServerError> {
@@ -1043,26 +1045,18 @@ async fn make_domain(
     } else {
         None
     };
-    let domain = Domain::builder()
+    let domain = Domain::basic()
         .ldh_name(ldh)
         .unicode_name(unicode_name)
         .and_secure_dns(secure_dns)
-        .and_nameservers(nameservers(store, args.ns).await?)
-        .common(
-            Common::level0_with_options()
-                .and_notices(notices(&args.object_args.notice))
-                .build(),
-        )
-        .object_common(
-            ObjectCommon::domain()
-                .and_entities(entities(store, &args.object_args).await?)
-                .and_remarks(remarks(&args.object_args.remark))
-                .and_status(status(&args.object_args))
-                .and_events(events(&args.object_args))
-                .and_links(links(&self_href))
-                .and_handle(args.handle)
-                .build(),
-        );
+        .nameservers(nameservers(store, args.ns).await?)
+        .notices(args.object_args.notice.clone().to_notices())
+        .remarks(args.object_args.remark.clone().to_remarks())
+        .entities(entities(store, &args.object_args).await?.unwrap_or(vec![]))
+        .statuses(args.object_args.status.clone())
+        .events(events(&args.object_args).unwrap_or_default())
+        .links(links(&self_href).unwrap_or_default())
+        .and_handle(args.handle);
     let domain = domain.build();
     let id = RdapId::Domain(DomainId {
         ldh_name: domain

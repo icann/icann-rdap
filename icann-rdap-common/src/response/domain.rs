@@ -207,7 +207,7 @@ impl SecureDns {
 ///   "ldhName": "foo.example.com"
 /// }
 /// ```
-#[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     #[serde(flatten)]
     pub common: Common,
@@ -259,7 +259,7 @@ impl Domain {
     fn new_ldh<T: Into<String>>(
         ldh_name: T,
         unicode_name: Option<String>,
-        nameservers: Option<Vec<Nameserver>>,
+        nameservers: Vec<Nameserver>,
         handle: Option<String>,
         remarks: Vec<crate::response::types::Remark>,
         links: Vec<crate::response::types::Link>,
@@ -270,14 +270,18 @@ impl Domain {
         notices: Vec<crate::response::types::Notice>,
         public_ids: Vec<crate::prelude::PublicId>,
         secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
+        let nameservers = (!nameservers.is_empty()).then_some(nameservers);
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         let public_ids = (!public_ids.is_empty()).then_some(public_ids);
+        let variants = (!variants.is_empty()).then_some(variants);
         Self {
             common: Common::level0_with_options().and_notices(notices).build(),
             object_common: ObjectCommon::domain()
@@ -292,11 +296,11 @@ impl Domain {
                 .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name,
-            variants: None,
+            variants,
             secure_dns,
             nameservers,
             public_ids,
-            network: None,
+            network,
         }
     }
 
@@ -316,7 +320,7 @@ impl Domain {
     fn new_idn<T: Into<String>>(
         ldh_name: Option<String>,
         unicode_name: T,
-        nameservers: Option<Vec<Nameserver>>,
+        nameservers: Vec<Nameserver>,
         handle: Option<String>,
         remarks: Vec<crate::response::types::Remark>,
         links: Vec<crate::response::types::Link>,
@@ -327,13 +331,17 @@ impl Domain {
         notices: Vec<crate::response::types::Notice>,
         public_ids: Vec<crate::prelude::PublicId>,
         secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
     ) -> Self {
+        let nameservers = (!nameservers.is_empty()).then_some(nameservers);
         let entities = (!entities.is_empty()).then_some(entities);
         let remarks = (!remarks.is_empty()).then_some(remarks);
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         let public_ids = (!public_ids.is_empty()).then_some(public_ids);
+        let variants = (!variants.is_empty()).then_some(variants);
         Self {
             common: Common::builder().and_notices(notices).build(),
             object_common: ObjectCommon::domain()
@@ -347,11 +355,11 @@ impl Domain {
                 .build(),
             ldh_name,
             unicode_name: Some(unicode_name.into()),
-            variants: None,
+            variants,
             secure_dns,
             nameservers,
             public_ids,
-            network: None,
+            network,
         }
     }
 }

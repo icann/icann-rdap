@@ -332,10 +332,7 @@ mod tests {
         response::{
             domain::Domain,
             nameserver::Nameserver,
-            types::{
-                Common, Event, Link, Notice, NoticeOrRemark, ObjectCommon, PublicId, Remark,
-                StatusValue,
-            },
+            types::{Event, Link, Notice, NoticeOrRemark, PublicId, Remark, StatusValue},
             RdapResponse,
         },
     };
