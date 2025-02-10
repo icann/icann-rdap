@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     types::{to_option_status, Common, Link, ObjectCommon},
-    GetSelfLink, RdapResponseError, SelfLink, ToChild,
+    Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
 };
 
 /// Represents an IP address set for nameservers.
@@ -91,7 +91,7 @@ impl IpAddresses {
 ///     }
 ///   }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Nameserver {
     #[serde(flatten)]
     pub common: Common,
@@ -134,13 +134,13 @@ impl Nameserver {
         ldh_name: T,
         addresses: Vec<String>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
@@ -169,6 +169,19 @@ impl Nameserver {
             unicode_name: None,
             ip_addresses,
         })
+    }
+
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(clippy::too_many_arguments)]
+    #[allow(dead_code)]
+    fn new_illegal(ldh_name: Option<String>, ip_addresses: Option<IpAddresses>) -> Self {
+        Self {
+            common: Common::level0_with_options().build(),
+            object_common: ObjectCommon::nameserver().build(),
+            ldh_name,
+            unicode_name: None,
+            ip_addresses,
+        }
     }
 }
 
