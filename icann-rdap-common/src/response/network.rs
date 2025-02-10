@@ -1,13 +1,13 @@
 //! RDAP IP Network.
 use std::str::FromStr;
 
-use buildstructor::Builder;
 use cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
 use super::{
+    to_opt_vec,
     types::{to_option_status, Common, ExtensionId, Link, ObjectCommon},
-    GetSelfLink, RdapResponseError, SelfLink, ToChild,
+    Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
 };
 
 /// Cidr0 structure from the Cidr0 extension.
@@ -153,7 +153,7 @@ impl std::fmt::Display for V6Cidr {
 ///   ]
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Network {
     #[serde(flatten)]
     pub common: Common,
@@ -213,71 +213,29 @@ impl Network {
         name: Option<String>,
         network_type: Option<String>,
         parent_handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
-        redacted: Option<Vec<crate::response::redacted::Redacted>>,
-    ) -> Result<Self, RdapResponseError> {
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let statuses = to_option_status(statuses);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
-        Network::new_network_with_options(
-            cidr,
-            handle,
-            country,
-            name,
-            network_type,
-            parent_handle,
-            remarks,
-            links,
-            events,
-            statuses,
-            port_43,
-            entities,
-            notices,
-            redacted,
-        )
-    }
-
-    #[builder(entry = "with_options", visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
-    fn new_network_with_options(
-        cidr: String,
-        handle: Option<String>,
-        country: Option<String>,
-        name: Option<String>,
-        network_type: Option<String>,
-        parent_handle: Option<String>,
-        remarks: Option<Vec<crate::response::types::Remark>>,
-        links: Option<Vec<crate::response::types::Link>>,
-        events: Option<Vec<crate::response::types::Event>>,
-        status: Option<Vec<crate::response::types::StatusValue>>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Option<Vec<crate::response::entity::Entity>>,
-        notices: Option<Vec<crate::response::types::Notice>>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
             common: Common::level0_with_options()
                 .extension(ExtensionId::Cidr0.to_extension())
-                .and_notices(notices)
+                .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::ip_network()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(status)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             start_address: Some(cidr.first_address().to_string()),
@@ -301,6 +259,37 @@ impl Network {
                 })]),
             },
         })
+    }
+
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(clippy::too_many_arguments)]
+    #[allow(dead_code)]
+    fn new_illegal(
+        start_address: Option<String>,
+        end_address: Option<String>,
+        ip_version: Option<String>,
+        cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
+        country: Option<String>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
+        notices: Vec<Notice>,
+    ) -> Self {
+        Self {
+            common: Common::level0_with_options()
+                .extension(ExtensionId::Cidr0.to_extension())
+                .and_notices(to_opt_vec(notices))
+                .build(),
+            object_common: ObjectCommon::ip_network().build(),
+            start_address,
+            end_address,
+            ip_version,
+            name,
+            network_type,
+            parent_handle,
+            country,
+            cidr0_cidrs,
+        }
     }
 }
 

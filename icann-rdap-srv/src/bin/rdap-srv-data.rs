@@ -1121,18 +1121,22 @@ async fn make_network(
             .query_url(&args.object_args.base_url)
             .expect("ipv6 network self href"),
     };
-    let network = Network::with_options()
+    let network = Network::basic()
         .cidr(args.cidr.to_string())
         .and_country(args.country)
         .and_name(args.name)
         .and_network_type(args.network_type)
         .and_parent_handle(args.parent_handle)
-        .and_notices(notices(&args.object_args.notice))
-        .and_entities(entities(store, &args.object_args).await?)
-        .and_remarks(remarks(&args.object_args.remark))
-        .and_status(status(&args.object_args))
-        .and_events(events(&args.object_args))
-        .and_links(links(&self_href))
+        .notices(args.object_args.notice.clone().to_notices())
+        .remarks(args.object_args.remark.clone().to_remarks())
+        .entities(
+            entities(store, &args.object_args)
+                .await?
+                .unwrap_or_default(),
+        )
+        .statuses(args.object_args.status.clone())
+        .events(events(&args.object_args).unwrap_or_default())
+        .links(links(&self_href).unwrap_or_default())
         .and_handle(args.handle);
     let network = network.build()?;
     let id = RdapId::Netowrk(NetworkId {

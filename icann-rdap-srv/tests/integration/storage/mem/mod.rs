@@ -463,15 +463,18 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_first_address_THEN_n
     let end = "10.0.1.255";
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(
-        &Network::builder()
-            .start_address(start)
-            .end_address(end)
-            .ip_version("v4")
-            .object_common(ObjectCommon::ip_network().build())
-            .common(Common::builder().build())
-            .build(),
-    )
+    tx.add_network(&Network {
+        common: Common::builder().build(),
+        object_common: ObjectCommon::ip_network().build(),
+        start_address: Some(start.to_string()),
+        end_address: Some(end.to_string()),
+        ip_version: Some("v4".to_string()),
+        name: None,
+        network_type: None,
+        parent_handle: None,
+        country: None,
+        cidr0_cidrs: None,
+    })
     .await
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
@@ -506,15 +509,18 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_last_address_THEN_ne
     let end = "10.0.1.255";
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(
-        &Network::builder()
-            .start_address(start)
-            .end_address(end)
-            .ip_version("v4")
-            .object_common(ObjectCommon::ip_network().build())
-            .common(Common::builder().build())
-            .build(),
-    )
+    tx.add_network(&Network {
+        common: Common::builder().build(),
+        object_common: ObjectCommon::ip_network().build(),
+        start_address: Some(start.to_string()),
+        end_address: Some(end.to_string()),
+        ip_version: Some("v4".to_string()),
+        name: None,
+        network_type: None,
+        parent_handle: None,
+        country: None,
+        cidr0_cidrs: None,
+    })
     .await
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
