@@ -28,7 +28,7 @@ impl DomainSearchResults {
 }
 
 /// Represents RDAP nameserver search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct NameserverSearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -41,10 +41,10 @@ pub struct NameserverSearchResults {
 impl NameserverSearchResults {
     /// Builds a nameserver search result.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_empty() -> Self {
+    fn new_basic(results: Vec<Nameserver>) -> Self {
         Self {
             common: Common::builder().build(),
-            results: Vec::new(),
+            results,
         }
     }
 }
