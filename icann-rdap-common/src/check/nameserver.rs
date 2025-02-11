@@ -94,7 +94,7 @@ mod tests {
         // GIVEN
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .ip_addresses(IpAddresses::builder().v6(vec![]).build())
+            .ip_addresses(IpAddresses::illegal().v6(vec![]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -114,7 +114,7 @@ mod tests {
         // GIVEN
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .ip_addresses(IpAddresses::builder().v4(vec![]).build())
+            .ip_addresses(IpAddresses::illegal().v4(vec![]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -134,7 +134,7 @@ mod tests {
         // GIVEN
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .ip_addresses(IpAddresses::builder().v6(vec!["__".to_string()]).build())
+            .ip_addresses(IpAddresses::illegal().v6(vec!["__".to_string()]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -154,7 +154,7 @@ mod tests {
         // GIVEN
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .ip_addresses(IpAddresses::builder().v4(vec!["___".to_string()]).build())
+            .ip_addresses(IpAddresses::illegal().v4(vec!["___".to_string()]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 

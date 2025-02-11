@@ -4,7 +4,6 @@ use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use std::{net::IpAddr, str::FromStr};
 
-use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::to_opt_vec;
@@ -14,7 +13,7 @@ use super::{
 };
 
 /// Represents an IP address set for nameservers.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct IpAddresses {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub v6: Option<Vec<String>>,
@@ -26,8 +25,8 @@ pub struct IpAddresses {
 #[buildstructor::buildstructor]
 impl IpAddresses {
     /// Builds nameserver IP address.
-    #[builder(entry = "basic", visibility = "pub")]
-    fn new_basic(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
+    #[builder(visibility = "pub")]
+    fn new(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
         let mut v4: Vec<String> = Vec::new();
         let mut v6: Vec<String> = Vec::new();
         for addr in addresses {
@@ -41,6 +40,12 @@ impl IpAddresses {
             v4: (!v4.is_empty()).then_some(v4),
             v6: (!v6.is_empty()).then_some(v6),
         })
+    }
+
+    #[allow(dead_code)]
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    fn new_illegal(v6: Option<Vec<String>>, v4: Option<Vec<String>>) -> Self {
+        Self { v4, v6 }
     }
 }
 
@@ -149,7 +154,7 @@ impl Nameserver {
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
-            Some(IpAddresses::basic().addresses(addresses).build()?)
+            Some(IpAddresses::builder().addresses(addresses).build()?)
         } else {
             None
         };
