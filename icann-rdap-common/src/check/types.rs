@@ -344,7 +344,7 @@ mod tests {
     fn check_link_with_no_rel_property() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::illegal()
@@ -374,7 +374,7 @@ mod tests {
     fn check_link_with_no_val_property() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(Link::illegal().href("https://foo").rel("about").build())
                 .build(),
@@ -399,7 +399,7 @@ mod tests {
     fn check_link_with_no_href_property() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(Link::illegal().value("https://foo").rel("about").build())
                 .build(),
@@ -424,7 +424,7 @@ mod tests {
     fn test_related_link_with_no_type_property() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -455,7 +455,7 @@ mod tests {
     fn test_object_related_link_with_non_rdap_type() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -487,7 +487,7 @@ mod tests {
     fn test_self_link_with_no_type_property() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -518,7 +518,7 @@ mod tests {
     fn test_self_link_with_non_rdap_type() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -542,7 +542,7 @@ mod tests {
     fn test_domain_with_self_link() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -670,7 +670,7 @@ mod tests {
     fn test_domain_with_no_self_link() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -701,7 +701,7 @@ mod tests {
     #[test]
     fn test_domain_with_no_links() {
         // GIVEN
-        let rdap = RdapResponse::Domain(Domain::basic().ldh_name("example.com").build());
+        let rdap = RdapResponse::Domain(Domain::builder().ldh_name("example.com").build());
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -721,7 +721,7 @@ mod tests {
     fn test_event_with_no_date() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .event(Event::illegal().event_action("foo").build())
                 .build(),
@@ -744,7 +744,7 @@ mod tests {
     fn test_event_with_no_action() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .event(Event::illegal().event_date("1990-12-31T23:59:59Z").build())
                 .build(),
@@ -767,7 +767,7 @@ mod tests {
     fn test_event_with_bad_date() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .event(
                     Event::builder()
@@ -795,7 +795,7 @@ mod tests {
     fn test_public_id_with_no_type() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .public_id(PublicId::illegal().identifier("thing").build())
                 .build(),
@@ -818,7 +818,7 @@ mod tests {
     fn test_public_id_with_no_identifier() {
         // GIVEN
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .public_id(PublicId::illegal().id_type("thing").build())
                 .build(),
@@ -846,7 +846,7 @@ mod tests {
             links: None,
         };
         let rdap = RdapResponse::Domain(
-            Domain::basic()
+            Domain::builder()
                 .ldh_name("example.com")
                 .notice(Notice(notice))
                 .build(),

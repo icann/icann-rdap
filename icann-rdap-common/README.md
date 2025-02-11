@@ -28,7 +28,7 @@ let holder = Entity::basic().handle("foo-BAR").build();
 
 // create an RDAP domain
 use icann_rdap_common::response::Domain;
-let domain = Domain::basic().ldh_name("example.com").entity(holder.clone()).build();
+let domain = Domain::builder().ldh_name("example.com").entity(holder.clone()).build();
 
 // create an IP network
 use icann_rdap_common::response::Network;

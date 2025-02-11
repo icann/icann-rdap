@@ -251,7 +251,7 @@ mod tests {
     #[case("_.")]
     fn test_check_for_bad_ldh(#[case] ldh: &str) {
         // GIVEN
-        let domain = Domain::basic().ldh_name(ldh).build();
+        let domain = Domain::builder().ldh_name(ldh).build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
@@ -308,7 +308,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -331,7 +331,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -353,7 +353,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -376,7 +376,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -398,7 +398,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -421,7 +421,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -449,7 +449,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -480,7 +480,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -508,7 +508,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -539,7 +539,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -570,7 +570,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });
@@ -598,7 +598,7 @@ mod tests {
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
             do_subchecks: false,
-            root: &RdapResponse::Domain(Domain::basic().ldh_name("example.com").build()),
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
             parent_type: TypeId::of::<SecureDns>(),
             allow_unreg_ext: false,
         });

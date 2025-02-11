@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn GIVEN_redaction_type_WHEN_search_for_type_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -199,7 +199,7 @@ mod tests {
     #[test]
     fn GIVEN_redaction_type_WHEN_get_text_for_type_THEN_redacted_text_returned() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn GIVEN_multiple_redaction_type_WHEN_search_for_one_of_the_types_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn GIVEN_multiple_redaction_type_WHEN_search_for_multiple_that_some_exist_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn GIVEN_multiple_redaction_type_WHEN_search_for_multiple_that_not_exist_THEN_false() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn GIVEN_no_redactions_WHEN_search_for_type_THEN_false() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("example.com").build();
+        let domain = Domain::builder().ldh_name("example.com").build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn GIVEN_redaction_type_WHEN_search_for_wrong_type_THEN_false() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -403,7 +403,7 @@ mod tests {
     #[test]
     fn GIVEN_entity_and_redaction_type_WHEN_search_for_type_on_entity_with_role_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -438,7 +438,7 @@ mod tests {
     fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_multipe_type_on_entity_with_roles_THEN_true(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -487,7 +487,7 @@ mod tests {
     fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_not_exist_type_on_entity_with_roles_THEN_false(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -536,7 +536,7 @@ mod tests {
     fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_type_on_entity_with_other_rolesroles_THEN_false(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -585,7 +585,7 @@ mod tests {
     fn GIVEN_entity_and_redaction_type_WHEN_get_text_for_type_on_entity_with_role_THEN_redaction_text_returned(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {

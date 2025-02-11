@@ -187,7 +187,7 @@ impl SecureDns {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let domain = Domain::basic()
+/// let domain = Domain::builder()
 ///   .ldh_name("foo.example.com")
 ///   .handle("foo_example_com-1")
 ///   .status("active")
@@ -252,15 +252,15 @@ impl Domain {
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let domain = Domain::basic()
+    /// let domain = Domain::builder()
     ///   .ldh_name("foo.example.com")
     ///   .handle("foo_example_com-1")
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "basic", visibility = "pub")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    fn new_ldh<T: Into<String>>(
+    fn new<T: Into<String>>(
         ldh_name: T,
         unicode_name: Option<String>,
         nameservers: Vec<Nameserver>,
@@ -690,7 +690,7 @@ mod tests {
     #[test]
     fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
         // GIVEN
-        let mut domain = Domain::basic()
+        let mut domain = Domain::builder()
             .ldh_name("foo.example")
             .link(
                 Link::builder()

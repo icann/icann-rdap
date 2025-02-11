@@ -42,7 +42,7 @@ async fn GIVEN_data_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
     // GIVEN
     let ldh_name = "foo.example";
     let temp = TestDir::temp();
-    let domain = Domain::basic().ldh_name(ldh_name).build();
+    let domain = Domain::builder().ldh_name(ldh_name).build();
     let domain_file = temp.path("foo_example.json");
     std::fs::write(
         domain_file,
@@ -72,7 +72,7 @@ async fn GIVEN_data_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_load
     let ldh2 = "bar.example";
     let temp = TestDir::temp();
     let template = Template::Domain {
-        domain: DomainOrError::DomainObject(Domain::basic().ldh_name("example").build()),
+        domain: DomainOrError::DomainObject(Domain::builder().ldh_name("example").build()),
         ids: vec![
             DomainId::builder().ldh_name(ldh1).build(),
             DomainId::builder().ldh_name(ldh2).build(),

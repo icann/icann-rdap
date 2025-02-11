@@ -88,7 +88,7 @@ mod tests {
     #[test]
     fn GIVEN_non_error_WHEN_exec_response_THEN_status_code_is_200() {
         // GIVEN
-        let domain = RdapResponse::Domain(Domain::basic().ldh_name("foo.example").build());
+        let domain = RdapResponse::Domain(Domain::builder().ldh_name("foo.example").build());
 
         // WHEN
         let actual = domain.response();

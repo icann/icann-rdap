@@ -566,7 +566,7 @@ mod tests {
     fn GIVEN_template_domain_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Domain {
-            domain: DomainOrError::DomainObject(Domain::basic().ldh_name("foo.example").build()),
+            domain: DomainOrError::DomainObject(Domain::builder().ldh_name("foo.example").build()),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
 
@@ -590,7 +590,7 @@ mod tests {
 
         // THEN
         let expected = Template::Domain {
-            domain: DomainOrError::DomainObject(Domain::basic().ldh_name("foo.example").build()),
+            domain: DomainOrError::DomainObject(Domain::builder().ldh_name("foo.example").build()),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
         assert_eq!(actual, expected);
@@ -773,7 +773,7 @@ mod tests {
     #[test]
     fn GIVEN_domain_and_id_WHEN_make_domain_THEN_ldh_and_self_change() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("foo.example")
             .link(
                 Link::builder()

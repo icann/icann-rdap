@@ -213,7 +213,7 @@ mod tests {
         let actual = serde_json::from_value::<Domain>(toplevel_json_response);
         let gtld_version_of_the_domain = match actual {
             Ok(domain) => {
-                let rdap_response = RdapResponse::Domain(Domain::basic().ldh_name("").build());
+                let rdap_response = RdapResponse::Domain(Domain::builder().ldh_name("").build());
                 let mut gtld_params = GtldParams {
                     root: &rdap_response,
                     parent_type: TypeId::of::<Domain>(),

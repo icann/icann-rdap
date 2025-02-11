@@ -433,7 +433,7 @@ mod tests {
     #[test]
     fn GIVEN_expected_extension_WHEN_rdap_has_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .extension(Extension::from("foo0"))
             .ldh_name("foo.example.com")
             .build();
@@ -449,7 +449,7 @@ mod tests {
     #[test]
     fn GIVEN_expected_extension_WHEN_rdap_does_not_have_THEN_false() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .extension(Extension::from("foo0"))
             .ldh_name("foo.example.com")
             .build();
@@ -465,7 +465,7 @@ mod tests {
     #[test]
     fn GIVEN_compound_expected_extension_WHEN_rdap_has_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .extension(Extension::from("foo0"))
             .ldh_name("foo.example.com")
             .build();

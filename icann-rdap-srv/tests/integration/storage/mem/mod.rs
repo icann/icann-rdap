@@ -15,7 +15,7 @@ async fn GIVEN_domain_in_mem_WHEN_new_truncate_tx_THEN_no_domain_in_mem() {
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -40,7 +40,7 @@ async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_domain_returned() {
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");

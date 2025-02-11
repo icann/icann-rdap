@@ -12,7 +12,7 @@ async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(
-        &Domain::basic()
+        &Domain::builder()
             .ldh_name("foo.example")
             .entity(Entity::basic().handle("bob").build())
             .build(),
