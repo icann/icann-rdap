@@ -17,12 +17,6 @@ pub struct Common {
 #[buildstructor::buildstructor]
 impl Common {
     #[builder(entry = "level0", visibility = "pub")]
-    fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
-        let notices = (!notices.is_empty()).then_some(notices);
-        Common::new_level0_with_options(extensions, notices)
-    }
-
-    #[builder(entry = "level0_with_options", visibility = "pub")]
     fn new_level0_with_options(
         mut extensions: Vec<Extension>,
         notices: Option<Vec<Notice>>,

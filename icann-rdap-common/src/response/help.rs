@@ -27,7 +27,7 @@ impl Help {
         notices: Option<Vec<crate::response::types::Notice>>,
     ) -> Result<Self, RdapResponseError> {
         Ok(Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0().and_notices(notices).build(),
         })
     }
 }

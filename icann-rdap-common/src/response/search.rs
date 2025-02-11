@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
 
 /// Represents RDAP domain search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct DomainSearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -19,10 +19,10 @@ pub struct DomainSearchResults {
 impl DomainSearchResults {
     /// Builds a domain search result.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_empty() -> Self {
+    fn new_basic(results: Vec<Domain>) -> Self {
         Self {
             common: Common::builder().build(),
-            results: Vec::new(),
+            results,
         }
     }
 }

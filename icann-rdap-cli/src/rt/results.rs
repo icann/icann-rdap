@@ -437,9 +437,7 @@ mod tests {
         // GIVEN
         let domain = Domain::basic().ldh_name("foo.example.com").build();
         let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
+            common: Common::level0().extension(Extension::from("foo0")).build(),
             ..domain
         };
         let rdap = RdapResponse::Domain(domain);
@@ -456,9 +454,7 @@ mod tests {
         // GIVEN
         let domain = Domain::basic().ldh_name("foo.example.com").build();
         let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
+            common: Common::level0().extension(Extension::from("foo0")).build(),
             ..domain
         };
         let rdap = RdapResponse::Domain(domain);
@@ -475,9 +471,7 @@ mod tests {
         // GIVEN
         let domain = Domain::basic().ldh_name("foo.example.com").build();
         let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
+            common: Common::level0().extension(Extension::from("foo0")).build(),
             ..domain
         };
         let rdap = RdapResponse::Domain(domain);

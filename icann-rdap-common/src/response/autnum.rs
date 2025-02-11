@@ -100,9 +100,7 @@ impl Autnum {
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0_with_options()
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::level0().and_notices(to_opt_vec(notices)).build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))

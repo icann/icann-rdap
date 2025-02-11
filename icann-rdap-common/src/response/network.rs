@@ -226,7 +226,7 @@ impl Network {
     ) -> Result<Self, RdapResponseError> {
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::Cidr0.to_extension())
                 .and_notices(to_opt_vec(notices))
                 .build(),
@@ -278,7 +278,7 @@ impl Network {
         notices: Vec<Notice>,
     ) -> Self {
         Self {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::Cidr0.to_extension())
                 .and_notices(to_opt_vec(notices))
                 .build(),

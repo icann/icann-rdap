@@ -156,7 +156,7 @@ impl Nameserver {
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
         Ok(Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0().and_notices(notices).build(),
             object_common: ObjectCommon::nameserver()
                 .and_handle(handle)
                 .and_remarks(remarks)
@@ -178,7 +178,7 @@ impl Nameserver {
     #[allow(dead_code)]
     fn new_illegal(ldh_name: Option<String>, ip_addresses: Option<IpAddresses>) -> Self {
         Self {
-            common: Common::level0_with_options().build(),
+            common: Common::level0().build(),
             object_common: ObjectCommon::nameserver().build(),
             ldh_name,
             unicode_name: None,
