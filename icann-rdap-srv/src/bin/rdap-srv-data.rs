@@ -24,7 +24,6 @@ use icann_rdap_common::response::Nameserver;
 use icann_rdap_common::response::Network;
 use icann_rdap_common::response::Notice;
 use icann_rdap_common::response::NoticeOrRemark;
-use icann_rdap_common::response::Notices;
 use icann_rdap_common::response::Rfc9083Error;
 use icann_rdap_common::response::SecureDns;
 use icann_rdap_common::response::ToChild;

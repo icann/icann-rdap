@@ -15,7 +15,7 @@ pub struct Common {
 
 #[buildstructor::buildstructor]
 impl Common {
-    #[builder(entry = "level0", visibility = "pub")]
+    #[builder(entry = "level0", visibility = "pub(crate)")]
     fn new_level0(mut extensions: Vec<Extension>, notices: Option<Vec<Notice>>) -> Self {
         let mut standard_extensions = vec![ExtensionId::RdapLevel0.to_extension()];
         extensions.append(&mut standard_extensions);

@@ -35,11 +35,7 @@ pub struct Rfc9083Error {
 impl Rfc9083Error {
     /// Creates a new RFC 9083 Error for a specific HTTP error code.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_error_code(
-        error_code: u16,
-        notices: Vec<crate::response::types::Notice>,
-        extensions: Vec<Extension>,
-    ) -> Self {
+    fn new_error_code(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
             common: Common::level0()
