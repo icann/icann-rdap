@@ -12,11 +12,11 @@ use tracing::warn;
 
 lazy_static! {
     pub static ref NOT_FOUND: RdapResponse =
-        RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(404).build());
+        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(404).build());
     pub static ref NOT_IMPLEMENTED: RdapResponse =
-        RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(501).build());
+        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(501).build());
     pub static ref BAD_REQUEST: RdapResponse =
-        RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(400).build());
+        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(400).build());
 }
 
 pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];
@@ -123,7 +123,7 @@ mod tests {
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
         let given = RdapResponse::ErrorResponse(
-            Rfc9083Error::basic()
+            Rfc9083Error::builder()
                 .error_code(307)
                 .notice(Notice(
                     NoticeOrRemark::builder()

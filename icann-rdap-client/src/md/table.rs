@@ -268,7 +268,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response =
-            RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+            RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -296,7 +296,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response =
-            RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+            RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -325,7 +325,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response =
-            RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+            RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -356,7 +356,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response =
-            RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+            RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -385,7 +385,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response =
-            RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+            RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -420,7 +420,7 @@ mod tests {
             source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response =
-            RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+            RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,

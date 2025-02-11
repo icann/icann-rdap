@@ -62,7 +62,7 @@ pub enum RdapServerError {
 
 impl IntoResponse for RdapServerError {
     fn into_response(self) -> Response {
-        let response = RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(500).build());
+        let response = RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             [("content-type", r#"application/rdap"#)],

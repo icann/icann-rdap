@@ -34,8 +34,8 @@ pub struct Rfc9083Error {
 #[buildstructor::buildstructor]
 impl Rfc9083Error {
     /// Creates a new RFC 9083 Error for a specific HTTP error code.
-    #[builder(entry = "basic", visibility = "pub")]
-    fn new_error_code(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+    #[builder(visibility = "pub")]
+    fn new(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
             common: Common::level0()
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn GIVEN_error_code_404_WHEN_is_redirect_THEN_false() {
         // GIVEN
-        let e = Rfc9083Error::basic().error_code(404).build();
+        let e = Rfc9083Error::builder().error_code(404).build();
 
         // WHEN
         let actual = e.is_redirect();

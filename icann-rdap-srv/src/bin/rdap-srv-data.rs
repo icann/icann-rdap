@@ -636,7 +636,7 @@ fn create_redirect_file(
     let file_name = create_file_name(self_href, "template");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
-    let error = Rfc9083Error::basic()
+    let error = Rfc9083Error::builder()
         .error_code(307)
         .notice(Notice(
             NoticeOrRemark::builder()
