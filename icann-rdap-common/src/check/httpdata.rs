@@ -63,11 +63,8 @@ mod tests {
         check::{Check, CheckParams, GetChecks},
         httpdata::HttpData,
         media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE},
-        response::{
-            domain::Domain,
-            types::{Common, ExtensionId, ObjectCommon},
-            RdapResponse,
-        },
+        prelude::{Common, ObjectCommon},
+        response::{domain::Domain, types::ExtensionId, RdapResponse},
     };
 
     #[test]

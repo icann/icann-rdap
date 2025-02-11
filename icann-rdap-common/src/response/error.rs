@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
-use super::types::{Common, Link, Notice, NoticeOrRemark};
+use super::{
+    types::{Link, Notice, NoticeOrRemark},
+    Common,
+};
 
 /// Represents an error response from an RDAP server.
 ///

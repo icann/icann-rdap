@@ -1,5 +1,7 @@
+use crate::prelude::ObjectCommon;
 use std::{any::TypeId, str::FromStr};
 
+use crate::prelude::Common;
 use crate::{
     media_types::RDAP_MEDIA_TYPE,
     response::{
@@ -9,8 +11,7 @@ use crate::{
         nameserver::Nameserver,
         network::Network,
         types::{
-            Common, ExtensionId, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds,
-            RdapConformance, Remarks,
+            ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance, Remarks,
         },
     },
 };

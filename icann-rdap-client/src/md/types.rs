@@ -1,12 +1,11 @@
+use icann_rdap_common::prelude::ObjectCommon;
 use std::any::TypeId;
 
 use lazy_static::lazy_static;
 
 use icann_rdap_common::check::StringCheck;
 use icann_rdap_common::httpdata::HttpData;
-use icann_rdap_common::response::{
-    Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
-};
+use icann_rdap_common::response::{Common, Event, Link, Links, Notices, PublicId, Remarks};
 use icann_rdap_common::response::{NoticeOrRemark, RdapConformance};
 use reqwest::header::{
     ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,

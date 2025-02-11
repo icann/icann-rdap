@@ -12,6 +12,8 @@ use crate::media_types::RDAP_MEDIA_TYPE;
 #[doc(inline)]
 pub use autnum::*;
 #[doc(inline)]
+pub use common::*;
+#[doc(inline)]
 pub use domain::*;
 #[doc(inline)]
 pub use entity::*;
@@ -26,11 +28,14 @@ pub use nameserver::*;
 #[doc(inline)]
 pub use network::*;
 #[doc(inline)]
+pub use obj_common::*;
+#[doc(inline)]
 pub use search::*;
 #[doc(inline)]
 pub use types::*;
 
 pub(crate) mod autnum;
+pub(crate) mod common;
 pub(crate) mod domain;
 pub(crate) mod entity;
 pub(crate) mod error;
@@ -38,6 +43,7 @@ pub(crate) mod help;
 pub(crate) mod lenient;
 pub(crate) mod nameserver;
 pub(crate) mod network;
+pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
 pub(crate) mod search;
 pub(crate) mod types;
@@ -301,13 +307,13 @@ impl GetSelfLink for RdapResponse {
 /// Trait for getting a link with a `rel` of "self".
 pub trait GetSelfLink {
     /// Get's the first self link.
-    /// See [crate::response::types::ObjectCommon::get_self_link()].
+    /// See [crate::response::ObjectCommon::get_self_link()].
     fn get_self_link(&self) -> Option<&Link>;
 }
 
 /// Train for setting a link with a `rel` of "self".
 pub trait SelfLink: GetSelfLink {
-    /// See [crate::response::types::ObjectCommon::get_self_link()].
+    /// See [crate::response::ObjectCommon::get_self_link()].
     fn set_self_link(self, link: Link) -> Self;
 }
 

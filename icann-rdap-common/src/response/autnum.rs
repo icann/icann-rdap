@@ -1,9 +1,11 @@
 //! RDAP Autonomous System Number.
+use crate::prelude::Common;
+use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 
 use super::{
     to_opt_vec,
-    types::{to_option_status, Common, Link, ObjectCommon},
+    types::{to_option_status, Link},
     Entity, Event, GetSelfLink, Notice, Port43, Remark, SelfLink, ToChild,
 };
 

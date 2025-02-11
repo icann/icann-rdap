@@ -1,11 +1,13 @@
 //! RDAP Nameserver object class.
+use crate::prelude::Common;
+use crate::prelude::ObjectCommon;
 use std::{net::IpAddr, str::FromStr};
 
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    types::{to_option_status, Common, Link, ObjectCommon},
+    types::{to_option_status, Link},
     Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
 };
 

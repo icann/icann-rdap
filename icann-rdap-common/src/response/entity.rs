@@ -1,5 +1,7 @@
 //! Entity object class.
 use crate::contact::Contact;
+use crate::prelude::Common;
+use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
@@ -8,7 +10,7 @@ use super::{
     autnum::Autnum,
     network::Network,
     to_opt_vec,
-    types::{to_option_status, Common, Events, Link, ObjectCommon, PublicIds},
+    types::{to_option_status, Events, Link, PublicIds},
     Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 

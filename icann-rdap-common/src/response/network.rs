@@ -1,4 +1,6 @@
 //! RDAP IP Network.
+use crate::prelude::Common;
+use crate::prelude::ObjectCommon;
 use std::str::FromStr;
 
 use cidr::IpInet;
@@ -6,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     to_opt_vec,
-    types::{to_option_status, Common, ExtensionId, Link, ObjectCommon},
+    types::{to_option_status, ExtensionId, Link},
     Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
 };
 

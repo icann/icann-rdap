@@ -1,8 +1,9 @@
 //! RDAP Search Results.
+use crate::prelude::Common;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::{domain::Domain, entity::Entity, nameserver::Nameserver, types::Common};
+use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
 
 /// Represents RDAP domain search results.
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]

@@ -1,4 +1,6 @@
 //! RDAP Domain Object Class
+use crate::prelude::Common;
+use crate::prelude::ObjectCommon;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +9,7 @@ use super::{
     nameserver::Nameserver,
     network::Network,
     to_opt_vec,
-    types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
+    types::{to_option_status, Events, Link, Links, PublicIds},
     Entity, Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 

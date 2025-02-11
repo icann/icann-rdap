@@ -3,7 +3,7 @@ use crate::response::RdapResponseError;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::types::Common;
+use super::Common;
 
 /// Represents an RDAP help response.
 #[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
