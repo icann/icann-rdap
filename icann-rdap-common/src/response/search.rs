@@ -1,6 +1,5 @@
 //! RDAP Search Results.
 use crate::prelude::Common;
-use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
@@ -50,7 +49,7 @@ impl NameserverSearchResults {
 }
 
 /// Represents RDAP entity search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct EntitySearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -63,10 +62,10 @@ pub struct EntitySearchResults {
 impl EntitySearchResults {
     /// Builds an entity search result.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_empty() -> Self {
+    fn new_empty(results: Vec<Entity>) -> Self {
         Self {
             common: Common::builder().build(),
-            results: Vec::new(),
+            results,
         }
     }
 }
