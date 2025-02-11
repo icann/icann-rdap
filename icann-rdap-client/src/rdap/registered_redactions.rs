@@ -420,7 +420,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = is_redaction_registered_for_role(
@@ -469,7 +472,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = are_redactions_registered_for_roles(
@@ -518,7 +524,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = are_redactions_registered_for_roles(
@@ -567,7 +576,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = are_redactions_registered_for_roles(
@@ -602,7 +614,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = text_or_registered_redaction_for_role(

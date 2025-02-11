@@ -803,7 +803,7 @@ mod tests {
     #[test]
     fn GIVEN_entity_and_id_WHEN_make_entity_THEN_handle_and_self_change() {
         // GIVEN
-        let entity = Entity::basic()
+        let entity = Entity::builder()
             .handle("foo")
             .link(
                 Link::builder()

@@ -24,7 +24,7 @@ Create some RDAP objects:
 ```rust
 // create an entity
 use icann_rdap_common::response::Entity;
-let holder = Entity::basic().handle("foo-BAR").build();
+let holder = Entity::builder().handle("foo-BAR").build();
 
 // create an RDAP domain
 use icann_rdap_common::response::Domain;

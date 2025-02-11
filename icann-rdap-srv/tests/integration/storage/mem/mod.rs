@@ -188,7 +188,7 @@ async fn GIVEN_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_entity_returned()
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_entity(&Entity::basic().handle("foo").build())
+    tx.add_entity(&Entity::builder().handle("foo").build())
         .await
         .expect("add entity in tx");
     tx.commit().await.expect("entity tx commit");

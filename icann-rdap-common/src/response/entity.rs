@@ -29,7 +29,7 @@ use super::{
 ///   .full_name("Bob Smurd")
 ///   .build();
 ///
-/// let entity = Entity::basic()
+/// let entity = Entity::builder()
 ///   .handle("foo_example_com-1")
 ///   .status("active")
 ///   .role("registrant")
@@ -122,16 +122,16 @@ impl Entity {
     ///   .full_name("Bob Smurd")
     ///   .build();
     ///
-    /// let entity = Entity::basic()
+    /// let entity = Entity::builder()
     ///   .handle("foo_example_com-1")
     ///   .status("active")
     ///   .role("registrant")
     ///   .contact(contact)
     ///   .build();
     /// ```
-    #[builder(entry = "basic", visibility = "pub")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    fn new_handle<T: Into<String>>(
+    fn new<T: Into<String>>(
         handle: T,
         remarks: Vec<Remark>,
         links: Vec<Link>,

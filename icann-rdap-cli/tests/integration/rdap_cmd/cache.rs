@@ -14,7 +14,7 @@ async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
     tx.add_domain(
         &Domain::builder()
             .ldh_name("foo.example")
-            .entity(Entity::basic().handle("bob").build())
+            .entity(Entity::builder().handle("bob").build())
             .build(),
     )
     .await

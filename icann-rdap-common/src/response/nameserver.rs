@@ -59,7 +59,7 @@ impl IpAddresses {
 ///   .status("active")
 ///   .address("10.0.0.1")
 ///   .address("10.0.0.2")
-///   .entity(Entity::basic().handle("FOO").build())
+///   .entity(Entity::builder().handle("FOO").build())
 ///   .build().unwrap();
 /// let c = serde_json::to_string_pretty(&ns).unwrap();
 /// eprintln!("{c}");
@@ -129,7 +129,7 @@ impl Nameserver {
     ///   .status("active")
     ///   .address("10.0.0.1")
     ///   .address("10.0.0.2")
-    ///   .entity(Entity::basic().handle("FOO").build())
+    ///   .entity(Entity::builder().handle("FOO").build())
     ///   .build().unwrap();
     /// ```
     #[builder(entry = "basic", visibility = "pub")]

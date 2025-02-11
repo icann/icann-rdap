@@ -107,7 +107,7 @@ async fn GIVEN_data_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
     // GIVEN
     let handle = "foo.example";
     let temp = TestDir::temp();
-    let entity = Entity::basic().handle(handle).build();
+    let entity = Entity::builder().handle(handle).build();
     let domain_file = temp.path("foo_example.json");
     std::fs::write(
         domain_file,
@@ -144,7 +144,7 @@ async fn GIVEN_data_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loa
     let handle2 = "bar";
     let temp = TestDir::temp();
     let template = Template::Entity {
-        entity: EntityObject(Entity::basic().handle("example").build()),
+        entity: EntityObject(Entity::builder().handle("example").build()),
         ids: vec![
             EntityId::builder().handle(handle1).build(),
             EntityId::builder().handle(handle2).build(),

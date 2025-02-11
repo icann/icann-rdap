@@ -892,7 +892,7 @@ async fn make_entity(
         .and_postal_code(args.postal_code)
         .build();
     contact = contact.set_postal_address(postal_address);
-    let entity = Entity::basic()
+    let entity = Entity::builder()
         .contact(contact)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
