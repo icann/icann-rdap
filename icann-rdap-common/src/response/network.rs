@@ -125,7 +125,7 @@ impl std::fmt::Display for V6Cidr {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let net = Network::basic()
+/// let net = Network::builder()
 ///   .cidr("10.0.0.0/24")
 ///   .handle("NET-10-0-0-0")
 ///   .status("active")
@@ -201,15 +201,15 @@ impl Network {
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let net = Network::basic()
+    /// let net = Network::builder()
     ///   .cidr("10.0.0.0/24")
     ///   .handle("NET-10-0-0-0")
     ///   .status("active")
     ///   .build().unwrap();
     /// ```
-    #[builder(entry = "basic", visibility = "pub")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    fn new_network(
+    fn new(
         cidr: String,
         handle: Option<String>,
         country: Option<String>,

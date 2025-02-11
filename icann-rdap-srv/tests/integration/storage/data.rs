@@ -254,7 +254,7 @@ async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     // GIVEN
     let num = 700u32;
     let temp = TestDir::temp();
-    let autnum = Autnum::basic().autnum_range(num..num).build();
+    let autnum = Autnum::builder().autnum_range(num..num).build();
     let autnum_file = temp.path("700.json");
     std::fs::write(
         autnum_file,
@@ -287,7 +287,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
     let num2 = 800u32;
     let temp = TestDir::temp();
     let template = Template::Autnum {
-        autnum: AutnumObject(Autnum::basic().autnum_range(0..0).build()),
+        autnum: AutnumObject(Autnum::builder().autnum_range(0..0).build()),
         ids: vec![
             AutnumId::builder()
                 .start_autnum(num1)
@@ -330,7 +330,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
 async fn GIVEN_data_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let network = Network::basic()
+    let network = Network::builder()
         .cidr("10.0.0.0/24")
         .build()
         .expect("cidr parsing");
@@ -372,7 +372,7 @@ async fn GIVEN_data_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netwo
     let temp = TestDir::temp();
     let template = Template::Network {
         network: NetworkObject(
-            Network::basic()
+            Network::builder()
                 .cidr("1.1.1.1/32")
                 .build()
                 .expect("parsing cidr"),
@@ -426,7 +426,7 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
     let temp = TestDir::temp();
     let template = Template::Network {
         network: NetworkObject(
-            Network::basic()
+            Network::builder()
                 .cidr("1.1.1.1/32")
                 .build()
                 .expect("parsing cidr"),

@@ -285,7 +285,7 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_retu
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
@@ -312,7 +312,7 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_return
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
@@ -367,7 +367,7 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_address_THEN_network_return
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::basic().cidr(cidr).build().expect("cidr parsing"))
+    tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
         .await
         .expect("add network in tx");
     tx.commit().await.expect("tx commit");
@@ -427,9 +427,14 @@ async fn GIVEN_contained_networks_in_mem_WHEN_lookup_network_by_address_THEN_mos
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     for cidr in cidrs {
-        tx.add_network(&Network::basic().cidr(*cidr).build().expect("cidr parsing"))
-            .await
-            .expect("add network in tx");
+        tx.add_network(
+            &Network::builder()
+                .cidr(*cidr)
+                .build()
+                .expect("cidr parsing"),
+        )
+        .await
+        .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -587,7 +592,7 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_cidr_THEN_network_returned(
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::basic().cidr(cidr).build().expect("cidr parsing"))
+    tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
         .await
         .expect("add network in tx");
     tx.commit().await.expect("tx commit");

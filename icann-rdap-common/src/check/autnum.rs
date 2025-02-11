@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn GIVEN_autnum_with_empty_name_WHEN_checked_THEN_empty_name_check() {
         // GIVEN
-        let mut autnum = Autnum::basic().autnum_range(700..700).build();
+        let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.name = Some("".to_string());
         let rdap = RdapResponse::Autnum(autnum);
 
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn GIVEN_autnum_with_empty_type_WHEN_checked_THEN_empty_type_check() {
         // GIVEN
-        let mut autnum = Autnum::basic().autnum_range(700..700).build();
+        let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.autnum_type = Some("".to_string());
         let rdap = RdapResponse::Autnum(autnum);
 

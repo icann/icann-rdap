@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn check_network_with_empty_name() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn check_network_with_empty_type() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn check_network_with_no_start() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn check_network_with_no_end() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn check_network_with_bad_start() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn check_network_with_bad_end() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -315,7 +315,7 @@ mod tests {
     #[test]
     fn check_network_with_end_before_start() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
@@ -340,7 +340,7 @@ mod tests {
     #[case("2000::/64", "v4")]
     fn check_network_with_ip_version(#[case] cidr: &str, #[case] version: &str) {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
@@ -365,7 +365,7 @@ mod tests {
     #[case("2000::/64", "")]
     fn check_network_with_bad_ip_version(#[case] cidr: &str, #[case] version: &str) {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");

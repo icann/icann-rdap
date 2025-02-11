@@ -32,7 +32,7 @@ let domain = Domain::builder().ldh_name("example.com").entity(holder.clone()).bu
 
 // create an IP network
 use icann_rdap_common::response::Network;
-let net = Network::basic().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
+let net = Network::builder().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
 
 // create a nameserver
 use icann_rdap_common::response::Nameserver;
@@ -40,7 +40,7 @@ let ns = Nameserver::basic().ldh_name("ns1.example.com").entity(holder.clone()).
 
 // create an autnum
 use icann_rdap_common::response::Autnum;
-let autnum = Autnum::basic().autnum_range(700..700).entity(holder).build();
+let autnum = Autnum::builder().autnum_range(700..700).entity(holder).build();
 ```
 
 Parse RDAP JSON:

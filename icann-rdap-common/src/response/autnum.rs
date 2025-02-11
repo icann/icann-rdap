@@ -19,7 +19,7 @@ use super::{
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let autnum = Autnum::basic()
+/// let autnum = Autnum::builder()
 ///   .autnum_range(700..710) // the range of autnums
 ///   .handle("AS700-1")
 ///   .status("active")
@@ -77,15 +77,15 @@ impl Autnum {
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let autnum = Autnum::basic()
+    /// let autnum = Autnum::builder()
     ///   .autnum_range(700..710)
     ///   .handle("AS700-1")
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "basic", visibility = "pub")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    fn new_autnum(
+    fn new(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,
         remarks: Vec<Remark>,

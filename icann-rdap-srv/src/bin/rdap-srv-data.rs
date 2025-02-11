@@ -1029,7 +1029,7 @@ async fn make_autnum(
         .query_url(&args.object_args.base_url)
         .expect("autnum self href");
     let autnum_range = args.start_autnum..args.end_autnum.unwrap_or(args.start_autnum);
-    let autnum = Autnum::basic()
+    let autnum = Autnum::builder()
         .autnum_range(autnum_range)
         .and_autnum_type(args.autnum_type)
         .and_country(args.country)
@@ -1066,7 +1066,7 @@ async fn make_network(
             .query_url(&args.object_args.base_url)
             .expect("ipv6 network self href"),
     };
-    let network = Network::basic()
+    let network = Network::builder()
         .cidr(args.cidr.to_string())
         .and_country(args.country)
         .and_name(args.name)

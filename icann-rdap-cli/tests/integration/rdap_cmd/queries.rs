@@ -94,7 +94,7 @@ async fn GIVEN_autnum_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
@@ -113,7 +113,7 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
-        &Network::basic()
+        &Network::builder()
             .cidr("10.0.0.0/24")
             .build()
             .expect("cidr parsing"),
@@ -139,7 +139,7 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
-        &Network::basic()
+        &Network::builder()
             .cidr(db_cidr)
             .build()
             .expect("cidr parsing"),

@@ -601,7 +601,7 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(
-                Network::basic()
+                Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -643,7 +643,7 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(
-                Network::basic()
+                Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -711,7 +711,7 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: NetworkOrError::NetworkObject(
-                Network::basic()
+                Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -755,7 +755,7 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: NetworkOrError::NetworkObject(
-                Network::basic()
+                Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -868,7 +868,7 @@ mod tests {
     #[test]
     fn GIVEN_autnum_and_id_WHEN_make_autnum_THEN_nums_and_self_change() {
         // GIVEN
-        let autnum = Autnum::basic()
+        let autnum = Autnum::builder()
             .autnum_range(700..710)
             .link(
                 Link::builder()
@@ -902,7 +902,7 @@ mod tests {
     #[test]
     fn GIVEN_network_and_id_with_range_WHEN_make_network_THEN_range_and_cidr_and_self_change() {
         // GIVEN
-        let network = Network::basic()
+        let network = Network::builder()
             .cidr("10.0.0.0/24")
             .link(
                 Link::builder()
@@ -954,7 +954,7 @@ mod tests {
     #[test]
     fn GIVEN_network_and_id_with_cdir_WHEN_make_network_THEN_range_and_cidr_and_self_change() {
         // GIVEN
-        let network = Network::basic()
+        let network = Network::builder()
             .cidr("10.0.0.0/24")
             .link(
                 Link::builder()

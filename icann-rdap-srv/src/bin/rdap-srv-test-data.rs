@@ -191,7 +191,7 @@ fn make_autnum_template(
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("autnum"));
     entity.roles = Some(vec!["registrant".to_string()]);
-    let autnum = Autnum::basic()
+    let autnum = Autnum::builder()
         .autnum_range(1..1)
         .entity(entity)
         .link(
@@ -384,7 +384,7 @@ fn make_test_nameserver(
 fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("network"));
     entity.roles = Some(vec!["registrant".to_string()]);
-    let network = Network::basic()
+    let network = Network::builder()
         .cidr("0.0.0.0/0")
         .entity(entity)
         .link(
