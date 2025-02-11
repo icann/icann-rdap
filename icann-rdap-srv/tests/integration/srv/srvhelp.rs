@@ -16,7 +16,7 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())
@@ -48,7 +48,7 @@ async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())

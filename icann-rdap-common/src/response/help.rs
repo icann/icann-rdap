@@ -16,8 +16,8 @@ pub struct Help {
 #[buildstructor::buildstructor]
 impl Help {
     /// Builds a basic help response.
-    #[builder(entry = "basic", visibility = "pub")]
-    fn new_help(notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+    #[builder(visibility = "pub")]
+    fn new(notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0()
                 .extensions(extensions)

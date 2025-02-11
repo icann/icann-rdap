@@ -53,7 +53,7 @@ impl IpAddresses {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let ns = Nameserver::basic()
+/// let ns = Nameserver::builder()
 ///   .ldh_name("ns1.example.com")
 ///   .handle("ns1_example_com-1")
 ///   .status("active")
@@ -123,7 +123,7 @@ impl Nameserver {
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let ns = Nameserver::basic()
+    /// let ns = Nameserver::builder()
     ///   .ldh_name("ns1.example.com")
     ///   .handle("ns1_example_com-1")
     ///   .status("active")
@@ -132,9 +132,9 @@ impl Nameserver {
     ///   .entity(Entity::builder().handle("FOO").build())
     ///   .build().unwrap();
     /// ```
-    #[builder(entry = "basic", visibility = "pub")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    fn new_ldh<T: Into<String>>(
+    fn new<T: Into<String>>(
         ldh_name: T,
         addresses: Vec<String>,
         handle: Option<String>,

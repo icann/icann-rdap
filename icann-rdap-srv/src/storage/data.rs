@@ -837,7 +837,7 @@ mod tests {
     #[test]
     fn GIVEN_nameserver_and_id_WHEN_make_nameserver_THEN_ldh_and_self_change() {
         // GIVEN
-        let nameserver = Nameserver::basic()
+        let nameserver = Nameserver::builder()
             .ldh_name("ns.foo.example")
             .link(
                 Link::builder()

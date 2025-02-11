@@ -926,7 +926,7 @@ async fn make_nameserver(
         .expect("nameserver self href");
     let mut addrs: Vec<String> = args.v4.clone();
     addrs.append(&mut args.v6.clone());
-    let ns = Nameserver::basic()
+    let ns = Nameserver::builder()
         .ldh_name(args.ldh)
         .addresses(addrs)
         .notices(args.object_args.notice.clone().to_notices())
@@ -1101,7 +1101,7 @@ async fn make_network(
 }
 
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
-    let help = Help::basic().notices(args.notice.to_notices()).build();
+    let help = Help::builder().notices(args.notice.to_notices()).build();
     let output = Output {
         rdap: RdapResponse::Help(help),
         id: RdapId::Help,

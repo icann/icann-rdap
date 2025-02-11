@@ -567,7 +567,7 @@ mod tests {
     fn test_nameserver_with_self_link() {
         // GIVEN
         let rdap = RdapResponse::Nameserver(
-            Nameserver::basic()
+            Nameserver::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -593,7 +593,7 @@ mod tests {
     fn test_nameserver_with_self_link_and_notice() {
         // GIVEN
         let rdap = RdapResponse::Nameserver(
-            Nameserver::basic()
+            Nameserver::builder()
                 .ldh_name("example.com")
                 .notice(Notice(
                     NoticeOrRemark::builder()
@@ -633,7 +633,7 @@ mod tests {
     fn test_nameserver_with_self_link_and_remark() {
         // GIVEN
         let rdap = RdapResponse::Nameserver(
-            Nameserver::basic()
+            Nameserver::builder()
                 .ldh_name("exapmle.com")
                 .remark(Remark(
                     NoticeOrRemark::builder()
@@ -872,7 +872,7 @@ mod tests {
     fn test_nameserver_with_no_links() {
         // GIVEN
         let rdap = RdapResponse::Nameserver(
-            Nameserver::basic()
+            Nameserver::builder()
                 .ldh_name("example.com")
                 .build()
                 .expect("building nameserver"),
@@ -889,7 +889,7 @@ mod tests {
     fn test_nameserver_with_no_self_links() {
         // GIVEN
         let rdap = RdapResponse::Nameserver(
-            Nameserver::basic()
+            Nameserver::builder()
                 .ldh_name("example.com")
                 .link(
                     Link::builder()
@@ -923,7 +923,7 @@ mod tests {
     #[test]
     fn test_nameserver_with_empty_status(#[case] status: Vec<StatusValue>) {
         // GIVEN
-        let mut ns = Nameserver::basic()
+        let mut ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
@@ -948,7 +948,7 @@ mod tests {
     #[test]
     fn test_nameserver_with_empty_handle(#[case] handle: &str) {
         // GIVEN
-        let mut ns = Nameserver::basic()
+        let mut ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();

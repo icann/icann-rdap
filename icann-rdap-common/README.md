@@ -36,7 +36,7 @@ let net = Network::builder().cidr("10.0.0.0/16").entity(holder.clone()).build().
 
 // create a nameserver
 use icann_rdap_common::response::Nameserver;
-let ns = Nameserver::basic().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
+let ns = Nameserver::builder().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
 
 // create an autnum
 use icann_rdap_common::response::Autnum;

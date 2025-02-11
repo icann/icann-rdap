@@ -75,7 +75,7 @@ mod tests {
     #[case("_.")]
     fn check_nameserver_with_bad_ldh(#[case] ldh: &str) {
         // GIVEN
-        let ns = Nameserver::basic().ldh_name(ldh).build().unwrap();
+        let ns = Nameserver::builder().ldh_name(ldh).build().unwrap();
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN

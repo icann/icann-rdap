@@ -186,7 +186,7 @@ async fn GIVEN_data_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded(
     // GIVEN
     let ldh_name = "ns.foo.example";
     let temp = TestDir::temp();
-    let nameserver = Nameserver::basic().ldh_name(ldh_name).build().unwrap();
+    let nameserver = Nameserver::builder().ldh_name(ldh_name).build().unwrap();
     let nameserver_file = temp.path("ns_foo_example.json");
     std::fs::write(
         nameserver_file,
@@ -219,7 +219,7 @@ async fn GIVEN_data_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_
     let ldh2 = "ns.bar.example";
     let temp = TestDir::temp();
     let template = Template::Nameserver {
-        nameserver: NameserverObject(Nameserver::basic().ldh_name("example").build().unwrap()),
+        nameserver: NameserverObject(Nameserver::builder().ldh_name("example").build().unwrap()),
         ids: vec![
             NameserverId::builder().ldh_name(ldh1).build(),
             NameserverId::builder().ldh_name(ldh2).build(),
@@ -480,7 +480,7 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
 async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())
@@ -529,7 +529,7 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
 async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("bar".to_string())

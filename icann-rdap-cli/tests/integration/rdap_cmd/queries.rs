@@ -72,7 +72,7 @@ async fn GIVEN_nameserver_WHEN_query_THEN_success() {
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
-        &Nameserver::basic()
+        &Nameserver::builder()
             .ldh_name("ns.foo.example")
             .build()
             .unwrap(),
