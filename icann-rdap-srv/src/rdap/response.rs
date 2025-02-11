@@ -5,30 +5,18 @@ use axum::{
 use http::StatusCode;
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
-    response::{Common, RdapResponse, Rfc9083Error},
+    response::{RdapResponse, Rfc9083Error},
 };
 use lazy_static::lazy_static;
 use tracing::warn;
 
 lazy_static! {
-    pub static ref NOT_FOUND: RdapResponse = RdapResponse::ErrorResponse(
-        Rfc9083Error::builder()
-            .error_code(404)
-            .common(Common::builder().build())
-            .build()
-    );
-    pub static ref NOT_IMPLEMENTED: RdapResponse = RdapResponse::ErrorResponse(
-        Rfc9083Error::builder()
-            .error_code(501)
-            .common(Common::builder().build())
-            .build()
-    );
-    pub static ref BAD_REQUEST: RdapResponse = RdapResponse::ErrorResponse(
-        Rfc9083Error::builder()
-            .error_code(400)
-            .common(Common::builder().build())
-            .build()
-    );
+    pub static ref NOT_FOUND: RdapResponse =
+        RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(404).build());
+    pub static ref NOT_IMPLEMENTED: RdapResponse =
+        RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(501).build());
+    pub static ref BAD_REQUEST: RdapResponse =
+        RdapResponse::ErrorResponse(Rfc9083Error::basic().error_code(400).build());
 }
 
 pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];

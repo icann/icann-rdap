@@ -758,11 +758,6 @@ struct Output {
     pub self_href: String,
 }
 
-fn notices(v: &[NoticeOrRemark]) -> Option<Vec<Notice>> {
-    let notices = v.iter().map(|n| Notice(n.clone())).collect::<Notices>();
-    (!notices.is_empty()).then_some(notices)
-}
-
 async fn entities(store: &dyn StoreOps, args: &ObjectArgs) -> Result<Vec<Entity>, RdapServerError> {
     let mut entities: Vec<Entity> = Vec::new();
     if let Some(handle) = &args.registrant {
@@ -1107,9 +1102,7 @@ async fn make_network(
 }
 
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
-    let help = Help::with_options()
-        .and_notices(notices(&args.notice))
-        .build()?;
+    let help = Help::basic().notices(args.notice.to_notices()).build();
     let output = Output {
         rdap: RdapResponse::Help(help),
         id: RdapId::Help,

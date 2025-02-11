@@ -1,5 +1,5 @@
 //! RFC 9083 Error
-use buildstructor::Builder;
+use crate::prelude::Extension;
 use serde::{Deserialize, Serialize};
 
 use crate::media_types::RDAP_MEDIA_TYPE;
@@ -16,7 +16,7 @@ use super::{
 /// See [RFC 9083, Section 6](https://datatracker.ietf.org/doc/html/rfc9083#name-error-response-body).
 ///
 /// Do not confuse this with [crate::response::RdapResponseError].
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Rfc9083Error {
     #[serde(flatten)]
     pub common: Common,
@@ -35,10 +35,17 @@ pub struct Rfc9083Error {
 impl Rfc9083Error {
     /// Creates a new RFC 9083 Error for a specific HTTP error code.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_error_code(error_code: u16, notices: Vec<crate::response::types::Notice>) -> Self {
+    fn new_error_code(
+        error_code: u16,
+        notices: Vec<crate::response::types::Notice>,
+        extensions: Vec<Extension>,
+    ) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(notices)
+                .build(),
             error_code,
             title: None,
             description: None,
@@ -47,7 +54,7 @@ impl Rfc9083Error {
 
     /// Creates an RFC 9083 error for an HTTP redirect.
     #[builder(entry = "redirect", visibility = "pub")]
-    fn new_redirect(url: String) -> Self {
+    fn new_redirect(url: String, extensions: Vec<Extension>) -> Self {
         let links = vec![Link::builder()
             .href(&url)
             .value(&url)
@@ -56,7 +63,10 @@ impl Rfc9083Error {
             .build()];
         let notices = vec![Notice(NoticeOrRemark::builder().links(links).build())];
         Self {
-            common: Common::builder().notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .notices(notices)
+                .build(),
             error_code: 307,
             title: None,
             description: None,

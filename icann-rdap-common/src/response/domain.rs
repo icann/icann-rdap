@@ -1,5 +1,6 @@
 //! RDAP Domain Object Class
 use crate::prelude::Common;
+use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
@@ -275,10 +276,14 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0().and_notices(to_opt_vec(notices)).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -328,9 +333,13 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
+        extensions: Vec<Extension>,
     ) -> Self {
         Self {
-            common: Common::builder().and_notices(to_opt_vec(notices)).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -366,7 +375,10 @@ impl SelfLink for Domain {
 
 impl ToChild for Domain {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
     }
 }

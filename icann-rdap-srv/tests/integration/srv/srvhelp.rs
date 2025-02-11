@@ -22,8 +22,7 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
                 .description_entry("foo".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     tx.add_srv_help(&srvhelp, None)
         .await
         .expect("adding srv help");
@@ -55,8 +54,7 @@ async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
                 .description_entry("foo".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     tx.add_srv_help(&srvhelp, Some("foo.example.com"))
         .await
         .expect("adding srv help");

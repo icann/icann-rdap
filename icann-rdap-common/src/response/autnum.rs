@@ -1,5 +1,6 @@
 //! RDAP Autonomous System Number.
 use crate::prelude::Common;
+use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 
@@ -97,10 +98,14 @@ impl Autnum {
         country: Option<String>,
         autnum_type: Option<String>,
         name: Option<String>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0().and_notices(to_opt_vec(notices)).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -135,7 +140,10 @@ impl SelfLink for Autnum {
 
 impl ToChild for Autnum {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
     }
 }

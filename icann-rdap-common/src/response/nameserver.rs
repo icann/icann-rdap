@@ -1,11 +1,13 @@
 //! RDAP Nameserver object class.
 use crate::prelude::Common;
+use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use std::{net::IpAddr, str::FromStr};
 
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
+use super::to_opt_vec;
 use super::{
     types::{to_option_status, Link},
     Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
@@ -143,6 +145,7 @@ impl Nameserver {
         port_43: Option<Port43>,
         entities: Vec<Entity>,
         notices: Vec<Notice>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
@@ -150,21 +153,19 @@ impl Nameserver {
         } else {
             None
         };
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Ok(Self {
-            common: Common::level0().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::nameserver()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
                 .and_status(to_option_status(statuses))
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             ldh_name: Some(ldh_name.into()),
@@ -202,7 +203,10 @@ impl SelfLink for Nameserver {
 
 impl ToChild for Nameserver {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
     }
 }

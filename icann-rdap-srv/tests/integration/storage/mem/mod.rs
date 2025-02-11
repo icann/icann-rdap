@@ -464,7 +464,10 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_first_address_THEN_n
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_network(&Network {
-        common: Common::builder().build(),
+        common: Common {
+            rdap_conformance: None,
+            notices: None,
+        },
         object_common: ObjectCommon::ip_network().build(),
         start_address: Some(start.to_string()),
         end_address: Some(end.to_string()),
@@ -510,7 +513,10 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_last_address_THEN_ne
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_network(&Network {
-        common: Common::builder().build(),
+        common: Common {
+            rdap_conformance: None,
+            notices: None,
+        },
         object_common: ObjectCommon::ip_network().build(),
         start_address: Some(start.to_string()),
         end_address: Some(end.to_string()),
@@ -619,8 +625,7 @@ async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_defaul
                     .description_entry("foo".to_string())
                     .build(),
             ))
-            .build()
-            .expect("building help"),
+            .build(),
         None,
     )
     .await
@@ -665,8 +670,7 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
                     .description_entry("bar".to_string())
                     .build(),
             ))
-            .build()
-            .expect("building help"),
+            .build(),
         Some("bar.example.com"),
     )
     .await

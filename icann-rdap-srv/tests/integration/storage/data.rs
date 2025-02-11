@@ -486,8 +486,7 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
                 .description_entry("foo".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     let srvhelp_file = temp.path("__default.help");
     std::fs::write(
         srvhelp_file,
@@ -536,8 +535,7 @@ async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() 
                 .description_entry("bar".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     let srvhelp_file = temp.path("foo_example_com.help");
     std::fs::write(
         srvhelp_file,

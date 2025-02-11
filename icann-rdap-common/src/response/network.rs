@@ -1,5 +1,6 @@
 //! RDAP IP Network.
 use crate::prelude::Common;
+use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use std::str::FromStr;
 
@@ -222,12 +223,15 @@ impl Network {
         port_43: Option<Port43>,
         entities: Vec<Entity>,
         notices: Vec<Notice>,
+        mut extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
+        let mut net_exts = vec![ExtensionId::Cidr0.to_extension()];
+        net_exts.append(&mut extensions);
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
             common: Common::level0()
-                .extension(ExtensionId::Cidr0.to_extension())
+                .extensions(net_exts)
                 .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::ip_network()
@@ -310,7 +314,10 @@ impl SelfLink for Network {
 
 impl ToChild for Network {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
     }
 }

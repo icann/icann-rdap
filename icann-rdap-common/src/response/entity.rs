@@ -1,6 +1,7 @@
 //! Entity object class.
 use crate::contact::Contact;
 use crate::prelude::Common;
+use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -145,10 +146,14 @@ impl Entity {
         notices: Vec<Notice>,
         networks: Vec<Network>,
         autnums: Vec<Autnum>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0().and_notices(to_opt_vec(notices)).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::entity()
                 .handle(handle.into())
                 .and_remarks(to_opt_vec(remarks))
@@ -189,7 +194,10 @@ impl SelfLink for Entity {
 
 impl ToChild for Entity {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
     }
 }

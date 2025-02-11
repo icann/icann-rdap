@@ -1,5 +1,6 @@
 //! RDAP Search Results.
 use crate::prelude::Common;
+use crate::prelude::Extension;
 use serde::{Deserialize, Serialize};
 
 use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
@@ -18,9 +19,9 @@ pub struct DomainSearchResults {
 impl DomainSearchResults {
     /// Builds a domain search result.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_basic(results: Vec<Domain>) -> Self {
+    fn new_basic(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
         Self {
-            common: Common::builder().build(),
+            common: Common::level0().extensions(extensions).build(),
             results,
         }
     }
@@ -40,9 +41,9 @@ pub struct NameserverSearchResults {
 impl NameserverSearchResults {
     /// Builds a nameserver search result.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_basic(results: Vec<Nameserver>) -> Self {
+    fn new_basic(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
         Self {
-            common: Common::builder().build(),
+            common: Common::level0().extensions(extensions).build(),
             results,
         }
     }
@@ -62,9 +63,9 @@ pub struct EntitySearchResults {
 impl EntitySearchResults {
     /// Builds an entity search result.
     #[builder(entry = "basic", visibility = "pub")]
-    fn new_empty(results: Vec<Entity>) -> Self {
+    fn new_empty(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
         Self {
-            common: Common::builder().build(),
+            common: Common::level0().extensions(extensions).build(),
             results,
         }
     }
