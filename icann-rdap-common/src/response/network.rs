@@ -7,6 +7,8 @@ use std::str::FromStr;
 use cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
+use super::CommonFields;
+use super::ObjectCommonFields;
 use super::{
     to_opt_vec,
     types::{to_option_status, ExtensionId, Link},
@@ -319,6 +321,18 @@ impl ToChild for Network {
             notices: None,
         };
         self
+    }
+}
+
+impl CommonFields for Network {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Network {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

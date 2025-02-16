@@ -5,6 +5,8 @@ use crate::prelude::ObjectCommon;
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
+use super::CommonFields;
+use super::ObjectCommonFields;
 use super::{
     lenient::{Boolish, Numberish},
     nameserver::Nameserver,
@@ -380,6 +382,18 @@ impl ToChild for Domain {
             notices: None,
         };
         self
+    }
+}
+
+impl CommonFields for Domain {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Domain {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

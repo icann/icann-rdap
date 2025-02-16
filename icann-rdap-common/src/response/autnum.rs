@@ -4,6 +4,8 @@ use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 
+use super::CommonFields;
+use super::ObjectCommonFields;
 use super::{
     to_opt_vec,
     types::{to_option_status, Link},
@@ -145,6 +147,18 @@ impl ToChild for Autnum {
             notices: None,
         };
         self
+    }
+}
+
+impl CommonFields for Autnum {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Autnum {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

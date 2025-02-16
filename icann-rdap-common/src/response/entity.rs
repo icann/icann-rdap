@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
 
+use super::CommonFields;
+use super::ObjectCommonFields;
 use super::{
     autnum::Autnum,
     network::Network,
@@ -199,6 +201,18 @@ impl ToChild for Entity {
             notices: None,
         };
         self
+    }
+}
+
+impl CommonFields for Entity {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Entity {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

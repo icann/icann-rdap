@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::{redacted::Redacted, Entity, Events, Link, Links, Port43, Remarks, Status};
@@ -191,5 +192,76 @@ impl ObjectCommon {
         } else {
             None
         }
+    }
+}
+
+lazy_static! {
+    /// Empty Remarks.
+    static ref EMPTY_REMARKS: Remarks = vec![];
+    /// Empty Links.
+    static ref EMPTY_LINKS: Links = vec![];
+    /// Empty Events.
+    static ref EMPTY_EVENTS: Events = vec![];
+    /// Empty Status.
+    static ref EMPTY_STATUS: Status = vec![];
+    /// Empty Entities.
+    static ref EMPTY_ENTITIES: Vec<Entity> = vec![];
+}
+
+/// Convenience methods for fields in [ObjectCommon].
+pub trait ObjectCommonFields {
+    /// Getter for [ObjectCommon].
+    fn object_common(&self) -> &ObjectCommon;
+
+    /// Returns the object class name.
+    fn object_class_name(&self) -> &str {
+        &self.object_common().object_class_name
+    }
+
+    /// Returns the handle, if present.
+    fn handle(&self) -> Option<&str> {
+        self.object_common().handle.as_deref()
+    }
+
+    /// Returns the port 43 information, if present.
+    fn port_43(&self) -> Option<&Port43> {
+        self.object_common().port_43.as_ref()
+    }
+
+    /// Getter for [Remarks].
+    fn remarks(&self) -> &Remarks {
+        self.object_common()
+            .remarks
+            .as_ref()
+            .unwrap_or(&EMPTY_REMARKS)
+    }
+
+    /// Getter for [Links].
+    fn links(&self) -> &Links {
+        self.object_common().links.as_ref().unwrap_or(&EMPTY_LINKS)
+    }
+
+    /// Getter for [Events].
+    fn events(&self) -> &Events {
+        self.object_common()
+            .events
+            .as_ref()
+            .unwrap_or(&EMPTY_EVENTS)
+    }
+
+    /// Getter for [Status].
+    fn status(&self) -> &Status {
+        self.object_common()
+            .status
+            .as_ref()
+            .unwrap_or(&EMPTY_STATUS)
+    }
+
+    /// Getter for Vec of [Entity].
+    fn entities(&self) -> &Vec<Entity> {
+        self.object_common()
+            .entities
+            .as_ref()
+            .unwrap_or(&EMPTY_ENTITIES)
     }
 }

@@ -188,7 +188,7 @@ impl StoreOps for Mem {
             })
             .collect::<Vec<Domain>>();
         let response = RdapResponse::DomainSearchResults(
-            DomainSearchResults::basic().results(results).build(),
+            DomainSearchResults::builder().results(results).build(),
         );
         Ok(response)
     }

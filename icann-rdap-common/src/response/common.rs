@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::{Extension, ExtensionId, Notice, Notices, RdapConformance};
@@ -23,5 +24,31 @@ impl Common {
             rdap_conformance: Some(extensions),
             notices,
         }
+    }
+}
+
+lazy_static! {
+    /// Empty Extensions.
+    static ref EMPTY_EXTENSIONS: Vec<Extension> = vec![];
+    /// Empty Notices.
+    static ref EMPTY_NOTICES: Vec<Notice> = vec![];
+}
+
+/// Convience methods for fields in  [Common].
+pub trait CommonFields {
+    /// Getter for [Common].
+    fn common(&self) -> &Common;
+
+    /// Getter for Vec of RDAP extensions.
+    fn extensions(&self) -> &Vec<Extension> {
+        self.common()
+            .rdap_conformance
+            .as_ref()
+            .unwrap_or(&EMPTY_EXTENSIONS)
+    }
+
+    /// Getter for Vec of Notices.
+    fn notices(&self) -> &Vec<Notice> {
+        self.common().notices.as_ref().unwrap_or(&EMPTY_NOTICES)
     }
 }

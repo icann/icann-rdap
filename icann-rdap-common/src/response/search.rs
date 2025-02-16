@@ -3,6 +3,7 @@ use crate::prelude::Common;
 use crate::prelude::Extension;
 use serde::{Deserialize, Serialize};
 
+use super::CommonFields;
 use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
 
 /// Represents RDAP domain search results.
@@ -18,12 +19,18 @@ pub struct DomainSearchResults {
 #[buildstructor::buildstructor]
 impl DomainSearchResults {
     /// Builds a domain search result.
-    #[builder(entry = "basic", visibility = "pub")]
-    fn new_basic(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
+    #[builder(visibility = "pub")]
+    fn new(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+}
+
+impl CommonFields for DomainSearchResults {
+    fn common(&self) -> &Common {
+        &self.common
     }
 }
 
@@ -40,12 +47,18 @@ pub struct NameserverSearchResults {
 #[buildstructor::buildstructor]
 impl NameserverSearchResults {
     /// Builds a nameserver search result.
-    #[builder(entry = "basic", visibility = "pub")]
-    fn new_basic(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
+    #[builder(visibility = "pub")]
+    fn new(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+}
+
+impl CommonFields for NameserverSearchResults {
+    fn common(&self) -> &Common {
+        &self.common
     }
 }
 
@@ -62,11 +75,17 @@ pub struct EntitySearchResults {
 #[buildstructor::buildstructor]
 impl EntitySearchResults {
     /// Builds an entity search result.
-    #[builder(entry = "basic", visibility = "pub")]
-    fn new_empty(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
+    #[builder(visibility = "pub")]
+    fn new(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+}
+
+impl CommonFields for EntitySearchResults {
+    fn common(&self) -> &Common {
+        &self.common
     }
 }

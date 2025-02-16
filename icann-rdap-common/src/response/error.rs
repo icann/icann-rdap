@@ -6,7 +6,7 @@ use crate::media_types::RDAP_MEDIA_TYPE;
 
 use super::{
     types::{Link, Notice, NoticeOrRemark},
-    Common,
+    Common, CommonFields,
 };
 
 /// Represents an error response from an RDAP server.
@@ -71,6 +71,12 @@ impl Rfc9083Error {
 
     pub fn is_redirect(&self) -> bool {
         self.error_code > 299 && self.error_code < 400
+    }
+}
+
+impl CommonFields for Rfc9083Error {
+    fn common(&self) -> &Common {
+        &self.common
     }
 }
 

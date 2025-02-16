@@ -7,6 +7,8 @@ use std::{net::IpAddr, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::to_opt_vec;
+use super::CommonFields;
+use super::ObjectCommonFields;
 use super::{
     types::{to_option_status, Link},
     Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
@@ -213,6 +215,18 @@ impl ToChild for Nameserver {
             notices: None,
         };
         self
+    }
+}
+
+impl CommonFields for Nameserver {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Nameserver {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

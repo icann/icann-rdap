@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::to_opt_vec;
 use super::Common;
+use super::CommonFields;
 
 /// Represents an RDAP help response.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -24,5 +25,11 @@ impl Help {
                 .and_notices(to_opt_vec(notices))
                 .build(),
         }
+    }
+}
+
+impl CommonFields for Help {
+    fn common(&self) -> &Common {
+        &self.common
     }
 }
