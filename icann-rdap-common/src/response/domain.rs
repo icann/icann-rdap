@@ -29,6 +29,18 @@ pub struct VariantName {
     pub unicode_name: Option<String>,
 }
 
+impl VariantName {
+    /// Convenience method.
+    pub fn ldh_name(&self) -> Option<&str> {
+        self.ldh_name.as_deref()
+    }
+
+    /// Convenience method.
+    pub fn unicode_name(&self) -> Option<&str> {
+        self.unicode_name.as_deref()
+    }
+}
+
 /// Represents an RDAP IDN variant.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Variant {
@@ -71,6 +83,11 @@ impl Variant {
     /// Convenience method to get variant names.
     pub fn variant_names(&self) -> &Vec<VariantName> {
         self.variant_names.as_ref().unwrap_or(&EMPTY_VARIANT_NAMES)
+    }
+
+    /// Convenience method.
+    pub fn idn_table(&self) -> Option<&str> {
+        self.idn_table.as_deref()
     }
 }
 
@@ -134,6 +151,21 @@ impl DsDatum {
     pub fn events(&self) -> &Vec<Event> {
         self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
     }
+
+    /// Returns a u32 if it was given, otherwise None.
+    pub fn key_tag(&self) -> Option<u32> {
+        self.key_tag.as_ref().and_then(|n| n.as_u32())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
+    pub fn digest_type(&self) -> Option<u8> {
+        self.digest_type.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Convenience method.
+    pub fn digest(&self) -> Option<&str> {
+        self.digest.as_deref()
+    }
 }
 
 /// Represents `keyData`.
@@ -189,6 +221,26 @@ impl KeyDatum {
     /// Convenience method to get events.
     pub fn events(&self) -> &Vec<Event> {
         self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    }
+
+    /// Returns a u16 if it was given, otherwise None.
+    pub fn flags(&self) -> Option<u16> {
+        self.flags.as_ref().and_then(|n| n.as_u16())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
+    pub fn protocol(&self) -> Option<u8> {
+        self.protocol.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
+    pub fn algorithm(&self) -> Option<u8> {
+        self.algorithm.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Convenience method.
+    pub fn public_key(&self) -> Option<&str> {
+        self.public_key.as_deref()
     }
 }
 
@@ -249,6 +301,23 @@ impl SecureDns {
     /// Convenience method to get key data.
     pub fn key_data(&self) -> &Vec<KeyDatum> {
         self.key_data.as_ref().unwrap_or(&EMPTY_KEY_DATA)
+    }
+
+    /// Returns true if a truish value was given, otherwise false.
+    pub fn zone_signed(&self) -> bool {
+        self.zone_signed.as_ref().map_or(false, |b| b.into_bool())
+    }
+
+    /// Returns true if a truish value was given, otherwise false.
+    pub fn delegation_signed(&self) -> bool {
+        self.delegation_signed
+            .as_ref()
+            .map_or(false, |b| b.into_bool())
+    }
+
+    /// Returns max_sig_life as a u64 if it was given, otherwise None.
+    pub fn max_sig_life(&self) -> Option<u64> {
+        self.max_sig_life.as_ref().and_then(|n| n.as_u64())
     }
 }
 
@@ -446,6 +515,16 @@ impl Domain {
     /// Convenience method to get the nameservers.
     pub fn nameservers(&self) -> &Vec<Nameserver> {
         self.nameservers.as_ref().unwrap_or(&EMPTY_NAMESERVERS)
+    }
+
+    /// Convenience method.
+    pub fn ldh_name(&self) -> Option<&str> {
+        self.ldh_name.as_deref()
+    }
+
+    /// Convenience method.
+    pub fn unicode_name(&self) -> Option<&str> {
+        self.unicode_name.as_deref()
     }
 }
 
