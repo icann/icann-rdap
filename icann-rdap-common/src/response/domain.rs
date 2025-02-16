@@ -3,6 +3,7 @@ use crate::prelude::Common;
 use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use buildstructor::Builder;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::CommonFields;
@@ -42,6 +43,11 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
+lazy_static! {
+    static ref EMPTY_RELATIONS: Vec<String> = vec![];
+    static ref EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
+}
+
 #[buildstructor::buildstructor]
 impl Variant {
     #[builder(visibility = "pub")]
@@ -56,6 +62,21 @@ impl Variant {
             variant_names: to_opt_vec(variant_names),
         }
     }
+
+    /// Convenience method to get relations.
+    pub fn relations(&self) -> &Vec<String> {
+        self.relation.as_ref().unwrap_or(&EMPTY_RELATIONS)
+    }
+
+    /// Convenience method to get variant names.
+    pub fn variant_names(&self) -> &Vec<VariantName> {
+        self.variant_names.as_ref().unwrap_or(&EMPTY_VARIANT_NAMES)
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_LINKS: Vec<Link> = vec![];
+    static ref EMPTY_EVENTS: Vec<Event> = vec![];
 }
 
 /// Represents `dsData`.
@@ -103,6 +124,16 @@ impl DsDatum {
             events: to_opt_vec(events),
         }
     }
+
+    /// Convenience method to get links.
+    pub fn links(&self) -> &Vec<Link> {
+        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    }
+
+    /// Convenience method to get events.
+    pub fn events(&self) -> &Vec<Event> {
+        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    }
 }
 
 /// Represents `keyData`.
@@ -149,6 +180,21 @@ impl KeyDatum {
             events: to_opt_vec(events),
         }
     }
+
+    /// Convenience method to get links.
+    pub fn links(&self) -> &Vec<Link> {
+        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    }
+
+    /// Convenience method to get events.
+    pub fn events(&self) -> &Vec<Event> {
+        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_DS_DATA: Vec<DsDatum> = vec![];
+    static ref EMPTY_KEY_DATA: Vec<KeyDatum> = vec![];
 }
 
 /// Represents the DNSSEC information of a domain.
@@ -194,6 +240,21 @@ impl SecureDns {
             key_data: to_opt_vec(key_data),
         }
     }
+
+    /// Convenience method to get ds data.
+    pub fn ds_data(&self) -> &Vec<DsDatum> {
+        self.ds_data.as_ref().unwrap_or(&EMPTY_DS_DATA)
+    }
+
+    /// Convenience method to get key data.
+    pub fn key_data(&self) -> &Vec<KeyDatum> {
+        self.key_data.as_ref().unwrap_or(&EMPTY_KEY_DATA)
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
+    static ref EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 }
 
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
@@ -375,6 +436,16 @@ impl Domain {
             public_ids: to_opt_vec(public_ids),
             network,
         }
+    }
+
+    /// Convenience method to get the public IDs.
+    pub fn public_ids(&self) -> &Vec<PublicId> {
+        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    }
+
+    /// Convenience method to get the nameservers.
+    pub fn nameservers(&self) -> &Vec<Nameserver> {
+        self.nameservers.as_ref().unwrap_or(&EMPTY_NAMESERVERS)
     }
 }
 

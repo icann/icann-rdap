@@ -3,6 +3,7 @@ use crate::contact::Contact;
 use crate::prelude::Common;
 use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
@@ -112,6 +113,14 @@ pub struct Entity {
     pub networks: Option<Vec<Network>>,
 }
 
+lazy_static! {
+    static ref EMPTY_ROLES: Vec<String> = vec![];
+    static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
+    static ref EMPTY_AS_EVENT_ACTORS: Vec<Event> = vec![];
+    static ref EMPTY_AUTNUMS: Vec<Autnum> = vec![];
+    static ref EMPTY_NETWORKS: Vec<Network> = vec![];
+}
+
 #[buildstructor::buildstructor]
 impl Entity {
     /// Builds a basic autnum object.
@@ -175,9 +184,37 @@ impl Entity {
         }
     }
 
+    /// Convenience method to get a [Contact] from the impentrable vCard.
     pub fn contact(&self) -> Option<Contact> {
         let vcard = self.vcard_array.as_ref()?;
         Contact::from_vcard(vcard)
+    }
+
+    /// Convenience method to get the roles.
+    pub fn roles(&self) -> &Vec<String> {
+        self.roles.as_ref().unwrap_or(&EMPTY_ROLES)
+    }
+
+    /// Convenience method to get the public IDs.
+    pub fn public_ids(&self) -> &Vec<PublicId> {
+        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    }
+
+    /// Convenience method to get the events this entity acted on.
+    pub fn as_event_actors(&self) -> &Vec<Event> {
+        self.as_event_actor
+            .as_ref()
+            .unwrap_or(&EMPTY_AS_EVENT_ACTORS)
+    }
+
+    /// Convenience method to get the autnums.
+    pub fn autnums(&self) -> &Vec<Autnum> {
+        self.autnums.as_ref().unwrap_or(&EMPTY_AUTNUMS)
+    }
+
+    /// Convenience method to get the networks.
+    pub fn networks(&self) -> &Vec<Network> {
+        self.networks.as_ref().unwrap_or(&EMPTY_NETWORKS)
     }
 }
 
