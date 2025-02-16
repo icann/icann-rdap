@@ -29,7 +29,7 @@ pub struct VariantName {
 }
 
 /// Represents an RDAP IDN variant.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Variant {
     pub relation: Option<Vec<String>>,
 
@@ -40,6 +40,22 @@ pub struct Variant {
     #[serde(rename = "variantNames")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variant_names: Option<Vec<VariantName>>,
+}
+
+#[buildstructor::buildstructor]
+impl Variant {
+    #[builder(visibility = "pub")]
+    fn new(
+        relation: Vec<String>,
+        idn_table: Option<String>,
+        variant_names: Vec<VariantName>,
+    ) -> Self {
+        Self {
+            relation: to_opt_vec(relation),
+            idn_table,
+            variant_names: to_opt_vec(variant_names),
+        }
+    }
 }
 
 /// Represents `dsData`.
@@ -75,16 +91,16 @@ impl DsDatum {
         algorithm: Option<u8>,
         digest: Option<String>,
         digest_type: Option<u8>,
-        links: Option<Links>,
-        events: Option<Events>,
+        links: Vec<Link>,
+        events: Vec<Event>,
     ) -> Self {
         Self {
             key_tag: key_tag.map(Numberish::<u32>::from),
             algorithm: algorithm.map(Numberish::<u8>::from),
             digest,
             digest_type: digest_type.map(Numberish::<u8>::from),
-            links,
-            events,
+            links: to_opt_vec(links),
+            events: to_opt_vec(events),
         }
     }
 }
@@ -121,16 +137,16 @@ impl KeyDatum {
         protocol: Option<u8>,
         public_key: Option<String>,
         algorithm: Option<u8>,
-        links: Option<Links>,
-        events: Option<Events>,
+        links: Vec<Link>,
+        events: Vec<Event>,
     ) -> Self {
         Self {
             flags: flags.map(Numberish::<u16>::from),
             protocol: protocol.map(Numberish::<u8>::from),
             public_key,
             algorithm: algorithm.map(Numberish::<u8>::from),
-            links,
-            events,
+            links: to_opt_vec(links),
+            events: to_opt_vec(events),
         }
     }
 }
@@ -167,15 +183,15 @@ impl SecureDns {
         zone_signed: Option<bool>,
         delegation_signed: Option<bool>,
         max_sig_life: Option<u64>,
-        ds_data: Option<Vec<DsDatum>>,
-        key_data: Option<Vec<KeyDatum>>,
+        ds_data: Vec<DsDatum>,
+        key_data: Vec<KeyDatum>,
     ) -> Self {
         Self {
             zone_signed: zone_signed.map(Boolish::from),
             delegation_signed: delegation_signed.map(Boolish::from),
             max_sig_life: max_sig_life.map(Numberish::<u64>::from),
-            ds_data,
-            key_data,
+            ds_data: to_opt_vec(ds_data),
+            key_data: to_opt_vec(key_data),
         }
     }
 }

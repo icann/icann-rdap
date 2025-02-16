@@ -992,7 +992,7 @@ async fn make_domain(
             .and_zone_signed(args.zone_signed)
             .and_delegation_signed(args.delegation_signed)
             .and_max_sig_life(args.max_sig_life)
-            .and_ds_data((!args.ds.is_empty()).then_some(args.ds))
+            .ds_data(args.ds.clone())
             .build();
         Some(secure_dns)
     } else {
