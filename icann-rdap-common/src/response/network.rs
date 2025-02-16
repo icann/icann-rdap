@@ -8,6 +8,7 @@ use cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
 use super::CommonFields;
+use super::Numberish;
 use super::ObjectCommonFields;
 use super::{
     to_opt_vec,
@@ -44,7 +45,7 @@ impl std::fmt::Display for Cidr0Cidr {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V4Cidr {
     pub v4prefix: Option<String>,
-    pub length: Option<u8>,
+    pub length: Option<Numberish<u8>>,
 }
 
 #[buildstructor::buildstructor]
@@ -54,14 +55,14 @@ impl V4Cidr {
     fn new(v4prefix: String, length: u8) -> Self {
         V4Cidr {
             v4prefix: Some(v4prefix),
-            length: Some(length),
+            length: Some(Numberish::<u8>::from(length)),
         }
     }
 }
 
 impl std::fmt::Display for V4Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let length_s = if let Some(length) = self.length {
+        let length_s = if let Some(length) = &self.length {
             length.to_string()
         } else {
             "not_given".to_string()
@@ -87,7 +88,7 @@ impl std::fmt::Display for V4Cidr {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V6Cidr {
     pub v6prefix: Option<String>,
-    pub length: Option<u8>,
+    pub length: Option<Numberish<u8>>,
 }
 
 #[buildstructor::buildstructor]
@@ -97,14 +98,14 @@ impl V6Cidr {
     fn new(v6prefix: String, length: u8) -> Self {
         V6Cidr {
             v6prefix: Some(v6prefix),
-            length: Some(length),
+            length: Some(Numberish::<u8>::from(length)),
         }
     }
 }
 
 impl std::fmt::Display for V6Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let length_s = if let Some(length) = self.length {
+        let length_s = if let Some(length) = &self.length {
             length.to_string()
         } else {
             "not_given".to_string()
@@ -259,11 +260,11 @@ impl Network {
             cidr0_cidrs: match cidr {
                 IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(cidr.first_address().to_string()),
-                    length: Some(cidr.network_length()),
+                    length: Some(Numberish::<u8>::from(cidr.network_length())),
                 })]),
                 IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                     v6prefix: Some(cidr.first_address().to_string()),
-                    length: Some(cidr.network_length()),
+                    length: Some(Numberish::<u8>::from(cidr.network_length())),
                 })]),
             },
         })

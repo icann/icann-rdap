@@ -5,9 +5,12 @@ use std::{
 };
 
 use buildstructor::Builder;
-use icann_rdap_common::response::{
-    Autnum, Domain, Entity, GetSelfLink, Nameserver, RdapResponse, SelfLink,
-    {Cidr0Cidr, Network, V4Cidr, V6Cidr},
+use icann_rdap_common::{
+    prelude::Numberish,
+    response::{
+        Autnum, Cidr0Cidr, Domain, Entity, GetSelfLink, Nameserver, Network, RdapResponse,
+        SelfLink, V4Cidr, V6Cidr,
+    },
 };
 use ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets};
 use serde::{Deserialize, Serialize};
@@ -481,7 +484,7 @@ fn make_network_from_template(
                 network.ip_version = Some("v4".to_string());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(v4.network().to_string()),
-                    length: Some(v4.prefix_len()),
+                    length: Some(Numberish::<u8>::from(v4.prefix_len())),
                 })]);
             }
             IpNet::V6(v6) => {
@@ -490,7 +493,7 @@ fn make_network_from_template(
                 network.ip_version = Some("v6".to_string());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                     v6prefix: Some(v6.network().to_string()),
-                    length: Some(v6.prefix_len()),
+                    length: Some(Numberish::<u8>::from(v6.prefix_len())),
                 })]);
             }
         },
@@ -506,7 +509,7 @@ fn make_network_from_template(
                         .map(|net| {
                             Cidr0Cidr::V4Cidr(V4Cidr {
                                 v4prefix: Some(net.network().to_string()),
-                                length: Some(net.prefix_len()),
+                                length: Some(Numberish::<u8>::from(net.prefix_len())),
                             })
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
@@ -518,7 +521,7 @@ fn make_network_from_template(
                         .map(|net| {
                             Cidr0Cidr::V6Cidr(V6Cidr {
                                 v6prefix: Some(net.network().to_string()),
-                                length: Some(net.prefix_len()),
+                                length: Some(Numberish::<u8>::from(net.prefix_len())),
                             })
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
@@ -538,14 +541,14 @@ fn make_network_from_template(
                 format!(
                     "{}/{}",
                     cidr.v4prefix.as_ref().expect("no v4prefix"),
-                    cidr.length.expect("no v4 length")
+                    cidr.length.as_ref().expect("no v4 length")
                 )
             }
             Cidr0Cidr::V6Cidr(cidr) => {
                 format!(
                     "{}/{}",
                     cidr.v6prefix.as_ref().expect("no v6prefix"),
-                    cidr.length.expect("no v6 length")
+                    cidr.length.as_ref().expect("no v6 length")
                 )
             }
         })
@@ -943,7 +946,7 @@ mod tests {
             panic!("no v4 cidr")
         };
         assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
-        assert_eq!(v4cidr.length, Some(24));
+        assert_eq!(v4cidr.length, Some(Numberish::<u8>::from(24)));
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
@@ -994,7 +997,7 @@ mod tests {
             panic!("no v4 cidr")
         };
         assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
-        assert_eq!(v4cidr.length, Some(24));
+        assert_eq!(v4cidr.length, Some(Numberish::<u8>::from(24)));
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),

@@ -180,6 +180,7 @@ mod tests {
 
     use rstest::rstest;
 
+    use crate::prelude::Numberish;
     use crate::response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr};
 
     use crate::response::RdapResponse;
@@ -389,7 +390,7 @@ mod tests {
         let network = Network::illegal()
             .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                 v4prefix: None,
-                length: Some(0),
+                length: Some(Numberish::<u8>::from(0)),
             })])
             .build();
         let rdap = RdapResponse::Network(network);
@@ -413,7 +414,7 @@ mod tests {
         let network = Network::illegal()
             .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                 v6prefix: None,
-                length: Some(0),
+                length: Some(Numberish::<u8>::from(0)),
             })])
             .build();
         let rdap = RdapResponse::Network(network);
