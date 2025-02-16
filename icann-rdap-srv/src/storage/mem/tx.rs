@@ -164,13 +164,15 @@ impl TxHandle for MemTx {
         let start_num = autnum
             .start_autnum
             .as_ref()
+            .and_then(|n| n.as_u32())
             .ok_or_else(|| RdapServerError::EmptyIndexData("startNum".to_string()))?;
         let end_num = autnum
             .end_autnum
             .as_ref()
+            .and_then(|n| n.as_u32())
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
         self.autnums.insert(
-            (*start_num)..=(*end_num),
+            (start_num)..=(end_num),
             Arc::new(RdapResponse::Autnum(autnum.clone())),
         );
         Ok(())

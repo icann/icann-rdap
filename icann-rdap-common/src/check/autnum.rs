@@ -28,8 +28,8 @@ impl GetChecks for Autnum {
             items.push(Check::AutnumMissing.check_item())
         }
 
-        if let Some(start_num) = &self.start_autnum {
-            if let Some(end_num) = &self.end_autnum {
+        if let Some(start_num) = &self.start_autnum.as_ref().and_then(|n| n.as_u32()) {
+            if let Some(end_num) = &self.end_autnum.as_ref().and_then(|n| n.as_u32()) {
                 if start_num > end_num {
                     items.push(Check::AutnumEndBeforeStart.check_item())
                 }

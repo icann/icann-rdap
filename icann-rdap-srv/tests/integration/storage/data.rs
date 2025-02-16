@@ -1,7 +1,10 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{
-    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, {Notice, NoticeOrRemark},
+use icann_rdap_common::{
+    prelude::Numberish,
+    response::{
+        Autnum, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark, RdapResponse,
+    },
 };
 use icann_rdap_srv::{
     config::{ServiceConfig, StorageType},
@@ -276,7 +279,7 @@ async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startAutnum is none"),
-        num
+        Numberish::<u32>::from(num)
     )
 }
 
@@ -321,7 +324,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
         };
         assert_eq!(
             *autnum.start_autnum.as_ref().expect("startAutnum is none"),
-            num
+            Numberish::<u32>::from(num)
         )
     }
 }

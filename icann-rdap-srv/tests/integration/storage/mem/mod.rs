@@ -1,8 +1,11 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{
-    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse,
-    {Common, Notice, NoticeOrRemark, ObjectCommon},
+use icann_rdap_common::{
+    prelude::Numberish,
+    response::{
+        Autnum, Common, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark,
+        ObjectCommon, RdapResponse,
+    },
 };
 use icann_rdap_srv::storage::{
     mem::{config::MemConfig, ops::Mem},
@@ -302,9 +305,12 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_retu
     };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startNum is none"),
-        700
+        Numberish::<u32>::from(700)
     );
-    assert_eq!(*autnum.end_autnum.as_ref().expect("startNum is none"), 710);
+    assert_eq!(
+        *autnum.end_autnum.as_ref().expect("startNum is none"),
+        Numberish::<u32>::from(710)
+    );
 }
 
 #[tokio::test]
@@ -329,9 +335,12 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_return
     };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startNum is none"),
-        700
+        Numberish::<u32>::from(700)
     );
-    assert_eq!(*autnum.end_autnum.as_ref().expect("startNum is none"), 710);
+    assert_eq!(
+        *autnum.end_autnum.as_ref().expect("startNum is none"),
+        Numberish::<u32>::from(710)
+    );
 }
 
 #[tokio::test]

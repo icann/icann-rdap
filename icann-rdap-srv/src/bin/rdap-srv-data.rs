@@ -1048,8 +1048,16 @@ async fn make_autnum(
         .and_handle(args.handle);
     let autnum = autnum.build();
     let id = RdapId::Autnum(AutnumId {
-        start_autnum: autnum.start_autnum.expect("autnum created with no start"),
-        end_autnum: autnum.end_autnum.expect("autnum create with no end"),
+        start_autnum: autnum
+            .start_autnum
+            .as_ref()
+            .and_then(|n| n.as_u32())
+            .expect("autnum created with no start"),
+        end_autnum: autnum
+            .end_autnum
+            .as_ref()
+            .and_then(|n| n.as_u32())
+            .expect("autnum create with no end"),
     });
     let output = Output {
         rdap: RdapResponse::Autnum(autnum),

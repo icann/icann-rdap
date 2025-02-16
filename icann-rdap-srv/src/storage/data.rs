@@ -466,8 +466,8 @@ fn make_nameserver_from_template(nameserver: &Nameserver, id: NameserverId) -> N
 fn make_autnum_from_template(autnum: &Autnum, id: AutnumId) -> Autnum {
     let mut autnum = autnum.clone();
     autnum = change_self_link(autnum, "autnum", &id.start_autnum.to_string());
-    autnum.start_autnum = Some(id.start_autnum);
-    autnum.end_autnum = Some(id.end_autnum);
+    autnum.start_autnum = Some(Numberish::<u32>::from(id.start_autnum));
+    autnum.end_autnum = Some(Numberish::<u32>::from(id.end_autnum));
     autnum
 }
 
@@ -892,9 +892,12 @@ mod tests {
         // THEN
         assert_eq!(
             *actual.start_autnum.as_ref().expect("no startnum on autnum"),
-            900
+            Numberish::<u32>::from(900)
         );
-        assert_eq!(*actual.end_autnum.as_ref().expect("no end on autnum"), 999);
+        assert_eq!(
+            *actual.end_autnum.as_ref().expect("no end on autnum"),
+            Numberish::<u32>::from(999)
+        );
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has href"),

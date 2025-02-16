@@ -5,6 +5,7 @@ use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 
 use super::CommonFields;
+use super::Numberish;
 use super::ObjectCommonFields;
 use super::{
     to_opt_vec,
@@ -55,11 +56,11 @@ pub struct Autnum {
 
     #[serde(rename = "startAutnum")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_autnum: Option<u32>,
+    pub start_autnum: Option<Numberish<u32>>,
 
     #[serde(rename = "endAutnum")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_autnum: Option<u32>,
+    pub end_autnum: Option<Numberish<u32>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -118,8 +119,8 @@ impl Autnum {
                 .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
-            start_autnum: Some(autnum_range.start),
-            end_autnum: Some(autnum_range.end),
+            start_autnum: Some(Numberish::<u32>::from(autnum_range.start)),
+            end_autnum: Some(Numberish::<u32>::from(autnum_range.end)),
             name,
             autnum_type,
             country,

@@ -36,9 +36,12 @@ impl ToMd for Autnum {
             .header_ref(&"Identifiers")
             .and_nv_ref(
                 &"Start AS Number",
-                &self.start_autnum.map(|n| n.to_string()),
+                &self.start_autnum.as_ref().map(|n| n.to_string()),
             )
-            .and_nv_ref(&"End AS Number", &self.end_autnum.map(|n| n.to_string()))
+            .and_nv_ref(
+                &"End AS Number",
+                &self.end_autnum.as_ref().map(|n| n.to_string()),
+            )
             .and_nv_ref(&"Handle", &self.object_common.handle)
             .and_nv_ref(&"Autnum Type", &self.autnum_type)
             .and_nv_ref(&"Autnum Name", &self.name)
@@ -85,8 +88,8 @@ impl MdUtil for Autnum {
         let header_text = if self.start_autnum.is_some() && self.end_autnum.is_some() {
             format!(
                 "Autonomous Systems {} - {}",
-                &self.start_autnum.unwrap().replace_ws(),
-                &self.end_autnum.unwrap().replace_ws()
+                &self.start_autnum.as_ref().unwrap().replace_ws(),
+                &self.end_autnum.as_ref().unwrap().replace_ws()
             )
         } else if let Some(start_autnum) = &self.start_autnum {
             format!("Autonomous System {}", start_autnum.replace_ws())
