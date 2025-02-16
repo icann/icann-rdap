@@ -873,8 +873,16 @@ async fn make_entity(
     };
     let mut contact = Contact::builder()
         .full_name(full_name)
-        .and_organization_names((!args.org_name.is_empty()).then_some(args.org_name))
-        .and_titles((!args.title.is_empty()).then_some(args.title))
+        .organization_names(
+            (!args.org_name.is_empty())
+                .then_some(args.org_name)
+                .unwrap_or_default(),
+        )
+        .titles(
+            (!args.title.is_empty())
+                .then_some(args.title)
+                .unwrap_or_default(),
+        )
         .build();
     contact = contact.set_emails(&args.email);
     contact = contact.add_voice_phones(&args.voice);

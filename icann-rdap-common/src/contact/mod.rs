@@ -86,6 +86,8 @@ use std::fmt::Display;
 
 use buildstructor::Builder;
 
+use crate::prelude::to_opt_vec;
+
 /// Represents a contact. This more closely represents an EPP Contact with some
 /// things taken from JSContact.
 ///
@@ -100,7 +102,7 @@ use buildstructor::Builder;
 /// ```
 ///
 ///
-#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
     pub langs: Option<Vec<Lang>>,
@@ -142,7 +144,42 @@ pub struct Contact {
     pub urls: Option<Vec<String>>,
 }
 
+#[buildstructor::buildstructor]
 impl Contact {
+    #[builder(visibility = "pub")]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        langs: Vec<Lang>,
+        kind: Option<String>,
+        full_name: Option<String>,
+        name_parts: Option<NameParts>,
+        nick_names: Vec<String>,
+        titles: Vec<String>,
+        roles: Vec<String>,
+        organization_names: Vec<String>,
+        postal_addresses: Vec<PostalAddress>,
+        emails: Vec<Email>,
+        phones: Vec<Phone>,
+        contact_uris: Vec<String>,
+        urls: Vec<String>,
+    ) -> Self {
+        Self {
+            langs: to_opt_vec(langs),
+            kind,
+            full_name,
+            name_parts,
+            nick_names: to_opt_vec(nick_names),
+            titles: to_opt_vec(titles),
+            roles: to_opt_vec(roles),
+            organization_names: to_opt_vec(organization_names),
+            postal_addresses: to_opt_vec(postal_addresses),
+            emails: to_opt_vec(emails),
+            phones: to_opt_vec(phones),
+            contact_uris: to_opt_vec(contact_uris),
+            urls: to_opt_vec(urls),
+        }
+    }
+
     /// Returns false if there is data in the Contact.
     pub fn is_non_empty(&self) -> bool {
         self.langs.is_some()

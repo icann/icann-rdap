@@ -63,17 +63,37 @@ impl Contact {
         let contact = Contact::builder()
             .and_full_name(vcard.find_property("fn").get_text())
             .and_kind(vcard.find_property("kind").get_text())
-            .and_titles(vcard.find_properties("title").get_texts())
-            .and_roles(vcard.find_properties("role").get_texts())
-            .and_nick_names(vcard.find_properties("nickname").get_texts())
-            .and_organization_names(vcard.find_properties("org").get_texts())
-            .and_langs(vcard.find_properties("lang").get_langs())
-            .and_emails(vcard.find_properties("email").get_emails())
-            .and_phones(vcard.find_properties("tel").get_phones())
-            .and_postal_addresses(vcard.find_properties("adr").get_postal_addresses())
+            .titles(vcard.find_properties("title").get_texts().unwrap_or(vec![]))
+            .roles(vcard.find_properties("role").get_texts().unwrap_or(vec![]))
+            .nick_names(
+                vcard
+                    .find_properties("nickname")
+                    .get_texts()
+                    .unwrap_or(vec![]),
+            )
+            .organization_names(vcard.find_properties("org").get_texts().unwrap_or(vec![]))
+            .langs(vcard.find_properties("lang").get_langs().unwrap_or(vec![]))
+            .emails(
+                vcard
+                    .find_properties("email")
+                    .get_emails()
+                    .unwrap_or(vec![]),
+            )
+            .phones(vcard.find_properties("tel").get_phones().unwrap_or(vec![]))
+            .postal_addresses(
+                vcard
+                    .find_properties("adr")
+                    .get_postal_addresses()
+                    .unwrap_or(vec![]),
+            )
             .and_name_parts(vcard.find_property("n").get_name_parts())
-            .and_contact_uris(vcard.find_properties("contact-uri").get_texts())
-            .and_urls(vcard.find_properties("url").get_texts())
+            .contact_uris(
+                vcard
+                    .find_properties("contact-uri")
+                    .get_texts()
+                    .unwrap_or(vec![]),
+            )
+            .urls(vcard.find_properties("url").get_texts().unwrap_or(vec![]))
             .build();
 
         contact.is_non_empty().then_some(contact)
