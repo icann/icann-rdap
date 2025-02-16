@@ -295,7 +295,7 @@ impl<'a> GetEmails<'a> for &'a [&'a Vec<Value>] {
                 let addr = (*prop).get_text()?;
                 let email = Email::builder()
                     .email(addr)
-                    .and_contexts((*prop).get_contexts())
+                    .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
                     .build();
                 Some(email)
@@ -317,8 +317,8 @@ impl<'a> GetPhones<'a> for &'a [&'a Vec<Value>] {
                 let number = (*prop).get_text()?;
                 let phone = Phone::builder()
                     .phone(number)
-                    .and_features((*prop).get_features())
-                    .and_contexts((*prop).get_contexts())
+                    .features((*prop).get_features().unwrap_or_default())
+                    .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
                     .build();
                 Some(phone)
@@ -430,7 +430,7 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                 let street_parts = (!street_parts.is_empty()).then_some(street_parts);
                 PostalAddress::builder()
                     .and_full_address((*prop).get_label())
-                    .and_contexts((*prop).get_contexts())
+                    .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
                     .and_country_code(country_code)
                     .and_country_name(country_name)
@@ -438,7 +438,7 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                     .and_region_name(region_name)
                     .and_region_code(region_code)
                     .and_locality(locality)
-                    .and_street_parts(street_parts)
+                    .street_parts(street_parts.unwrap_or_default())
                     .build()
             })
             .collect::<Vec<PostalAddress>>();

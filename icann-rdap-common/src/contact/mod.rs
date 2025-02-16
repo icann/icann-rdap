@@ -313,7 +313,7 @@ impl NameParts {
 }
 
 /// A postal address.
-#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PostalAddress {
     /// Preference of this address in relation to others.
     pub preference: Option<u64>,
@@ -356,8 +356,39 @@ pub struct PostalAddress {
     pub postal_code: Option<String>,
 }
 
+#[buildstructor::buildstructor]
+impl PostalAddress {
+    #[builder(visibility = "pub")]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        preference: Option<u64>,
+        contexts: Vec<String>,
+        full_address: Option<String>,
+        street_parts: Vec<String>,
+        locality: Option<String>,
+        region_name: Option<String>,
+        region_code: Option<String>,
+        country_name: Option<String>,
+        country_code: Option<String>,
+        postal_code: Option<String>,
+    ) -> Self {
+        Self {
+            preference,
+            contexts: to_opt_vec(contexts),
+            full_address,
+            street_parts: to_opt_vec(street_parts),
+            locality,
+            region_name,
+            region_code,
+            country_name,
+            country_code,
+            postal_code,
+        }
+    }
+}
+
 /// Represents an email address.
-#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Email {
     /// Preference of this email in relation to others.
     pub preference: Option<u64>,
@@ -367,6 +398,18 @@ pub struct Email {
 
     /// The email address.
     pub email: String,
+}
+
+#[buildstructor::buildstructor]
+impl Email {
+    #[builder(visibility = "pub")]
+    fn new(preference: Option<u64>, contexts: Vec<String>, email: String) -> Self {
+        Self {
+            preference,
+            contexts: to_opt_vec(contexts),
+            email,
+        }
+    }
 }
 
 impl Display for Email {
@@ -388,7 +431,7 @@ impl Display for Email {
 }
 
 /// Represents phone number.
-#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Phone {
     /// Preference of this phone in relation to others.
     pub preference: Option<u64>,
@@ -401,6 +444,24 @@ pub struct Phone {
 
     /// Features (voice, fax, etc...)
     pub features: Option<Vec<String>>,
+}
+
+#[buildstructor::buildstructor]
+impl Phone {
+    #[builder(visibility = "pub")]
+    fn new(
+        preference: Option<u64>,
+        contexts: Vec<String>,
+        phone: String,
+        features: Vec<String>,
+    ) -> Self {
+        Self {
+            preference,
+            contexts: to_opt_vec(contexts),
+            phone,
+            features: to_opt_vec(features),
+        }
+    }
 }
 
 impl Display for Phone {

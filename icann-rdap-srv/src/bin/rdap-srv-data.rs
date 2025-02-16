@@ -888,10 +888,7 @@ async fn make_entity(
     contact = contact.add_voice_phones(&args.voice);
     contact = contact.add_fax_phones(&args.fax);
     let postal_address = PostalAddress::builder()
-        .and_street_parts(
-            (!&args.street.is_empty())
-                .then_some(args.street.iter().map(|s| s.to_string()).collect()),
-        )
+        .street_parts(args.street.clone())
         .and_locality(args.locality)
         .and_region_name(args.region_name)
         .and_region_code(args.region_code)
