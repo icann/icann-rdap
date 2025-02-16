@@ -477,11 +477,11 @@ impl<'a> GetNameParts<'a> for Option<&'a Vec<Value>> {
             suffixes = get_string_or_vec(e);
         };
         let name_parts = NameParts::builder()
-            .and_surnames(surnames)
-            .and_prefixes(prefixes)
-            .and_given_names(given_names)
-            .and_middle_names(middle_names)
-            .and_suffixes(suffixes)
+            .surnames(surnames.unwrap_or_default())
+            .prefixes(prefixes.unwrap_or_default())
+            .given_names(given_names.unwrap_or_default())
+            .middle_names(middle_names.unwrap_or_default())
+            .suffixes(suffixes.unwrap_or_default())
             .build();
         if name_parts.surnames.is_none()
             && name_parts.given_names.is_none()

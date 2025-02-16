@@ -273,7 +273,7 @@ impl Display for Lang {
 }
 
 /// Name parts of a name.
-#[derive(Debug, Builder, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NameParts {
     /// Name prefixes.
     pub prefixes: Option<Vec<String>>,
@@ -289,6 +289,27 @@ pub struct NameParts {
 
     /// Name suffixes.
     pub suffixes: Option<Vec<String>>,
+}
+
+#[buildstructor::buildstructor]
+impl NameParts {
+    #[builder(visibility = "pub")]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        prefixes: Vec<String>,
+        surnames: Vec<String>,
+        middle_names: Vec<String>,
+        given_names: Vec<String>,
+        suffixes: Vec<String>,
+    ) -> Self {
+        Self {
+            prefixes: to_opt_vec(prefixes),
+            surnames: to_opt_vec(surnames),
+            middle_names: to_opt_vec(middle_names),
+            given_names: to_opt_vec(given_names),
+            suffixes: to_opt_vec(suffixes),
+        }
+    }
 }
 
 /// A postal address.
