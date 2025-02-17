@@ -275,7 +275,7 @@ impl ToMpTable for ObjectCommon {
 
             // Status
             if let Some(status) = &self.status {
-                let values = status.iter().map(|v| v.0.as_str()).collect::<Vec<&str>>();
+                let values = status.into_vec_string_owned();
                 table = table.nv_ul(&"Status", values.make_list_all_title_case());
             }
 

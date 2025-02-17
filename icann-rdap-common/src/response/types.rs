@@ -508,38 +508,6 @@ impl Event {
     }
 }
 
-/// Represents an item in an RDAP status array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct StatusValue(pub String);
-
-impl std::ops::Deref for StatusValue {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-/// An array of status values.
-pub type Status = Vec<StatusValue>;
-
-/// Converts a vector of strings to a Option<[Status]>.
-///
-/// If the vector is empty, returns None. Otherwise returns
-/// `Some(`[Status]`)`.
-pub fn to_option_status(values: Vec<String>) -> Option<Status> {
-    if !values.is_empty() {
-        Some(values.into_iter().map(StatusValue).collect::<Status>())
-    } else {
-        None
-    }
-}
-
-/// Converts a vector of strings to a [Status].
-pub fn to_status(values: Vec<String>) -> Status {
-    values.into_iter().map(StatusValue).collect::<Status>()
-}
-
 /// An RDAP port53 type.
 pub type Port43 = String;
 
@@ -600,9 +568,7 @@ impl PublicId {
 #[allow(non_snake_case)]
 mod tests {
     use crate::prelude::ObjectCommon;
-    use crate::response::types::{
-        Extension, Notice, Notices, RdapConformance, Remark, Remarks, Status, StatusValue,
-    };
+    use crate::response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks};
 
     use super::{Event, Link, Links, NoticeOrRemark, PublicId};
 
@@ -831,22 +797,6 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.event_actor.as_ref().unwrap();
-    }
-
-    #[test]
-    fn GIVEN_status_array_WHEN_serialize_THEN_array_of_strings() {
-        // GIVEN
-        let status: Status = vec![
-            StatusValue("foo".to_string()),
-            StatusValue("bar".to_string()),
-        ];
-
-        // WHEN
-        let actual = serde_json::to_string(&status).unwrap();
-
-        // THEN
-        let expected = r#"["foo","bar"]"#;
-        assert_eq!(actual, expected);
     }
 
     #[test]

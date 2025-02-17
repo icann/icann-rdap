@@ -1,10 +1,10 @@
 use super::{GtldParams, ToGtldWhois};
 use icann_rdap_common::response::Boolish;
 use icann_rdap_common::response::Domain;
+use icann_rdap_common::response::Event;
 use icann_rdap_common::response::Nameserver;
 use icann_rdap_common::response::Network;
 use icann_rdap_common::response::SecureDns;
-use icann_rdap_common::response::{Event, StatusValue};
 
 impl ToGtldWhois for Domain {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
@@ -24,8 +24,14 @@ impl ToGtldWhois for Domain {
         gtld.push_str(&date_info);
 
         // Common Object Stuff
-        let domain_info =
-            format_domain_info(&self.object_common.status, &self.object_common.port_43);
+        let domain_info = format_domain_info(
+            &self
+                .object_common
+                .status
+                .as_ref()
+                .map(|v| v.into_vec_string_owned()),
+            &self.object_common.port_43,
+        );
         gtld.push_str(&domain_info);
 
         // Enitities: registrar and abuse/tech/admin/registrant info
@@ -103,11 +109,11 @@ fn format_registry_dates(events: &Option<Vec<Event>>) -> String {
     formatted_dates
 }
 
-fn format_domain_info(status: &Option<Vec<StatusValue>>, port_43: &Option<String>) -> String {
+fn format_domain_info(status: &Option<Vec<String>>, port_43: &Option<String>) -> String {
     let mut info = String::new();
     if let Some(status) = status {
         for value in status {
-            info.push_str(&format!("Domain Status: {}\n", **value));
+            info.push_str(&format!("Domain Status: {}\n", *value));
         }
     }
     if let Some(port_43) = port_43 {

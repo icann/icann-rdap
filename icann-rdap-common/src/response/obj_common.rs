@@ -1,7 +1,10 @@
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-use super::{redacted::Redacted, Entity, Events, Link, Links, Port43, Remarks, Status};
+use super::{
+    redacted::Redacted, to_opt_vectorstringish, Entity, Events, Link, Links, Port43, Remarks,
+    VectorStringish,
+};
 
 /// Holds those types that are common in all object classes.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -21,9 +24,8 @@ pub struct ObjectCommon {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub events: Option<Events>,
 
-    // TODO convert to VecStringish
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
+    pub status: Option<VectorStringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "port43")]
@@ -46,7 +48,7 @@ impl ObjectCommon {
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
-        status: Option<Status>,
+        status: Option<Vec<String>>,
         port_43: Option<Port43>,
         entities: Option<Vec<Entity>>,
         redacted: Option<Vec<Redacted>>,
@@ -57,7 +59,7 @@ impl ObjectCommon {
             remarks,
             links,
             events,
-            status,
+            status: to_opt_vectorstringish(status.unwrap_or_default()),
             port_43,
             entities,
             redacted,
@@ -72,7 +74,7 @@ impl ObjectCommon {
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
-        status: Option<Status>,
+        status: Option<Vec<String>>,
         port_43: Option<Port43>,
         entities: Option<Vec<Entity>>,
         redacted: Option<Vec<Redacted>>,
@@ -83,7 +85,7 @@ impl ObjectCommon {
             remarks,
             links,
             events,
-            status,
+            status: to_opt_vectorstringish(status.unwrap_or_default()),
             port_43,
             entities,
             redacted,
@@ -98,7 +100,7 @@ impl ObjectCommon {
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
-        status: Option<Status>,
+        status: Option<Vec<String>>,
         port_43: Option<Port43>,
         entities: Option<Vec<Entity>>,
         redacted: Option<Vec<Redacted>>,
@@ -109,7 +111,7 @@ impl ObjectCommon {
             remarks,
             links,
             events,
-            status,
+            status: to_opt_vectorstringish(status.unwrap_or_default()),
             port_43,
             entities,
             redacted,
@@ -124,7 +126,7 @@ impl ObjectCommon {
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
-        status: Option<Status>,
+        status: Option<Vec<String>>,
         port_43: Option<Port43>,
         entities: Option<Vec<Entity>>,
         redacted: Option<Vec<Redacted>>,
@@ -135,7 +137,7 @@ impl ObjectCommon {
             remarks,
             links,
             events,
-            status,
+            status: to_opt_vectorstringish(status.unwrap_or_default()),
             port_43,
             entities,
             redacted,
@@ -150,7 +152,7 @@ impl ObjectCommon {
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
-        status: Option<Status>,
+        status: Option<Vec<String>>,
         port_43: Option<Port43>,
         entities: Option<Vec<Entity>>,
         redacted: Option<Vec<Redacted>>,
@@ -161,7 +163,7 @@ impl ObjectCommon {
             remarks,
             links,
             events,
-            status,
+            status: to_opt_vectorstringish(status.unwrap_or_default()),
             port_43,
             entities,
             redacted,
@@ -203,8 +205,6 @@ lazy_static! {
     static ref EMPTY_LINKS: Links = vec![];
     /// Empty Events.
     static ref EMPTY_EVENTS: Events = vec![];
-    /// Empty Status.
-    static ref EMPTY_STATUS: Status = vec![];
     /// Empty Entities.
     static ref EMPTY_ENTITIES: Vec<Entity> = vec![];
 }
@@ -250,12 +250,13 @@ pub trait ObjectCommonFields {
             .unwrap_or(&EMPTY_EVENTS)
     }
 
-    /// Getter for [Status].
-    fn status(&self) -> &Status {
+    /// Getter for status.
+    fn status(&self) -> Vec<String> {
         self.object_common()
             .status
             .as_ref()
-            .unwrap_or(&EMPTY_STATUS)
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
     }
 
     /// Getter for Vec of [Entity].

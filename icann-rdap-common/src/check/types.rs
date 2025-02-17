@@ -298,8 +298,9 @@ impl GetSubChecks for ObjectCommon {
 
         // Status
         if let Some(status) = &self.status {
-            let status: Vec<&str> = status.iter().map(|s| s.0.as_str()).collect();
-            if status.as_slice().is_empty_or_any_empty_or_whitespace() {
+            // TODO add check for status is string
+            let status = status.into_vec_string_owned();
+            if status.is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Status,
                     items: vec![Check::StatusIsEmpty.check_item()],
@@ -328,12 +329,13 @@ impl GetSubChecks for ObjectCommon {
 mod tests {
     use rstest::rstest;
 
+    use crate::prelude::VectorStringish;
     use crate::{
         check::Checks,
         response::{
             domain::Domain,
             nameserver::Nameserver,
-            types::{Event, Link, Notice, NoticeOrRemark, PublicId, Remark, StatusValue},
+            types::{Event, Link, Notice, NoticeOrRemark, PublicId, Remark},
             RdapResponse,
         },
     };
@@ -917,17 +919,18 @@ mod tests {
 
     #[rstest]
     #[case(vec![])]
-    #[case(vec![StatusValue("".to_string())])]
-    #[case(vec![StatusValue("  ".to_string())])]
-    #[case(vec![StatusValue("  ".to_string()), StatusValue("foo".to_string())])]
+    #[case(vec!["".to_string()])]
+    #[case(vec!["  ".to_string()])]
+    #[case(vec!["  ".to_string(), "foo".to_string()])]
     #[test]
-    fn test_nameserver_with_empty_status(#[case] status: Vec<StatusValue>) {
+    fn test_nameserver_with_empty_status(#[case] status: Vec<String>) {
         // GIVEN
+
         let mut ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
-        ns.object_common.status = Some(status);
+        ns.object_common.status = Some(VectorStringish::from(status));
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN

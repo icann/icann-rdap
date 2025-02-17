@@ -13,7 +13,7 @@ use super::{
     nameserver::Nameserver,
     network::Network,
     to_opt_vec,
-    types::{to_option_status, Events, Link, Links, PublicIds},
+    types::{Events, Link, Links, PublicIds},
     Entity, Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 
@@ -437,7 +437,7 @@ impl Domain {
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
-                .and_status(to_option_status(statuses))
+                .status(statuses)
                 .and_port_43(port_43)
                 .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
@@ -493,7 +493,7 @@ impl Domain {
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
-                .and_status(to_option_status(statuses))
+                .status(statuses)
                 .and_port_43(port_43)
                 .and_entities(to_opt_vec(entities))
                 .build(),
