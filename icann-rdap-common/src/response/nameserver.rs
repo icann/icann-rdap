@@ -7,8 +7,10 @@ use std::{net::IpAddr, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 use super::to_opt_vec;
+use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::VectorStringish;
 use super::{
     types::Link, Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink,
     ToChild,
@@ -18,10 +20,10 @@ use super::{
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct IpAddresses {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub v6: Option<Vec<String>>,
+    pub v6: Option<VectorStringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub v4: Option<Vec<String>>,
+    pub v4: Option<VectorStringish>,
 }
 
 #[buildstructor::buildstructor]
@@ -39,15 +41,18 @@ impl IpAddresses {
             }
         }
         Ok(Self {
-            v4: (!v4.is_empty()).then_some(v4),
-            v6: (!v6.is_empty()).then_some(v6),
+            v4: to_opt_vectorstringish(v4),
+            v6: to_opt_vectorstringish(v6),
         })
     }
 
     #[allow(dead_code)]
     #[builder(entry = "illegal", visibility = "pub(crate)")]
     fn new_illegal(v6: Option<Vec<String>>, v4: Option<Vec<String>>) -> Self {
-        Self { v4, v6 }
+        Self {
+            v4: v4.map(VectorStringish::from),
+            v6: v6.map(VectorStringish::from),
+        }
     }
 
     // TODO getter methods

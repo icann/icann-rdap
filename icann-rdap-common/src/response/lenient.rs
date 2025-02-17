@@ -5,6 +5,8 @@ use std::{fmt::Display, marker::PhantomData, str::FromStr};
 use serde::{Deserialize, Serialize};
 use serde_json::Number;
 
+use crate::check::StringListCheck;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 enum VectorStringishInner {
@@ -104,6 +106,24 @@ impl VectorStringish {
             VectorStringishInner::Many(_) => false,
             VectorStringishInner::One(_) => true,
         }
+    }
+}
+
+impl StringListCheck for VectorStringish {
+    fn is_empty_or_any_empty_or_whitespace(&self) -> bool {
+        let l = match &self.inner {
+            VectorStringishInner::Many(many) => many,
+            VectorStringishInner::One(one) => &vec![one.to_owned()],
+        };
+        l.is_empty_or_any_empty_or_whitespace()
+    }
+
+    fn is_ldh_string_list(&self) -> bool {
+        let l = match &self.inner {
+            VectorStringishInner::Many(many) => many,
+            VectorStringishInner::One(one) => &vec![one.to_owned()],
+        };
+        l.is_ldh_string_list()
     }
 }
 

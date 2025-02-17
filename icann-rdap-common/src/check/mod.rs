@@ -389,6 +389,8 @@ pub enum Check {
     IpAddressDocumentationNet = 1312,
     #[strum(message = "Reserved network. See RFC 1112")]
     IpAddressReservedNet = 1313,
+    #[strum(message = "IP address array is a string.")]
+    IpAddressArrayIsString = 1314,
 
     // Autnum 1400 - 1499
     #[strum(message = "start or end autnum is missing")]
@@ -555,6 +557,7 @@ impl Check {
             Check::IpAddressUniqueLocal => CheckClass::Informational,
             Check::IpAddressDocumentationNet => CheckClass::Informational,
             Check::IpAddressReservedNet => CheckClass::Informational,
+            Check::IpAddressArrayIsString => CheckClass::StdError,
 
             Check::AutnumMissing => CheckClass::StdWarning,
             Check::AutnumEndBeforeStart => CheckClass::StdWarning,

@@ -34,18 +34,32 @@ impl GetChecks for Nameserver {
 
         if let Some(ip_addresses) = &self.ip_addresses {
             if let Some(v6_addrs) = &ip_addresses.v6 {
-                if v6_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
+                if v6_addrs.is_string() {
+                    items.push(Check::IpAddressArrayIsString.check_item())
+                }
+                if v6_addrs.is_empty_or_any_empty_or_whitespace() {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
-                if v6_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
+                if v6_addrs
+                    .into_vec_string_owned()
+                    .iter()
+                    .any(|ip| IpAddr::from_str(ip).is_err())
+                {
                     items.push(Check::IpAddressMalformed.check_item())
                 }
             }
             if let Some(v4_addrs) = &ip_addresses.v4 {
-                if v4_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
+                if v4_addrs.is_string() {
+                    items.push(Check::IpAddressArrayIsString.check_item())
+                }
+                if v4_addrs.is_empty_or_any_empty_or_whitespace() {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
-                if v4_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
+                if v4_addrs
+                    .into_vec_string_owned()
+                    .iter()
+                    .any(|ip| IpAddr::from_str(ip).is_err())
+                {
                     items.push(Check::IpAddressMalformed.check_item())
                 }
             }
