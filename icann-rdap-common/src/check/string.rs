@@ -91,6 +91,16 @@ impl<T: ToString> StringListCheck for &[T] {
     }
 }
 
+impl<T: ToString> StringListCheck for Vec<T> {
+    fn is_empty_or_any_empty_or_whitespace(&self) -> bool {
+        self.is_empty() || self.iter().any(|s| s.to_string().is_whitespace_or_empty())
+    }
+
+    fn is_ldh_string_list(&self) -> bool {
+        !self.is_empty() && self.iter().all(|s| s.to_string().is_ldh_string())
+    }
+}
+
 /// Functions for chars.
 ///
 /// Example:

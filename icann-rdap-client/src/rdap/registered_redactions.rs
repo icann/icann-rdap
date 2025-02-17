@@ -113,13 +113,12 @@ pub fn is_redaction_registered_for_role(
     entity: &Entity,
     entity_role: &EntityRole,
 ) -> bool {
-    if let Some(roles) = &entity.roles {
-        if roles
-            .iter()
-            .any(|r| r.eq_ignore_ascii_case(&entity_role.to_string()))
-        {
-            return is_redaction_registered(rdap_response, redaction_type);
-        }
+    let roles = entity.roles();
+    if roles
+        .iter()
+        .any(|r| r.eq_ignore_ascii_case(&entity_role.to_string()))
+    {
+        return is_redaction_registered(rdap_response, redaction_type);
     }
     false
 }
@@ -131,14 +130,13 @@ pub fn are_redactions_registered_for_roles(
     entity: &Entity,
     entity_roles: &[&EntityRole],
 ) -> bool {
-    if let Some(roles) = &entity.roles {
-        if roles.iter().any(|r| {
-            entity_roles
-                .iter()
-                .any(|er| r.eq_ignore_ascii_case(&er.to_string()))
-        }) {
-            return are_redactions_registered(rdap_response, redaction_type);
-        }
+    let roles = entity.roles();
+    if roles.iter().any(|r| {
+        entity_roles
+            .iter()
+            .any(|er| r.eq_ignore_ascii_case(&er.to_string()))
+    }) {
+        return are_redactions_registered(rdap_response, redaction_type);
     }
     false
 }

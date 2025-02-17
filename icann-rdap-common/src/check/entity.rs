@@ -32,11 +32,15 @@ impl GetChecks for Entity {
         let mut items = Vec::new();
 
         if let Some(roles) = &self.roles {
-            if roles.as_slice().is_empty_or_any_empty_or_whitespace() {
+            if roles.is_string() {
+                items.push(Check::RoleIsString.check_item());
+            }
+            let roles = roles.into_vec_string_owned();
+            if roles.is_empty_or_any_empty_or_whitespace() {
                 items.push(Check::RoleIsEmpty.check_item());
             } else {
                 for role in roles {
-                    let r = EntityRole::from_str(role);
+                    let r = EntityRole::from_str(&role);
                     if r.is_err() {
                         items.push(Check::UnknownRole.check_item());
                     }

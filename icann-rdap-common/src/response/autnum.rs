@@ -126,6 +126,8 @@ impl Autnum {
             country,
         }
     }
+
+    // TODO getting methods
 }
 
 impl GetSelfLink for Autnum {

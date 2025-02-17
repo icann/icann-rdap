@@ -47,6 +47,14 @@ impl From<String> for VectorStringish {
     }
 }
 
+impl From<&str> for VectorStringish {
+    fn from(value: &str) -> Self {
+        VectorStringish {
+            inner: VectorStringishInner::Many(vec![value.to_owned()]),
+        }
+    }
+}
+
 impl From<Vec<String>> for VectorStringish {
     fn from(value: Vec<String>) -> Self {
         VectorStringish {
@@ -97,6 +105,11 @@ impl VectorStringish {
             VectorStringishInner::One(_) => true,
         }
     }
+}
+
+/// Returns `Some(VectorStringish)` if the vector is not empty, otherwise `None`.
+pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
+    (!vec.is_empty()).then_some(VectorStringish::from(vec))
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

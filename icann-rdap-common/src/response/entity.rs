@@ -8,8 +8,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
 
+use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::VectorStringish;
 use super::{
     autnum::Autnum,
     network::Network,
@@ -96,7 +98,7 @@ pub struct Entity {
     pub vcard_array: Option<Vec<Value>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub roles: Option<Vec<String>>,
+    pub roles: Option<VectorStringish>,
 
     #[serde(rename = "publicIds")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -114,7 +116,6 @@ pub struct Entity {
 }
 
 lazy_static! {
-    static ref EMPTY_ROLES: Vec<String> = vec![];
     static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
     static ref EMPTY_AS_EVENT_ACTORS: Vec<Event> = vec![];
     static ref EMPTY_AUTNUMS: Vec<Autnum> = vec![];
@@ -176,7 +177,7 @@ impl Entity {
                 .and_redacted(redacted)
                 .build(),
             vcard_array: contact.map(|c| c.to_vcard()),
-            roles: to_opt_vec(roles),
+            roles: to_opt_vectorstringish(roles),
             public_ids: to_opt_vec(public_ids),
             as_event_actor: to_opt_vec(as_event_actors),
             autnums: to_opt_vec(autnums),
@@ -191,8 +192,11 @@ impl Entity {
     }
 
     /// Convenience method to get the roles.
-    pub fn roles(&self) -> &Vec<String> {
-        self.roles.as_ref().unwrap_or(&EMPTY_ROLES)
+    pub fn roles(&self) -> Vec<String> {
+        self.roles
+            .as_ref()
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
     }
 
     /// Convenience method to get the public IDs.

@@ -300,6 +300,8 @@ impl Network {
             cidr0_cidrs,
         }
     }
+
+    // TODO getting methods
 }
 
 impl GetSelfLink for Network {

@@ -21,6 +21,7 @@ pub struct ObjectCommon {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub events: Option<Events>,
 
+    // TODO convert to VecStringish
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<Status>,
 

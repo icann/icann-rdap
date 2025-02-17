@@ -4,9 +4,8 @@ use clap::Parser;
 use icann_rdap_common::{
     contact::{Contact, Email, Phone, PostalAddress},
     media_types::RDAP_MEDIA_TYPE,
-    response::{
-        Autnum, Domain, Entity, Nameserver, Network, {Link, Notice, NoticeOrRemark, Remark},
-    },
+    prelude::VectorStringish,
+    response::{Autnum, Domain, Entity, Link, Nameserver, Network, Notice, NoticeOrRemark, Remark},
     VERSION,
 };
 use icann_rdap_srv::{
@@ -140,7 +139,7 @@ fn make_domain_template(
     num_domains: u32,
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("domain"));
-    entity.roles = Some(vec!["registrant".to_string()]);
+    entity.roles = Some(VectorStringish::from("registrant"));
     let nameserver = make_test_nameserver(base_url, None)?;
     let domain = Domain::builder()
         .ldh_name("example.net")
@@ -190,7 +189,7 @@ fn make_autnum_template(
     num_autnums: u32,
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("autnum"));
-    entity.roles = Some(vec!["registrant".to_string()]);
+    entity.roles = Some(VectorStringish::from("registrant"));
     let autnum = Autnum::builder()
         .autnum_range(1..1)
         .entity(entity)
@@ -351,7 +350,7 @@ fn make_test_nameserver(
         vec![]
     };
     let mut entity = make_test_entity(base_url, Some("nameserver"));
-    entity.roles = Some(vec!["tech".to_string()]);
+    entity.roles = Some(VectorStringish::from("tech"));
     Ok(Nameserver::builder()
         .ldh_name("ns.template.example")
         .link(
@@ -383,7 +382,7 @@ fn make_test_nameserver(
 
 fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("network"));
-    entity.roles = Some(vec!["registrant".to_string()]);
+    entity.roles = Some(VectorStringish::from("registrant"));
     let network = Network::builder()
         .cidr("0.0.0.0/0")
         .entity(entity)

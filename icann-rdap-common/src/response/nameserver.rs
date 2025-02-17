@@ -49,6 +49,8 @@ impl IpAddresses {
     fn new_illegal(v6: Option<Vec<String>>, v4: Option<Vec<String>>) -> Self {
         Self { v4, v6 }
     }
+
+    // TODO getter methods
 }
 
 /// Represents an RDAP [nameserver](https://rdap.rcode3.com/protocol/object_classes.html#nameserver) response.
@@ -193,6 +195,8 @@ impl Nameserver {
             ip_addresses,
         }
     }
+
+    // TODO getter methods
 }
 
 impl GetSelfLink for Nameserver {

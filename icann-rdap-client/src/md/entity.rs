@@ -69,7 +69,7 @@ impl ToMd for Entity {
         table = table
             .header_ref(&"Identifiers")
             .and_nv_ref(&"Handle", &entity_handle)
-            .and_nv_ul(&"Roles", self.roles.to_owned());
+            .and_nv_ul(&"Roles", Some(self.roles()));
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -323,13 +323,7 @@ impl ToMpTable for Option<NameParts> {
 
 impl MdUtil for Entity {
     fn get_header_text(&self) -> MdHeaderText {
-        let role = self.roles.as_ref().map(|roles| {
-            roles
-                .first()
-                .unwrap_or(&String::default())
-                .replace_ws()
-                .to_title_case()
-        });
+        let role = self.roles().first().map(|s| s.replace_ws().to_title_case());
         let header_text = if let Some(handle) = &self.object_common.handle {
             if let Some(role) = role {
                 format!("{} ({})", handle.replace_ws(), role)

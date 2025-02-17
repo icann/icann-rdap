@@ -11,6 +11,7 @@ use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
 use icann_rdap_common::prelude::RdapResponse;
 use icann_rdap_common::prelude::ToNotices;
 use icann_rdap_common::prelude::ToRemarks;
+use icann_rdap_common::prelude::VectorStringish;
 use icann_rdap_common::response::Autnum;
 use icann_rdap_common::response::Domain;
 use icann_rdap_common::response::DsDatum;
@@ -790,7 +791,7 @@ async fn get_entity(
 ) -> Result<Entity, RdapServerError> {
     let e = store.get_entity_by_handle(handle).await?;
     if let RdapResponse::Entity(mut e) = e {
-        e.roles = Some(vec![role]);
+        e.roles = Some(VectorStringish::from(role));
         Ok(e.to_child())
     } else {
         Err(RdapServerError::InvalidArg(handle.to_string()))

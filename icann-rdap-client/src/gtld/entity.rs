@@ -9,81 +9,79 @@ impl ToGtldWhois for Option<Vec<Entity>> {
 
         if let Some(entities) = self {
             for entity in entities {
-                if let Some(roles) = &entity.roles {
-                    for role in roles {
-                        match role.as_str() {
-                            "registrar" => {
-                                if let Some(vcard_array) = &entity.vcard_array {
-                                    let role_info = extract_role_info(role, vcard_array, params);
-                                    // Now use role_info to append to formatted_data
-                                    if !role_info.name.is_empty() {
-                                        front_formatted_data +=
-                                            &format!("{}: {}\n", cfl(role), role_info.name);
-                                    }
-                                    if !role_info.org.is_empty() {
-                                        front_formatted_data += &format!(
-                                            "{} Organization: {}\n",
-                                            cfl(role),
-                                            role_info.org
-                                        );
-                                    }
-                                    if !role_info.adr.is_empty() {
-                                        front_formatted_data += &role_info.adr;
-                                    }
+                for role in entity.roles() {
+                    match role.as_str() {
+                        "registrar" => {
+                            if let Some(vcard_array) = &entity.vcard_array {
+                                let role_info = extract_role_info(&role, vcard_array, params);
+                                // Now use role_info to append to formatted_data
+                                if !role_info.name.is_empty() {
+                                    front_formatted_data +=
+                                        &format!("{}: {}\n", cfl(&role), role_info.name);
                                 }
-                                // Special Sauce for Registrar IANA ID and Abuse Contact
-                                if let Some(public_ids) = &entity.public_ids {
-                                    for public_id in public_ids {
-                                        if let Some(id_type) = &public_id.id_type {
-                                            if let Some(identifier) = &public_id.identifier {
-                                                if id_type.as_str() == "IANA Registrar ID"
-                                                    && !identifier.is_empty()
-                                                {
-                                                    front_formatted_data += &format!(
-                                                        "Registrar IANA ID: {}\n",
-                                                        identifier.clone()
-                                                    );
-                                                }
+                                if !role_info.org.is_empty() {
+                                    front_formatted_data += &format!(
+                                        "{} Organization: {}\n",
+                                        cfl(&role),
+                                        role_info.org
+                                    );
+                                }
+                                if !role_info.adr.is_empty() {
+                                    front_formatted_data += &role_info.adr;
+                                }
+                            }
+                            // Special Sauce for Registrar IANA ID and Abuse Contact
+                            if let Some(public_ids) = &entity.public_ids {
+                                for public_id in public_ids {
+                                    if let Some(id_type) = &public_id.id_type {
+                                        if let Some(identifier) = &public_id.identifier {
+                                            if id_type.as_str() == "IANA Registrar ID"
+                                                && !identifier.is_empty()
+                                            {
+                                                front_formatted_data += &format!(
+                                                    "Registrar IANA ID: {}\n",
+                                                    identifier.clone()
+                                                );
                                             }
                                         }
                                     }
                                 }
-                                append_abuse_contact_info(entity, &mut front_formatted_data);
                             }
-                            "technical" | "administrative" | "registrant" => {
-                                if let Some(vcard_array) = &entity.vcard_array {
-                                    let role_info = extract_role_info(role, vcard_array, params);
-                                    // Now use role_info to append to formatted_data
-                                    if !role_info.name.is_empty() {
-                                        formatted_data +=
-                                            &format!("{} Name: {}\n", cfl(role), role_info.name);
-                                    }
-                                    if !role_info.org.is_empty() {
-                                        formatted_data += &format!(
-                                            "{} Organization: {}\n",
-                                            cfl(role),
-                                            role_info.org
-                                        );
-                                    }
-                                    if !role_info.adr.is_empty() {
-                                        formatted_data += &role_info.adr;
-                                    }
-                                    if !role_info.email.is_empty() {
-                                        formatted_data +=
-                                            &format!("{} Email: {}\n", cfl(role), role_info.email);
-                                    }
-                                    if !role_info.phone.is_empty() {
-                                        formatted_data +=
-                                            &format!("{} Phone: {}\n", cfl(role), role_info.phone);
-                                    }
-                                    if !role_info.fax.is_empty() {
-                                        formatted_data +=
-                                            &format!("{} Fax: {}\n", cfl(role), role_info.fax);
-                                    }
+                            append_abuse_contact_info(entity, &mut front_formatted_data);
+                        }
+                        "technical" | "administrative" | "registrant" => {
+                            if let Some(vcard_array) = &entity.vcard_array {
+                                let role_info = extract_role_info(&role, vcard_array, params);
+                                // Now use role_info to append to formatted_data
+                                if !role_info.name.is_empty() {
+                                    formatted_data +=
+                                        &format!("{} Name: {}\n", cfl(&role), role_info.name);
+                                }
+                                if !role_info.org.is_empty() {
+                                    formatted_data += &format!(
+                                        "{} Organization: {}\n",
+                                        cfl(&role),
+                                        role_info.org
+                                    );
+                                }
+                                if !role_info.adr.is_empty() {
+                                    formatted_data += &role_info.adr;
+                                }
+                                if !role_info.email.is_empty() {
+                                    formatted_data +=
+                                        &format!("{} Email: {}\n", cfl(&role), role_info.email);
+                                }
+                                if !role_info.phone.is_empty() {
+                                    formatted_data +=
+                                        &format!("{} Phone: {}\n", cfl(&role), role_info.phone);
+                                }
+                                if !role_info.fax.is_empty() {
+                                    formatted_data +=
+                                        &format!("{} Fax: {}\n", cfl(&role), role_info.fax);
                                 }
                             }
-                            _ => {} // Are there any roles we are missing?
                         }
+                        _ => {} // Are there any roles we are missing?
                     }
                 }
             }
@@ -229,33 +227,31 @@ fn extract_role_info(
 fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String) {
     if let Some(entities) = &entity.object_common.entities {
         for entity in entities {
-            if let Some(roles) = &entity.roles {
-                for role in roles {
-                    if role.as_str() == "abuse" {
-                        if let Some(vcard_array) = &entity.vcard_array {
-                            if let Some(contact) = Contact::from_vcard(vcard_array) {
-                                // Emails
-                                if let Some(emails) = &contact.emails {
-                                    for email in emails {
-                                        let abuse_contact_email = &email.email;
-                                        if !abuse_contact_email.is_empty() {
-                                            front_formatted_data.push_str(&format!(
-                                                "Registrar Abuse Contact Email: {}\n",
-                                                abuse_contact_email
-                                            ));
-                                        }
+            for role in entity.roles() {
+                if role.as_str() == "abuse" {
+                    if let Some(vcard_array) = &entity.vcard_array {
+                        if let Some(contact) = Contact::from_vcard(vcard_array) {
+                            // Emails
+                            if let Some(emails) = &contact.emails {
+                                for email in emails {
+                                    let abuse_contact_email = &email.email;
+                                    if !abuse_contact_email.is_empty() {
+                                        front_formatted_data.push_str(&format!(
+                                            "Registrar Abuse Contact Email: {}\n",
+                                            abuse_contact_email
+                                        ));
                                     }
                                 }
-                                // Phones
-                                if let Some(phones) = &contact.phones {
-                                    for phone in phones {
-                                        let abuse_contact_phone = &phone.phone;
-                                        if !abuse_contact_phone.is_empty() {
-                                            front_formatted_data.push_str(&format!(
-                                                "Registrar Abuse Contact Phone: {}\n",
-                                                abuse_contact_phone
-                                            ));
-                                        }
+                            }
+                            // Phones
+                            if let Some(phones) = &contact.phones {
+                                for phone in phones {
+                                    let abuse_contact_phone = &phone.phone;
+                                    if !abuse_contact_phone.is_empty() {
+                                        front_formatted_data.push_str(&format!(
+                                            "Registrar Abuse Contact Phone: {}\n",
+                                            abuse_contact_phone
+                                        ));
                                     }
                                 }
                             }
