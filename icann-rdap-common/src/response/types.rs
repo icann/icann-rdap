@@ -243,6 +243,41 @@ impl Link {
             media_type,
         }
     }
+
+    /// Returns the value of the link.
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_deref()
+    }
+
+    /// Returns the relationship of the link.
+    pub fn rel(&self) -> Option<&str> {
+        self.rel.as_deref()
+    }
+
+    /// Returns the target URL of the link.
+    pub fn href(&self) -> Option<&str> {
+        self.href.as_deref()
+    }
+
+    /// Returns the language(s) of the linked resource.
+    pub fn hreflang(&self) -> Option<&HrefLang> {
+        self.hreflang.as_ref()
+    }
+
+    /// Returns the title of the link.
+    pub fn title(&self) -> Option<&str> {
+        self.title.as_deref()
+    }
+
+    /// Returns the media type for which the link is designed.
+    pub fn media(&self) -> Option<&str> {
+        self.media.as_deref()
+    }
+
+    /// Returns the media type of the linked resource.
+    pub fn media_type(&self) -> Option<&str> {
+        self.media_type.as_deref()
+    }
 }
 
 /// An array of notices.
@@ -352,6 +387,21 @@ impl NoticeOrRemark {
     /// Converts to a [Remark].
     pub fn remark(self) -> Remark {
         Remark(self)
+    }
+
+    /// Returns the title of the notice/remark.
+    pub fn title(&self) -> Option<&str> {
+        self.title.as_deref()
+    }
+
+    /// Returns the description of the notice/remark.
+    pub fn description(&self) -> Option<&VectorStringish> {
+        self.description.as_ref()
+    }
+
+    /// Returns the links associated with the notice/remark.
+    pub fn links(&self) -> Option<&Links> {
+        self.links.as_ref()
     }
 }
 
@@ -506,6 +556,26 @@ impl Event {
             links,
         }
     }
+
+    /// Returns the action associated with the event.
+    pub fn event_action(&self) -> Option<&str> {
+        self.event_action.as_deref()
+    }
+
+    /// Returns the actor associated with the event.
+    pub fn event_actor(&self) -> Option<&str> {
+        self.event_actor.as_deref()
+    }
+
+    /// Returns the date and time of the event.
+    pub fn event_date(&self) -> Option<&str> {
+        self.event_date.as_deref()
+    }
+
+    /// Returns the links associated with the event.
+    pub fn links(&self) -> Option<&Links> {
+        self.links.as_ref()
+    }
 }
 
 /// An RDAP port53 type.
@@ -561,6 +631,16 @@ impl PublicId {
             id_type,
             identifier,
         }
+    }
+
+    /// Returns the type of the public ID.
+    pub fn id_type(&self) -> Option<&str> {
+        self.id_type.as_deref()
+    }
+
+    /// Returns the identifier of the public ID.
+    pub fn identifier(&self) -> Option<&str> {
+        self.identifier.as_deref()
     }
 }
 
