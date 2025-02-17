@@ -17,7 +17,7 @@ use super::{
 };
 
 /// Represents an IP address set for nameservers.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct IpAddresses {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub v6: Option<VectorStringish>,
@@ -55,7 +55,21 @@ impl IpAddresses {
         }
     }
 
-    // TODO getter methods
+    /// Get the IPv6 addresses.
+    pub fn v6s(&self) -> Vec<String> {
+        self.v6
+            .as_ref()
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
+    }
+
+    /// Get the IPv4 addresses.
+    pub fn v4s(&self) -> Vec<String> {
+        self.v4
+            .as_ref()
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
+    }
 }
 
 /// Represents an RDAP [nameserver](https://rdap.rcode3.com/protocol/object_classes.html#nameserver) response.
@@ -201,7 +215,20 @@ impl Nameserver {
         }
     }
 
-    // TODO getter methods
+    /// Get the LDH name.
+    pub fn ldh_name(&self) -> Option<&str> {
+        self.ldh_name.as_deref()
+    }
+
+    /// Get the Unicode name.
+    pub fn unicode_name(&self) -> Option<&str> {
+        self.unicode_name.as_deref()
+    }
+
+    /// Get the IP addresses.
+    pub fn ip_addresses(&self) -> Option<&IpAddresses> {
+        self.ip_addresses.as_ref()
+    }
 }
 
 impl GetSelfLink for Nameserver {
