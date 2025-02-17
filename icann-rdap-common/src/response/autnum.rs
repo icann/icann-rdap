@@ -125,7 +125,30 @@ impl Autnum {
         }
     }
 
-    // TODO getting methods
+    /// Returns the starting ASN of the range.
+    pub fn start_autnum(&self) -> Option<u32> {
+        self.start_autnum.as_ref().and_then(|n| n.as_u32())
+    }
+
+    /// Returns the ending ASN of the range.
+    pub fn end_autnum(&self) -> Option<u32> {
+        self.end_autnum.as_ref().and_then(|n| n.as_u32())
+    }
+
+    /// Returns the name of the ASN.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    /// Returns the type of the ASN.
+    pub fn autnum_type(&self) -> Option<&str> {
+        self.autnum_type.as_deref()
+    }
+
+    /// Returns the country of the ASN.
+    pub fn country(&self) -> Option<&str> {
+        self.country.as_deref()
+    }
 }
 
 impl GetSelfLink for Autnum {
