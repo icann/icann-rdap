@@ -5,6 +5,7 @@ use crate::prelude::ObjectCommon;
 use std::str::FromStr;
 
 use cidr::IpInet;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::CommonFields;
@@ -197,6 +198,10 @@ pub struct Network {
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
 
+lazy_static! {
+    static ref EMPTY_CIDR0CIDRS: Vec<Cidr0Cidr> = vec![];
+}
+
 #[buildstructor::buildstructor]
 impl Network {
     /// Builds a basic IP network object.
@@ -301,7 +306,45 @@ impl Network {
         }
     }
 
-    // TODO getting methods
+    /// Returns the start address of the network.
+    pub fn start_address(&self) -> Option<&str> {
+        self.start_address.as_deref()
+    }
+
+    /// Returns the end address of the network.
+    pub fn end_address(&self) -> Option<&str> {
+        self.end_address.as_deref()
+    }
+
+    /// Returns the IP version of the network.
+    pub fn ip_version(&self) -> Option<&str> {
+        self.ip_version.as_deref()
+    }
+
+    /// Returns the name of the network.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    /// Returns the type of the network.
+    pub fn network_type(&self) -> Option<&str> {
+        self.network_type.as_deref()
+    }
+
+    /// Returns the parent handle of the network.
+    pub fn parent_handle(&self) -> Option<&str> {
+        self.parent_handle.as_deref()
+    }
+
+    /// Returns the country of the network.
+    pub fn country(&self) -> Option<&str> {
+        self.country.as_deref()
+    }
+
+    /// Returns the CIDR0 CIDRs of the network.
+    pub fn cidr0_cidrs(&self) -> &Vec<Cidr0Cidr> {
+        self.cidr0_cidrs.as_ref().unwrap_or(&EMPTY_CIDR0CIDRS)
+    }
 }
 
 impl GetSelfLink for Network {
