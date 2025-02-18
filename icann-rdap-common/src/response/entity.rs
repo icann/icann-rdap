@@ -1,14 +1,23 @@
+//! Entity object class.
 use crate::contact::Contact;
-use buildstructor::Builder;
+use crate::prelude::Common;
+use crate::prelude::Extension;
+use crate::prelude::ObjectCommon;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
 
+use super::to_opt_vectorstringish;
+use super::CommonFields;
+use super::ObjectCommonFields;
+use super::VectorStringish;
 use super::{
     autnum::Autnum,
     network::Network,
-    types::{to_option_status, Common, Events, Link, ObjectCommon, PublicIds},
-    GetSelfLink, SelfLink, ToChild,
+    to_opt_vec,
+    types::{Events, Link, PublicIds},
+    Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 
 /// Represents an RDAP [entity](https://rdap.rcode3.com/protocol/object_classes.html#entity) response.
@@ -18,16 +27,14 @@ use super::{
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::entity::Entity;
-/// use icann_rdap_common::response::types::StatusValue;
-/// use icann_rdap_common::contact::Contact;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let contact = Contact::builder()
 ///   .kind("individual")
 ///   .full_name("Bob Smurd")
 ///   .build();
 ///
-/// let entity = Entity::basic()
+/// let entity = Entity::builder()
 ///   .handle("foo_example_com-1")
 ///   .status("active")
 ///   .role("registrant")
@@ -78,7 +85,7 @@ use super::{
 /// }
 /// ```
 ///
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
     #[serde(flatten)]
     pub common: Common,
@@ -91,7 +98,7 @@ pub struct Entity {
     pub vcard_array: Option<Vec<Value>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub roles: Option<Vec<String>>,
+    pub roles: Option<VectorStringish>,
 
     #[serde(rename = "publicIds")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -108,73 +115,110 @@ pub struct Entity {
     pub networks: Option<Vec<Network>>,
 }
 
+lazy_static! {
+    static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
+    static ref EMPTY_AS_EVENT_ACTORS: Vec<Event> = vec![];
+    static ref EMPTY_AUTNUMS: Vec<Autnum> = vec![];
+    static ref EMPTY_NETWORKS: Vec<Network> = vec![];
+}
+
 #[buildstructor::buildstructor]
 impl Entity {
     /// Builds a basic autnum object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::entity::Entity;
-    /// use icann_rdap_common::response::types::StatusValue;
-    /// use icann_rdap_common::contact::Contact;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let contact = Contact::builder()
     ///   .kind("individual")
     ///   .full_name("Bob Smurd")
     ///   .build();
     ///
-    /// let entity = Entity::basic()
+    /// let entity = Entity::builder()
     ///   .handle("foo_example_com-1")
     ///   .status("active")
     ///   .role("registrant")
     ///   .contact(contact)
     ///   .build();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_handle<T: Into<String>>(
+    fn new<T: Into<String>>(
         handle: T,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
+        port_43: Option<Port43>,
         entities: Vec<Entity>,
+        as_event_actors: Vec<Event>,
         contact: Option<Contact>,
         roles: Vec<String>,
-        public_ids: Option<PublicIds>,
-        notices: Vec<crate::response::types::Notice>,
+        public_ids: Vec<PublicId>,
+        notices: Vec<Notice>,
+        networks: Vec<Network>,
+        autnums: Vec<Autnum>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
-        let roles = (!roles.is_empty()).then_some(roles);
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::entity()
                 .handle(handle.into())
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(to_option_status(statuses))
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             vcard_array: contact.map(|c| c.to_vcard()),
-            roles,
-            public_ids,
-            as_event_actor: None,
-            autnums: None,
-            networks: None,
+            roles: to_opt_vectorstringish(roles),
+            public_ids: to_opt_vec(public_ids),
+            as_event_actor: to_opt_vec(as_event_actors),
+            autnums: to_opt_vec(autnums),
+            networks: to_opt_vec(networks),
         }
     }
 
+    /// Convenience method to get a [Contact] from the impentrable vCard.
     pub fn contact(&self) -> Option<Contact> {
         let vcard = self.vcard_array.as_ref()?;
         Contact::from_vcard(vcard)
+    }
+
+    /// Convenience method to get the roles.
+    pub fn roles(&self) -> Vec<String> {
+        self.roles
+            .as_ref()
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
+    }
+
+    /// Convenience method to get the public IDs.
+    pub fn public_ids(&self) -> &Vec<PublicId> {
+        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    }
+
+    /// Convenience method to get the events this entity acted on.
+    pub fn as_event_actors(&self) -> &Vec<Event> {
+        self.as_event_actor
+            .as_ref()
+            .unwrap_or(&EMPTY_AS_EVENT_ACTORS)
+    }
+
+    /// Convenience method to get the autnums.
+    pub fn autnums(&self) -> &Vec<Autnum> {
+        self.autnums.as_ref().unwrap_or(&EMPTY_AUTNUMS)
+    }
+
+    /// Convenience method to get the networks.
+    pub fn networks(&self) -> &Vec<Network> {
+        self.networks.as_ref().unwrap_or(&EMPTY_NETWORKS)
     }
 }
 
@@ -193,11 +237,27 @@ impl SelfLink for Entity {
 
 impl ToChild for Entity {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
     }
 }
 
+impl CommonFields for Entity {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Entity {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
+    }
+}
+
+/// IANA registered roles for entities.
 #[derive(PartialEq, Eq, Debug, EnumString, Display)]
 #[strum(serialize_all = "lowercase")]
 pub enum EntityRole {

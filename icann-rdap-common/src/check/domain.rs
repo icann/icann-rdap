@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::response::domain::Domain;
+use crate::response::domain::{Domain, SecureDns};
 
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
@@ -18,6 +18,9 @@ impl GetChecks for Domain {
             if let Some(public_ids) = &self.public_ids {
                 sub_checks.append(&mut public_ids.get_sub_checks(params));
             }
+            if let Some(secure_dns) = &self.secure_dns {
+                sub_checks.append(&mut secure_dns.get_sub_checks(params));
+            }
             sub_checks
         } else {
             Vec::new()
@@ -30,7 +33,7 @@ impl GetChecks for Domain {
             let empty_count = variants
                 .iter()
                 .filter(|v| {
-                    v.relation.is_none() && v.idn_table.is_none() && v.variant_names.is_none()
+                    v.relations.is_none() && v.idn_table.is_none() && v.variant_names.is_none()
                 })
                 .count();
             if empty_count != 0 {
@@ -86,10 +89,158 @@ impl GetChecks for Domain {
     }
 }
 
+impl GetSubChecks for SecureDns {
+    fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
+        let mut sub_checks = Vec::new();
+        if let Some(delegation_signed) = &self.delegation_signed {
+            if delegation_signed.is_string() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::SecureDns,
+                    items: vec![Check::DelegationSignedIsString.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        }
+        if let Some(zone_signed) = &self.zone_signed {
+            if zone_signed.is_string() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::SecureDns,
+                    items: vec![Check::ZoneSignedIsString.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        }
+        if let Some(max_sig_life) = &self.max_sig_life {
+            if max_sig_life.is_string() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::SecureDns,
+                    items: vec![Check::MaxSigLifeIsString.check_item()],
+                    sub_checks: Vec::new(),
+                });
+            }
+        }
+
+        if let Some(key_data) = &self.key_data {
+            for key_datum in key_data {
+                if let Some(alg) = &key_datum.algorithm {
+                    if alg.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumAlgorithmIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if alg.as_u8().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumAlgorithmIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
+                if let Some(flags) = &key_datum.flags {
+                    if flags.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumFlagsIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if flags.as_u16().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumFlagsIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
+                if let Some(protocol) = &key_datum.protocol {
+                    if protocol.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumProtocolIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if protocol.as_u8().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::KeyDatumProtocolIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
+            }
+        }
+
+        if let Some(ds_data) = &self.ds_data {
+            for ds_datum in ds_data {
+                if let Some(alg) = &ds_datum.algorithm {
+                    if alg.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumAlgorithmIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if alg.as_u8().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumAlgorithmIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
+                if let Some(key_tag) = &ds_datum.key_tag {
+                    if key_tag.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumKeyTagIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if key_tag.as_u32().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumKeyTagIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
+                if let Some(digest_type) = &ds_datum.digest_type {
+                    if digest_type.is_string() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumDigestTypeIsString.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                    if digest_type.as_u8().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::SecureDns,
+                            items: vec![Check::DsDatumDigestTypeIsOutOfRange.check_item()],
+                            sub_checks: Vec::new(),
+                        });
+                    }
+                }
+            }
+        }
+
+        sub_checks
+    }
+}
+
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
-    use crate::response::{domain::Domain, RdapResponse};
+    use std::any::TypeId;
+
+    use crate::{
+        check::{is_checked, is_checked_item, GetSubChecks},
+        response::{
+            domain::{Domain, SecureDns},
+            RdapResponse,
+        },
+    };
     use rstest::rstest;
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -98,9 +249,9 @@ mod tests {
     #[case("")]
     #[case("  ")]
     #[case("_.")]
-    fn GIVEN_domain_with_bad_ldh_WHEN_checked_THEN_invalid_ldh(#[case] ldh: &str) {
+    fn test_check_for_bad_ldh(#[case] ldh: &str) {
         // GIVEN
-        let domain = Domain::basic().ldh_name(ldh).build();
+        let domain = Domain::builder().ldh_name(ldh).build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
@@ -108,16 +259,13 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::LdhNameInvalid));
+        assert!(is_checked_item(Check::LdhNameInvalid, &checks));
     }
 
     #[rstest]
     #[case("")]
     #[case("  ")]
-    fn GIVEN_domain_with_bad_unicode_WHEN_checked_THEN_invalid_ldh(#[case] unicode: &str) {
+    fn test_check_for_bad_unicode(#[case] unicode: &str) {
         // GIVEN
         let domain = Domain::idn().unicode_name(unicode).build();
         let rdap = RdapResponse::Domain(domain);
@@ -127,14 +275,11 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::UnicodeNameInvalidDomain));
+        assert!(is_checked_item(Check::UnicodeNameInvalidDomain, &checks));
     }
 
     #[test]
-    fn GIVEN_domain_with_mismatch_ldh_and_unicode_WHEN_checked_THEN_unicode_does_not_match() {
+    fn test_check_for_ldh_unicode_mismatch() {
         // GIVEN
         let domain = Domain::idn()
             .unicode_name("foo.com")
@@ -147,9 +292,321 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::LdhNameDoesNotMatchUnicode));
+        assert!(is_checked_item(Check::LdhNameDoesNotMatchUnicode, &checks));
+    }
+
+    #[test]
+    fn test_delegation_signed_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "delegationSigned": "true"
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(is_checked(Check::DelegationSignedIsString, &checks));
+    }
+
+    #[test]
+    fn test_delegation_signed_as_bool() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "delegationSigned": true
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_zone_signed_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "zoneSigned": "false"
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(is_checked(Check::ZoneSignedIsString, &checks));
+    }
+
+    #[test]
+    fn test_zone_signed_as_bool() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "zoneSigned": true
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_max_sig_life_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "maxSigLife": "123"
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 1);
+        assert!(is_checked(Check::MaxSigLifeIsString, &checks));
+    }
+
+    #[test]
+    fn test_max_sig_life_as_number() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "maxSigLife": 123
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_key_data_attributes_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "algorithm": "13",
+                        "flags": "13",
+                        "protocol": "13"
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 3);
+        assert!(is_checked(Check::KeyDatumAlgorithmIsString, &checks));
+        assert!(is_checked(Check::KeyDatumFlagsIsString, &checks));
+        assert!(is_checked(Check::KeyDatumProtocolIsString, &checks));
+    }
+
+    #[test]
+    fn test_key_data_attributes_as_number() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "algorithm": 13,
+                        "flags": 13,
+                        "protocol": 13
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_key_data_attributes_out_of_range() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "algorithm": 1300,
+                        "flags": 130000,
+                        "protocol": 1300
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 3);
+        assert!(is_checked(Check::KeyDatumAlgorithmIsOutOfRange, &checks));
+        assert!(is_checked(Check::KeyDatumFlagsIsOutOfRange, &checks));
+        assert!(is_checked(Check::KeyDatumProtocolIsOutOfRange, &checks));
+    }
+
+    #[test]
+    fn test_ds_data_attributes_as_string() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "algorithm": "13",
+                        "keyTag": "13",
+                        "digestType": "13"
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 3);
+        assert!(is_checked(Check::DsDatumAlgorithmIsString, &checks));
+        assert!(is_checked(Check::DsDatumKeyTagIsString, &checks));
+        assert!(is_checked(Check::DsDatumDigestTypeIsString, &checks));
+    }
+
+    #[test]
+    fn test_ds_data_attributes_as_number() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "algorithm": 13,
+                        "keyTag": 13,
+                        "digestType": 13
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert!(checks.is_empty());
+    }
+
+    #[test]
+    fn test_ds_data_attributes_out_of_range() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "algorithm": 1300,
+                        "keyTag": 13000000000,
+                        "digestType": 1300
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_sub_checks(CheckParams {
+            do_subchecks: false,
+            root: &RdapResponse::Domain(Domain::builder().ldh_name("example.com").build()),
+            parent_type: TypeId::of::<SecureDns>(),
+            allow_unreg_ext: false,
+        });
+
+        // THEN
+        assert_eq!(checks.len(), 3);
+        assert!(is_checked(Check::DsDatumAlgorithmIsOutOfRange, &checks));
+        assert!(is_checked(Check::DsDatumKeyTagIsOutOfRange, &checks));
+        assert!(is_checked(Check::DsDatumDigestTypeIsOutOfRange, &checks));
     }
 }

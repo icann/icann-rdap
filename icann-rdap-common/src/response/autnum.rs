@@ -1,9 +1,14 @@
-use buildstructor::Builder;
+//! RDAP Autonomous System Number.
+use crate::prelude::Common;
+use crate::prelude::Extension;
+use crate::prelude::ObjectCommon;
 use serde::{Deserialize, Serialize};
 
+use super::CommonFields;
+use super::Numberish;
+use super::ObjectCommonFields;
 use super::{
-    types::{to_option_status, Common, Link, ObjectCommon},
-    GetSelfLink, SelfLink, ToChild,
+    to_opt_vec, types::Link, Entity, Event, GetSelfLink, Notice, Port43, Remark, SelfLink, ToChild,
 };
 
 /// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.
@@ -13,10 +18,9 @@ use super::{
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::autnum::Autnum;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
-/// let autnum = Autnum::basic()
+/// let autnum = Autnum::builder()
 ///   .autnum_range(700..710) // the range of autnums
 ///   .handle("AS700-1")
 ///   .status("active")
@@ -40,7 +44,7 @@ use super::{
 ///   "endAutnum": 710
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Autnum {
     #[serde(flatten)]
     pub common: Common,
@@ -50,11 +54,11 @@ pub struct Autnum {
 
     #[serde(rename = "startAutnum")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_autnum: Option<u32>,
+    pub start_autnum: Option<Numberish<u32>>,
 
     #[serde(rename = "endAutnum")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_autnum: Option<u32>,
+    pub end_autnum: Option<Numberish<u32>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -72,52 +76,78 @@ impl Autnum {
     /// Builds a basic autnum object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::autnum::Autnum;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
-    /// let autnum = Autnum::basic()
+    /// let autnum = Autnum::builder()
     ///   .autnum_range(700..710)
     ///   .handle("AS700-1")
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_autnum(
+    fn new(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        country: Option<String>,
+        autnum_type: Option<String>,
+        name: Option<String>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(to_option_status(statuses))
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
-            start_autnum: Some(autnum_range.start),
-            end_autnum: Some(autnum_range.end),
-            name: None,
-            autnum_type: None,
-            country: None,
+            start_autnum: Some(Numberish::<u32>::from(autnum_range.start)),
+            end_autnum: Some(Numberish::<u32>::from(autnum_range.end)),
+            name,
+            autnum_type,
+            country,
         }
+    }
+
+    /// Returns the starting ASN of the range.
+    pub fn start_autnum(&self) -> Option<u32> {
+        self.start_autnum.as_ref().and_then(|n| n.as_u32())
+    }
+
+    /// Returns the ending ASN of the range.
+    pub fn end_autnum(&self) -> Option<u32> {
+        self.end_autnum.as_ref().and_then(|n| n.as_u32())
+    }
+
+    /// Returns the name of the ASN.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    /// Returns the type of the ASN.
+    pub fn autnum_type(&self) -> Option<&str> {
+        self.autnum_type.as_deref()
+    }
+
+    /// Returns the country of the ASN.
+    pub fn country(&self) -> Option<&str> {
+        self.country.as_deref()
     }
 }
 
@@ -136,8 +166,23 @@ impl SelfLink for Autnum {
 
 impl ToChild for Autnum {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
+    }
+}
+
+impl CommonFields for Autnum {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Autnum {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

@@ -1,14 +1,10 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    help::Help,
-    nameserver::Nameserver,
-    network::Network,
-    types::{Notice, NoticeOrRemark},
-    RdapResponse,
+use icann_rdap_common::{
+    prelude::Numberish,
+    response::{
+        Autnum, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark, RdapResponse,
+    },
 };
 use icann_rdap_srv::{
     config::{ServiceConfig, StorageType},
@@ -49,7 +45,7 @@ async fn GIVEN_data_dir_with_domain_WHEN_mem_init_THEN_domain_is_loaded() {
     // GIVEN
     let ldh_name = "foo.example";
     let temp = TestDir::temp();
-    let domain = Domain::basic().ldh_name(ldh_name).build();
+    let domain = Domain::builder().ldh_name(ldh_name).build();
     let domain_file = temp.path("foo_example.json");
     std::fs::write(
         domain_file,
@@ -79,7 +75,7 @@ async fn GIVEN_data_dir_with_domain_template_WHEN_mem_init_THEN_domains_are_load
     let ldh2 = "bar.example";
     let temp = TestDir::temp();
     let template = Template::Domain {
-        domain: DomainOrError::DomainObject(Domain::basic().ldh_name("example").build()),
+        domain: DomainOrError::DomainObject(Domain::builder().ldh_name("example").build()),
         ids: vec![
             DomainId::builder().ldh_name(ldh1).build(),
             DomainId::builder().ldh_name(ldh2).build(),
@@ -114,7 +110,7 @@ async fn GIVEN_data_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
     // GIVEN
     let handle = "foo.example";
     let temp = TestDir::temp();
-    let entity = Entity::basic().handle(handle).build();
+    let entity = Entity::builder().handle(handle).build();
     let domain_file = temp.path("foo_example.json");
     std::fs::write(
         domain_file,
@@ -151,7 +147,7 @@ async fn GIVEN_data_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loa
     let handle2 = "bar";
     let temp = TestDir::temp();
     let template = Template::Entity {
-        entity: EntityObject(Entity::basic().handle("example").build()),
+        entity: EntityObject(Entity::builder().handle("example").build()),
         ids: vec![
             EntityId::builder().handle(handle1).build(),
             EntityId::builder().handle(handle2).build(),
@@ -193,7 +189,7 @@ async fn GIVEN_data_dir_with_nameserver_WHEN_mem_init_THEN_nameserver_is_loaded(
     // GIVEN
     let ldh_name = "ns.foo.example";
     let temp = TestDir::temp();
-    let nameserver = Nameserver::basic().ldh_name(ldh_name).build().unwrap();
+    let nameserver = Nameserver::builder().ldh_name(ldh_name).build().unwrap();
     let nameserver_file = temp.path("ns_foo_example.json");
     std::fs::write(
         nameserver_file,
@@ -226,7 +222,7 @@ async fn GIVEN_data_dir_with_nameserver_template_WHEN_mem_init_THEN_nameservers_
     let ldh2 = "ns.bar.example";
     let temp = TestDir::temp();
     let template = Template::Nameserver {
-        nameserver: NameserverObject(Nameserver::basic().ldh_name("example").build().unwrap()),
+        nameserver: NameserverObject(Nameserver::builder().ldh_name("example").build().unwrap()),
         ids: vec![
             NameserverId::builder().ldh_name(ldh1).build(),
             NameserverId::builder().ldh_name(ldh2).build(),
@@ -261,7 +257,7 @@ async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     // GIVEN
     let num = 700u32;
     let temp = TestDir::temp();
-    let autnum = Autnum::basic().autnum_range(num..num).build();
+    let autnum = Autnum::builder().autnum_range(num..num).build();
     let autnum_file = temp.path("700.json");
     std::fs::write(
         autnum_file,
@@ -283,7 +279,7 @@ async fn GIVEN_data_dir_with_autnum_WHEN_mem_init_THEN_autnum_is_loaded() {
     };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startAutnum is none"),
-        num
+        Numberish::<u32>::from(num)
     )
 }
 
@@ -294,7 +290,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
     let num2 = 800u32;
     let temp = TestDir::temp();
     let template = Template::Autnum {
-        autnum: AutnumObject(Autnum::basic().autnum_range(0..0).build()),
+        autnum: AutnumObject(Autnum::builder().autnum_range(0..0).build()),
         ids: vec![
             AutnumId::builder()
                 .start_autnum(num1)
@@ -328,7 +324,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
         };
         assert_eq!(
             *autnum.start_autnum.as_ref().expect("startAutnum is none"),
-            num
+            Numberish::<u32>::from(num)
         )
     }
 }
@@ -337,7 +333,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
 async fn GIVEN_data_dir_with_network_WHEN_mem_init_THEN_network_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let network = Network::basic()
+    let network = Network::builder()
         .cidr("10.0.0.0/24")
         .build()
         .expect("cidr parsing");
@@ -379,7 +375,7 @@ async fn GIVEN_data_dir_with_network_template_with_cidr_WHEN_mem_init_THEN_netwo
     let temp = TestDir::temp();
     let template = Template::Network {
         network: NetworkObject(
-            Network::basic()
+            Network::builder()
                 .cidr("1.1.1.1/32")
                 .build()
                 .expect("parsing cidr"),
@@ -433,7 +429,7 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
     let temp = TestDir::temp();
     let template = Template::Network {
         network: NetworkObject(
-            Network::basic()
+            Network::builder()
                 .cidr("1.1.1.1/32")
                 .build()
                 .expect("parsing cidr"),
@@ -487,14 +483,13 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
 async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     let srvhelp_file = temp.path("__default.help");
     std::fs::write(
         srvhelp_file,
@@ -526,7 +521,7 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
             .description
             .as_ref()
             .expect("no description!")
-            .many()
+            .into_vec_string_owned()
             .first()
             .expect("no description in notice"),
         "foo"
@@ -537,14 +532,13 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
 async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("bar".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     let srvhelp_file = temp.path("foo_example_com.help");
     std::fs::write(
         srvhelp_file,
@@ -576,7 +570,7 @@ async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() 
             .description
             .as_ref()
             .expect("no description!")
-            .many()
+            .into_vec_string_owned()
             .first()
             .expect("no description in notice"),
         "bar"

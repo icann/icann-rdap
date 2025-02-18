@@ -2,6 +2,7 @@
 
 use icann_rdap_client::http::{create_client, ClientConfig};
 use icann_rdap_client::rdap::{rdap_request, QueryType};
+use icann_rdap_common::response::Rfc9083Error;
 use icann_rdap_srv::storage::{
     data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
     StoreOps,
@@ -17,9 +18,7 @@ async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("example").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net/")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
     )
     .await
     .expect("add domain redirect");
@@ -56,9 +55,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_sho
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("no_example").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net").build(),
     )
     .await
     .expect("add domain redirect");
@@ -84,9 +81,7 @@ async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("example").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net/")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
     )
     .await
     .expect("add domain redirect");
@@ -123,9 +118,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_pani
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_domain_err(
         &DomainId::builder().ldh_name("no_example").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net").build(),
     )
     .await
     .expect("add domain redirect");
@@ -155,9 +148,7 @@ async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is
                 "10.0.0.0/8".parse().expect("parsing ipnet"),
             )))
             .build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net/")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
     )
     .await
     .expect("adding network redirect");
@@ -198,9 +189,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_pani
                 "10.0.0.0/8".parse().expect("parsing ipnet"),
             )))
             .build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net").build(),
     )
     .await
     .expect("adding network redirect");
@@ -230,9 +219,7 @@ async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status
             .start_autnum(700)
             .end_autnum(800)
             .build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net/")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
     )
     .await
     .expect("adding autnum redirect");
@@ -272,9 +259,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_sho
             .start_autnum(700)
             .end_autnum(800)
             .build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net").build(),
     )
     .await
     .expect("adding autnum redirect");
@@ -300,9 +285,7 @@ async fn GIVEN_bootstrap_with_specific_tag_WHEN_query_entity_THEN_status_code_is
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId::builder().handle("-ARIN").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net/")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
     )
     .await
     .expect("adding entity redirect");
@@ -339,9 +322,7 @@ async fn GIVEN_bootstrap_with_specific_tag_lowercase_WHEN_query_entity_THEN_stat
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId::builder().handle("-ARIN").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net/")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
     )
     .await
     .expect("adding entity redirect");
@@ -378,9 +359,7 @@ async fn GIVEN_bootstrap_with_no_specific_tag_WHEN_query_entity_THEN_should_pani
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_entity_err(
         &EntityId::builder().handle("-CLAUCA").build(),
-        &icann_rdap_common::response::error::Error::redirect()
-            .url("https://example.net")
-            .build(),
+        &Rfc9083Error::redirect().url("https://example.net").build(),
     )
     .await
     .expect("adding entity redirect");

@@ -1,10 +1,13 @@
-use buildstructor::Builder;
+//! RDAP Search Results.
+use crate::prelude::Common;
+use crate::prelude::Extension;
 use serde::{Deserialize, Serialize};
 
-use super::{domain::Domain, entity::Entity, nameserver::Nameserver, types::Common};
+use super::CommonFields;
+use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
 
 /// Represents RDAP domain search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct DomainSearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -15,17 +18,24 @@ pub struct DomainSearchResults {
 
 #[buildstructor::buildstructor]
 impl DomainSearchResults {
-    #[builder(entry = "basic")]
-    pub fn new_empty() -> Self {
+    /// Builds a domain search result.
+    #[builder(visibility = "pub")]
+    fn new(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
         Self {
-            common: Common::builder().build(),
-            results: Vec::new(),
+            common: Common::level0().extensions(extensions).build(),
+            results,
         }
     }
 }
 
+impl CommonFields for DomainSearchResults {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
 /// Represents RDAP nameserver search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct NameserverSearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -36,17 +46,24 @@ pub struct NameserverSearchResults {
 
 #[buildstructor::buildstructor]
 impl NameserverSearchResults {
-    #[builder(entry = "basic")]
-    pub fn new_empty() -> Self {
+    /// Builds a nameserver search result.
+    #[builder(visibility = "pub")]
+    fn new(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
         Self {
-            common: Common::builder().build(),
-            results: Vec::new(),
+            common: Common::level0().extensions(extensions).build(),
+            results,
         }
     }
 }
 
+impl CommonFields for NameserverSearchResults {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
 /// Represents RDAP entity search results.
-#[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct EntitySearchResults {
     #[serde(flatten)]
     pub common: Common,
@@ -57,11 +74,18 @@ pub struct EntitySearchResults {
 
 #[buildstructor::buildstructor]
 impl EntitySearchResults {
-    #[builder(entry = "basic")]
-    pub fn new_empty() -> Self {
+    /// Builds an entity search result.
+    #[builder(visibility = "pub")]
+    fn new(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
         Self {
-            common: Common::builder().build(),
-            results: Vec::new(),
+            common: Common::level0().extensions(extensions).build(),
+            results,
         }
+    }
+}
+
+impl CommonFields for EntitySearchResults {
+    fn common(&self) -> &Common {
+        &self.common
     }
 }

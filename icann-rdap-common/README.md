@@ -23,30 +23,30 @@ Create some RDAP objects:
 
 ```rust
 // create an entity
-use icann_rdap_common::response::entity::Entity;
-let holder = Entity::basic().handle("foo-BAR").build();
+use icann_rdap_common::response::Entity;
+let holder = Entity::builder().handle("foo-BAR").build();
 
 // create an RDAP domain
-use icann_rdap_common::response::domain::Domain;
-let domain = Domain::basic().ldh_name("example.com").entity(holder.clone()).build();
+use icann_rdap_common::response::Domain;
+let domain = Domain::builder().ldh_name("example.com").entity(holder.clone()).build();
 
 // create an IP network
-use icann_rdap_common::response::network::Network;
-let net = Network::basic().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
+use icann_rdap_common::response::Network;
+let net = Network::builder().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
 
 // create a nameserver
-use icann_rdap_common::response::nameserver::Nameserver;
-let ns = Nameserver::basic().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
+use icann_rdap_common::response::Nameserver;
+let ns = Nameserver::builder().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
 
 // create an autnum
-use icann_rdap_common::response::autnum::Autnum;
-let autnum = Autnum::basic().autnum_range(700..700).entity(holder).build();
+use icann_rdap_common::response::Autnum;
+let autnum = Autnum::builder().autnum_range(700..700).entity(holder).build();
 ```
 
 Parse RDAP JSON:
 
 ```rust
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::prelude::*;
 
 let json = r#"
   {

@@ -11,7 +11,7 @@ use icann_rdap_client::iana::{qtype_to_bootstrap_url, BootstrapStore};
 use icann_rdap_client::{http::create_client, http::ClientConfig, rdap::rdap_url_request};
 use icann_rdap_client::{rdap::QueryType, RdapClientError};
 use icann_rdap_common::response::get_related_links;
-use icann_rdap_common::response::types::ExtensionId;
+use icann_rdap_common::response::ExtensionId;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
 use thiserror::Error;
@@ -99,7 +99,7 @@ pub async fn execute_tests<'a, BS: BootstrapStore>(
             value.query_url(&base_url)?
         }
     };
-    // if they URL to test is a referral
+    // if the URL to test is a referral
     if options.chase_referral {
         let client = create_client(client_config)?;
         info!("Fetching referral from {query_url}");
@@ -348,7 +348,7 @@ fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestExe
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::types::ExtensionId;
+    use icann_rdap_common::response::ExtensionId;
 
     use crate::rt::exec::{ExtensionGroup, TestOptions};
 

@@ -5,30 +5,18 @@ use axum::{
 use http::StatusCode;
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
-    response::{error::Error, types::Common, RdapResponse},
+    response::{RdapResponse, Rfc9083Error},
 };
 use lazy_static::lazy_static;
 use tracing::warn;
 
 lazy_static! {
-    pub static ref NOT_FOUND: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
-            .error_code(404)
-            .common(Common::builder().build())
-            .build()
-    );
-    pub static ref NOT_IMPLEMENTED: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
-            .error_code(501)
-            .common(Common::builder().build())
-            .build()
-    );
-    pub static ref BAD_REQUEST: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
-            .error_code(400)
-            .common(Common::builder().build())
-            .build()
-    );
+    pub static ref NOT_FOUND: RdapResponse =
+        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(404).build());
+    pub static ref NOT_IMPLEMENTED: RdapResponse =
+        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(501).build());
+    pub static ref BAD_REQUEST: RdapResponse =
+        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(400).build());
 }
 
 pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];
@@ -92,10 +80,7 @@ mod tests {
     use axum::response::IntoResponse;
     use http::StatusCode;
     use icann_rdap_common::response::{
-        domain::Domain,
-        error::Error,
-        types::{Link, Notice, NoticeOrRemark},
-        RdapResponse,
+        Domain, RdapResponse, Rfc9083Error, {Link, Notice, NoticeOrRemark},
     };
 
     use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};
@@ -103,7 +88,7 @@ mod tests {
     #[test]
     fn GIVEN_non_error_WHEN_exec_response_THEN_status_code_is_200() {
         // GIVEN
-        let domain = RdapResponse::Domain(Domain::basic().ldh_name("foo.example").build());
+        let domain = RdapResponse::Domain(Domain::builder().ldh_name("foo.example").build());
 
         // WHEN
         let actual = domain.response();
@@ -138,7 +123,7 @@ mod tests {
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
         let given = RdapResponse::ErrorResponse(
-            Error::basic()
+            Rfc9083Error::builder()
                 .error_code(307)
                 .notice(Notice(
                     NoticeOrRemark::builder()

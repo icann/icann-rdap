@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::search::{
+use icann_rdap_common::response::{
     DomainSearchResults, EntitySearchResults, NameserverSearchResults,
 };
 

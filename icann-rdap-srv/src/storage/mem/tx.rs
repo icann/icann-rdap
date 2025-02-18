@@ -3,8 +3,7 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
 use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, help::Help, nameserver::Nameserver,
-    network::Network, RdapResponse,
+    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error,
 };
 use ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
@@ -92,7 +91,7 @@ impl TxHandle for MemTx {
     async fn add_entity_err(
         &mut self,
         entity_id: &EntityId,
-        error: &icann_rdap_common::response::error::Error,
+        error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.entities.insert(
             entity_id.handle.to_owned(),
@@ -128,7 +127,7 @@ impl TxHandle for MemTx {
     async fn add_domain_err(
         &mut self,
         domain_id: &DomainId,
-        error: &icann_rdap_common::response::error::Error,
+        error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.domains.insert(
             domain_id.ldh_name.to_owned(),
@@ -152,7 +151,7 @@ impl TxHandle for MemTx {
     async fn add_nameserver_err(
         &mut self,
         nameserver_id: &NameserverId,
-        error: &icann_rdap_common::response::error::Error,
+        error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.nameservers.insert(
             nameserver_id.ldh_name.to_owned(),
@@ -165,13 +164,15 @@ impl TxHandle for MemTx {
         let start_num = autnum
             .start_autnum
             .as_ref()
+            .and_then(|n| n.as_u32())
             .ok_or_else(|| RdapServerError::EmptyIndexData("startNum".to_string()))?;
         let end_num = autnum
             .end_autnum
             .as_ref()
+            .and_then(|n| n.as_u32())
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
         self.autnums.insert(
-            (*start_num)..=(*end_num),
+            (start_num)..=(end_num),
             Arc::new(RdapResponse::Autnum(autnum.clone())),
         );
         Ok(())
@@ -180,7 +181,7 @@ impl TxHandle for MemTx {
     async fn add_autnum_err(
         &mut self,
         autnum_id: &AutnumId,
-        error: &icann_rdap_common::response::error::Error,
+        error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         self.autnums.insert(
             (autnum_id.start_autnum)..=(autnum_id.end_autnum),
@@ -222,7 +223,7 @@ impl TxHandle for MemTx {
     async fn add_network_err(
         &mut self,
         network_id: &NetworkId,
-        error: &icann_rdap_common::response::error::Error,
+        error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         let subnets = match &network_id.network_id {
             crate::storage::data::NetworkIdType::Cidr(cidr) => cidr.subnets(cidr.prefix_len())?,

@@ -1,14 +1,23 @@
+//! RDAP IP Network.
+use crate::prelude::Common;
+use crate::prelude::Extension;
+use crate::prelude::ObjectCommon;
 use std::str::FromStr;
 
-use buildstructor::Builder;
 use cidr::IpInet;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
+use super::CommonFields;
+use super::Numberish;
+use super::ObjectCommonFields;
 use super::{
-    types::{to_option_status, Common, ExtensionId, Link, ObjectCommon},
-    GetSelfLink, RdapResponseError, SelfLink, ToChild,
+    to_opt_vec,
+    types::{ExtensionId, Link},
+    Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
 };
 
+/// Cidr0 structure from the Cidr0 extension.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum Cidr0Cidr {
@@ -25,7 +34,9 @@ impl std::fmt::Display for Cidr0Cidr {
     }
 }
 
-/// Represents a CIDR0 V4 CIDR. This structure allow both the prefix
+/// Represents a CIDR0 V4 CIDR.
+///
+/// This structure allow both the prefix
 /// and length to be optional to handle misbehaving servers, however
 /// both are required according to the CIDR0 RDAP extension. To create
 /// a valid stucture, use the builder.
@@ -35,23 +46,24 @@ impl std::fmt::Display for Cidr0Cidr {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V4Cidr {
     pub v4prefix: Option<String>,
-    pub length: Option<u8>,
+    pub length: Option<Numberish<u8>>,
 }
 
 #[buildstructor::buildstructor]
 impl V4Cidr {
-    #[builder]
-    pub fn new(v4prefix: String, length: u8) -> Self {
+    /// Builds an Ipv4 CIDR0.
+    #[builder(visibility = "pub")]
+    fn new(v4prefix: String, length: u8) -> Self {
         V4Cidr {
             v4prefix: Some(v4prefix),
-            length: Some(length),
+            length: Some(Numberish::<u8>::from(length)),
         }
     }
 }
 
 impl std::fmt::Display for V4Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let length_s = if let Some(length) = self.length {
+        let length_s = if let Some(length) = &self.length {
             length.to_string()
         } else {
             "not_given".to_string()
@@ -65,7 +77,9 @@ impl std::fmt::Display for V4Cidr {
     }
 }
 
-/// Represents a CIDR0 V6 CIDR. This structure allow both the prefix
+/// Represents a CIDR0 V6 CIDR.
+///
+/// This structure allow both the prefix
 /// and length to be optional to handle misbehaving servers, however
 /// both are required according to the CIDR0 RDAP extension. To create
 /// a valid stucture, use the builder.
@@ -75,23 +89,24 @@ impl std::fmt::Display for V4Cidr {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct V6Cidr {
     pub v6prefix: Option<String>,
-    pub length: Option<u8>,
+    pub length: Option<Numberish<u8>>,
 }
 
 #[buildstructor::buildstructor]
 impl V6Cidr {
-    #[builder]
-    pub fn new(v6prefix: String, length: u8) -> Self {
+    /// Builds an IPv6 CIDR0.
+    #[builder(visibility = "pub")]
+    fn new(v6prefix: String, length: u8) -> Self {
         V6Cidr {
             v6prefix: Some(v6prefix),
-            length: Some(length),
+            length: Some(Numberish::<u8>::from(length)),
         }
     }
 }
 
 impl std::fmt::Display for V6Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let length_s = if let Some(length) = self.length {
+        let length_s = if let Some(length) = &self.length {
             length.to_string()
         } else {
             "not_given".to_string()
@@ -112,10 +127,9 @@ impl std::fmt::Display for V6Cidr {
 /// is easier than specifying start and end IP addresses.
 ///
 /// ```rust
-/// use icann_rdap_common::response::network::Network;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
-/// let net = Network::basic()
+/// let net = Network::builder()
 ///   .cidr("10.0.0.0/24")
 ///   .handle("NET-10-0-0-0")
 ///   .status("active")
@@ -146,7 +160,7 @@ impl std::fmt::Display for V6Cidr {
 ///   ]
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Network {
     #[serde(flatten)]
     pub common: Common,
@@ -184,94 +198,58 @@ pub struct Network {
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
 
+lazy_static! {
+    static ref EMPTY_CIDR0CIDRS: Vec<Cidr0Cidr> = vec![];
+}
+
 #[buildstructor::buildstructor]
 impl Network {
     /// Builds a basic IP network object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::network::Network;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
-    /// let net = Network::basic()
+    /// let net = Network::builder()
     ///   .cidr("10.0.0.0/24")
     ///   .handle("NET-10-0-0-0")
     ///   .status("active")
     ///   .build().unwrap();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_network(
+    fn new(
         cidr: String,
         handle: Option<String>,
         country: Option<String>,
         name: Option<String>,
         network_type: Option<String>,
         parent_handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        mut extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let statuses = to_option_status(statuses);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
-        Network::new_network_with_options(
-            cidr,
-            handle,
-            country,
-            name,
-            network_type,
-            parent_handle,
-            remarks,
-            links,
-            events,
-            statuses,
-            port_43,
-            entities,
-            notices,
-            redacted,
-        )
-    }
-
-    #[builder(entry = "with_options")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_network_with_options(
-        cidr: String,
-        handle: Option<String>,
-        country: Option<String>,
-        name: Option<String>,
-        network_type: Option<String>,
-        parent_handle: Option<String>,
-        remarks: Option<Vec<crate::response::types::Remark>>,
-        links: Option<Vec<crate::response::types::Link>>,
-        events: Option<Vec<crate::response::types::Event>>,
-        status: Option<Vec<crate::response::types::StatusValue>>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Option<Vec<crate::response::entity::Entity>>,
-        notices: Option<Vec<crate::response::types::Notice>>,
-        redacted: Option<Vec<crate::response::redacted::Redacted>>,
-    ) -> Result<Self, RdapResponseError> {
+        let mut net_exts = vec![ExtensionId::Cidr0.to_extension()];
+        net_exts.append(&mut extensions);
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
-            common: Common::level0_with_options()
-                .extension(ExtensionId::Cidr0.to_extension())
-                .and_notices(notices)
+            common: Common::level0()
+                .extensions(net_exts)
+                .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::ip_network()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(status)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             start_address: Some(cidr.first_address().to_string()),
@@ -287,14 +265,85 @@ impl Network {
             cidr0_cidrs: match cidr {
                 IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(cidr.first_address().to_string()),
-                    length: Some(cidr.network_length()),
+                    length: Some(Numberish::<u8>::from(cidr.network_length())),
                 })]),
                 IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                     v6prefix: Some(cidr.first_address().to_string()),
-                    length: Some(cidr.network_length()),
+                    length: Some(Numberish::<u8>::from(cidr.network_length())),
                 })]),
             },
         })
+    }
+
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(clippy::too_many_arguments)]
+    #[allow(dead_code)]
+    fn new_illegal(
+        start_address: Option<String>,
+        end_address: Option<String>,
+        ip_version: Option<String>,
+        cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
+        country: Option<String>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
+        notices: Vec<Notice>,
+    ) -> Self {
+        Self {
+            common: Common::level0()
+                .extension(ExtensionId::Cidr0.to_extension())
+                .and_notices(to_opt_vec(notices))
+                .build(),
+            object_common: ObjectCommon::ip_network().build(),
+            start_address,
+            end_address,
+            ip_version,
+            name,
+            network_type,
+            parent_handle,
+            country,
+            cidr0_cidrs,
+        }
+    }
+
+    /// Returns the start address of the network.
+    pub fn start_address(&self) -> Option<&str> {
+        self.start_address.as_deref()
+    }
+
+    /// Returns the end address of the network.
+    pub fn end_address(&self) -> Option<&str> {
+        self.end_address.as_deref()
+    }
+
+    /// Returns the IP version of the network.
+    pub fn ip_version(&self) -> Option<&str> {
+        self.ip_version.as_deref()
+    }
+
+    /// Returns the name of the network.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    /// Returns the type of the network.
+    pub fn network_type(&self) -> Option<&str> {
+        self.network_type.as_deref()
+    }
+
+    /// Returns the parent handle of the network.
+    pub fn parent_handle(&self) -> Option<&str> {
+        self.parent_handle.as_deref()
+    }
+
+    /// Returns the country of the network.
+    pub fn country(&self) -> Option<&str> {
+        self.country.as_deref()
+    }
+
+    /// Returns the CIDR0 CIDRs of the network.
+    pub fn cidr0_cidrs(&self) -> &Vec<Cidr0Cidr> {
+        self.cidr0_cidrs.as_ref().unwrap_or(&EMPTY_CIDR0CIDRS)
     }
 }
 
@@ -313,8 +362,23 @@ impl SelfLink for Network {
 
 impl ToChild for Network {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
+    }
+}
+
+impl CommonFields for Network {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Network {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

@@ -1,5 +1,5 @@
 use super::{GtldParams, ToGtldWhois};
-use icann_rdap_common::response::network::Network;
+use icann_rdap_common::response::Network;
 use std::any::TypeId;
 
 impl ToGtldWhois for Network {

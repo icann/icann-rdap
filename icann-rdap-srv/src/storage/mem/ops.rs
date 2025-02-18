@@ -2,9 +2,7 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
-use icann_rdap_common::response::{
-    domain::Domain, search::DomainSearchResults, types::Common, RdapResponse,
-};
+use icann_rdap_common::response::{Domain, DomainSearchResults, RdapResponse};
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use prefix_trie::PrefixMap;
 use tokio::sync::RwLock;
@@ -190,10 +188,7 @@ impl StoreOps for Mem {
             })
             .collect::<Vec<Domain>>();
         let response = RdapResponse::DomainSearchResults(
-            DomainSearchResults::builder()
-                .common(Common::new_level0(vec![], vec![]))
-                .results(results)
-                .build(),
+            DomainSearchResults::builder().results(results).build(),
         );
         Ok(response)
     }

@@ -5,8 +5,9 @@ use std::str::{Chars, FromStr};
 use idna::domain_to_ascii;
 use thiserror::Error;
 
-use crate::check::string::StringCheck;
+use crate::check::StringCheck;
 
+/// Errors when determining DNS information.
 #[derive(Debug, Error)]
 pub enum DnsTypeError {
     #[error("Invalid DNS Algorithm")]
@@ -15,6 +16,7 @@ pub enum DnsTypeError {
     InvalidDigest,
 }
 
+/// Information about DNSSEC Algorithm.
 pub struct DnsAlgorithm {
     pub number: u8,
     pub mnemonic: &'static str,
@@ -22,6 +24,7 @@ pub struct DnsAlgorithm {
     pub transaction_signing: bool,
 }
 
+/// DNS Algorithm Variants.
 pub enum DnsAlgorithmType {
     DeleteDs(DnsAlgorithm),
     RsaMd5(DnsAlgorithm),
@@ -42,6 +45,7 @@ pub enum DnsAlgorithmType {
 }
 
 impl DnsAlgorithmType {
+    /// Convert an algorithm number to a [DnsAlgorithmType].
     pub fn from_number(number: u8) -> Result<Self, DnsTypeError> {
         match number {
             0 => Ok(Self::DeleteDs(DnsAlgorithm {
@@ -144,6 +148,7 @@ impl DnsAlgorithmType {
         }
     }
 
+    /// Get the mnemonic for the algorithm number.
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
         let alg = Self::from_number(number)?;
         let m = match alg {
@@ -167,6 +172,7 @@ impl DnsAlgorithmType {
         Ok(m)
     }
 
+    /// True if the DNS Algorithm can sign zones.
     pub fn zone_signing(number: u8) -> Result<bool, DnsTypeError> {
         let alg = Self::from_number(number)?;
         let z = match alg {
@@ -191,6 +197,7 @@ impl DnsAlgorithmType {
     }
 }
 
+/// DNS Digest.
 pub struct DnsDigest {
     pub number: u8,
     pub mnemonic: &'static str,
@@ -206,6 +213,7 @@ pub struct DnsDigest {
 4 	SHA-384 	OPTIONAL
 */
 
+/// DNS Digest Variants.
 pub enum DnsDigestType {
     Sha1(DnsDigest),
     Sha256(DnsDigest),
@@ -214,6 +222,7 @@ pub enum DnsDigestType {
 }
 
 impl DnsDigestType {
+    /// Get the [DnsDigestType] from the protocol number.
     pub fn from_number(number: u8) -> Result<Self, DnsTypeError> {
         match number {
             1 => Ok(DnsDigestType::Sha1(DnsDigest {
@@ -240,6 +249,7 @@ impl DnsDigestType {
         }
     }
 
+    /// Get the mnemonic from the protocol number.
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
         let digest = DnsDigestType::from_number(number)?;
         let d = match digest {
@@ -252,6 +262,7 @@ impl DnsDigestType {
     }
 }
 
+/// Error specific to processing of domain names.
 #[derive(Debug, Error)]
 pub enum DomainNameError {
     #[error("Invalid Domain Name")]

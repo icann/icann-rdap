@@ -1,14 +1,11 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    help::Help,
-    nameserver::Nameserver,
-    network::Network,
-    types::{Common, Notice, NoticeOrRemark, ObjectCommon},
-    RdapResponse,
+use icann_rdap_common::{
+    prelude::Numberish,
+    response::{
+        Autnum, Common, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark,
+        ObjectCommon, RdapResponse,
+    },
 };
 use icann_rdap_srv::storage::{
     mem::{config::MemConfig, ops::Mem},
@@ -21,7 +18,7 @@ async fn GIVEN_domain_in_mem_WHEN_new_truncate_tx_THEN_no_domain_in_mem() {
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -46,7 +43,7 @@ async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_ldh_THEN_domain_returned() {
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -194,7 +191,7 @@ async fn GIVEN_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_entity_returned()
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_entity(&Entity::basic().handle("foo").build())
+    tx.add_entity(&Entity::builder().handle("foo").build())
         .await
         .expect("add entity in tx");
     tx.commit().await.expect("entity tx commit");
@@ -243,7 +240,7 @@ async fn GIVEN_nameserver_in_mem_WHEN_lookup_nameserver_by_ldh_THEN_nameserver_r
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
-        &Nameserver::basic()
+        &Nameserver::builder()
             .ldh_name("ns.foo.example")
             .build()
             .unwrap(),
@@ -291,7 +288,7 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_retu
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
@@ -308,9 +305,12 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_start_autnum_THEN_autnum_retu
     };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startNum is none"),
-        700
+        Numberish::<u32>::from(700)
     );
-    assert_eq!(*autnum.end_autnum.as_ref().expect("startNum is none"), 710);
+    assert_eq!(
+        *autnum.end_autnum.as_ref().expect("startNum is none"),
+        Numberish::<u32>::from(710)
+    );
 }
 
 #[tokio::test]
@@ -318,7 +318,7 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_return
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
@@ -335,9 +335,12 @@ async fn GIVEN_autnum_in_mem_WHEN_lookup_autnum_by_end_autnum_THEN_autnum_return
     };
     assert_eq!(
         *autnum.start_autnum.as_ref().expect("startNum is none"),
-        700
+        Numberish::<u32>::from(700)
     );
-    assert_eq!(*autnum.end_autnum.as_ref().expect("startNum is none"), 710);
+    assert_eq!(
+        *autnum.end_autnum.as_ref().expect("startNum is none"),
+        Numberish::<u32>::from(710)
+    );
 }
 
 #[tokio::test]
@@ -373,7 +376,7 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_address_THEN_network_return
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::basic().cidr(cidr).build().expect("cidr parsing"))
+    tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
         .await
         .expect("add network in tx");
     tx.commit().await.expect("tx commit");
@@ -433,9 +436,14 @@ async fn GIVEN_contained_networks_in_mem_WHEN_lookup_network_by_address_THEN_mos
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     for cidr in cidrs {
-        tx.add_network(&Network::basic().cidr(*cidr).build().expect("cidr parsing"))
-            .await
-            .expect("add network in tx");
+        tx.add_network(
+            &Network::builder()
+                .cidr(*cidr)
+                .build()
+                .expect("cidr parsing"),
+        )
+        .await
+        .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -469,15 +477,31 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_first_address_THEN_n
     let end = "10.0.1.255";
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(
-        &Network::builder()
-            .start_address(start)
-            .end_address(end)
-            .ip_version("v4")
-            .object_common(ObjectCommon::ip_network().build())
-            .common(Common::builder().build())
-            .build(),
-    )
+    tx.add_network(&Network {
+        common: Common {
+            rdap_conformance: None,
+            notices: None,
+        },
+        object_common: ObjectCommon {
+            object_class_name: "ip network".to_string(),
+            handle: None,
+            remarks: None,
+            links: None,
+            events: None,
+            status: None,
+            port_43: None,
+            entities: None,
+            redacted: None,
+        },
+        start_address: Some(start.to_string()),
+        end_address: Some(end.to_string()),
+        ip_version: Some("v4".to_string()),
+        name: None,
+        network_type: None,
+        parent_handle: None,
+        country: None,
+        cidr0_cidrs: None,
+    })
     .await
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
@@ -512,15 +536,31 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_last_address_THEN_ne
     let end = "10.0.1.255";
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(
-        &Network::builder()
-            .start_address(start)
-            .end_address(end)
-            .ip_version("v4")
-            .object_common(ObjectCommon::ip_network().build())
-            .common(Common::builder().build())
-            .build(),
-    )
+    tx.add_network(&Network {
+        common: Common {
+            rdap_conformance: None,
+            notices: None,
+        },
+        object_common: ObjectCommon {
+            object_class_name: "ip network".to_string(),
+            handle: None,
+            remarks: None,
+            links: None,
+            events: None,
+            status: None,
+            port_43: None,
+            entities: None,
+            redacted: None,
+        },
+        start_address: Some(start.to_string()),
+        end_address: Some(end.to_string()),
+        ip_version: Some("v4".to_string()),
+        name: None,
+        network_type: None,
+        parent_handle: None,
+        country: None,
+        cidr0_cidrs: None,
+    })
     .await
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
@@ -561,7 +601,7 @@ async fn GIVEN_network_in_mem_WHEN_lookup_network_by_cidr_THEN_network_returned(
     // GIVEN
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::basic().cidr(cidr).build().expect("cidr parsing"))
+    tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
         .await
         .expect("add network in tx");
     tx.commit().await.expect("tx commit");
@@ -613,14 +653,13 @@ async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_defaul
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_srv_help(
-        &Help::basic()
+        &Help::builder()
             .notice(Notice(
                 NoticeOrRemark::builder()
                     .description_entry("foo".to_string())
                     .build(),
             ))
-            .build()
-            .expect("building help"),
+            .build(),
         None,
     )
     .await
@@ -646,7 +685,7 @@ async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_defaul
             .description
             .as_ref()
             .expect("no description!")
-            .many()
+            .into_vec_string_owned()
             .first()
             .expect("no description in notice"),
         "foo"
@@ -659,14 +698,13 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_srv_help(
-        &Help::basic()
+        &Help::builder()
             .notice(Notice(
                 NoticeOrRemark::builder()
                     .description_entry("bar".to_string())
                     .build(),
             ))
-            .build()
-            .expect("building help"),
+            .build(),
         Some("bar.example.com"),
     )
     .await
@@ -695,7 +733,7 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
             .description
             .as_ref()
             .expect("no description")
-            .many()
+            .into_vec_string_owned()
             .first()
             .expect("no description in notice"),
         "bar"

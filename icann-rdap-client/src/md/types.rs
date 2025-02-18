@@ -1,13 +1,12 @@
+use icann_rdap_common::prelude::ObjectCommon;
 use std::any::TypeId;
 
 use lazy_static::lazy_static;
 
-use icann_rdap_common::check::string::StringCheck;
+use icann_rdap_common::check::StringCheck;
 use icann_rdap_common::httpdata::HttpData;
-use icann_rdap_common::response::types::{
-    Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
-};
-use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
+use icann_rdap_common::response::{Common, Event, Link, Links, Notices, PublicId, Remarks};
+use icann_rdap_common::response::{NoticeOrRemark, RdapConformance};
 use reqwest::header::{
     ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
     STRICT_TRANSPORT_SECURITY,
@@ -96,10 +95,10 @@ impl ToMd for Link {
         };
         if let Some(hreflang) = &self.hreflang {
             match hreflang {
-                icann_rdap_common::response::types::HrefLang::Lang(lang) => {
+                icann_rdap_common::response::HrefLang::Lang(lang) => {
                     md.push_str(&format!("* Language:  {}\n", lang.replace_ws()));
                 }
-                icann_rdap_common::response::types::HrefLang::Langs(langs) => {
+                icann_rdap_common::response::HrefLang::Langs(langs) => {
                     md.push_str(&format!("* Languages: {}", langs.join(", ").replace_ws()));
                 }
             }
@@ -146,7 +145,7 @@ impl ToMd for NoticeOrRemark {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         if let Some(description) = &self.description {
-            description.many().iter().for_each(|s| {
+            description.into_vec_string_owned().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
                     md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
                 }
@@ -276,7 +275,7 @@ impl ToMpTable for ObjectCommon {
 
             // Status
             if let Some(status) = &self.status {
-                let values = status.iter().map(|v| v.0.as_str()).collect::<Vec<&str>>();
+                let values = status.into_vec_string_owned();
                 table = table.nv_ul(&"Status", values.make_list_all_title_case());
             }
 
@@ -376,8 +375,8 @@ pub(crate) fn links_to_table(
         let hreflang_s;
         if let Some(hreflang) = &link.hreflang {
             hreflang_s = match hreflang {
-                icann_rdap_common::response::types::HrefLang::Lang(lang) => lang.to_owned(),
-                icann_rdap_common::response::types::HrefLang::Langs(langs) => langs.join(", "),
+                icann_rdap_common::response::HrefLang::Lang(lang) => lang.to_owned(),
+                icann_rdap_common::response::HrefLang::Langs(langs) => langs.join(", "),
             };
             ul.push(&hreflang_s)
         };

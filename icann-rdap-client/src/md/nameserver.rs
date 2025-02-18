@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::nameserver::Nameserver;
+use icann_rdap_common::response::Nameserver;
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
@@ -42,10 +42,10 @@ impl ToMd for Nameserver {
             .and_nv_ref(&"Handle", &self.object_common.handle);
         if let Some(addresses) = &self.ip_addresses {
             if let Some(v4) = &addresses.v4 {
-                table = table.nv_ul_ref(&"Ipv4", v4.iter().collect());
+                table = table.nv_ul_ref(&"Ipv4", v4.into_vec_string_owned().iter().collect());
             }
             if let Some(v6) = &addresses.v6 {
-                table = table.nv_ul_ref(&"Ipv6", v6.iter().collect());
+                table = table.nv_ul_ref(&"Ipv6", v6.into_vec_string_owned().iter().collect());
             }
         }
 

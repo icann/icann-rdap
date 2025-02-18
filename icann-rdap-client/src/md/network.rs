@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::{
     check::{CheckParams, GetChecks, GetSubChecks},
-    response::network::Network,
+    response::Network,
 };
 
 use super::{

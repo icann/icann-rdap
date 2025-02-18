@@ -9,7 +9,7 @@ use icann_rdap_client::{
 };
 use icann_rdap_common::{
     check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-    response::{types::ExtensionId, RdapResponse},
+    response::{ExtensionId, RdapResponse},
 };
 use reqwest::StatusCode;
 use serde::Serialize;
@@ -426,24 +426,17 @@ fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{
-        domain::Domain,
-        types::{Common, Extension},
-        RdapResponse,
-    };
+    use icann_rdap_common::response::{Domain, Extension, RdapResponse};
 
     use super::rdap_has_expected_extension;
 
     #[test]
     fn GIVEN_expected_extension_WHEN_rdap_has_THEN_true() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("foo.example.com").build();
-        let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
-            ..domain
-        };
+        let domain = Domain::builder()
+            .extension(Extension::from("foo0"))
+            .ldh_name("foo.example.com")
+            .build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
@@ -456,13 +449,10 @@ mod tests {
     #[test]
     fn GIVEN_expected_extension_WHEN_rdap_does_not_have_THEN_false() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("foo.example.com").build();
-        let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
-            ..domain
-        };
+        let domain = Domain::builder()
+            .extension(Extension::from("foo0"))
+            .ldh_name("foo.example.com")
+            .build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
@@ -475,13 +465,10 @@ mod tests {
     #[test]
     fn GIVEN_compound_expected_extension_WHEN_rdap_has_THEN_true() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("foo.example.com").build();
-        let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
-            ..domain
-        };
+        let domain = Domain::builder()
+            .extension(Extension::from("foo0"))
+            .ldh_name("foo.example.com")
+            .build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN

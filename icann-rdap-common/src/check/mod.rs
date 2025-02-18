@@ -8,25 +8,29 @@ use serde::{Deserialize, Serialize};
 use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
 
-pub mod autnum;
-pub mod domain;
-pub mod entity;
-pub mod error;
-pub mod help;
-pub mod httpdata;
-pub mod nameserver;
-pub mod network;
-pub mod search;
-pub mod string;
-pub mod types;
+#[doc(inline)]
+pub use string::*;
+
+mod autnum;
+mod domain;
+mod entity;
+mod error;
+mod help;
+mod httpdata;
+mod nameserver;
+mod network;
+mod search;
+mod string;
+mod types;
 
 lazy_static! {
+    /// The max length of the check class string representations.
     pub static ref CHECK_CLASS_LEN: usize = CheckClass::iter()
         .max_by_key(|x| x.to_string().len())
         .map_or(8, |x| x.to_string().len());
 }
 
-/// Describes the calls of checks.
+/// Describes the classes of checks.
 #[derive(
     EnumIter,
     EnumString,
@@ -117,9 +121,13 @@ pub enum RdapStructure {
     RdapConformance,
     Redacted,
     Remarks,
+    SecureDns,
     Status,
 }
 
+/// Contains many [CheckItem] structures and sub checks.
+///
+/// Checks are found on object classes and structures defined in [RdapStructure].
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Checks {
     pub rdap_struct: RdapStructure,
@@ -135,6 +143,7 @@ impl Checks {
     }
 }
 
+/// A specific check item.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CheckItem {
     pub check_class: CheckClass,
@@ -154,10 +163,12 @@ impl std::fmt::Display for CheckItem {
     }
 }
 
+/// Trait for an item that can get checks.
 pub trait GetChecks {
     fn get_checks(&self, params: CheckParams) -> Checks;
 }
 
+/// Parameters for finding checks.
 #[derive(Clone, Copy)]
 pub struct CheckParams<'a> {
     pub do_subchecks: bool,
@@ -203,6 +214,7 @@ impl GetChecks for RdapResponse {
     }
 }
 
+/// Trait to get checks for structures below that of the object class.
 pub trait GetSubChecks {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
@@ -237,6 +249,17 @@ where
     found
 }
 
+/// Returns true if the check is in a check list
+pub fn is_checked(check: Check, checks: &[Checks]) -> bool {
+    checks.iter().any(|c| is_checked_item(check, c))
+}
+
+/// Returns true if the check is in a list of check items.
+pub fn is_checked_item(check: Check, checks: &Checks) -> bool {
+    checks.items.iter().any(|c| c.check == check)
+}
+
+/// The variant check types.
 #[derive(
     Debug,
     EnumMessage,
@@ -312,6 +335,8 @@ pub enum Check {
     RoleIsEmpty = 800,
     #[strum(message = "entity role may not be registered")]
     UnknownRole = 801,
+    #[strum(message = "role is a string, not array of strings")]
+    RoleIsString = 802,
 
     // LDH Name 900 - 999
     #[strum(message = "ldhName does not appear to be an LDH name")]
@@ -364,6 +389,8 @@ pub enum Check {
     IpAddressDocumentationNet = 1312,
     #[strum(message = "Reserved network. See RFC 1112")]
     IpAddressReservedNet = 1313,
+    #[strum(message = "IP address array is a string.")]
+    IpAddressArrayIsString = 1314,
 
     // Autnum 1400 - 1499
     #[strum(message = "start or end autnum is missing")]
@@ -436,6 +463,40 @@ pub enum Check {
     ExpectedExtensionNotFound = 2104,
     #[strum(message = "IPv6 Support Required.")]
     Ipv6SupportRequiredByIcann = 2105,
+
+    // Secure DNS 2200 - 2299
+    #[strum(message = "delegationSigned is a string not a bool.")]
+    DelegationSignedIsString = 2200,
+    #[strum(message = "zoneSigned is a string not a bool.")]
+    ZoneSignedIsString = 2201,
+    #[strum(message = "maxSigLife is a string not a number.")]
+    MaxSigLifeIsString = 2202,
+    // key data
+    #[strum(message = "keyData algorithm is a string not a number.")]
+    KeyDatumAlgorithmIsString = 2203,
+    #[strum(message = "keyData algorithm is out of range.")]
+    KeyDatumAlgorithmIsOutOfRange = 2204,
+    #[strum(message = "keyData flags is a string not a number.")]
+    KeyDatumFlagsIsString = 2205,
+    #[strum(message = "keyData flags is out of range.")]
+    KeyDatumFlagsIsOutOfRange = 2206,
+    #[strum(message = "keyData protocol is a string not a number.")]
+    KeyDatumProtocolIsString = 2207,
+    #[strum(message = "keyData protocol is out of range.")]
+    KeyDatumProtocolIsOutOfRange = 2208,
+    // ds data
+    #[strum(message = "dsData algorithm is a string not a number.")]
+    DsDatumAlgorithmIsString = 2213,
+    #[strum(message = "dsData algorithm is out of range.")]
+    DsDatumAlgorithmIsOutOfRange = 2214,
+    #[strum(message = "dsData keyTag is a string not a number.")]
+    DsDatumKeyTagIsString = 2215,
+    #[strum(message = "dsData keyTag is out of range.")]
+    DsDatumKeyTagIsOutOfRange = 2216,
+    #[strum(message = "dsData digestType is a string not a number.")]
+    DsDatumDigestTypeIsString = 2217,
+    #[strum(message = "dsData digestType is out of range.")]
+    DsDatumDigestTypeIsOutOfRange = 2218,
 }
 
 impl Check {
@@ -469,6 +530,7 @@ impl Check {
 
             Check::RoleIsEmpty => CheckClass::StdError,
             Check::UnknownRole => CheckClass::StdWarning,
+            Check::RoleIsString => CheckClass::StdError,
 
             Check::LdhNameInvalid => CheckClass::StdError,
             Check::LdhNameDocumentation => CheckClass::Informational,
@@ -495,6 +557,7 @@ impl Check {
             Check::IpAddressUniqueLocal => CheckClass::Informational,
             Check::IpAddressDocumentationNet => CheckClass::Informational,
             Check::IpAddressReservedNet => CheckClass::Informational,
+            Check::IpAddressArrayIsString => CheckClass::StdError,
 
             Check::AutnumMissing => CheckClass::StdWarning,
             Check::AutnumEndBeforeStart => CheckClass::StdWarning,
@@ -531,6 +594,22 @@ impl Check {
             Check::NoAAAARecords => CheckClass::SpecificationNote,
             Check::ExpectedExtensionNotFound => CheckClass::StdError,
             Check::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
+
+            Check::DelegationSignedIsString => CheckClass::StdError,
+            Check::ZoneSignedIsString => CheckClass::StdError,
+            Check::MaxSigLifeIsString => CheckClass::StdError,
+            Check::KeyDatumAlgorithmIsString => CheckClass::StdError,
+            Check::KeyDatumAlgorithmIsOutOfRange => CheckClass::StdError,
+            Check::KeyDatumFlagsIsString => CheckClass::StdError,
+            Check::KeyDatumFlagsIsOutOfRange => CheckClass::StdError,
+            Check::KeyDatumProtocolIsString => CheckClass::StdError,
+            Check::KeyDatumProtocolIsOutOfRange => CheckClass::StdError,
+            Check::DsDatumAlgorithmIsString => CheckClass::StdError,
+            Check::DsDatumAlgorithmIsOutOfRange => CheckClass::StdError,
+            Check::DsDatumKeyTagIsString => CheckClass::StdError,
+            Check::DsDatumKeyTagIsOutOfRange => CheckClass::StdError,
+            Check::DsDatumDigestTypeIsString => CheckClass::StdError,
+            Check::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
         };
         CheckItem {
             check_class,

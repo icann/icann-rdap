@@ -63,18 +63,15 @@ mod tests {
         check::{Check, CheckParams, GetChecks},
         httpdata::HttpData,
         media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE},
-        response::{
-            domain::Domain,
-            types::{Common, ExtensionId, ObjectCommon},
-            RdapResponse,
-        },
+        prelude::{Common, ObjectCommon},
+        response::{domain::Domain, types::ExtensionId, RdapResponse},
     };
 
     #[test]
     fn check_not_rdap_media() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -105,7 +102,7 @@ mod tests {
     fn check_exactly_rdap_media() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -136,7 +133,7 @@ mod tests {
     fn check_rdap_media_with_charset_parameter() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -168,7 +165,7 @@ mod tests {
     fn check_media_type_absent() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -199,7 +196,7 @@ mod tests {
     fn check_cors_header_with_tig() {
         // GIVEN a response with gtld tig
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -230,7 +227,7 @@ mod tests {
     fn check_cors_header_with_foo_and_tig() {
         // GIVEN a response with gtld tig extension
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -263,7 +260,7 @@ mod tests {
     fn check_no_cors_header_and_tig() {
         // GIVEN domain response with gtld tig extension id
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -295,7 +292,7 @@ mod tests {
     fn given_response_is_over_https_and_tig() {
         // GIVEN response with gtld tig extension
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -323,7 +320,7 @@ mod tests {
     fn response_over_htttp_and_tig() {
         // GIVEN domain response with gtld tig extension
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),

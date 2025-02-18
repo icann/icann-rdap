@@ -8,6 +8,14 @@ pub mod iana;
 pub mod media_types;
 pub mod response;
 
+/// Basics RDAP structures.
+pub mod prelude {
+    #[doc(inline)]
+    pub use crate::contact::*;
+    #[doc(inline)]
+    pub use crate::response::*;
+}
+
 #[cfg(debug_assertions)]
 use const_format::formatcp;
 

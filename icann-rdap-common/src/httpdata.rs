@@ -4,6 +4,7 @@ use buildstructor::Builder;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
+/// Represents the data from HTTP responses.
 #[derive(Serialize, Deserialize, Clone, Debug, Builder, PartialEq, Eq)]
 pub struct HttpData {
     pub content_length: Option<u64>,
@@ -23,9 +24,9 @@ pub struct HttpData {
 
 #[buildstructor::buildstructor]
 impl HttpData {
-    #[builder(entry = "now")]
+    #[builder(entry = "now", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_now(
+    fn new_now(
         content_length: Option<u64>,
         content_type: Option<String>,
         scheme: String,
@@ -56,9 +57,9 @@ impl HttpData {
         }
     }
 
-    #[builder(entry = "example")]
+    #[builder(entry = "example", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_example(
+    fn new_example(
         content_length: Option<u64>,
         content_type: Option<String>,
         expires: Option<String>,

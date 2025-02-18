@@ -1,7 +1,7 @@
 use std::{net::IpAddr, path::PathBuf};
 
 use clap::Parser;
-use icann_rdap_common::{check::CheckClass, response::RdapResponse, VERSION};
+use icann_rdap_common::{check::CheckClass, prelude::Numberish, response::RdapResponse, VERSION};
 use icann_rdap_srv::{
     config::{data_dir, debug_config_vars, LOG},
     error::RdapServerError,
@@ -228,8 +228,8 @@ fn verify_rdap_template(
                     match &autnum {
                         AutnumOrError::AutnumObject(autnum) => {
                             let mut autnum = autnum.clone();
-                            autnum.start_autnum = Some(id.start_autnum);
-                            autnum.end_autnum = Some(id.end_autnum);
+                            autnum.start_autnum = Some(Numberish::<u32>::from(id.start_autnum));
+                            autnum.end_autnum = Some(Numberish::<u32>::from(id.end_autnum));
                             errors_found |= check_rdap(RdapResponse::Autnum(autnum), check_types);
                         }
                         AutnumOrError::ErrorResponse(error) => {

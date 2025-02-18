@@ -1,11 +1,22 @@
+//! RDAP Domain Object Class
+use crate::prelude::Common;
+use crate::prelude::Extension;
+use crate::prelude::ObjectCommon;
 use buildstructor::Builder;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
+use super::to_opt_vectorstringish;
+use super::CommonFields;
+use super::ObjectCommonFields;
+use super::VectorStringish;
 use super::{
+    lenient::{Boolish, Numberish},
     nameserver::Nameserver,
     network::Network,
-    types::{to_option_status, Common, Events, Link, Links, ObjectCommon, PublicIds},
-    GetSelfLink, SelfLink, ToChild,
+    to_opt_vec,
+    types::{Events, Link, Links, PublicIds},
+    Entity, Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
 };
 
 /// Represents an RDAP variant name.
@@ -20,10 +31,24 @@ pub struct VariantName {
     pub unicode_name: Option<String>,
 }
 
+impl VariantName {
+    /// Convenience method.
+    pub fn ldh_name(&self) -> Option<&str> {
+        self.ldh_name.as_deref()
+    }
+
+    /// Convenience method.
+    pub fn unicode_name(&self) -> Option<&str> {
+        self.unicode_name.as_deref()
+    }
+}
+
 /// Represents an RDAP IDN variant.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Variant {
-    pub relation: Option<Vec<String>>,
+    #[serde(rename = "relation")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relations: Option<VectorStringish>,
 
     #[serde(rename = "idnTable")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -34,21 +59,65 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+lazy_static! {
+    static ref EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
+}
+
+#[buildstructor::buildstructor]
+impl Variant {
+    #[builder(visibility = "pub")]
+    fn new(
+        relations: Vec<String>,
+        idn_table: Option<String>,
+        variant_names: Vec<VariantName>,
+    ) -> Self {
+        Self {
+            relations: to_opt_vectorstringish(relations),
+            idn_table,
+            variant_names: to_opt_vec(variant_names),
+        }
+    }
+
+    /// Convenience method to get relations.
+    pub fn relations(&self) -> Vec<String> {
+        self.relations
+            .as_ref()
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
+    }
+
+    /// Convenience method to get variant names.
+    pub fn variant_names(&self) -> &Vec<VariantName> {
+        self.variant_names.as_ref().unwrap_or(&EMPTY_VARIANT_NAMES)
+    }
+
+    /// Convenience method.
+    pub fn idn_table(&self) -> Option<&str> {
+        self.idn_table.as_deref()
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_LINKS: Vec<Link> = vec![];
+    static ref EMPTY_EVENTS: Vec<Event> = vec![];
+}
+
+/// Represents `dsData`.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct DsDatum {
     #[serde(rename = "keyTag")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub key_tag: Option<u32>,
+    pub key_tag: Option<Numberish<u32>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub algorithm: Option<u8>,
+    pub algorithm: Option<Numberish<u8>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub digest: Option<String>,
 
     #[serde(rename = "digestType")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub digest_type: Option<u8>,
+    pub digest_type: Option<Numberish<u8>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
@@ -57,20 +126,69 @@ pub struct DsDatum {
     pub events: Option<Events>,
 }
 
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[buildstructor::buildstructor]
+impl DsDatum {
+    /// Builder for `dsData`
+    #[builder(visibility = "pub")]
+    fn new(
+        key_tag: Option<u32>,
+        algorithm: Option<u8>,
+        digest: Option<String>,
+        digest_type: Option<u8>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+    ) -> Self {
+        Self {
+            key_tag: key_tag.map(Numberish::<u32>::from),
+            algorithm: algorithm.map(Numberish::<u8>::from),
+            digest,
+            digest_type: digest_type.map(Numberish::<u8>::from),
+            links: to_opt_vec(links),
+            events: to_opt_vec(events),
+        }
+    }
+
+    /// Convenience method to get links.
+    pub fn links(&self) -> &Vec<Link> {
+        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    }
+
+    /// Convenience method to get events.
+    pub fn events(&self) -> &Vec<Event> {
+        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    }
+
+    /// Returns a u32 if it was given, otherwise None.
+    pub fn key_tag(&self) -> Option<u32> {
+        self.key_tag.as_ref().and_then(|n| n.as_u32())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
+    pub fn digest_type(&self) -> Option<u8> {
+        self.digest_type.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Convenience method.
+    pub fn digest(&self) -> Option<&str> {
+        self.digest.as_deref()
+    }
+}
+
+/// Represents `keyData`.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct KeyDatum {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub flags: Option<u16>,
+    pub flags: Option<Numberish<u16>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocol: Option<u8>,
+    pub protocol: Option<Numberish<u8>>,
 
     #[serde(rename = "publicKey")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub public_key: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub algorithm: Option<u8>,
+    pub algorithm: Option<Numberish<u8>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
@@ -79,20 +197,118 @@ pub struct KeyDatum {
     pub events: Option<Events>,
 }
 
+#[buildstructor::buildstructor]
+impl KeyDatum {
+    /// Builder for `keyData`
+    #[builder(visibility = "pub")]
+    fn new(
+        flags: Option<u16>,
+        protocol: Option<u8>,
+        public_key: Option<String>,
+        algorithm: Option<u8>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+    ) -> Self {
+        Self {
+            flags: flags.map(Numberish::<u16>::from),
+            protocol: protocol.map(Numberish::<u8>::from),
+            public_key,
+            algorithm: algorithm.map(Numberish::<u8>::from),
+            links: to_opt_vec(links),
+            events: to_opt_vec(events),
+        }
+    }
+
+    /// Convenience method to get links.
+    pub fn links(&self) -> &Vec<Link> {
+        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    }
+
+    /// Convenience method to get events.
+    pub fn events(&self) -> &Vec<Event> {
+        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    }
+
+    /// Returns a u16 if it was given, otherwise None.
+    pub fn flags(&self) -> Option<u16> {
+        self.flags.as_ref().and_then(|n| n.as_u16())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
+    pub fn protocol(&self) -> Option<u8> {
+        self.protocol.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
+    pub fn algorithm(&self) -> Option<u8> {
+        self.algorithm.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Convenience method.
+    pub fn public_key(&self) -> Option<&str> {
+        self.public_key.as_deref()
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_DS_DATA: Vec<DsDatum> = vec![];
+    static ref EMPTY_KEY_DATA: Vec<KeyDatum> = vec![];
+}
+
 /// Represents the DNSSEC information of a domain.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+///
+/// The following shows how to use the builders to
+/// create a domain with secure DNS informaiton.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// // Builds DNS security `keyData`.
+/// let key_datum = KeyDatum::builder()
+///     .flags(257)
+///     .protocol(3)
+///     .algorithm(8)
+///     .public_key("AwEAAa6eDzronzjEDbT...Jg1M5N rBSPkuXpdFE=")
+///     .build();
+///
+/// // Builds DNS security `dsData`.
+/// let ds_datum = DsDatum::builder()
+///     .algorithm(13)
+///     .key_tag(20149)
+///     .digest_type(2)
+///     .digest("cf066bceadb799a27b62e3e82dc2e4da314c1807db98f13d82f0043b1418cf4e")
+///     .build();
+///
+/// // Builds DNS security.
+/// let secure_dns = SecureDns::builder()
+///     .ds_data(ds_datum)
+///     .key_data(key_datum)
+///     .zone_signed(true)
+///     .delegation_signed(false)
+///     .max_sig_life(604800)
+///     .build();
+///
+/// // Builds `domain` with DNS security.
+/// let domain = Domain::builder()
+///     .ldh_name("example.com")
+///     .handle("EXAMPLE-DOMAIN")
+///     .status("active")
+///     .secure_dns(secure_dns)
+///     .build();
+/// ```
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct SecureDns {
     #[serde(rename = "zoneSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub zone_signed: Option<bool>,
+    pub zone_signed: Option<Boolish>,
 
     #[serde(rename = "delegationSigned")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub delegation_signed: Option<bool>,
+    pub delegation_signed: Option<Boolish>,
 
     #[serde(rename = "maxSigLife")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_sig_life: Option<u64>,
+    pub max_sig_life: Option<Numberish<u64>>,
 
     #[serde(rename = "dsData")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -103,6 +319,59 @@ pub struct SecureDns {
     pub key_data: Option<Vec<KeyDatum>>,
 }
 
+#[buildstructor::buildstructor]
+impl SecureDns {
+    /// Builder for `secureDNS`.
+    #[builder(visibility = "pub")]
+    fn new(
+        zone_signed: Option<bool>,
+        delegation_signed: Option<bool>,
+        max_sig_life: Option<u64>,
+        ds_datas: Vec<DsDatum>,
+        key_datas: Vec<KeyDatum>,
+    ) -> Self {
+        Self {
+            zone_signed: zone_signed.map(Boolish::from),
+            delegation_signed: delegation_signed.map(Boolish::from),
+            max_sig_life: max_sig_life.map(Numberish::<u64>::from),
+            ds_data: to_opt_vec(ds_datas),
+            key_data: to_opt_vec(key_datas),
+        }
+    }
+
+    /// Convenience method to get ds data.
+    pub fn ds_data(&self) -> &Vec<DsDatum> {
+        self.ds_data.as_ref().unwrap_or(&EMPTY_DS_DATA)
+    }
+
+    /// Convenience method to get key data.
+    pub fn key_data(&self) -> &Vec<KeyDatum> {
+        self.key_data.as_ref().unwrap_or(&EMPTY_KEY_DATA)
+    }
+
+    /// Returns true if a truish value was given, otherwise false.
+    pub fn zone_signed(&self) -> bool {
+        self.zone_signed.as_ref().map_or(false, |b| b.into_bool())
+    }
+
+    /// Returns true if a truish value was given, otherwise false.
+    pub fn delegation_signed(&self) -> bool {
+        self.delegation_signed
+            .as_ref()
+            .map_or(false, |b| b.into_bool())
+    }
+
+    /// Returns max_sig_life as a u64 if it was given, otherwise None.
+    pub fn max_sig_life(&self) -> Option<u64> {
+        self.max_sig_life.as_ref().and_then(|n| n.as_u64())
+    }
+}
+
+lazy_static! {
+    static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
+    static ref EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
+}
+
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
 ///
 /// Using the builder is recommended to construct this structure as it
@@ -110,10 +379,9 @@ pub struct SecureDns {
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::domain::Domain;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
-/// let domain = Domain::basic()
+/// let domain = Domain::builder()
 ///   .ldh_name("foo.example.com")
 ///   .handle("foo_example_com-1")
 ///   .status("active")
@@ -137,7 +405,48 @@ pub struct SecureDns {
 ///   "ldhName": "foo.example.com"
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+///
+/// Domains have many sub-structures that are also constructed
+/// using builders, which may then be passed into a Domain
+/// builder.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let nameservers = vec![
+///     Nameserver::builder()
+///         .ldh_name("ns1.example.com")
+///         .address("127.0.0.1")
+///         .build()
+///         .unwrap(),
+///     Nameserver::builder()
+///         .ldh_name("ns2.example.com")
+///         .build()
+///         .unwrap(),
+/// ];
+///
+/// let ds_datum = DsDatum::builder()
+///         .algorithm(13)
+///         .key_tag(20149)
+///         .digest_type(2)
+///         .digest("cf066bceadb799a27b62e3e82dc2e4da314c1807db98f13d82f0043b1418cf4e")
+///         .build();
+///
+/// let secure_dns = SecureDns::builder()
+///         .ds_data(ds_datum)
+///         .zone_signed(true)
+///         .delegation_signed(false)
+///         .build();
+///
+/// let domain = Domain::builder()
+///   .ldh_name("foo.example.com")
+///   .handle("foo_example_com-3")
+///   .status("active")
+///   .nameservers(nameservers)
+///   .secure_dns(secure_dns)
+///   .build();
+/// ```
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     #[serde(flatten)]
     pub common: Common,
@@ -176,63 +485,64 @@ impl Domain {
     /// Builds a basic domain object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::domain::Domain;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
-    /// let domain = Domain::basic()
+    /// let domain = Domain::builder()
     ///   .ldh_name("foo.example.com")
     ///   .handle("foo_example_com-1")
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_ldh<T: Into<String>>(
+    fn new<T: Into<String>>(
         ldh_name: T,
         unicode_name: Option<String>,
-        nameservers: Option<Vec<Nameserver>>,
+        nameservers: Vec<Nameserver>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        public_ids: Vec<PublicId>,
+        secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(to_option_status(statuses))
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name,
-            variants: None,
-            secure_dns: None,
-            nameservers,
-            public_ids: None,
-            network: None,
+            variants: to_opt_vec(variants),
+            secure_dns,
+            nameservers: to_opt_vec(nameservers),
+            public_ids: to_opt_vec(public_ids),
+            network,
         }
     }
 
     /// Builds an IDN object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::domain::Domain;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
     /// let domain = Domain::idn()
     ///   .unicode_name("foo.example.com")
@@ -240,45 +550,68 @@ impl Domain {
     ///   .status("active")
     ///   .build();
     /// ```
-    #[builder(entry = "idn")]
+    #[builder(entry = "idn", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_idn<T: Into<String>>(
+    fn new_idn<T: Into<String>>(
         ldh_name: Option<String>,
         unicode_name: T,
-        nameservers: Option<Vec<Nameserver>>,
+        nameservers: Vec<Nameserver>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        public_ids: Vec<PublicId>,
+        secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
+        extensions: Vec<Extension>,
     ) -> Self {
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(to_option_status(statuses))
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .build(),
             ldh_name,
             unicode_name: Some(unicode_name.into()),
-            variants: None,
-            secure_dns: None,
-            nameservers,
-            public_ids: None,
-            network: None,
+            variants: to_opt_vec(variants),
+            secure_dns,
+            nameservers: to_opt_vec(nameservers),
+            public_ids: to_opt_vec(public_ids),
+            network,
         }
+    }
+
+    /// Convenience method to get the public IDs.
+    pub fn public_ids(&self) -> &Vec<PublicId> {
+        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    }
+
+    /// Convenience method to get the nameservers.
+    pub fn nameservers(&self) -> &Vec<Nameserver> {
+        self.nameservers.as_ref().unwrap_or(&EMPTY_NAMESERVERS)
+    }
+
+    /// Convenience method.
+    pub fn ldh_name(&self) -> Option<&str> {
+        self.ldh_name.as_deref()
+    }
+
+    /// Convenience method.
+    pub fn unicode_name(&self) -> Option<&str> {
+        self.unicode_name.as_deref()
     }
 }
 
@@ -297,8 +630,23 @@ impl SelfLink for Domain {
 
 impl ToChild for Domain {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
+    }
+}
+
+impl CommonFields for Domain {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Domain {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 
@@ -609,7 +957,7 @@ mod tests {
     #[test]
     fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
         // GIVEN
-        let mut domain = Domain::basic()
+        let mut domain = Domain::builder()
             .ldh_name("foo.example")
             .link(
                 Link::builder()

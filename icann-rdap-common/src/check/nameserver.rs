@@ -34,18 +34,32 @@ impl GetChecks for Nameserver {
 
         if let Some(ip_addresses) = &self.ip_addresses {
             if let Some(v6_addrs) = &ip_addresses.v6 {
-                if v6_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
+                if v6_addrs.is_string() {
+                    items.push(Check::IpAddressArrayIsString.check_item())
+                }
+                if v6_addrs.is_empty_or_any_empty_or_whitespace() {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
-                if v6_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
+                if v6_addrs
+                    .into_vec_string_owned()
+                    .iter()
+                    .any(|ip| IpAddr::from_str(ip).is_err())
+                {
                     items.push(Check::IpAddressMalformed.check_item())
                 }
             }
             if let Some(v4_addrs) = &ip_addresses.v4 {
-                if v4_addrs.as_slice().is_empty_or_any_empty_or_whitespace() {
+                if v4_addrs.is_string() {
+                    items.push(Check::IpAddressArrayIsString.check_item())
+                }
+                if v4_addrs.is_empty_or_any_empty_or_whitespace() {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
-                if v4_addrs.iter().any(|ip| IpAddr::from_str(ip).is_err()) {
+                if v4_addrs
+                    .into_vec_string_owned()
+                    .iter()
+                    .any(|ip| IpAddr::from_str(ip).is_err())
+                {
                     items.push(Check::IpAddressMalformed.check_item())
                 }
             }
@@ -60,11 +74,9 @@ impl GetChecks for Nameserver {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use crate::response::{
         nameserver::{IpAddresses, Nameserver},
-        types::{Common, ObjectCommon},
         RdapResponse,
     };
     use rstest::rstest;
@@ -75,9 +87,9 @@ mod tests {
     #[case("")]
     #[case("  ")]
     #[case("_.")]
-    fn GIVEN_nameserver_with_bad_ldh_WHEN_checked_THEN_invalid_ldh(#[case] ldh: &str) {
+    fn check_nameserver_with_bad_ldh(#[case] ldh: &str) {
         // GIVEN
-        let ns = Nameserver::basic().ldh_name(ldh).build().unwrap();
+        let ns = Nameserver::builder().ldh_name(ldh).build().unwrap();
         let rdap = RdapResponse::Nameserver(ns);
 
         // WHEN
@@ -92,13 +104,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_empty_v6s_WHEN_checked_THEN_ip_list_is_empty_check() {
+    fn check_nameserver_with_empty_v6s() {
         // GIVEN
-        let ns = Nameserver::builder()
+        let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::nameserver().build())
-            .ip_addresses(IpAddresses::builder().v6(vec![]).build())
+            .ip_addresses(IpAddresses::illegal().v6(vec![]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -114,13 +124,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_empty_v4s_WHEN_checked_THEN_ip_list_is_empty_check() {
+    fn check_nameserver_with_empty_v4s() {
         // GIVEN
-        let ns = Nameserver::builder()
+        let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::nameserver().build())
-            .ip_addresses(IpAddresses::builder().v4(vec![]).build())
+            .ip_addresses(IpAddresses::illegal().v4(vec![]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -136,13 +144,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_bad_v6s_WHEN_checked_THEN_ip_list_is_empty_check() {
+    fn check_nameserver_with_bad_v6s() {
         // GIVEN
-        let ns = Nameserver::builder()
+        let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::nameserver().build())
-            .ip_addresses(IpAddresses::builder().v6(vec!["__".to_string()]).build())
+            .ip_addresses(IpAddresses::illegal().v6(vec!["__".to_string()]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 
@@ -158,13 +164,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_bad_v4s_WHEN_checked_THEN_ip_list_is_empty_check() {
+    fn check_nameserver_with_bad_v4s() {
         // GIVEN
-        let ns = Nameserver::builder()
+        let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::nameserver().build())
-            .ip_addresses(IpAddresses::builder().v4(vec!["___".to_string()]).build())
+            .ip_addresses(IpAddresses::illegal().v4(vec!["___".to_string()]).build())
             .build();
         let rdap = RdapResponse::Nameserver(ns);
 

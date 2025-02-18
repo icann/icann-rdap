@@ -28,8 +28,8 @@ impl GetChecks for Autnum {
             items.push(Check::AutnumMissing.check_item())
         }
 
-        if let Some(start_num) = &self.start_autnum {
-            if let Some(end_num) = &self.end_autnum {
+        if let Some(start_num) = &self.start_autnum.as_ref().and_then(|n| n.as_u32()) {
+            if let Some(end_num) = &self.end_autnum.as_ref().and_then(|n| n.as_u32()) {
                 if start_num > end_num {
                     items.push(Check::AutnumEndBeforeStart.check_item())
                 }
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn GIVEN_autnum_with_empty_name_WHEN_checked_THEN_empty_name_check() {
         // GIVEN
-        let mut autnum = Autnum::basic().autnum_range(700..700).build();
+        let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.name = Some("".to_string());
         let rdap = RdapResponse::Autnum(autnum);
 
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn GIVEN_autnum_with_empty_type_WHEN_checked_THEN_empty_type_check() {
         // GIVEN
-        let mut autnum = Autnum::basic().autnum_range(700..700).build();
+        let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.autnum_type = Some("".to_string());
         let rdap = RdapResponse::Autnum(autnum);
 

@@ -1,4 +1,4 @@
-use icann_rdap_common::response::{error::Error, RdapResponse};
+use icann_rdap_common::response::{RdapResponse, Rfc9083Error};
 
 pub mod autnum;
 pub mod domain;
@@ -57,7 +57,7 @@ impl ToBootStrap for RdapResponse {
     }
 }
 
-fn bootstrap_redirect(error: Error, path: &str, id: &str) -> RdapResponse {
+fn bootstrap_redirect(error: Rfc9083Error, path: &str, id: &str) -> RdapResponse {
     let Some(ref notices) = error.common.notices else {
         return RdapResponse::ErrorResponse(error);
     };
@@ -74,6 +74,6 @@ fn bootstrap_redirect(error: Error, path: &str, id: &str) -> RdapResponse {
         return RdapResponse::ErrorResponse(error);
     };
     let href = format!("{}{path}/{id}", href);
-    let redirect = Error::redirect().url(href).build();
+    let redirect = Rfc9083Error::redirect().url(href).build();
     RdapResponse::ErrorResponse(redirect)
 }

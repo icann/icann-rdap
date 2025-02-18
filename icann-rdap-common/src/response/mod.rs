@@ -6,47 +6,73 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::Display;
 use thiserror::Error;
-use types::Extension;
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
-use self::{
-    autnum::Autnum,
-    domain::Domain,
-    entity::Entity,
-    error::Error,
-    help::Help,
-    nameserver::Nameserver,
-    network::Network,
-    search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults},
-    types::{ExtensionId, Link, Links, RdapConformance},
-};
+#[doc(inline)]
+pub use autnum::*;
+#[doc(inline)]
+pub use common::*;
+#[doc(inline)]
+pub use domain::*;
+#[doc(inline)]
+pub use entity::*;
+#[doc(inline)]
+pub use error::*;
+#[doc(inline)]
+pub use help::*;
+#[doc(inline)]
+pub use lenient::*;
+#[doc(inline)]
+pub use nameserver::*;
+#[doc(inline)]
+pub use network::*;
+#[doc(inline)]
+pub use obj_common::*;
+#[doc(inline)]
+pub use search::*;
+#[doc(inline)]
+pub use types::*;
 
-pub mod autnum;
-pub mod domain;
-pub mod entity;
-pub mod error;
-pub mod help;
-pub mod nameserver;
-pub mod network;
-pub mod redacted;
-pub mod search;
-pub mod types;
+pub(crate) mod autnum;
+pub(crate) mod common;
+pub(crate) mod domain;
+pub(crate) mod entity;
+pub(crate) mod error;
+pub(crate) mod help;
+pub(crate) mod lenient;
+pub(crate) mod nameserver;
+pub(crate) mod network;
+pub(crate) mod obj_common;
+pub mod redacted; // RFC 9537 is not a mainstream extension.
+pub(crate) mod search;
+pub(crate) mod types;
 
+/// An error caused be processing an RDAP response.
+///
+/// This is caused because the JSON constituting the
+/// RDAP response has a problem that cannot be overcome.
+///
+/// Do not confuse this with [Rfc9083Error].
 #[derive(Debug, Error)]
 pub enum RdapResponseError {
+    /// The JSON type is incorrect.
     #[error("Wrong JSON type: {0}")]
     WrongJsonType(String),
 
+    /// The type of RDAP response is unknown.
     #[error("Unknown RDAP response.")]
     UnknownRdapResponse,
 
+    /// An error has occurred parsing the JSON.
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
 
+    /// An error with parsing an IP address.
     #[error(transparent)]
     AddrParse(#[from] std::net::AddrParseError),
 
+    /// An error caused with parsing a CIDR address.
     #[error(transparent)]
     CidrParse(#[from] cidr::errors::NetworkParseError),
 }
@@ -104,7 +130,7 @@ pub enum RdapResponse {
     NameserverSearchResults(NameserverSearchResults),
 
     // Error
-    ErrorResponse(Error),
+    ErrorResponse(Rfc9083Error),
 
     // Help
     Help(Help),
@@ -213,7 +239,7 @@ impl RdapResponse {
             RdapResponse::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
             RdapResponse::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
             RdapResponse::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
-            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Error>(),
+            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             RdapResponse::Help(_) => TypeId::of::<Help>(),
         }
     }
@@ -278,17 +304,20 @@ impl GetSelfLink for RdapResponse {
     }
 }
 
+/// Trait for getting a link with a `rel` of "self".
 pub trait GetSelfLink {
     /// Get's the first self link.
-    /// See [crate::response::types::ObjectCommon::get_self_link()].
+    /// See [crate::response::ObjectCommon::get_self_link()].
     fn get_self_link(&self) -> Option<&Link>;
 }
 
+/// Train for setting a link with a `rel` of "self".
 pub trait SelfLink: GetSelfLink {
-    /// See [crate::response::types::ObjectCommon::get_self_link()].
+    /// See [crate::response::ObjectCommon::get_self_link()].
     fn set_self_link(self, link: Link) -> Self;
 }
 
+/// Gets the `href` of a link with `rel` of "related" and `type` with the RDAP media type.
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
     if let Some(links) = rdap_response.get_links() {
         let urls: Vec<&str> = links
@@ -317,10 +346,21 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
     }
 }
 
+/// Makes a root object class suitable for being embedded in another object class.
 pub trait ToChild {
     /// Removes notices and rdapConformance so this object can be a child
     /// of another object.
     fn to_child(self) -> Self;
+}
+
+/// Returns `Some(Vec<T>)` if the vector is not empty, otherwise `None`.
+pub fn to_opt_vec<T>(vec: Vec<T>) -> Option<Vec<T>> {
+    (!vec.is_empty()).then_some(vec)
+}
+
+/// Returns `Vec<T>` if `is_some()` else an empty vector.
+pub fn opt_to_vec<T>(opt: Option<Vec<T>>) -> Vec<T> {
+    opt.unwrap_or_default()
 }
 
 #[cfg(test)]

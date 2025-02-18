@@ -1,8 +1,7 @@
 //! Determines of an RFC 9537 registered redaction is present.
 
 use icann_rdap_common::response::{
-    entity::{Entity, EntityRole},
-    RdapResponse,
+    RdapResponse, {Entity, EntityRole},
 };
 use strum_macros::{Display, EnumString};
 
@@ -114,13 +113,12 @@ pub fn is_redaction_registered_for_role(
     entity: &Entity,
     entity_role: &EntityRole,
 ) -> bool {
-    if let Some(roles) = &entity.roles {
-        if roles
-            .iter()
-            .any(|r| r.eq_ignore_ascii_case(&entity_role.to_string()))
-        {
-            return is_redaction_registered(rdap_response, redaction_type);
-        }
+    let roles = entity.roles();
+    if roles
+        .iter()
+        .any(|r| r.eq_ignore_ascii_case(&entity_role.to_string()))
+    {
+        return is_redaction_registered(rdap_response, redaction_type);
     }
     false
 }
@@ -132,14 +130,13 @@ pub fn are_redactions_registered_for_roles(
     entity: &Entity,
     entity_roles: &[&EntityRole],
 ) -> bool {
-    if let Some(roles) = &entity.roles {
-        if roles.iter().any(|r| {
-            entity_roles
-                .iter()
-                .any(|er| r.eq_ignore_ascii_case(&er.to_string()))
-        }) {
-            return are_redactions_registered(rdap_response, redaction_type);
-        }
+    let roles = entity.roles();
+    if roles.iter().any(|r| {
+        entity_roles
+            .iter()
+            .any(|er| r.eq_ignore_ascii_case(&er.to_string()))
+    }) {
+        return are_redactions_registered(rdap_response, redaction_type);
     }
     false
 }
@@ -164,8 +161,8 @@ pub fn text_or_registered_redaction_for_role(
 #[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::response::{
-        domain::Domain,
         redacted::{Name, Redacted},
+        Domain,
     };
 
     use super::*;
@@ -173,7 +170,7 @@ mod tests {
     #[test]
     fn GIVEN_redaction_type_WHEN_search_for_type_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -200,7 +197,7 @@ mod tests {
     #[test]
     fn GIVEN_redaction_type_WHEN_get_text_for_type_THEN_redacted_text_returned() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -232,7 +229,7 @@ mod tests {
     #[test]
     fn GIVEN_multiple_redaction_type_WHEN_search_for_one_of_the_types_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -273,7 +270,7 @@ mod tests {
     #[test]
     fn GIVEN_multiple_redaction_type_WHEN_search_for_multiple_that_some_exist_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -317,7 +314,7 @@ mod tests {
     #[test]
     fn GIVEN_multiple_redaction_type_WHEN_search_for_multiple_that_not_exist_THEN_false() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -364,7 +361,7 @@ mod tests {
     #[test]
     fn GIVEN_no_redactions_WHEN_search_for_type_THEN_false() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("example.com").build();
+        let domain = Domain::builder().ldh_name("example.com").build();
         let rdap = RdapResponse::Domain(domain);
 
         // WHEN
@@ -377,7 +374,7 @@ mod tests {
     #[test]
     fn GIVEN_redaction_type_WHEN_search_for_wrong_type_THEN_false() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -404,7 +401,7 @@ mod tests {
     #[test]
     fn GIVEN_entity_and_redaction_type_WHEN_search_for_type_on_entity_with_role_THEN_true() {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -421,7 +418,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = is_redaction_registered_for_role(
@@ -439,7 +439,7 @@ mod tests {
     fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_multipe_type_on_entity_with_roles_THEN_true(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -470,7 +470,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = are_redactions_registered_for_roles(
@@ -488,7 +491,7 @@ mod tests {
     fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_not_exist_type_on_entity_with_roles_THEN_false(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -519,7 +522,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = are_redactions_registered_for_roles(
@@ -537,7 +543,7 @@ mod tests {
     fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_type_on_entity_with_other_rolesroles_THEN_false(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![
                 Redacted {
@@ -568,7 +574,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = are_redactions_registered_for_roles(
@@ -586,7 +595,7 @@ mod tests {
     fn GIVEN_entity_and_redaction_type_WHEN_get_text_for_type_on_entity_with_role_THEN_redaction_text_returned(
     ) {
         // GIVEN
-        let domain = Domain::basic()
+        let domain = Domain::builder()
             .ldh_name("example.com")
             .redacted(vec![Redacted {
                 name: Name {
@@ -603,7 +612,10 @@ mod tests {
             .build();
         let rdap = RdapResponse::Domain(domain);
         let role = EntityRole::Technical.to_string();
-        let entity = Entity::basic().handle("foo_bar").role(role.clone()).build();
+        let entity = Entity::builder()
+            .handle("foo_bar")
+            .role(role.clone())
+            .build();
 
         // WHEN
         let actual = text_or_registered_redaction_for_role(

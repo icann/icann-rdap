@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::rdap::{RequestResponseOwned, SourceType};
-use icann_rdap_common::response::network::Network;
+use icann_rdap_common::response::Network;
 use icann_rdap_srv::storage::StoreOps;
 use rstest::rstest;
 
@@ -19,7 +19,7 @@ async fn GIVEN_inr_query_WHEN_query_THEN_source_is_rir(
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
-        &Network::basic()
+        &Network::builder()
             .cidr(db_cidr)
             .build()
             .expect("cidr parsing"),
