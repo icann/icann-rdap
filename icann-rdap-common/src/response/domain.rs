@@ -256,6 +256,46 @@ lazy_static! {
 }
 
 /// Represents the DNSSEC information of a domain.
+///
+/// The following shows how to use the builders to
+/// create a domain with secure DNS informaiton.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// // Builds DNS security `keyData`.
+/// let key_datum = KeyDatum::builder()
+///     .flags(257)
+///     .protocol(3)
+///     .algorithm(8)
+///     .public_key("AwEAAa6eDzronzjEDbT...Jg1M5N rBSPkuXpdFE=")
+///     .build();
+///
+/// // Builds DNS security `dsData`.
+/// let ds_datum = DsDatum::builder()
+///     .algorithm(13)
+///     .key_tag(20149)
+///     .digest_type(2)
+///     .digest("cf066bceadb799a27b62e3e82dc2e4da314c1807db98f13d82f0043b1418cf4e")
+///     .build();
+///
+/// // Builds DNS security.
+/// let secure_dns = SecureDns::builder()
+///     .ds_data(ds_datum)
+///     .key_data(key_datum)
+///     .zone_signed(true)
+///     .delegation_signed(false)
+///     .max_sig_life(604800)
+///     .build();
+///
+/// // Builds `domain` with DNS security.
+/// let domain = Domain::builder()
+///     .ldh_name("example.com")
+///     .handle("EXAMPLE-DOMAIN")
+///     .status("active")
+///     .secure_dns(secure_dns)
+///     .build();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct SecureDns {
     #[serde(rename = "zoneSigned")]
@@ -287,15 +327,15 @@ impl SecureDns {
         zone_signed: Option<bool>,
         delegation_signed: Option<bool>,
         max_sig_life: Option<u64>,
-        ds_data: Vec<DsDatum>,
-        key_data: Vec<KeyDatum>,
+        ds_datas: Vec<DsDatum>,
+        key_datas: Vec<KeyDatum>,
     ) -> Self {
         Self {
             zone_signed: zone_signed.map(Boolish::from),
             delegation_signed: delegation_signed.map(Boolish::from),
             max_sig_life: max_sig_life.map(Numberish::<u64>::from),
-            ds_data: to_opt_vec(ds_data),
-            key_data: to_opt_vec(key_data),
+            ds_data: to_opt_vec(ds_datas),
+            key_data: to_opt_vec(key_datas),
         }
     }
 
@@ -364,6 +404,47 @@ lazy_static! {
 ///   ],
 ///   "ldhName": "foo.example.com"
 /// }
+/// ```
+///
+/// Domains have many sub-structures that are also constructed
+/// using builders, which may then be passed into a Domain
+/// builder.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let nameservers = vec![
+///     Nameserver::builder()
+///         .ldh_name("ns1.example.com")
+///         .address("127.0.0.1")
+///         .build()
+///         .unwrap(),
+///     Nameserver::builder()
+///         .ldh_name("ns2.example.com")
+///         .build()
+///         .unwrap(),
+/// ];
+///
+/// let ds_datum = DsDatum::builder()
+///         .algorithm(13)
+///         .key_tag(20149)
+///         .digest_type(2)
+///         .digest("cf066bceadb799a27b62e3e82dc2e4da314c1807db98f13d82f0043b1418cf4e")
+///         .build();
+///
+/// let secure_dns = SecureDns::builder()
+///         .ds_data(ds_datum)
+///         .zone_signed(true)
+///         .delegation_signed(false)
+///         .build();
+///
+/// let domain = Domain::builder()
+///   .ldh_name("foo.example.com")
+///   .handle("foo_example_com-3")
+///   .status("active")
+///   .nameservers(nameservers)
+///   .secure_dns(secure_dns)
+///   .build();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
