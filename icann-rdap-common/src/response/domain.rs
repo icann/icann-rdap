@@ -6,8 +6,10 @@ use buildstructor::Builder;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
+use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::VectorStringish;
 use super::{
     lenient::{Boolish, Numberish},
     nameserver::Nameserver,
@@ -44,7 +46,9 @@ impl VariantName {
 /// Represents an RDAP IDN variant.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Variant {
-    pub relation: Option<Vec<String>>,
+    #[serde(rename = "relation")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relations: Option<VectorStringish>,
 
     #[serde(rename = "idnTable")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -56,7 +60,6 @@ pub struct Variant {
 }
 
 lazy_static! {
-    static ref EMPTY_RELATIONS: Vec<String> = vec![];
     static ref EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
 }
 
@@ -64,20 +67,23 @@ lazy_static! {
 impl Variant {
     #[builder(visibility = "pub")]
     fn new(
-        relation: Vec<String>,
+        relations: Vec<String>,
         idn_table: Option<String>,
         variant_names: Vec<VariantName>,
     ) -> Self {
         Self {
-            relation: to_opt_vec(relation),
+            relations: to_opt_vectorstringish(relations),
             idn_table,
             variant_names: to_opt_vec(variant_names),
         }
     }
 
     /// Convenience method to get relations.
-    pub fn relations(&self) -> &Vec<String> {
-        self.relation.as_ref().unwrap_or(&EMPTY_RELATIONS)
+    pub fn relations(&self) -> Vec<String> {
+        self.relations
+            .as_ref()
+            .map(|v| v.into_vec_string_owned())
+            .unwrap_or_default()
     }
 
     /// Convenience method to get variant names.

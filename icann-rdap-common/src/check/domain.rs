@@ -33,7 +33,7 @@ impl GetChecks for Domain {
             let empty_count = variants
                 .iter()
                 .filter(|v| {
-                    v.relation.is_none() && v.idn_table.is_none() && v.variant_names.is_none()
+                    v.relations.is_none() && v.idn_table.is_none() && v.variant_names.is_none()
                 })
                 .count();
             if empty_count != 0 {
