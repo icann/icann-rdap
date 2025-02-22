@@ -11,6 +11,7 @@ use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
 use super::VectorStringish;
+use super::EMPTY_VEC_STRING;
 use super::{
     types::Link, Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink,
     ToChild,
@@ -56,19 +57,19 @@ impl IpAddresses {
     }
 
     /// Get the IPv6 addresses.
-    pub fn v6s(&self) -> Vec<String> {
+    pub fn v6s(&self) -> &Vec<String> {
         self.v6
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 
     /// Get the IPv4 addresses.
-    pub fn v4s(&self) -> Vec<String> {
+    pub fn v4s(&self) -> &Vec<String> {
         self.v4
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 }
 

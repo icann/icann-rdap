@@ -35,7 +35,7 @@ impl GetChecks for Entity {
             if roles.is_string() {
                 items.push(Check::RoleIsString.check_item());
             }
-            let roles = roles.into_vec_string_owned();
+            let roles = roles.vec();
             if roles.is_empty_or_any_empty_or_whitespace() {
                 items.push(Check::RoleIsEmpty.check_item());
             } else {

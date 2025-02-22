@@ -41,7 +41,7 @@ impl GetChecks for Nameserver {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
                 if v6_addrs
-                    .into_vec_string_owned()
+                    .vec()
                     .iter()
                     .any(|ip| IpAddr::from_str(ip).is_err())
                 {
@@ -56,7 +56,7 @@ impl GetChecks for Nameserver {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
                 if v4_addrs
-                    .into_vec_string_owned()
+                    .vec()
                     .iter()
                     .any(|ip| IpAddr::from_str(ip).is_err())
                 {

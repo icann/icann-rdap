@@ -145,7 +145,7 @@ impl ToMd for NoticeOrRemark {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
         if let Some(description) = &self.description {
-            description.into_vec_string_owned().iter().for_each(|s| {
+            description.vec().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
                     md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
                 }
@@ -275,7 +275,7 @@ impl ToMpTable for ObjectCommon {
 
             // Status
             if let Some(status) = &self.status {
-                let values = status.into_vec_string_owned();
+                let values = status.vec();
                 table = table.nv_ul(&"Status", values.make_list_all_title_case());
             }
 

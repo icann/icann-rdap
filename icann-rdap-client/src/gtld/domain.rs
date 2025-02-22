@@ -25,11 +25,7 @@ impl ToGtldWhois for Domain {
 
         // Common Object Stuff
         let domain_info = format_domain_info(
-            &self
-                .object_common
-                .status
-                .as_ref()
-                .map(|v| v.into_vec_string_owned()),
+            &self.object_common.status.as_ref().map(|v| v.vec().clone()),
             &self.object_common.port_43,
         );
         gtld.push_str(&domain_info);

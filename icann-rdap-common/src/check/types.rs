@@ -299,7 +299,7 @@ impl GetSubChecks for ObjectCommon {
         // Status
         if let Some(status) = &self.status {
             // TODO add check for status is string
-            let status = status.into_vec_string_owned();
+            let status = status.vec();
             if status.is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Status,

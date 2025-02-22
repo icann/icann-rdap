@@ -12,6 +12,7 @@ use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
 use super::VectorStringish;
+use super::EMPTY_VEC_STRING;
 use super::{
     autnum::Autnum,
     network::Network,
@@ -192,11 +193,11 @@ impl Entity {
     }
 
     /// Convenience method to get the roles.
-    pub fn roles(&self) -> Vec<String> {
+    pub fn roles(&self) -> &Vec<String> {
         self.roles
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 
     /// Convenience method to get the public IDs.

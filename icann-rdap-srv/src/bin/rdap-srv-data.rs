@@ -1168,7 +1168,7 @@ mod tests {
         assert!(actual
             .description
             .expect("no description!")
-            .into_vec_string()
+            .into_vec()
             .contains(&description.to_string()));
         let Some(links) = actual.links else {
             panic!("no links in notice")

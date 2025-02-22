@@ -69,7 +69,7 @@ impl ToMd for Entity {
         table = table
             .header_ref(&"Identifiers")
             .and_nv_ref(&"Handle", &entity_handle)
-            .and_nv_ul(&"Roles", Some(self.roles()));
+            .and_nv_ul(&"Roles", Some(self.roles().to_vec()));
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
