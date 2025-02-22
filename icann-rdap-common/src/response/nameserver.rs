@@ -10,6 +10,7 @@ use super::to_opt_vec;
 use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::VectorStringish;
 use super::EMPTY_VEC_STRING;
 use super::{
@@ -229,6 +230,12 @@ impl Nameserver {
     /// Get the IP addresses.
     pub fn ip_addresses(&self) -> Option<&IpAddresses> {
         self.ip_addresses.as_ref()
+    }
+}
+
+impl ToResponse for Nameserver {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Nameserver(self)
     }
 }
 
