@@ -144,6 +144,9 @@ impl ToMd for NoticeOrRemark {
         if let Some(title) = &self.title {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
+        if let Some(nr_type) = &self.nr_type {
+            md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
+        };
         if let Some(description) = &self.description {
             description.vec().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {

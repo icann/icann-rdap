@@ -167,6 +167,7 @@ impl GetChecks for NoticeOrRemark {
                 });
             };
         };
+        // TODO checks on 'type'
         Checks {
             rdap_struct: super::RdapStructure::NoticeOrRemark,
             items,
@@ -846,6 +847,7 @@ mod tests {
             title: None,
             description: None,
             links: None,
+            nr_type: None,
         };
         let rdap = RdapResponse::Domain(
             Domain::builder()
