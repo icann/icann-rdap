@@ -304,6 +304,12 @@ impl GetSelfLink for RdapResponse {
     }
 }
 
+/// A trait for converting structs into an appropriate [RdapResponse] variant.
+pub trait ToResponse {
+    /// Consumes the object and returns an [RdapResponse].
+    fn to_response(self) -> RdapResponse;
+}
+
 /// Trait for getting a link with a `rel` of "self".
 pub trait GetSelfLink {
     /// Get's the first self link.

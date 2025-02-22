@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::VectorStringish;
 use super::EMPTY_VEC_STRING;
 use super::{
@@ -613,6 +614,12 @@ impl Domain {
     /// Convenience method.
     pub fn unicode_name(&self) -> Option<&str> {
         self.unicode_name.as_deref()
+    }
+}
+
+impl ToResponse for Domain {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Domain(self)
     }
 }
 
