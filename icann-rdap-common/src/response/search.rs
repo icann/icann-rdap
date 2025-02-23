@@ -4,6 +4,7 @@ use crate::prelude::Extension;
 use serde::{Deserialize, Serialize};
 
 use super::CommonFields;
+use super::ToResponse;
 use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
 
 /// Represents RDAP domain search results.
@@ -31,6 +32,12 @@ impl DomainSearchResults {
 impl CommonFields for DomainSearchResults {
     fn common(&self) -> &Common {
         &self.common
+    }
+}
+
+impl ToResponse for DomainSearchResults {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::DomainSearchResults(self)
     }
 }
 
@@ -62,6 +69,12 @@ impl CommonFields for NameserverSearchResults {
     }
 }
 
+impl ToResponse for NameserverSearchResults {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::NameserverSearchResults(self)
+    }
+}
+
 /// Represents RDAP entity search results.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct EntitySearchResults {
@@ -87,5 +100,11 @@ impl EntitySearchResults {
 impl CommonFields for EntitySearchResults {
     fn common(&self) -> &Common {
         &self.common
+    }
+}
+
+impl ToResponse for EntitySearchResults {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::EntitySearchResults(self)
     }
 }
