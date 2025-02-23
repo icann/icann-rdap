@@ -172,7 +172,7 @@ impl TxHandle for MemTx {
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
         self.autnums.insert(
             (start_num)..=(end_num),
-            Arc::new(RdapResponse::Autnum(autnum.clone())),
+            Arc::new(autnum.clone().to_response()),
         );
         Ok(())
     }

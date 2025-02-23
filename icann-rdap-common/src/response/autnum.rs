@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::CommonFields;
 use super::Numberish;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::{
     to_opt_vec, types::Link, Entity, Event, GetSelfLink, Notice, Port43, Remark, SelfLink, ToChild,
 };
@@ -148,6 +149,12 @@ impl Autnum {
     /// Returns the country of the ASN.
     pub fn country(&self) -> Option<&str> {
         self.country.as_deref()
+    }
+}
+
+impl ToResponse for Autnum {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Autnum(self)
     }
 }
 

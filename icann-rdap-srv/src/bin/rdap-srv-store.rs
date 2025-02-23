@@ -235,7 +235,7 @@ fn verify_rdap_template(
                             let mut autnum = autnum.clone();
                             autnum.start_autnum = Some(Numberish::<u32>::from(id.start_autnum));
                             autnum.end_autnum = Some(Numberish::<u32>::from(id.end_autnum));
-                            errors_found |= check_rdap(RdapResponse::Autnum(autnum), check_types);
+                            errors_found |= check_rdap(autnum.to_response(), check_types);
                         }
                         AutnumOrError::ErrorResponse(error) => {
                             errors_found |=

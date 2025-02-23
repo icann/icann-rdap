@@ -11,6 +11,7 @@ use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
 use icann_rdap_common::prelude::RdapResponse;
 use icann_rdap_common::prelude::ToNotices;
 use icann_rdap_common::prelude::ToRemarks;
+use icann_rdap_common::prelude::ToResponse;
 use icann_rdap_common::prelude::VectorStringish;
 use icann_rdap_common::response::Autnum;
 use icann_rdap_common::response::Domain;
@@ -1061,7 +1062,7 @@ async fn make_autnum(
             .expect("autnum create with no end"),
     });
     let output = Output {
-        rdap: RdapResponse::Autnum(autnum),
+        rdap: autnum.to_response(),
         id,
         self_href,
     };
