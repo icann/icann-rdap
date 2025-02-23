@@ -185,8 +185,7 @@ fn verify_rdap_template(
                             errors_found |= check_rdap(RdapResponse::Domain(domain), check_types);
                         }
                         DomainOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -201,8 +200,7 @@ fn verify_rdap_template(
                             errors_found |= check_rdap(entity.to_response(), check_types);
                         }
                         EntityOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -221,8 +219,7 @@ fn verify_rdap_template(
                                 check_rdap(RdapResponse::Nameserver(nameserver), check_types);
                         }
                         NameserverOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -238,8 +235,7 @@ fn verify_rdap_template(
                             errors_found |= check_rdap(autnum.to_response(), check_types);
                         }
                         AutnumOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -280,8 +276,7 @@ fn verify_rdap_template(
                             errors_found |= check_rdap(RdapResponse::Network(network), check_types);
                         }
                         NetworkOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }

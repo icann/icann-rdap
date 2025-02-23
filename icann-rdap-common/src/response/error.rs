@@ -6,7 +6,7 @@ use crate::media_types::RDAP_MEDIA_TYPE;
 
 use super::{
     types::{Link, Notice, NoticeOrRemark},
-    Common, CommonFields,
+    Common, CommonFields, ToResponse,
 };
 
 /// Represents an error response from an RDAP server.
@@ -77,6 +77,12 @@ impl Rfc9083Error {
 impl CommonFields for Rfc9083Error {
     fn common(&self) -> &Common {
         &self.common
+    }
+}
+
+impl ToResponse for Rfc9083Error {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::ErrorResponse(self)
     }
 }
 

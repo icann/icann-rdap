@@ -94,7 +94,7 @@ impl TxHandle for MemTx {
     ) -> Result<(), RdapServerError> {
         self.entities.insert(
             entity_id.handle.to_owned(),
-            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+            Arc::new(error.clone().to_response()),
         );
         Ok(())
     }
@@ -130,7 +130,7 @@ impl TxHandle for MemTx {
     ) -> Result<(), RdapServerError> {
         self.domains.insert(
             domain_id.ldh_name.to_owned(),
-            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+            Arc::new(error.clone().to_response()),
         );
         Ok(())
     }
@@ -154,7 +154,7 @@ impl TxHandle for MemTx {
     ) -> Result<(), RdapServerError> {
         self.nameservers.insert(
             nameserver_id.ldh_name.to_owned(),
-            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+            Arc::new(error.clone().to_response()),
         );
         Ok(())
     }
@@ -184,7 +184,7 @@ impl TxHandle for MemTx {
     ) -> Result<(), RdapServerError> {
         self.autnums.insert(
             (autnum_id.start_autnum)..=(autnum_id.end_autnum),
-            Arc::new(RdapResponse::ErrorResponse(error.clone())),
+            Arc::new(error.clone().to_response()),
         );
         Ok(())
     }
@@ -258,14 +258,12 @@ impl TxHandle for MemTx {
         match subnets {
             IpSubnets::V4(subnets) => {
                 for net in subnets {
-                    self.ip4
-                        .insert(net, Arc::new(RdapResponse::ErrorResponse(error.clone())));
+                    self.ip4.insert(net, Arc::new(error.clone().to_response()));
                 }
             }
             IpSubnets::V6(subnets) => {
                 for net in subnets {
-                    self.ip6
-                        .insert(net, Arc::new(RdapResponse::ErrorResponse(error.clone())));
+                    self.ip6.insert(net, Arc::new(error.clone().to_response()));
                 }
             }
         }

@@ -5,18 +5,25 @@ use axum::{
 use http::StatusCode;
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
+    prelude::ToResponse,
     response::{RdapResponse, Rfc9083Error},
 };
 use lazy_static::lazy_static;
 use tracing::warn;
 
 lazy_static! {
-    pub static ref NOT_FOUND: RdapResponse =
-        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(404).build());
-    pub static ref NOT_IMPLEMENTED: RdapResponse =
-        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(501).build());
-    pub static ref BAD_REQUEST: RdapResponse =
-        RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(400).build());
+    pub static ref NOT_FOUND: RdapResponse = Rfc9083Error::builder()
+        .error_code(404)
+        .build()
+        .to_response();
+    pub static ref NOT_IMPLEMENTED: RdapResponse = Rfc9083Error::builder()
+        .error_code(501)
+        .build()
+        .to_response();
+    pub static ref BAD_REQUEST: RdapResponse = Rfc9083Error::builder()
+        .error_code(400)
+        .build()
+        .to_response();
 }
 
 pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];
@@ -79,8 +86,9 @@ mod tests {
 
     use axum::response::IntoResponse;
     use http::StatusCode;
-    use icann_rdap_common::response::{
-        Domain, RdapResponse, Rfc9083Error, {Link, Notice, NoticeOrRemark},
+    use icann_rdap_common::{
+        prelude::ToResponse,
+        response::{Domain, Link, Notice, NoticeOrRemark, RdapResponse, Rfc9083Error},
     };
 
     use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};
@@ -122,20 +130,19 @@ mod tests {
     #[test]
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
-        let given = RdapResponse::ErrorResponse(
-            Rfc9083Error::builder()
-                .error_code(307)
-                .notice(Notice(
-                    NoticeOrRemark::builder()
-                        .links(vec![Link::builder()
-                            .href("https://other.example.com")
-                            .value("https://other.example.com")
-                            .rel("related")
-                            .build()])
-                        .build(),
-                ))
-                .build(),
-        );
+        let given = Rfc9083Error::builder()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("related")
+                        .build()])
+                    .build(),
+            ))
+            .build()
+            .to_response();
 
         // WHEN
         let actual = given.first_notice_link_href();

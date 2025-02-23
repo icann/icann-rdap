@@ -7,7 +7,10 @@ use axum::{
 use envmnt::errors::EnvmntError;
 use http::StatusCode;
 use icann_rdap_client::{iana::IanaResponseError, RdapClientError};
-use icann_rdap_common::response::{RdapResponse, RdapResponseError, Rfc9083Error};
+use icann_rdap_common::{
+    prelude::ToResponse,
+    response::{RdapResponseError, Rfc9083Error},
+};
 use ipnet::PrefixLenError;
 use thiserror::Error;
 
@@ -62,7 +65,10 @@ pub enum RdapServerError {
 
 impl IntoResponse for RdapServerError {
     fn into_response(self) -> Response {
-        let response = RdapResponse::ErrorResponse(Rfc9083Error::builder().error_code(500).build());
+        let response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             [("content-type", r#"application/rdap"#)],
