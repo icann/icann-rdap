@@ -1,7 +1,12 @@
 use std::{net::IpAddr, path::PathBuf};
 
 use clap::Parser;
-use icann_rdap_common::{check::CheckClass, prelude::Numberish, response::RdapResponse, VERSION};
+use icann_rdap_common::{
+    check::CheckClass,
+    prelude::{Numberish, ToResponse},
+    response::RdapResponse,
+    VERSION,
+};
 use icann_rdap_srv::{
     config::{data_dir, debug_config_vars, LOG},
     error::RdapServerError,
@@ -193,7 +198,7 @@ fn verify_rdap_template(
                         EntityOrError::EntityObject(entity) => {
                             let mut entity = entity.clone();
                             entity.object_common.handle = Some(id.handle);
-                            errors_found |= check_rdap(RdapResponse::Entity(entity), check_types);
+                            errors_found |= check_rdap(entity.to_response(), check_types);
                         }
                         EntityOrError::ErrorResponse(error) => {
                             errors_found |=

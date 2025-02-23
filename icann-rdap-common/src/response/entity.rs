@@ -11,6 +11,7 @@ use strum_macros::{Display, EnumString};
 use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::VectorStringish;
 use super::EMPTY_VEC_STRING;
 use super::{
@@ -220,6 +221,12 @@ impl Entity {
     /// Convenience method to get the networks.
     pub fn networks(&self) -> &Vec<Network> {
         self.networks.as_ref().unwrap_or(&EMPTY_NETWORKS)
+    }
+}
+
+impl ToResponse for Entity {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Entity(self)
     }
 }
 

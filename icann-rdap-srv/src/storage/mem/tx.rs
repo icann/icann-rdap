@@ -2,8 +2,9 @@ use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
 use async_trait::async_trait;
 use btree_range_map::RangeMap;
-use icann_rdap_common::response::{
-    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error,
+use icann_rdap_common::{
+    prelude::ToResponse,
+    response::{Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error},
 };
 use ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
 use prefix_trie::PrefixMap;
@@ -81,10 +82,8 @@ impl TxHandle for MemTx {
             .handle
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
-        self.entities.insert(
-            handle.to_owned(),
-            Arc::new(RdapResponse::Entity(entity.clone())),
-        );
+        self.entities
+            .insert(handle.to_owned(), Arc::new(entity.clone().to_response()));
         Ok(())
     }
 
