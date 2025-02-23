@@ -180,10 +180,8 @@ mod tests {
 
     use rstest::rstest;
 
-    use crate::prelude::Numberish;
+    use crate::prelude::{Numberish, ToResponse};
     use crate::response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr};
-
-    use crate::response::RdapResponse;
 
     use crate::check::{Check, CheckParams, GetChecks};
 
@@ -195,7 +193,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.name = Some("".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -216,7 +214,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.network_type = Some("".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -237,7 +235,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.start_address = None;
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -258,7 +256,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.end_address = None;
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -279,7 +277,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.start_address = Some("____".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -300,7 +298,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.end_address = Some("___".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -323,7 +321,7 @@ mod tests {
         let swap = network.end_address.clone();
         network.end_address = network.start_address.clone();
         network.start_address = swap;
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -346,7 +344,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.ip_version = Some(version.to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -371,7 +369,7 @@ mod tests {
             .build()
             .expect("invalid ip cidr");
         network.ip_version = Some(version.to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -393,7 +391,7 @@ mod tests {
                 length: Some(Numberish::<u8>::from(0)),
             })])
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -417,7 +415,7 @@ mod tests {
                 length: Some(Numberish::<u8>::from(0)),
             })])
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -441,7 +439,7 @@ mod tests {
                 length: None,
             })])
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -465,7 +463,7 @@ mod tests {
                 length: None,
             })])
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
