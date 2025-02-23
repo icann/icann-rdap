@@ -279,7 +279,7 @@ impl TxHandle for MemTx {
     ) -> Result<(), RdapServerError> {
         let host = host.unwrap_or("..default");
         self.srvhelps
-            .insert(host.to_string(), Arc::new(RdapResponse::Help(help.clone())));
+            .insert(host.to_string(), Arc::new(help.clone().to_response()));
         Ok(())
     }
 

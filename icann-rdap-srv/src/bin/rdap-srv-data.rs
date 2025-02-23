@@ -1118,7 +1118,7 @@ async fn make_network(
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
     let help = Help::builder().notices(args.notice.to_notices()).build();
     let output = Output {
-        rdap: RdapResponse::Help(help),
+        rdap: help.to_response(),
         id: RdapId::Help,
         self_href: args.host.unwrap_or("__default".to_string()),
     };
