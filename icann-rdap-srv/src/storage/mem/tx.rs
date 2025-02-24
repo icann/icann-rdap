@@ -100,7 +100,7 @@ impl TxHandle for MemTx {
     }
 
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
-        let domain_response = Arc::new(RdapResponse::Domain(domain.clone()));
+        let domain_response = Arc::new(domain.clone().to_response());
 
         // add the domain as LDH, which is required.
         let ldh_name = domain
@@ -142,7 +142,7 @@ impl TxHandle for MemTx {
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
         self.nameservers.insert(
             ldh_name.to_owned(),
-            Arc::new(RdapResponse::Nameserver(nameserver.clone())),
+            Arc::new(nameserver.clone().to_response()),
         );
         Ok(())
     }
@@ -207,13 +207,13 @@ impl TxHandle for MemTx {
             let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
                 self.ip4
-                    .insert(net, Arc::new(RdapResponse::Network(network.clone())));
+                    .insert(net, Arc::new(network.clone().to_response()));
             }
         } else {
             let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
                 self.ip6
-                    .insert(net, Arc::new(RdapResponse::Network(network.clone())));
+                    .insert(net, Arc::new(network.clone().to_response()));
             }
         };
         Ok(())

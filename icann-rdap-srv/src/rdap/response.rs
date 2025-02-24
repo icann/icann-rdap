@@ -88,7 +88,7 @@ mod tests {
     use http::StatusCode;
     use icann_rdap_common::{
         prelude::ToResponse,
-        response::{Domain, Link, Notice, NoticeOrRemark, RdapResponse, Rfc9083Error},
+        response::{Domain, Link, Notice, NoticeOrRemark, Rfc9083Error},
     };
 
     use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};
@@ -96,7 +96,10 @@ mod tests {
     #[test]
     fn GIVEN_non_error_WHEN_exec_response_THEN_status_code_is_200() {
         // GIVEN
-        let domain = RdapResponse::Domain(Domain::builder().ldh_name("foo.example").build());
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .build()
+            .to_response();
 
         // WHEN
         let actual = domain.response();

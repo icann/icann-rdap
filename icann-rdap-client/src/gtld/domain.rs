@@ -197,8 +197,9 @@ mod tests {
     use crate::gtld::ToGtldWhois;
 
     use super::GtldParams;
+    use icann_rdap_common::prelude::ToResponse;
     use icann_rdap_common::response::Domain;
-    use icann_rdap_common::response::RdapResponse;
+
     use serde_json::Value;
     use std::any::TypeId;
     use std::error::Error;
@@ -215,7 +216,7 @@ mod tests {
         let actual = serde_json::from_value::<Domain>(toplevel_json_response);
         let gtld_version_of_the_domain = match actual {
             Ok(domain) => {
-                let rdap_response = RdapResponse::Domain(Domain::builder().ldh_name("").build());
+                let rdap_response = Domain::builder().ldh_name("").build().to_response();
                 let mut gtld_params = GtldParams {
                     root: &rdap_response,
                     parent_type: TypeId::of::<Domain>(),

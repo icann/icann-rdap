@@ -426,7 +426,10 @@ fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{Domain, Extension, RdapResponse};
+    use icann_rdap_common::{
+        prelude::ToResponse,
+        response::{Domain, Extension},
+    };
 
     use super::rdap_has_expected_extension;
 
@@ -437,7 +440,7 @@ mod tests {
             .extension(Extension::from("foo0"))
             .ldh_name("foo.example.com")
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = rdap_has_expected_extension(&rdap, "foo0");
@@ -453,7 +456,7 @@ mod tests {
             .extension(Extension::from("foo0"))
             .ldh_name("foo.example.com")
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = rdap_has_expected_extension(&rdap, "foo1");
@@ -469,7 +472,7 @@ mod tests {
             .extension(Extension::from("foo0"))
             .ldh_name("foo.example.com")
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = rdap_has_expected_extension(&rdap, "foo0|foo1");

@@ -182,7 +182,7 @@ fn verify_rdap_template(
                             if let Some(unicode_name) = id.unicode_name {
                                 domain.unicode_name = Some(unicode_name);
                             };
-                            errors_found |= check_rdap(RdapResponse::Domain(domain), check_types);
+                            errors_found |= check_rdap(domain.to_response(), check_types);
                         }
                         DomainOrError::ErrorResponse(error) => {
                             errors_found |= check_rdap(error.clone().to_response(), check_types);
@@ -215,8 +215,7 @@ fn verify_rdap_template(
                             if let Some(unicode_name) = id.unicode_name {
                                 nameserver.unicode_name = Some(unicode_name);
                             };
-                            errors_found |=
-                                check_rdap(RdapResponse::Nameserver(nameserver), check_types);
+                            errors_found |= check_rdap(nameserver.to_response(), check_types);
                         }
                         NameserverOrError::ErrorResponse(error) => {
                             errors_found |= check_rdap(error.clone().to_response(), check_types);
@@ -273,7 +272,7 @@ fn verify_rdap_template(
                                     network.end_address = Some(end_address);
                                 }
                             }
-                            errors_found |= check_rdap(RdapResponse::Network(network), check_types);
+                            errors_found |= check_rdap(network.to_response(), check_types);
                         }
                         NetworkOrError::ErrorResponse(error) => {
                             errors_found |= check_rdap(error.clone().to_response(), check_types);

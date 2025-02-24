@@ -917,7 +917,7 @@ async fn make_entity(
             .expect("entity created without a handle"),
     });
     let output = Output {
-        rdap: RdapResponse::Entity(entity),
+        rdap: entity.to_response(),
         id,
         self_href,
     };
@@ -952,7 +952,7 @@ async fn make_nameserver(
         unicode_name: ns.unicode_name.clone(),
     });
     let output = Output {
-        rdap: RdapResponse::Nameserver(ns),
+        rdap: ns.to_response(),
         id,
         self_href,
     };
@@ -1021,7 +1021,7 @@ async fn make_domain(
         unicode_name: domain.unicode_name.clone(),
     });
     let output = Output {
-        rdap: RdapResponse::Domain(domain),
+        rdap: domain.to_response(),
         id,
         self_href,
     };
@@ -1108,7 +1108,7 @@ async fn make_network(
         },
     });
     let output = Output {
-        rdap: RdapResponse::Network(network),
+        rdap: network.to_response(),
         id,
         self_href,
     };
