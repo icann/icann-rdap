@@ -152,11 +152,11 @@ impl TryFrom<Value> for RdapResponse {
         if let Some(class_name) = response.get("objectClassName") {
             if let Some(name_str) = class_name.as_str() {
                 return match name_str {
-                    "domain" => Ok(RdapResponse::Domain(serde_json::from_value(value)?)),
-                    "entity" => Ok(RdapResponse::Entity(serde_json::from_value(value)?)),
-                    "nameserver" => Ok(RdapResponse::Nameserver(serde_json::from_value(value)?)),
-                    "autnum" => Ok(RdapResponse::Autnum(serde_json::from_value(value)?)),
-                    "ip network" => Ok(RdapResponse::Network(serde_json::from_value(value)?)),
+                    "domain" => Ok(serde_json::from_value::<Domain>(value)?.to_response()),
+                    "entity" => Ok(serde_json::from_value::<Entity>(value)?.to_response()),
+                    "nameserver" => Ok(serde_json::from_value::<Nameserver>(value)?.to_response()),
+                    "autnum" => Ok(serde_json::from_value::<Autnum>(value)?.to_response()),
+                    "ip network" => Ok(serde_json::from_value::<Network>(value)?.to_response()),
                     _ => Err(RdapResponseError::UnknownRdapResponse),
                 };
             } else {
@@ -169,9 +169,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a domain search result
         if let Some(result) = response.get("domainSearchResults") {
             if result.is_array() {
-                return Ok(RdapResponse::DomainSearchResults(serde_json::from_value(
-                    value,
-                )?));
+                return Ok(serde_json::from_value::<DomainSearchResults>(value)?.to_response());
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'domainSearchResults' is not an array".to_string(),
@@ -181,9 +179,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a entity search result
         if let Some(result) = response.get("entitySearchResults") {
             if result.is_array() {
-                return Ok(RdapResponse::EntitySearchResults(serde_json::from_value(
-                    value,
-                )?));
+                return Ok(serde_json::from_value::<EntitySearchResults>(value)?.to_response());
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'entitySearchResults' is not an array".to_string(),
@@ -193,9 +189,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a nameserver search result
         if let Some(result) = response.get("nameserverSearchResults") {
             if result.is_array() {
-                return Ok(RdapResponse::NameserverSearchResults(
-                    serde_json::from_value(value)?,
-                ));
+                return Ok(serde_json::from_value::<NameserverSearchResults>(value)?.to_response());
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'nameserverSearchResults' is not an array".to_string(),
@@ -206,7 +200,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it has an errorCode
         if let Some(result) = response.get("errorCode") {
             if result.is_u64() {
-                return Ok(RdapResponse::ErrorResponse(serde_json::from_value(value)?));
+                return Ok(serde_json::from_value::<Rfc9083Error>(value)?.to_response());
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'errorCode' is not an unsigned integer".to_string(),
@@ -217,7 +211,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it has a notices then it is help response at this point
         if let Some(result) = response.get("notices") {
             if result.is_array() {
-                return Ok(RdapResponse::Help(serde_json::from_value(value)?));
+                return Ok(serde_json::from_value::<Help>(value)?.to_response());
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'notices' is not an array".to_string(),
