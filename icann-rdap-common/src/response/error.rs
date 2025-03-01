@@ -82,7 +82,7 @@ impl CommonFields for Rfc9083Error {
 
 impl ToResponse for Rfc9083Error {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::ErrorResponse(self)
+        super::RdapResponse::ErrorResponse(Box::new(self))
     }
 }
 

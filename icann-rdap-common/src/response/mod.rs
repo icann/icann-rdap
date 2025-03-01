@@ -130,7 +130,7 @@ pub enum RdapResponse {
     NameserverSearchResults(Box<NameserverSearchResults>),
 
     // Error
-    ErrorResponse(Rfc9083Error),
+    ErrorResponse(Box<Rfc9083Error>),
 
     // Help
     Help(Help),
