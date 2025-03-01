@@ -705,7 +705,7 @@ fn create_template_file(
                 panic!("non domain created with domain id")
             };
             Template::Domain {
-                domain: DomainOrError::DomainObject(domain.clone()),
+                domain: DomainOrError::DomainObject(*domain.clone()),
                 ids: vec![id.clone()],
             }
         }

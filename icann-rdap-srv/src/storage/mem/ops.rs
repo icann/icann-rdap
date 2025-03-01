@@ -186,7 +186,7 @@ impl StoreOps for Mem {
             .into_iter()
             .map(Arc::<RdapResponse>::unwrap_or_clone)
             .filter_map(|d| match d {
-                RdapResponse::Domain(d) => Some(d),
+                RdapResponse::Domain(d) => Some(*d),
                 _ => None,
             })
             .collect::<Vec<Domain>>();

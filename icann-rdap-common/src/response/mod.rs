@@ -119,7 +119,7 @@ pub enum RdapResponseError {
 pub enum RdapResponse {
     // Object Classes
     Entity(Entity),
-    Domain(Domain),
+    Domain(Box<Domain>),
     Nameserver(Nameserver),
     Autnum(Autnum),
     Network(Network),

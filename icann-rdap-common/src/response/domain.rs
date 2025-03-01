@@ -619,7 +619,7 @@ impl Domain {
 
 impl ToResponse for Domain {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::Domain(self)
+        super::RdapResponse::Domain(Box::new(self))
     }
 }
 
