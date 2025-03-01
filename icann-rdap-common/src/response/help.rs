@@ -37,6 +37,6 @@ impl CommonFields for Help {
 
 impl ToResponse for Help {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::Help(self)
+        super::RdapResponse::Help(Box::new(self))
     }
 }
