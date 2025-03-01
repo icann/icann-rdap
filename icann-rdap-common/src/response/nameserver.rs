@@ -235,7 +235,7 @@ impl Nameserver {
 
 impl ToResponse for Nameserver {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::Nameserver(self)
+        super::RdapResponse::Nameserver(Box::new(self))
     }
 }
 

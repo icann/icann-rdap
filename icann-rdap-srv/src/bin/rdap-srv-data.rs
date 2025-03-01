@@ -714,7 +714,7 @@ fn create_template_file(
                 panic!("non nameserver created with nameserver id")
             };
             Template::Nameserver {
-                nameserver: NameserverOrError::NameserverObject(nameserver.clone()),
+                nameserver: NameserverOrError::NameserverObject(*nameserver.clone()),
                 ids: vec![id.clone()],
             }
         }

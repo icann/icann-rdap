@@ -120,7 +120,7 @@ pub enum RdapResponse {
     // Object Classes
     Entity(Box<Entity>),
     Domain(Box<Domain>),
-    Nameserver(Nameserver),
+    Nameserver(Box<Nameserver>),
     Autnum(Autnum),
     Network(Network),
 
