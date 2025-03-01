@@ -171,12 +171,12 @@ pub(crate) struct WrappedResponse {
 }
 
 pub(crate) async fn wrapped_request(
-    url: &str,
+    request_uri: &str,
     client: &Client,
 ) -> Result<WrappedResponse, ReqwestError> {
     // send request and loop for possible retries
     #[allow(unused_mut)] //because of wasm32 exclusion below
-    let mut response = client.reqwest_client.get(url).send().await?;
+    let mut response = client.reqwest_client.get(request_uri).send().await?;
 
     // this doesn't work on wasm32 because tokio doesn't work on wasm
     #[cfg(not(target_arch = "wasm32"))]
@@ -228,7 +228,7 @@ pub(crate) async fn wrapped_request(
                     break;
                 } else {
                     // send the query again
-                    response = client.reqwest_client.get(url).send().await?;
+                    response = client.reqwest_client.get(request_uri).send().await?;
                 }
 
             // else don't repeat the request
@@ -291,6 +291,7 @@ pub(crate) async fn wrapped_request(
         .and_access_control_allow_origin(access_control_allow_origin)
         .and_strict_transport_security(strict_transport_security)
         .and_retry_after(retry_after)
+        .request_uri(request_uri)
         .build();
 
     Ok(WrappedResponse { http_data, text })

@@ -19,6 +19,7 @@ pub struct HttpData {
     pub access_control_allow_credentials: Option<String>,
     pub strict_transport_security: Option<String>,
     pub retry_after: Option<String>,
+    pub request_uri: Option<String>,
 }
 
 #[buildstructor::buildstructor]
@@ -39,6 +40,7 @@ impl HttpData {
         strict_transport_security: Option<String>,
         retry_after: Option<String>,
         received: DateTime<Utc>,
+        request_uri: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -54,6 +56,7 @@ impl HttpData {
             access_control_allow_credentials,
             strict_transport_security,
             retry_after,
+            request_uri,
         }
     }
 
@@ -72,6 +75,7 @@ impl HttpData {
         access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
         retry_after: Option<String>,
+        request_uri: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -87,6 +91,7 @@ impl HttpData {
             access_control_allow_credentials,
             strict_transport_security,
             retry_after,
+            request_uri,
         }
     }
 
@@ -103,6 +108,7 @@ impl HttpData {
         access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
         retry_after: Option<String>,
+        request_uri: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -118,6 +124,7 @@ impl HttpData {
             access_control_allow_credentials,
             strict_transport_security,
             retry_after,
+            request_uri,
         }
     }
 

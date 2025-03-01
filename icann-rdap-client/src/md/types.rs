@@ -206,15 +206,17 @@ impl ToMd for Common {
 }
 
 const RECEIVED: &str = "Received";
+const REQUEST_URI: &str = "Request URI";
 
 lazy_static! {
-    pub static ref NAMES: [String; 6] = [
+    pub static ref NAMES: [String; 7] = [
         HOST.to_string(),
         reqwest::header::EXPIRES.to_string(),
         reqwest::header::CACHE_CONTROL.to_string(),
         reqwest::header::STRICT_TRANSPORT_SECURITY.to_string(),
         reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
-        RECEIVED.to_string()
+        RECEIVED.to_string(),
+        REQUEST_URI.to_string()
     ];
     pub static ref NAME_LEN: usize = NAMES
         .iter()
@@ -226,6 +228,9 @@ impl ToMd for HttpData {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = HR.to_string();
         md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, &self.host));
+        if let Some(request_uri) = &self.request_uri {
+            md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", REQUEST_URI, request_uri));
+        }
         if let Some(content_length) = &self.content_length {
             md.push_str(&format!(
                 " * {:<NAME_LEN$}: {}\n",
