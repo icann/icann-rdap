@@ -696,7 +696,7 @@ fn create_template_file(
                 panic!("non entity created with entity id")
             };
             Template::Entity {
-                entity: EntityOrError::EntityObject(entity.clone()),
+                entity: EntityOrError::EntityObject(*entity.clone()),
                 ids: vec![id.clone()],
             }
         }

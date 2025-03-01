@@ -226,7 +226,7 @@ impl Entity {
 
 impl ToResponse for Entity {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::Entity(self)
+        super::RdapResponse::Entity(Box::new(self))
     }
 }
 

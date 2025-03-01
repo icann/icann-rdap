@@ -118,7 +118,7 @@ pub enum RdapResponseError {
 #[serde(untagged, try_from = "Value")]
 pub enum RdapResponse {
     // Object Classes
-    Entity(Entity),
+    Entity(Box<Entity>),
     Domain(Box<Domain>),
     Nameserver(Nameserver),
     Autnum(Autnum),
