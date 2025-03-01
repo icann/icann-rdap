@@ -127,7 +127,7 @@ pub enum RdapResponse {
     // Search Results
     DomainSearchResults(Box<DomainSearchResults>),
     EntitySearchResults(Box<EntitySearchResults>),
-    NameserverSearchResults(NameserverSearchResults),
+    NameserverSearchResults(Box<NameserverSearchResults>),
 
     // Error
     ErrorResponse(Rfc9083Error),

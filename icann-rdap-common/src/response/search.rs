@@ -71,7 +71,7 @@ impl CommonFields for NameserverSearchResults {
 
 impl ToResponse for NameserverSearchResults {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::NameserverSearchResults(self)
+        super::RdapResponse::NameserverSearchResults(Box::new(self))
     }
 }
 
