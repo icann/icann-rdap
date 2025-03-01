@@ -732,7 +732,7 @@ fn create_template_file(
                 panic!("non network created with network id")
             };
             Template::Network {
-                network: NetworkOrError::NetworkObject(network.clone()),
+                network: NetworkOrError::NetworkObject(*network.clone()),
                 ids: vec![id.clone()],
             }
         }

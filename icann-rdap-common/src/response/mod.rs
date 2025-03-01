@@ -122,7 +122,7 @@ pub enum RdapResponse {
     Domain(Box<Domain>),
     Nameserver(Box<Nameserver>),
     Autnum(Box<Autnum>),
-    Network(Network),
+    Network(Box<Network>),
 
     // Search Results
     DomainSearchResults(DomainSearchResults),

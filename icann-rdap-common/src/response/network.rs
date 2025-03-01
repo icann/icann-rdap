@@ -350,7 +350,7 @@ impl Network {
 
 impl ToResponse for Network {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::Network(self)
+        super::RdapResponse::Network(Box::new(self))
     }
 }
 
