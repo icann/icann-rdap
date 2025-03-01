@@ -126,7 +126,7 @@ pub enum RdapResponse {
 
     // Search Results
     DomainSearchResults(Box<DomainSearchResults>),
-    EntitySearchResults(EntitySearchResults),
+    EntitySearchResults(Box<EntitySearchResults>),
     NameserverSearchResults(NameserverSearchResults),
 
     // Error

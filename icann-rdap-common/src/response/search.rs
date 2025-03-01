@@ -105,6 +105,6 @@ impl CommonFields for EntitySearchResults {
 
 impl ToResponse for EntitySearchResults {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::EntitySearchResults(self)
+        super::RdapResponse::EntitySearchResults(Box::new(self))
     }
 }
