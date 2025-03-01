@@ -107,7 +107,7 @@ fn make_entity_template(
         })
         .collect();
     let template = Template::Entity {
-        entity: EntityOrError::EntityObject(entity),
+        entity: EntityOrError::EntityObject(Box::new(entity)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -127,7 +127,7 @@ fn make_nameserver_template(
         })
         .collect();
     let template = Template::Nameserver {
-        nameserver: NameserverOrError::NameserverObject(nameserver),
+        nameserver: NameserverOrError::NameserverObject(Box::new(nameserver)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -177,7 +177,7 @@ fn make_domain_template(
         })
         .collect();
     let template = Template::Domain {
-        domain: DomainOrError::DomainObject(domain),
+        domain: DomainOrError::DomainObject(Box::new(domain)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -221,7 +221,7 @@ fn make_autnum_template(
         .map(|x| AutnumId::builder().start_autnum(x).end_autnum(x).build())
         .collect();
     let template = Template::Autnum {
-        autnum: AutnumOrError::AutnumObject(autnum),
+        autnum: AutnumOrError::AutnumObject(Box::new(autnum)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -243,7 +243,7 @@ fn make_netv4_template(
         })
         .collect();
     let template = Template::Network {
-        network: NetworkOrError::NetworkObject(network),
+        network: NetworkOrError::NetworkObject(Box::new(network)),
         ids,
     };
     save_template(data_dir, base_url, template, Some("v4"))
@@ -269,7 +269,7 @@ fn make_netv6_template(
     })
     .collect();
     let template = Template::Network {
-        network: NetworkOrError::NetworkObject(network),
+        network: NetworkOrError::NetworkObject(Box::new(network)),
         ids,
     };
     save_template(data_dir, base_url, template, Some("v6"))

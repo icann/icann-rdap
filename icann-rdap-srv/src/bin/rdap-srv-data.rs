@@ -696,7 +696,7 @@ fn create_template_file(
                 panic!("non entity created with entity id")
             };
             Template::Entity {
-                entity: EntityOrError::EntityObject(*entity.clone()),
+                entity: EntityOrError::EntityObject(Box::new(*entity.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -705,7 +705,7 @@ fn create_template_file(
                 panic!("non domain created with domain id")
             };
             Template::Domain {
-                domain: DomainOrError::DomainObject(*domain.clone()),
+                domain: DomainOrError::DomainObject(Box::new(*domain.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -714,7 +714,7 @@ fn create_template_file(
                 panic!("non nameserver created with nameserver id")
             };
             Template::Nameserver {
-                nameserver: NameserverOrError::NameserverObject(*nameserver.clone()),
+                nameserver: NameserverOrError::NameserverObject(Box::new(*nameserver.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -723,7 +723,7 @@ fn create_template_file(
                 panic!("non autnum created with autnum id")
             };
             Template::Autnum {
-                autnum: AutnumOrError::AutnumObject(*autnum.clone()),
+                autnum: AutnumOrError::AutnumObject(Box::new(*autnum.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -732,7 +732,7 @@ fn create_template_file(
                 panic!("non network created with network id")
             };
             Template::Network {
-                network: NetworkOrError::NetworkObject(*network.clone()),
+                network: NetworkOrError::NetworkObject(Box::new(*network.clone())),
                 ids: vec![id.clone()],
             }
         }

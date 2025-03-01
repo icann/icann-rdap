@@ -56,7 +56,7 @@ pub enum Template {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum DomainOrError {
     #[serde(rename = "object")]
-    DomainObject(Domain),
+    DomainObject(Box<Domain>),
     #[serde(rename = "error")]
     ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
@@ -64,7 +64,7 @@ pub enum DomainOrError {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum EntityOrError {
     #[serde(rename = "object")]
-    EntityObject(Entity),
+    EntityObject(Box<Entity>),
     #[serde(rename = "error")]
     ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
@@ -72,7 +72,7 @@ pub enum EntityOrError {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum NameserverOrError {
     #[serde(rename = "object")]
-    NameserverObject(Nameserver),
+    NameserverObject(Box<Nameserver>),
     #[serde(rename = "error")]
     ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
@@ -80,7 +80,7 @@ pub enum NameserverOrError {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum AutnumOrError {
     #[serde(rename = "object")]
-    AutnumObject(Autnum),
+    AutnumObject(Box<Autnum>),
     #[serde(rename = "error")]
     ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
@@ -88,7 +88,7 @@ pub enum AutnumOrError {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum NetworkOrError {
     #[serde(rename = "object")]
-    NetworkObject(Network),
+    NetworkObject(Box<Network>),
     #[serde(rename = "error")]
     ErrorResponse(icann_rdap_common::response::Rfc9083Error),
 }
@@ -569,7 +569,9 @@ mod tests {
     fn GIVEN_template_domain_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Domain {
-            domain: DomainOrError::DomainObject(Domain::builder().ldh_name("foo.example").build()),
+            domain: DomainOrError::DomainObject(Box::new(
+                Domain::builder().ldh_name("foo.example").build(),
+            )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
 
@@ -593,7 +595,9 @@ mod tests {
 
         // THEN
         let expected = Template::Domain {
-            domain: DomainOrError::DomainObject(Domain::builder().ldh_name("foo.example").build()),
+            domain: DomainOrError::DomainObject(Box::new(
+                Domain::builder().ldh_name("foo.example").build(),
+            )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
         assert_eq!(actual, expected);
@@ -603,12 +607,12 @@ mod tests {
     fn GIVEN_template_network_with_cidr_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Network {
-            network: NetworkOrError::NetworkObject(
+            network: NetworkOrError::NetworkObject(Box::new(
                 Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
-            ),
+            )),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(
                     "10.0.0.0/24".parse().expect("ipnet parsing"),
@@ -645,12 +649,12 @@ mod tests {
     fn GIVEN_template_network_with_start_and_end_WHEN_serialize_THEN_success() {
         // GIVEN
         let template = Template::Network {
-            network: NetworkOrError::NetworkObject(
+            network: NetworkOrError::NetworkObject(Box::new(
                 Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
-            ),
+            )),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Range {
                     start_address: "10.0.0.0".to_string(),
@@ -713,12 +717,12 @@ mod tests {
 
         // THEN
         let expected = Template::Network {
-            network: NetworkOrError::NetworkObject(
+            network: NetworkOrError::NetworkObject(Box::new(
                 Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
-            ),
+            )),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Cidr(
                     "10.0.0.0/24".parse().expect("ipnet parsing"),
@@ -757,12 +761,12 @@ mod tests {
 
         // THEN
         let expected = Template::Network {
-            network: NetworkOrError::NetworkObject(
+            network: NetworkOrError::NetworkObject(Box::new(
                 Network::builder()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
-            ),
+            )),
             ids: vec![NetworkId::builder()
                 .network_id(NetworkIdType::Range {
                     start_address: "10.0.0.0".to_string(),
