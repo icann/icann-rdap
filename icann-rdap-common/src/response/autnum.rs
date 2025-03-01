@@ -154,7 +154,7 @@ impl Autnum {
 
 impl ToResponse for Autnum {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::Autnum(self)
+        super::RdapResponse::Autnum(Box::new(self))
     }
 }
 

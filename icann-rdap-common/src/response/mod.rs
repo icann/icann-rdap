@@ -121,7 +121,7 @@ pub enum RdapResponse {
     Entity(Box<Entity>),
     Domain(Box<Domain>),
     Nameserver(Box<Nameserver>),
-    Autnum(Autnum),
+    Autnum(Box<Autnum>),
     Network(Network),
 
     // Search Results

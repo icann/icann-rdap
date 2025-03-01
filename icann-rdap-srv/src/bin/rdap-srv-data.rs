@@ -723,7 +723,7 @@ fn create_template_file(
                 panic!("non autnum created with autnum id")
             };
             Template::Autnum {
-                autnum: AutnumOrError::AutnumObject(autnum.clone()),
+                autnum: AutnumOrError::AutnumObject(*autnum.clone()),
                 ids: vec![id.clone()],
             }
         }
