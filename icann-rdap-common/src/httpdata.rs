@@ -1,11 +1,10 @@
 //! Code for handling HTTP caching.
 
-use buildstructor::Builder;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Represents the data from HTTP responses.
-#[derive(Serialize, Deserialize, Clone, Debug, Builder, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct HttpData {
     pub content_length: Option<u64>,
     pub content_type: Option<String>,
@@ -24,6 +23,40 @@ pub struct HttpData {
 
 #[buildstructor::buildstructor]
 impl HttpData {
+    #[builder(visibility = "pub")]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        content_length: Option<u64>,
+        content_type: Option<String>,
+        scheme: Option<String>,
+        host: String,
+        expires: Option<String>,
+        cache_control: Option<String>,
+        status_code: u16,
+        location: Option<String>,
+        access_control_allow_origin: Option<String>,
+        access_control_allow_credentials: Option<String>,
+        strict_transport_security: Option<String>,
+        retry_after: Option<String>,
+        received: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            content_length,
+            content_type,
+            scheme,
+            host,
+            expires,
+            cache_control,
+            received,
+            status_code,
+            location,
+            access_control_allow_origin,
+            access_control_allow_credentials,
+            strict_transport_security,
+            retry_after,
+        }
+    }
+
     #[builder(entry = "now", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
     fn new_now(
