@@ -125,7 +125,7 @@ pub enum RdapResponse {
     Network(Box<Network>),
 
     // Search Results
-    DomainSearchResults(DomainSearchResults),
+    DomainSearchResults(Box<DomainSearchResults>),
     EntitySearchResults(EntitySearchResults),
     NameserverSearchResults(NameserverSearchResults),
 

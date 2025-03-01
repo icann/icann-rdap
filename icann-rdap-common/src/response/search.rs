@@ -37,7 +37,7 @@ impl CommonFields for DomainSearchResults {
 
 impl ToResponse for DomainSearchResults {
     fn to_response(self) -> super::RdapResponse {
-        super::RdapResponse::DomainSearchResults(self)
+        super::RdapResponse::DomainSearchResults(Box::new(self))
     }
 }
 
