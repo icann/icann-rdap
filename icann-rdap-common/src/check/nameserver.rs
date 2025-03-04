@@ -41,7 +41,7 @@ impl GetChecks for Nameserver {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
                 if v6_addrs
-                    .into_vec_string_owned()
+                    .vec()
                     .iter()
                     .any(|ip| IpAddr::from_str(ip).is_err())
                 {
@@ -56,7 +56,7 @@ impl GetChecks for Nameserver {
                     items.push(Check::IpAddressListIsEmpty.check_item())
                 }
                 if v4_addrs
-                    .into_vec_string_owned()
+                    .vec()
                     .iter()
                     .any(|ip| IpAddr::from_str(ip).is_err())
                 {
@@ -75,10 +75,7 @@ impl GetChecks for Nameserver {
 
 #[cfg(test)]
 mod tests {
-    use crate::response::{
-        nameserver::{IpAddresses, Nameserver},
-        RdapResponse,
-    };
+    use crate::prelude::*;
     use rstest::rstest;
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -89,8 +86,11 @@ mod tests {
     #[case("_.")]
     fn check_nameserver_with_bad_ldh(#[case] ldh: &str) {
         // GIVEN
-        let ns = Nameserver::builder().ldh_name(ldh).build().unwrap();
-        let rdap = RdapResponse::Nameserver(ns);
+        let rdap = Nameserver::builder()
+            .ldh_name(ldh)
+            .build()
+            .unwrap()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -109,11 +109,11 @@ mod tests {
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
             .ip_addresses(IpAddresses::illegal().v6(vec![]).build())
-            .build();
-        let rdap = RdapResponse::Nameserver(ns);
+            .build()
+            .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -129,11 +129,11 @@ mod tests {
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
             .ip_addresses(IpAddresses::illegal().v4(vec![]).build())
-            .build();
-        let rdap = RdapResponse::Nameserver(ns);
+            .build()
+            .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -149,11 +149,11 @@ mod tests {
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
             .ip_addresses(IpAddresses::illegal().v6(vec!["__".to_string()]).build())
-            .build();
-        let rdap = RdapResponse::Nameserver(ns);
+            .build()
+            .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -169,11 +169,11 @@ mod tests {
         let ns = Nameserver::illegal()
             .ldh_name("ns1.example.com")
             .ip_addresses(IpAddresses::illegal().v4(vec!["___".to_string()]).build())
-            .build();
-        let rdap = RdapResponse::Nameserver(ns);
+            .build()
+            .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);

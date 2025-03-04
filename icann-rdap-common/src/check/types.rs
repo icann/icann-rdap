@@ -167,6 +167,7 @@ impl GetChecks for NoticeOrRemark {
                 });
             };
         };
+        // TODO checks on 'type'
         Checks {
             rdap_struct: super::RdapStructure::NoticeOrRemark,
             items,
@@ -299,7 +300,7 @@ impl GetSubChecks for ObjectCommon {
         // Status
         if let Some(status) = &self.status {
             // TODO add check for status is string
-            let status = status.into_vec_string_owned();
+            let status = status.vec();
             if status.is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Status,
@@ -329,7 +330,7 @@ impl GetSubChecks for ObjectCommon {
 mod tests {
     use rstest::rstest;
 
-    use crate::prelude::VectorStringish;
+    use crate::prelude::{ToResponse, VectorStringish};
     use crate::{
         check::Checks,
         response::{
@@ -345,17 +346,16 @@ mod tests {
     #[test]
     fn check_link_with_no_rel_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::illegal()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::illegal()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -375,12 +375,11 @@ mod tests {
     #[test]
     fn check_link_with_no_val_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(Link::illegal().href("https://foo").rel("about").build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(Link::illegal().href("https://foo").rel("about").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -400,12 +399,11 @@ mod tests {
     #[test]
     fn check_link_with_no_href_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(Link::illegal().value("https://foo").rel("about").build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(Link::illegal().value("https://foo").rel("about").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -425,18 +423,17 @@ mod tests {
     #[test]
     fn test_related_link_with_no_type_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("related")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -456,19 +453,18 @@ mod tests {
     #[test]
     fn test_object_related_link_with_non_rdap_type() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("related")
-                        .media_type("foo")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -488,18 +484,17 @@ mod tests {
     #[test]
     fn test_self_link_with_no_type_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("self")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -519,19 +514,18 @@ mod tests {
     #[test]
     fn test_self_link_with_non_rdap_type() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("self")
-                        .media_type("foo")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -543,19 +537,18 @@ mod tests {
     #[test]
     fn test_domain_with_self_link() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("self")
-                        .media_type("application/rdap+json")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -568,20 +561,19 @@ mod tests {
     #[test]
     fn test_nameserver_with_self_link() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("self")
-                        .media_type("application/rdap+json")
-                        .build(),
-                )
-                .build()
-                .expect("unable to build nameserver"),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .expect("unable to build nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -594,33 +586,32 @@ mod tests {
     /// Issue #59
     fn test_nameserver_with_self_link_and_notice() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .ldh_name("example.com")
-                .notice(Notice(
-                    NoticeOrRemark::builder()
-                        .description_entry("a notice")
-                        .link(
-                            Link::builder()
-                                .href("https://tos")
-                                .value("https://tos")
-                                .rel("terms-of-service")
-                                .media_type("text/html")
-                                .build(),
-                        )
-                        .build(),
-                ))
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("self")
-                        .media_type("application/rdap+json")
-                        .build(),
-                )
-                .build()
-                .expect("build nameserver"),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .description_entry("a notice")
+                    .link(
+                        Link::builder()
+                            .href("https://tos")
+                            .value("https://tos")
+                            .rel("terms-of-service")
+                            .media_type("text/html")
+                            .build(),
+                    )
+                    .build(),
+            ))
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .expect("build nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -634,31 +625,30 @@ mod tests {
     /// Issue #59
     fn test_nameserver_with_self_link_and_remark() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .ldh_name("exapmle.com")
-                .remark(Remark(
-                    NoticeOrRemark::builder()
-                        .description_entry("a notice")
-                        .links(vec![Link::builder()
-                            .href("https://tos")
-                            .value("https://tos")
-                            .rel("terms-of-service")
-                            .media_type("text/html")
-                            .build()])
-                        .build(),
-                ))
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("self")
-                        .media_type("application/rdap+json")
-                        .build(),
-                )
-                .build()
-                .expect("building nameserver"),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("exapmle.com")
+            .remark(Remark(
+                NoticeOrRemark::builder()
+                    .description_entry("a notice")
+                    .links(vec![Link::builder()
+                        .href("https://tos")
+                        .value("https://tos")
+                        .rel("terms-of-service")
+                        .media_type("text/html")
+                        .build()])
+                    .build(),
+            ))
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .expect("building nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -671,19 +661,18 @@ mod tests {
     #[test]
     fn test_domain_with_no_self_link() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("no_self")
-                        .media_type("foo")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("no_self")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -703,7 +692,10 @@ mod tests {
     #[test]
     fn test_domain_with_no_links() {
         // GIVEN
-        let rdap = RdapResponse::Domain(Domain::builder().ldh_name("example.com").build());
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -722,12 +714,11 @@ mod tests {
     #[test]
     fn test_event_with_no_date() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .event(Event::illegal().event_action("foo").build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(Event::illegal().event_action("foo").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -745,12 +736,11 @@ mod tests {
     #[test]
     fn test_event_with_no_action() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .event(Event::illegal().event_date("1990-12-31T23:59:59Z").build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(Event::illegal().event_date("1990-12-31T23:59:59Z").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -768,17 +758,16 @@ mod tests {
     #[test]
     fn test_event_with_bad_date() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .event(
-                    Event::builder()
-                        .event_action("foo")
-                        .event_date("bar")
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(
+                Event::builder()
+                    .event_action("foo")
+                    .event_date("bar")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -796,12 +785,11 @@ mod tests {
     #[test]
     fn test_public_id_with_no_type() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .public_id(PublicId::illegal().identifier("thing").build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .public_id(PublicId::illegal().identifier("thing").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -819,12 +807,11 @@ mod tests {
     #[test]
     fn test_public_id_with_no_identifier() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .public_id(PublicId::illegal().id_type("thing").build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .public_id(PublicId::illegal().id_type("thing").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -846,13 +833,13 @@ mod tests {
             title: None,
             description: None,
             links: None,
+            nr_type: None,
         };
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .ldh_name("example.com")
-                .notice(Notice(notice))
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .notice(Notice(notice))
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -873,12 +860,11 @@ mod tests {
     #[test]
     fn test_nameserver_with_no_links() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .ldh_name("example.com")
-                .build()
-                .expect("building nameserver"),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .build()
+            .expect("building nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -890,20 +876,19 @@ mod tests {
     #[test]
     fn test_nameserver_with_no_self_links() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .ldh_name("example.com")
-                .link(
-                    Link::builder()
-                        .href("https://foo")
-                        .value("https://foo")
-                        .rel("no_self")
-                        .media_type("foo")
-                        .build(),
-                )
-                .build()
-                .expect("building nameserver"),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("no_self")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .expect("building nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -931,7 +916,7 @@ mod tests {
             .build()
             .unwrap();
         ns.object_common.status = Some(VectorStringish::from(status));
-        let rdap = RdapResponse::Nameserver(ns);
+        let rdap = ns.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -956,7 +941,7 @@ mod tests {
             .build()
             .unwrap();
         ns.object_common.handle = Some(handle.to_string());
-        let rdap = RdapResponse::Nameserver(ns);
+        let rdap = ns.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));

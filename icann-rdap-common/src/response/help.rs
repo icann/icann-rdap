@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::to_opt_vec;
 use super::Common;
 use super::CommonFields;
+use super::ToResponse;
 
 /// Represents an RDAP help response.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -31,5 +32,11 @@ impl Help {
 impl CommonFields for Help {
     fn common(&self) -> &Common {
         &self.common
+    }
+}
+
+impl ToResponse for Help {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Help(Box::new(self))
     }
 }

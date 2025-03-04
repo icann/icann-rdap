@@ -144,8 +144,11 @@ impl ToMd for NoticeOrRemark {
         if let Some(title) = &self.title {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
+        if let Some(nr_type) = &self.nr_type {
+            md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
+        };
         if let Some(description) = &self.description {
-            description.into_vec_string_owned().iter().for_each(|s| {
+            description.vec().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
                     md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
                 }
@@ -203,15 +206,17 @@ impl ToMd for Common {
 }
 
 const RECEIVED: &str = "Received";
+const REQUEST_URI: &str = "Request URI";
 
 lazy_static! {
-    pub static ref NAMES: [String; 6] = [
+    pub static ref NAMES: [String; 7] = [
         HOST.to_string(),
         reqwest::header::EXPIRES.to_string(),
         reqwest::header::CACHE_CONTROL.to_string(),
         reqwest::header::STRICT_TRANSPORT_SECURITY.to_string(),
         reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
-        RECEIVED.to_string()
+        RECEIVED.to_string(),
+        REQUEST_URI.to_string()
     ];
     pub static ref NAME_LEN: usize = NAMES
         .iter()
@@ -223,6 +228,9 @@ impl ToMd for HttpData {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = HR.to_string();
         md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, &self.host));
+        if let Some(request_uri) = &self.request_uri {
+            md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", REQUEST_URI, request_uri));
+        }
         if let Some(content_length) = &self.content_length {
             md.push_str(&format!(
                 " * {:<NAME_LEN$}: {}\n",
@@ -275,7 +283,7 @@ impl ToMpTable for ObjectCommon {
 
             // Status
             if let Some(status) = &self.status {
-                let values = status.into_vec_string_owned();
+                let values = status.vec();
                 table = table.nv_ul(&"Status", values.make_list_all_title_case());
             }
 

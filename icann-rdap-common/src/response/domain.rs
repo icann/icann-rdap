@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::VectorStringish;
+use super::EMPTY_VEC_STRING;
 use super::{
     lenient::{Boolish, Numberish},
     nameserver::Nameserver,
@@ -79,11 +81,11 @@ impl Variant {
     }
 
     /// Convenience method to get relations.
-    pub fn relations(&self) -> Vec<String> {
+    pub fn relations(&self) -> &Vec<String> {
         self.relations
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 
     /// Convenience method to get variant names.
@@ -612,6 +614,12 @@ impl Domain {
     /// Convenience method.
     pub fn unicode_name(&self) -> Option<&str> {
         self.unicode_name.as_deref()
+    }
+}
+
+impl ToResponse for Domain {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Domain(Box::new(self))
     }
 }
 

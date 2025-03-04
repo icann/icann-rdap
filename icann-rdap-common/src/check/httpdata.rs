@@ -63,8 +63,8 @@ mod tests {
         check::{Check, CheckParams, GetChecks},
         httpdata::HttpData,
         media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE},
-        prelude::{Common, ObjectCommon},
-        response::{domain::Domain, types::ExtensionId, RdapResponse},
+        prelude::{Common, ObjectCommon, ToResponse},
+        response::{domain::Domain, types::ExtensionId},
     };
 
     #[test]
@@ -83,7 +83,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata with content type that is not RDAP media type
         let http_data = HttpData::example().content_type(JSON_MEDIA_TYPE).build();
@@ -114,7 +114,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata with content type that is not RDAP media type
         let http_data = HttpData::example().content_type(RDAP_MEDIA_TYPE).build();
@@ -145,7 +145,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata with content type that is not RDAP media type with charset parameter
         let mt = format!("{RDAP_MEDIA_TYPE};charset=UTF-8");
@@ -177,7 +177,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata no content type
         let http_data = HttpData::example().build();
@@ -208,7 +208,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN a cors header with *
         let http_data = HttpData::example().access_control_allow_origin("*").build();
@@ -239,7 +239,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN response with cors header of "foo" (not "*")
         let http_data = HttpData::example()
@@ -272,7 +272,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN a response with no cors header
         let http_data = HttpData::example().build();
@@ -304,7 +304,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN response is over https
         let http_data = HttpData::now().scheme("https").host("example.com").build();
@@ -332,7 +332,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN response is with http (not https)
         let http_data = HttpData::now().scheme("http").host("example.com").build();

@@ -13,18 +13,15 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                     match role.as_str() {
                         "registrar" => {
                             if let Some(vcard_array) = &entity.vcard_array {
-                                let role_info = extract_role_info(&role, vcard_array, params);
+                                let role_info = extract_role_info(role, vcard_array, params);
                                 // Now use role_info to append to formatted_data
                                 if !role_info.name.is_empty() {
                                     front_formatted_data +=
-                                        &format!("{}: {}\n", cfl(&role), role_info.name);
+                                        &format!("{}: {}\n", cfl(role), role_info.name);
                                 }
                                 if !role_info.org.is_empty() {
-                                    front_formatted_data += &format!(
-                                        "{} Organization: {}\n",
-                                        cfl(&role),
-                                        role_info.org
-                                    );
+                                    front_formatted_data +=
+                                        &format!("{} Organization: {}\n", cfl(role), role_info.org);
                                 }
                                 if !role_info.adr.is_empty() {
                                     front_formatted_data += &role_info.adr;
@@ -51,33 +48,30 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                         }
                         "technical" | "administrative" | "registrant" => {
                             if let Some(vcard_array) = &entity.vcard_array {
-                                let role_info = extract_role_info(&role, vcard_array, params);
+                                let role_info = extract_role_info(role, vcard_array, params);
                                 // Now use role_info to append to formatted_data
                                 if !role_info.name.is_empty() {
                                     formatted_data +=
-                                        &format!("{} Name: {}\n", cfl(&role), role_info.name);
+                                        &format!("{} Name: {}\n", cfl(role), role_info.name);
                                 }
                                 if !role_info.org.is_empty() {
-                                    formatted_data += &format!(
-                                        "{} Organization: {}\n",
-                                        cfl(&role),
-                                        role_info.org
-                                    );
+                                    formatted_data +=
+                                        &format!("{} Organization: {}\n", cfl(role), role_info.org);
                                 }
                                 if !role_info.adr.is_empty() {
                                     formatted_data += &role_info.adr;
                                 }
                                 if !role_info.email.is_empty() {
                                     formatted_data +=
-                                        &format!("{} Email: {}\n", cfl(&role), role_info.email);
+                                        &format!("{} Email: {}\n", cfl(role), role_info.email);
                                 }
                                 if !role_info.phone.is_empty() {
                                     formatted_data +=
-                                        &format!("{} Phone: {}\n", cfl(&role), role_info.phone);
+                                        &format!("{} Phone: {}\n", cfl(role), role_info.phone);
                                 }
                                 if !role_info.fax.is_empty() {
                                     formatted_data +=
-                                        &format!("{} Fax: {}\n", cfl(&role), role_info.fax);
+                                        &format!("{} Fax: {}\n", cfl(role), role_info.fax);
                                 }
                             }
                         }

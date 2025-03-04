@@ -421,7 +421,7 @@ mod tests {
         };
         assert_eq!(307, error.error_code);
         assert_eq!(
-            get_redirect_link(error),
+            get_redirect_link(*error),
             "https://registry.example.com/myrdap/"
         );
         // net
@@ -431,7 +431,7 @@ mod tests {
         };
         assert_eq!(307, error.error_code);
         assert_eq!(
-            get_redirect_link(error),
+            get_redirect_link(*error),
             "https://registry.example.com/myrdap/"
         );
         // org
@@ -440,7 +440,7 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://example.org/");
+        assert_eq!(get_redirect_link(*error), "https://example.org/");
         // mytld
         let response = mem
             .get_domain_by_ldh("mytld")
@@ -450,7 +450,7 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://example.org/");
+        assert_eq!(get_redirect_link(*error), "https://example.org/");
     }
 
     #[tokio::test]
@@ -505,28 +505,31 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://rir3.example.com/myrdap/");
+        assert_eq!(
+            get_redirect_link(*error),
+            "https://rir3.example.com/myrdap/"
+        );
         // 64512-65534
         let response = mem.get_autnum_by_num(64512).await.expect("lookup of 64512");
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://example.net/rdaprir2/");
+        assert_eq!(get_redirect_link(*error), "https://example.net/rdaprir2/");
         // 64497-64510
         let response = mem.get_autnum_by_num(64510).await.expect("lookup of 64510");
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://example.org/");
+        assert_eq!(get_redirect_link(*error), "https://example.org/");
         // 65536-65551
         let response = mem.get_autnum_by_num(65551).await.expect("lookup of 65551");
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://example.org/");
+        assert_eq!(get_redirect_link(*error), "https://example.org/");
     }
 
     #[tokio::test]
@@ -584,7 +587,10 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://rir1.example.com/myrdap/");
+        assert_eq!(
+            get_redirect_link(*error),
+            "https://rir1.example.com/myrdap/"
+        );
         // 192.0.0.0/8
         let response = mem
             .get_network_by_cidr("192.0.0.0/8")
@@ -594,7 +600,10 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://rir1.example.com/myrdap/");
+        assert_eq!(
+            get_redirect_link(*error),
+            "https://rir1.example.com/myrdap/"
+        );
         // 203.0.113.0/24
         let response = mem
             .get_network_by_cidr("203.0.113.0/24")
@@ -604,7 +613,7 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://example.org/");
+        assert_eq!(get_redirect_link(*error), "https://example.org/");
     }
 
     async fn new_and_init_mem(data_dir: String) -> Mem {
@@ -749,7 +758,7 @@ mod tests {
             panic!("not an error response")
         };
         assert_eq!(307, error.error_code);
-        assert_eq!(get_redirect_link(error), "https://rdap.arin.net/registry/",);
+        assert_eq!(get_redirect_link(*error), "https://rdap.arin.net/registry/",);
         // GLAUCA
         let response = mem
             .get_entity_by_handle("-GLAUCA")
@@ -760,7 +769,7 @@ mod tests {
         };
         assert_eq!(307, error.error_code);
         assert_eq!(
-            get_redirect_link(error),
+            get_redirect_link(*error),
             "https://whois-web.as207960.net/rdap/"
         );
     }

@@ -11,6 +11,7 @@ use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
 use icann_rdap_common::prelude::RdapResponse;
 use icann_rdap_common::prelude::ToNotices;
 use icann_rdap_common::prelude::ToRemarks;
+use icann_rdap_common::prelude::ToResponse;
 use icann_rdap_common::prelude::VectorStringish;
 use icann_rdap_common::response::Autnum;
 use icann_rdap_common::response::Domain;
@@ -695,7 +696,7 @@ fn create_template_file(
                 panic!("non entity created with entity id")
             };
             Template::Entity {
-                entity: EntityOrError::EntityObject(entity.clone()),
+                entity: EntityOrError::EntityObject(Box::new(*entity.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -704,7 +705,7 @@ fn create_template_file(
                 panic!("non domain created with domain id")
             };
             Template::Domain {
-                domain: DomainOrError::DomainObject(domain.clone()),
+                domain: DomainOrError::DomainObject(Box::new(*domain.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -713,7 +714,7 @@ fn create_template_file(
                 panic!("non nameserver created with nameserver id")
             };
             Template::Nameserver {
-                nameserver: NameserverOrError::NameserverObject(nameserver.clone()),
+                nameserver: NameserverOrError::NameserverObject(Box::new(*nameserver.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -722,7 +723,7 @@ fn create_template_file(
                 panic!("non autnum created with autnum id")
             };
             Template::Autnum {
-                autnum: AutnumOrError::AutnumObject(autnum.clone()),
+                autnum: AutnumOrError::AutnumObject(Box::new(*autnum.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -731,7 +732,7 @@ fn create_template_file(
                 panic!("non network created with network id")
             };
             Template::Network {
-                network: NetworkOrError::NetworkObject(network.clone()),
+                network: NetworkOrError::NetworkObject(Box::new(*network.clone())),
                 ids: vec![id.clone()],
             }
         }
@@ -916,7 +917,7 @@ async fn make_entity(
             .expect("entity created without a handle"),
     });
     let output = Output {
-        rdap: RdapResponse::Entity(entity),
+        rdap: entity.to_response(),
         id,
         self_href,
     };
@@ -951,7 +952,7 @@ async fn make_nameserver(
         unicode_name: ns.unicode_name.clone(),
     });
     let output = Output {
-        rdap: RdapResponse::Nameserver(ns),
+        rdap: ns.to_response(),
         id,
         self_href,
     };
@@ -1020,7 +1021,7 @@ async fn make_domain(
         unicode_name: domain.unicode_name.clone(),
     });
     let output = Output {
-        rdap: RdapResponse::Domain(domain),
+        rdap: domain.to_response(),
         id,
         self_href,
     };
@@ -1061,7 +1062,7 @@ async fn make_autnum(
             .expect("autnum create with no end"),
     });
     let output = Output {
-        rdap: RdapResponse::Autnum(autnum),
+        rdap: autnum.to_response(),
         id,
         self_href,
     };
@@ -1107,7 +1108,7 @@ async fn make_network(
         },
     });
     let output = Output {
-        rdap: RdapResponse::Network(network),
+        rdap: network.to_response(),
         id,
         self_href,
     };
@@ -1117,7 +1118,7 @@ async fn make_network(
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
     let help = Help::builder().notices(args.notice.to_notices()).build();
     let output = Output {
-        rdap: RdapResponse::Help(help),
+        rdap: help.to_response(),
         id: RdapId::Help,
         self_href: args.host.unwrap_or("__default".to_string()),
     };
@@ -1168,7 +1169,7 @@ mod tests {
         assert!(actual
             .description
             .expect("no description!")
-            .into_vec_string()
+            .into_vec()
             .contains(&description.to_string()));
         let Some(links) = actual.links else {
             panic!("no links in notice")

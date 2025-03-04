@@ -160,9 +160,12 @@ pub fn text_or_registered_redaction_for_role(
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{
-        redacted::{Name, Redacted},
-        Domain,
+    use icann_rdap_common::{
+        prelude::ToResponse,
+        response::{
+            redacted::{Name, Redacted},
+            Domain,
+        },
     };
 
     use super::*;
@@ -185,7 +188,7 @@ mod tests {
                 method: None,
             }])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = is_redaction_registered(&rdap, &RedactedName::TechEmail);
@@ -212,7 +215,7 @@ mod tests {
                 method: None,
             }])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = text_or_registered_redaction(
@@ -258,7 +261,7 @@ mod tests {
                 },
             ])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = is_redaction_registered(&rdap, &RedactedName::TechEmail);
@@ -299,7 +302,7 @@ mod tests {
                 },
             ])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = are_redactions_registered(
@@ -343,7 +346,7 @@ mod tests {
                 },
             ])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = are_redactions_registered(
@@ -362,7 +365,7 @@ mod tests {
     fn GIVEN_no_redactions_WHEN_search_for_type_THEN_false() {
         // GIVEN
         let domain = Domain::builder().ldh_name("example.com").build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = is_redaction_registered(&rdap, &RedactedName::TechEmail);
@@ -389,7 +392,7 @@ mod tests {
                 method: None,
             }])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = is_redaction_registered(&rdap, &RedactedName::TechEmail);
@@ -416,7 +419,7 @@ mod tests {
                 method: None,
             }])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
         let role = EntityRole::Technical.to_string();
         let entity = Entity::builder()
             .handle("foo_bar")
@@ -468,7 +471,7 @@ mod tests {
                 },
             ])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
         let role = EntityRole::Technical.to_string();
         let entity = Entity::builder()
             .handle("foo_bar")
@@ -520,7 +523,7 @@ mod tests {
                 },
             ])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
         let role = EntityRole::Technical.to_string();
         let entity = Entity::builder()
             .handle("foo_bar")
@@ -572,7 +575,7 @@ mod tests {
                 },
             ])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
         let role = EntityRole::Technical.to_string();
         let entity = Entity::builder()
             .handle("foo_bar")
@@ -610,7 +613,7 @@ mod tests {
                 method: None,
             }])
             .build();
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
         let role = EntityRole::Technical.to_string();
         let entity = Entity::builder()
             .handle("foo_bar")

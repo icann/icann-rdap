@@ -86,7 +86,7 @@ mod tests {
 
     use rstest::rstest;
 
-    use crate::response::RdapResponse;
+    use crate::prelude::ToResponse;
 
     use crate::check::{Check, CheckParams, GetChecks};
     use crate::response::autnum::Autnum;
@@ -98,7 +98,7 @@ mod tests {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.name = Some("".to_string());
-        let rdap = RdapResponse::Autnum(autnum);
+        let rdap = autnum.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -116,7 +116,7 @@ mod tests {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.autnum_type = Some("".to_string());
-        let rdap = RdapResponse::Autnum(autnum);
+        let rdap = autnum.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));

@@ -347,17 +347,28 @@ pub struct NoticeOrRemark {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+
+    /// Description `type` as is found in the IANA registry.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nr_type: Option<String>,
 }
 
 #[buildstructor::buildstructor]
 impl NoticeOrRemark {
     /// Builds an RDAP notice/remark.
     #[builder(visibility = "pub")]
-    fn new(title: Option<String>, description: Vec<String>, links: Vec<Link>) -> Self {
+    fn new(
+        title: Option<String>,
+        description: Vec<String>,
+        links: Vec<Link>,
+        nr_type: Option<String>,
+    ) -> Self {
         NoticeOrRemark {
             title,
             description: Some(VectorStringish::from(description)),
             links: (!links.is_empty()).then_some(links),
+            nr_type,
         }
     }
 
@@ -368,6 +379,7 @@ impl NoticeOrRemark {
         title: Option<String>,
         description: Option<Vec<String>>,
         links: Option<Vec<Link>>,
+        nr_type: Option<String>,
     ) -> Self {
         let d = description
             .is_some()
@@ -376,6 +388,7 @@ impl NoticeOrRemark {
             title,
             description: d,
             links,
+            nr_type,
         }
     }
 
@@ -402,6 +415,13 @@ impl NoticeOrRemark {
     /// Returns the links associated with the notice/remark.
     pub fn links(&self) -> Option<&Links> {
         self.links.as_ref()
+    }
+
+    /// Returns the `type` of the notice or remark.
+    ///
+    /// These values are suppose to come from the IANA RDAP registry.
+    pub fn nr_type(&self) -> Option<&str> {
+        self.nr_type.as_deref()
     }
 }
 

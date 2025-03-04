@@ -123,11 +123,7 @@ fn do_variants(variants: &[Variant], params: MdParams) -> String {
     variants.iter().for_each(|v| {
         md.push_str(&format!(
             "|{}|{}|{}|",
-            v.relations
-                .as_ref()
-                .map(|v| v.into_vec_string_owned())
-                .unwrap_or_default()
-                .make_title_case_list(),
+            v.relations().make_title_case_list(),
             v.idn_table.as_deref().unwrap_or_default(),
             v.variant_names
                 .as_deref()

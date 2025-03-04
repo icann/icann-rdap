@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use super::CommonFields;
 use super::Numberish;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::{
     to_opt_vec,
     types::{ExtensionId, Link},
@@ -344,6 +345,12 @@ impl Network {
     /// Returns the CIDR0 CIDRs of the network.
     pub fn cidr0_cidrs(&self) -> &Vec<Cidr0Cidr> {
         self.cidr0_cidrs.as_ref().unwrap_or(&EMPTY_CIDR0CIDRS)
+    }
+}
+
+impl ToResponse for Network {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Network(Box::new(self))
     }
 }
 

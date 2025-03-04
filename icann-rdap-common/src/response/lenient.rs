@@ -2,20 +2,11 @@
 
 use std::{fmt::Display, marker::PhantomData, str::FromStr};
 
-use serde::{Deserialize, Serialize};
+use lazy_static::lazy_static;
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use serde_json::Number;
 
 use crate::check::StringListCheck;
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(untagged)]
-enum VectorStringishInner {
-    /// Valid RDAP.
-    Many(Vec<String>),
-
-    /// Invalide RDAP.
-    One(String),
-}
 
 /// A type that is suppose to be a vector of strings.
 ///
@@ -35,16 +26,67 @@ enum VectorStringishInner {
 ///
 /// let v = VectorStringish::from("one".to_string());
 /// ````
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct VectorStringish {
-    inner: VectorStringishInner,
+    vec: Vec<String>,
+    #[serde(skip)]
+    is_string: bool,
+}
+
+impl<'de> Deserialize<'de> for VectorStringish {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(VectorStringishVisitor)
+    }
+}
+
+struct VectorStringishVisitor;
+
+impl<'de> Visitor<'de> for VectorStringishVisitor {
+    type Value = VectorStringish;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("expected an array of strings")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(VectorStringish {
+            vec: vec![v.to_owned()],
+            is_string: true,
+        })
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+    {
+        let mut v = vec![];
+        loop {
+            let n = seq.next_element()?;
+            if let Some(s) = n {
+                v.push(s);
+            } else {
+                break;
+            }
+        }
+        Ok(VectorStringish {
+            vec: v,
+            is_string: false,
+        })
+    }
 }
 
 impl From<String> for VectorStringish {
     fn from(value: String) -> Self {
         VectorStringish {
-            inner: VectorStringishInner::Many(vec![value]),
+            vec: vec![value],
+            is_string: false,
         }
     }
 }
@@ -52,7 +94,8 @@ impl From<String> for VectorStringish {
 impl From<&str> for VectorStringish {
     fn from(value: &str) -> Self {
         VectorStringish {
-            inner: VectorStringishInner::Many(vec![value.to_owned()]),
+            vec: vec![value.to_owned()],
+            is_string: false,
         }
     }
 }
@@ -60,76 +103,58 @@ impl From<&str> for VectorStringish {
 impl From<Vec<String>> for VectorStringish {
     fn from(value: Vec<String>) -> Self {
         VectorStringish {
-            inner: VectorStringishInner::Many(value),
+            vec: value,
+            is_string: false,
         }
     }
 }
 
 impl From<VectorStringish> for Vec<String> {
     fn from(value: VectorStringish) -> Self {
-        match value.inner {
-            VectorStringishInner::Many(many) => many,
-            VectorStringishInner::One(one) => vec![one],
-        }
+        value.vec
     }
 }
 
 impl From<&VectorStringish> for Vec<String> {
     fn from(value: &VectorStringish) -> Self {
-        match &value.inner {
-            VectorStringishInner::Many(many) => many.to_owned(),
-            VectorStringishInner::One(one) => vec![one.to_owned()],
-        }
+        value.vec.to_owned()
     }
 }
 
 impl VectorStringish {
     /// Consumes and converts it to a `Vec<String>`.
-    pub fn into_vec_string(self) -> Vec<String> {
-        match self.inner {
-            VectorStringishInner::Many(many) => many,
-            VectorStringishInner::One(one) => vec![one],
-        }
+    pub fn into_vec(self) -> Vec<String> {
+        self.vec
     }
 
-    /// Converts it a `Vec<String>` by cloning().
-    pub fn into_vec_string_owned(&self) -> Vec<String> {
-        match &self.inner {
-            VectorStringishInner::Many(many) => many.clone(),
-            VectorStringishInner::One(one) => vec![one.to_owned()],
-        }
+    /// Gets a reference to the underlying `Vec<String>`.
+    pub fn vec(&self) -> &Vec<String> {
+        &self.vec
     }
 
     /// Returns true if the deserialization was as a string.
     pub fn is_string(&self) -> bool {
-        match self.inner {
-            VectorStringishInner::Many(_) => false,
-            VectorStringishInner::One(_) => true,
-        }
+        self.is_string
     }
 }
 
 impl StringListCheck for VectorStringish {
     fn is_empty_or_any_empty_or_whitespace(&self) -> bool {
-        let l = match &self.inner {
-            VectorStringishInner::Many(many) => many,
-            VectorStringishInner::One(one) => &vec![one.to_owned()],
-        };
-        l.is_empty_or_any_empty_or_whitespace()
+        self.vec().is_empty_or_any_empty_or_whitespace()
     }
 
     fn is_ldh_string_list(&self) -> bool {
-        let l = match &self.inner {
-            VectorStringishInner::Many(many) => many,
-            VectorStringishInner::One(one) => &vec![one.to_owned()],
-        };
-        l.is_ldh_string_list()
+        self.vec().is_ldh_string_list()
     }
 }
 
 /// Returns `Some(VectorStringish)` if the vector is not empty, otherwise `None`.
 pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
     (!vec.is_empty()).then_some(VectorStringish::from(vec))
+}
+
+lazy_static! {
+    pub(crate) static ref EMPTY_VEC_STRING: Vec<String> = vec![];
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -347,8 +372,8 @@ mod tests {
 
         // THEN
         assert_eq!(
-            deserialized.into_vec_string_owned(),
-            vec!["one".to_string(), "two".to_string()]
+            deserialized.vec(),
+            &vec!["one".to_string(), "two".to_string()]
         );
 
         // and THEN is not string
@@ -364,10 +389,7 @@ mod tests {
         let deserialized: VectorStringish = from_str(json_str).unwrap();
 
         // THEN
-        assert_eq!(
-            deserialized.into_vec_string_owned(),
-            vec!["one".to_string()]
-        );
+        assert_eq!(deserialized.vec(), &vec!["one".to_string()]);
 
         // and THEN is string
         assert!(deserialized.is_string())

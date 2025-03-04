@@ -11,7 +11,9 @@ use strum_macros::{Display, EnumString};
 use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::VectorStringish;
+use super::EMPTY_VEC_STRING;
 use super::{
     autnum::Autnum,
     network::Network,
@@ -192,11 +194,11 @@ impl Entity {
     }
 
     /// Convenience method to get the roles.
-    pub fn roles(&self) -> Vec<String> {
+    pub fn roles(&self) -> &Vec<String> {
         self.roles
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 
     /// Convenience method to get the public IDs.
@@ -219,6 +221,12 @@ impl Entity {
     /// Convenience method to get the networks.
     pub fn networks(&self) -> &Vec<Network> {
         self.networks.as_ref().unwrap_or(&EMPTY_NETWORKS)
+    }
+}
+
+impl ToResponse for Entity {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Entity(Box::new(self))
     }
 }
 

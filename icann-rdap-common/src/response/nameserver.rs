@@ -10,7 +10,9 @@ use super::to_opt_vec;
 use super::to_opt_vectorstringish;
 use super::CommonFields;
 use super::ObjectCommonFields;
+use super::ToResponse;
 use super::VectorStringish;
+use super::EMPTY_VEC_STRING;
 use super::{
     types::Link, Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink,
     ToChild,
@@ -56,19 +58,19 @@ impl IpAddresses {
     }
 
     /// Get the IPv6 addresses.
-    pub fn v6s(&self) -> Vec<String> {
+    pub fn v6s(&self) -> &Vec<String> {
         self.v6
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 
     /// Get the IPv4 addresses.
-    pub fn v4s(&self) -> Vec<String> {
+    pub fn v4s(&self) -> &Vec<String> {
         self.v4
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 }
 
@@ -228,6 +230,12 @@ impl Nameserver {
     /// Get the IP addresses.
     pub fn ip_addresses(&self) -> Option<&IpAddresses> {
         self.ip_addresses.as_ref()
+    }
+}
+
+impl ToResponse for Nameserver {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Nameserver(Box::new(self))
     }
 }
 

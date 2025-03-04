@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     redacted::Redacted, to_opt_vectorstringish, Entity, Events, Link, Links, Port43, Remarks,
-    VectorStringish,
+    VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Holds those types that are common in all object classes.
@@ -251,12 +251,12 @@ pub trait ObjectCommonFields {
     }
 
     /// Getter for status.
-    fn status(&self) -> Vec<String> {
+    fn status(&self) -> &Vec<String> {
         self.object_common()
             .status
             .as_ref()
-            .map(|v| v.into_vec_string_owned())
-            .unwrap_or_default()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 
     /// Getter for Vec of [Entity].
