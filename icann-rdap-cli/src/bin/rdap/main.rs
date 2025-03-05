@@ -486,7 +486,11 @@ impl From<&LogLevel> for LevelFilter {
 #[tokio::main]
 pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
-        eprintln!("\n{e}\n");
+        let ec = e.exit_code();
+        match ec {
+            202 => error!("Use -T or --allow-http to allow insecure HTTP connections."),
+            _ => eprintln!("\n{e}\n"),
+        };
         return e;
     } else {
         return RdapCliError::Success;

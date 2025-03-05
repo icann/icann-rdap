@@ -4,6 +4,7 @@ use icann_rdap_client::iana::IanaResponseError;
 use icann_rdap_client::RdapClientError;
 use minus::MinusError;
 use thiserror::Error;
+use tracing::error;
 
 #[derive(Debug, Error)]
 pub enum RdapCliError {
@@ -35,9 +36,9 @@ pub enum RdapCliError {
     NoRegistryFound,
 }
 
-impl Termination for RdapCliError {
-    fn report(self) -> std::process::ExitCode {
-        let exit_code: u8 = match self {
+impl RdapCliError {
+    pub(crate) fn exit_code(&self) -> u8 {
+        match self {
             // Success
             RdapCliError::Success => 0,
 
@@ -63,7 +64,16 @@ impl Termination for RdapCliError {
             // RDAP Client Errrors
             RdapCliError::RdapClient(e) => match e {
                 // I/O Errors
-                RdapClientError::Client(_) => 42,
+                RdapClientError::Client(ce) => {
+                    if ce.is_builder() {
+                        match ce.url() {
+                            Some(url) if url.scheme() == "http" => 202,
+                            _ => 42,
+                        }
+                    } else {
+                        42
+                    }
+                }
                 RdapClientError::IoError(_) => 43,
 
                 // RDAP Server Errors
@@ -85,7 +95,13 @@ impl Termination for RdapCliError {
                 RdapClientError::Poison => 250,
                 // _ => 255,
             },
-        };
+        }
+    }
+}
+
+impl Termination for RdapCliError {
+    fn report(self) -> std::process::ExitCode {
+        let exit_code = self.exit_code();
         ExitCode::from(exit_code)
     }
 }
