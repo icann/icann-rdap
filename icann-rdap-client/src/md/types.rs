@@ -71,7 +71,7 @@ impl ToMd for Link {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(title) = &self.title {
-            md.push_str(&format!("* {}:\n", title.replace_ws()));
+            md.push_str(&format!("* {}:\n", title.replace_md_chars()));
         } else {
             md.push_str("* Link:\n")
         };
@@ -82,24 +82,27 @@ impl ToMd for Link {
             ));
         };
         if let Some(rel) = &self.rel {
-            md.push_str(&format!("* Relation:  {}\n", rel.replace_ws()));
+            md.push_str(&format!("* Relation:  {}\n", rel.replace_md_chars()));
         };
         if let Some(media_type) = &self.media_type {
-            md.push_str(&format!("* Type:      {}\n", media_type.replace_ws()));
+            md.push_str(&format!("* Type:      {}\n", media_type.replace_md_chars()));
         };
         if let Some(media) = &self.media {
-            md.push_str(&format!("* Media:     {}\n", media.replace_ws()));
+            md.push_str(&format!("* Media:     {}\n", media.replace_md_chars()));
         };
         if let Some(value) = &self.value {
-            md.push_str(&format!("* Value:     {}\n", value.replace_ws()));
+            md.push_str(&format!("* Value:     {}\n", value.replace_md_chars()));
         };
         if let Some(hreflang) = &self.hreflang {
             match hreflang {
                 icann_rdap_common::response::HrefLang::Lang(lang) => {
-                    md.push_str(&format!("* Language:  {}\n", lang.replace_ws()));
+                    md.push_str(&format!("* Language:  {}\n", lang.replace_md_chars()));
                 }
                 icann_rdap_common::response::HrefLang::Langs(langs) => {
-                    md.push_str(&format!("* Languages: {}", langs.join(", ").replace_ws()));
+                    md.push_str(&format!(
+                        "* Languages: {}",
+                        langs.join(", ").replace_md_chars()
+                    ));
                 }
             }
         };
@@ -150,7 +153,7 @@ impl ToMd for NoticeOrRemark {
         if let Some(description) = &self.description {
             description.vec().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
-                    md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
+                    md.push_str(&format!("> {}\n\n", s.trim().replace_md_chars()))
                 }
             });
         }
@@ -327,7 +330,7 @@ pub(crate) fn events_to_table(
     header_name: &str,
     params: MdParams,
 ) -> MultiPartTable {
-    table = table.header_ref(&header_name.to_string());
+    table = table.header_ref(&header_name.replace_md_chars());
     for event in events {
         let event_date = &event
             .event_date
@@ -357,7 +360,7 @@ pub(crate) fn links_to_table(
     mut table: MultiPartTable,
     header_name: &str,
 ) -> MultiPartTable {
-    table = table.header_ref(&header_name.to_string());
+    table = table.header_ref(&header_name.replace_md_chars());
     for link in links {
         if let Some(title) = &link.title {
             table = table.nv_ref(&"Title", &title.trim());

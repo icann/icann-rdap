@@ -164,7 +164,7 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
 
     if let Some(ds_data) = &secure_dns.ds_data {
         for (i, ds) in ds_data.iter().enumerate() {
-            let header = format!("DS Data ({i})");
+            let header = format!("DS Data ({i})").replace_md_chars();
             table = table
                 .header_ref(&header)
                 .and_nv_ref(&"Key Tag", &ds.key_tag.as_ref().map(|k| k.to_string()))
@@ -190,7 +190,7 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
 
     if let Some(key_data) = &secure_dns.key_data {
         for (i, key) in key_data.iter().enumerate() {
-            let header = format!("Key Data ({i})");
+            let header = format!("Key Data ({i})").replace_md_chars();
             table = table
                 .header_ref(&header)
                 .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
@@ -241,11 +241,11 @@ fn dns_digest_type(dt: &Option<u8>) -> Option<String> {
 impl MdUtil for Domain {
     fn get_header_text(&self) -> MdHeaderText {
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Domain {}", unicode_name.replace_ws())
+            format!("Domain {}", unicode_name.replace_md_chars())
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Domain {}", ldh_name.replace_ws())
+            format!("Domain {}", ldh_name.replace_md_chars())
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Domain {}", handle.replace_ws())
+            format!("Domain {}", handle.replace_md_chars())
         } else {
             "Domain".to_string()
         };

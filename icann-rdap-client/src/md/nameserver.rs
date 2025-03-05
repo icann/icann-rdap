@@ -88,11 +88,11 @@ impl ToMd for Nameserver {
 impl MdUtil for Nameserver {
     fn get_header_text(&self) -> MdHeaderText {
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Nameserver {}", unicode_name.replace_ws())
+            format!("Nameserver {}", unicode_name.replace_md_chars())
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Nameserver {}", ldh_name.replace_ws())
+            format!("Nameserver {}", ldh_name.replace_md_chars())
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Nameserver {}", handle.replace_ws())
+            format!("Nameserver {}", handle.replace_md_chars())
         } else {
             "Domain".to_string()
         };
