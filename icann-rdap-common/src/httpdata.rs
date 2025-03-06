@@ -187,7 +187,6 @@ impl HttpData {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use super::HttpData;
     use chrono::Duration;
@@ -205,7 +204,7 @@ mod tests {
     #[case(HttpData::example().expires((Utc::now() + Duration::seconds(100)).to_rfc2822()).build(), 50, false)]
     #[case(HttpData::example().cache_control("max-age=100").expires(Utc::now().to_rfc2822()).build(), 100, false)]
     #[case(HttpData::example().cache_control("max-age=0").expires((Utc::now() + Duration::seconds(50)).to_rfc2822()).build(), 100, true)]
-    fn GIVEN_cache_data_and_max_age_WHEN_is_expired_THEN_correct(
+    fn test_cache_data_and_max_age_is_expired(
         #[case] cache_data: HttpData,
         #[case] max_age: i64,
         #[case] expected: bool,
@@ -223,10 +222,7 @@ mod tests {
     #[case(HttpData::example().cache_control("no-cache").build(), false)]
     #[case(HttpData::example().cache_control("no-store").build(), false)]
     #[case(HttpData::example().cache_control("max-age=40").build(), true)]
-    fn GIVEN_cache_control_WHEN_should_cache_THEN_correc(
-        #[case] cache_data: HttpData,
-        #[case] expected: bool,
-    ) {
+    fn test_cache_control(#[case] cache_data: HttpData, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -237,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_data_and_data_cache_WHEN_to_lines_THEN_format_correct() {
+    fn test_data_and_data_cache_to_lines() {
         // GIVEN
         let data = "foo";
         let cache_data = HttpData::example().content_length(14).build();
@@ -251,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_lines_WHEN_from_lines_THEN_parse_correctly() {
+    fn test_from_lines() {
         // GIVEN
         let data = "foo";
         let cache_data = HttpData::example().content_length(14).build();
