@@ -189,24 +189,24 @@ impl HttpData {
         self.content_length
     }
 
-    pub fn content_type(&self) -> Option<&String> {
-        self.content_type.as_ref()
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_deref()
     }
 
-    pub fn scheme(&self) -> Option<&String> {
-        self.scheme.as_ref()
+    pub fn scheme(&self) -> Option<&str> {
+        self.scheme.as_deref()
     }
 
-    pub fn host(&self) -> &String {
+    pub fn host(&self) -> &str {
         &self.host
     }
 
-    pub fn expires(&self) -> Option<&String> {
-        self.expires.as_ref()
+    pub fn expires(&self) -> Option<&str> {
+        self.expires.as_deref()
     }
 
-    pub fn cache_control(&self) -> Option<&String> {
-        self.cache_control.as_ref()
+    pub fn cache_control(&self) -> Option<&str> {
+        self.cache_control.as_deref()
     }
 
     pub fn received(&self) -> &DateTime<Utc> {
@@ -217,28 +217,28 @@ impl HttpData {
         self.status_code
     }
 
-    pub fn location(&self) -> Option<&String> {
-        self.location.as_ref()
+    pub fn location(&self) -> Option<&str> {
+        self.location.as_deref()
     }
 
-    pub fn access_control_allow_origin(&self) -> Option<&String> {
-        self.access_control_allow_origin.as_ref()
+    pub fn access_control_allow_origin(&self) -> Option<&str> {
+        self.access_control_allow_origin.as_deref()
     }
 
-    pub fn access_control_allow_credentials(&self) -> Option<&String> {
-        self.access_control_allow_credentials.as_ref()
+    pub fn access_control_allow_credentials(&self) -> Option<&str> {
+        self.access_control_allow_credentials.as_deref()
     }
 
-    pub fn strict_transport_security(&self) -> Option<&String> {
-        self.strict_transport_security.as_ref()
+    pub fn strict_transport_security(&self) -> Option<&str> {
+        self.strict_transport_security.as_deref()
     }
 
-    pub fn retry_after(&self) -> Option<&String> {
-        self.retry_after.as_ref()
+    pub fn retry_after(&self) -> Option<&str> {
+        self.retry_after.as_deref()
     }
 
-    pub fn request_uri(&self) -> Option<&String> {
-        self.request_uri.as_ref()
+    pub fn request_uri(&self) -> Option<&str> {
+        self.request_uri.as_deref()
     }
 }
 
