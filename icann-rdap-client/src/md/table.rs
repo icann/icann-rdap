@@ -60,6 +60,13 @@ impl MultiPartTable {
         self
     }
 
+    /// Add a name/value row without processing whitespace or markdown charaters.
+    pub fn nv_raw(mut self, name: &impl ToString, value: impl ToString) -> Self {
+        self.rows
+            .push(Row::NameValue((name.to_string(), value.to_string())));
+        self
+    }
+
     /// Add a name/value row with unordered list.
     pub fn nv_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
@@ -172,6 +179,22 @@ impl MultiPartTable {
     pub fn multi_ref(mut self, values: &[&str]) -> Self {
         self.rows.push(Row::MultiValue(
             values.iter().map(|s| s.replace_md_chars()).collect(),
+        ));
+        self
+    }
+
+    /// Adds a multivalue row without processing whitespace or markdown characters.
+    pub fn multi_raw(mut self, values: Vec<String>) -> Self {
+        self.rows.push(Row::MultiValue(
+            values.iter().map(|s| s.to_owned()).collect(),
+        ));
+        self
+    }
+
+    /// Adds a multivalue row without processing whitespace or markdown characters.
+    pub fn multi_raw_ref(mut self, values: &[&str]) -> Self {
+        self.rows.push(Row::MultiValue(
+            values.iter().map(|s| s.to_string()).collect(),
         ));
         self
     }
