@@ -25,6 +25,12 @@ enum Row {
     MultiValue(Vec<String>),
 }
 
+impl Default for MultiPartTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MultiPartTable {
     pub fn new() -> Self {
         Self { rows: Vec::new() }
