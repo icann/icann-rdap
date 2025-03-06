@@ -269,8 +269,14 @@ impl TestRun {
                 | RdapClientError::BootstrapError(_)
                 | RdapClientError::IanaResponse(_) => RunOutcome::InternalError,
                 RdapClientError::Response(_) => RunOutcome::RdapDataError,
-                RdapClientError::Json(_) | RdapClientError::ParsingError(_) => {
-                    RunOutcome::JsonError
+                RdapClientError::Json(_) => RunOutcome::JsonError,
+                RdapClientError::ParsingError(e) => {
+                    let status_code = e.http_data.status_code();
+                    if status_code > 299 && status_code < 400 {
+                        RunOutcome::HttpRedirectError
+                    } else {
+                        RunOutcome::JsonError
+                    }
                 }
                 RdapClientError::IoError(_) => RunOutcome::NetworkError,
                 RdapClientError::Client(e) => {
