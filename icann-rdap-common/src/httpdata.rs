@@ -184,6 +184,62 @@ impl HttpData {
         lines.push_str(data);
         Ok(lines)
     }
+
+    pub fn content_length(&self) -> Option<u64> {
+        self.content_length
+    }
+
+    pub fn content_type(&self) -> Option<&String> {
+        self.content_type.as_ref()
+    }
+
+    pub fn scheme(&self) -> Option<&String> {
+        self.scheme.as_ref()
+    }
+
+    pub fn host(&self) -> &String {
+        &self.host
+    }
+
+    pub fn expires(&self) -> Option<&String> {
+        self.expires.as_ref()
+    }
+
+    pub fn cache_control(&self) -> Option<&String> {
+        self.cache_control.as_ref()
+    }
+
+    pub fn received(&self) -> &DateTime<Utc> {
+        &self.received
+    }
+
+    pub fn status_code(&self) -> u16 {
+        self.status_code
+    }
+
+    pub fn location(&self) -> Option<&String> {
+        self.location.as_ref()
+    }
+
+    pub fn access_control_allow_origin(&self) -> Option<&String> {
+        self.access_control_allow_origin.as_ref()
+    }
+
+    pub fn access_control_allow_credentials(&self) -> Option<&String> {
+        self.access_control_allow_credentials.as_ref()
+    }
+
+    pub fn strict_transport_security(&self) -> Option<&String> {
+        self.strict_transport_security.as_ref()
+    }
+
+    pub fn retry_after(&self) -> Option<&String> {
+        self.retry_after.as_ref()
+    }
+
+    pub fn request_uri(&self) -> Option<&String> {
+        self.request_uri.as_ref()
+    }
 }
 
 #[cfg(test)]

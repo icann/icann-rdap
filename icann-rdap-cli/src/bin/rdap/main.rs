@@ -382,6 +382,9 @@ enum OtypeArg {
     /// Global Top Level Domain Output
     GtldWhois,
 
+    /// URL of RDAP servers.
+    Url,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -531,6 +534,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::PrettyJson => OutputType::PrettyJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
+        OtypeArg::Url => OutputType::Url,
     };
 
     let process_type = match cli.process_type {
