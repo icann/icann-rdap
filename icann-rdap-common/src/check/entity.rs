@@ -40,7 +40,7 @@ impl GetChecks for Entity {
                 items.push(Check::RoleIsEmpty.check_item());
             } else {
                 for role in roles {
-                    let r = EntityRole::from_str(&role);
+                    let r = EntityRole::from_str(role);
                     if r.is_err() {
                         items.push(Check::UnknownRole.check_item());
                     }

@@ -41,6 +41,9 @@ pub(crate) enum OutputType {
 
     /// RDAP JSON with extra information.
     JsonExtra,
+
+    /// URL
+    Url,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -433,6 +436,13 @@ fn do_final_output<W: std::io::Write>(
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
         OutputType::GtldWhois => {}
+        OutputType::Url => {
+            for rr in &transactions {
+                if let Some(url) = rr.res_data.http_data.request_uri() {
+                    writeln!(write, "{url}")?;
+                }
+            }
+        }
         _ => {} // do nothing
     };
 

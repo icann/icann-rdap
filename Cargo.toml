@@ -89,7 +89,7 @@ jsonpath-rust = "=0.5.0"
 jsonpath_lib = "0.3.0"
 
 # internationalized domain names for applications
-idna = "0.5"
+idna = "1.0"
 
 # for use prefixmap
 ipnet = { version = "2.9", features = ["json"] }

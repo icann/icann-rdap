@@ -3,7 +3,8 @@ use chrono::DateTime;
 use super::{MdOptions, MdParams};
 
 pub trait StringUtil {
-    fn replace_ws(self) -> String;
+    /// Replaces and filters markdown characters.
+    fn replace_md_chars(self) -> String;
     fn to_em(self, options: &MdOptions) -> String;
     fn to_bold(self, options: &MdOptions) -> String;
     fn to_inline(self, options: &MdOptions) -> String;
@@ -24,15 +25,22 @@ pub trait StringUtil {
 }
 
 impl<T: ToString> StringUtil for T {
-    fn replace_ws(self) -> String {
-        self.to_string().replace(|c: char| c.is_whitespace(), " ")
+    fn replace_md_chars(self) -> String {
+        self.to_string()
+            .replace(|c: char| c.is_whitespace(), " ")
+            .chars()
+            .map(|c| match c {
+                '*' | '_' | '|' | '#' => format!("\\{c}"),
+                _ => c.to_string(),
+            })
+            .collect()
     }
 
     fn to_em(self, options: &MdOptions) -> String {
         format!(
             "{}{}{}",
             options.text_style_char,
-            self.to_string().replace_ws(),
+            self.to_string(),
             options.text_style_char
         )
     }
@@ -42,18 +50,18 @@ impl<T: ToString> StringUtil for T {
             "{}{}{}{}{}",
             options.text_style_char,
             options.text_style_char,
-            self.to_string().replace_ws(),
+            self.to_string(),
             options.text_style_char,
             options.text_style_char
         )
     }
 
     fn to_inline(self, _options: &MdOptions) -> String {
-        format!("`{}`", self.to_string().replace_ws(),)
+        format!("`{}`", self.to_string(),)
     }
 
     fn to_header(self, level: usize, options: &MdOptions) -> String {
-        let s = self.to_string().replace_ws();
+        let s = self.to_string();
         if options.hash_headers {
             format!("{} {s}\n\n", "#".repeat(level))
         } else {
@@ -67,7 +75,7 @@ impl<T: ToString> StringUtil for T {
     }
 
     fn to_right(self, width: usize, options: &MdOptions) -> String {
-        let str = self.to_string().replace_ws();
+        let str = self.to_string();
         if options.no_unicode_chars {
             format!("{str:>width$}")
         } else {
@@ -92,7 +100,7 @@ impl<T: ToString> StringUtil for T {
     }
 
     fn to_left(self, width: usize, options: &MdOptions) -> String {
-        let str = self.to_string().replace_ws();
+        let str = self.to_string();
         if options.no_unicode_chars {
             format!("{str:<width$}")
         } else {
@@ -117,7 +125,7 @@ impl<T: ToString> StringUtil for T {
     }
 
     fn to_center(self, width: usize, options: &MdOptions) -> String {
-        let str = self.to_string().replace_ws();
+        let str = self.to_string();
         if options.no_unicode_chars {
             format!("{str:^width$}")
         } else {
@@ -143,7 +151,6 @@ impl<T: ToString> StringUtil for T {
 
     fn to_title_case(self) -> String {
         self.to_string()
-            .replace_ws()
             .char_indices()
             .map(|(i, mut c)| {
                 if i == 0 {
@@ -158,7 +165,6 @@ impl<T: ToString> StringUtil for T {
 
     fn to_words_title_case(self) -> String {
         self.to_string()
-            .replace_ws()
             .split_whitespace()
             .map(|s| s.to_title_case())
             .collect::<Vec<String>>()
@@ -172,7 +178,7 @@ impl<T: ToString> StringUtil for T {
 
     fn to_cap_acronyms(self) -> String {
         self.to_string()
-            .replace_ws()
+            .replace_md_chars()
             .replace("rdap", "RDAP")
             .replace("icann", "ICANN")
             .replace("arin", "ARIN")
@@ -203,7 +209,6 @@ impl<T: ToString> StringListUtil for &[T] {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use rstest::rstest;
 
@@ -212,10 +217,7 @@ mod tests {
     #[rstest]
     #[case("foo", "Foo")]
     #[case("FOO", "FOO")]
-    fn GIVEN_word_WHEN_make_title_case_THEN_first_char_is_upper(
-        #[case] word: &str,
-        #[case] expected: &str,
-    ) {
+    fn test_words(#[case] word: &str, #[case] expected: &str) {
         // GIVEN in arguments
 
         // WHEN
@@ -229,10 +231,7 @@ mod tests {
     #[case("foo bar", "Foo Bar")]
     #[case("foo  bar", "Foo Bar")]
     #[case("foO  baR", "FoO BaR")]
-    fn GIVEN_sentence_WHEN_make_all_title_case_THEN_first_chars_is_upper(
-        #[case] sentence: &str,
-        #[case] expected: &str,
-    ) {
+    fn test_sentences(#[case] sentence: &str, #[case] expected: &str) {
         // GIVEN in arguments
 
         // WHEN
@@ -243,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_list_of_sentences_WHEN_make_list_all_title_case_THEN_each_sentence_all_title_cased() {
+    fn test_list_of_sentences() {
         // GIVEN
         let v = ["foo bar", "foO baR"];
 
@@ -255,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_list_WHEN_make_title_case_list_THEN_comma_separated_title_cased() {
+    fn test_list() {
         // GIVEN
         let list = ["foo bar", "bizz buzz"];
 

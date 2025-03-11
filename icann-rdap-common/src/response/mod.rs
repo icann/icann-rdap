@@ -324,7 +324,8 @@ pub trait SelfLink: GetSelfLink {
 /// Gets the `href` of a link with `rel` of "related" and `type` with the RDAP media type.
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
     if let Some(links) = rdap_response.get_links() {
-        let urls: Vec<&str> = links
+        // look for links with the proper type and relation
+        let mut urls: Vec<&str> = links
             .iter()
             .filter(|l| {
                 if l.href.as_ref().is_some() {
@@ -344,6 +345,29 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             })
             .map(|l| l.href.as_ref().unwrap().as_str())
             .collect::<Vec<&str>>();
+        // if none are found with correct media type, look for something that looks like an RDAP link
+        if urls.is_empty() {
+            urls = links
+                .iter()
+                .filter(|l| {
+                    if let Some(href) = l.href() {
+                        if let Some(rel) = l.rel() {
+                            rel.eq_ignore_ascii_case("related")
+                                && (href.contains("/domain/")
+                                    || href.contains("/ip/")
+                                    || href.contains("/autnum/")
+                                    || href.contains("/nameserver/")
+                                    || href.contains("/entity/"))
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                })
+                .map(|l| l.href.as_ref().unwrap().as_str())
+                .collect::<Vec<&str>>();
+        }
         urls
     } else {
         Vec::new()
@@ -368,14 +392,15 @@ pub fn opt_to_vec<T>(opt: Option<Vec<T>>) -> Vec<T> {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use serde_json::Value;
 
-    use super::RdapResponse;
+    use crate::media_types::RDAP_MEDIA_TYPE;
+
+    use super::{get_related_links, Domain, Link, RdapResponse, ToResponse};
 
     #[test]
-    fn GIVEN_redaction_response_WHEN_try_from_THEN_response_is_lookup_with_redaction() {
+    fn test_redaction_response_gets_object() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/lookup_with_redaction.json")).unwrap();
@@ -388,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_response_WHEN_has_extension_THEN_true() {
+    fn test_redaction_response_has_extension() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/lookup_with_redaction.json")).unwrap();
@@ -401,8 +426,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_response_WHEN_try_from_THEN_response_is_domain_search_results_with_redaction(
-    ) {
+    fn test_redaction_response_domain_search() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/domain_search_with_redaction.json"))
@@ -416,7 +440,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_response_WHEN_try_from_THEN_response_is_domain() {
+    fn test_resopnse_is_domain() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/domain_afnic_fr.json")).unwrap();
@@ -429,7 +453,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_response_WHEN_try_from_THEN_response_is_entity() {
+    fn test_response_is_entity() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/entity_arin_hostmaster.json")).unwrap();
@@ -442,7 +466,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_response_WHEN_try_from_THEN_response_is_nameserver() {
+    fn test_response_is_nameserver() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/nameserver_ns1_nic_fr.json")).unwrap();
@@ -455,7 +479,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_autnum_response_WHEN_try_from_THEN_response_is_autnum() {
+    fn test_response_is_autnum() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/autnum_16509.json")).unwrap();
@@ -468,7 +492,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_response_WHEN_try_from_THEN_response_is_network() {
+    fn test_response_is_network() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/network_192_198_0_0.json")).unwrap();
@@ -481,7 +505,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_search_results_WHEN_try_from_THEN_response_is_domain_search_results() {
+    fn test_response_is_domain_search_results() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/domains_ldhname_ns1_arin_net.json"))
@@ -495,7 +519,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_search_results_WHEN_try_from_THEN_response_is_entity_search_results() {
+    fn test_response_is_entity_search_results() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/entities_fn_arin.json")).unwrap();
@@ -508,7 +532,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_help_response_WHEN_try_from_THEN_response_is_help() {
+    fn test_response_is_help() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/help_nic_fr.json")).unwrap();
@@ -521,7 +545,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_error_response_WHEN_try_from_THEN_response_is_error() {
+    fn test_response_is_error() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/error_ripe_net.json")).unwrap();
@@ -534,7 +558,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_search_results_variant_WHEN_to_string_THEN_string_is_entity() {
+    fn test_string_is_entity_search_results() {
         // GIVEN
         let entity: Value =
             serde_json::from_str(include_str!("test_files/entities_fn_arin.json")).unwrap();
@@ -545,5 +569,93 @@ mod tests {
 
         // THEN
         assert_eq!(actual, "EntitySearchResults");
+    }
+
+    #[test]
+    fn test_get_related_for_non_rel_link() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .rel("not-related")
+                    .href("http://example.com")
+                    .value("http://example.com")
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let links = get_related_links(&rdap);
+
+        // THEN
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_get_related_for_rel_with_rdap_type_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("related")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links = get_related_links(&rdap);
+
+        // THEN
+        assert!(!links.is_empty());
+        assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_related_for_rel_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("related")
+            .href("http://example.com")
+            .value("http://example.com")
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links = get_related_links(&rdap);
+
+        // THEN
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_get_related_for_rel_link_that_look_like_rdap() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("related")
+            .href("http://example.com/domain/foo")
+            .value("http://example.com")
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links = get_related_links(&rdap);
+
+        // THEN
+        assert!(!links.is_empty());
+        assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
     }
 }

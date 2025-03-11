@@ -88,15 +88,15 @@ impl MdUtil for Autnum {
         let header_text = if self.start_autnum.is_some() && self.end_autnum.is_some() {
             format!(
                 "Autonomous Systems {} - {}",
-                &self.start_autnum.as_ref().unwrap().replace_ws(),
-                &self.end_autnum.as_ref().unwrap().replace_ws()
+                &self.start_autnum.as_ref().unwrap().replace_md_chars(),
+                &self.end_autnum.as_ref().unwrap().replace_md_chars()
             )
         } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {}", start_autnum.replace_ws())
+            format!("Autonomous System {}", start_autnum.replace_md_chars())
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {}", handle.replace_ws())
+            format!("Autonomous System {}", handle.replace_md_chars())
         } else if let Some(name) = &self.name {
-            format!("Autonomous System {}", name.replace_ws())
+            format!("Autonomous System {}", name.replace_md_chars())
         } else {
             "Autonomous System".to_string()
         };

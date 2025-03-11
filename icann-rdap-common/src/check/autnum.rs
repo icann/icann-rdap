@@ -81,7 +81,6 @@ pub fn is_autnum_private_use(autnum: u32) -> bool {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
 
     use rstest::rstest;
@@ -94,7 +93,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_autnum_with_empty_name_WHEN_checked_THEN_empty_name_check() {
+    fn check_autnum_with_empty_name() {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.name = Some("".to_string());
@@ -112,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_autnum_with_empty_type_WHEN_checked_THEN_empty_type_check() {
+    fn check_autnum_with_empty_type() {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.autnum_type = Some("".to_string());
@@ -140,10 +139,7 @@ mod tests {
     #[case(65551, false)]
     #[case(131072, false)]
     #[case(4294967294, false)]
-    fn GIVEN_autnum_WHEN_is_reserved_THEN_correct_result(
-        #[case] autnum: u32,
-        #[case] expected: bool,
-    ) {
+    fn check_autnum_is_reserved(#[case] autnum: u32, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -162,10 +158,7 @@ mod tests {
     #[case(64512, false)]
     #[case(65535, false)]
     #[case(65552, false)]
-    fn GIVEN_autnum_WHEN_is_documentation_THEN_correct_result(
-        #[case] autnum: u32,
-        #[case] expected: bool,
-    ) {
+    fn check_autnum_is_documentation(#[case] autnum: u32, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -185,10 +178,7 @@ mod tests {
     #[case(65535, false)]
     #[case(4199999999, false)]
     #[case(4294967295, false)]
-    fn GIVEN_autnum_WHEN_is_private_use_THEN_correct_result(
-        #[case] autnum: u32,
-        #[case] expected: bool,
-    ) {
+    fn check_autnum_is_private_use(#[case] autnum: u32, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN

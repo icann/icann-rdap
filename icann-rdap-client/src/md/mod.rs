@@ -132,6 +132,7 @@ pub struct MdHeaderText {
     children: Vec<MdHeaderText>,
 }
 
+#[allow(clippy::to_string_trait_impl)]
 impl ToString for MdHeaderText {
     fn to_string(&self) -> String {
         self.header_text.clone()

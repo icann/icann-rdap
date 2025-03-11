@@ -382,6 +382,9 @@ enum OtypeArg {
     /// Global Top Level Domain Output
     GtldWhois,
 
+    /// URL of RDAP servers.
+    Url,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -486,7 +489,11 @@ impl From<&LogLevel> for LevelFilter {
 #[tokio::main]
 pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
-        eprintln!("\n{e}\n");
+        let ec = e.exit_code();
+        match ec {
+            202 => error!("Use -T or --allow-http to allow insecure HTTP connections."),
+            _ => eprintln!("\n{e}\n"),
+        };
         return e;
     } else {
         return RdapCliError::Success;
@@ -527,6 +534,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::PrettyJson => OutputType::PrettyJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
+        OtypeArg::Url => OutputType::Url,
     };
 
     let process_type = match cli.process_type {
