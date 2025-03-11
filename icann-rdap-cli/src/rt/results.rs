@@ -183,7 +183,7 @@ pub enum RunOutcome {
     NetworkError,
     HttpProtocolError,
     HttpConnectError,
-    HttpRedirectError,
+    HttpRedirectResponse,
     HttpTimeoutError,
     HttpNon200Error,
     HttpTooManyRequestsError,
@@ -273,7 +273,7 @@ impl TestRun {
                 RdapClientError::ParsingError(e) => {
                     let status_code = e.http_data.status_code();
                     if status_code > 299 && status_code < 400 {
-                        RunOutcome::HttpRedirectError
+                        RunOutcome::HttpRedirectResponse
                     } else {
                         RunOutcome::JsonError
                     }
@@ -281,7 +281,7 @@ impl TestRun {
                 RdapClientError::IoError(_) => RunOutcome::NetworkError,
                 RdapClientError::Client(e) => {
                     if e.is_redirect() {
-                        RunOutcome::HttpRedirectError
+                        RunOutcome::HttpRedirectResponse
                     } else if e.is_connect() {
                         RunOutcome::HttpConnectError
                     } else if e.is_timeout() {
