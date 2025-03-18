@@ -144,50 +144,35 @@ impl DnsAlgorithmType {
         })
     }
 
+    fn algo(self) -> DnsAlgorithm {
+        match self {
+            Self::DeleteDs(a) |
+            Self::RsaMd5(a) |
+            Self::DiffieHellman(a) |
+            Self::Dsa(a) |
+            Self::RsaSha1(a) |
+            Self::DsaNsec3Sha1(a) |
+            Self::RsaSha1Nsec3Sha1(a) |
+            Self::RsaSha256(a) |
+            Self::RsaSha512(a) |
+            Self::EccGost(a) |
+            Self::EcdsaP256Sha256(a) |
+            Self::EcdsaP384Sha384(a) |
+            Self::Ed25519(a) |
+            Self::Ed448(a) |
+            Self::PrivateDns(a) |
+            Self::PrivateOid(a) => a,
+        }
+    }
+
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
         let alg = Self::from_number(number)?;
-        let m = match alg {
-            DnsAlgorithmType::DeleteDs(a) => a.mnemonic,
-            DnsAlgorithmType::RsaMd5(a) => a.mnemonic,
-            DnsAlgorithmType::DiffieHellman(a) => a.mnemonic,
-            DnsAlgorithmType::Dsa(a) => a.mnemonic,
-            DnsAlgorithmType::RsaSha1(a) => a.mnemonic,
-            DnsAlgorithmType::DsaNsec3Sha1(a) => a.mnemonic,
-            DnsAlgorithmType::RsaSha1Nsec3Sha1(a) => a.mnemonic,
-            DnsAlgorithmType::RsaSha256(a) => a.mnemonic,
-            DnsAlgorithmType::RsaSha512(a) => a.mnemonic,
-            DnsAlgorithmType::EccGost(a) => a.mnemonic,
-            DnsAlgorithmType::EcdsaP256Sha256(a) => a.mnemonic,
-            DnsAlgorithmType::EcdsaP384Sha384(a) => a.mnemonic,
-            DnsAlgorithmType::Ed25519(a) => a.mnemonic,
-            DnsAlgorithmType::Ed448(a) => a.mnemonic,
-            DnsAlgorithmType::PrivateDns(a) => a.mnemonic,
-            DnsAlgorithmType::PrivateOid(a) => a.mnemonic,
-        };
-        Ok(m)
+        Ok(alg.algo().mnemonic)
     }
 
     pub fn zone_signing(number: u8) -> Result<bool, DnsTypeError> {
         let alg = Self::from_number(number)?;
-        let z = match alg {
-            DnsAlgorithmType::DeleteDs(a) => a.zone_signing,
-            DnsAlgorithmType::RsaMd5(a) => a.zone_signing,
-            DnsAlgorithmType::DiffieHellman(a) => a.zone_signing,
-            DnsAlgorithmType::Dsa(a) => a.zone_signing,
-            DnsAlgorithmType::RsaSha1(a) => a.zone_signing,
-            DnsAlgorithmType::DsaNsec3Sha1(a) => a.zone_signing,
-            DnsAlgorithmType::RsaSha1Nsec3Sha1(a) => a.zone_signing,
-            DnsAlgorithmType::RsaSha256(a) => a.zone_signing,
-            DnsAlgorithmType::RsaSha512(a) => a.zone_signing,
-            DnsAlgorithmType::EccGost(a) => a.zone_signing,
-            DnsAlgorithmType::EcdsaP256Sha256(a) => a.zone_signing,
-            DnsAlgorithmType::EcdsaP384Sha384(a) => a.zone_signing,
-            DnsAlgorithmType::Ed25519(a) => a.zone_signing,
-            DnsAlgorithmType::Ed448(a) => a.zone_signing,
-            DnsAlgorithmType::PrivateDns(a) => a.zone_signing,
-            DnsAlgorithmType::PrivateOid(a) => a.zone_signing,
-        };
-        Ok(z)
+        Ok(alg.algo().zone_signing)
     }
 }
 
