@@ -72,22 +72,21 @@ impl StorageType {
             .domain_search_by_name_enable(domain_search_by_name)
             .build();
         let storage = get_or(STORAGE, "memory");
-        let storage_type = if storage == "memory" {
-            StorageType::Memory(MemConfig::builder().common_config(common_config).build())
+        if storage == "memory" {
+            Ok(Self::Memory(MemConfig::builder().common_config(common_config).build()))
         } else if storage == "postgres" {
             let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
-            StorageType::Postgres(
+            Ok(Self::Postgres(
                 PgConfig::builder()
                     .db_url(db_url)
                     .common_config(common_config)
                     .build(),
-            )
+            ))
         } else {
-            return Err(RdapServerError::Config(format!(
+            Err(RdapServerError::Config(format!(
                 "storage type of '{storage}' is invalid"
-            )));
-        };
-        Ok(storage_type)
+            )))
+        }
     }
 }
 

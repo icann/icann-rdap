@@ -42,7 +42,7 @@ pub struct V4Cidr {
 impl V4Cidr {
     #[builder]
     pub fn new(v4prefix: String, length: u8) -> Self {
-        V4Cidr {
+        Self {
             v4prefix: Some(v4prefix),
             length: Some(length),
         }
@@ -82,7 +82,7 @@ pub struct V6Cidr {
 impl V6Cidr {
     #[builder]
     pub fn new(v6prefix: String, length: u8) -> Self {
-        V6Cidr {
+        Self {
             v6prefix: Some(v6prefix),
             length: Some(length),
         }
@@ -222,7 +222,7 @@ impl Network {
         let links = (!links.is_empty()).then_some(links);
         let events = (!events.is_empty()).then_some(events);
         let notices = (!notices.is_empty()).then_some(notices);
-        Network::new_network_with_options(
+        Self::new_network_with_options(
             cidr,
             handle,
             country,

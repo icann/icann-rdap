@@ -206,7 +206,7 @@ impl Link {
         media_type: Option<String>,
     ) -> Self {
         let hreflang = hreflang.map(HrefLang::Lang);
-        Link {
+        Self {
             value: Some(value),
             rel: Some(rel),
             href: Some(href),
@@ -291,7 +291,7 @@ pub struct NoticeOrRemark {
 impl NoticeOrRemark {
     #[builder]
     pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
-        NoticeOrRemark {
+        Self {
             title,
             description: Some(StringOrStringArray::Many(description)),
             links,
@@ -367,7 +367,7 @@ impl Event {
         event_actor: Option<String>,
         links: Option<Links>,
     ) -> Self {
-        Event {
+        Self {
             event_action: Some(event_action),
             event_actor,
             event_date: Some(event_date),
@@ -437,7 +437,7 @@ pub struct PublicId {
 impl PublicId {
     #[builder]
     pub fn new(id_type: String, identifier: String) -> Self {
-        PublicId {
+        Self {
             id_type: Some(id_type),
             identifier: Some(identifier),
         }
@@ -460,7 +460,7 @@ impl Common {
     #[builder(entry = "level0")]
     pub fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
-        Common::new_level0_with_options(extensions, notices)
+        Self::new_level0_with_options(extensions, notices)
     }
 
     #[builder(entry = "level0_with_options")]

@@ -179,7 +179,7 @@ impl AppState<Mem> {
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Mem> {
+        Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
         })
@@ -200,7 +200,7 @@ impl AppState<Pg> {
         let storage = Pg::new(config).await?;
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Pg> {
+        Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
         })

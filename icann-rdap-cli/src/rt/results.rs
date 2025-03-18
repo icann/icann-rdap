@@ -29,7 +29,7 @@ pub struct TestResults {
 
 impl TestResults {
     pub fn new(query_url: String, dns_data: DnsData) -> Self {
-        TestResults {
+        Self {
             query_url,
             dns_data,
             start_time: Utc::now(),
@@ -226,7 +226,7 @@ pub struct TestRun {
 
 impl TestRun {
     pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
-        TestRun {
+        Self {
             features,
             start_time: Utc::now(),
             socket_addr: SocketAddr::new(IpAddr::V4(ipv4), port),
@@ -238,7 +238,7 @@ impl TestRun {
     }
 
     pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
-        TestRun {
+        Self {
             features,
             start_time: Utc::now(),
             socket_addr: SocketAddr::new(IpAddr::V6(ipv6), port),
