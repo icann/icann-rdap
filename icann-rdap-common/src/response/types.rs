@@ -10,7 +10,7 @@ pub struct Extension(pub String);
 
 impl From<&str> for Extension {
     fn from(value: &str) -> Self {
-        Extension(value.to_string())
+        Self(value.to_string())
     }
 }
 

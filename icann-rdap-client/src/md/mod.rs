@@ -183,7 +183,7 @@ pub(crate) trait FromMd<'a> {
 
 impl<'a> FromMd<'a> for CheckParams<'a> {
     fn from_md(md_params: MdParams<'a>, parent_type: TypeId) -> Self {
-        CheckParams {
+        Self {
             do_subchecks: false,
             root: md_params.root,
             parent_type,
@@ -192,7 +192,7 @@ impl<'a> FromMd<'a> for CheckParams<'a> {
     }
 
     fn from_md_no_parent(md_params: MdParams<'a>) -> Self {
-        CheckParams {
+        Self {
             do_subchecks: false,
             root: md_params.root,
             parent_type: md_params.parent_type,

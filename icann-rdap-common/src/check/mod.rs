@@ -168,7 +168,7 @@ pub struct CheckParams<'a> {
 
 impl CheckParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
-        CheckParams {
+        Self {
             do_subchecks: self.do_subchecks,
             root: self.root,
             parent_type,

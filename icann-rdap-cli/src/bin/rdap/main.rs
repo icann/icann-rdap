@@ -473,12 +473,12 @@ enum InrBackupBootstrapArg {
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
-            LogLevel::Off => LevelFilter::OFF,
-            LogLevel::Error => LevelFilter::ERROR,
-            LogLevel::Warn => LevelFilter::WARN,
-            LogLevel::Info => LevelFilter::INFO,
-            LogLevel::Debug => LevelFilter::DEBUG,
-            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Off => Self::OFF,
+            LogLevel::Error => Self::ERROR,
+            LogLevel::Warn => Self::WARN,
+            LogLevel::Info => Self::INFO,
+            LogLevel::Debug => Self::DEBUG,
+            LogLevel::Trace => Self::TRACE,
         }
     }
 }

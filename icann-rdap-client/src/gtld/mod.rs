@@ -19,7 +19,7 @@ pub struct GtldParams<'a> {
 
 impl GtldParams<'_> {
     pub fn from_parent(&mut self, parent_type: TypeId) -> Self {
-        GtldParams {
+        Self {
             parent_type,
             root: self.root,
             label: self.label.clone(),
@@ -27,7 +27,7 @@ impl GtldParams<'_> {
     }
 
     pub fn next_level(&self) -> Self {
-        GtldParams {
+        Self {
             label: self.label.clone(),
             ..*self
         }
