@@ -43,105 +43,105 @@ pub enum DnsAlgorithmType {
 
 impl DnsAlgorithmType {
     pub fn from_number(number: u8) -> Result<Self, DnsTypeError> {
-        match number {
-            0 => Ok(Self::DeleteDs(DnsAlgorithm {
+        Ok(match number {
+            0 => Self::DeleteDs(DnsAlgorithm {
                 number: 0,
                 mnemonic: "DELETE",
                 zone_signing: false,
                 transaction_signing: false,
-            })),
-            1 => Ok(Self::RsaMd5(DnsAlgorithm {
+            }),
+            1 => Self::RsaMd5(DnsAlgorithm {
                 number: 1,
                 mnemonic: "RSAMD5",
                 zone_signing: false,
                 transaction_signing: true,
-            })),
-            2 => Ok(Self::DiffieHellman(DnsAlgorithm {
+            }),
+            2 => Self::DiffieHellman(DnsAlgorithm {
                 number: 2,
                 mnemonic: "DH",
                 zone_signing: false,
                 transaction_signing: true,
-            })),
-            3 => Ok(Self::Dsa(DnsAlgorithm {
+            }),
+            3 => Self::Dsa(DnsAlgorithm {
                 number: 3,
                 mnemonic: "DSA",
                 zone_signing: true,
                 transaction_signing: true,
-            })),
-            5 => Ok(Self::RsaSha1(DnsAlgorithm {
+            }),
+            5 => Self::RsaSha1(DnsAlgorithm {
                 number: 5,
                 mnemonic: "RSASHA1",
                 zone_signing: true,
                 transaction_signing: true,
-            })),
-            6 => Ok(Self::DsaNsec3Sha1(DnsAlgorithm {
+            }),
+            6 => Self::DsaNsec3Sha1(DnsAlgorithm {
                 number: 6,
                 mnemonic: "DSA-NSEC3-SHA1",
                 zone_signing: true,
                 transaction_signing: true,
-            })),
-            7 => Ok(Self::RsaSha1Nsec3Sha1(DnsAlgorithm {
+            }),
+            7 => Self::RsaSha1Nsec3Sha1(DnsAlgorithm {
                 number: 7,
                 mnemonic: "RSA-NSEC3-SHA1",
                 zone_signing: true,
                 transaction_signing: true,
-            })),
-            8 => Ok(Self::RsaSha256(DnsAlgorithm {
+            }),
+            8 => Self::RsaSha256(DnsAlgorithm {
                 number: 8,
                 mnemonic: "RSASHA256",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            10 => Ok(Self::RsaSha512(DnsAlgorithm {
+            }),
+            10 => Self::RsaSha512(DnsAlgorithm {
                 number: 10,
                 mnemonic: "RSASHA512",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            12 => Ok(Self::EccGost(DnsAlgorithm {
+            }),
+            12 => Self::EccGost(DnsAlgorithm {
                 number: 12,
                 mnemonic: "ECC-GOST",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            13 => Ok(Self::EcdsaP256Sha256(DnsAlgorithm {
+            }),
+            13 => Self::EcdsaP256Sha256(DnsAlgorithm {
                 number: 13,
                 mnemonic: "ECDSAP256SHA256",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            14 => Ok(Self::EcdsaP384Sha384(DnsAlgorithm {
+            }),
+            14 => Self::EcdsaP384Sha384(DnsAlgorithm {
                 number: 14,
                 mnemonic: "ECDSAP384SHA384",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            15 => Ok(Self::Ed25519(DnsAlgorithm {
+            }),
+            15 => Self::Ed25519(DnsAlgorithm {
                 number: 15,
                 mnemonic: "ED25519",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            16 => Ok(Self::Ed448(DnsAlgorithm {
+            }),
+            16 => Self::Ed448(DnsAlgorithm {
                 number: 16,
                 mnemonic: "ED448",
                 zone_signing: true,
                 transaction_signing: false,
-            })),
-            253 => Ok(Self::PrivateDns(DnsAlgorithm {
+            }),
+            253 => Self::PrivateDns(DnsAlgorithm {
                 number: 253,
                 mnemonic: "PRIVATEDNS",
                 zone_signing: true,
                 transaction_signing: true,
-            })),
-            254 => Ok(Self::PrivateOid(DnsAlgorithm {
+            }),
+            254 => Self::PrivateOid(DnsAlgorithm {
                 number: 254,
                 mnemonic: "PRIVATEOID",
                 zone_signing: true,
                 transaction_signing: true,
-            })),
-            _ => Err(DnsTypeError::InvalidAlgorithm),
-        }
+            }),
+            _ => return Err(DnsTypeError::InvalidAlgorithm),
+        })
     }
 
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
@@ -215,29 +215,29 @@ pub enum DnsDigestType {
 
 impl DnsDigestType {
     pub fn from_number(number: u8) -> Result<Self, DnsTypeError> {
-        match number {
-            1 => Ok(DnsDigestType::Sha1(DnsDigest {
+       Ok(match number {
+            1 => DnsDigestType::Sha1(DnsDigest {
                 number: 1,
                 mnemonic: "SHA1",
                 mandatory: true,
-            })),
-            2 => Ok(DnsDigestType::Sha256(DnsDigest {
+            }),
+            2 => DnsDigestType::Sha256(DnsDigest {
                 number: 2,
                 mnemonic: "SHA256",
                 mandatory: true,
-            })),
-            3 => Ok(DnsDigestType::Gost(DnsDigest {
+            }),
+            3 => DnsDigestType::Gost(DnsDigest {
                 number: 3,
                 mnemonic: "GOST",
                 mandatory: false,
-            })),
-            4 => Ok(DnsDigestType::Sha384(DnsDigest {
+            }),
+            4 => DnsDigestType::Sha384(DnsDigest {
                 number: 4,
                 mnemonic: "SHA384",
                 mandatory: false,
-            })),
-            _ => Err(DnsTypeError::InvalidDigest),
-        }
+            }),
+            _ => return Err(DnsTypeError::InvalidDigest),
+        })
     }
 
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {

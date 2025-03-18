@@ -18,7 +18,7 @@ impl Help {
         notices: Vec<crate::response::types::Notice>,
     ) -> Result<Self, RdapResponseError> {
         let notices = (!notices.is_empty()).then_some(notices);
-        Help::new_help_with_options(notices)
+        Self::new_help_with_options(notices)
     }
 
     #[builder(entry = "with_options")]
