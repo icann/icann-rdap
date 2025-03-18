@@ -12,11 +12,11 @@ impl GetChecks for Error {
                 .get_sub_checks(params.from_parent(TypeId::of::<Error>()));
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::Error,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }

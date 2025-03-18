@@ -17,11 +17,11 @@ impl GetChecks for DomainSearchResults {
             });
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::DomainSearchResults,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -40,11 +40,11 @@ impl GetChecks for NameserverSearchResults {
             });
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::NameserverSearchResults,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -63,11 +63,11 @@ impl GetChecks for EntitySearchResults {
             });
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::EntitySearchResults,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }

@@ -26,10 +26,10 @@ impl GetChecks for Entity {
             }
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         if let Some(roles) = &self.roles {
             if roles.as_slice().is_empty_or_any_empty_or_whitespace() {

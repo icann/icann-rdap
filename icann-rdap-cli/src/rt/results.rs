@@ -324,7 +324,7 @@ impl TestRun {
         // if outcome is tested
         if matches!(self.outcome, RunOutcome::Tested) {
             // get check items according to class
-            let mut check_v: Vec<(String, String)> = Vec::new();
+            let mut check_v: Vec<(String, String)> = vec![];
             if let Some(ref checks) = self.checks {
                 traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
                     let message = check_item_md(item, options);

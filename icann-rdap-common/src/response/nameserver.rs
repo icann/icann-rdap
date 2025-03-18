@@ -22,8 +22,8 @@ pub struct IpAddresses {
 impl IpAddresses {
     #[builder(entry = "basic")]
     pub fn new_basic(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
-        let mut v4: Vec<String> = Vec::new();
-        let mut v6: Vec<String> = Vec::new();
+        let mut v4: Vec<String> = vec![];
+        let mut v6: Vec<String> = vec![];
         for addr in addresses {
             let ip = IpAddr::from_str(&addr)?;
             match ip {

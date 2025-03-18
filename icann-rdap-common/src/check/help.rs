@@ -12,11 +12,11 @@ impl GetChecks for Help {
                 .get_sub_checks(params.from_parent(TypeId::of::<Help>()));
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::Help,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }

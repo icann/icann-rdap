@@ -4,7 +4,7 @@ use super::{Check, Checks, GetChecks};
 
 impl GetChecks for HttpData {
     fn get_checks(&self, params: crate::check::CheckParams) -> crate::check::Checks {
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         // RFC checks
         if let Some(allow_origin) = &self.access_control_allow_origin {
@@ -52,7 +52,7 @@ impl GetChecks for HttpData {
         Checks {
             rdap_struct: super::RdapStructure::HttpData,
             items,
-            sub_checks: Vec::new(),
+            sub_checks: vec![],
         }
     }
 }

@@ -19,10 +19,10 @@ impl GetChecks for Autnum {
             );
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         if self.start_autnum.is_none() || self.end_autnum.is_none() {
             items.push(Check::AutnumMissing.check_item())

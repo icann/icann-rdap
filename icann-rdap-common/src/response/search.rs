@@ -19,7 +19,7 @@ impl DomainSearchResults {
     pub fn new_empty() -> Self {
         Self {
             common: Common::builder().build(),
-            results: Vec::new(),
+            results: vec![],
         }
     }
 }
@@ -40,7 +40,7 @@ impl NameserverSearchResults {
     pub fn new_empty() -> Self {
         Self {
             common: Common::builder().build(),
-            results: Vec::new(),
+            results: vec![],
         }
     }
 }
@@ -61,7 +61,7 @@ impl EntitySearchResults {
     pub fn new_empty() -> Self {
         Self {
             common: Common::builder().build(),
-            results: Vec::new(),
+            results: vec![],
         }
     }
 }

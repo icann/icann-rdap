@@ -24,14 +24,14 @@ impl GetChecks for Network {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V4PrefixIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                         if v4.length.is_none() {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V4LengthIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                     }
@@ -40,14 +40,14 @@ impl GetChecks for Network {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V6PrefixIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                         if v6.length.is_none() {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V6LengthIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                     }
@@ -55,10 +55,10 @@ impl GetChecks for Network {
             }
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         if let Some(name) = &self.name {
             if name.is_whitespace_or_empty() {

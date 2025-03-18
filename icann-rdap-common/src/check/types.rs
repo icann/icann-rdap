@@ -24,7 +24,7 @@ use super::{
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items = Vec::new();
+        let mut items = vec![];
         if params.parent_type != params.root.get_type() {
             items.push(Check::RdapConformanceInvalidParent.check_item())
         };
@@ -39,21 +39,21 @@ impl GetChecks for RdapConformance {
         Checks {
             rdap_struct: super::RdapStructure::RdapConformance,
             items,
-            sub_checks: Vec::new(),
+            sub_checks: vec![],
         }
     }
 }
 
 impl GetChecks for Links {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             self.iter()
                 .for_each(|link| sub_checks.push(link.get_checks(params)));
         }
         Checks {
             rdap_struct: super::RdapStructure::Links,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -70,7 +70,7 @@ lazy_static! {
 
 impl GetChecks for Link {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = Vec::new();
+        let mut items: Vec<CheckItem> = vec![];
         if self.value.is_none() {
             items.push(Check::LinkMissingValueProperty.check_item())
         };
@@ -112,21 +112,21 @@ impl GetChecks for Link {
         Checks {
             rdap_struct: super::RdapStructure::Link,
             items,
-            sub_checks: Vec::new(),
+            sub_checks: vec![],
         }
     }
 }
 
 impl GetChecks for Notices {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             self.iter()
                 .for_each(|note| sub_checks.push(note.0.get_checks(params)));
         }
         Checks {
             rdap_struct: super::RdapStructure::Notices,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -134,14 +134,14 @@ impl GetChecks for Notices {
 
 impl GetChecks for Remarks {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             self.iter()
                 .for_each(|remark| sub_checks.push(remark.0.get_checks(params)));
         }
         Checks {
             rdap_struct: super::RdapStructure::Remarks,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -149,7 +149,7 @@ impl GetChecks for Remarks {
 
 impl GetChecks for NoticeOrRemark {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = Vec::new();
+        let mut items: Vec<CheckItem> = vec![];
         if let Some(description) = &self.description {
             if matches!(description, StringOrStringArray::One(_)) {
                 items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
@@ -157,7 +157,7 @@ impl GetChecks for NoticeOrRemark {
         } else {
             items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
         };
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             if let Some(links) = &self.links {
                 links.iter().for_each(|link| {
@@ -176,20 +176,20 @@ impl GetChecks for NoticeOrRemark {
 
 impl GetSubChecks for PublicIds {
     fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         self.iter().for_each(|pid| {
             if pid.id_type.is_none() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdTypeIsAbsent.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
             if pid.identifier.is_none() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
         });
@@ -199,7 +199,7 @@ impl GetSubChecks for PublicIds {
 
 impl GetSubChecks for Common {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             if let Some(rdap_conformance) = &self.rdap_conformance {
                 sub_checks.push(rdap_conformance.get_checks(params))
@@ -212,7 +212,7 @@ impl GetSubChecks for Common {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::RdapConformance,
                 items: vec![Check::RdapConformanceMissing.check_item()],
-                sub_checks: Vec::new(),
+                sub_checks: vec![],
             });
         }
         sub_checks
@@ -221,7 +221,7 @@ impl GetSubChecks for Common {
 
 impl GetSubChecks for ObjectCommon {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
 
         // entities
         if params.do_subchecks {
@@ -246,7 +246,7 @@ impl GetSubChecks for ObjectCommon {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::Links,
                 items: vec![Check::LinkObjectClassHasNoSelf.check_item()],
-                sub_checks: Vec::new(),
+                sub_checks: vec![],
             })
         };
 
@@ -264,21 +264,21 @@ impl GetSubChecks for ObjectCommon {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::Events,
                             items: vec![Check::EventDateIsNotRfc3339.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         })
                     }
                 } else {
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::Events,
                         items: vec![Check::EventDateIsAbsent.check_item()],
-                        sub_checks: Vec::new(),
+                        sub_checks: vec![],
                     })
                 }
                 if e.event_action.is_none() {
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::Events,
                         items: vec![Check::EventActionIsAbsent.check_item()],
-                        sub_checks: Vec::new(),
+                        sub_checks: vec![],
                     })
                 }
             });
@@ -290,7 +290,7 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Handle,
                     items: vec![Check::HandleIsEmpty.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 })
             }
         }
@@ -302,7 +302,7 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Status,
                     items: vec![Check::StatusIsEmpty.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 })
             }
         }
@@ -313,7 +313,7 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Port43,
                     items: vec![Check::Port43IsEmpty.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 })
             }
         }

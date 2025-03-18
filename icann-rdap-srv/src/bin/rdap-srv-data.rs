@@ -776,7 +776,7 @@ async fn entities(
     store: &dyn StoreOps,
     args: &ObjectArgs,
 ) -> Result<Option<Vec<Entity>>, RdapServerError> {
-    let mut entities: Vec<Entity> = Vec::new();
+    let mut entities: Vec<Entity> = vec![];
     if let Some(handle) = &args.registrant {
         entities.push(get_entity(store, handle, "registrant".to_string()).await?);
     }
@@ -819,7 +819,7 @@ async fn nameservers(
     store: &dyn StoreOps,
     ns_names: Vec<String>,
 ) -> Result<Option<Vec<Nameserver>>, RdapServerError> {
-    let mut nameservers: Vec<Nameserver> = Vec::new();
+    let mut nameservers: Vec<Nameserver> = vec![];
     for ns in ns_names {
         let ns = get_ns(store, &ns).await?;
         nameservers.push(ns);
@@ -846,7 +846,7 @@ fn status(args: &ObjectArgs) -> Option<Status> {
 }
 
 fn events(args: &ObjectArgs) -> Option<Events> {
-    let mut events: Events = Vec::new();
+    let mut events: Events = vec![];
     let created_at = if let Some(dt) = args.created {
         dt
     } else {
@@ -871,7 +871,7 @@ fn events(args: &ObjectArgs) -> Option<Events> {
 }
 
 fn links(self_href: &str) -> Option<Links> {
-    let mut links: Links = Vec::new();
+    let mut links: Links = vec![];
     let self_link = Link::builder()
         .value(self_href.to_owned())
         .href(self_href.to_owned())

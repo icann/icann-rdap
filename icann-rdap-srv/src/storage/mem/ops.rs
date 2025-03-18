@@ -50,7 +50,7 @@ impl Mem {
 
 impl Default for Mem {
     fn default() -> Self {
-        Mem::new(
+        Self::new(
             MemConfig::builder()
                 .common_config(CommonConfig::default())
                 .build(),

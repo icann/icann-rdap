@@ -318,7 +318,7 @@ async fn fetch_iana_registry(
     if path.exists() {
         let input = File::open(&path).await?;
         let buf = BufReader::new(input);
-        let mut lines = Vec::new();
+        let mut lines = vec![];
         let mut buf_lines = buf.lines();
         while let Some(buf_line) = buf_lines.next_line().await? {
             lines.push(buf_line);

@@ -20,10 +20,10 @@ impl GetChecks for Domain {
             }
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         // check variants
         if let Some(variants) = &self.variants {

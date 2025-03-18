@@ -323,7 +323,7 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                 let mut region_code: Option<String> = None;
                 let mut region_name: Option<String> = None;
                 let mut locality: Option<String> = None;
-                let mut street_parts: Vec<String> = Vec::new();
+                let mut street_parts: Vec<String> = vec![];
                 if let Some(fourth) = prop.get(3) {
                     if let Some(addr) = fourth.as_array() {
                         // the jcard address fields are in a different index of the array.

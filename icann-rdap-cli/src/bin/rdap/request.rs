@@ -34,7 +34,7 @@ pub(crate) async fn do_request(
         if path.exists() {
             let input = File::open(path)?;
             let buf = BufReader::new(input);
-            let mut lines = Vec::new();
+            let mut lines = vec![];
             for line in buf.lines() {
                 lines.push(line?)
             }
