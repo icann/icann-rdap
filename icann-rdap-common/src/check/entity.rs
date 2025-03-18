@@ -15,11 +15,11 @@ impl GetChecks for Entity {
         let sub_checks = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Entity>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Entity>())),
+                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(public_ids) = &self.public_ids {
                 sub_checks.append(&mut public_ids.get_sub_checks(params));

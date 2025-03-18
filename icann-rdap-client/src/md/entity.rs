@@ -22,7 +22,7 @@ use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Entity {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Entity>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 

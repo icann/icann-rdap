@@ -9,7 +9,7 @@ impl GetChecks for Error {
         let sub_checks = if params.do_subchecks {
             let sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Error>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks
         } else {
             vec![]

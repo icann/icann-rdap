@@ -25,7 +25,7 @@ pub trait StringUtil {
 
 impl<T: ToString> StringUtil for T {
     fn replace_ws(self) -> String {
-        self.to_string().replace(|c: char| c.is_whitespace(), " ")
+        self.to_string().replace(char::is_whitespace, " ")
     }
 
     fn to_em(self, options: &MdOptions) -> String {

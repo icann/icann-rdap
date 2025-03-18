@@ -7,7 +7,7 @@ use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
 impl ToMd for Help {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(TypeId::of::<Help>())));
+        md.push_str(&self.common.to_md(params.from_parent(TypeId::of::<Self>())));
         md.push_str(HR);
         md.push('\n');
         md

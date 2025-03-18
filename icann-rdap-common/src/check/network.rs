@@ -11,11 +11,11 @@ impl GetChecks for Network {
         let sub_checks = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Network>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Network>())),
+                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(cidr0) = &self.cidr0_cidrs {
                 cidr0.iter().for_each(|cidr| match cidr {

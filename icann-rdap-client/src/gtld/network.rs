@@ -4,7 +4,7 @@ use std::any::TypeId;
 
 impl ToGtldWhois for Network {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
-        let _typeid = TypeId::of::<Network>();
+        let _typeid = TypeId::of::<Self>();
         let mut gtld = String::new();
         gtld.push_str(&self.common.to_gtld_whois(params));
         let header_text = if self.start_address.is_some() && self.end_address.is_some() {

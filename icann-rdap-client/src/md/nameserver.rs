@@ -14,7 +14,7 @@ use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Nameserver {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Nameserver>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
 
         // other common stuff

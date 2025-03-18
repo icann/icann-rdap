@@ -14,7 +14,7 @@ use super::{
 
 impl ToMd for Network {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Network>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params));
 

@@ -26,11 +26,11 @@ pub(crate) async fn domains(
     Query(params): Query<DomainsParams>,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    if let Some(name) = params.name {
+    Ok(if let Some(name) = params.name {
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_name(&name).await?;
-        Ok(results.response())
+        results.response()
     } else {
-        Ok(NOT_IMPLEMENTED.response())
-    }
+        NOT_IMPLEMENTED.response()
+    })
 }

@@ -115,7 +115,7 @@ impl Redacted {
     }
 
     pub fn get_type(&self) -> std::any::TypeId {
-        TypeId::of::<Redacted>()
+        TypeId::of::<Self>()
     }
 }
 
