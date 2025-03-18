@@ -227,13 +227,12 @@ impl DnsDigestType {
 
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
         let digest = DnsDigestType::from_number(number)?;
-        let d = match digest {
-            DnsDigestType::Sha1(d) => d.mnemonic,
-            DnsDigestType::Sha256(d) => d.mnemonic,
-            DnsDigestType::Gost(d) => d.mnemonic,
+        Ok(match digest {
+            DnsDigestType::Sha1(d) |
+            DnsDigestType::Sha256(d) |
+            DnsDigestType::Gost(d) |
             DnsDigestType::Sha384(d) => d.mnemonic,
-        };
-        Ok(d)
+        })
     }
 }
 
@@ -306,10 +305,9 @@ impl FromStr for DomainName {
             return Err(DomainNameError::InvalidDomainName);
         }
         let ascii = domain_to_ascii(s)?;
-        let retval = DomainName {
+        Ok(Self {
             domain_name: s.to_string(),
             ascii,
-        };
-        Ok(retval)
+        })
     }
 }
