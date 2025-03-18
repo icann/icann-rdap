@@ -126,11 +126,11 @@ impl TryFrom<Value> for RdapResponse {
         if let Some(class_name) = response.get("objectClassName") {
             if let Some(name_str) = class_name.as_str() {
                 return match name_str {
-                    "domain" => Ok(RdapResponse::Domain(serde_json::from_value(value)?)),
-                    "entity" => Ok(RdapResponse::Entity(serde_json::from_value(value)?)),
-                    "nameserver" => Ok(RdapResponse::Nameserver(serde_json::from_value(value)?)),
-                    "autnum" => Ok(RdapResponse::Autnum(serde_json::from_value(value)?)),
-                    "ip network" => Ok(RdapResponse::Network(serde_json::from_value(value)?)),
+                    "domain" => Ok(Self::Domain(serde_json::from_value(value)?)),
+                    "entity" => Ok(Self::Entity(serde_json::from_value(value)?)),
+                    "nameserver" => Ok(Self::Nameserver(serde_json::from_value(value)?)),
+                    "autnum" => Ok(Self::Autnum(serde_json::from_value(value)?)),
+                    "ip network" => Ok(Self::Network(serde_json::from_value(value)?)),
                     _ => Err(RdapResponseError::UnknownRdapResponse),
                 };
             } else {
@@ -143,7 +143,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a domain search result
         if let Some(result) = response.get("domainSearchResults") {
             if result.is_array() {
-                return Ok(RdapResponse::DomainSearchResults(serde_json::from_value(
+                return Ok(Self::DomainSearchResults(serde_json::from_value(
                     value,
                 )?));
             } else {
@@ -155,7 +155,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a entity search result
         if let Some(result) = response.get("entitySearchResults") {
             if result.is_array() {
-                return Ok(RdapResponse::EntitySearchResults(serde_json::from_value(
+                return Ok(Self::EntitySearchResults(serde_json::from_value(
                     value,
                 )?));
             } else {
@@ -167,7 +167,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a nameserver search result
         if let Some(result) = response.get("nameserverSearchResults") {
             if result.is_array() {
-                return Ok(RdapResponse::NameserverSearchResults(
+                return Ok(Self::NameserverSearchResults(
                     serde_json::from_value(value)?,
                 ));
             } else {
@@ -180,7 +180,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it has an errorCode
         if let Some(result) = response.get("errorCode") {
             if result.is_u64() {
-                return Ok(RdapResponse::ErrorResponse(serde_json::from_value(value)?));
+                return Ok(Self::ErrorResponse(serde_json::from_value(value)?));
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'errorCode' is not an unsigned integer".to_string(),
@@ -191,7 +191,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it has a notices then it is help response at this point
         if let Some(result) = response.get("notices") {
             if result.is_array() {
-                return Ok(RdapResponse::Help(serde_json::from_value(value)?));
+                return Ok(Self::Help(serde_json::from_value(value)?));
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'notices' is not an array".to_string(),
@@ -262,7 +262,7 @@ impl RdapResponse {
 
     pub fn is_redirect(&self) -> bool {
         match self {
-            RdapResponse::ErrorResponse(e) => e.is_redirect(),
+            Self::ErrorResponse(e) => e.is_redirect(),
             _ => false,
         }
     }
@@ -270,11 +270,9 @@ impl RdapResponse {
 
 impl GetSelfLink for RdapResponse {
     fn get_self_link(&self) -> Option<&Link> {
-        if let Some(links) = self.get_links() {
-            links.iter().find(|link| link.is_relation("self"))
-        } else {
-            None
-        }
+        self.get_links()
+            .and_then(|links| links.iter().find(|link| link.is_relation("self")))
+
     }
 }
 
@@ -290,31 +288,25 @@ pub trait SelfLink: GetSelfLink {
 }
 
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
-    if let Some(links) = rdap_response.get_links() {
-        let urls: Vec<&str> = links
-            .iter()
-            .filter(|l| {
-                if l.href.as_ref().is_some() {
-                    if let Some(rel) = &l.rel {
-                        if let Some(media_type) = &l.media_type {
-                            rel.eq_ignore_ascii_case("related")
-                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
+    let Some(links) = rdap_response.get_links() else{
+        return vec![];
+    };
+    let urls: Vec<&str> = links
+        .iter()
+        .filter(|l| {
+            if l.href.as_ref().is_some() {
+                if let Some(rel) = &l.rel {
+                    if let Some(media_type) = &l.media_type {
+                        return rel.eq_ignore_ascii_case("related")
+                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
                     }
-                } else {
-                    false
                 }
-            })
-            .map(|l| l.href.as_ref().unwrap().as_str())
-            .collect::<Vec<&str>>();
-        urls
-    } else {
-        Vec::new()
-    }
+            }
+            false
+        })
+        .map(|l| l.href.as_ref().unwrap().as_str())
+        .collect::<Vec<&str>>();
+    urls
 }
 
 pub trait ToChild {

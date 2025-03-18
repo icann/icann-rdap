@@ -689,34 +689,32 @@ async fn exec<W: std::io::Write>(
 }
 
 fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
-    if let Some(query_value) = cli.query_value.clone() {
-        if let Some(query_type) = cli.query_type {
-            let q = match query_type {
-                QtypeArg::V4 => QueryType::ipv4(&query_value)?,
-                QtypeArg::V6 => QueryType::ipv6(&query_value)?,
-                QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
-                QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
-                QtypeArg::Autnum => QueryType::autnum(&query_value)?,
-                QtypeArg::Domain => QueryType::domain(&query_value)?,
-                QtypeArg::ALabel => QueryType::alabel(&query_value)?,
-                QtypeArg::Entity => QueryType::Entity(query_value),
-                QtypeArg::Ns => QueryType::ns(&query_value)?,
-                QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
-                QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
-                QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
-                QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
-                QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
-                QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
-                QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
-                QtypeArg::Url => QueryType::Url(query_value),
-            };
-            Ok(q)
-        } else {
-            Ok(QueryType::from_str(&query_value)?)
-        }
-    } else {
-        Ok(QueryType::Help)
-    }
+    let Some(query_value) = cli.query_value.clone() else {
+       return Ok(QueryType::Help)
+    };
+    let Some(query_type) = cli.query_type else {
+        return Ok(QueryType::from_str(&query_value)?)
+    };
+    let q = match query_type {
+        QtypeArg::V4 => QueryType::ipv4(&query_value)?,
+        QtypeArg::V6 => QueryType::ipv6(&query_value)?,
+        QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
+        QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
+        QtypeArg::Autnum => QueryType::autnum(&query_value)?,
+        QtypeArg::Domain => QueryType::domain(&query_value)?,
+        QtypeArg::ALabel => QueryType::alabel(&query_value)?,
+        QtypeArg::Entity => QueryType::Entity(query_value),
+        QtypeArg::Ns => QueryType::ns(&query_value)?,
+        QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
+        QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
+        QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
+        QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
+        QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
+        QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
+        QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
+        QtypeArg::Url => QueryType::Url(query_value),
+    };
+    Ok(q)
 }
 
 #[cfg(test)]
