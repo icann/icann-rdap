@@ -75,76 +75,76 @@ impl QueryType {
     pub fn query_url(&self, base_url: &str) -> Result<String, RdapClientError> {
         let base_url = base_url.trim_end_matches('/');
         match self {
-            QueryType::IpV4Addr(value) => Ok(format!(
+            Self::IpV4Addr(value) => Ok(format!(
                 "{base_url}/ip/{}",
                 PctString::encode(value.to_string().chars(), URIReserved)
             )),
-            QueryType::IpV6Addr(value) => Ok(format!(
+            Self::IpV6Addr(value) => Ok(format!(
                 "{base_url}/ip/{}",
                 PctString::encode(value.to_string().chars(), URIReserved)
             )),
-            QueryType::IpV4Cidr(value) => Ok(format!(
+            Self::IpV4Cidr(value) => Ok(format!(
                 "{base_url}/ip/{}/{}",
                 PctString::encode(value.first_address().to_string().chars(), URIReserved),
                 PctString::encode(value.network_length().to_string().chars(), URIReserved)
             )),
-            QueryType::IpV6Cidr(value) => Ok(format!(
+            Self::IpV6Cidr(value) => Ok(format!(
                 "{base_url}/ip/{}/{}",
                 PctString::encode(value.first_address().to_string().chars(), URIReserved),
                 PctString::encode(value.network_length().to_string().chars(), URIReserved)
             )),
-            QueryType::AsNumber(value) => Ok(format!(
+            Self::AsNumber(value) => Ok(format!(
                 "{base_url}/autnum/{}",
                 PctString::encode(value.to_string().chars(), URIReserved)
             )),
-            QueryType::Domain(value) => Ok(format!(
+            Self::Domain(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(value.trim_leading_dot().chars(), URIReserved)
             )),
-            QueryType::ALabel(value) => Ok(format!(
+            Self::ALabel(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(value.to_ascii().chars(), URIReserved),
             )),
-            QueryType::Entity(value) => Ok(format!(
+            Self::Entity(value) => Ok(format!(
                 "{base_url}/entity/{}",
                 PctString::encode(value.chars(), URIReserved)
             )),
-            QueryType::Nameserver(value) => Ok(format!(
+            Self::Nameserver(value) => Ok(format!(
                 "{base_url}/nameserver/{}",
                 PctString::encode(value.to_ascii().chars(), URIReserved)
             )),
-            QueryType::EntityNameSearch(value) => search_query(value, "entities?fn", base_url),
-            QueryType::EntityHandleSearch(value) => {
+            Self::EntityNameSearch(value) => search_query(value, "entities?fn", base_url),
+            Self::EntityHandleSearch(value) => {
                 search_query(value, "entities?handle", base_url)
             }
-            QueryType::DomainNameSearch(value) => search_query(value, "domains?name", base_url),
-            QueryType::DomainNsNameSearch(value) => {
+            Self::DomainNameSearch(value) => search_query(value, "domains?name", base_url),
+            Self::DomainNsNameSearch(value) => {
                 search_query(value, "domains?nsLdhName", base_url)
             }
-            QueryType::DomainNsIpSearch(value) => {
+            Self::DomainNsIpSearch(value) => {
                 search_query(&value.to_string(), "domains?nsIp", base_url)
             }
-            QueryType::NameserverNameSearch(value) => {
+            Self::NameserverNameSearch(value) => {
                 search_query(value, "nameserver?name=", base_url)
             }
-            QueryType::NameserverIpSearch(value) => {
+            Self::NameserverIpSearch(value) => {
                 search_query(&value.to_string(), "nameservers?ip", base_url)
             }
-            QueryType::Help => Ok(format!("{base_url}/help")),
-            QueryType::Url(url) => Ok(url.to_owned()),
+            Self::Help => Ok(format!("{base_url}/help")),
+            Self::Url(url) => Ok(url.to_owned()),
         }
     }
 
     pub fn domain(domain_name: &str) -> Result<QueryType, RdapClientError> {
-        Ok(QueryType::Domain(DomainName::from_str(domain_name)?))
+        Ok(Self::Domain(DomainName::from_str(domain_name)?))
     }
 
     pub fn alabel(alabel: &str) -> Result<QueryType, RdapClientError> {
-        Ok(QueryType::ALabel(DomainName::from_str(alabel)?))
+        Ok(Self::ALabel(DomainName::from_str(alabel)?))
     }
 
     pub fn ns(nameserver: &str) -> Result<QueryType, RdapClientError> {
-        Ok(QueryType::Nameserver(DomainName::from_str(nameserver)?))
+        Ok(Self::Nameserver(DomainName::from_str(nameserver)?))
     }
 
     pub fn autnum(autnum: &str) -> Result<QueryType, RdapClientError> {
@@ -152,17 +152,17 @@ impl QueryType {
             .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
             .parse::<u32>()
             .map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(QueryType::AsNumber(value))
+        Ok(Self::AsNumber(value))
     }
 
     pub fn ipv4(ip: &str) -> Result<QueryType, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(QueryType::IpV4Addr(value))
+        Ok(Self::IpV4Addr(value))
     }
 
     pub fn ipv6(ip: &str) -> Result<QueryType, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(QueryType::IpV6Addr(value))
+        Ok(Self::IpV6Addr(value))
     }
 
     pub fn ipv4cidr(cidr: &str) -> Result<QueryType, RdapClientError> {
@@ -172,7 +172,7 @@ impl QueryType {
         )
         .map_err(|_e| RdapClientError::InvalidQueryValue)?;
         if let IpCidr::V4(v4) = value {
-            Ok(QueryType::IpV4Cidr(v4))
+            Ok(Self::IpV4Cidr(v4))
         } else {
             Err(RdapClientError::AmbiquousQueryType)
         }
@@ -185,7 +185,7 @@ impl QueryType {
         )
         .map_err(|_e| RdapClientError::InvalidQueryValue)?;
         if let IpCidr::V6(v6) = value {
-            Ok(QueryType::IpV6Cidr(v6))
+            Ok(Self::IpV6Cidr(v6))
         } else {
             Err(RdapClientError::AmbiquousQueryType)
         }
@@ -193,12 +193,12 @@ impl QueryType {
 
     pub fn domain_ns_ip_search(ip: &str) -> Result<QueryType, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(QueryType::DomainNsIpSearch(value))
+        Ok(Self::DomainNsIpSearch(value))
     }
 
     pub fn ns_ip_search(ip: &str) -> Result<QueryType, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(QueryType::NameserverIpSearch(value))
+        Ok(Self::NameserverIpSearch(value))
     }
 }
 
@@ -215,44 +215,44 @@ impl FromStr for QueryType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // if it looks like a HTTP(S) url
         if s.starts_with("http://") || s.starts_with("https://") {
-            return Ok(QueryType::Url(s.to_owned()));
+            return Ok(Self::Url(s.to_owned()));
         }
 
         // if looks like an autnum
         let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
         if let Ok(_autnum) = u32::from_str(autnum) {
-            return QueryType::autnum(s);
+            return Self::autnum(s);
         }
 
         // If it's an IP address
         if let Ok(ip_addr) = IpAddr::from_str(s) {
             if ip_addr.is_ipv4() {
-                return QueryType::ipv4(s);
+                return Self::ipv4(s);
             } else {
-                return QueryType::ipv6(s);
+                return Self::ipv6(s);
             }
         }
 
         // if it is a cidr
         if let Ok(ip_cidr) = parse_cidr(s) {
             return match ip_cidr {
-                IpCidr::V4(cidr) => Ok(QueryType::IpV4Cidr(cidr)),
-                IpCidr::V6(cidr) => Ok(QueryType::IpV6Cidr(cidr)),
+                IpCidr::V4(cidr) => Ok(Self::IpV4Cidr(cidr)),
+                IpCidr::V6(cidr) => Ok(Self::IpV6Cidr(cidr)),
             };
         }
 
         // if it looks like a domain name
         if is_domain_name(s) {
             if is_nameserver(s) {
-                return QueryType::ns(s);
+                return Self::ns(s);
             } else {
-                return QueryType::domain(s);
+                return Self::domain(s);
             }
         }
 
         // if it is just one word
         if !s.contains(|c: char| c.is_whitespace() || c == '.' || c == ',' || c == '"') {
-            return Ok(QueryType::Entity(s.to_owned()));
+            return Ok(Self::Entity(s.to_owned()));
         }
 
         // The query type cannot be deteremined.

@@ -205,46 +205,46 @@ impl TryFrom<Value> for RdapResponse {
 impl RdapResponse {
     pub fn get_type(&self) -> TypeId {
         match self {
-            RdapResponse::Entity(_) => TypeId::of::<Entity>(),
-            RdapResponse::Domain(_) => TypeId::of::<Domain>(),
-            RdapResponse::Nameserver(_) => TypeId::of::<Nameserver>(),
-            RdapResponse::Autnum(_) => TypeId::of::<Autnum>(),
-            RdapResponse::Network(_) => TypeId::of::<Network>(),
-            RdapResponse::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
-            RdapResponse::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
-            RdapResponse::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
-            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Error>(),
-            RdapResponse::Help(_) => TypeId::of::<Help>(),
+            Self::Entity(_) => TypeId::of::<Entity>(),
+            Self::Domain(_) => TypeId::of::<Domain>(),
+            Self::Nameserver(_) => TypeId::of::<Nameserver>(),
+            Self::Autnum(_) => TypeId::of::<Autnum>(),
+            Self::Network(_) => TypeId::of::<Network>(),
+            Self::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
+            Self::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
+            Self::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
+            Self::ErrorResponse(_) => TypeId::of::<crate::response::Error>(),
+            Self::Help(_) => TypeId::of::<Help>(),
         }
     }
 
     pub fn get_links(&self) -> Option<&Links> {
         match self {
-            RdapResponse::Entity(e) => e.object_common.links.as_ref(),
-            RdapResponse::Domain(d) => d.object_common.links.as_ref(),
-            RdapResponse::Nameserver(n) => n.object_common.links.as_ref(),
-            RdapResponse::Autnum(a) => a.object_common.links.as_ref(),
-            RdapResponse::Network(n) => n.object_common.links.as_ref(),
-            RdapResponse::DomainSearchResults(_) => None,
-            RdapResponse::EntitySearchResults(_) => None,
-            RdapResponse::NameserverSearchResults(_) => None,
-            RdapResponse::ErrorResponse(_) => None,
-            RdapResponse::Help(_) => None,
+            Self::Entity(e) => e.object_common.links.as_ref(),
+            Self::Domain(d) => d.object_common.links.as_ref(),
+            Self::Nameserver(n) => n.object_common.links.as_ref(),
+            Self::Autnum(a) => a.object_common.links.as_ref(),
+            Self::Network(n) => n.object_common.links.as_ref(),
+            Self::DomainSearchResults(_) |
+            Self::EntitySearchResults(_) |
+            Self::NameserverSearchResults(_) |
+            Self::ErrorResponse(_) |
+            Self::Help(_) => None,
         }
     }
 
     pub fn get_conformance(&self) -> Option<&RdapConformance> {
         match self {
-            RdapResponse::Entity(e) => e.common.rdap_conformance.as_ref(),
-            RdapResponse::Domain(d) => d.common.rdap_conformance.as_ref(),
-            RdapResponse::Nameserver(n) => n.common.rdap_conformance.as_ref(),
-            RdapResponse::Autnum(a) => a.common.rdap_conformance.as_ref(),
-            RdapResponse::Network(n) => n.common.rdap_conformance.as_ref(),
-            RdapResponse::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
-            RdapResponse::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
-            RdapResponse::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
-            RdapResponse::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
-            RdapResponse::Help(h) => h.common.rdap_conformance.as_ref(),
+            Self::Entity(e) => e.common.rdap_conformance.as_ref(),
+            Self::Domain(d) => d.common.rdap_conformance.as_ref(),
+            Self::Nameserver(n) => n.common.rdap_conformance.as_ref(),
+            Self::Autnum(a) => a.common.rdap_conformance.as_ref(),
+            Self::Network(n) => n.common.rdap_conformance.as_ref(),
+            Self::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
+            Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
 

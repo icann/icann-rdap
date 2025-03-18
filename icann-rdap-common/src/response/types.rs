@@ -678,8 +678,8 @@ pub enum StringOrStringArray {
 impl StringOrStringArray {
     pub fn many(&self) -> Vec<String> {
         match self {
-            StringOrStringArray::Many(many) => many.clone(),
-            StringOrStringArray::One(one) => vec![one.to_owned()],
+            Self::Many(many) => many.clone(),
+            Self::One(one) => vec![one.to_owned()],
         }
     }
 }

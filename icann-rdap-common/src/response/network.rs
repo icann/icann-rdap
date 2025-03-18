@@ -19,8 +19,8 @@ pub enum Cidr0Cidr {
 impl std::fmt::Display for Cidr0Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Cidr0Cidr::V4Cidr(cidr) => cidr.fmt(f),
-            Cidr0Cidr::V6Cidr(cidr) => cidr.fmt(f),
+          Self::V4Cidr(cidr) => cidr.fmt(f),
+          Self::V6Cidr(cidr) => cidr.fmt(f),
         }
     }
 }

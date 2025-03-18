@@ -235,23 +235,21 @@ async fn load_rdap(
 ) -> Result<(), RdapServerError> {
     debug!("loading {path_name} into storage");
     let json = serde_json::from_str::<Value>(contents);
-    if let Ok(value) = json {
-        let rdap = RdapResponse::try_from(value);
-        if let Ok(rdap) = rdap {
-            match rdap {
-                RdapResponse::Entity(entity) => tx.add_entity(&entity).await,
-                RdapResponse::Domain(domain) => tx.add_domain(&domain).await,
-                RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await,
-                RdapResponse::Autnum(autnum) => tx.add_autnum(&autnum).await,
-                RdapResponse::Network(network) => tx.add_network(&network).await,
-                _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
-            }?;
-        } else {
-            return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned()));
-        }
-    } else {
+    let Ok(value) = json else {
         return Err(RdapServerError::NonJsonFile(path_name.to_owned()));
-    }
+    };
+    let rdap = RdapResponse::try_from(value);
+    let Ok(rdap) = rdap else {
+        return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned()));
+    };
+    match rdap {
+        RdapResponse::Entity(entity) => tx.add_entity(&entity).await,
+        RdapResponse::Domain(domain) => tx.add_domain(&domain).await,
+        RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await,
+        RdapResponse::Autnum(autnum) => tx.add_autnum(&autnum).await,
+        RdapResponse::Network(network) => tx.add_network(&network).await,
+        _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
+    }?;
     Ok(())
 }
 
@@ -268,19 +266,17 @@ async fn load_srvhelp(
     };
     let host = host.replace('_', ".");
     let json = serde_json::from_str::<Value>(contents);
-    if let Ok(value) = json {
-        let rdap = RdapResponse::try_from(value);
-        if let Ok(rdap) = rdap {
-            match rdap {
-                RdapResponse::Help(srvhelp) => tx.add_srv_help(&srvhelp, Some(&host)).await,
-                _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
-            }?;
-        } else {
-            return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned()));
-        }
-    } else {
+    let Ok(value) = json else {
         return Err(RdapServerError::NonJsonFile(path_name.to_owned()));
-    }
+    };
+    let rdap = RdapResponse::try_from(value);
+    let Ok(rdap) = rdap else {
+        return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned()));
+    };
+    match rdap {
+        RdapResponse::Help(srvhelp) => tx.add_srv_help(&srvhelp, Some(&host)).await,
+        _ => return Err(RdapServerError::NonRdapJsonFile(path_name.to_owned())),
+    }?;
     Ok(())
 }
 

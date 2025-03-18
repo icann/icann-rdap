@@ -206,8 +206,8 @@ pub enum RunFeature {
 impl RunOutcome {
     pub fn to_md(&self, options: &MdOptions) -> String {
         match self {
-            RunOutcome::Tested => self.to_bold(options),
-            RunOutcome::Skipped => self.to_string(),
+            Self::Tested => self.to_bold(options),
+            Self::Skipped => self.to_string(),
             _ => self.to_em(options),
         }
     }

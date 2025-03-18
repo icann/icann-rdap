@@ -361,11 +361,11 @@ trait BootstrapPrefix {
 impl BootstrapPrefix for IanaRegistryType {
     fn prefix(&self) -> &str {
         match self {
-            IanaRegistryType::RdapBootstrapDns => "bootstrap_dns",
-            IanaRegistryType::RdapBootstrapAsn => "bootstrap_asn",
-            IanaRegistryType::RdapBootstrapIpv4 => "bootstrap_ipv4",
-            IanaRegistryType::RdapBootstrapIpv6 => "bootstrap_ipv6",
-            IanaRegistryType::RdapObjectTags => "bootstrap_objtag",
+            Self::RdapBootstrapDns => "bootstrap_dns",
+            Self::RdapBootstrapAsn => "bootstrap_asn",
+            Self::RdapBootstrapIpv4 => "bootstrap_ipv4",
+            Self::RdapBootstrapIpv6 => "bootstrap_ipv6",
+            Self::RdapObjectTags => "bootstrap_objtag",
         }
     }
 }
