@@ -641,25 +641,22 @@ impl ObjectCommon {
     /// to "self" on the provided link.
     pub fn set_self_link(mut self, mut link: Link) -> Self {
         link.rel = Some("self".to_string());
-        if let Some(links) = self.links {
+        self.links = Some(if let Some(links) = self.links {
             let mut new_links = links
                 .into_iter()
                 .filter(|link| !link.is_relation("self"))
                 .collect::<Vec<Link>>();
             new_links.push(link);
-            self.links = Some(new_links);
+            new_links
         } else {
-            self.links = Some(vec![link]);
-        }
+            vec![link]
+        });
         self
     }
 
     pub fn get_self_link(&self) -> Option<&Link> {
-        if let Some(links) = &self.links {
-            links.iter().find(|link| link.is_relation("self"))
-        } else {
-            None
-        }
+        self.links.as_ref()
+            .and_then(|links| links.iter().find(|link| link.is_relation("self")))
     }
 }
 
