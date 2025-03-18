@@ -189,16 +189,16 @@ impl CheckParams<'_> {
 impl GetChecks for RdapResponse {
     fn get_checks(&self, params: CheckParams) -> Checks {
         match &self {
-            RdapResponse::Entity(e) => e.get_checks(params),
-            RdapResponse::Domain(d) => d.get_checks(params),
-            RdapResponse::Nameserver(n) => n.get_checks(params),
-            RdapResponse::Autnum(a) => a.get_checks(params),
-            RdapResponse::Network(n) => n.get_checks(params),
-            RdapResponse::DomainSearchResults(r) => r.get_checks(params),
-            RdapResponse::EntitySearchResults(r) => r.get_checks(params),
-            RdapResponse::NameserverSearchResults(r) => r.get_checks(params),
-            RdapResponse::ErrorResponse(e) => e.get_checks(params),
-            RdapResponse::Help(h) => h.get_checks(params),
+            Self::Entity(e) => e.get_checks(params),
+            Self::Domain(d) => d.get_checks(params),
+            Self::Nameserver(n) => n.get_checks(params),
+            Self::Autnum(a) => a.get_checks(params),
+            Self::Network(n) => n.get_checks(params),
+            Self::DomainSearchResults(r) => r.get_checks(params),
+            Self::EntitySearchResults(r) => r.get_checks(params),
+            Self::NameserverSearchResults(r) => r.get_checks(params),
+            Self::ErrorResponse(e) => e.get_checks(params),
+            Self::Help(h) => h.get_checks(params),
         }
     }
 }

@@ -44,7 +44,7 @@ pub struct MdOptions {
 
 impl Default for MdOptions {
     fn default() -> Self {
-        MdOptions {
+        Self {
             no_unicode_chars: false,
             text_style_char: '*',
             hash_headers: true,
@@ -56,7 +56,7 @@ impl Default for MdOptions {
 impl MdOptions {
     /// Defaults for markdown that looks more like plain text.
     pub fn plain_text() -> Self {
-        MdOptions {
+        Self {
             no_unicode_chars: true,
             text_style_char: '_',
             hash_headers: false,
@@ -78,7 +78,7 @@ pub struct MdParams<'a> {
 
 impl MdParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
-        MdParams {
+        Self {
             parent_type,
             heading_level: self.heading_level,
             root: self.root,
@@ -90,7 +90,7 @@ impl MdParams<'_> {
     }
 
     pub fn next_level(&self) -> Self {
-        MdParams {
+        Self {
             heading_level: self.heading_level + 1,
             ..*self
         }
@@ -106,16 +106,16 @@ impl ToMd for RdapResponse {
         let mut md = String::new();
         md.push_str(&params.http_data.to_md(params));
         let variant_md = match &self {
-            RdapResponse::Entity(entity) => entity.to_md(params),
-            RdapResponse::Domain(domain) => domain.to_md(params),
-            RdapResponse::Nameserver(nameserver) => nameserver.to_md(params),
-            RdapResponse::Autnum(autnum) => autnum.to_md(params),
-            RdapResponse::Network(network) => network.to_md(params),
-            RdapResponse::DomainSearchResults(results) => results.to_md(params),
-            RdapResponse::EntitySearchResults(results) => results.to_md(params),
-            RdapResponse::NameserverSearchResults(results) => results.to_md(params),
-            RdapResponse::ErrorResponse(error) => error.to_md(params),
-            RdapResponse::Help(help) => help.to_md(params),
+            Self::Entity(entity) => entity.to_md(params),
+            Self::Domain(domain) => domain.to_md(params),
+            Self::Nameserver(nameserver) => nameserver.to_md(params),
+            Self::Autnum(autnum) => autnum.to_md(params),
+            Self::Network(network) => network.to_md(params),
+            Self::DomainSearchResults(results) => results.to_md(params),
+            Self::EntitySearchResults(results) => results.to_md(params),
+            Self::NameserverSearchResults(results) => results.to_md(params),
+            Self::ErrorResponse(error) => error.to_md(params),
+            Self::Help(help) => help.to_md(params),
         };
         md.push_str(&variant_md);
         md
@@ -141,16 +141,16 @@ impl ToString for MdHeaderText {
 impl MdUtil for RdapResponse {
     fn get_header_text(&self) -> MdHeaderText {
         match &self {
-            RdapResponse::Entity(entity) => entity.get_header_text(),
-            RdapResponse::Domain(domain) => domain.get_header_text(),
-            RdapResponse::Nameserver(nameserver) => nameserver.get_header_text(),
-            RdapResponse::Autnum(autnum) => autnum.get_header_text(),
-            RdapResponse::Network(network) => network.get_header_text(),
-            RdapResponse::DomainSearchResults(results) => results.get_header_text(),
-            RdapResponse::EntitySearchResults(results) => results.get_header_text(),
-            RdapResponse::NameserverSearchResults(results) => results.get_header_text(),
-            RdapResponse::ErrorResponse(error) => error.get_header_text(),
-            RdapResponse::Help(help) => help.get_header_text(),
+            Self::Entity(entity) => entity.get_header_text(),
+            Self::Domain(domain) => domain.get_header_text(),
+            Self::Nameserver(nameserver) => nameserver.get_header_text(),
+            Self::Autnum(autnum) => autnum.get_header_text(),
+            Self::Network(network) => network.get_header_text(),
+            Self::DomainSearchResults(results) => results.get_header_text(),
+            Self::EntitySearchResults(results) => results.get_header_text(),
+            Self::NameserverSearchResults(results) => results.get_header_text(),
+            Self::ErrorResponse(error) => error.get_header_text(),
+            Self::Help(help) => help.get_header_text(),
         }
     }
 }

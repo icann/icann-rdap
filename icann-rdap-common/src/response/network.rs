@@ -276,24 +276,24 @@ impl Network {
                 .build(),
             start_address: Some(cidr.first_address().to_string()),
             end_address: Some(cidr.last_address().to_string()),
-            ip_version: match cidr {
-                IpInet::V4(_) => Some("v4".to_string()),
-                IpInet::V6(_) => Some("v6".to_string()),
-            },
+            ip_version: Some(match cidr {
+                IpInet::V4(_) => "v4",
+                IpInet::V6(_) => "v6",
+            }.to_string()),
             name,
             network_type,
             parent_handle,
             country,
-            cidr0_cidrs: match cidr {
-                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+            cidr0_cidrs:  Some(vec![match cidr {
+                IpInet::V4(cidr) => Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(cidr.first_address().to_string()),
                     length: Some(cidr.network_length()),
-                })]),
-                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                }),
+                IpInet::V6(cidr) => Cidr0Cidr::V6Cidr(V6Cidr {
                     v6prefix: Some(cidr.first_address().to_string()),
                     length: Some(cidr.network_length()),
-                })]),
-            },
+                }),
+            }]),
         })
     }
 }

@@ -42,7 +42,7 @@ impl ToGtldWhois for RdapResponse {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
         let variant_gtld = match &self {
-            RdapResponse::Domain(domain) => domain.to_gtld_whois(params),
+            Self::Domain(domain) => domain.to_gtld_whois(params),
             _ => String::new(),
         };
         gtld.push_str(&variant_gtld);
