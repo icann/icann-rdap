@@ -655,7 +655,8 @@ impl ObjectCommon {
     }
 
     pub fn get_self_link(&self) -> Option<&Link> {
-        self.links.as_ref()
+        self.links
+            .as_ref()
             .and_then(|links| links.iter().find(|link| link.is_relation("self")))
     }
 }

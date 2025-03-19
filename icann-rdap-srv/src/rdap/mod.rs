@@ -35,9 +35,7 @@ impl ToBootStrap for RdapResponse {
 
     fn to_autnum_bootstrap(self, autnum_id: u32) -> RdapResponse {
         match self {
-            Self::ErrorResponse(e) => {
-                bootstrap_redirect(e, "autnum", &autnum_id.to_string())
-            }
+            Self::ErrorResponse(e) => bootstrap_redirect(e, "autnum", &autnum_id.to_string()),
             _ => self,
         }
     }

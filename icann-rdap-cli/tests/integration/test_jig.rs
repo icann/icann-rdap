@@ -69,7 +69,8 @@ impl TestJig {
             cmd_type,
             rdap_base,
             test_dir,
-        }.new_cmd()
+        }
+        .new_cmd()
     }
 
     /// Creates a new command from an existing one but resetting necessary environment variables.

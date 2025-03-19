@@ -19,8 +19,8 @@ pub enum Cidr0Cidr {
 impl std::fmt::Display for Cidr0Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-          Self::V4Cidr(cidr) => cidr.fmt(f),
-          Self::V6Cidr(cidr) => cidr.fmt(f),
+            Self::V4Cidr(cidr) => cidr.fmt(f),
+            Self::V6Cidr(cidr) => cidr.fmt(f),
         }
     }
 }
@@ -276,15 +276,18 @@ impl Network {
                 .build(),
             start_address: Some(cidr.first_address().to_string()),
             end_address: Some(cidr.last_address().to_string()),
-            ip_version: Some(match cidr {
-                IpInet::V4(_) => "v4",
-                IpInet::V6(_) => "v6",
-            }.to_string()),
+            ip_version: Some(
+                match cidr {
+                    IpInet::V4(_) => "v4",
+                    IpInet::V6(_) => "v6",
+                }
+                .to_string(),
+            ),
             name,
             network_type,
             parent_handle,
             country,
-            cidr0_cidrs:  Some(vec![match cidr {
+            cidr0_cidrs: Some(vec![match cidr {
                 IpInet::V4(cidr) => Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(cidr.first_address().to_string()),
                     length: Some(cidr.network_length()),

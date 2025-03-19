@@ -690,10 +690,10 @@ async fn exec<W: std::io::Write>(
 
 fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
     let Some(query_value) = cli.query_value.clone() else {
-       return Ok(QueryType::Help)
+        return Ok(QueryType::Help);
     };
     let Some(query_type) = cli.query_type else {
-        return Ok(QueryType::from_str(&query_value)?)
+        return Ok(QueryType::from_str(&query_value)?);
     };
     let q = match query_type {
         QtypeArg::V4 => QueryType::ipv4(&query_value)?,

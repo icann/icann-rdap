@@ -146,22 +146,22 @@ impl DnsAlgorithmType {
 
     fn algo(self) -> DnsAlgorithm {
         match self {
-            Self::DeleteDs(a) |
-            Self::RsaMd5(a) |
-            Self::DiffieHellman(a) |
-            Self::Dsa(a) |
-            Self::RsaSha1(a) |
-            Self::DsaNsec3Sha1(a) |
-            Self::RsaSha1Nsec3Sha1(a) |
-            Self::RsaSha256(a) |
-            Self::RsaSha512(a) |
-            Self::EccGost(a) |
-            Self::EcdsaP256Sha256(a) |
-            Self::EcdsaP384Sha384(a) |
-            Self::Ed25519(a) |
-            Self::Ed448(a) |
-            Self::PrivateDns(a) |
-            Self::PrivateOid(a) => a,
+            Self::DeleteDs(a)
+            | Self::RsaMd5(a)
+            | Self::DiffieHellman(a)
+            | Self::Dsa(a)
+            | Self::RsaSha1(a)
+            | Self::DsaNsec3Sha1(a)
+            | Self::RsaSha1Nsec3Sha1(a)
+            | Self::RsaSha256(a)
+            | Self::RsaSha512(a)
+            | Self::EccGost(a)
+            | Self::EcdsaP256Sha256(a)
+            | Self::EcdsaP384Sha384(a)
+            | Self::Ed25519(a)
+            | Self::Ed448(a)
+            | Self::PrivateDns(a)
+            | Self::PrivateOid(a) => a,
         }
     }
 
@@ -200,7 +200,7 @@ pub enum DnsDigestType {
 
 impl DnsDigestType {
     pub fn from_number(number: u8) -> Result<Self, DnsTypeError> {
-       Ok(match number {
+        Ok(match number {
             1 => DnsDigestType::Sha1(DnsDigest {
                 number: 1,
                 mnemonic: "SHA1",
@@ -228,10 +228,10 @@ impl DnsDigestType {
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
         let digest = DnsDigestType::from_number(number)?;
         Ok(match digest {
-            DnsDigestType::Sha1(d) |
-            DnsDigestType::Sha256(d) |
-            DnsDigestType::Gost(d) |
-            DnsDigestType::Sha384(d) => d.mnemonic,
+            DnsDigestType::Sha1(d)
+            | DnsDigestType::Sha256(d)
+            | DnsDigestType::Gost(d)
+            | DnsDigestType::Sha384(d) => d.mnemonic,
         })
     }
 }

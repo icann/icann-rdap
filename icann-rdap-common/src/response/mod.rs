@@ -143,9 +143,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a domain search result
         if let Some(result) = response.get("domainSearchResults") {
             if result.is_array() {
-                return Ok(Self::DomainSearchResults(serde_json::from_value(
-                    value,
-                )?));
+                return Ok(Self::DomainSearchResults(serde_json::from_value(value)?));
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'domainSearchResults' is not an array".to_string(),
@@ -155,9 +153,7 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a entity search result
         if let Some(result) = response.get("entitySearchResults") {
             if result.is_array() {
-                return Ok(Self::EntitySearchResults(serde_json::from_value(
-                    value,
-                )?));
+                return Ok(Self::EntitySearchResults(serde_json::from_value(value)?));
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'entitySearchResults' is not an array".to_string(),
@@ -167,9 +163,9 @@ impl TryFrom<Value> for RdapResponse {
         // else if it is a nameserver search result
         if let Some(result) = response.get("nameserverSearchResults") {
             if result.is_array() {
-                return Ok(Self::NameserverSearchResults(
-                    serde_json::from_value(value)?,
-                ));
+                return Ok(Self::NameserverSearchResults(serde_json::from_value(
+                    value,
+                )?));
             } else {
                 return Err(RdapResponseError::WrongJsonType(
                     "'nameserverSearchResults' is not an array".to_string(),
@@ -225,11 +221,11 @@ impl RdapResponse {
             Self::Nameserver(n) => n.object_common.links.as_ref(),
             Self::Autnum(a) => a.object_common.links.as_ref(),
             Self::Network(n) => n.object_common.links.as_ref(),
-            Self::DomainSearchResults(_) |
-            Self::EntitySearchResults(_) |
-            Self::NameserverSearchResults(_) |
-            Self::ErrorResponse(_) |
-            Self::Help(_) => None,
+            Self::DomainSearchResults(_)
+            | Self::EntitySearchResults(_)
+            | Self::NameserverSearchResults(_)
+            | Self::ErrorResponse(_)
+            | Self::Help(_) => None,
         }
     }
 
@@ -272,7 +268,6 @@ impl GetSelfLink for RdapResponse {
     fn get_self_link(&self) -> Option<&Link> {
         self.get_links()
             .and_then(|links| links.iter().find(|link| link.is_relation("self")))
-
     }
 }
 
@@ -288,7 +283,7 @@ pub trait SelfLink: GetSelfLink {
 }
 
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
-    let Some(links) = rdap_response.get_links() else{
+    let Some(links) = rdap_response.get_links() else {
         return vec![];
     };
     let urls: Vec<&str> = links
@@ -298,7 +293,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
                 if let Some(rel) = &l.rel {
                     if let Some(media_type) = &l.media_type {
                         return rel.eq_ignore_ascii_case("related")
-                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
+                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE);
                     }
                 }
             }

@@ -73,7 +73,9 @@ impl StorageType {
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
-            Ok(Self::Memory(MemConfig::builder().common_config(common_config).build()))
+            Ok(Self::Memory(
+                MemConfig::builder().common_config(common_config).build(),
+            ))
         } else if storage == "postgres" {
             let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
             Ok(Self::Postgres(

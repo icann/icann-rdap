@@ -114,19 +114,13 @@ impl QueryType {
                 PctString::encode(value.to_ascii().chars(), URIReserved)
             )),
             Self::EntityNameSearch(value) => search_query(value, "entities?fn", base_url),
-            Self::EntityHandleSearch(value) => {
-                search_query(value, "entities?handle", base_url)
-            }
+            Self::EntityHandleSearch(value) => search_query(value, "entities?handle", base_url),
             Self::DomainNameSearch(value) => search_query(value, "domains?name", base_url),
-            Self::DomainNsNameSearch(value) => {
-                search_query(value, "domains?nsLdhName", base_url)
-            }
+            Self::DomainNsNameSearch(value) => search_query(value, "domains?nsLdhName", base_url),
             Self::DomainNsIpSearch(value) => {
                 search_query(&value.to_string(), "domains?nsIp", base_url)
             }
-            Self::NameserverNameSearch(value) => {
-                search_query(value, "nameserver?name=", base_url)
-            }
+            Self::NameserverNameSearch(value) => search_query(value, "nameserver?name=", base_url),
             Self::NameserverIpSearch(value) => {
                 search_query(&value.to_string(), "nameservers?ip", base_url)
             }

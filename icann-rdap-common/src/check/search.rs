@@ -11,9 +11,7 @@ impl GetChecks for DomainSearchResults {
                 .common
                 .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
-                sub_checks.push(
-                    result.get_checks(params.from_parent(TypeId::of::<Self>())),
-                )
+                sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
             sub_checks
         } else {
@@ -34,9 +32,7 @@ impl GetChecks for NameserverSearchResults {
                 .common
                 .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
-                sub_checks.push(
-                    result.get_checks(params.from_parent(TypeId::of::<Self>())),
-                )
+                sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
             sub_checks
         } else {
@@ -57,9 +53,7 @@ impl GetChecks for EntitySearchResults {
                 .common
                 .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
-                sub_checks.push(
-                    result.get_checks(params.from_parent(TypeId::of::<Self>())),
-                )
+                sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
             sub_checks
         } else {
