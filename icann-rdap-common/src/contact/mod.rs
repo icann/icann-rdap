@@ -414,7 +414,7 @@ impl Email {
 
 impl Display for Email {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut qualifiers = Vec::new();
+        let mut qualifiers = vec![];
         if let Some(pref) = self.preference {
             qualifiers.push(format!("(pref: {pref})"));
         }
@@ -466,7 +466,7 @@ impl Phone {
 
 impl Display for Phone {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut qualifiers = Vec::new();
+        let mut qualifiers = vec![];
         if let Some(pref) = self.preference {
             qualifiers.push(format!("(pref: {pref})"));
         }

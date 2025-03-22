@@ -20,11 +20,11 @@ impl IanaRegistryType {
     /// Get the URL for an IANA RDAP registry.
     pub fn url(&self) -> &str {
         match self {
-            IanaRegistryType::RdapBootstrapDns => "https://data.iana.org/rdap/dns.json",
-            IanaRegistryType::RdapBootstrapAsn => "https://data.iana.org/rdap/asn.json",
-            IanaRegistryType::RdapBootstrapIpv4 => "https://data.iana.org/rdap/ipv4.json",
-            IanaRegistryType::RdapBootstrapIpv6 => "https://data.iana.org/rdap/ipv6.json",
-            IanaRegistryType::RdapObjectTags => "https://data.iana.org/rdap/object-tags.json",
+            Self::RdapBootstrapDns => "https://data.iana.org/rdap/dns.json",
+            Self::RdapBootstrapAsn => "https://data.iana.org/rdap/asn.json",
+            Self::RdapBootstrapIpv4 => "https://data.iana.org/rdap/ipv4.json",
+            Self::RdapBootstrapIpv6 => "https://data.iana.org/rdap/ipv6.json",
+            Self::RdapObjectTags => "https://data.iana.org/rdap/object-tags.json",
         }
     }
 

@@ -147,11 +147,11 @@ impl HttpData {
         }
         if let Some(expires) = &self.expires {
             let expire_time = DateTime::parse_from_rfc2822(expires);
-            if let Ok(expire_time) = expire_time {
-                return now >= expire_time;
+            return if let Ok(expire_time) = expire_time {
+                now >= expire_time
             } else {
-                return false;
-            }
+                false
+            };
         }
         false
     }

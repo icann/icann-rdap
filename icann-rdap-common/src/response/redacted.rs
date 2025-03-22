@@ -103,10 +103,10 @@ impl Default for Method {
 impl fmt::Display for Method {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Method::Removal => write!(f, "Removal"),
-            Method::EmptyValue => write!(f, "EmptyValue"),
-            Method::PartialValue => write!(f, "PartialValue"),
-            Method::ReplacementValue => write!(f, "ReplacementValue"),
+            Self::Removal => write!(f, "Removal"),
+            Self::EmptyValue => write!(f, "EmptyValue"),
+            Self::PartialValue => write!(f, "PartialValue"),
+            Self::ReplacementValue => write!(f, "ReplacementValue"),
         }
     }
 }
@@ -116,14 +116,14 @@ impl Redacted {
     pub fn get_checks(&self, _check_params: crate::check::CheckParams<'_>) -> crate::check::Checks {
         Checks {
             rdap_struct: crate::check::RdapStructure::Redacted,
-            items: Vec::new(),
-            sub_checks: Vec::new(),
+            items: vec![],
+            sub_checks: vec![],
         }
     }
 
     /// Get the type.
     pub fn get_type(&self) -> std::any::TypeId {
-        TypeId::of::<Redacted>()
+        TypeId::of::<Self>()
     }
 }
 

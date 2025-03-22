@@ -11,18 +11,18 @@ impl GetChecks for Autnum {
         let sub_checks = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Autnum>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Autnum>())),
+                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         if self.start_autnum.is_none() || self.end_autnum.is_none() {
             items.push(Check::AutnumMissing.check_item())

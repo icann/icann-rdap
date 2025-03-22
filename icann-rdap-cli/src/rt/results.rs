@@ -29,7 +29,7 @@ pub struct TestResults {
 
 impl TestResults {
     pub fn new(query_url: String, dns_data: DnsData) -> Self {
-        TestResults {
+        Self {
             query_url,
             dns_data,
             start_time: Utc::now(),
@@ -206,8 +206,8 @@ pub enum RunFeature {
 impl RunOutcome {
     pub fn to_md(&self, options: &MdOptions) -> String {
         match self {
-            RunOutcome::Tested => self.to_bold(options),
-            RunOutcome::Skipped => self.to_string(),
+            Self::Tested => self.to_bold(options),
+            Self::Skipped => self.to_string(),
             _ => self.to_em(options),
         }
     }
@@ -226,7 +226,7 @@ pub struct TestRun {
 
 impl TestRun {
     pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
-        TestRun {
+        Self {
             features,
             start_time: Utc::now(),
             socket_addr: SocketAddr::new(IpAddr::V4(ipv4), port),
@@ -238,7 +238,7 @@ impl TestRun {
     }
 
     pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
-        TestRun {
+        Self {
             features,
             start_time: Utc::now(),
             socket_addr: SocketAddr::new(IpAddr::V6(ipv6), port),
@@ -330,7 +330,7 @@ impl TestRun {
         // if outcome is tested
         if matches!(self.outcome, RunOutcome::Tested) {
             // get check items according to class
-            let mut check_v: Vec<(String, String)> = Vec::new();
+            let mut check_v: Vec<(String, String)> = vec![];
             if let Some(ref checks) = self.checks {
                 traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
                     let message = check_item_md(item, options);

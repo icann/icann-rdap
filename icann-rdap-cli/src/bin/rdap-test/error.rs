@@ -43,31 +43,31 @@ impl Termination for RdapTestError {
     fn report(self) -> std::process::ExitCode {
         let exit_code: u8 = match self {
             // Success
-            RdapTestError::Success => 0,
-            RdapTestError::TestsCompletedExecutionErrors => 1,
-            RdapTestError::TestsCompletedWarningsFound => 2,
-            RdapTestError::TestsCompletedErrorsFound => 3,
+            Self::Success => 0,
+            Self::TestsCompletedExecutionErrors => 1,
+            Self::TestsCompletedWarningsFound => 2,
+            Self::TestsCompletedErrorsFound => 3,
 
             // Internal Errors
-            RdapTestError::Termimad(_) => 10,
+            Self::Termimad(_) => 10,
 
             // I/O Errors
-            RdapTestError::IoError(_) => 40,
-            RdapTestError::TestExecutionError(_) => 40,
+            Self::IoError(_) => 40,
+            Self::TestExecutionError(_) => 40,
 
             // RDAP Errors
-            RdapTestError::Json(_) => 100,
-            RdapTestError::Iana(_) => 101,
-            RdapTestError::InvalidBootstrap => 102,
-            RdapTestError::BootstrapNotFound => 103,
-            RdapTestError::NoRegistrarFound => 104,
-            RdapTestError::NoRegistryFound => 105,
+            Self::Json(_) => 100,
+            Self::Iana(_) => 101,
+            Self::InvalidBootstrap => 102,
+            Self::BootstrapNotFound => 103,
+            Self::NoRegistrarFound => 104,
+            Self::NoRegistryFound => 105,
 
             // User Errors
-            RdapTestError::UnknownOutputType => 200,
+            Self::UnknownOutputType => 200,
 
             // RDAP Client Errrors
-            RdapTestError::RdapClient(e) => match e {
+            Self::RdapClient(e) => match e {
                 // I/O Errors
                 RdapClientError::Client(_) => 42,
                 RdapClientError::IoError(_) => 43,

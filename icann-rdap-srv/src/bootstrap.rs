@@ -303,7 +303,7 @@ async fn fetch_iana_registry(
     if path.exists() {
         let input = File::open(&path).await?;
         let buf = BufReader::new(input);
-        let mut lines = Vec::new();
+        let mut lines = vec![];
         let mut buf_lines = buf.lines();
         while let Some(buf_line) = buf_lines.next_line().await? {
             lines.push(buf_line);
@@ -346,11 +346,11 @@ trait BootstrapPrefix {
 impl BootstrapPrefix for IanaRegistryType {
     fn prefix(&self) -> &str {
         match self {
-            IanaRegistryType::RdapBootstrapDns => "bootstrap_dns",
-            IanaRegistryType::RdapBootstrapAsn => "bootstrap_asn",
-            IanaRegistryType::RdapBootstrapIpv4 => "bootstrap_ipv4",
-            IanaRegistryType::RdapBootstrapIpv6 => "bootstrap_ipv6",
-            IanaRegistryType::RdapObjectTags => "bootstrap_objtag",
+            Self::RdapBootstrapDns => "bootstrap_dns",
+            Self::RdapBootstrapAsn => "bootstrap_asn",
+            Self::RdapBootstrapIpv4 => "bootstrap_ipv4",
+            Self::RdapBootstrapIpv6 => "bootstrap_ipv6",
+            Self::RdapObjectTags => "bootstrap_objtag",
         }
     }
 }

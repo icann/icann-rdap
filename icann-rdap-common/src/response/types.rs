@@ -10,7 +10,7 @@ pub struct Extension(pub String);
 
 impl From<&str> for Extension {
     fn from(value: &str) -> Self {
-        Extension(value.to_string())
+        Self(value.to_string())
     }
 }
 
@@ -209,7 +209,7 @@ impl Link {
         media_type: Option<String>,
     ) -> Self {
         let hreflang = hreflang.map(HrefLang::Lang);
-        Link {
+        Self {
             value: Some(value),
             rel: Some(rel),
             href: Some(href),
@@ -553,7 +553,7 @@ impl Event {
         event_actor: Option<String>,
         links: Option<Links>,
     ) -> Self {
-        Event {
+        Self {
             event_action: Some(event_action),
             event_actor,
             event_date: Some(event_date),

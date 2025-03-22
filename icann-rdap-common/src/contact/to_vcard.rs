@@ -105,7 +105,7 @@ impl Contact {
                 if let Some(pref) = phone.preference {
                     params.insert("pref".to_string(), Value::String(pref.to_string()));
                 }
-                let mut types: Vec<String> = Vec::new();
+                let mut types: Vec<String> = vec![];
                 if let Some(contexts) = &phone.contexts {
                     types.append(&mut contexts.clone());
                 }
@@ -132,7 +132,7 @@ impl Contact {
                         Value::from_str(full_address).expect("serializing full address"),
                     );
                 }
-                let mut lines: Vec<String> = Vec::new();
+                let mut lines: Vec<String> = vec![];
                 if let Some(street_parts) = &addr.street_parts {
                     lines.push(street_parts.first().cloned().unwrap_or("".to_string()));
                     lines.push(street_parts.get(1).cloned().unwrap_or("".to_string()));

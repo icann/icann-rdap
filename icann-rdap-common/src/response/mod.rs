@@ -229,46 +229,46 @@ impl TryFrom<Value> for RdapResponse {
 impl RdapResponse {
     pub fn get_type(&self) -> TypeId {
         match self {
-            RdapResponse::Entity(_) => TypeId::of::<Entity>(),
-            RdapResponse::Domain(_) => TypeId::of::<Domain>(),
-            RdapResponse::Nameserver(_) => TypeId::of::<Nameserver>(),
-            RdapResponse::Autnum(_) => TypeId::of::<Autnum>(),
-            RdapResponse::Network(_) => TypeId::of::<Network>(),
-            RdapResponse::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
-            RdapResponse::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
-            RdapResponse::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
-            RdapResponse::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
-            RdapResponse::Help(_) => TypeId::of::<Help>(),
+            Self::Entity(_) => TypeId::of::<Entity>(),
+            Self::Domain(_) => TypeId::of::<Domain>(),
+            Self::Nameserver(_) => TypeId::of::<Nameserver>(),
+            Self::Autnum(_) => TypeId::of::<Autnum>(),
+            Self::Network(_) => TypeId::of::<Network>(),
+            Self::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
+            Self::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
+            Self::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
+            Self::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
+            Self::Help(_) => TypeId::of::<Help>(),
         }
     }
 
     pub fn get_links(&self) -> Option<&Links> {
         match self {
-            RdapResponse::Entity(e) => e.object_common.links.as_ref(),
-            RdapResponse::Domain(d) => d.object_common.links.as_ref(),
-            RdapResponse::Nameserver(n) => n.object_common.links.as_ref(),
-            RdapResponse::Autnum(a) => a.object_common.links.as_ref(),
-            RdapResponse::Network(n) => n.object_common.links.as_ref(),
-            RdapResponse::DomainSearchResults(_) => None,
-            RdapResponse::EntitySearchResults(_) => None,
-            RdapResponse::NameserverSearchResults(_) => None,
-            RdapResponse::ErrorResponse(_) => None,
-            RdapResponse::Help(_) => None,
+            Self::Entity(e) => e.object_common.links.as_ref(),
+            Self::Domain(d) => d.object_common.links.as_ref(),
+            Self::Nameserver(n) => n.object_common.links.as_ref(),
+            Self::Autnum(a) => a.object_common.links.as_ref(),
+            Self::Network(n) => n.object_common.links.as_ref(),
+            Self::DomainSearchResults(_)
+            | Self::EntitySearchResults(_)
+            | Self::NameserverSearchResults(_)
+            | Self::ErrorResponse(_)
+            | Self::Help(_) => None,
         }
     }
 
     pub fn get_conformance(&self) -> Option<&RdapConformance> {
         match self {
-            RdapResponse::Entity(e) => e.common.rdap_conformance.as_ref(),
-            RdapResponse::Domain(d) => d.common.rdap_conformance.as_ref(),
-            RdapResponse::Nameserver(n) => n.common.rdap_conformance.as_ref(),
-            RdapResponse::Autnum(a) => a.common.rdap_conformance.as_ref(),
-            RdapResponse::Network(n) => n.common.rdap_conformance.as_ref(),
-            RdapResponse::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
-            RdapResponse::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
-            RdapResponse::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
-            RdapResponse::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
-            RdapResponse::Help(h) => h.common.rdap_conformance.as_ref(),
+            Self::Entity(e) => e.common.rdap_conformance.as_ref(),
+            Self::Domain(d) => d.common.rdap_conformance.as_ref(),
+            Self::Nameserver(n) => n.common.rdap_conformance.as_ref(),
+            Self::Autnum(a) => a.common.rdap_conformance.as_ref(),
+            Self::Network(n) => n.common.rdap_conformance.as_ref(),
+            Self::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
+            Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
 
@@ -286,7 +286,7 @@ impl RdapResponse {
 
     pub fn is_redirect(&self) -> bool {
         match self {
-            RdapResponse::ErrorResponse(e) => e.is_redirect(),
+            Self::ErrorResponse(e) => e.is_redirect(),
             _ => false,
         }
     }
@@ -294,11 +294,8 @@ impl RdapResponse {
 
 impl GetSelfLink for RdapResponse {
     fn get_self_link(&self) -> Option<&Link> {
-        if let Some(links) = self.get_links() {
-            links.iter().find(|link| link.is_relation("self"))
-        } else {
-            None
-        }
+        self.get_links()
+            .and_then(|links| links.iter().find(|link| link.is_relation("self")))
     }
 }
 
@@ -323,19 +320,42 @@ pub trait SelfLink: GetSelfLink {
 
 /// Gets the `href` of a link with `rel` of "related" and `type` with the RDAP media type.
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
-    if let Some(links) = rdap_response.get_links() {
-        // look for links with the proper type and relation
-        let mut urls: Vec<&str> = links
+    let Some(links) = rdap_response.get_links() else {
+        return vec![];
+    };
+    let mut urls: Vec<&str> = links
+        .iter()
+        .filter(|l| {
+            if l.href.as_ref().is_some() {
+                if let Some(rel) = &l.rel {
+                    if let Some(media_type) = &l.media_type {
+                        return rel.eq_ignore_ascii_case("related")
+                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE);
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        })
+        .map(|l| l.href.as_ref().unwrap().as_str())
+        .collect::<Vec<&str>>();
+    // if none are found with correct media type, look for something that looks like an RDAP link
+    if urls.is_empty() {
+        urls = links
             .iter()
             .filter(|l| {
-                if l.href.as_ref().is_some() {
-                    if let Some(rel) = &l.rel {
-                        if let Some(media_type) = &l.media_type {
-                            rel.eq_ignore_ascii_case("related")
-                                && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
-                        } else {
-                            false
-                        }
+                if let Some(href) = l.href() {
+                    if let Some(rel) = l.rel() {
+                        rel.eq_ignore_ascii_case("related")
+                            && (href.contains("/domain/")
+                                || href.contains("/ip/")
+                                || href.contains("/autnum/")
+                                || href.contains("/nameserver/")
+                                || href.contains("/entity/"))
                     } else {
                         false
                     }
@@ -345,33 +365,8 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             })
             .map(|l| l.href.as_ref().unwrap().as_str())
             .collect::<Vec<&str>>();
-        // if none are found with correct media type, look for something that looks like an RDAP link
-        if urls.is_empty() {
-            urls = links
-                .iter()
-                .filter(|l| {
-                    if let Some(href) = l.href() {
-                        if let Some(rel) = l.rel() {
-                            rel.eq_ignore_ascii_case("related")
-                                && (href.contains("/domain/")
-                                    || href.contains("/ip/")
-                                    || href.contains("/autnum/")
-                                    || href.contains("/nameserver/")
-                                    || href.contains("/entity/"))
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
-                    }
-                })
-                .map(|l| l.href.as_ref().unwrap().as_str())
-                .collect::<Vec<&str>>();
-        }
-        urls
-    } else {
-        Vec::new()
     }
+    urls
 }
 
 /// Makes a root object class suitable for being embedded in another object class.

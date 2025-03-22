@@ -821,7 +821,7 @@ async fn get_ns(store: &dyn StoreOps, ldh: &str) -> Result<Nameserver, RdapServe
 }
 
 fn events(args: &ObjectArgs) -> Option<Events> {
-    let mut events: Events = Vec::new();
+    let mut events: Events = vec![];
     let created_at = if let Some(dt) = args.created {
         dt
     } else {
@@ -846,7 +846,7 @@ fn events(args: &ObjectArgs) -> Option<Events> {
 }
 
 fn links(self_href: &str) -> Option<Links> {
-    let mut links: Links = Vec::new();
+    let mut links: Links = vec![];
     let self_link = Link::builder()
         .value(self_href.to_owned())
         .href(self_href.to_owned())
@@ -964,22 +964,21 @@ async fn make_domain(
     store: &dyn StoreOps,
 ) -> Result<Output, RdapServerError> {
     // get ldh from idn u-label if ldh is not given
-    let ldh;
-    if let Some(ldh_arg) = args.ldh.as_ref() {
-        ldh = ldh_arg.to_owned();
+    let ldh = if let Some(ldh_arg) = args.ldh.as_ref() {
+        ldh_arg.to_owned()
     } else if let Some(idn_arg) = args.idn.as_ref() {
-        ldh = idna::domain_to_ascii(idn_arg)
-            .map_err(|_| RdapServerError::InvalidArg("Invalid IDN U-Lable".to_string()))?;
+        idna::domain_to_ascii(idn_arg)
+            .map_err(|_| RdapServerError::InvalidArg("Invalid IDN U-Lable".to_string()))?
     } else {
         panic!("neither ldh or idn specified. this should have been caught in arg parsing.")
     }
 
     // get unicodeName (idn) from ldh if idn is not given
-    let unicode_name;
-    if let Some(idn_arg) = args.idn {
-        unicode_name = idn_arg;
+    ;
+    let unicode_name = if let Some(idn_arg) = args.idn {
+        idn_arg
     } else {
-        unicode_name = idna::domain_to_unicode(&ldh).0;
+        idna::domain_to_unicode(&ldh).0
     };
 
     let self_href = QueryType::domain(&ldh)?
