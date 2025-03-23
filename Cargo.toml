@@ -151,3 +151,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # url
 url = "2.5"
+
+
+[profile.release]
+codegen-units = 1
+lto = true
