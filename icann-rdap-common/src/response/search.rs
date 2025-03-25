@@ -1,11 +1,8 @@
 //! RDAP Search Results.
-use crate::prelude::Common;
-use crate::prelude::Extension;
+use crate::prelude::{Common, Extension};
 use serde::{Deserialize, Serialize};
 
-use super::CommonFields;
-use super::ToResponse;
-use super::{domain::Domain, entity::Entity, nameserver::Nameserver};
+use super::{domain::Domain, entity::Entity, nameserver::Nameserver, CommonFields, ToResponse};
 
 /// Represents RDAP domain search results.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]

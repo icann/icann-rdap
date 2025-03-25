@@ -8,8 +8,7 @@ use icann_rdap_client::{
     rdap::{rdap_url_request, QueryType, ResponseData},
 };
 use icann_rdap_common::{httpdata::HttpData, response::GetSelfLink};
-use pct_str::PctString;
-use pct_str::URIReserved;
+use pct_str::{PctString, URIReserved};
 use tracing::{debug, info};
 
 use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};

@@ -4,9 +4,7 @@ use icann_rdap_client::{
     http::{create_client, ClientConfig},
     rdap::{rdap_request, QueryType},
 };
-use icann_rdap_common::response::{
-    Rfc9083Error, {Link, Notice, NoticeOrRemark},
-};
+use icann_rdap_common::response::{Link, Notice, NoticeOrRemark, Rfc9083Error};
 use icann_rdap_srv::storage::{
     data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
     StoreOps,

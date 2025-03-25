@@ -1,14 +1,13 @@
 //! The IANA RDAP Bootstrap Registries.
 
-use icann_rdap_common::httpdata::HttpData;
-use icann_rdap_common::iana::IanaRegistry;
-use icann_rdap_common::iana::IanaRegistryType;
-use icann_rdap_common::iana::RdapBootstrapRegistry;
+use icann_rdap_common::{
+    httpdata::HttpData,
+    iana::{IanaRegistry, IanaRegistryType, RdapBootstrapRegistry},
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::http::wrapped_request;
-use crate::http::Client;
+use crate::http::{wrapped_request, Client};
 
 /// Response from getting an IANA registry.
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -1,11 +1,11 @@
-use std::any::TypeId;
-use std::net::IpAddr;
-use std::str::FromStr;
+use std::{any::TypeId, net::IpAddr, str::FromStr};
 
 use crate::response::nameserver::Nameserver;
 
-use super::string::StringListCheck;
-use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{
+    string::{StringCheck, StringListCheck},
+    Check, CheckParams, Checks, GetChecks, GetSubChecks,
+};
 
 impl GetChecks for Nameserver {
     fn get_checks(&self, params: CheckParams) -> super::Checks {

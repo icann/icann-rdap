@@ -1,24 +1,19 @@
 //! Entity object class.
-use crate::contact::Contact;
-use crate::prelude::Common;
-use crate::prelude::Extension;
-use crate::prelude::ObjectCommon;
+use crate::{
+    contact::Contact,
+    prelude::{Common, Extension, ObjectCommon},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
 
-use super::to_opt_vectorstringish;
-use super::CommonFields;
-use super::ObjectCommonFields;
-use super::ToResponse;
-use super::VectorStringish;
-use super::EMPTY_VEC_STRING;
 use super::{
     autnum::Autnum,
     network::Network,
-    to_opt_vec,
+    to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, PublicIds},
-    Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
+    CommonFields, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
+    SelfLink, ToChild, ToResponse, VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Represents an RDAP [entity](https://rdap.rcode3.com/protocol/object_classes.html#entity) response.

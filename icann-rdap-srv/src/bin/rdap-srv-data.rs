@@ -1,67 +1,34 @@
-use chrono::DateTime;
-use chrono::FixedOffset;
-use chrono::Utc;
-use cidr::IpCidr;
-use cidr::IpInet;
+use chrono::{DateTime, FixedOffset, Utc};
+use cidr::{IpCidr, IpInet};
 use clap::{Args, Parser, Subcommand};
 use icann_rdap_client::rdap::QueryType;
-use icann_rdap_common::contact::Contact;
-use icann_rdap_common::contact::PostalAddress;
-use icann_rdap_common::media_types::RDAP_MEDIA_TYPE;
-use icann_rdap_common::prelude::RdapResponse;
-use icann_rdap_common::prelude::ToNotices;
-use icann_rdap_common::prelude::ToRemarks;
-use icann_rdap_common::prelude::ToResponse;
-use icann_rdap_common::prelude::VectorStringish;
-use icann_rdap_common::response::Autnum;
-use icann_rdap_common::response::Domain;
-use icann_rdap_common::response::DsDatum;
-use icann_rdap_common::response::Entity;
-use icann_rdap_common::response::Event;
-use icann_rdap_common::response::Events;
-use icann_rdap_common::response::Help;
-use icann_rdap_common::response::Link;
-use icann_rdap_common::response::Links;
-use icann_rdap_common::response::Nameserver;
-use icann_rdap_common::response::Network;
-use icann_rdap_common::response::Notice;
-use icann_rdap_common::response::NoticeOrRemark;
-use icann_rdap_common::response::Rfc9083Error;
-use icann_rdap_common::response::SecureDns;
-use icann_rdap_common::response::ToChild;
-use icann_rdap_common::VERSION;
-use icann_rdap_srv::config::ServiceConfig;
-use icann_rdap_srv::storage::data::load_data;
-use icann_rdap_srv::storage::data::AutnumId;
-use icann_rdap_srv::storage::data::AutnumOrError;
-use icann_rdap_srv::storage::data::DomainId;
-use icann_rdap_srv::storage::data::DomainOrError;
-use icann_rdap_srv::storage::data::EntityId;
-use icann_rdap_srv::storage::data::EntityOrError;
-use icann_rdap_srv::storage::data::NameserverId;
-use icann_rdap_srv::storage::data::NameserverOrError;
-use icann_rdap_srv::storage::data::NetworkId;
-use icann_rdap_srv::storage::data::NetworkOrError;
-use icann_rdap_srv::storage::data::Template;
-use icann_rdap_srv::storage::mem::config::MemConfig;
-use icann_rdap_srv::storage::mem::ops::Mem;
-use icann_rdap_srv::storage::CommonConfig;
-use icann_rdap_srv::storage::StoreOps;
-use icann_rdap_srv::util::bin::check::check_rdap;
-use icann_rdap_srv::util::bin::check::to_check_classes;
-use icann_rdap_srv::util::bin::check::CheckArgs;
-use icann_rdap_srv::{
-    config::{debug_config_vars, LOG},
-    error::RdapServerError,
+use icann_rdap_common::{
+    contact::{Contact, PostalAddress},
+    media_types::RDAP_MEDIA_TYPE,
+    prelude::{RdapResponse, ToNotices, ToRemarks, ToResponse, VectorStringish},
+    response::{
+        Autnum, Domain, DsDatum, Entity, Event, Events, Help, Link, Links, Nameserver, Network,
+        Notice, NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
+    },
+    VERSION,
 };
-use pct_str::PctString;
-use pct_str::URIReserved;
+use icann_rdap_srv::{
+    config::{debug_config_vars, ServiceConfig, LOG},
+    error::RdapServerError,
+    storage::{
+        data::{
+            load_data, AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError,
+            NameserverId, NameserverOrError, NetworkId, NetworkOrError, Template,
+        },
+        mem::{config::MemConfig, ops::Mem},
+        CommonConfig, StoreOps,
+    },
+    util::bin::check::{check_rdap, to_check_classes, CheckArgs},
+};
+use pct_str::{PctString, URIReserved};
 use regex::Regex;
-use std::fs;
-use std::path::PathBuf;
-use std::str::FromStr;
-use tracing::error;
-use tracing::info;
+use std::{fs, path::PathBuf, str::FromStr};
+use tracing::{error, info};
 use tracing_subscriber::{
     fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };

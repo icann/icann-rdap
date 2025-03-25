@@ -1,23 +1,16 @@
 //! RDAP Domain Object Class
-use crate::prelude::Common;
-use crate::prelude::Extension;
-use crate::prelude::ObjectCommon;
+use crate::prelude::{Common, Extension, ObjectCommon};
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
-use super::to_opt_vectorstringish;
-use super::CommonFields;
-use super::ObjectCommonFields;
-use super::ToResponse;
-use super::VectorStringish;
-use super::EMPTY_VEC_STRING;
 use super::{
     lenient::{Boolish, Numberish},
     nameserver::Nameserver,
     network::Network,
-    to_opt_vec,
+    to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, Links, PublicIds},
-    Entity, Event, GetSelfLink, Notice, Port43, PublicId, Remark, SelfLink, ToChild,
+    CommonFields, Entity, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
+    SelfLink, ToChild, ToResponse, VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Represents an RDAP variant name.

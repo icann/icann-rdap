@@ -1,22 +1,21 @@
 use std::any::TypeId;
 
-use icann_rdap_common::dns_types::{DnsAlgorithmType, DnsDigestType};
-use icann_rdap_common::response::{Domain, SecureDns, Variant};
+use icann_rdap_common::{
+    dns_types::{DnsAlgorithmType, DnsDigestType},
+    response::{Domain, SecureDns, Variant},
+};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
 use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
 
-use super::redacted::REDACTED_TEXT;
-use super::types::{events_to_table, links_to_table, public_ids_to_table};
 use super::{
-    string::StringListUtil,
-    string::StringUtil,
+    redacted::REDACTED_TEXT,
+    string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    MdParams, ToMd, HR,
+    types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
-use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {

@@ -1,24 +1,18 @@
-use std::io::stdout;
-use std::str::FromStr;
+use std::{io::stdout, str::FromStr};
 
-use clap::builder::styling::AnsiColor;
-use clap::builder::Styles;
+use clap::builder::{styling::AnsiColor, Styles};
 use error::RdapTestError;
-use icann_rdap_cli::dirs;
-use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
-use icann_rdap_cli::rt::exec::execute_tests;
-use icann_rdap_cli::rt::exec::ExtensionGroup;
-use icann_rdap_cli::rt::exec::TestOptions;
-use icann_rdap_cli::rt::results::RunOutcome;
-use icann_rdap_cli::rt::results::TestResults;
-use icann_rdap_client::http::ClientConfig;
-use icann_rdap_client::md::MdOptions;
-use icann_rdap_client::rdap::QueryType;
-use icann_rdap_common::check::traverse_checks;
-use icann_rdap_common::check::CheckClass;
-use termimad::crossterm::style::Color::*;
-use termimad::Alignment;
-use termimad::MadSkin;
+use icann_rdap_cli::{
+    dirs,
+    dirs::fcbs::FileCacheBootstrapStore,
+    rt::{
+        exec::{execute_tests, ExtensionGroup, TestOptions},
+        results::{RunOutcome, TestResults},
+    },
+};
+use icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType};
+use icann_rdap_common::check::{traverse_checks, CheckClass};
+use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 use tracing::info;
 #[cfg(debug_assertions)]
 use tracing::warn;

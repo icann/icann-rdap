@@ -1,20 +1,15 @@
 //! RDAP IP Network.
-use crate::prelude::Common;
-use crate::prelude::Extension;
-use crate::prelude::ObjectCommon;
+use crate::prelude::{Common, Extension, ObjectCommon};
 use std::str::FromStr;
 
 use cidr::IpInet;
 use serde::{Deserialize, Serialize};
 
-use super::CommonFields;
-use super::Numberish;
-use super::ObjectCommonFields;
-use super::ToResponse;
 use super::{
     to_opt_vec,
     types::{ExtensionId, Link},
-    Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink, ToChild,
+    CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
+    RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
 };
 
 /// Cidr0 structure from the Cidr0 extension.

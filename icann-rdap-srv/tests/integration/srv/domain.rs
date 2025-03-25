@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
 use icann_rdap_client::{
-    http::create_client,
-    http::ClientConfig,
+    http::{create_client, ClientConfig},
     rdap::{rdap_request, QueryType},
     RdapClientError,
 };

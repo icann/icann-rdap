@@ -1,8 +1,9 @@
 //! Creates a Reqwest client.
 
-pub use reqwest::header::{self, HeaderValue};
-pub use reqwest::Client as ReqwestClient;
-pub use reqwest::Error as ReqwestError;
+pub use reqwest::{
+    header::{self, HeaderValue},
+    Client as ReqwestClient, Error as ReqwestError,
+};
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
 

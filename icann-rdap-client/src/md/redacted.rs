@@ -219,9 +219,7 @@ fn get_string_from_map(map: &serde_json::Map<String, Value>, key: &str) -> Strin
 #[allow(non_snake_case)]
 mod tests {
     use serde_json::Value;
-    use std::error::Error;
-    use std::fs::File;
-    use std::io::Read;
+    use std::{error::Error, fs::File, io::Read};
 
     fn process_redacted_file(file_path: &str) -> Result<String, Box<dyn Error>> {
         let mut file = File::open(file_path)?;

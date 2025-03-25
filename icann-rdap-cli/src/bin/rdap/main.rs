@@ -1,25 +1,16 @@
 use bootstrap::BootstrapType;
-use clap::builder::styling::AnsiColor;
-use clap::builder::Styles;
+use clap::builder::{styling::AnsiColor, Styles};
 use error::RdapCliError;
 use icann_rdap_cli::dirs;
-use icann_rdap_client::http::create_client;
-use icann_rdap_client::http::Client;
-use icann_rdap_client::http::ClientConfig;
+use icann_rdap_client::http::{create_client, Client, ClientConfig};
 use icann_rdap_common::check::CheckClass;
-use query::InrBackupBootstrap;
-use query::ProcessType;
-use query::ProcessingParams;
-use query::TldLookup;
-use std::io::IsTerminal;
-use std::str::FromStr;
-use tracing::error;
-use tracing::info;
+use query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup};
+use std::{io::IsTerminal, str::FromStr};
 #[cfg(debug_assertions)]
 use tracing::warn;
+use tracing::{error, info};
 use tracing_subscriber::filter::LevelFilter;
-use write::FmtWrite;
-use write::PagerWrite;
+use write::{FmtWrite, PagerWrite};
 
 use clap::{ArgGroup, Parser, ValueEnum};
 use icann_rdap_client::rdap::QueryType;

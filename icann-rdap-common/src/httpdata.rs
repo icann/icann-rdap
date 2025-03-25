@@ -245,8 +245,7 @@ impl HttpData {
 #[cfg(test)]
 mod tests {
     use super::HttpData;
-    use chrono::Duration;
-    use chrono::Utc;
+    use chrono::{Duration, Utc};
     use rstest::rstest;
 
     #[rstest]

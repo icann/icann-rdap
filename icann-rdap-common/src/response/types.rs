@@ -667,8 +667,10 @@ impl PublicId {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::prelude::ObjectCommon;
-    use crate::response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks};
+    use crate::{
+        prelude::ObjectCommon,
+        response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks},
+    };
 
     use super::{Event, Link, Links, NoticeOrRemark, PublicId};
 

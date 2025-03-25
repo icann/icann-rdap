@@ -1,8 +1,7 @@
 //! RFC 9537.
 use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
-use std::any::TypeId;
-use std::fmt;
+use std::{any::TypeId, fmt};
 
 use crate::check::Checks;
 

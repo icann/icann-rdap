@@ -1,9 +1,9 @@
 use crate::prelude::ObjectCommon;
 use std::{any::TypeId, str::FromStr, sync::LazyLock};
 
-use crate::prelude::Common;
 use crate::{
     media_types::RDAP_MEDIA_TYPE,
+    prelude::Common,
     response::{
         autnum::Autnum,
         domain::Domain,
@@ -329,9 +329,9 @@ impl GetSubChecks for ObjectCommon {
 mod tests {
     use rstest::rstest;
 
-    use crate::prelude::{ToResponse, VectorStringish};
     use crate::{
         check::Checks,
+        prelude::{ToResponse, VectorStringish},
         response::{
             domain::Domain,
             nameserver::Nameserver,

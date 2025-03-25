@@ -1,14 +1,14 @@
 use assert_cmd::Command;
-use icann_rdap_srv::config::ListenConfig;
-use icann_rdap_srv::server::AppState;
-use icann_rdap_srv::server::Listener;
-use icann_rdap_srv::storage::mem::config::MemConfig;
-use icann_rdap_srv::storage::mem::ops::Mem;
-use icann_rdap_srv::storage::CommonConfig;
+use icann_rdap_srv::{
+    config::ListenConfig,
+    server::{AppState, Listener},
+    storage::{
+        mem::{config::MemConfig, ops::Mem},
+        CommonConfig,
+    },
+};
 use std::time::Duration;
-use test_dir::DirBuilder;
-use test_dir::FileType;
-use test_dir::TestDir;
+use test_dir::{DirBuilder, FileType, TestDir};
 
 pub enum CommandType {
     Rdap,

@@ -1,7 +1,6 @@
 //! Converts RDAP structures to gTLD Whois output.
 
-use icann_rdap_common::contact::PostalAddress;
-use icann_rdap_common::response::RdapResponse;
+use icann_rdap_common::{contact::PostalAddress, response::RdapResponse};
 use std::any::TypeId;
 
 pub mod domain;

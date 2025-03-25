@@ -1,16 +1,13 @@
 //! Wrapped Client.
 
 use icann_rdap_common::httpdata::HttpData;
-pub use reqwest::header::HeaderValue;
 use reqwest::header::{
     ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION, RETRY_AFTER,
     STRICT_TRANSPORT_SECURITY,
 };
-pub use reqwest::Client as ReqwestClient;
-pub use reqwest::Error as ReqwestError;
+pub use reqwest::{header::HeaderValue, Client as ReqwestClient, Error as ReqwestError};
 
-use super::create_reqwest_client;
-use super::ReqwestClientConfig;
+use super::{create_reqwest_client, ReqwestClientConfig};
 use crate::RdapClientError;
 
 #[cfg(not(target_arch = "wasm32"))]

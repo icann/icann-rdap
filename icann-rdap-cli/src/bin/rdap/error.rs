@@ -1,7 +1,6 @@
 use std::process::{ExitCode, Termination};
 
-use icann_rdap_client::iana::IanaResponseError;
-use icann_rdap_client::RdapClientError;
+use icann_rdap_client::{iana::IanaResponseError, RdapClientError};
 use minus::MinusError;
 use thiserror::Error;
 use tracing::error;
