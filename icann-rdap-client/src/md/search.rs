@@ -8,7 +8,7 @@ use super::{MdHeaderText, MdParams, MdUtil, ToMd};
 
 impl ToMd for DomainSearchResults {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<DomainSearchResults>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
         self.results.iter().for_each(|result| {
@@ -25,7 +25,7 @@ impl ToMd for DomainSearchResults {
 
 impl ToMd for NameserverSearchResults {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<NameserverSearchResults>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
         self.results.iter().for_each(|result| {
@@ -42,7 +42,7 @@ impl ToMd for NameserverSearchResults {
 
 impl ToMd for EntitySearchResults {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<EntitySearchResults>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
         self.results.iter().for_each(|result| {

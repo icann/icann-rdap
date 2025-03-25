@@ -33,7 +33,7 @@ impl Default for MultiPartTable {
 
 impl MultiPartTable {
     pub fn new() -> Self {
-        Self { rows: Vec::new() }
+        Self { rows: vec![] }
     }
 
     /// Add a header row.

@@ -155,7 +155,7 @@ impl ToMd for NoticeOrRemark {
                 }
             });
         }
-        self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
+        self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()))
             .items
             .iter()
             .filter(|item| params.check_types.contains(&item.check_class))

@@ -40,29 +40,29 @@ impl RdapCliError {
     pub(crate) fn exit_code(&self) -> u8 {
         match self {
             // Success
-            RdapCliError::Success => 0,
+            Self::Success => 0,
 
             // Internal Errors
-            RdapCliError::Termimad(_) => 10,
-            RdapCliError::Minus(_) => 11,
+            Self::Termimad(_) => 10,
+            Self::Minus(_) => 11,
 
             // I/O Errors
-            RdapCliError::IoError(_) => 40,
+            Self::IoError(_) => 40,
 
             // RDAP Errors
-            RdapCliError::Json(_) => 100,
-            RdapCliError::Iana(_) => 101,
-            RdapCliError::InvalidBootstrap => 102,
-            RdapCliError::BootstrapNotFound => 103,
-            RdapCliError::NoRegistrarFound => 104,
-            RdapCliError::NoRegistryFound => 105,
+            Self::Json(_) => 100,
+            Self::Iana(_) => 101,
+            Self::InvalidBootstrap => 102,
+            Self::BootstrapNotFound => 103,
+            Self::NoRegistrarFound => 104,
+            Self::NoRegistryFound => 105,
 
             // User Errors
-            RdapCliError::UnknownOutputType => 200,
-            RdapCliError::ErrorOnChecks => 201,
+            Self::UnknownOutputType => 200,
+            Self::ErrorOnChecks => 201,
 
             // RDAP Client Errrors
-            RdapCliError::RdapClient(e) => match e {
+            Self::RdapClient(e) => match e {
                 // I/O Errors
                 RdapClientError::Client(ce) => {
                     if ce.is_builder() {

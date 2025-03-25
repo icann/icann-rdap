@@ -175,11 +175,11 @@ impl AppState<Mem> {
     pub async fn new_mem(
         config: MemConfig,
         service_config: &ServiceConfig,
-    ) -> Result<AppState<Mem>, RdapServerError> {
+    ) -> Result<Self, RdapServerError> {
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Mem> {
+        Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
         })
@@ -196,11 +196,11 @@ impl AppState<Pg> {
     pub async fn new_pg(
         config: PgConfig,
         service_config: &ServiceConfig,
-    ) -> Result<AppState<Pg>, RdapServerError> {
+    ) -> Result<Self, RdapServerError> {
         let storage = Pg::new(config).await?;
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Pg> {
+        Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
         })

@@ -26,7 +26,7 @@ impl RdapSrvStoreTestJig {
             .env("RDAP_BASE_URL", "http://localhost:3000/rdap")
             .env("RDAP_SRV_LOG", "debug")
             .env("RDAP_SRV_DATA_DIR", data_dir.root());
-        RdapSrvStoreTestJig {
+        Self {
             cmd,
             source_dir,
             data_dir,
@@ -41,7 +41,7 @@ pub struct RdapSrvDataTestJig {
 }
 
 impl RdapSrvDataTestJig {
-    pub fn new() -> RdapSrvDataTestJig {
+    pub fn new() -> Self {
         let source_dir = TestDir::temp();
         let data_dir = TestDir::temp();
         let mut cmd = Command::cargo_bin("rdap-srv-data").expect("cannot find rdap-srv-data cmd");
@@ -50,21 +50,21 @@ impl RdapSrvDataTestJig {
             .env("RDAP_BASE_URL", "http://localhost:3000/rdap")
             .env("RDAP_SRV_LOG", "debug")
             .env("RDAP_SRV_DATA_DIR", data_dir.root());
-        RdapSrvDataTestJig {
+        Self {
             cmd,
             source_dir,
             data_dir,
         }
     }
 
-    pub fn new_cmd(self) -> RdapSrvDataTestJig {
+    pub fn new_cmd(self) -> Self {
         let mut cmd = Command::cargo_bin("rdap-srv-data").expect("cannot find rdap-srv-data cmd");
         cmd.env_clear()
             .timeout(Duration::from_secs(2))
             .env("RDAP_BASE_URL", "http://localhost:3000/rdap")
             .env("RDAP_SRV_LOG", "debug")
             .env("RDAP_SRV_DATA_DIR", self.data_dir.root());
-        RdapSrvDataTestJig {
+        Self {
             cmd,
             source_dir: self.source_dir,
             data_dir: self.data_dir,
@@ -78,7 +78,7 @@ pub struct SrvTestJig {
 }
 
 impl SrvTestJig {
-    pub async fn new() -> SrvTestJig {
+    pub async fn new() -> Self {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
@@ -95,10 +95,10 @@ impl SrvTestJig {
                 .await
                 .expect("starting server");
         });
-        SrvTestJig { mem, rdap_base }
+        Self { mem, rdap_base }
     }
 
-    pub async fn new_common_config(common_config: CommonConfig) -> SrvTestJig {
+    pub async fn new_common_config(common_config: CommonConfig) -> Self {
         let mem_config = MemConfig::builder().common_config(common_config).build();
         let mem = Mem::new(mem_config);
         let app_state = AppState {
@@ -116,10 +116,10 @@ impl SrvTestJig {
                 .await
                 .expect("starting server");
         });
-        SrvTestJig { mem, rdap_base }
+        Self { mem, rdap_base }
     }
 
-    pub async fn new_bootstrap() -> SrvTestJig {
+    pub async fn new_bootstrap() -> Self {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
@@ -136,6 +136,6 @@ impl SrvTestJig {
                 .await
                 .expect("starting server");
         });
-        SrvTestJig { mem, rdap_base }
+        Self { mem, rdap_base }
     }
 }

@@ -174,12 +174,12 @@ impl Default for MemoryBootstrapStore {
 
 impl MemoryBootstrapStore {
     pub fn new() -> Self {
-        MemoryBootstrapStore {
-            ipv4: Arc::new(RwLock::new(None)),
-            ipv6: Arc::new(RwLock::new(None)),
-            autnum: Arc::new(RwLock::new(None)),
-            dns: Arc::new(RwLock::new(None)),
-            tag: Arc::new(RwLock::new(None)),
+        Self {
+            ipv4: <_>::default(),
+            ipv6: <_>::default(),
+            autnum: <_>::default(),
+            dns: <_>::default(),
+            tag: <_>::default(),
         }
     }
 }

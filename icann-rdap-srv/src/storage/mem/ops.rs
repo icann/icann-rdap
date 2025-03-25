@@ -35,15 +35,15 @@ pub struct Mem {
 impl Mem {
     pub fn new(config: MemConfig) -> Self {
         Self {
-            autnums: Arc::new(RwLock::new(RangeMap::new())),
-            ip4: Arc::new(RwLock::new(PrefixMap::new())),
-            ip6: Arc::new(RwLock::new(PrefixMap::new())),
-            domains: Arc::new(RwLock::new(HashMap::new())),
+            autnums: <_>::default(),
+            ip4: <_>::default(),
+            ip6: <_>::default(),
+            domains: <_>::default(),
             domains_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
-            idns: Arc::new(RwLock::new(HashMap::new())),
-            nameservers: Arc::new(RwLock::new(HashMap::new())),
-            entities: Arc::new(RwLock::new(HashMap::new())),
-            srvhelps: Arc::new(RwLock::new(HashMap::new())),
+            idns: <_>::default(),
+            nameservers: <_>::default(),
+            entities: <_>::default(),
+            srvhelps: <_>::default(),
             config,
         }
     }
@@ -51,7 +51,7 @@ impl Mem {
 
 impl Default for Mem {
     fn default() -> Self {
-        Mem::new(
+        Self::new(
             MemConfig::builder()
                 .common_config(CommonConfig::default())
                 .build(),
