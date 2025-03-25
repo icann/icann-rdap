@@ -501,96 +501,83 @@ pub enum Check {
 impl Check {
     pub fn check_item(self) -> CheckItem {
         let check_class = match self {
-            Self::RdapConformanceMissing |
-            Self::RdapConformanceInvalidParent => CheckClass::StdError,
+            Self::RdapConformanceMissing | Self::RdapConformanceInvalidParent => {
+                CheckClass::StdError
+            }
             Self::UnknownExtention => CheckClass::StdWarning,
 
-            Self::LinkMissingValueProperty |
-            Self::LinkMissingRelProperty => CheckClass::StdError,
-            Self::LinkRelatedHasNoType |
-            Self::LinkRelatedIsNotRdap |
-            Self::LinkSelfHasNoType |
-            Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
+            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::StdError,
+            Self::LinkRelatedHasNoType
+            | Self::LinkRelatedIsNotRdap
+            | Self::LinkSelfHasNoType
+            | Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
             Self::LinkMissingHrefProperty => CheckClass::StdError,
 
             Self::VariantEmptyDomain => CheckClass::StdWarning,
 
-            Self::EventDateIsAbsent |
-            Self::EventDateIsNotRfc3339 |
-            Self::EventActionIsAbsent  |
-
-            Self::NoticeOrRemarkDescriptionIsAbsent |
-            Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
+            Self::EventDateIsAbsent
+            | Self::EventDateIsNotRfc3339
+            | Self::EventActionIsAbsent
+            | Self::NoticeOrRemarkDescriptionIsAbsent
+            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
 
             Self::HandleIsEmpty => CheckClass::StdWarning,
 
-            Self::StatusIsEmpty |
-
-            Self::RoleIsEmpty => CheckClass::StdError,
+            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
             Self::UnknownRole => CheckClass::StdWarning,
-            Self::RoleIsString |
-
-            Self::LdhNameInvalid => CheckClass::StdError,
+            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::StdError,
             Self::LdhNameDocumentation => CheckClass::Informational,
             Self::LdhNameDoesNotMatchUnicode => CheckClass::StdWarning,
 
-            Self::UnicodeNameInvalidDomain |
-            Self::UnicodeNameInvalidUnicode => CheckClass::StdError,
+            Self::UnicodeNameInvalidDomain | Self::UnicodeNameInvalidUnicode => {
+                CheckClass::StdError
+            }
 
-            Self::NetworkOrAutnumNameIsEmpty |
-
-            Self::NetworkOrAutnumTypeIsEmpty |
-
-            Self::IpAddressMissing => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsEmpty
+            | Self::NetworkOrAutnumTypeIsEmpty
+            | Self::IpAddressMissing => CheckClass::StdWarning,
             Self::IpAddressMalformed => CheckClass::StdError,
-            Self::IpAddressEndBeforeStart |
-            Self::IpAddressVersionMismatch => CheckClass::StdWarning,
-            Self::IpAddressMalformedVersion |
-            Self::IpAddressListIsEmpty => CheckClass::StdError,
-            Self::IpAddressThisNetwork |
-            Self::IpAddressPrivateUse |
-            Self::IpAddressSharedNat |
-            Self::IpAddressLoopback |
-            Self::IpAddressLinkLocal |
-            Self::IpAddressUniqueLocal |
-            Self::IpAddressDocumentationNet |
-            Self::IpAddressReservedNet => CheckClass::Informational,
+            Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
+                CheckClass::StdWarning
+            }
+            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::StdError,
+            Self::IpAddressThisNetwork
+            | Self::IpAddressPrivateUse
+            | Self::IpAddressSharedNat
+            | Self::IpAddressLoopback
+            | Self::IpAddressLinkLocal
+            | Self::IpAddressUniqueLocal
+            | Self::IpAddressDocumentationNet
+            | Self::IpAddressReservedNet => CheckClass::Informational,
             Self::IpAddressArrayIsString => CheckClass::StdError,
 
-            Self::AutnumMissing |
-            Self::AutnumEndBeforeStart => CheckClass::StdWarning,
-            Self::AutnumPrivateUse |
-            Self::AutnumDocumentation |
-            Self::AutnumReserved => CheckClass::Informational,
+            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
+            Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
+                CheckClass::Informational
+            }
 
-            Self::VcardArrayIsEmpty |
-            Self::VcardHasNoFn => CheckClass::StdError,
+            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::StdError,
             Self::VcardFnIsEmpty => CheckClass::SpecificationNote,
 
-            Self::Port43IsEmpty |
+            Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
+                CheckClass::StdError
+            }
 
-            Self::PublicIdTypeIsAbsent |
-            Self::PublicIdIdentifierIsAbsent => CheckClass::StdError,
+            Self::CorsAllowOriginRecommended
+            | Self::CorsAllowOriginStarRecommended
+            | Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
+            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::StdError,
 
-            Self::CorsAllowOriginRecommended |
-            Self::CorsAllowOriginStarRecommended |
-            Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
-            Self::ContentTypeIsAbsent |
-            Self::ContentTypeIsNotRdap => CheckClass::StdError,
+            Self::Cidr0V4PrefixIsAbsent
+            | Self::Cidr0V4LengthIsAbsent
+            | Self::Cidr0V6PrefixIsAbsent
+            | Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
 
-            Self::Cidr0V4PrefixIsAbsent |
-            Self::Cidr0V4LengthIsAbsent |
-            Self::Cidr0V6PrefixIsAbsent |
-            Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
+            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::IcannError,
 
-            Self::MustUseHttps |
-            Self::AllowOriginNotStar => CheckClass::IcannError,
-
-            Self::CnameWithoutARecords |
-            Self::CnameWithoutAAAARecords => CheckClass::StdError,
-            Self::NoARecords => CheckClass::SpecificationNote,
-            Self::NoAAAARecords => CheckClass::SpecificationNote,
+            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::StdError,
+            Self::NoARecords | Self::NoAAAARecords => CheckClass::SpecificationNote,
             Self::ExpectedExtensionNotFound => CheckClass::StdError,
             Self::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
 

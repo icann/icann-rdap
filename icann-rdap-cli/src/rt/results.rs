@@ -225,11 +225,11 @@ pub struct TestRun {
 }
 
 impl TestRun {
-    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
+    fn new(features: Vec<RunFeature>, socket_addr: SocketAddr) -> Self {
         Self {
             features,
             start_time: Utc::now(),
-            socket_addr: SocketAddr::new(IpAddr::V4(ipv4), port),
+            socket_addr,
             end_time: None,
             response_data: None,
             outcome: RunOutcome::Skipped,
@@ -237,16 +237,12 @@ impl TestRun {
         }
     }
 
+    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
+        Self::new(features, SocketAddr::new(IpAddr::V4(ipv4), port))
+    }
+
     pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
-        Self {
-            features,
-            start_time: Utc::now(),
-            socket_addr: SocketAddr::new(IpAddr::V6(ipv6), port),
-            end_time: None,
-            response_data: None,
-            outcome: RunOutcome::Skipped,
-            checks: None,
-        }
+        Self::new(features, SocketAddr::new(IpAddr::V6(ipv6), port))
     }
 
     pub fn end(

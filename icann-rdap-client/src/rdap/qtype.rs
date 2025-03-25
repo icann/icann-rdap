@@ -214,7 +214,7 @@ impl FromStr for QueryType {
 
         // if looks like an autnum
         let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
-        if let Ok(_autnum) = u32::from_str(autnum) {
+        if u32::from_str(autnum).is_ok() {
             return Self::autnum(s);
         }
 
@@ -229,23 +229,23 @@ impl FromStr for QueryType {
 
         // if it is a cidr
         if let Ok(ip_cidr) = parse_cidr(s) {
-            return match ip_cidr {
-                IpCidr::V4(cidr) => Ok(Self::IpV4Cidr(cidr)),
-                IpCidr::V6(cidr) => Ok(Self::IpV6Cidr(cidr)),
-            };
+            return Ok(match ip_cidr {
+                IpCidr::V4(cidr) => Self::IpV4Cidr(cidr),
+                IpCidr::V6(cidr) => Self::IpV6Cidr(cidr),
+            });
         }
 
         // if it looks like a domain name
         if is_domain_name(s) {
-            if is_nameserver(s) {
-                return Self::ns(s);
+            return if is_nameserver(s) {
+                Self::ns(s)
             } else {
-                return Self::domain(s);
-            }
+                Self::domain(s)
+            };
         }
 
         // if it is just one word
-        if !s.contains(|c: char| c.is_whitespace() || c == '.' || c == ',' || c == '"') {
+        if !s.contains(|c: char| c.is_whitespace() || matches!(c, '.' | ',' | '"')) {
             return Ok(Self::Entity(s.to_owned()));
         }
 
@@ -255,23 +255,22 @@ impl FromStr for QueryType {
 }
 
 fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
-    if let Some((prefix, suffix)) = s.split_once('/') {
-        if prefix.chars().all(|c: char| c.is_ascii_alphanumeric()) {
-            let cidr = cidr::parsers::parse_short_ip_address_as_cidr(prefix)
-                .map_err(|_e| RdapClientError::InvalidQueryValue)?;
-            IpCidr::new(
-                cidr.first_address(),
-                suffix
-                    .parse::<u8>()
-                    .map_err(|_e| RdapClientError::InvalidQueryValue)?,
-            )
-            .map_err(|_e| RdapClientError::InvalidQueryValue)
-        } else {
-            cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(s, cidr::parsers::parse_loose_ip)
-                .map_err(|_e| RdapClientError::InvalidQueryValue)
-        }
+    let Some((prefix, suffix)) = s.split_once('/') else {
+        return Err(RdapClientError::InvalidQueryValue);
+    };
+    if prefix.chars().all(|c: char| c.is_ascii_alphanumeric()) {
+        let cidr = cidr::parsers::parse_short_ip_address_as_cidr(prefix)
+            .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        IpCidr::new(
+            cidr.first_address(),
+            suffix
+                .parse::<u8>()
+                .map_err(|_e| RdapClientError::InvalidQueryValue)?,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)
     } else {
-        Err(RdapClientError::InvalidQueryValue)
+        cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(s, cidr::parsers::parse_loose_ip)
+            .map_err(|_e| RdapClientError::InvalidQueryValue)
     }
 }
 
