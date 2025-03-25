@@ -1,8 +1,10 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network};
-use icann_rdap_srv::storage::StoreOps;
-use rstest::rstest;
+use {
+    icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network},
+    icann_rdap_srv::storage::StoreOps,
+    rstest::rstest,
+};
 
 use crate::test_jig::TestJig;
 

@@ -4,12 +4,14 @@ use std::{
     path::PathBuf,
 };
 
-use icann_rdap_client::iana::{BootstrapStore, RegistryHasNotExpired};
-use icann_rdap_common::{
-    httpdata::HttpData,
-    iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
+use {
+    icann_rdap_client::iana::{BootstrapStore, RegistryHasNotExpired},
+    icann_rdap_common::{
+        httpdata::HttpData,
+        iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
+    },
+    tracing::debug,
 };
-use tracing::debug;
 
 use super::bootstrap_cache_path;
 
@@ -94,16 +96,18 @@ where
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod test {
-    use icann_rdap_client::{
-        iana::{BootstrapStore, PreferredUrl},
-        rdap::QueryType,
+    use {
+        icann_rdap_client::{
+            iana::{BootstrapStore, PreferredUrl},
+            rdap::QueryType,
+        },
+        icann_rdap_common::{
+            httpdata::HttpData,
+            iana::{IanaRegistry, IanaRegistryType},
+        },
+        serial_test::serial,
+        test_dir::{DirBuilder, FileType, TestDir},
     };
-    use icann_rdap_common::{
-        httpdata::HttpData,
-        iana::{IanaRegistry, IanaRegistryType},
-    };
-    use serial_test::serial;
-    use test_dir::{DirBuilder, FileType, TestDir};
 
     use crate::dirs::{self, fcbs::FileCacheBootstrapStore};
 

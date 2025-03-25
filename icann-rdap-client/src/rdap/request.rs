@@ -1,8 +1,10 @@
 //! Functions to make RDAP requests.
 
-use icann_rdap_common::{httpdata::HttpData, iana::IanaRegistryType, response::RdapResponse};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use {
+    icann_rdap_common::{httpdata::HttpData, iana::IanaRegistryType, response::RdapResponse},
+    serde::{Deserialize, Serialize},
+    serde_json::Value,
+};
 
 use crate::{
     http::{wrapped_request, Client},

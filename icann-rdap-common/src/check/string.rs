@@ -127,8 +127,7 @@ impl CharCheck for char {
 mod tests {
     use rstest::rstest;
 
-    use crate::check::string::CharCheck;
-    use crate::check::string::StringListCheck;
+    use crate::check::string::{CharCheck, StringListCheck};
 
     use super::StringCheck;
 

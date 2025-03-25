@@ -1,16 +1,18 @@
 use std::sync::LazyLock;
 
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
+use {
+    axum::{
+        response::{IntoResponse, Response},
+        Json,
+    },
+    http::StatusCode,
+    icann_rdap_common::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::ToResponse,
+        response::{RdapResponse, Rfc9083Error},
+    },
+    tracing::warn,
 };
-use http::StatusCode;
-use icann_rdap_common::{
-    media_types::RDAP_MEDIA_TYPE,
-    prelude::ToResponse,
-    response::{RdapResponse, Rfc9083Error},
-};
-use tracing::warn;
 
 pub static NOT_FOUND: LazyLock<RdapResponse> = LazyLock::new(|| {
     Rfc9083Error::builder()
@@ -89,11 +91,13 @@ impl ResponseUtil for RdapResponse {
 #[allow(non_snake_case)]
 mod tests {
 
-    use axum::response::IntoResponse;
-    use http::StatusCode;
-    use icann_rdap_common::{
-        prelude::ToResponse,
-        response::{Domain, Link, Notice, NoticeOrRemark, Rfc9083Error},
+    use {
+        axum::response::IntoResponse,
+        http::StatusCode,
+        icann_rdap_common::{
+            prelude::ToResponse,
+            response::{Domain, Link, Notice, NoticeOrRemark, Rfc9083Error},
+        },
     };
 
     use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};

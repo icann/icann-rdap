@@ -1,22 +1,28 @@
 //! Function to execute tests.
 
-use std::net::{Ipv4Addr, Ipv6Addr};
-use std::str::FromStr;
+use std::{
+    net::{Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
 
-use hickory_client::client::{AsyncClient, ClientConnection, ClientHandle};
-use hickory_client::rr::{DNSClass, Name, RecordType};
-use hickory_client::udp::UdpClientConnection;
-use icann_rdap_client::http::create_client_with_addr;
-use icann_rdap_client::iana::{qtype_to_bootstrap_url, BootstrapStore};
-use icann_rdap_client::{http::create_client, http::ClientConfig, rdap::rdap_url_request};
-use icann_rdap_client::{rdap::QueryType, RdapClientError};
-use icann_rdap_common::response::get_related_links;
-use icann_rdap_common::response::ExtensionId;
-use reqwest::header::HeaderValue;
-use reqwest::Url;
-use thiserror::Error;
-use tracing::{debug, info};
-use url::ParseError;
+use {
+    hickory_client::{
+        client::{AsyncClient, ClientConnection, ClientHandle},
+        rr::{DNSClass, Name, RecordType},
+        udp::UdpClientConnection,
+    },
+    icann_rdap_client::{
+        http::{create_client, create_client_with_addr, ClientConfig},
+        iana::{qtype_to_bootstrap_url, BootstrapStore},
+        rdap::{rdap_url_request, QueryType},
+        RdapClientError,
+    },
+    icann_rdap_common::response::{get_related_links, ExtensionId},
+    reqwest::{header::HeaderValue, Url},
+    thiserror::Error,
+    tracing::{debug, info},
+    url::ParseError,
+};
 
 use crate::rt::results::{RunFeature, TestRun};
 

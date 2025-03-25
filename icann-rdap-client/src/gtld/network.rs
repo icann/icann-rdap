@@ -1,6 +1,8 @@
-use super::{GtldParams, ToGtldWhois};
-use icann_rdap_common::response::Network;
-use std::any::TypeId;
+use {
+    super::{GtldParams, ToGtldWhois},
+    icann_rdap_common::response::Network,
+    std::any::TypeId,
+};
 
 impl ToGtldWhois for Network {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {

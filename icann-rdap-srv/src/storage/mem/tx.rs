@@ -1,13 +1,15 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
-use async_trait::async_trait;
-use btree_range_map::RangeMap;
-use icann_rdap_common::{
-    prelude::ToResponse,
-    response::{Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error},
+use {
+    async_trait::async_trait,
+    btree_range_map::RangeMap,
+    icann_rdap_common::{
+        prelude::ToResponse,
+        response::{Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error},
+    },
+    ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets},
+    prefix_trie::PrefixMap,
 };
-use ipnet::{IpSubnets, Ipv4Net, Ipv4Subnets, Ipv6Net, Ipv6Subnets};
-use prefix_trie::PrefixMap;
 
 use crate::{
     error::RdapServerError,

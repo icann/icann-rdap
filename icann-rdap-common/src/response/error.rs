@@ -1,6 +1,8 @@
 //! RFC 9083 Error
-use crate::prelude::Extension;
-use serde::{Deserialize, Serialize};
+use {
+    crate::prelude::Extension,
+    serde::{Deserialize, Serialize},
+};
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 

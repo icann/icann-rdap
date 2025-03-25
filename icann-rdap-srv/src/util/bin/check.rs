@@ -1,9 +1,11 @@
-use clap::{Args, ValueEnum};
-use icann_rdap_common::{
-    check::{traverse_checks, CheckClass, CheckParams, GetChecks},
-    response::RdapResponse,
+use {
+    clap::{Args, ValueEnum},
+    icann_rdap_common::{
+        check::{traverse_checks, CheckClass, CheckParams, GetChecks},
+        response::RdapResponse,
+    },
+    tracing::error,
 };
-use tracing::error;
 
 #[derive(Debug, Args)]
 pub struct CheckArgs {

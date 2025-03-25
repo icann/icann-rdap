@@ -87,8 +87,10 @@ mod tests {
 
     use crate::prelude::ToResponse;
 
-    use crate::check::{Check, CheckParams, GetChecks};
-    use crate::response::autnum::Autnum;
+    use crate::{
+        check::{Check, CheckParams, GetChecks},
+        response::autnum::Autnum,
+    };
 
     use super::*;
 

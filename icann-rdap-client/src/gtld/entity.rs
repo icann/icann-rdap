@@ -1,6 +1,10 @@
-use super::{GtldParams, RoleInfo, ToGtldWhois};
-use icann_rdap_common::contact::{Contact, PostalAddress};
-use icann_rdap_common::response::Entity;
+use {
+    super::{GtldParams, RoleInfo, ToGtldWhois},
+    icann_rdap_common::{
+        contact::{Contact, PostalAddress},
+        response::Entity,
+    },
+};
 
 impl ToGtldWhois for Option<Vec<Entity>> {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {

@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::rdap::{RequestResponseOwned, SourceType};
-use icann_rdap_common::response::Network;
-use icann_rdap_srv::storage::StoreOps;
-use rstest::rstest;
+use {
+    icann_rdap_client::rdap::{RequestResponseOwned, SourceType},
+    icann_rdap_common::response::Network,
+    icann_rdap_srv::storage::StoreOps,
+    rstest::rstest,
+};
 
 use crate::test_jig::TestJig;
 

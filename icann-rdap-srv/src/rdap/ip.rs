@@ -1,11 +1,13 @@
 use std::{net::IpAddr, str::FromStr};
 
-use axum::{
-    extract::{Path, State},
-    response::Response,
+use {
+    axum::{
+        extract::{Path, State},
+        response::Response,
+    },
+    cidr::IpInet,
+    tracing::debug,
 };
-use cidr::IpInet;
-use tracing::debug;
 
 use crate::{
     error::RdapServerError,

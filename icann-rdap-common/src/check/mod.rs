@@ -2,10 +2,12 @@
 
 use std::{any::TypeId, sync::LazyLock};
 
-use crate::response::RdapResponse;
-use serde::{Deserialize, Serialize};
-use strum::{EnumMessage, IntoEnumIterator};
-use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
+use {
+    crate::response::RdapResponse,
+    serde::{Deserialize, Serialize},
+    strum::{EnumMessage, IntoEnumIterator},
+    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr},
+};
 
 #[doc(inline)]
 pub use string::*;
@@ -501,114 +503,101 @@ pub enum Check {
 impl Check {
     pub fn check_item(self) -> CheckItem {
         let check_class = match self {
-            Self::RdapConformanceMissing => CheckClass::StdError,
-            Self::RdapConformanceInvalidParent => CheckClass::StdError,
+            Self::RdapConformanceMissing | Self::RdapConformanceInvalidParent => {
+                CheckClass::StdError
+            }
             Self::UnknownExtention => CheckClass::StdWarning,
 
-            Self::LinkMissingValueProperty => CheckClass::StdError,
-            Self::LinkMissingRelProperty => CheckClass::StdError,
-            Self::LinkRelatedHasNoType => CheckClass::StdWarning,
-            Self::LinkRelatedIsNotRdap => CheckClass::StdWarning,
-            Self::LinkSelfHasNoType => CheckClass::StdWarning,
-            Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
+            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::StdError,
+            Self::LinkRelatedHasNoType
+            | Self::LinkRelatedIsNotRdap
+            | Self::LinkSelfHasNoType
+            | Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
             Self::LinkMissingHrefProperty => CheckClass::StdError,
 
             Self::VariantEmptyDomain => CheckClass::StdWarning,
 
-            Self::EventDateIsAbsent => CheckClass::StdError,
-            Self::EventDateIsNotRfc3339 => CheckClass::StdError,
-            Self::EventActionIsAbsent => CheckClass::StdError,
-
-            Self::NoticeOrRemarkDescriptionIsAbsent => CheckClass::StdError,
-            Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
+            Self::EventDateIsAbsent
+            | Self::EventDateIsNotRfc3339
+            | Self::EventActionIsAbsent
+            | Self::NoticeOrRemarkDescriptionIsAbsent
+            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
 
             Self::HandleIsEmpty => CheckClass::StdWarning,
 
-            Self::StatusIsEmpty => CheckClass::StdError,
-
-            Self::RoleIsEmpty => CheckClass::StdError,
+            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
             Self::UnknownRole => CheckClass::StdWarning,
-            Self::RoleIsString => CheckClass::StdError,
-
-            Self::LdhNameInvalid => CheckClass::StdError,
+            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::StdError,
             Self::LdhNameDocumentation => CheckClass::Informational,
             Self::LdhNameDoesNotMatchUnicode => CheckClass::StdWarning,
 
-            Self::UnicodeNameInvalidDomain => CheckClass::StdError,
-            Self::UnicodeNameInvalidUnicode => CheckClass::StdError,
+            Self::UnicodeNameInvalidDomain | Self::UnicodeNameInvalidUnicode => {
+                CheckClass::StdError
+            }
 
-            Self::NetworkOrAutnumNameIsEmpty => CheckClass::StdWarning,
-
-            Self::NetworkOrAutnumTypeIsEmpty => CheckClass::StdWarning,
-
-            Self::IpAddressMissing => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsEmpty
+            | Self::NetworkOrAutnumTypeIsEmpty
+            | Self::IpAddressMissing => CheckClass::StdWarning,
             Self::IpAddressMalformed => CheckClass::StdError,
-            Self::IpAddressEndBeforeStart => CheckClass::StdWarning,
-            Self::IpAddressVersionMismatch => CheckClass::StdWarning,
-            Self::IpAddressMalformedVersion => CheckClass::StdError,
-            Self::IpAddressListIsEmpty => CheckClass::StdError,
-            Self::IpAddressThisNetwork => CheckClass::Informational,
-            Self::IpAddressPrivateUse => CheckClass::Informational,
-            Self::IpAddressSharedNat => CheckClass::Informational,
-            Self::IpAddressLoopback => CheckClass::Informational,
-            Self::IpAddressLinkLocal => CheckClass::Informational,
-            Self::IpAddressUniqueLocal => CheckClass::Informational,
-            Self::IpAddressDocumentationNet => CheckClass::Informational,
-            Self::IpAddressReservedNet => CheckClass::Informational,
+            Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
+                CheckClass::StdWarning
+            }
+            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::StdError,
+            Self::IpAddressThisNetwork
+            | Self::IpAddressPrivateUse
+            | Self::IpAddressSharedNat
+            | Self::IpAddressLoopback
+            | Self::IpAddressLinkLocal
+            | Self::IpAddressUniqueLocal
+            | Self::IpAddressDocumentationNet
+            | Self::IpAddressReservedNet => CheckClass::Informational,
             Self::IpAddressArrayIsString => CheckClass::StdError,
 
-            Self::AutnumMissing => CheckClass::StdWarning,
-            Self::AutnumEndBeforeStart => CheckClass::StdWarning,
-            Self::AutnumPrivateUse => CheckClass::Informational,
-            Self::AutnumDocumentation => CheckClass::Informational,
-            Self::AutnumReserved => CheckClass::Informational,
+            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
+            Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
+                CheckClass::Informational
+            }
 
-            Self::VcardArrayIsEmpty => CheckClass::StdError,
-            Self::VcardHasNoFn => CheckClass::StdError,
+            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::StdError,
             Self::VcardFnIsEmpty => CheckClass::SpecificationNote,
 
-            Self::Port43IsEmpty => CheckClass::StdError,
+            Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
+                CheckClass::StdError
+            }
 
-            Self::PublicIdTypeIsAbsent => CheckClass::StdError,
-            Self::PublicIdIdentifierIsAbsent => CheckClass::StdError,
+            Self::CorsAllowOriginRecommended
+            | Self::CorsAllowOriginStarRecommended
+            | Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
+            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::StdError,
 
-            Self::CorsAllowOriginRecommended => CheckClass::StdWarning,
-            Self::CorsAllowOriginStarRecommended => CheckClass::StdWarning,
-            Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
-            Self::ContentTypeIsAbsent => CheckClass::StdError,
-            Self::ContentTypeIsNotRdap => CheckClass::StdError,
+            Self::Cidr0V4PrefixIsAbsent
+            | Self::Cidr0V4LengthIsAbsent
+            | Self::Cidr0V6PrefixIsAbsent
+            | Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
 
-            Self::Cidr0V4PrefixIsAbsent => CheckClass::Cidr0Error,
-            Self::Cidr0V4LengthIsAbsent => CheckClass::Cidr0Error,
-            Self::Cidr0V6PrefixIsAbsent => CheckClass::Cidr0Error,
-            Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
+            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::IcannError,
 
-            Self::MustUseHttps => CheckClass::IcannError,
-            Self::AllowOriginNotStar => CheckClass::IcannError,
-
-            Self::CnameWithoutARecords => CheckClass::StdError,
-            Self::CnameWithoutAAAARecords => CheckClass::StdError,
-            Self::NoARecords => CheckClass::SpecificationNote,
-            Self::NoAAAARecords => CheckClass::SpecificationNote,
+            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::StdError,
+            Self::NoARecords | Self::NoAAAARecords => CheckClass::SpecificationNote,
             Self::ExpectedExtensionNotFound => CheckClass::StdError,
             Self::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
 
-            Self::DelegationSignedIsString => CheckClass::StdError,
-            Self::ZoneSignedIsString => CheckClass::StdError,
-            Self::MaxSigLifeIsString => CheckClass::StdError,
-            Self::KeyDatumAlgorithmIsString => CheckClass::StdError,
-            Self::KeyDatumAlgorithmIsOutOfRange => CheckClass::StdError,
-            Self::KeyDatumFlagsIsString => CheckClass::StdError,
-            Self::KeyDatumFlagsIsOutOfRange => CheckClass::StdError,
-            Self::KeyDatumProtocolIsString => CheckClass::StdError,
-            Self::KeyDatumProtocolIsOutOfRange => CheckClass::StdError,
-            Self::DsDatumAlgorithmIsString => CheckClass::StdError,
-            Self::DsDatumAlgorithmIsOutOfRange => CheckClass::StdError,
-            Self::DsDatumKeyTagIsString => CheckClass::StdError,
-            Self::DsDatumKeyTagIsOutOfRange => CheckClass::StdError,
-            Self::DsDatumDigestTypeIsString => CheckClass::StdError,
-            Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
+            Self::DelegationSignedIsString
+            | Self::ZoneSignedIsString
+            | Self::MaxSigLifeIsString
+            | Self::KeyDatumAlgorithmIsString
+            | Self::KeyDatumAlgorithmIsOutOfRange
+            | Self::KeyDatumFlagsIsString
+            | Self::KeyDatumFlagsIsOutOfRange
+            | Self::KeyDatumProtocolIsString
+            | Self::KeyDatumProtocolIsOutOfRange
+            | Self::DsDatumAlgorithmIsString
+            | Self::DsDatumAlgorithmIsOutOfRange
+            | Self::DsDatumKeyTagIsString
+            | Self::DsDatumKeyTagIsOutOfRange
+            | Self::DsDatumDigestTypeIsString
+            | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
         };
         CheckItem {
             check_class,

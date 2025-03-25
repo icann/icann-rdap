@@ -1,10 +1,7 @@
-use super::{GtldParams, ToGtldWhois};
-use icann_rdap_common::response::Boolish;
-use icann_rdap_common::response::Domain;
-use icann_rdap_common::response::Event;
-use icann_rdap_common::response::Nameserver;
-use icann_rdap_common::response::Network;
-use icann_rdap_common::response::SecureDns;
+use {
+    super::{GtldParams, ToGtldWhois},
+    icann_rdap_common::response::{Boolish, Domain, Event, Nameserver, Network, SecureDns},
+};
 
 impl ToGtldWhois for Domain {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
@@ -196,15 +193,15 @@ fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
 mod tests {
     use crate::gtld::ToGtldWhois;
 
-    use super::GtldParams;
-    use icann_rdap_common::prelude::ToResponse;
-    use icann_rdap_common::response::Domain;
+    use {
+        super::GtldParams,
+        icann_rdap_common::{prelude::ToResponse, response::Domain},
+    };
 
-    use serde_json::Value;
-    use std::any::TypeId;
-    use std::error::Error;
-    use std::fs::File;
-    use std::io::Read;
+    use {
+        serde_json::Value,
+        std::{any::TypeId, error::Error, fs::File, io::Read},
+    };
 
     fn process_gtld_file(file_path: &str) -> Result<String, Box<dyn Error>> {
         let mut file = File::open(file_path)?;

@@ -1,11 +1,13 @@
 //! RDAP structures for parsing and creating RDAP responses.
 use std::any::TypeId;
 
-use cidr;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use strum_macros::Display;
-use thiserror::Error;
+use {
+    cidr,
+    serde::{Deserialize, Serialize},
+    serde_json::Value,
+    strum_macros::Display,
+    thiserror::Error,
+};
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
@@ -323,26 +325,20 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
     let Some(links) = rdap_response.get_links() else {
         return vec![];
     };
-    let mut urls: Vec<&str> = links
+
+    let mut urls: Vec<_> = links
         .iter()
-        .filter(|l| {
-            if l.href.as_ref().is_some() {
-                if let Some(rel) = &l.rel {
-                    if let Some(media_type) = &l.media_type {
-                        return rel.eq_ignore_ascii_case("related")
-                            && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE);
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            } else {
-                false
+        .filter_map(|l| match (&l.href, &l.rel, &l.media_type) {
+            (Some(href), Some(rel), Some(media_type))
+                if rel.eq_ignore_ascii_case("related")
+                    && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE) =>
+            {
+                Some(href.as_str())
             }
+            _ => None,
         })
-        .map(|l| l.href.as_ref().unwrap().as_str())
-        .collect::<Vec<&str>>();
+        .collect();
+
     // if none are found with correct media type, look for something that looks like an RDAP link
     if urls.is_empty() {
         urls = links

@@ -180,8 +180,10 @@ mod tests {
 
     use rstest::rstest;
 
-    use crate::prelude::{Numberish, ToResponse};
-    use crate::response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr};
+    use crate::{
+        prelude::{Numberish, ToResponse},
+        response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+    };
 
     use crate::check::{Check, CheckParams, GetChecks};
 

@@ -1,8 +1,9 @@
 //! Creates a Reqwest client.
 
-pub use reqwest::header::{self, HeaderValue};
-pub use reqwest::Client as ReqwestClient;
-pub use reqwest::Error as ReqwestError;
+pub use reqwest::{
+    header::{self, HeaderValue},
+    Client as ReqwestClient, Error as ReqwestError,
+};
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
 
@@ -58,7 +59,7 @@ pub struct ReqwestClientConfig {
 
 impl Default for ReqwestClientConfig {
     fn default() -> Self {
-        ReqwestClientConfig {
+        Self {
             user_agent_suffix: "library".to_string(),
             https_only: true,
             accept_invalid_host_names: false,
@@ -85,7 +86,7 @@ impl ReqwestClientConfig {
         origin: Option<HeaderValue>,
         timeout_secs: Option<u64>,
     ) -> Self {
-        let default = ReqwestClientConfig::default();
+        let default = Self::default();
         Self {
             user_agent_suffix: user_agent_suffix.unwrap_or(default.user_agent_suffix),
             https_only: https_only.unwrap_or(default.https_only),

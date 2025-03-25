@@ -1,7 +1,9 @@
 use std::any::TypeId;
 
-use icann_rdap_common::contact::{NameParts, PostalAddress};
-use icann_rdap_common::response::{Entity, EntityRole};
+use icann_rdap_common::{
+    contact::{NameParts, PostalAddress},
+    response::{Entity, EntityRole},
+};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
@@ -10,15 +12,13 @@ use crate::rdap::registered_redactions::{
     text_or_registered_redaction_for_role, RedactedName,
 };
 
-use super::redacted::REDACTED_TEXT;
-use super::types::public_ids_to_table;
 use super::{
+    redacted::REDACTED_TEXT,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    MdParams, ToMd, HR,
+    types::{checks_to_table, public_ids_to_table},
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
-use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Entity {
     fn to_md(&self, params: MdParams) -> String {

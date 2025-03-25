@@ -1,12 +1,10 @@
 //! Server Help Response.
-use crate::prelude::Extension;
-use crate::prelude::Notice;
-use serde::{Deserialize, Serialize};
+use {
+    crate::prelude::{Extension, Notice},
+    serde::{Deserialize, Serialize},
+};
 
-use super::to_opt_vec;
-use super::Common;
-use super::CommonFields;
-use super::ToResponse;
+use super::{to_opt_vec, Common, CommonFields, ToResponse};
 
 /// Represents an RDAP help response.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

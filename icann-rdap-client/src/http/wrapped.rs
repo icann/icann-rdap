@@ -1,17 +1,18 @@
 //! Wrapped Client.
 
-use icann_rdap_common::httpdata::HttpData;
-pub use reqwest::header::HeaderValue;
-use reqwest::header::{
-    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION, RETRY_AFTER,
-    STRICT_TRANSPORT_SECURITY,
+pub use reqwest::{header::HeaderValue, Client as ReqwestClient, Error as ReqwestError};
+use {
+    icann_rdap_common::httpdata::HttpData,
+    reqwest::header::{
+        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION, RETRY_AFTER,
+        STRICT_TRANSPORT_SECURITY,
+    },
 };
-pub use reqwest::Client as ReqwestClient;
-pub use reqwest::Error as ReqwestError;
 
-use super::create_reqwest_client;
-use super::ReqwestClientConfig;
-use crate::RdapClientError;
+use {
+    super::{create_reqwest_client, ReqwestClientConfig},
+    crate::RdapClientError,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 use {
@@ -184,56 +185,54 @@ pub(crate) async fn wrapped_request(
         let mut tries: u16 = 0;
         loop {
             debug!("HTTP version: {:?}", response.version());
-            // loop if HTTP 429
-            if matches!(response.status(), StatusCode::TOO_MANY_REQUESTS) {
-                let retry_after_header = response
-                    .headers()
-                    .get(RETRY_AFTER)
-                    .map(|value| value.to_str().unwrap().to_string());
-                let retry_after = if let Some(rt) = retry_after_header {
-                    info!("Server says too many requests and to retry-after '{rt}'.");
-                    rt
-                } else {
-                    info!("Server says too many requests but does not offer 'retry-after' value.");
-                    client.request_options.def_retry_secs.to_string()
-                };
-                let mut wait_time_seconds =
-                    if let Ok(date) = DateTime::parse_from_rfc2822(&retry_after) {
-                        (date.with_timezone(&Utc) - Utc::now()).num_seconds() as u64
-                    } else if let Ok(seconds) = retry_after.parse::<u64>() {
-                        seconds
-                    } else {
-                        info!(
-                            "Unable to parse retry-after header value. Using {}",
-                            client.request_options.def_retry_secs
-                        );
-                        client.request_options.def_retry_secs.into()
-                    };
-                if wait_time_seconds == 0 {
-                    info!("Given {wait_time_seconds} for retry-after. Does not make sense.");
-                    wait_time_seconds = client.request_options.def_retry_secs as u64;
-                }
-                if wait_time_seconds > client.request_options.max_retry_secs as u64 {
-                    info!(
-                        "Server is asking to wait longer than configured max of {}.",
-                        client.request_options.max_retry_secs
-                    );
-                    wait_time_seconds = client.request_options.max_retry_secs as u64;
-                }
-                info!("Waiting {wait_time_seconds} seconds to retry.");
-                tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_seconds + 1)).await;
-                tries += 1;
-                if tries > client.request_options.max_retries {
-                    info!("Max query retries reached.");
-                    break;
-                } else {
-                    // send the query again
-                    response = client.reqwest_client.get(request_uri).send().await?;
-                }
-
-            // else don't repeat the request
-            } else {
+            // don't repeat the request
+            if !matches!(response.status(), StatusCode::TOO_MANY_REQUESTS) {
                 break;
+            }
+            // loop if HTTP 429
+            let retry_after_header = response
+                .headers()
+                .get(RETRY_AFTER)
+                .map(|value| value.to_str().unwrap().to_string());
+            let retry_after = if let Some(rt) = retry_after_header {
+                info!("Server says too many requests and to retry-after '{rt}'.");
+                rt
+            } else {
+                info!("Server says too many requests but does not offer 'retry-after' value.");
+                client.request_options.def_retry_secs.to_string()
+            };
+            let mut wait_time_seconds = if let Ok(date) = DateTime::parse_from_rfc2822(&retry_after)
+            {
+                (date.with_timezone(&Utc) - Utc::now()).num_seconds() as u64
+            } else if let Ok(seconds) = retry_after.parse::<u64>() {
+                seconds
+            } else {
+                info!(
+                    "Unable to parse retry-after header value. Using {}",
+                    client.request_options.def_retry_secs
+                );
+                client.request_options.def_retry_secs.into()
+            };
+            if wait_time_seconds == 0 {
+                info!("Given {wait_time_seconds} for retry-after. Does not make sense.");
+                wait_time_seconds = client.request_options.def_retry_secs as u64;
+            }
+            if wait_time_seconds > client.request_options.max_retry_secs as u64 {
+                info!(
+                    "Server is asking to wait longer than configured max of {}.",
+                    client.request_options.max_retry_secs
+                );
+                wait_time_seconds = client.request_options.max_retry_secs as u64;
+            }
+            info!("Waiting {wait_time_seconds} seconds to retry.");
+            tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_seconds + 1)).await;
+            tries += 1;
+            if tries > client.request_options.max_retries {
+                info!("Max query retries reached.");
+                break;
+            } else {
+                // send the query again
+                response = client.reqwest_client.get(request_uri).send().await?;
             }
         }
     }

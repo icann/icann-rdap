@@ -1,14 +1,16 @@
-use envmnt::{get_or, get_parse_or, get_u16};
-use icann_rdap_srv::{
-    config::{
-        data_dir, debug_config_vars, ListenConfig, ServiceConfig, StorageType, AUTO_RELOAD,
-        BOOTSTRAP, LISTEN_ADDR, LISTEN_PORT, LOG, UPDATE_ON_BOOTSTRAP,
+use {
+    envmnt::{get_or, get_parse_or, get_u16},
+    icann_rdap_srv::{
+        config::{
+            data_dir, debug_config_vars, ListenConfig, ServiceConfig, StorageType, AUTO_RELOAD,
+            BOOTSTRAP, LISTEN_ADDR, LISTEN_PORT, LOG, UPDATE_ON_BOOTSTRAP,
+        },
+        error::RdapServerError,
+        server::Listener,
     },
-    error::RdapServerError,
-    server::Listener,
-};
-use tracing_subscriber::{
-    fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    tracing_subscriber::{
+        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    },
 };
 
 #[tokio::main(flavor = "multi_thread")]

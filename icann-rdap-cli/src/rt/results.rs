@@ -2,18 +2,20 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
-use icann_rdap_client::{
-    md::{string::StringUtil, table::MultiPartTable, MdOptions},
-    rdap::ResponseData,
-    RdapClientError,
+use {
+    icann_rdap_client::{
+        md::{string::StringUtil, table::MultiPartTable, MdOptions},
+        rdap::ResponseData,
+        RdapClientError,
+    },
+    icann_rdap_common::{
+        check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
+        response::{ExtensionId, RdapResponse},
+    },
+    reqwest::StatusCode,
+    serde::Serialize,
+    strum_macros::Display,
 };
-use icann_rdap_common::{
-    check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-    response::{ExtensionId, RdapResponse},
-};
-use reqwest::StatusCode;
-use serde::Serialize;
-use strum_macros::Display;
 
 use super::exec::TestOptions;
 
@@ -225,11 +227,11 @@ pub struct TestRun {
 }
 
 impl TestRun {
-    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
+    fn new(features: Vec<RunFeature>, socket_addr: SocketAddr) -> Self {
         Self {
             features,
             start_time: Utc::now(),
-            socket_addr: SocketAddr::new(IpAddr::V4(ipv4), port),
+            socket_addr,
             end_time: None,
             response_data: None,
             outcome: RunOutcome::Skipped,
@@ -237,16 +239,12 @@ impl TestRun {
         }
     }
 
+    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
+        Self::new(features, SocketAddr::new(IpAddr::V4(ipv4), port))
+    }
+
     pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
-        Self {
-            features,
-            start_time: Utc::now(),
-            socket_addr: SocketAddr::new(IpAddr::V6(ipv6), port),
-            end_time: None,
-            response_data: None,
-            outcome: RunOutcome::Skipped,
-            checks: None,
-        }
+        Self::new(features, SocketAddr::new(IpAddr::V6(ipv6), port))
     }
 
     pub fn end(

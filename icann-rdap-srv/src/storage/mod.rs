@@ -1,7 +1,9 @@
-use async_trait::async_trait;
-use buildstructor::Builder;
-use icann_rdap_common::response::{
-    Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error,
+use {
+    async_trait::async_trait,
+    buildstructor::Builder,
+    icann_rdap_common::response::{
+        Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error,
+    },
 };
 
 use crate::error::RdapServerError;

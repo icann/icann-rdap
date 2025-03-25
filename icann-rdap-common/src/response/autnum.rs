@@ -1,15 +1,12 @@
 //! RDAP Autonomous System Number.
-use crate::prelude::Common;
-use crate::prelude::Extension;
-use crate::prelude::ObjectCommon;
-use serde::{Deserialize, Serialize};
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    serde::{Deserialize, Serialize},
+};
 
-use super::CommonFields;
-use super::Numberish;
-use super::ObjectCommonFields;
-use super::ToResponse;
 use super::{
-    to_opt_vec, types::Link, Entity, Event, GetSelfLink, Notice, Port43, Remark, SelfLink, ToChild,
+    to_opt_vec, types::Link, CommonFields, Entity, Event, GetSelfLink, Notice, Numberish,
+    ObjectCommonFields, Port43, Remark, SelfLink, ToChild, ToResponse,
 };
 
 /// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.

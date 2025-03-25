@@ -1,24 +1,33 @@
-use icann_rdap_common::prelude::ObjectCommon;
-use std::{any::TypeId, sync::LazyLock};
-
-use icann_rdap_common::check::StringCheck;
-use icann_rdap_common::httpdata::HttpData;
-use icann_rdap_common::response::{Common, Event, Link, Links, Notices, PublicId, Remarks};
-use icann_rdap_common::response::{NoticeOrRemark, RdapConformance};
-use reqwest::header::{
-    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
-    STRICT_TRANSPORT_SECURITY,
+use {
+    icann_rdap_common::prelude::ObjectCommon,
+    std::{any::TypeId, sync::LazyLock},
 };
-use strum::EnumMessage;
+
+use {
+    icann_rdap_common::{
+        check::StringCheck,
+        httpdata::HttpData,
+        response::{
+            Common, Event, Link, Links, NoticeOrRemark, Notices, PublicId, RdapConformance, Remarks,
+        },
+    },
+    reqwest::header::{
+        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
+        STRICT_TRANSPORT_SECURITY,
+    },
+    strum::EnumMessage,
+};
 
 use icann_rdap_common::check::{
     CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN,
 };
 
-use super::string::{StringListUtil, StringUtil};
-use super::table::{MultiPartTable, ToMpTable};
-use super::{checks_ul, MdParams, HR};
-use super::{FromMd, ToMd};
+use super::{
+    checks_ul,
+    string::{StringListUtil, StringUtil},
+    table::{MultiPartTable, ToMpTable},
+    FromMd, MdParams, ToMd, HR,
+};
 
 impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {

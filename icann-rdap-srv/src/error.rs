@@ -1,18 +1,20 @@
 use std::{net::AddrParseError, num::ParseIntError};
 
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
+use {
+    axum::{
+        response::{IntoResponse, Response},
+        Json,
+    },
+    envmnt::errors::EnvmntError,
+    http::StatusCode,
+    icann_rdap_client::{iana::IanaResponseError, RdapClientError},
+    icann_rdap_common::{
+        prelude::ToResponse,
+        response::{RdapResponseError, Rfc9083Error},
+    },
+    ipnet::PrefixLenError,
+    thiserror::Error,
 };
-use envmnt::errors::EnvmntError;
-use http::StatusCode;
-use icann_rdap_client::{iana::IanaResponseError, RdapClientError};
-use icann_rdap_common::{
-    prelude::ToResponse,
-    response::{RdapResponseError, Rfc9083Error},
-};
-use ipnet::PrefixLenError;
-use thiserror::Error;
 
 /// Errors from the RDAP Server.
 #[derive(Debug, Error)]

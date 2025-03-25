@@ -1,21 +1,26 @@
-use crate::prelude::ObjectCommon;
-use std::{any::TypeId, str::FromStr, sync::LazyLock};
+use {
+    crate::prelude::ObjectCommon,
+    std::{any::TypeId, str::FromStr, sync::LazyLock},
+};
 
-use crate::prelude::Common;
-use crate::{
-    media_types::RDAP_MEDIA_TYPE,
-    response::{
-        autnum::Autnum,
-        domain::Domain,
-        entity::Entity,
-        nameserver::Nameserver,
-        network::Network,
-        types::{
-            ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance, Remarks,
+use {
+    crate::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::Common,
+        response::{
+            autnum::Autnum,
+            domain::Domain,
+            entity::Entity,
+            nameserver::Nameserver,
+            network::Network,
+            types::{
+                ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance,
+                Remarks,
+            },
         },
     },
+    chrono::DateTime,
 };
-use chrono::DateTime;
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -329,9 +334,9 @@ impl GetSubChecks for ObjectCommon {
 mod tests {
     use rstest::rstest;
 
-    use crate::prelude::{ToResponse, VectorStringish};
     use crate::{
         check::Checks,
+        prelude::{ToResponse, VectorStringish},
         response::{
             domain::Domain,
             nameserver::Nameserver,

@@ -1,26 +1,30 @@
 use std::{fs, path::PathBuf};
 
-use clap::Parser;
-use icann_rdap_common::{
-    contact::{Contact, Email, Phone, PostalAddress},
-    media_types::RDAP_MEDIA_TYPE,
-    prelude::VectorStringish,
-    response::{Autnum, Domain, Entity, Link, Nameserver, Network, Notice, NoticeOrRemark, Remark},
-    VERSION,
-};
-use icann_rdap_srv::{
-    config::{debug_config_vars, LOG},
-    error::RdapServerError,
-    storage::data::{
-        AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError, NameserverId,
-        NameserverOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
+use {
+    clap::Parser,
+    icann_rdap_common::{
+        contact::{Contact, Email, Phone, PostalAddress},
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::VectorStringish,
+        response::{
+            Autnum, Domain, Entity, Link, Nameserver, Network, Notice, NoticeOrRemark, Remark,
+        },
+        VERSION,
     },
-};
-use ipnet::{Ipv4Subnets, Ipv6Subnets};
-use pct_str::{PctString, URIReserved};
-use tracing::info;
-use tracing_subscriber::{
-    fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    icann_rdap_srv::{
+        config::{debug_config_vars, LOG},
+        error::RdapServerError,
+        storage::data::{
+            AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError,
+            NameserverId, NameserverOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
+        },
+    },
+    ipnet::{Ipv4Subnets, Ipv6Subnets},
+    pct_str::{PctString, URIReserved},
+    tracing::info,
+    tracing_subscriber::{
+        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    },
 };
 
 #[derive(Parser, Debug)]

@@ -1,21 +1,15 @@
 //! RDAP Nameserver object class.
-use crate::prelude::Common;
-use crate::prelude::Extension;
-use crate::prelude::ObjectCommon;
-use std::{net::IpAddr, str::FromStr};
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    std::{net::IpAddr, str::FromStr},
+};
 
 use serde::{Deserialize, Serialize};
 
-use super::to_opt_vec;
-use super::to_opt_vectorstringish;
-use super::CommonFields;
-use super::ObjectCommonFields;
-use super::ToResponse;
-use super::VectorStringish;
-use super::EMPTY_VEC_STRING;
 use super::{
-    types::Link, Entity, Event, GetSelfLink, Notice, Port43, RdapResponseError, Remark, SelfLink,
-    ToChild,
+    to_opt_vec, to_opt_vectorstringish, types::Link, CommonFields, Entity, Event, GetSelfLink,
+    Notice, ObjectCommonFields, Port43, RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
+    VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Represents an IP address set for nameservers.

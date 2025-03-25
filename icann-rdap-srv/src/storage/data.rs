@@ -4,20 +4,22 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use buildstructor::Builder;
-use icann_rdap_common::{
-    prelude::Numberish,
-    response::{
-        Autnum, Cidr0Cidr, Domain, Entity, GetSelfLink, Nameserver, Network, RdapResponse,
-        SelfLink, V4Cidr, V6Cidr,
+use {
+    buildstructor::Builder,
+    icann_rdap_common::{
+        prelude::Numberish,
+        response::{
+            Autnum, Cidr0Cidr, Domain, Entity, GetSelfLink, Nameserver, Network, RdapResponse,
+            SelfLink, V4Cidr, V6Cidr,
+        },
     },
+    ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets},
+    serde::{Deserialize, Serialize},
+    serde_json::Value,
+    strum_macros::Display,
+    tokio::time::sleep,
+    tracing::{debug, info, warn},
 };
-use ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use strum_macros::Display;
-use tokio::time::sleep;
-use tracing::{debug, info, warn};
 
 use crate::{
     config::ServiceConfig,

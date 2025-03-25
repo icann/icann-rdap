@@ -1,6 +1,8 @@
 //! Common data structures, etc...
-use serde::{Deserialize, Serialize};
-use strum_macros::{AsRefStr, Display, EnumString};
+use {
+    serde::{Deserialize, Serialize},
+    strum_macros::{AsRefStr, Display, EnumString},
+};
 
 use super::lenient::VectorStringish;
 
@@ -667,8 +669,10 @@ impl PublicId {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::prelude::ObjectCommon;
-    use crate::response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks};
+    use crate::{
+        prelude::ObjectCommon,
+        response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks},
+    };
 
     use super::{Event, Link, Links, NoticeOrRemark, PublicId};
 
