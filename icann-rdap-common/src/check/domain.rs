@@ -97,7 +97,7 @@ impl GetSubChecks for SecureDns {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::SecureDns,
                     items: vec![Check::DelegationSignedIsString.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
         }
@@ -106,7 +106,7 @@ impl GetSubChecks for SecureDns {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::SecureDns,
                     items: vec![Check::ZoneSignedIsString.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
         }
@@ -115,7 +115,7 @@ impl GetSubChecks for SecureDns {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::SecureDns,
                     items: vec![Check::MaxSigLifeIsString.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
         }
@@ -127,14 +127,14 @@ impl GetSubChecks for SecureDns {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::KeyDatumAlgorithmIsString.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                     if alg.as_u8().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::KeyDatumAlgorithmIsOutOfRange.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                 }
@@ -143,14 +143,14 @@ impl GetSubChecks for SecureDns {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::KeyDatumFlagsIsString.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                     if flags.as_u16().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::KeyDatumFlagsIsOutOfRange.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                 }
@@ -159,14 +159,14 @@ impl GetSubChecks for SecureDns {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::KeyDatumProtocolIsString.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                     if protocol.as_u8().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::KeyDatumProtocolIsOutOfRange.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                 }
@@ -180,14 +180,14 @@ impl GetSubChecks for SecureDns {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::DsDatumAlgorithmIsString.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                     if alg.as_u8().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::DsDatumAlgorithmIsOutOfRange.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                 }
@@ -196,14 +196,14 @@ impl GetSubChecks for SecureDns {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::DsDatumKeyTagIsString.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                     if key_tag.as_u32().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::DsDatumKeyTagIsOutOfRange.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                 }
@@ -212,14 +212,14 @@ impl GetSubChecks for SecureDns {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::DsDatumDigestTypeIsString.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                     if digest_type.as_u8().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::SecureDns,
                             items: vec![Check::DsDatumDigestTypeIsOutOfRange.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         });
                     }
                 }
