@@ -1,24 +1,27 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::{
-    prelude::Numberish,
-    response::{
-        Autnum, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark, RdapResponse,
-    },
-};
-use icann_rdap_srv::{
-    config::{ServiceConfig, StorageType},
-    storage::{
-        data::{
-            load_data, AutnumId, AutnumOrError::AutnumObject, DomainId, DomainOrError, EntityId,
-            EntityOrError::EntityObject, NameserverId, NameserverOrError::NameserverObject,
-            NetworkId, NetworkIdType, NetworkOrError::NetworkObject, Template,
+use {
+    icann_rdap_common::{
+        prelude::Numberish,
+        response::{
+            Autnum, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark, RdapResponse,
         },
-        mem::{config::MemConfig, ops::Mem},
-        CommonConfig, StoreOps,
     },
+    icann_rdap_srv::{
+        config::{ServiceConfig, StorageType},
+        storage::{
+            data::{
+                load_data, AutnumId, AutnumOrError::AutnumObject, DomainId, DomainOrError,
+                EntityId, EntityOrError::EntityObject, NameserverId,
+                NameserverOrError::NameserverObject, NetworkId, NetworkIdType,
+                NetworkOrError::NetworkObject, Template,
+            },
+            mem::{config::MemConfig, ops::Mem},
+            CommonConfig, StoreOps,
+        },
+    },
+    test_dir::{DirBuilder, TestDir},
 };
-use test_dir::{DirBuilder, TestDir};
 
 async fn new_and_init_mem(data_dir: String) -> Mem {
     let mem_config = MemConfig::builder()

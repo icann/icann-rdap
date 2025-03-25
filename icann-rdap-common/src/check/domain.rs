@@ -234,12 +234,14 @@ impl GetSubChecks for SecureDns {
 mod tests {
     use std::any::TypeId;
 
-    use crate::{
-        check::{is_checked, is_checked_item, GetSubChecks},
-        prelude::ToResponse,
-        response::domain::{Domain, SecureDns},
+    use {
+        crate::{
+            check::{is_checked, is_checked_item, GetSubChecks},
+            prelude::ToResponse,
+            response::domain::{Domain, SecureDns},
+        },
+        rstest::rstest,
     };
-    use rstest::rstest;
 
     use crate::check::{Check, CheckParams, GetChecks};
 

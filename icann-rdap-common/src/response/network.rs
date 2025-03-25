@@ -1,9 +1,13 @@
 //! RDAP IP Network.
-use crate::prelude::{Common, Extension, ObjectCommon};
-use std::str::FromStr;
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    std::str::FromStr,
+};
 
-use cidr::IpInet;
-use serde::{Deserialize, Serialize};
+use {
+    cidr::IpInet,
+    serde::{Deserialize, Serialize},
+};
 
 use super::{
     to_opt_vec,

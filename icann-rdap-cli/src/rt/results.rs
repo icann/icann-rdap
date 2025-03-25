@@ -2,18 +2,20 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
-use icann_rdap_client::{
-    md::{string::StringUtil, table::MultiPartTable, MdOptions},
-    rdap::ResponseData,
-    RdapClientError,
+use {
+    icann_rdap_client::{
+        md::{string::StringUtil, table::MultiPartTable, MdOptions},
+        rdap::ResponseData,
+        RdapClientError,
+    },
+    icann_rdap_common::{
+        check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
+        response::{ExtensionId, RdapResponse},
+    },
+    reqwest::StatusCode,
+    serde::Serialize,
+    strum_macros::Display,
 };
-use icann_rdap_common::{
-    check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-    response::{ExtensionId, RdapResponse},
-};
-use reqwest::StatusCode;
-use serde::Serialize;
-use strum_macros::Display;
 
 use super::exec::TestOptions;
 

@@ -1,11 +1,13 @@
 //! RDAP structures for parsing and creating RDAP responses.
 use std::any::TypeId;
 
-use cidr;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use strum_macros::Display;
-use thiserror::Error;
+use {
+    cidr,
+    serde::{Deserialize, Serialize},
+    serde_json::Value,
+    strum_macros::Display,
+    thiserror::Error,
+};
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 

@@ -1,6 +1,8 @@
 //! RDAP Nameserver object class.
-use crate::prelude::{Common, Extension, ObjectCommon};
-use std::{net::IpAddr, str::FromStr};
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    std::{net::IpAddr, str::FromStr},
+};
 
 use serde::{Deserialize, Serialize};
 

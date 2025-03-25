@@ -5,22 +5,24 @@ use std::{
     str::FromStr,
 };
 
-use hickory_client::{
-    client::{AsyncClient, ClientConnection, ClientHandle},
-    rr::{DNSClass, Name, RecordType},
-    udp::UdpClientConnection,
+use {
+    hickory_client::{
+        client::{AsyncClient, ClientConnection, ClientHandle},
+        rr::{DNSClass, Name, RecordType},
+        udp::UdpClientConnection,
+    },
+    icann_rdap_client::{
+        http::{create_client, create_client_with_addr, ClientConfig},
+        iana::{qtype_to_bootstrap_url, BootstrapStore},
+        rdap::{rdap_url_request, QueryType},
+        RdapClientError,
+    },
+    icann_rdap_common::response::{get_related_links, ExtensionId},
+    reqwest::{header::HeaderValue, Url},
+    thiserror::Error,
+    tracing::{debug, info},
+    url::ParseError,
 };
-use icann_rdap_client::{
-    http::{create_client, create_client_with_addr, ClientConfig},
-    iana::{qtype_to_bootstrap_url, BootstrapStore},
-    rdap::{rdap_url_request, QueryType},
-    RdapClientError,
-};
-use icann_rdap_common::response::{get_related_links, ExtensionId};
-use reqwest::{header::HeaderValue, Url};
-use thiserror::Error;
-use tracing::{debug, info};
-use url::ParseError;
 
 use crate::rt::results::{RunFeature, TestRun};
 

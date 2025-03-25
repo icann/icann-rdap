@@ -1,8 +1,10 @@
 //! Structures that describe a request/response.
 
-use icann_rdap_common::check::Checks;
-use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use {
+    icann_rdap_common::check::Checks,
+    serde::{Deserialize, Serialize},
+    strum_macros::Display,
+};
 
 use crate::rdap::request::ResponseData;
 

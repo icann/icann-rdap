@@ -1,22 +1,26 @@
-use bootstrap::BootstrapType;
-use clap::builder::{styling::AnsiColor, Styles};
-use error::RdapCliError;
-use icann_rdap_cli::dirs;
-use icann_rdap_client::http::{create_client, Client, ClientConfig};
-use icann_rdap_common::check::CheckClass;
-use query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup};
-use std::{io::IsTerminal, str::FromStr};
 #[cfg(debug_assertions)]
 use tracing::warn;
-use tracing::{error, info};
-use tracing_subscriber::filter::LevelFilter;
-use write::{FmtWrite, PagerWrite};
+use {
+    bootstrap::BootstrapType,
+    clap::builder::{styling::AnsiColor, Styles},
+    error::RdapCliError,
+    icann_rdap_cli::dirs,
+    icann_rdap_client::http::{create_client, Client, ClientConfig},
+    icann_rdap_common::check::CheckClass,
+    query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup},
+    std::{io::IsTerminal, str::FromStr},
+    tracing::{error, info},
+    tracing_subscriber::filter::LevelFilter,
+    write::{FmtWrite, PagerWrite},
+};
 
-use clap::{ArgGroup, Parser, ValueEnum};
-use icann_rdap_client::rdap::QueryType;
-use icann_rdap_common::VERSION;
-use query::OutputType;
-use tokio::{join, task::spawn_blocking};
+use {
+    clap::{ArgGroup, Parser, ValueEnum},
+    icann_rdap_client::rdap::QueryType,
+    icann_rdap_common::VERSION,
+    query::OutputType,
+    tokio::{join, task::spawn_blocking},
+};
 
 use crate::query::do_query;
 

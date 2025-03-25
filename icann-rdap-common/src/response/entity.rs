@@ -1,11 +1,13 @@
 //! Entity object class.
-use crate::{
-    contact::Contact,
-    prelude::{Common, Extension, ObjectCommon},
+use {
+    crate::{
+        contact::Contact,
+        prelude::{Common, Extension, ObjectCommon},
+    },
+    serde::{Deserialize, Serialize},
+    serde_json::Value,
+    strum_macros::{Display, EnumString},
 };
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use strum_macros::{Display, EnumString};
 
 use super::{
     autnum::Autnum,

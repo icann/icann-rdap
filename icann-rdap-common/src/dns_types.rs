@@ -2,8 +2,7 @@
 
 use std::str::{Chars, FromStr};
 
-use idna::domain_to_ascii;
-use thiserror::Error;
+use {idna::domain_to_ascii, thiserror::Error};
 
 use crate::check::StringCheck;
 

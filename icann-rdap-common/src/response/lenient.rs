@@ -2,8 +2,10 @@
 
 use std::{fmt::Display, marker::PhantomData, str::FromStr};
 
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
-use serde_json::Number;
+use {
+    serde::{de::Visitor, Deserialize, Deserializer, Serialize},
+    serde_json::Number,
+};
 
 use crate::check::StringListCheck;
 
@@ -328,8 +330,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use serde_json::{from_str, to_string};
+    use {
+        super::*,
+        serde_json::{from_str, to_string},
+    };
 
     //
     // VectorStringish tests

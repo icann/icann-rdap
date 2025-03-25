@@ -1,21 +1,26 @@
-use crate::prelude::ObjectCommon;
-use std::{any::TypeId, str::FromStr, sync::LazyLock};
+use {
+    crate::prelude::ObjectCommon,
+    std::{any::TypeId, str::FromStr, sync::LazyLock},
+};
 
-use crate::{
-    media_types::RDAP_MEDIA_TYPE,
-    prelude::Common,
-    response::{
-        autnum::Autnum,
-        domain::Domain,
-        entity::Entity,
-        nameserver::Nameserver,
-        network::Network,
-        types::{
-            ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance, Remarks,
+use {
+    crate::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::Common,
+        response::{
+            autnum::Autnum,
+            domain::Domain,
+            entity::Entity,
+            nameserver::Nameserver,
+            network::Network,
+            types::{
+                ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance,
+                Remarks,
+            },
         },
     },
+    chrono::DateTime,
 };
-use chrono::DateTime;
 
 use super::{
     string::{StringCheck, StringListCheck},

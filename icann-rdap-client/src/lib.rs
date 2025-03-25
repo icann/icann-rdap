@@ -3,12 +3,14 @@
 #![doc = include_str!("../README.md")]
 use std::{fmt::Display, sync::PoisonError};
 
-use iana::iana_request::IanaResponseError;
-use icann_rdap_common::{
-    dns_types::DomainNameError, httpdata::HttpData, iana::BootstrapRegistryError,
-    response::RdapResponseError,
+use {
+    iana::iana_request::IanaResponseError,
+    icann_rdap_common::{
+        dns_types::DomainNameError, httpdata::HttpData, iana::BootstrapRegistryError,
+        response::RdapResponseError,
+    },
+    thiserror::Error,
 };
-use thiserror::Error;
 
 pub mod gtld;
 pub mod http;

@@ -1,14 +1,16 @@
-use assert_cmd::Command;
-use icann_rdap_srv::{
-    config::ListenConfig,
-    server::{AppState, Listener},
-    storage::{
-        mem::{config::MemConfig, ops::Mem},
-        CommonConfig,
+use {
+    assert_cmd::Command,
+    icann_rdap_srv::{
+        config::ListenConfig,
+        server::{AppState, Listener},
+        storage::{
+            mem::{config::MemConfig, ops::Mem},
+            CommonConfig,
+        },
     },
+    std::time::Duration,
+    test_dir::{DirBuilder, TestDir},
 };
-use std::time::Duration;
-use test_dir::{DirBuilder, TestDir};
 
 pub struct RdapSrvStoreTestJig {
     pub cmd: Command,

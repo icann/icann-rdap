@@ -75,8 +75,7 @@ impl GetChecks for Nameserver {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-    use rstest::rstest;
+    use {crate::prelude::*, rstest::rstest};
 
     use crate::check::{Check, CheckParams, GetChecks};
 

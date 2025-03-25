@@ -1,18 +1,22 @@
-use icann_rdap_common::prelude::ObjectCommon;
-use std::{any::TypeId, sync::LazyLock};
+use {
+    icann_rdap_common::prelude::ObjectCommon,
+    std::{any::TypeId, sync::LazyLock},
+};
 
-use icann_rdap_common::{
-    check::StringCheck,
-    httpdata::HttpData,
-    response::{
-        Common, Event, Link, Links, NoticeOrRemark, Notices, PublicId, RdapConformance, Remarks,
+use {
+    icann_rdap_common::{
+        check::StringCheck,
+        httpdata::HttpData,
+        response::{
+            Common, Event, Link, Links, NoticeOrRemark, Notices, PublicId, RdapConformance, Remarks,
+        },
     },
+    reqwest::header::{
+        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
+        STRICT_TRANSPORT_SECURITY,
+    },
+    strum::EnumMessage,
 };
-use reqwest::header::{
-    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
-    STRICT_TRANSPORT_SECURITY,
-};
-use strum::EnumMessage;
 
 use icann_rdap_common::check::{
     CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN,

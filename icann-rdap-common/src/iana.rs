@@ -1,9 +1,11 @@
 //! The IANA RDAP Bootstrap Registries.
 
-use ipnet::{Ipv4Net, Ipv6Net};
-use prefix_trie::PrefixMap;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use {
+    ipnet::{Ipv4Net, Ipv6Net},
+    prefix_trie::PrefixMap,
+    serde::{Deserialize, Serialize},
+    thiserror::Error,
+};
 
 /// IANA registry variants for RDAP.
 #[derive(Debug, Serialize, Deserialize, Clone)]

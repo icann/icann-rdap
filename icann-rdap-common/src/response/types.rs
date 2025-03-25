@@ -1,6 +1,8 @@
 //! Common data structures, etc...
-use serde::{Deserialize, Serialize};
-use strum_macros::{AsRefStr, Display, EnumString};
+use {
+    serde::{Deserialize, Serialize},
+    strum_macros::{AsRefStr, Display, EnumString},
+};
 
 use super::lenient::VectorStringish;
 

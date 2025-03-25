@@ -1,17 +1,19 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::{
-    prelude::Numberish,
-    response::{
-        Autnum, Common, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark,
-        ObjectCommon, RdapResponse,
+use {
+    icann_rdap_common::{
+        prelude::Numberish,
+        response::{
+            Autnum, Common, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark,
+            ObjectCommon, RdapResponse,
+        },
     },
+    icann_rdap_srv::storage::{
+        mem::{config::MemConfig, ops::Mem},
+        CommonConfig, StoreOps,
+    },
+    rstest::rstest,
 };
-use icann_rdap_srv::storage::{
-    mem::{config::MemConfig, ops::Mem},
-    CommonConfig, StoreOps,
-};
-use rstest::rstest;
 
 #[tokio::test]
 async fn GIVEN_domain_in_mem_WHEN_new_truncate_tx_THEN_no_domain_in_mem() {

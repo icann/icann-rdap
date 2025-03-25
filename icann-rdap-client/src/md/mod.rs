@@ -1,10 +1,12 @@
 //! Converts RDAP to Markdown.
 
-use crate::rdap::rr::RequestData;
-use buildstructor::Builder;
-use icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse};
-use std::{any::TypeId, char};
-use strum::EnumMessage;
+use {
+    crate::rdap::rr::RequestData,
+    buildstructor::Builder,
+    icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse},
+    std::{any::TypeId, char},
+    strum::EnumMessage,
+};
 
 use icann_rdap_common::check::{CheckClass, Checks, CHECK_CLASS_LEN};
 

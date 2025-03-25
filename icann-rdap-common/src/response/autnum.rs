@@ -1,6 +1,8 @@
 //! RDAP Autonomous System Number.
-use crate::prelude::{Common, Extension, ObjectCommon};
-use serde::{Deserialize, Serialize};
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    serde::{Deserialize, Serialize},
+};
 
 use super::{
     to_opt_vec, types::Link, CommonFields, Entity, Event, GetSelfLink, Notice, Numberish,

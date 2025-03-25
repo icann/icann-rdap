@@ -1,16 +1,22 @@
-use icann_rdap_client::http::Client;
-use icann_rdap_common::{
-    check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks},
-    response::get_related_links,
+use {
+    icann_rdap_client::http::Client,
+    icann_rdap_common::{
+        check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks},
+        response::get_related_links,
+    },
+    tracing::{debug, error, info},
 };
-use tracing::{debug, error, info};
 
-use icann_rdap_client::{
-    gtld::{GtldParams, ToGtldWhois},
-    md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
-    rdap::{QueryType, RequestData, RequestResponse, RequestResponses, ResponseData, SourceType},
+use {
+    icann_rdap_client::{
+        gtld::{GtldParams, ToGtldWhois},
+        md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
+        rdap::{
+            QueryType, RequestData, RequestResponse, RequestResponses, ResponseData, SourceType,
+        },
+    },
+    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
-use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},

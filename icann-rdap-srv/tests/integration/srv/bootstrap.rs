@@ -1,13 +1,15 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::{
-    http::{create_client, ClientConfig},
-    rdap::{rdap_request, QueryType},
-};
-use icann_rdap_common::response::Rfc9083Error;
-use icann_rdap_srv::storage::{
-    data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
-    StoreOps,
+use {
+    icann_rdap_client::{
+        http::{create_client, ClientConfig},
+        rdap::{rdap_request, QueryType},
+    },
+    icann_rdap_common::response::Rfc9083Error,
+    icann_rdap_srv::storage::{
+        data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
+        StoreOps,
+    },
 };
 
 use crate::test_jig::SrvTestJig;

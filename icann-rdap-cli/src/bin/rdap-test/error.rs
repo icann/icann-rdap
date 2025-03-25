@@ -1,8 +1,10 @@
 use std::process::{ExitCode, Termination};
 
-use icann_rdap_cli::rt::exec::TestExecutionError;
-use icann_rdap_client::{iana::IanaResponseError, RdapClientError};
-use thiserror::Error;
+use {
+    icann_rdap_cli::rt::exec::TestExecutionError,
+    icann_rdap_client::{iana::IanaResponseError, RdapClientError},
+    thiserror::Error,
+};
 
 #[derive(Debug, Error)]
 pub enum RdapTestError {

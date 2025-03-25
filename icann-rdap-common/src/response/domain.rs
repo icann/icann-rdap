@@ -1,7 +1,9 @@
 //! RDAP Domain Object Class
-use crate::prelude::{Common, Extension, ObjectCommon};
-use buildstructor::Builder;
-use serde::{Deserialize, Serialize};
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    buildstructor::Builder,
+    serde::{Deserialize, Serialize},
+};
 
 use super::{
     lenient::{Boolish, Numberish},

@@ -1,7 +1,9 @@
-use buildstructor::Builder;
-use envmnt::{get_or, get_parse_or};
-use strum_macros::Display;
-use tracing::debug;
+use {
+    buildstructor::Builder,
+    envmnt::{get_or, get_parse_or},
+    strum_macros::Display,
+    tracing::debug,
+};
 
 use crate::{
     error::RdapServerError,

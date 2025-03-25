@@ -1,36 +1,39 @@
-use chrono::{DateTime, FixedOffset, Utc};
-use cidr::{IpCidr, IpInet};
-use clap::{Args, Parser, Subcommand};
-use icann_rdap_client::rdap::QueryType;
-use icann_rdap_common::{
-    contact::{Contact, PostalAddress},
-    media_types::RDAP_MEDIA_TYPE,
-    prelude::{RdapResponse, ToNotices, ToRemarks, ToResponse, VectorStringish},
-    response::{
-        Autnum, Domain, DsDatum, Entity, Event, Events, Help, Link, Links, Nameserver, Network,
-        Notice, NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
-    },
-    VERSION,
-};
-use icann_rdap_srv::{
-    config::{debug_config_vars, ServiceConfig, LOG},
-    error::RdapServerError,
-    storage::{
-        data::{
-            load_data, AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError,
-            NameserverId, NameserverOrError, NetworkId, NetworkOrError, Template,
+use {
+    chrono::{DateTime, FixedOffset, Utc},
+    cidr::{IpCidr, IpInet},
+    clap::{Args, Parser, Subcommand},
+    icann_rdap_client::rdap::QueryType,
+    icann_rdap_common::{
+        contact::{Contact, PostalAddress},
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::{RdapResponse, ToNotices, ToRemarks, ToResponse, VectorStringish},
+        response::{
+            Autnum, Domain, DsDatum, Entity, Event, Events, Help, Link, Links, Nameserver, Network,
+            Notice, NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
         },
-        mem::{config::MemConfig, ops::Mem},
-        CommonConfig, StoreOps,
+        VERSION,
     },
-    util::bin::check::{check_rdap, to_check_classes, CheckArgs},
-};
-use pct_str::{PctString, URIReserved};
-use regex::Regex;
-use std::{fs, path::PathBuf, str::FromStr};
-use tracing::{error, info};
-use tracing_subscriber::{
-    fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    icann_rdap_srv::{
+        config::{debug_config_vars, ServiceConfig, LOG},
+        error::RdapServerError,
+        storage::{
+            data::{
+                load_data, AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId,
+                EntityOrError, NameserverId, NameserverOrError, NetworkId, NetworkOrError,
+                Template,
+            },
+            mem::{config::MemConfig, ops::Mem},
+            CommonConfig, StoreOps,
+        },
+        util::bin::check::{check_rdap, to_check_classes, CheckArgs},
+    },
+    pct_str::{PctString, URIReserved},
+    regex::Regex,
+    std::{fs, path::PathBuf, str::FromStr},
+    tracing::{error, info},
+    tracing_subscriber::{
+        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    },
 };
 
 #[derive(Parser, Debug)]

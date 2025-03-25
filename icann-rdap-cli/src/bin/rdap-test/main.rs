@@ -1,25 +1,29 @@
 use std::{io::stdout, str::FromStr};
 
-use clap::builder::{styling::AnsiColor, Styles};
-use error::RdapTestError;
-use icann_rdap_cli::{
-    dirs,
-    dirs::fcbs::FileCacheBootstrapStore,
-    rt::{
-        exec::{execute_tests, ExtensionGroup, TestOptions},
-        results::{RunOutcome, TestResults},
-    },
-};
-use icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType};
-use icann_rdap_common::check::{traverse_checks, CheckClass};
-use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
-use tracing::info;
 #[cfg(debug_assertions)]
 use tracing::warn;
-use tracing_subscriber::filter::LevelFilter;
+use {
+    clap::builder::{styling::AnsiColor, Styles},
+    error::RdapTestError,
+    icann_rdap_cli::{
+        dirs,
+        dirs::fcbs::FileCacheBootstrapStore,
+        rt::{
+            exec::{execute_tests, ExtensionGroup, TestOptions},
+            results::{RunOutcome, TestResults},
+        },
+    },
+    icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType},
+    icann_rdap_common::check::{traverse_checks, CheckClass},
+    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
+    tracing::info,
+    tracing_subscriber::filter::LevelFilter,
+};
 
-use clap::{Parser, ValueEnum};
-use icann_rdap_common::VERSION;
+use {
+    clap::{Parser, ValueEnum},
+    icann_rdap_common::VERSION,
+};
 
 pub mod error;
 

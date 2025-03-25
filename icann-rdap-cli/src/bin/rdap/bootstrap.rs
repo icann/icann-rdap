@@ -1,12 +1,14 @@
-use crate::error::RdapCliError;
-use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
-use icann_rdap_client::{
-    http::Client,
-    iana::{fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl},
-    rdap::QueryType,
+use {
+    crate::error::RdapCliError,
+    icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore,
+    icann_rdap_client::{
+        http::Client,
+        iana::{fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl},
+        rdap::QueryType,
+    },
+    icann_rdap_common::iana::IanaRegistryType,
+    tracing::debug,
 };
-use icann_rdap_common::iana::IanaRegistryType;
-use tracing::debug;
 
 /// Defines the type of bootstrapping to use.
 pub(crate) enum BootstrapType {

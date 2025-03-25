@@ -2,10 +2,12 @@
 
 use std::{any::TypeId, sync::LazyLock};
 
-use crate::response::RdapResponse;
-use serde::{Deserialize, Serialize};
-use strum::{EnumMessage, IntoEnumIterator};
-use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
+use {
+    crate::response::RdapResponse,
+    serde::{Deserialize, Serialize},
+    strum::{EnumMessage, IntoEnumIterator},
+    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr},
+};
 
 #[doc(inline)]
 pub use string::*;

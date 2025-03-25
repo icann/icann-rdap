@@ -5,11 +5,13 @@ use std::{
     sync::LazyLock,
 };
 
-use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
-use icann_rdap_common::{check::StringCheck, dns_types::DomainName};
-use pct_str::{PctString, URIReserved};
-use regex::Regex;
-use strum_macros::Display;
+use {
+    cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr},
+    icann_rdap_common::{check::StringCheck, dns_types::DomainName},
+    pct_str::{PctString, URIReserved},
+    regex::Regex,
+    strum_macros::Display,
+};
 
 use crate::RdapClientError;
 

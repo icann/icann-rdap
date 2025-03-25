@@ -1,7 +1,9 @@
 //! Determines of an RFC 9537 registered redaction is present.
 
-use icann_rdap_common::response::{Entity, EntityRole, RdapResponse};
-use strum_macros::{Display, EnumString};
+use {
+    icann_rdap_common::response::{Entity, EntityRole, RdapResponse},
+    strum_macros::{Display, EnumString},
+};
 
 /// Redacted types in the IANA registry
 #[derive(Debug, PartialEq, Eq, EnumString, Display)]

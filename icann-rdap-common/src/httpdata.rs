@@ -1,7 +1,9 @@
 //! Code for handling HTTP caching.
 
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use {
+    chrono::{DateTime, Duration, Utc},
+    serde::{Deserialize, Serialize},
+};
 
 /// Represents the data from HTTP responses.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -244,9 +246,11 @@ impl HttpData {
 
 #[cfg(test)]
 mod tests {
-    use super::HttpData;
-    use chrono::{Duration, Utc};
-    use rstest::rstest;
+    use {
+        super::HttpData,
+        chrono::{Duration, Utc},
+        rstest::rstest,
+    };
 
     #[rstest]
     #[case(HttpData::example().cache_control("max-age=0").build(), 100, true)]

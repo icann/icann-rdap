@@ -1,6 +1,8 @@
 //! Server Help Response.
-use crate::prelude::{Extension, Notice};
-use serde::{Deserialize, Serialize};
+use {
+    crate::prelude::{Extension, Notice},
+    serde::{Deserialize, Serialize},
+};
 
 use super::{to_opt_vec, Common, CommonFields, ToResponse};
 
