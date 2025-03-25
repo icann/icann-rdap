@@ -210,22 +210,22 @@ impl DnsDigestType {
     /// Get the [DnsDigestType] from the protocol number.
     pub fn from_number(number: u8) -> Result<Self, DnsTypeError> {
         Ok(match number {
-            1 => DnsDigestType::Sha1(DnsDigest {
+            1 => Self::Sha1(DnsDigest {
                 number: 1,
                 mnemonic: "SHA1",
                 mandatory: true,
             }),
-            2 => DnsDigestType::Sha256(DnsDigest {
+            2 => Self::Sha256(DnsDigest {
                 number: 2,
                 mnemonic: "SHA256",
                 mandatory: true,
             }),
-            3 => DnsDigestType::Gost(DnsDigest {
+            3 => Self::Gost(DnsDigest {
                 number: 3,
                 mnemonic: "GOST",
                 mandatory: false,
             }),
-            4 => DnsDigestType::Sha384(DnsDigest {
+            4 => Self::Sha384(DnsDigest {
                 number: 4,
                 mnemonic: "SHA384",
                 mandatory: false,
@@ -236,12 +236,9 @@ impl DnsDigestType {
 
     /// Get the mnemonic from the protocol number.
     pub fn mnemonic(number: u8) -> Result<&'static str, DnsTypeError> {
-        let digest = DnsDigestType::from_number(number)?;
+        let digest = Self::from_number(number)?;
         Ok(match digest {
-            DnsDigestType::Sha1(d)
-            | DnsDigestType::Sha256(d)
-            | DnsDigestType::Gost(d)
-            | DnsDigestType::Sha384(d) => d.mnemonic,
+            Self::Sha1(d) | Self::Sha256(d) | Self::Gost(d) | Self::Sha384(d) => d.mnemonic,
         })
     }
 }
