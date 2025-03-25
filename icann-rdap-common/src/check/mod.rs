@@ -1,9 +1,8 @@
 //! Conformance checks of RDAP structures.
 
-use std::any::TypeId;
+use std::{any::TypeId, sync::LazyLock};
 
 use crate::response::RdapResponse;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use strum::{EnumMessage, IntoEnumIterator};
 use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
@@ -23,12 +22,12 @@ mod search;
 mod string;
 mod types;
 
-lazy_static! {
-    /// The max length of the check class string representations.
-    pub static ref CHECK_CLASS_LEN: usize = CheckClass::iter()
+/// The max length of the check class string representations.
+pub static CHECK_CLASS_LEN: LazyLock<usize> = LazyLock::new(|| {
+    CheckClass::iter()
         .max_by_key(|x| x.to_string().len())
-        .map_or(8, |x| x.to_string().len());
-}
+        .map_or(8, |x| x.to_string().len())
+});
 
 /// Describes the classes of checks.
 #[derive(

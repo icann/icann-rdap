@@ -3,7 +3,6 @@ use crate::prelude::Common;
 use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
 use buildstructor::Builder;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::to_opt_vectorstringish;
@@ -61,9 +60,7 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-lazy_static! {
-    static ref EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
-}
+static EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
 
 #[buildstructor::buildstructor]
 impl Variant {
@@ -99,10 +96,8 @@ impl Variant {
     }
 }
 
-lazy_static! {
-    static ref EMPTY_LINKS: Vec<Link> = vec![];
-    static ref EMPTY_EVENTS: Vec<Event> = vec![];
-}
+static EMPTY_LINKS: Vec<Link> = vec![];
+static EMPTY_EVENTS: Vec<Event> = vec![];
 
 /// Represents `dsData`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -252,10 +247,8 @@ impl KeyDatum {
     }
 }
 
-lazy_static! {
-    static ref EMPTY_DS_DATA: Vec<DsDatum> = vec![];
-    static ref EMPTY_KEY_DATA: Vec<KeyDatum> = vec![];
-}
+static EMPTY_DS_DATA: Vec<DsDatum> = vec![];
+static EMPTY_KEY_DATA: Vec<KeyDatum> = vec![];
 
 /// Represents the DNSSEC information of a domain.
 ///
@@ -369,10 +362,8 @@ impl SecureDns {
     }
 }
 
-lazy_static! {
-    static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
-    static ref EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
-}
+static EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
+static EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
 ///

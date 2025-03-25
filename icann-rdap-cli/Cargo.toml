@@ -20,7 +20,6 @@ const_format.workspace = true
 directories.workspace = true
 dotenv.workspace = true
 hickory-client.workspace = true
-lazy_static.workspace = true
 minus.workspace = true
 pct-str.workspace = true
 prefix-trie.workspace = true

@@ -5,7 +5,6 @@ use crate::prelude::ObjectCommon;
 use std::str::FromStr;
 
 use cidr::IpInet;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::CommonFields;
@@ -199,9 +198,7 @@ pub struct Network {
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
 
-lazy_static! {
-    static ref EMPTY_CIDR0CIDRS: Vec<Cidr0Cidr> = vec![];
-}
+static EMPTY_CIDR0CIDRS: Vec<Cidr0Cidr> = vec![];
 
 #[buildstructor::buildstructor]
 impl Network {

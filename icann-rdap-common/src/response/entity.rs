@@ -3,7 +3,6 @@ use crate::contact::Contact;
 use crate::prelude::Common;
 use crate::prelude::Extension;
 use crate::prelude::ObjectCommon;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strum_macros::{Display, EnumString};
@@ -117,12 +116,10 @@ pub struct Entity {
     pub networks: Option<Vec<Network>>,
 }
 
-lazy_static! {
-    static ref EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
-    static ref EMPTY_AS_EVENT_ACTORS: Vec<Event> = vec![];
-    static ref EMPTY_AUTNUMS: Vec<Autnum> = vec![];
-    static ref EMPTY_NETWORKS: Vec<Network> = vec![];
-}
+static EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
+static EMPTY_AS_EVENT_ACTORS: Vec<Event> = vec![];
+static EMPTY_AUTNUMS: Vec<Autnum> = vec![];
+static EMPTY_NETWORKS: Vec<Network> = vec![];
 
 #[buildstructor::buildstructor]
 impl Entity {

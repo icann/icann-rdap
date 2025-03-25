@@ -1,5 +1,5 @@
 use crate::prelude::ObjectCommon;
-use std::{any::TypeId, str::FromStr};
+use std::{any::TypeId, str::FromStr, sync::LazyLock};
 
 use crate::prelude::Common;
 use crate::{
@@ -16,7 +16,6 @@ use crate::{
     },
 };
 use chrono::DateTime;
-use lazy_static::lazy_static;
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -60,14 +59,14 @@ impl GetChecks for Links {
     }
 }
 
-lazy_static! {
-    static ref RELATED_AND_SELF_LINK_PARENTS: Vec<TypeId> = vec![
+static RELATED_AND_SELF_LINK_PARENTS: LazyLock<Vec<TypeId>> = LazyLock::new(|| {
+    vec![
         TypeId::of::<Domain>(),
         TypeId::of::<Entity>(),
         TypeId::of::<Autnum>(),
         TypeId::of::<Network>(),
-    ];
-}
+    ]
+});
 
 impl GetChecks for Link {
     fn get_checks(&self, params: CheckParams) -> Checks {
