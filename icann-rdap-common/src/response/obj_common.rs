@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -198,16 +197,14 @@ impl ObjectCommon {
     }
 }
 
-lazy_static! {
-    /// Empty Remarks.
-    static ref EMPTY_REMARKS: Remarks = vec![];
-    /// Empty Links.
-    static ref EMPTY_LINKS: Links = vec![];
-    /// Empty Events.
-    static ref EMPTY_EVENTS: Events = vec![];
-    /// Empty Entities.
-    static ref EMPTY_ENTITIES: Vec<Entity> = vec![];
-}
+/// Empty Remarks.
+static EMPTY_REMARKS: Remarks = vec![];
+/// Empty Links.
+static EMPTY_LINKS: Links = vec![];
+/// Empty Events.
+static EMPTY_EVENTS: Events = vec![];
+/// Empty Entities.
+static EMPTY_ENTITIES: Vec<Entity> = vec![];
 
 /// Convenience methods for fields in [ObjectCommon].
 pub trait ObjectCommonFields {

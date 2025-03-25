@@ -5,14 +5,11 @@ pub use reqwest::Client as ReqwestClient;
 pub use reqwest::Error as ReqwestError;
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
-use lazy_static::lazy_static;
 
 #[cfg(not(target_arch = "wasm32"))]
 use {icann_rdap_common::VERSION, std::net::SocketAddr, std::time::Duration};
 
-lazy_static! {
-    static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
-}
+const ACCEPT_HEADER_VALUES: &str = const_format::formatcp!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
 
 /// Configures the HTTP client.
 pub struct ReqwestClientConfig {
@@ -216,7 +213,7 @@ fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,
-        HeaderValue::from_static(&ACCEPT_HEADER_VALUES),
+        HeaderValue::from_static(ACCEPT_HEADER_VALUES),
     );
     if let Some(host) = &config.host {
         default_headers.insert(header::HOST, host.into());

@@ -31,7 +31,6 @@ ipnet.workspace = true
 headers.workspace = true
 http.workspace = true
 hyper.workspace = true
-lazy_static.workspace = true
 pct-str.workspace = true
 prefix-trie.workspace = true
 regex.workspace = true

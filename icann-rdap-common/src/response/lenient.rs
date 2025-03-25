@@ -2,7 +2,6 @@
 
 use std::{fmt::Display, marker::PhantomData, str::FromStr};
 
-use lazy_static::lazy_static;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use serde_json::Number;
 
@@ -153,9 +152,7 @@ pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
     (!vec.is_empty()).then_some(VectorStringish::from(vec))
 }
 
-lazy_static! {
-    pub(crate) static ref EMPTY_VEC_STRING: Vec<String> = vec![];
-}
+pub(crate) static EMPTY_VEC_STRING: Vec<String> = vec![];
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]

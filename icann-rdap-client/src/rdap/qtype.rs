@@ -2,11 +2,11 @@
 use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     str::FromStr,
+    sync::LazyLock,
 };
 
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
 use icann_rdap_common::{check::StringCheck, dns_types::DomainName};
-use lazy_static::lazy_static;
 use pct_str::{PctString, URIReserved};
 use regex::Regex;
 use strum_macros::Display;
@@ -282,10 +282,8 @@ fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
 }
 
 fn is_ldh_domain(text: &str) -> bool {
-    lazy_static! {
-        static ref LDH_DOMAIN_RE: Regex =
-            Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap();
-    }
+    static LDH_DOMAIN_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap());
     LDH_DOMAIN_RE.is_match(text)
 }
 
@@ -294,10 +292,9 @@ fn is_domain_name(text: &str) -> bool {
 }
 
 fn is_nameserver(text: &str) -> bool {
-    lazy_static! {
-        static ref NS_RE: Regex =
-            Regex::new(r"^(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.?$").unwrap();
-    }
+    static NS_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.?$").unwrap()
+    });
     NS_RE.is_match(text)
 }
 

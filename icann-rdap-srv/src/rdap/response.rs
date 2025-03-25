@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use axum::{
     response::{IntoResponse, Response},
     Json,
@@ -8,23 +10,26 @@ use icann_rdap_common::{
     prelude::ToResponse,
     response::{RdapResponse, Rfc9083Error},
 };
-use lazy_static::lazy_static;
 use tracing::warn;
 
-lazy_static! {
-    pub static ref NOT_FOUND: RdapResponse = Rfc9083Error::builder()
+pub static NOT_FOUND: LazyLock<RdapResponse> = LazyLock::new(|| {
+    Rfc9083Error::builder()
         .error_code(404)
         .build()
-        .to_response();
-    pub static ref NOT_IMPLEMENTED: RdapResponse = Rfc9083Error::builder()
+        .to_response()
+});
+pub static NOT_IMPLEMENTED: LazyLock<RdapResponse> = LazyLock::new(|| {
+    Rfc9083Error::builder()
         .error_code(501)
         .build()
-        .to_response();
-    pub static ref BAD_REQUEST: RdapResponse = Rfc9083Error::builder()
+        .to_response()
+});
+pub static BAD_REQUEST: LazyLock<RdapResponse> = LazyLock::new(|| {
+    Rfc9083Error::builder()
         .error_code(400)
         .build()
-        .to_response();
-}
+        .to_response()
+});
 
 pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];
 

@@ -1,10 +1,10 @@
 use std::{
     fs::{create_dir_all, remove_dir_all, write},
     path::PathBuf,
+    sync::LazyLock,
 };
 
 use directories::ProjectDirs;
-use lazy_static::lazy_static;
 
 pub const QUALIFIER: &str = "org";
 pub const ORGANIZATION: &str = "ICANN";
@@ -14,11 +14,10 @@ pub const ENV_FILE_NAME: &str = "rdap.env";
 pub const RDAP_CACHE_NAME: &str = "rdap_cache";
 pub const BOOTSTRAP_CACHE_NAME: &str = "bootstrap_cache";
 
-lazy_static! {
-    pub(crate) static ref PROJECT_DIRS: ProjectDirs =
-        ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
-            .expect("unable to formulate project directories");
-}
+pub(crate) static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
+    ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
+        .expect("unable to formulate project directories")
+});
 
 /// Initializes the directories to be used.
 pub fn init() -> Result<(), std::io::Error> {

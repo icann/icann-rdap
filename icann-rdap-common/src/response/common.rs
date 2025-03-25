@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 use super::{Extension, ExtensionId, Notice, Notices, RdapConformance};
@@ -27,12 +26,10 @@ impl Common {
     }
 }
 
-lazy_static! {
-    /// Empty Extensions.
-    static ref EMPTY_EXTENSIONS: Vec<Extension> = vec![];
-    /// Empty Notices.
-    static ref EMPTY_NOTICES: Vec<Notice> = vec![];
-}
+/// Empty Extensions.
+static EMPTY_EXTENSIONS: Vec<Extension> = vec![];
+/// Empty Notices.
+static EMPTY_NOTICES: Vec<Notice> = vec![];
 
 /// Convience methods for fields in  [Common].
 pub trait CommonFields {

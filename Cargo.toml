@@ -69,9 +69,6 @@ futures-util = "0.3"
 # macros to get the git version
 git-version = "0.3"
 
-# lazy static initilization
-lazy_static = "1.4"
-
 # headers (http headers)
 headers = "0.4"
 

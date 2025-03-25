@@ -1,7 +1,5 @@
 use icann_rdap_common::prelude::ObjectCommon;
-use std::any::TypeId;
-
-use lazy_static::lazy_static;
+use std::{any::TypeId, sync::LazyLock};
 
 use icann_rdap_common::check::StringCheck;
 use icann_rdap_common::httpdata::HttpData;
@@ -211,21 +209,23 @@ impl ToMd for Common {
 const RECEIVED: &str = "Received";
 const REQUEST_URI: &str = "Request URI";
 
-lazy_static! {
-    pub static ref NAMES: [String; 7] = [
+pub static NAMES: LazyLock<[String; 7]> = LazyLock::new(|| {
+    [
         HOST.to_string(),
         reqwest::header::EXPIRES.to_string(),
         reqwest::header::CACHE_CONTROL.to_string(),
         reqwest::header::STRICT_TRANSPORT_SECURITY.to_string(),
         reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
         RECEIVED.to_string(),
-        REQUEST_URI.to_string()
-    ];
-    pub static ref NAME_LEN: usize = NAMES
+        REQUEST_URI.to_string(),
+    ]
+});
+pub static NAME_LEN: LazyLock<usize> = LazyLock::new(|| {
+    NAMES
         .iter()
         .max_by_key(|x| x.to_string().len())
-        .map_or(8, |x| x.to_string().len());
-}
+        .map_or(8, |x| x.to_string().len())
+});
 
 impl ToMd for HttpData {
     fn to_md(&self, params: MdParams) -> String {
