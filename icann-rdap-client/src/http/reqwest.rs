@@ -213,7 +213,7 @@ fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,
-        HeaderValue::from_static(&ACCEPT_HEADER_VALUES),
+        HeaderValue::from_static(ACCEPT_HEADER_VALUES),
     );
     if let Some(host) = &config.host {
         default_headers.insert(header::HOST, host.into());
