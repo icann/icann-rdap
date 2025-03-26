@@ -457,10 +457,188 @@ mod tests {
         // GIVEN case input
 
         // WHEN
-
         let q = parse_cidr(actual);
 
         // THEN
         assert_eq!(q.unwrap().to_string(), expected)
+    }
+
+    #[test]
+    fn test_ipv4addr_query_url() {
+        // GIVEN ipv4 addr query
+        let q = QueryType::from_str("199.1.1.1").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/ip/199.1.1.1")
+    }
+
+    #[test]
+    fn test_ipv6addr_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("2000::1").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/ip/2000%3A%3A1")
+    }
+
+    #[test]
+    fn test_ipv4cidr_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("199.1.1.1/16").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/ip/199.1.0.0/16")
+    }
+
+    #[test]
+    fn test_ipv6cidr_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("2000::1/16").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/ip/2000%3A%3A/16")
+    }
+
+    #[test]
+    fn test_autnum_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("as16509").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/autnum/16509")
+    }
+
+    #[test]
+    fn test_domain_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("example.com").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/domain/example.com")
+    }
+
+    #[test]
+    fn test_ns_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("ns.example.com").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/nameserver/ns.example.com")
+    }
+
+    #[test]
+    fn test_entity_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("foo").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/entity/foo")
+    }
+
+    #[test]
+    fn test_entity_name_search_query_url() {
+        // GIVEN
+        let q = QueryType::EntityNameSearch("foo".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/entities?fn=foo")
+    }
+
+    #[test]
+    fn test_entity_handle_search_query_url() {
+        // GIVEN
+        let q = QueryType::EntityHandleSearch("foo".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/entities?handle=foo")
+    }
+
+    #[test]
+    fn test_domain_name_search_query_url() {
+        // GIVEN
+        let q = QueryType::DomainNameSearch("foo".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/domains?name=foo")
+    }
+
+    #[test]
+    fn test_domain_ns_name_search_query_url() {
+        // GIVEN
+        let q = QueryType::DomainNsNameSearch("foo".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/domains?nsLdhName=foo")
+    }
+
+    #[test]
+    fn test_domain_ns_ip_search_query_url() {
+        // GIVEN
+        let q = QueryType::DomainNsIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)));
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/domains?nsIp=1.1.1.1")
+    }
+
+    fn test_ns_name_search_query_url() {
+        // GIVEN
+        let q = QueryType::NameserverNameSearch("foo".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/nameservers?name=foo")
+    }
+
+    #[test]
+    fn test_ns_ip_search_query_url() {
+        // GIVEN
+        let q = QueryType::NameserverIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)));
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/nameservers?ip=1.1.1.1")
     }
 }
