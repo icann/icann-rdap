@@ -122,7 +122,7 @@ impl QueryType {
             Self::DomainNsIpSearch(value) => {
                 search_query(&value.to_string(), "domains?nsIp", base_url)
             }
-            Self::NameserverNameSearch(value) => search_query(value, "nameserver?name=", base_url),
+            Self::NameserverNameSearch(value) => search_query(value, "nameservers?name", base_url),
             Self::NameserverIpSearch(value) => {
                 search_query(&value.to_string(), "nameservers?ip", base_url)
             }
@@ -619,6 +619,7 @@ mod tests {
         assert_eq!(actual, "https://example.com/domains?nsIp=1.1.1.1")
     }
 
+    #[test]
     fn test_ns_name_search_query_url() {
         // GIVEN
         let q = QueryType::NameserverNameSearch("foo".to_string());
