@@ -294,7 +294,6 @@ fn is_nameserver(text: &str) -> bool {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use std::str::FromStr;
 
@@ -303,7 +302,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_ipv4_WHEN_query_type_from_str_THEN_query_is_ipv4() {
+    fn test_ipv4_query_type_from_str() {
         // GIVEN
         let s = "129.129.1.1";
 
@@ -315,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_ipv6_WHEN_query_type_from_str_THEN_query_is_ipv6() {
+    fn test_ipv6_query_type_from_str() {
         // GIVEN
         let s = "2001::1";
 
@@ -327,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_ipv4_cidr_WHEN_query_type_from_str_THEN_query_is_ipv4_cidr() {
+    fn test_ipv4_cidr_query_type_from_str() {
         // GIVEN
         let s = "129.129.1.1/8";
 
@@ -339,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_ipv6_cidr_WHEN_query_type_from_str_THEN_query_is_ipv6_cidr() {
+    fn test_ipv6_cidr_query_type_from_str() {
         // GIVEN
         let s = "2001::1/20";
 
@@ -351,7 +350,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_number_WHEN_query_type_from_str_THEN_query_is_autnum() {
+    fn test_number_query_type_from_str() {
         // GIVEN
         let s = "16509";
 
@@ -363,7 +362,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_as_followed_by_number_WHEN_query_type_from_str_THEN_query_is_autnum() {
+    fn test_as_followed_by_number_query_type_from_str() {
         // GIVEN
         let s = "as16509";
 
@@ -380,7 +379,7 @@ mod tests {
     #[case("snark.fail")]
     #[case("ns.fail")]
     #[case(".com")]
-    fn GIVEN_domain_name_WHEN_query_type_from_str_THEN_query_is_domain(#[case] input: &str) {
+    fn test_domain_name_query_type_from_str(#[case] input: &str) {
         // GIVEN case input
 
         // WHEN
@@ -394,7 +393,7 @@ mod tests {
     #[case("ns.example.com")]
     #[case("ns1.example.com")]
     #[case("NS1.example.com")]
-    fn GIVEN_name_server_WHEN_query_type_from_str_THEN_query_is_nameserver(#[case] input: &str) {
+    fn test_name_server_query_type_from_str(#[case] input: &str) {
         // GIVEN case input
 
         // WHEN
@@ -405,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_single_word_WHEN_query_type_from_str_THEN_query_is_entity() {
+    fn test_single_word_query_type_from_str() {
         // GIVEN
         let s = "foo";
 
@@ -420,7 +419,7 @@ mod tests {
     #[rstest]
     #[case("https://example.com")]
     #[case("http://foo.example.com")]
-    fn GIVEN_url_WHEN_query_type_from_str_THEN_query_is_url(#[case] input: &str) {
+    fn test_url_query_type_from_str(#[case] input: &str) {
         // GIVEN case input
 
         // WHEN
@@ -433,7 +432,7 @@ mod tests {
     #[rstest]
     #[case("ns.foo_bar.com")]
     #[case("ns.foo bar.com")]
-    fn GIVEN_bad_input_WHEN_query_type_from_str_THEN_error(#[case] input: &str) {
+    fn test_bad_input_query_type_from_str(#[case] input: &str) {
         // GIVEN case input
 
         // WHEN
@@ -454,7 +453,7 @@ mod tests {
     #[case("10/24", "10.0.0.0/24")]
     #[case("129.129.1.1/8", "129.0.0.0/8")]
     #[case("2001::1/32", "2001::/32")]
-    fn GIVEN_cidr_WHEN_parse_cidr_THEN_error(#[case] actual: &str, #[case] expected: &str) {
+    fn test_cidr_parse_cidr(#[case] actual: &str, #[case] expected: &str) {
         // GIVEN case input
 
         // WHEN
