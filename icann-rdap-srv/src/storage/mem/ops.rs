@@ -1,13 +1,16 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
-use async_trait::async_trait;
-use btree_range_map::RangeMap;
-use icann_rdap_common::response::{
-    domain::Domain, search::DomainSearchResults, types::Common, RdapResponse,
+use {
+    async_trait::async_trait,
+    btree_range_map::RangeMap,
+    icann_rdap_common::{
+        prelude::ToResponse,
+        response::{Domain, DomainSearchResults, RdapResponse},
+    },
+    ipnet::{IpNet, Ipv4Net, Ipv6Net},
+    prefix_trie::PrefixMap,
+    tokio::sync::RwLock,
 };
-use ipnet::{IpNet, Ipv4Net, Ipv6Net};
-use prefix_trie::PrefixMap;
-use tokio::sync::RwLock;
 
 use crate::{
     error::RdapServerError,
@@ -34,15 +37,15 @@ pub struct Mem {
 impl Mem {
     pub fn new(config: MemConfig) -> Self {
         Self {
-            autnums: Arc::new(RwLock::new(RangeMap::new())),
-            ip4: Arc::new(RwLock::new(PrefixMap::new())),
-            ip6: Arc::new(RwLock::new(PrefixMap::new())),
-            domains: Arc::new(RwLock::new(HashMap::new())),
+            autnums: <_>::default(),
+            ip4: <_>::default(),
+            ip6: <_>::default(),
+            domains: <_>::default(),
             domains_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
-            idns: Arc::new(RwLock::new(HashMap::new())),
-            nameservers: Arc::new(RwLock::new(HashMap::new())),
-            entities: Arc::new(RwLock::new(HashMap::new())),
-            srvhelps: Arc::new(RwLock::new(HashMap::new())),
+            idns: <_>::default(),
+            nameservers: <_>::default(),
+            entities: <_>::default(),
+            srvhelps: <_>::default(),
             config,
         }
     }
@@ -50,7 +53,7 @@ impl Mem {
 
 impl Default for Mem {
     fn default() -> Self {
-        Mem::new(
+        Self::new(
             MemConfig::builder()
                 .common_config(CommonConfig::default())
                 .build(),
@@ -185,16 +188,14 @@ impl StoreOps for Mem {
             .into_iter()
             .map(Arc::<RdapResponse>::unwrap_or_clone)
             .filter_map(|d| match d {
-                RdapResponse::Domain(d) => Some(d),
+                RdapResponse::Domain(d) => Some(*d),
                 _ => None,
             })
             .collect::<Vec<Domain>>();
-        let response = RdapResponse::DomainSearchResults(
-            DomainSearchResults::builder()
-                .common(Common::new_level0(vec![], vec![]))
-                .results(results)
-                .build(),
-        );
+        let response = DomainSearchResults::builder()
+            .results(results)
+            .build()
+            .to_response();
         Ok(response)
     }
 }

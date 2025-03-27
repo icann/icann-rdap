@@ -1,32 +1,37 @@
 //! Conformance checks of RDAP structures.
 
-use std::any::TypeId;
+use std::{any::TypeId, sync::LazyLock};
 
-use crate::response::RdapResponse;
-use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
-use strum::{EnumMessage, IntoEnumIterator};
-use strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr};
+use {
+    crate::response::RdapResponse,
+    serde::{Deserialize, Serialize},
+    strum::{EnumMessage, IntoEnumIterator},
+    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr},
+};
 
-pub mod autnum;
-pub mod domain;
-pub mod entity;
-pub mod error;
-pub mod help;
-pub mod httpdata;
-pub mod nameserver;
-pub mod network;
-pub mod search;
-pub mod string;
-pub mod types;
+#[doc(inline)]
+pub use string::*;
 
-lazy_static! {
-    pub static ref CHECK_CLASS_LEN: usize = CheckClass::iter()
+mod autnum;
+mod domain;
+mod entity;
+mod error;
+mod help;
+mod httpdata;
+mod nameserver;
+mod network;
+mod search;
+mod string;
+mod types;
+
+/// The max length of the check class string representations.
+pub static CHECK_CLASS_LEN: LazyLock<usize> = LazyLock::new(|| {
+    CheckClass::iter()
         .max_by_key(|x| x.to_string().len())
-        .map_or(8, |x| x.to_string().len());
-}
+        .map_or(8, |x| x.to_string().len())
+});
 
-/// Describes the calls of checks.
+/// Describes the classes of checks.
 #[derive(
     EnumIter,
     EnumString,
@@ -117,9 +122,13 @@ pub enum RdapStructure {
     RdapConformance,
     Redacted,
     Remarks,
+    SecureDns,
     Status,
 }
 
+/// Contains many [CheckItem] structures and sub checks.
+///
+/// Checks are found on object classes and structures defined in [RdapStructure].
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Checks {
     pub rdap_struct: RdapStructure,
@@ -135,6 +144,7 @@ impl Checks {
     }
 }
 
+/// A specific check item.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CheckItem {
     pub check_class: CheckClass,
@@ -154,10 +164,12 @@ impl std::fmt::Display for CheckItem {
     }
 }
 
+/// Trait for an item that can get checks.
 pub trait GetChecks {
     fn get_checks(&self, params: CheckParams) -> Checks;
 }
 
+/// Parameters for finding checks.
 #[derive(Clone, Copy)]
 pub struct CheckParams<'a> {
     pub do_subchecks: bool,
@@ -168,7 +180,7 @@ pub struct CheckParams<'a> {
 
 impl CheckParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
-        CheckParams {
+        Self {
             do_subchecks: self.do_subchecks,
             root: self.root,
             parent_type,
@@ -189,20 +201,21 @@ impl CheckParams<'_> {
 impl GetChecks for RdapResponse {
     fn get_checks(&self, params: CheckParams) -> Checks {
         match &self {
-            RdapResponse::Entity(e) => e.get_checks(params),
-            RdapResponse::Domain(d) => d.get_checks(params),
-            RdapResponse::Nameserver(n) => n.get_checks(params),
-            RdapResponse::Autnum(a) => a.get_checks(params),
-            RdapResponse::Network(n) => n.get_checks(params),
-            RdapResponse::DomainSearchResults(r) => r.get_checks(params),
-            RdapResponse::EntitySearchResults(r) => r.get_checks(params),
-            RdapResponse::NameserverSearchResults(r) => r.get_checks(params),
-            RdapResponse::ErrorResponse(e) => e.get_checks(params),
-            RdapResponse::Help(h) => h.get_checks(params),
+            Self::Entity(e) => e.get_checks(params),
+            Self::Domain(d) => d.get_checks(params),
+            Self::Nameserver(n) => n.get_checks(params),
+            Self::Autnum(a) => a.get_checks(params),
+            Self::Network(n) => n.get_checks(params),
+            Self::DomainSearchResults(r) => r.get_checks(params),
+            Self::EntitySearchResults(r) => r.get_checks(params),
+            Self::NameserverSearchResults(r) => r.get_checks(params),
+            Self::ErrorResponse(e) => e.get_checks(params),
+            Self::Help(h) => h.get_checks(params),
         }
     }
 }
 
+/// Trait to get checks for structures below that of the object class.
 pub trait GetSubChecks {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
@@ -237,6 +250,17 @@ where
     found
 }
 
+/// Returns true if the check is in a check list
+pub fn is_checked(check: Check, checks: &[Checks]) -> bool {
+    checks.iter().any(|c| is_checked_item(check, c))
+}
+
+/// Returns true if the check is in a list of check items.
+pub fn is_checked_item(check: Check, checks: &Checks) -> bool {
+    checks.items.iter().any(|c| c.check == check)
+}
+
+/// The variant check types.
 #[derive(
     Debug,
     EnumMessage,
@@ -312,6 +336,8 @@ pub enum Check {
     RoleIsEmpty = 800,
     #[strum(message = "entity role may not be registered")]
     UnknownRole = 801,
+    #[strum(message = "role is a string, not array of strings")]
+    RoleIsString = 802,
 
     // LDH Name 900 - 999
     #[strum(message = "ldhName does not appear to be an LDH name")]
@@ -364,6 +390,8 @@ pub enum Check {
     IpAddressDocumentationNet = 1312,
     #[strum(message = "Reserved network. See RFC 1112")]
     IpAddressReservedNet = 1313,
+    #[strum(message = "IP address array is a string.")]
+    IpAddressArrayIsString = 1314,
 
     // Autnum 1400 - 1499
     #[strum(message = "start or end autnum is missing")]
@@ -436,101 +464,140 @@ pub enum Check {
     ExpectedExtensionNotFound = 2104,
     #[strum(message = "IPv6 Support Required.")]
     Ipv6SupportRequiredByIcann = 2105,
+
+    // Secure DNS 2200 - 2299
+    #[strum(message = "delegationSigned is a string not a bool.")]
+    DelegationSignedIsString = 2200,
+    #[strum(message = "zoneSigned is a string not a bool.")]
+    ZoneSignedIsString = 2201,
+    #[strum(message = "maxSigLife is a string not a number.")]
+    MaxSigLifeIsString = 2202,
+    // key data
+    #[strum(message = "keyData algorithm is a string not a number.")]
+    KeyDatumAlgorithmIsString = 2203,
+    #[strum(message = "keyData algorithm is out of range.")]
+    KeyDatumAlgorithmIsOutOfRange = 2204,
+    #[strum(message = "keyData flags is a string not a number.")]
+    KeyDatumFlagsIsString = 2205,
+    #[strum(message = "keyData flags is out of range.")]
+    KeyDatumFlagsIsOutOfRange = 2206,
+    #[strum(message = "keyData protocol is a string not a number.")]
+    KeyDatumProtocolIsString = 2207,
+    #[strum(message = "keyData protocol is out of range.")]
+    KeyDatumProtocolIsOutOfRange = 2208,
+    // ds data
+    #[strum(message = "dsData algorithm is a string not a number.")]
+    DsDatumAlgorithmIsString = 2213,
+    #[strum(message = "dsData algorithm is out of range.")]
+    DsDatumAlgorithmIsOutOfRange = 2214,
+    #[strum(message = "dsData keyTag is a string not a number.")]
+    DsDatumKeyTagIsString = 2215,
+    #[strum(message = "dsData keyTag is out of range.")]
+    DsDatumKeyTagIsOutOfRange = 2216,
+    #[strum(message = "dsData digestType is a string not a number.")]
+    DsDatumDigestTypeIsString = 2217,
+    #[strum(message = "dsData digestType is out of range.")]
+    DsDatumDigestTypeIsOutOfRange = 2218,
 }
 
 impl Check {
     pub fn check_item(self) -> CheckItem {
         let check_class = match self {
-            Check::RdapConformanceMissing => CheckClass::StdError,
-            Check::RdapConformanceInvalidParent => CheckClass::StdError,
-            Check::UnknownExtention => CheckClass::StdWarning,
+            Self::RdapConformanceMissing | Self::RdapConformanceInvalidParent => {
+                CheckClass::StdError
+            }
+            Self::UnknownExtention => CheckClass::StdWarning,
 
-            Check::LinkMissingValueProperty => CheckClass::StdError,
-            Check::LinkMissingRelProperty => CheckClass::StdError,
-            Check::LinkRelatedHasNoType => CheckClass::StdWarning,
-            Check::LinkRelatedIsNotRdap => CheckClass::StdWarning,
-            Check::LinkSelfHasNoType => CheckClass::StdWarning,
-            Check::LinkSelfIsNotRdap => CheckClass::StdWarning,
-            Check::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
-            Check::LinkMissingHrefProperty => CheckClass::StdError,
+            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::StdError,
+            Self::LinkRelatedHasNoType
+            | Self::LinkRelatedIsNotRdap
+            | Self::LinkSelfHasNoType
+            | Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
+            Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
+            Self::LinkMissingHrefProperty => CheckClass::StdError,
 
-            Check::VariantEmptyDomain => CheckClass::StdWarning,
+            Self::VariantEmptyDomain => CheckClass::StdWarning,
 
-            Check::EventDateIsAbsent => CheckClass::StdError,
-            Check::EventDateIsNotRfc3339 => CheckClass::StdError,
-            Check::EventActionIsAbsent => CheckClass::StdError,
+            Self::EventDateIsAbsent
+            | Self::EventDateIsNotRfc3339
+            | Self::EventActionIsAbsent
+            | Self::NoticeOrRemarkDescriptionIsAbsent
+            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
 
-            Check::NoticeOrRemarkDescriptionIsAbsent => CheckClass::StdError,
-            Check::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
+            Self::HandleIsEmpty => CheckClass::StdWarning,
 
-            Check::HandleIsEmpty => CheckClass::StdWarning,
+            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
+            Self::UnknownRole => CheckClass::StdWarning,
+            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::StdError,
+            Self::LdhNameDocumentation => CheckClass::Informational,
+            Self::LdhNameDoesNotMatchUnicode => CheckClass::StdWarning,
 
-            Check::StatusIsEmpty => CheckClass::StdError,
+            Self::UnicodeNameInvalidDomain | Self::UnicodeNameInvalidUnicode => {
+                CheckClass::StdError
+            }
 
-            Check::RoleIsEmpty => CheckClass::StdError,
-            Check::UnknownRole => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsEmpty
+            | Self::NetworkOrAutnumTypeIsEmpty
+            | Self::IpAddressMissing => CheckClass::StdWarning,
+            Self::IpAddressMalformed => CheckClass::StdError,
+            Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
+                CheckClass::StdWarning
+            }
+            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::StdError,
+            Self::IpAddressThisNetwork
+            | Self::IpAddressPrivateUse
+            | Self::IpAddressSharedNat
+            | Self::IpAddressLoopback
+            | Self::IpAddressLinkLocal
+            | Self::IpAddressUniqueLocal
+            | Self::IpAddressDocumentationNet
+            | Self::IpAddressReservedNet => CheckClass::Informational,
+            Self::IpAddressArrayIsString => CheckClass::StdError,
 
-            Check::LdhNameInvalid => CheckClass::StdError,
-            Check::LdhNameDocumentation => CheckClass::Informational,
-            Check::LdhNameDoesNotMatchUnicode => CheckClass::StdWarning,
+            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
+            Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
+                CheckClass::Informational
+            }
 
-            Check::UnicodeNameInvalidDomain => CheckClass::StdError,
-            Check::UnicodeNameInvalidUnicode => CheckClass::StdError,
+            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::StdError,
+            Self::VcardFnIsEmpty => CheckClass::SpecificationNote,
 
-            Check::NetworkOrAutnumNameIsEmpty => CheckClass::StdWarning,
+            Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
+                CheckClass::StdError
+            }
 
-            Check::NetworkOrAutnumTypeIsEmpty => CheckClass::StdWarning,
+            Self::CorsAllowOriginRecommended
+            | Self::CorsAllowOriginStarRecommended
+            | Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
+            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::StdError,
 
-            Check::IpAddressMissing => CheckClass::StdWarning,
-            Check::IpAddressMalformed => CheckClass::StdError,
-            Check::IpAddressEndBeforeStart => CheckClass::StdWarning,
-            Check::IpAddressVersionMismatch => CheckClass::StdWarning,
-            Check::IpAddressMalformedVersion => CheckClass::StdError,
-            Check::IpAddressListIsEmpty => CheckClass::StdError,
-            Check::IpAddressThisNetwork => CheckClass::Informational,
-            Check::IpAddressPrivateUse => CheckClass::Informational,
-            Check::IpAddressSharedNat => CheckClass::Informational,
-            Check::IpAddressLoopback => CheckClass::Informational,
-            Check::IpAddressLinkLocal => CheckClass::Informational,
-            Check::IpAddressUniqueLocal => CheckClass::Informational,
-            Check::IpAddressDocumentationNet => CheckClass::Informational,
-            Check::IpAddressReservedNet => CheckClass::Informational,
+            Self::Cidr0V4PrefixIsAbsent
+            | Self::Cidr0V4LengthIsAbsent
+            | Self::Cidr0V6PrefixIsAbsent
+            | Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
 
-            Check::AutnumMissing => CheckClass::StdWarning,
-            Check::AutnumEndBeforeStart => CheckClass::StdWarning,
-            Check::AutnumPrivateUse => CheckClass::Informational,
-            Check::AutnumDocumentation => CheckClass::Informational,
-            Check::AutnumReserved => CheckClass::Informational,
+            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::IcannError,
 
-            Check::VcardArrayIsEmpty => CheckClass::StdError,
-            Check::VcardHasNoFn => CheckClass::StdError,
-            Check::VcardFnIsEmpty => CheckClass::SpecificationNote,
+            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::StdError,
+            Self::NoARecords | Self::NoAAAARecords => CheckClass::SpecificationNote,
+            Self::ExpectedExtensionNotFound => CheckClass::StdError,
+            Self::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
 
-            Check::Port43IsEmpty => CheckClass::StdError,
-
-            Check::PublicIdTypeIsAbsent => CheckClass::StdError,
-            Check::PublicIdIdentifierIsAbsent => CheckClass::StdError,
-
-            Check::CorsAllowOriginRecommended => CheckClass::StdWarning,
-            Check::CorsAllowOriginStarRecommended => CheckClass::StdWarning,
-            Check::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
-            Check::ContentTypeIsAbsent => CheckClass::StdError,
-            Check::ContentTypeIsNotRdap => CheckClass::StdError,
-
-            Check::Cidr0V4PrefixIsAbsent => CheckClass::Cidr0Error,
-            Check::Cidr0V4LengthIsAbsent => CheckClass::Cidr0Error,
-            Check::Cidr0V6PrefixIsAbsent => CheckClass::Cidr0Error,
-            Check::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
-
-            Check::MustUseHttps => CheckClass::IcannError,
-            Check::AllowOriginNotStar => CheckClass::IcannError,
-
-            Check::CnameWithoutARecords => CheckClass::StdError,
-            Check::CnameWithoutAAAARecords => CheckClass::StdError,
-            Check::NoARecords => CheckClass::SpecificationNote,
-            Check::NoAAAARecords => CheckClass::SpecificationNote,
-            Check::ExpectedExtensionNotFound => CheckClass::StdError,
-            Check::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
+            Self::DelegationSignedIsString
+            | Self::ZoneSignedIsString
+            | Self::MaxSigLifeIsString
+            | Self::KeyDatumAlgorithmIsString
+            | Self::KeyDatumAlgorithmIsOutOfRange
+            | Self::KeyDatumFlagsIsString
+            | Self::KeyDatumFlagsIsOutOfRange
+            | Self::KeyDatumProtocolIsString
+            | Self::KeyDatumProtocolIsOutOfRange
+            | Self::DsDatumAlgorithmIsString
+            | Self::DsDatumAlgorithmIsOutOfRange
+            | Self::DsDatumKeyTagIsString
+            | Self::DsDatumKeyTagIsOutOfRange
+            | Self::DsDatumDigestTypeIsString
+            | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
         };
         CheckItem {
             check_class,

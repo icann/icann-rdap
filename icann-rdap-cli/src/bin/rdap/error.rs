@@ -1,9 +1,11 @@
 use std::process::{ExitCode, Termination};
 
-use icann_rdap_client::iana::IanaResponseError;
-use icann_rdap_client::RdapClientError;
-use minus::MinusError;
-use thiserror::Error;
+use {
+    icann_rdap_client::{iana::IanaResponseError, RdapClientError},
+    minus::MinusError,
+    thiserror::Error,
+    tracing::error,
+};
 
 #[derive(Debug, Error)]
 pub enum RdapCliError {
@@ -35,35 +37,44 @@ pub enum RdapCliError {
     NoRegistryFound,
 }
 
-impl Termination for RdapCliError {
-    fn report(self) -> std::process::ExitCode {
-        let exit_code: u8 = match self {
+impl RdapCliError {
+    pub(crate) fn exit_code(&self) -> u8 {
+        match self {
             // Success
-            RdapCliError::Success => 0,
+            Self::Success => 0,
 
             // Internal Errors
-            RdapCliError::Termimad(_) => 10,
-            RdapCliError::Minus(_) => 11,
+            Self::Termimad(_) => 10,
+            Self::Minus(_) => 11,
 
             // I/O Errors
-            RdapCliError::IoError(_) => 40,
+            Self::IoError(_) => 40,
 
             // RDAP Errors
-            RdapCliError::Json(_) => 100,
-            RdapCliError::Iana(_) => 101,
-            RdapCliError::InvalidBootstrap => 102,
-            RdapCliError::BootstrapNotFound => 103,
-            RdapCliError::NoRegistrarFound => 104,
-            RdapCliError::NoRegistryFound => 105,
+            Self::Json(_) => 100,
+            Self::Iana(_) => 101,
+            Self::InvalidBootstrap => 102,
+            Self::BootstrapNotFound => 103,
+            Self::NoRegistrarFound => 104,
+            Self::NoRegistryFound => 105,
 
             // User Errors
-            RdapCliError::UnknownOutputType => 200,
-            RdapCliError::ErrorOnChecks => 201,
+            Self::UnknownOutputType => 200,
+            Self::ErrorOnChecks => 201,
 
             // RDAP Client Errrors
-            RdapCliError::RdapClient(e) => match e {
+            Self::RdapClient(e) => match e {
                 // I/O Errors
-                RdapClientError::Client(_) => 42,
+                RdapClientError::Client(ce) => {
+                    if ce.is_builder() {
+                        match ce.url() {
+                            Some(url) if url.scheme() == "http" => 202,
+                            _ => 42,
+                        }
+                    } else {
+                        42
+                    }
+                }
                 RdapClientError::IoError(_) => 43,
 
                 // RDAP Server Errors
@@ -85,7 +96,13 @@ impl Termination for RdapCliError {
                 RdapClientError::Poison => 250,
                 // _ => 255,
             },
-        };
+        }
+    }
+}
+
+impl Termination for RdapCliError {
+    fn report(self) -> std::process::ExitCode {
+        let exit_code = self.exit_code();
         ExitCode::from(exit_code)
     }
 }

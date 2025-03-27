@@ -1,14 +1,13 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::{
-    http::{create_client, ClientConfig},
-    rdap::{rdap_request, QueryType},
+use {
+    icann_rdap_client::{
+        http::{create_client, ClientConfig},
+        rdap::{rdap_request, QueryType},
+    },
+    icann_rdap_common::response::{Help, Notice, NoticeOrRemark},
+    icann_rdap_srv::storage::StoreOps,
 };
-use icann_rdap_common::response::{
-    help::Help,
-    types::{Notice, NoticeOrRemark},
-};
-use icann_rdap_srv::storage::StoreOps;
 
 use crate::test_jig::SrvTestJig;
 
@@ -17,14 +16,13 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     tx.add_srv_help(&srvhelp, None)
         .await
         .expect("adding srv help");
@@ -50,14 +48,13 @@ async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    let srvhelp = Help::basic()
+    let srvhelp = Help::builder()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())
                 .build(),
         ))
-        .build()
-        .expect("building help");
+        .build();
     tx.add_srv_help(&srvhelp, Some("foo.example.com"))
         .await
         .expect("adding srv help");

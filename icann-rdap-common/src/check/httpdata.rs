@@ -4,7 +4,7 @@ use super::{Check, Checks, GetChecks};
 
 impl GetChecks for HttpData {
     fn get_checks(&self, params: crate::check::CheckParams) -> crate::check::Checks {
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         // RFC checks
         if let Some(allow_origin) = &self.access_control_allow_origin {
@@ -52,7 +52,7 @@ impl GetChecks for HttpData {
         Checks {
             rdap_struct: super::RdapStructure::HttpData,
             items,
-            sub_checks: Vec::new(),
+            sub_checks: vec![],
         }
     }
 }
@@ -63,18 +63,15 @@ mod tests {
         check::{Check, CheckParams, GetChecks},
         httpdata::HttpData,
         media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE},
-        response::{
-            domain::Domain,
-            types::{Common, ExtensionId, ObjectCommon},
-            RdapResponse,
-        },
+        prelude::{Common, ObjectCommon, ToResponse},
+        response::{domain::Domain, types::ExtensionId},
     };
 
     #[test]
     fn check_not_rdap_media() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -86,7 +83,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata with content type that is not RDAP media type
         let http_data = HttpData::example().content_type(JSON_MEDIA_TYPE).build();
@@ -105,7 +102,7 @@ mod tests {
     fn check_exactly_rdap_media() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -117,7 +114,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata with content type that is not RDAP media type
         let http_data = HttpData::example().content_type(RDAP_MEDIA_TYPE).build();
@@ -136,7 +133,7 @@ mod tests {
     fn check_rdap_media_with_charset_parameter() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -148,7 +145,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata with content type that is not RDAP media type with charset parameter
         let mt = format!("{RDAP_MEDIA_TYPE};charset=UTF-8");
@@ -168,7 +165,7 @@ mod tests {
     fn check_media_type_absent() {
         // GIVEN an rdap response
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -180,7 +177,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN httpdata no content type
         let http_data = HttpData::example().build();
@@ -199,7 +196,7 @@ mod tests {
     fn check_cors_header_with_tig() {
         // GIVEN a response with gtld tig
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -211,7 +208,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN a cors header with *
         let http_data = HttpData::example().access_control_allow_origin("*").build();
@@ -230,7 +227,7 @@ mod tests {
     fn check_cors_header_with_foo_and_tig() {
         // GIVEN a response with gtld tig extension
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -242,7 +239,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN response with cors header of "foo" (not "*")
         let http_data = HttpData::example()
@@ -263,7 +260,7 @@ mod tests {
     fn check_no_cors_header_and_tig() {
         // GIVEN domain response with gtld tig extension id
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -275,7 +272,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN a response with no cors header
         let http_data = HttpData::example().build();
@@ -295,7 +292,7 @@ mod tests {
     fn given_response_is_over_https_and_tig() {
         // GIVEN response with gtld tig extension
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -307,7 +304,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN response is over https
         let http_data = HttpData::now().scheme("https").host("example.com").build();
@@ -323,7 +320,7 @@ mod tests {
     fn response_over_htttp_and_tig() {
         // GIVEN domain response with gtld tig extension
         let domain = Domain {
-            common: Common::level0_with_options()
+            common: Common::level0()
                 .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
                 .build(),
             object_common: ObjectCommon::domain().build(),
@@ -335,7 +332,7 @@ mod tests {
             public_ids: None,
             network: None,
         };
-        let rdap = RdapResponse::Domain(domain);
+        let rdap = domain.to_response();
 
         // and GIVEN response is with http (not https)
         let http_data = HttpData::now().scheme("http").host("example.com").build();

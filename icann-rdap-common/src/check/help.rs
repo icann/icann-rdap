@@ -9,14 +9,14 @@ impl GetChecks for Help {
         let sub_checks = if params.do_subchecks {
             let sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Help>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::Help,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }

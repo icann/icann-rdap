@@ -11,11 +11,11 @@ impl GetChecks for Network {
         let sub_checks = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Network>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Network>())),
+                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(cidr0) = &self.cidr0_cidrs {
                 cidr0.iter().for_each(|cidr| match cidr {
@@ -24,14 +24,14 @@ impl GetChecks for Network {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V4PrefixIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                         if v4.length.is_none() {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V4LengthIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                     }
@@ -40,14 +40,14 @@ impl GetChecks for Network {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V6PrefixIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                         if v6.length.is_none() {
                             sub_checks.push(Checks {
                                 rdap_struct: super::RdapStructure::Cidr0,
                                 items: vec![Check::Cidr0V6LengthIsAbsent.check_item()],
-                                sub_checks: Vec::new(),
+                                sub_checks: vec![],
                             })
                         }
                     }
@@ -55,10 +55,10 @@ impl GetChecks for Network {
             }
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         if let Some(name) = &self.name {
             if name.is_whitespace_or_empty() {
@@ -176,26 +176,26 @@ impl GetChecks for Network {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
 
     use rstest::rstest;
 
-    use crate::response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr};
-    use crate::response::types::{Common, ObjectCommon};
-    use crate::response::RdapResponse;
+    use crate::{
+        prelude::{Numberish, ToResponse},
+        response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+    };
 
     use crate::check::{Check, CheckParams, GetChecks};
 
     #[test]
-    fn GIVEN_network_with_empty_name_WHEN_checked_THEN_empty_name_check() {
+    fn check_network_with_empty_name() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         network.name = Some("".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -209,14 +209,14 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_with_empty_type_WHEN_checked_THEN_empty_type_check() {
+    fn check_network_with_empty_type() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         network.network_type = Some("".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -230,14 +230,14 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_with_no_start_WHEN_checked_THEN_missing_ip_check() {
+    fn check_network_with_no_start() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         network.start_address = None;
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -251,14 +251,14 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_with_no_end_WHEN_checked_THEN_missing_ip_check() {
+    fn check_network_with_no_end() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         network.end_address = None;
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -272,14 +272,14 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_with_bad_start_WHEN_checked_THEN_malformed_ip_check() {
+    fn check_network_with_bad_start() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         network.start_address = Some("____".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -293,14 +293,14 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_with_bad_end_WHEN_checked_THEN_malformed_ip_check() {
+    fn check_network_with_bad_end() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         network.end_address = Some("___".to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -314,16 +314,16 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_with_end_before_start_WHEN_checked_THEN_end_before_start_check() {
+    fn check_network_with_end_before_start() {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
         let swap = network.end_address.clone();
         network.end_address = network.start_address.clone();
         network.start_address = swap;
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -339,17 +339,14 @@ mod tests {
     #[rstest]
     #[case("10.0.0.0/8", "v6")]
     #[case("2000::/64", "v4")]
-    fn GIVEN_network_with_ip_version_WHEN_checked_THEN_version_match_check(
-        #[case] cidr: &str,
-        #[case] version: &str,
-    ) {
+    fn check_network_with_ip_version(#[case] cidr: &str, #[case] version: &str) {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
         network.ip_version = Some(version.to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -367,17 +364,14 @@ mod tests {
     #[case("2000::/64", "__")]
     #[case("10.0.0.0/8", "")]
     #[case("2000::/64", "")]
-    fn GIVEN_network_with_bad_ip_version_WHEN_checked_THEN_version_match_check(
-        #[case] cidr: &str,
-        #[case] version: &str,
-    ) {
+    fn check_network_with_bad_ip_version(#[case] cidr: &str, #[case] version: &str) {
         // GIVEN
-        let mut network = Network::basic()
+        let mut network = Network::builder()
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
         network.ip_version = Some(version.to_string());
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -391,17 +385,15 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_cidr0_with_v4_prefixex_WHEN_checked_THEN_no_prefix_check() {
+    fn check_cidr0_with_v4_prefixex() {
         // GIVEN
-        let network = Network::builder()
+        let network = Network::illegal()
             .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                 v4prefix: None,
-                length: Some(0),
+                length: Some(Numberish::<u8>::from(0)),
             })])
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::ip_network().build())
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -417,17 +409,15 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_cidr0_with_v6_prefixex_WHEN_checked_THEN_no_prefix_check() {
+    fn check_cidr0_with_v6_prefixex() {
         // GIVEN
-        let network = Network::builder()
+        let network = Network::illegal()
             .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                 v6prefix: None,
-                length: Some(0),
+                length: Some(Numberish::<u8>::from(0)),
             })])
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::ip_network().build())
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -443,17 +433,15 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_cidr0_with_v4_length_WHEN_checked_THEN_no_length_check() {
+    fn check_cidr0_with_v4_length() {
         // GIVEN
-        let network = Network::builder()
+        let network = Network::illegal()
             .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                 v4prefix: Some("0.0.0.0".to_string()),
                 length: None,
             })])
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::ip_network().build())
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -469,17 +457,15 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_cidr0_with_v6_length_WHEN_checked_THEN_no_length_check() {
+    fn check_cidr0_with_v6_length() {
         // GIVEN
-        let network = Network::builder()
+        let network = Network::illegal()
             .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                 v6prefix: Some("0.0.0.0".to_string()),
                 length: None,
             })])
-            .common(Common::builder().build())
-            .object_common(ObjectCommon::ip_network().build())
             .build();
-        let rdap = RdapResponse::Network(network);
+        let rdap = network.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));

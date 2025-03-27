@@ -1,26 +1,25 @@
 use std::any::TypeId;
 
-use icann_rdap_common::dns_types::{DnsAlgorithmType, DnsDigestType};
-use icann_rdap_common::response::domain::{Domain, SecureDns, Variant};
+use icann_rdap_common::{
+    dns_types::{DnsAlgorithmType, DnsDigestType},
+    response::{Domain, SecureDns, Variant},
+};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
 use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
 
-use super::redacted::REDACTED_TEXT;
-use super::types::{events_to_table, links_to_table, public_ids_to_table};
 use super::{
-    string::StringListUtil,
-    string::StringUtil,
+    redacted::REDACTED_TEXT,
+    string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    MdParams, ToMd, HR,
+    types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
-use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Domain>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 
@@ -123,10 +122,7 @@ fn do_variants(variants: &[Variant], params: MdParams) -> String {
     variants.iter().for_each(|v| {
         md.push_str(&format!(
             "|{}|{}|{}|",
-            v.relation
-                .as_deref()
-                .unwrap_or_default()
-                .make_title_case_list(),
+            v.relations().make_title_case_list(),
             v.idn_table.as_deref().unwrap_or_default(),
             v.variant_names
                 .as_deref()
@@ -154,26 +150,32 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
         .header_ref(&"DNSSEC Information")
         .and_nv_ref(
             &"Zone Signed",
-            &secure_dns.zone_signed.map(|b| b.to_string()),
+            &secure_dns.zone_signed.as_ref().map(|b| b.to_string()),
         )
         .and_nv_ref(
             &"Delegation Signed",
-            &secure_dns.delegation_signed.map(|b| b.to_string()),
+            &secure_dns.delegation_signed.as_ref().map(|b| b.to_string()),
         )
         .and_nv_ref(
             &"Max Sig Life",
-            &secure_dns.max_sig_life.map(|u| u.to_string()),
+            &secure_dns.max_sig_life.as_ref().map(|u| u.to_string()),
         );
 
     if let Some(ds_data) = &secure_dns.ds_data {
         for (i, ds) in ds_data.iter().enumerate() {
-            let header = format!("DS Data ({i})");
+            let header = format!("DS Data ({i})").replace_md_chars();
             table = table
                 .header_ref(&header)
-                .and_nv_ref(&"Key Tag", &ds.key_tag.map(|k| k.to_string()))
-                .and_nv_ref(&"Algorithm", &dns_algorithm(&ds.algorithm))
+                .and_nv_ref(&"Key Tag", &ds.key_tag.as_ref().map(|k| k.to_string()))
+                .and_nv_ref(
+                    &"Algorithm",
+                    &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
+                )
                 .and_nv_ref(&"Digest", &ds.digest)
-                .and_nv_ref(&"Digest Type", &dns_digest_type(&ds.digest_type));
+                .and_nv_ref(
+                    &"Digest Type",
+                    &dns_digest_type(&ds.digest_type.as_ref().and_then(|d| d.as_u8())),
+                );
             if let Some(events) = &ds.events {
                 let ds_header = format!("DS ({i}) Events");
                 table = events_to_table(events, table, &ds_header, params);
@@ -187,13 +189,16 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
 
     if let Some(key_data) = &secure_dns.key_data {
         for (i, key) in key_data.iter().enumerate() {
-            let header = format!("Key Data ({i})");
+            let header = format!("Key Data ({i})").replace_md_chars();
             table = table
                 .header_ref(&header)
-                .and_nv_ref(&"Flags", &key.flags.map(|k| k.to_string()))
-                .and_nv_ref(&"Protocol", &key.protocol.map(|a| a.to_string()))
+                .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
+                .and_nv_ref(&"Protocol", &key.protocol.as_ref().map(|a| a.to_string()))
                 .and_nv_ref(&"Public Key", &key.public_key)
-                .and_nv_ref(&"Algorithm", &dns_algorithm(&key.algorithm));
+                .and_nv_ref(
+                    &"Algorithm",
+                    &dns_algorithm(&key.algorithm.as_ref().and_then(|a| a.as_u8())),
+                );
             if let Some(events) = &key.events {
                 let key_header = format!("Key ({i}) Events");
                 table = events_to_table(events, table, &key_header, params);
@@ -204,6 +209,12 @@ fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
             }
         }
     }
+
+    // checks
+    let typeid = TypeId::of::<Domain>();
+    let check_params = CheckParams::from_md(params, typeid);
+    let checks = secure_dns.get_sub_checks(check_params);
+    table = checks_to_table(checks, table, params);
 
     // render table
     md.push_str(&table.to_md(params));
@@ -229,11 +240,11 @@ fn dns_digest_type(dt: &Option<u8>) -> Option<String> {
 impl MdUtil for Domain {
     fn get_header_text(&self) -> MdHeaderText {
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Domain {}", unicode_name.replace_ws())
+            format!("Domain {}", unicode_name.replace_md_chars())
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Domain {}", ldh_name.replace_ws())
+            format!("Domain {}", ldh_name.replace_md_chars())
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Domain {}", handle.replace_ws())
+            format!("Domain {}", handle.replace_md_chars())
         } else {
             "Domain".to_string()
         };

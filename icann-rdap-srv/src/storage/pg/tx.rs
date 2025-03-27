@@ -1,9 +1,9 @@
 #![allow(clippy::diverging_sub_expression)]
-use async_trait::async_trait;
-use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
+use {
+    async_trait::async_trait,
+    icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network, Rfc9083Error},
+    sqlx::{PgPool, Postgres},
 };
-use sqlx::{PgPool, Postgres};
 
 use crate::{
     error::RdapServerError,
@@ -18,17 +18,17 @@ pub struct PgTx<'a> {
 }
 
 impl<'a> PgTx<'a> {
-    pub async fn new(pg_pool: &PgPool) -> Result<PgTx<'a>, RdapServerError> {
+    pub async fn new(pg_pool: &PgPool) -> Result<Self, RdapServerError> {
         let db_tx = pg_pool.begin().await?;
-        Ok(PgTx { db_tx })
+        Ok(Self { db_tx })
     }
 
-    pub async fn new_truncate(pg_pool: &PgPool) -> Result<PgTx<'a>, RdapServerError> {
+    pub async fn new_truncate(pg_pool: &PgPool) -> Result<Self, RdapServerError> {
         let mut db_tx = pg_pool.begin().await?;
         // TODO actually complete this
         // this is just here to make sure something will compile
         sqlx::query("truncate domain").execute(&mut *db_tx).await?;
-        Ok(PgTx { db_tx })
+        Ok(Self { db_tx })
     }
 }
 
@@ -41,7 +41,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_entity_err(
         &mut self,
         _entity_id: &EntityId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -58,7 +58,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_domain_err(
         &mut self,
         _domain_id: &DomainId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -70,7 +70,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_nameserver_err(
         &mut self,
         _nameserver_id: &NameserverId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -82,7 +82,7 @@ impl TxHandle for PgTx<'_> {
     async fn add_autnum_err(
         &mut self,
         _autnum_id: &AutnumId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
@@ -94,14 +94,14 @@ impl TxHandle for PgTx<'_> {
     async fn add_network_err(
         &mut self,
         _network_id: &NetworkId,
-        _error: &icann_rdap_common::response::error::Error,
+        _error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         todo!()
     }
 
     async fn add_srv_help(
         &mut self,
-        _help: &icann_rdap_common::response::help::Help,
+        _help: &icann_rdap_common::response::Help,
         _host: Option<&str>,
     ) -> Result<(), RdapServerError> {
         todo!()

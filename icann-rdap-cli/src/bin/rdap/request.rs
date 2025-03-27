@@ -3,14 +3,15 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use icann_rdap_client::{
-    http::Client,
-    rdap::{rdap_url_request, QueryType, ResponseData},
+use {
+    icann_rdap_client::{
+        http::Client,
+        rdap::{rdap_url_request, QueryType, ResponseData},
+    },
+    icann_rdap_common::{httpdata::HttpData, response::GetSelfLink},
+    pct_str::{PctString, URIReserved},
+    tracing::{debug, info},
 };
-use icann_rdap_common::{httpdata::HttpData, response::GetSelfLink};
-use pct_str::PctString;
-use pct_str::URIReserved;
-use tracing::{debug, info};
 
 use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};
 
@@ -24,7 +25,6 @@ pub(crate) async fn do_request(
         info!("Cache has been disabled.")
     }
     let query_url = query_type.query_url(base_url)?;
-    debug!("Requesting RDAP URL {query_url}");
     if !processing_params.no_cache {
         let file_name = format!(
             "{}.cache",
@@ -34,7 +34,7 @@ pub(crate) async fn do_request(
         if path.exists() {
             let input = File::open(path)?;
             let buf = BufReader::new(input);
-            let mut lines = Vec::new();
+            let mut lines = vec![];
             for line in buf.lines() {
                 lines.push(line?)
             }

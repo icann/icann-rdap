@@ -1,21 +1,28 @@
 use std::{net::IpAddr, path::PathBuf};
 
-use clap::Parser;
-use icann_rdap_common::{check::CheckClass, response::RdapResponse, VERSION};
-use icann_rdap_srv::{
-    config::{data_dir, debug_config_vars, LOG},
-    error::RdapServerError,
-    storage::data::{
-        trigger_reload, trigger_update, AutnumOrError, DomainOrError, EntityOrError,
-        NameserverOrError, NetworkIdType, NetworkOrError, Template,
+use {
+    clap::Parser,
+    icann_rdap_common::{
+        check::CheckClass,
+        prelude::{Numberish, ToResponse},
+        response::RdapResponse,
+        VERSION,
     },
-    util::bin::check::{check_rdap, to_check_classes, CheckArgs},
-};
-use ipnet::IpNet;
-use serde_json::Value;
-use tracing::{debug, error, warn};
-use tracing_subscriber::{
-    fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    icann_rdap_srv::{
+        config::{data_dir, debug_config_vars, LOG},
+        error::RdapServerError,
+        storage::data::{
+            trigger_reload, trigger_update, AutnumOrError, DomainOrError, EntityOrError,
+            NameserverOrError, NetworkIdType, NetworkOrError, Template,
+        },
+        util::bin::check::{check_rdap, to_check_classes, CheckArgs},
+    },
+    ipnet::IpNet,
+    serde_json::Value,
+    tracing::{debug, error, warn},
+    tracing_subscriber::{
+        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    },
 };
 
 #[derive(Parser, Debug)]
@@ -177,11 +184,10 @@ fn verify_rdap_template(
                             if let Some(unicode_name) = id.unicode_name {
                                 domain.unicode_name = Some(unicode_name);
                             };
-                            errors_found |= check_rdap(RdapResponse::Domain(domain), check_types);
+                            errors_found |= check_rdap(domain.to_response(), check_types);
                         }
                         DomainOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -193,11 +199,10 @@ fn verify_rdap_template(
                         EntityOrError::EntityObject(entity) => {
                             let mut entity = entity.clone();
                             entity.object_common.handle = Some(id.handle);
-                            errors_found |= check_rdap(RdapResponse::Entity(entity), check_types);
+                            errors_found |= check_rdap(entity.to_response(), check_types);
                         }
                         EntityOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -212,12 +217,10 @@ fn verify_rdap_template(
                             if let Some(unicode_name) = id.unicode_name {
                                 nameserver.unicode_name = Some(unicode_name);
                             };
-                            errors_found |=
-                                check_rdap(RdapResponse::Nameserver(nameserver), check_types);
+                            errors_found |= check_rdap(nameserver.to_response(), check_types);
                         }
                         NameserverOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -228,13 +231,12 @@ fn verify_rdap_template(
                     match &autnum {
                         AutnumOrError::AutnumObject(autnum) => {
                             let mut autnum = autnum.clone();
-                            autnum.start_autnum = Some(id.start_autnum);
-                            autnum.end_autnum = Some(id.end_autnum);
-                            errors_found |= check_rdap(RdapResponse::Autnum(autnum), check_types);
+                            autnum.start_autnum = Some(Numberish::<u32>::from(id.start_autnum));
+                            autnum.end_autnum = Some(Numberish::<u32>::from(id.end_autnum));
+                            errors_found |= check_rdap(autnum.to_response(), check_types);
                         }
                         AutnumOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }
@@ -272,11 +274,10 @@ fn verify_rdap_template(
                                     network.end_address = Some(end_address);
                                 }
                             }
-                            errors_found |= check_rdap(RdapResponse::Network(network), check_types);
+                            errors_found |= check_rdap(network.to_response(), check_types);
                         }
                         NetworkOrError::ErrorResponse(error) => {
-                            errors_found |=
-                                check_rdap(RdapResponse::ErrorResponse(error.clone()), check_types);
+                            errors_found |= check_rdap(error.clone().to_response(), check_types);
                         }
                     };
                 }

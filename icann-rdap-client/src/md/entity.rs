@@ -1,7 +1,9 @@
 use std::any::TypeId;
 
-use icann_rdap_common::contact::{NameParts, PostalAddress};
-use icann_rdap_common::response::entity::{Entity, EntityRole};
+use icann_rdap_common::{
+    contact::{NameParts, PostalAddress},
+    response::{Entity, EntityRole},
+};
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
@@ -10,19 +12,17 @@ use crate::rdap::registered_redactions::{
     text_or_registered_redaction_for_role, RedactedName,
 };
 
-use super::redacted::REDACTED_TEXT;
-use super::types::public_ids_to_table;
 use super::{
+    redacted::REDACTED_TEXT,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    MdParams, ToMd, HR,
+    types::{checks_to_table, public_ids_to_table},
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
-use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Entity {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Entity>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 
@@ -69,7 +69,7 @@ impl ToMd for Entity {
         table = table
             .header_ref(&"Identifiers")
             .and_nv_ref(&"Handle", &entity_handle)
-            .and_nv_ul(&"Roles", self.roles.to_owned());
+            .and_nv_ul(&"Roles", Some(self.roles().to_vec()));
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -323,16 +323,13 @@ impl ToMpTable for Option<NameParts> {
 
 impl MdUtil for Entity {
     fn get_header_text(&self) -> MdHeaderText {
-        let role = self.roles.as_ref().map(|roles| {
-            roles
-                .first()
-                .unwrap_or(&String::default())
-                .replace_ws()
-                .to_title_case()
-        });
+        let role = self
+            .roles()
+            .first()
+            .map(|s| s.replace_md_chars().to_title_case());
         let header_text = if let Some(handle) = &self.object_common.handle {
             if let Some(role) = role {
-                format!("{} ({})", handle.replace_ws(), role)
+                format!("{} ({})", handle.replace_md_chars(), role)
             } else {
                 format!("Entity {}", handle)
             }

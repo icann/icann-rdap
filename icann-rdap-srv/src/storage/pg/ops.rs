@@ -1,8 +1,10 @@
 #![allow(clippy::diverging_sub_expression)]
-use async_trait::async_trait;
-use icann_rdap_common::response::RdapResponse;
-use sqlx::{query, PgPool};
-use tracing::{debug, info};
+use {
+    async_trait::async_trait,
+    icann_rdap_common::response::RdapResponse,
+    sqlx::{query, PgPool},
+    tracing::{debug, info},
+};
 
 use crate::{
     error::RdapServerError,

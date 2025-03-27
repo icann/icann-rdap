@@ -1,11 +1,13 @@
-use crate::response::RdapResponseError;
-use buildstructor::Builder;
-use serde::{Deserialize, Serialize};
+//! Server Help Response.
+use {
+    crate::prelude::{Extension, Notice},
+    serde::{Deserialize, Serialize},
+};
 
-use super::types::Common;
+use super::{to_opt_vec, Common, CommonFields, ToResponse};
 
 /// Represents an RDAP help response.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Help {
     #[serde(flatten)]
     pub common: Common,
@@ -13,20 +15,26 @@ pub struct Help {
 
 #[buildstructor::buildstructor]
 impl Help {
-    #[builder(entry = "basic")]
-    pub fn new_help(
-        notices: Vec<crate::response::types::Notice>,
-    ) -> Result<Self, RdapResponseError> {
-        let notices = (!notices.is_empty()).then_some(notices);
-        Help::new_help_with_options(notices)
+    /// Builds a basic help response.
+    #[builder(visibility = "pub")]
+    fn new(notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+        Self {
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
+        }
     }
+}
 
-    #[builder(entry = "with_options")]
-    pub fn new_help_with_options(
-        notices: Option<Vec<crate::response::types::Notice>>,
-    ) -> Result<Self, RdapResponseError> {
-        Ok(Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
-        })
+impl CommonFields for Help {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ToResponse for Help {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Help(Box::new(self))
     }
 }

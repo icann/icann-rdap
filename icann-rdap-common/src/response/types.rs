@@ -1,8 +1,10 @@
-use buildstructor::Builder;
-use serde::{Deserialize, Serialize};
-use strum_macros::{AsRefStr, Display, EnumString};
+//! Common data structures, etc...
+use {
+    serde::{Deserialize, Serialize},
+    strum_macros::{AsRefStr, Display, EnumString},
+};
 
-use super::{entity::Entity, redacted::Redacted};
+use super::lenient::VectorStringish;
 
 /// Represents an RDAP extension identifier.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -10,7 +12,7 @@ pub struct Extension(pub String);
 
 impl From<&str> for Extension {
     fn from(value: &str) -> Self {
-        Extension(value.to_string())
+        Self(value.to_string())
     }
 }
 
@@ -37,7 +39,7 @@ pub type RdapConformance = Vec<Extension>;
 ///
 /// ```rust
 /// use std::str::FromStr;
-/// use icann_rdap_common::response::types::ExtensionId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let cidr0 = ExtensionId::from_str("cidr0").unwrap();
 /// assert_eq!(cidr0, ExtensionId::Cidr0);
@@ -47,7 +49,7 @@ pub type RdapConformance = Vec<Extension>;
 /// To get the variants as a string:
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::ExtensionId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let s = ExtensionId::Cidr0.to_string();
 /// ```
@@ -55,7 +57,7 @@ pub type RdapConformance = Vec<Extension>;
 /// To get the variants as a &str:
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::ExtensionId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let s = ExtensionId::Cidr0.as_ref();
 /// ```
@@ -108,6 +110,7 @@ pub enum ExtensionId {
 }
 
 impl ExtensionId {
+    /// Gets an [Extension] from an Extension ID.
     pub fn to_extension(&self) -> Extension {
         Extension(self.to_string())
     }
@@ -134,7 +137,7 @@ pub type Links = Vec<Link>;
 /// which will not allow omision of required fields.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::Link;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let link = Link::builder()
 ///   .value("https://example.com/domains?domain=foo.*")
@@ -188,6 +191,7 @@ pub struct Link {
 
 #[buildstructor::buildstructor]
 impl Link {
+    /// True if the link `rel` property is equal to the given value.
     pub fn is_relation(&self, rel: &str) -> bool {
         let Some(link_rel) = &self.rel else {
             return false;
@@ -195,8 +199,9 @@ impl Link {
         link_rel == rel
     }
 
-    #[builder]
-    pub fn new(
+    /// Builds an RDAP link.
+    #[builder(visibility = "pub")]
+    fn new(
         value: String,
         href: String,
         rel: String,
@@ -206,7 +211,7 @@ impl Link {
         media_type: Option<String>,
     ) -> Self {
         let hreflang = hreflang.map(HrefLang::Lang);
-        Link {
+        Self {
             value: Some(value),
             rel: Some(rel),
             href: Some(href),
@@ -215,6 +220,65 @@ impl Link {
             media,
             media_type,
         }
+    }
+
+    /// Builds a potentially illegal RDAP link.
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(
+        value: Option<String>,
+        href: Option<String>,
+        rel: Option<String>,
+        hreflang: Option<String>,
+        title: Option<String>,
+        media: Option<String>,
+        media_type: Option<String>,
+    ) -> Self {
+        let hreflang = hreflang.map(HrefLang::Lang);
+        Link {
+            value,
+            rel,
+            href,
+            hreflang,
+            title,
+            media,
+            media_type,
+        }
+    }
+
+    /// Returns the value of the link.
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_deref()
+    }
+
+    /// Returns the relationship of the link.
+    pub fn rel(&self) -> Option<&str> {
+        self.rel.as_deref()
+    }
+
+    /// Returns the target URL of the link.
+    pub fn href(&self) -> Option<&str> {
+        self.href.as_deref()
+    }
+
+    /// Returns the language(s) of the linked resource.
+    pub fn hreflang(&self) -> Option<&HrefLang> {
+        self.hreflang.as_ref()
+    }
+
+    /// Returns the title of the link.
+    pub fn title(&self) -> Option<&str> {
+        self.title.as_deref()
+    }
+
+    /// Returns the media type for which the link is designed.
+    pub fn media(&self) -> Option<&str> {
+        self.media.as_deref()
+    }
+
+    /// Returns the media type of the linked resource.
+    pub fn media_type(&self) -> Option<&str> {
+        self.media_type.as_deref()
     }
 }
 
@@ -252,12 +316,11 @@ impl std::ops::Deref for Remark {
 ///
 /// RFC 9083 requires that `description` be required, but some servers
 /// do not follow this rule. Therefore, this structure allows `description`
-/// to be optional. It is recommended to use builder to construct an RFC valie
+/// to be optional. It is recommended to use builder to construct an RFC valid
 /// structure.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::NoticeOrRemark;
-/// use icann_rdap_common::response::types::Link;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let link = Link::builder()
 ///   .value("https://example.com/domains/foo.example")
@@ -271,6 +334,7 @@ impl std::ops::Deref for Remark {
 /// let nr = NoticeOrRemark::builder()
 ///   .title("Terms of Use")
 ///   .description_entry("Please read our terms of use.")
+///   .description_entry("TOS can be found in the link.")
 ///   .links(vec![link])
 ///   .build();
 /// ```
@@ -281,21 +345,145 @@ pub struct NoticeOrRemark {
     pub title: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<StringOrStringArray>,
+    pub description: Option<VectorStringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+
+    /// Description `type` as is found in the IANA registry.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nr_type: Option<String>,
 }
 
 #[buildstructor::buildstructor]
 impl NoticeOrRemark {
-    #[builder]
-    pub fn new(title: Option<String>, description: Vec<String>, links: Option<Links>) -> Self {
+    /// Builds an RDAP notice/remark.
+    #[builder(visibility = "pub")]
+    fn new(
+        title: Option<String>,
+        description: Vec<String>,
+        links: Vec<Link>,
+        nr_type: Option<String>,
+    ) -> Self {
         NoticeOrRemark {
             title,
-            description: Some(StringOrStringArray::Many(description)),
-            links,
+            description: Some(VectorStringish::from(description)),
+            links: (!links.is_empty()).then_some(links),
+            nr_type,
         }
+    }
+
+    /// Builds an illegal RDAP notice/remark.
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(
+        title: Option<String>,
+        description: Option<Vec<String>>,
+        links: Option<Vec<Link>>,
+        nr_type: Option<String>,
+    ) -> Self {
+        let d = description
+            .is_some()
+            .then_some(VectorStringish::from(description.unwrap()));
+        NoticeOrRemark {
+            title,
+            description: d,
+            links,
+            nr_type,
+        }
+    }
+
+    /// Converts to a [Notice].
+    pub fn notice(self) -> Notice {
+        Notice(self)
+    }
+
+    /// Converts to a [Remark].
+    pub fn remark(self) -> Remark {
+        Remark(self)
+    }
+
+    /// Returns the title of the notice/remark.
+    pub fn title(&self) -> Option<&str> {
+        self.title.as_deref()
+    }
+
+    /// Returns the description of the notice/remark.
+    pub fn description(&self) -> Option<&VectorStringish> {
+        self.description.as_ref()
+    }
+
+    /// Returns the links associated with the notice/remark.
+    pub fn links(&self) -> Option<&Links> {
+        self.links.as_ref()
+    }
+
+    /// Returns the `type` of the notice or remark.
+    ///
+    /// These values are suppose to come from the IANA RDAP registry.
+    pub fn nr_type(&self) -> Option<&str> {
+        self.nr_type.as_deref()
+    }
+}
+
+/// Conversion for collection of notices.
+pub trait ToNotices {
+    /// Convert to a collection of notices.
+    fn to_notices(self) -> Vec<Notice>;
+    /// Convert to a collection if some, otherwise none.
+    fn to_opt_notices(self) -> Option<Vec<Notice>>;
+}
+
+impl ToNotices for &[NoticeOrRemark] {
+    fn to_notices(self) -> Vec<Notice> {
+        self.iter().map(|n| Notice(n.clone())).collect::<Notices>()
+    }
+
+    fn to_opt_notices(self) -> Option<Vec<Notice>> {
+        let notices = self.to_notices();
+        (!notices.is_empty()).then_some(notices)
+    }
+}
+
+impl ToNotices for Vec<NoticeOrRemark> {
+    fn to_notices(self) -> Vec<Notice> {
+        self.into_iter().map(Notice).collect::<Notices>()
+    }
+
+    fn to_opt_notices(self) -> Option<Vec<Notice>> {
+        let notices = self.to_notices();
+        (!notices.is_empty()).then_some(notices)
+    }
+}
+
+/// Conversion for collection of remarks.
+pub trait ToRemarks {
+    /// Convert to a collection of remarks.
+    fn to_remarks(self) -> Vec<Remark>;
+    /// Convert to a collection if some, otherwise none.
+    fn to_opt_remarks(self) -> Option<Vec<Remark>>;
+}
+
+impl ToRemarks for &[NoticeOrRemark] {
+    fn to_remarks(self) -> Vec<Remark> {
+        self.iter().map(|n| Remark(n.clone())).collect::<Remarks>()
+    }
+
+    fn to_opt_remarks(self) -> Option<Vec<Remark>> {
+        let remarks = self.to_remarks();
+        (!remarks.is_empty()).then_some(remarks)
+    }
+}
+
+impl ToRemarks for Vec<NoticeOrRemark> {
+    fn to_remarks(self) -> Vec<Remark> {
+        self.into_iter().map(Remark).collect::<Remarks>()
+    }
+
+    fn to_opt_remarks(self) -> Option<Vec<Remark>> {
+        let remarks = self.to_remarks();
+        (!remarks.is_empty()).then_some(remarks)
     }
 }
 
@@ -311,8 +499,7 @@ pub type Events = Vec<Event>;
 /// Use of the builder to contruct an RFC valid structure is recommended.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::Event;
-/// use icann_rdap_common::response::types::Link;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let link = Link::builder()
 ///   .value("https://example.com/domains/foo.example")
@@ -360,42 +547,56 @@ pub struct Event {
 
 #[buildstructor::buildstructor]
 impl Event {
-    #[builder]
-    pub fn new(
+    /// Builds an Event.
+    #[builder(visibility = "pub")]
+    fn new(
         event_action: String,
         event_date: String,
         event_actor: Option<String>,
         links: Option<Links>,
     ) -> Self {
-        Event {
+        Self {
             event_action: Some(event_action),
             event_actor,
             event_date: Some(event_date),
             links,
         }
     }
-}
 
-/// Represents an item in an RDAP status array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct StatusValue(pub String);
-
-impl std::ops::Deref for StatusValue {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(
+        event_action: Option<String>,
+        event_date: Option<String>,
+        event_actor: Option<String>,
+        links: Option<Links>,
+    ) -> Self {
+        Event {
+            event_action,
+            event_actor,
+            event_date,
+            links,
+        }
     }
-}
 
-/// An array of status values.
-pub type Status = Vec<StatusValue>;
+    /// Returns the action associated with the event.
+    pub fn event_action(&self) -> Option<&str> {
+        self.event_action.as_deref()
+    }
 
-pub fn to_option_status(values: Vec<String>) -> Option<Status> {
-    if !values.is_empty() {
-        Some(values.into_iter().map(StatusValue).collect::<Status>())
-    } else {
-        None
+    /// Returns the actor associated with the event.
+    pub fn event_actor(&self) -> Option<&str> {
+        self.event_actor.as_deref()
+    }
+
+    /// Returns the date and time of the event.
+    pub fn event_date(&self) -> Option<&str> {
+        self.event_date.as_deref()
+    }
+
+    /// Returns the links associated with the event.
+    pub fn links(&self) -> Option<&Links> {
+        self.links.as_ref()
     }
 }
 
@@ -414,7 +615,7 @@ pub type PublicIds = Vec<PublicId>;
 /// Use of the builder to contruct an RFC valid structure is recommended.
 ///
 /// ```rust
-/// use icann_rdap_common::response::types::PublicId;
+/// use icann_rdap_common::prelude::*;
 ///
 /// let public_id = PublicId::builder()
 ///   .id_type("IANA Registrar ID")
@@ -435,264 +636,45 @@ pub struct PublicId {
 
 #[buildstructor::buildstructor]
 impl PublicId {
-    #[builder]
-    pub fn new(id_type: String, identifier: String) -> Self {
+    /// Builds a public ID.
+    #[builder(visibility = "pub")]
+    fn new(id_type: String, identifier: String) -> Self {
         PublicId {
             id_type: Some(id_type),
             identifier: Some(identifier),
         }
     }
-}
 
-/// Holds those types that are common in all responses.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
-pub struct Common {
-    #[serde(rename = "rdapConformance")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rdap_conformance: Option<RdapConformance>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub notices: Option<Notices>,
-}
-
-#[buildstructor::buildstructor]
-impl Common {
-    #[builder(entry = "level0")]
-    pub fn new_level0(extensions: Vec<Extension>, notices: Vec<Notice>) -> Self {
-        let notices = (!notices.is_empty()).then_some(notices);
-        Common::new_level0_with_options(extensions, notices)
-    }
-
-    #[builder(entry = "level0_with_options")]
-    pub fn new_level0_with_options(
-        mut extensions: Vec<Extension>,
-        notices: Option<Vec<Notice>>,
-    ) -> Self {
-        let mut standard_extensions = vec![ExtensionId::RdapLevel0.to_extension()];
-        extensions.append(&mut standard_extensions);
-        Self {
-            rdap_conformance: Some(extensions),
-            notices,
-        }
-    }
-}
-
-/// Holds those types that are common in all object classes.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
-pub struct ObjectCommon {
-    #[serde(rename = "objectClassName")]
-    pub object_class_name: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remarks: Option<Remarks>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub links: Option<Links>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub events: Option<Events>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "port43")]
-    pub port_43: Option<Port43>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub entities: Option<Vec<Entity>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub redacted: Option<Vec<Redacted>>,
-}
-
-#[buildstructor::buildstructor]
-impl ObjectCommon {
-    #[builder(entry = "domain")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_domain(
-        handle: Option<String>,
-        remarks: Option<Remarks>,
-        links: Option<Links>,
-        events: Option<Events>,
-        status: Option<Status>,
-        port_43: Option<Port43>,
-        entities: Option<Vec<Entity>>,
-        redacted: Option<Vec<Redacted>>,
-    ) -> Self {
-        Self {
-            object_class_name: "domain".to_string(),
-            handle,
-            remarks,
-            links,
-            events,
-            status,
-            port_43,
-            entities,
-            redacted,
+    /// Builds an illegal public ID.
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(dead_code)]
+    fn new_illegal(id_type: Option<String>, identifier: Option<String>) -> Self {
+        PublicId {
+            id_type,
+            identifier,
         }
     }
 
-    #[builder(entry = "ip_network")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_ip_network(
-        handle: Option<String>,
-        remarks: Option<Remarks>,
-        links: Option<Links>,
-        events: Option<Events>,
-        status: Option<Status>,
-        port_43: Option<Port43>,
-        entities: Option<Vec<Entity>>,
-        redacted: Option<Vec<Redacted>>,
-    ) -> Self {
-        Self {
-            object_class_name: "ip network".to_string(),
-            handle,
-            remarks,
-            links,
-            events,
-            status,
-            port_43,
-            entities,
-            redacted,
-        }
+    /// Returns the type of the public ID.
+    pub fn id_type(&self) -> Option<&str> {
+        self.id_type.as_deref()
     }
 
-    #[builder(entry = "autnum")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_autnum(
-        handle: Option<String>,
-        remarks: Option<Remarks>,
-        links: Option<Links>,
-        events: Option<Events>,
-        status: Option<Status>,
-        port_43: Option<Port43>,
-        entities: Option<Vec<Entity>>,
-        redacted: Option<Vec<Redacted>>,
-    ) -> Self {
-        Self {
-            object_class_name: "autnum".to_string(),
-            handle,
-            remarks,
-            links,
-            events,
-            status,
-            port_43,
-            entities,
-            redacted,
-        }
-    }
-
-    #[builder(entry = "nameserver")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_nameserver(
-        handle: Option<String>,
-        remarks: Option<Remarks>,
-        links: Option<Links>,
-        events: Option<Events>,
-        status: Option<Status>,
-        port_43: Option<Port43>,
-        entities: Option<Vec<Entity>>,
-        redacted: Option<Vec<Redacted>>,
-    ) -> Self {
-        Self {
-            object_class_name: "nameserver".to_string(),
-            handle,
-            remarks,
-            links,
-            events,
-            status,
-            port_43,
-            entities,
-            redacted,
-        }
-    }
-
-    #[builder(entry = "entity")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_entity(
-        handle: Option<String>,
-        remarks: Option<Remarks>,
-        links: Option<Links>,
-        events: Option<Events>,
-        status: Option<Status>,
-        port_43: Option<Port43>,
-        entities: Option<Vec<Entity>>,
-        redacted: Option<Vec<Redacted>>,
-    ) -> Self {
-        Self {
-            object_class_name: "entity".to_string(),
-            handle,
-            remarks,
-            links,
-            events,
-            status,
-            port_43,
-            entities,
-            redacted,
-        }
-    }
-
-    /// This will remove all other self links and place the provided link
-    /// into the Links. This method will also set the "rel" attribute
-    /// to "self" on the provided link.
-    pub fn set_self_link(mut self, mut link: Link) -> Self {
-        link.rel = Some("self".to_string());
-        if let Some(links) = self.links {
-            let mut new_links = links
-                .into_iter()
-                .filter(|link| !link.is_relation("self"))
-                .collect::<Vec<Link>>();
-            new_links.push(link);
-            self.links = Some(new_links);
-        } else {
-            self.links = Some(vec![link]);
-        }
-        self
-    }
-
-    pub fn get_self_link(&self) -> Option<&Link> {
-        if let Some(links) = &self.links {
-            links.iter().find(|link| link.is_relation("self"))
-        } else {
-            None
-        }
-    }
-}
-
-/// Provides a choice between a string or an array of strings.
-///
-/// This is provided to be lenient with misbehaving RDAP servers that
-/// serve a string when they are suppose to be serving an array of
-/// strings. Usage of a string where an array of strings is an error.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum StringOrStringArray {
-    Many(Vec<String>),
-    One(String),
-}
-
-impl StringOrStringArray {
-    pub fn many(&self) -> Vec<String> {
-        match self {
-            StringOrStringArray::Many(many) => many.clone(),
-            StringOrStringArray::One(one) => vec![one.to_owned()],
-        }
+    /// Returns the identifier of the public ID.
+    pub fn identifier(&self) -> Option<&str> {
+        self.identifier.as_deref()
     }
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::response::types::{
-        Extension, Notice, Notices, RdapConformance, Remark, Remarks, Status, StatusValue,
-        StringOrStringArray,
+    use crate::{
+        prelude::ObjectCommon,
+        response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks},
     };
 
-    use super::{Event, Link, Links, NoticeOrRemark, ObjectCommon, PublicId};
+    use super::{Event, Link, Links, NoticeOrRemark, PublicId};
 
     #[test]
     fn GIVEN_rdap_conformance_WHEN_serialize_THEN_array_of_strings() {
@@ -849,11 +831,7 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.title.as_ref().unwrap();
-        let StringOrStringArray::Many(description) =
-            actual.description.expect("must have description")
-        else {
-            panic!();
-        };
+        let description: Vec<String> = actual.description.expect("must have description").into();
         assert_eq!(description.len(), 2);
         actual.links.unwrap();
     }
@@ -923,22 +901,6 @@ mod tests {
         // THEN
         let actual = actual.unwrap();
         actual.event_actor.as_ref().unwrap();
-    }
-
-    #[test]
-    fn GIVEN_status_array_WHEN_serialize_THEN_array_of_strings() {
-        // GIVEN
-        let status: Status = vec![
-            StatusValue("foo".to_string()),
-            StatusValue("bar".to_string()),
-        ];
-
-        // WHEN
-        let actual = serde_json::to_string(&status).unwrap();
-
-        // THEN
-        let expected = r#"["foo","bar"]"#;
-        assert_eq!(actual, expected);
     }
 
     #[test]

@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::{
     check::{CheckParams, GetChecks, GetSubChecks},
-    response::autnum::Autnum,
+    response::Autnum,
 };
 
 use super::{
@@ -14,7 +14,7 @@ use super::{
 
 impl ToMd for Autnum {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Autnum>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params.from_parent(typeid)));
 
@@ -36,9 +36,12 @@ impl ToMd for Autnum {
             .header_ref(&"Identifiers")
             .and_nv_ref(
                 &"Start AS Number",
-                &self.start_autnum.map(|n| n.to_string()),
+                &self.start_autnum.as_ref().map(|n| n.to_string()),
             )
-            .and_nv_ref(&"End AS Number", &self.end_autnum.map(|n| n.to_string()))
+            .and_nv_ref(
+                &"End AS Number",
+                &self.end_autnum.as_ref().map(|n| n.to_string()),
+            )
             .and_nv_ref(&"Handle", &self.object_common.handle)
             .and_nv_ref(&"Autnum Type", &self.autnum_type)
             .and_nv_ref(&"Autnum Name", &self.name)
@@ -85,15 +88,15 @@ impl MdUtil for Autnum {
         let header_text = if self.start_autnum.is_some() && self.end_autnum.is_some() {
             format!(
                 "Autonomous Systems {} - {}",
-                &self.start_autnum.unwrap().replace_ws(),
-                &self.end_autnum.unwrap().replace_ws()
+                &self.start_autnum.as_ref().unwrap().replace_md_chars(),
+                &self.end_autnum.as_ref().unwrap().replace_md_chars()
             )
         } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {}", start_autnum.replace_ws())
+            format!("Autonomous System {}", start_autnum.replace_md_chars())
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {}", handle.replace_ws())
+            format!("Autonomous System {}", handle.replace_md_chars())
         } else if let Some(name) = &self.name {
-            format!("Autonomous System {}", name.replace_ws())
+            format!("Autonomous System {}", name.replace_md_chars())
         } else {
             "Autonomous System".to_string()
         };

@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use icann_rdap_common::response::nameserver::Nameserver;
+use icann_rdap_common::response::Nameserver;
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
@@ -8,13 +8,12 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
-    MdParams, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
 };
-use super::{FromMd, MdHeaderText, MdUtil};
 
 impl ToMd for Nameserver {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Nameserver>();
+        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
 
         // other common stuff
@@ -42,10 +41,10 @@ impl ToMd for Nameserver {
             .and_nv_ref(&"Handle", &self.object_common.handle);
         if let Some(addresses) = &self.ip_addresses {
             if let Some(v4) = &addresses.v4 {
-                table = table.nv_ul_ref(&"Ipv4", v4.iter().collect());
+                table = table.nv_ul_ref(&"Ipv4", v4.vec().iter().collect());
             }
             if let Some(v6) = &addresses.v6 {
-                table = table.nv_ul_ref(&"Ipv6", v6.iter().collect());
+                table = table.nv_ul_ref(&"Ipv6", v6.vec().iter().collect());
             }
         }
 
@@ -88,11 +87,11 @@ impl ToMd for Nameserver {
 impl MdUtil for Nameserver {
     fn get_header_text(&self) -> MdHeaderText {
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Nameserver {}", unicode_name.replace_ws())
+            format!("Nameserver {}", unicode_name.replace_md_chars())
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Nameserver {}", ldh_name.replace_ws())
+            format!("Nameserver {}", ldh_name.replace_md_chars())
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Nameserver {}", handle.replace_ws())
+            format!("Nameserver {}", handle.replace_md_chars())
         } else {
             "Domain".to_string()
         };

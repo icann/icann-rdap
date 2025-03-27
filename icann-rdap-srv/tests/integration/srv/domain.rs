@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_client::{
-    http::create_client,
-    http::ClientConfig,
-    rdap::{rdap_request, QueryType},
-    RdapClientError,
+use {
+    icann_rdap_client::{
+        http::{create_client, ClientConfig},
+        rdap::{rdap_request, QueryType},
+        RdapClientError,
+    },
+    icann_rdap_common::response::Domain,
+    icann_rdap_srv::storage::{CommonConfig, StoreOps},
 };
-use icann_rdap_common::response::domain::Domain;
-use icann_rdap_srv::storage::{CommonConfig, StoreOps};
 
 use crate::test_jig::SrvTestJig;
 
@@ -16,7 +17,7 @@ async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -74,7 +75,7 @@ async fn GIVEN_server_with_domain_and_search_disabled_WHEN_query_domain_THEN_sta
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -103,7 +104,7 @@ async fn GIVEN_server_with_domain_and_search_enabled_WHEN_query_domain_THEN_stat
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");

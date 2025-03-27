@@ -25,9 +25,15 @@ enum Row {
     MultiValue(Vec<String>),
 }
 
+impl Default for MultiPartTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MultiPartTable {
     pub fn new() -> Self {
-        Self { rows: Vec::new() }
+        Self { rows: vec![] }
     }
 
     /// Add a header row.
@@ -40,7 +46,7 @@ impl MultiPartTable {
     pub fn nv_ref(mut self, name: &impl ToString, value: &impl ToString) -> Self {
         self.rows.push(Row::NameValue((
             name.to_string(),
-            value.to_string().replace_ws(),
+            value.to_string().replace_md_chars(),
         )));
         self
     }
@@ -49,8 +55,15 @@ impl MultiPartTable {
     pub fn nv(mut self, name: &impl ToString, value: impl ToString) -> Self {
         self.rows.push(Row::NameValue((
             name.to_string(),
-            value.to_string().replace_ws(),
+            value.to_string().replace_md_chars(),
         )));
+        self
+    }
+
+    /// Add a name/value row without processing whitespace or markdown charaters.
+    pub fn nv_raw(mut self, name: &impl ToString, value: impl ToString) -> Self {
+        self.rows
+            .push(Row::NameValue((name.to_string(), value.to_string())));
         self
     }
 
@@ -60,12 +73,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    format!("* {}", v.to_string().replace_ws()),
+                    format!("* {}", v.to_string().replace_md_chars()),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    format!("* {}", v.to_string().replace_ws()),
+                    format!("* {}", v.to_string().replace_md_chars()),
                 )))
             }
         });
@@ -78,12 +91,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    format!("* {}", v.to_string().replace_ws()),
+                    format!("* {}", v.to_string().replace_md_chars()),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    format!("* {}", v.to_string().replace_ws()),
+                    format!("* {}", v.to_string().replace_md_chars()),
                 )))
             }
         });
@@ -98,7 +111,7 @@ impl MultiPartTable {
                 .as_deref()
                 .unwrap_or_default()
                 .to_string()
-                .replace_ws(),
+                .replace_md_chars(),
         )));
         self
     }
@@ -135,19 +148,19 @@ impl MultiPartTable {
     pub fn summary(mut self, header_text: MdHeaderText) -> Self {
         self.rows.push(Row::NameValue((
             "Summary".to_string(),
-            header_text.to_string().replace_ws().to_string(),
+            header_text.to_string().replace_md_chars().to_string(),
         )));
         // note that termimad has limits on list depth, so we can't go too crazy.
         // however, this seems perfectly reasonable for must RDAP use cases.
         for level1 in header_text.children {
             self.rows.push(Row::NameValue((
                 "".to_string(),
-                format!("* {}", level1.to_string().replace_ws()),
+                format!("* {}", level1.to_string().replace_md_chars()),
             )));
             for level2 in level1.children {
                 self.rows.push(Row::NameValue((
                     "".to_string(),
-                    format!("  * {}", level2.to_string().replace_ws()),
+                    format!("  * {}", level2.to_string().replace_md_chars()),
                 )));
             }
         }
@@ -157,7 +170,7 @@ impl MultiPartTable {
     /// Adds a multivalue row.
     pub fn multi(mut self, values: Vec<String>) -> Self {
         self.rows.push(Row::MultiValue(
-            values.iter().map(|s| s.replace_ws()).collect(),
+            values.iter().map(|s| s.replace_md_chars()).collect(),
         ));
         self
     }
@@ -165,7 +178,23 @@ impl MultiPartTable {
     /// Adds a multivalue row.
     pub fn multi_ref(mut self, values: &[&str]) -> Self {
         self.rows.push(Row::MultiValue(
-            values.iter().map(|s| s.replace_ws()).collect(),
+            values.iter().map(|s| s.replace_md_chars()).collect(),
+        ));
+        self
+    }
+
+    /// Adds a multivalue row without processing whitespace or markdown characters.
+    pub fn multi_raw(mut self, values: Vec<String>) -> Self {
+        self.rows.push(Row::MultiValue(
+            values.iter().map(|s| s.to_owned()).collect(),
+        ));
+        self
+    }
+
+    /// Adds a multivalue row without processing whitespace or markdown characters.
+    pub fn multi_raw_ref(mut self, values: &[&str]) -> Self {
+        self.rows.push(Row::MultiValue(
+            values.iter().map(|s| s.to_string()).collect(),
         ));
         self
     }
@@ -244,10 +273,7 @@ impl ToMd for MultiPartTable {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::{
-        httpdata::HttpData,
-        response::{types::Common, RdapResponse},
-    };
+    use icann_rdap_common::{httpdata::HttpData, prelude::ToResponse, response::Rfc9083Error};
 
     use crate::{
         md::ToMd,
@@ -267,12 +293,10 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .common(Common::builder().build())
-                .error_code(500)
-                .build(),
-        );
+        let rdap_response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -299,12 +323,10 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .common(Common::builder().build())
-                .error_code(500)
-                .build(),
-        );
+        let rdap_response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -332,12 +354,10 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .common(Common::builder().build())
-                .error_code(500)
-                .build(),
-        );
+        let rdap_response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -367,12 +387,10 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .common(Common::builder().build())
-                .error_code(500)
-                .build(),
-        );
+        let rdap_response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -400,12 +418,10 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .common(Common::builder().build())
-                .error_code(500)
-                .build(),
-        );
+        let rdap_response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,
@@ -439,12 +455,10 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .common(Common::builder().build())
-                .error_code(500)
-                .build(),
-        );
+        let rdap_response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         let actual = table.to_md(crate::md::MdParams {
             heading_level: 0,
             root: &rdap_response,

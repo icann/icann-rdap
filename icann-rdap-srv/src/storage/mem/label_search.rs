@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use ab_radix_trie::Trie;
-use buildstructor::Builder;
+use {ab_radix_trie::Trie, buildstructor::Builder};
 
 use crate::error::RdapServerError;
 

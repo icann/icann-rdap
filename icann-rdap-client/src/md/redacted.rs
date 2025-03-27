@@ -1,13 +1,17 @@
 use std::str::FromStr;
 
-use icann_rdap_common::response::redacted::Redacted;
-use jsonpath::replace_with;
-use jsonpath_lib as jsonpath;
-use jsonpath_rust::{JsonPathFinder, JsonPathInst};
-use serde_json::{json, Value};
+use {
+    icann_rdap_common::response::redacted::Redacted,
+    jsonpath::replace_with,
+    jsonpath_lib as jsonpath,
+    jsonpath_rust::{JsonPathFinder, JsonPathInst},
+    serde_json::{json, Value},
+};
 
-use super::{string::StringUtil, table::MultiPartTable, MdOptions, MdParams, ToMd};
-use icann_rdap_common::response::RdapResponse;
+use {
+    super::{string::StringUtil, table::MultiPartTable, MdOptions, MdParams, ToMd},
+    icann_rdap_common::response::RdapResponse,
+};
 
 /// The text to appear if something is redacted.
 ///
@@ -218,10 +222,10 @@ fn get_string_from_map(map: &serde_json::Map<String, Value>, key: &str) -> Strin
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use serde_json::Value;
-    use std::error::Error;
-    use std::fs::File;
-    use std::io::Read;
+    use {
+        serde_json::Value,
+        std::{error::Error, fs::File, io::Read},
+    };
 
     fn process_redacted_file(file_path: &str) -> Result<String, Box<dyn Error>> {
         let mut file = File::open(file_path)?;

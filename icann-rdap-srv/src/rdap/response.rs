@@ -1,35 +1,37 @@
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
-use http::StatusCode;
-use icann_rdap_common::{
-    media_types::RDAP_MEDIA_TYPE,
-    response::{error::Error, types::Common, RdapResponse},
-};
-use lazy_static::lazy_static;
-use tracing::warn;
+use std::sync::LazyLock;
 
-lazy_static! {
-    pub static ref NOT_FOUND: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
-            .error_code(404)
-            .common(Common::builder().build())
-            .build()
-    );
-    pub static ref NOT_IMPLEMENTED: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
-            .error_code(501)
-            .common(Common::builder().build())
-            .build()
-    );
-    pub static ref BAD_REQUEST: RdapResponse = RdapResponse::ErrorResponse(
-        Error::builder()
-            .error_code(400)
-            .common(Common::builder().build())
-            .build()
-    );
-}
+use {
+    axum::{
+        response::{IntoResponse, Response},
+        Json,
+    },
+    http::StatusCode,
+    icann_rdap_common::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::ToResponse,
+        response::{RdapResponse, Rfc9083Error},
+    },
+    tracing::warn,
+};
+
+pub static NOT_FOUND: LazyLock<RdapResponse> = LazyLock::new(|| {
+    Rfc9083Error::builder()
+        .error_code(404)
+        .build()
+        .to_response()
+});
+pub static NOT_IMPLEMENTED: LazyLock<RdapResponse> = LazyLock::new(|| {
+    Rfc9083Error::builder()
+        .error_code(501)
+        .build()
+        .to_response()
+});
+pub static BAD_REQUEST: LazyLock<RdapResponse> = LazyLock::new(|| {
+    Rfc9083Error::builder()
+        .error_code(400)
+        .build()
+        .to_response()
+});
 
 pub(crate) const RDAP_HEADERS: [(&str, &str); 1] = [("content-type", RDAP_MEDIA_TYPE)];
 
@@ -89,13 +91,13 @@ impl ResponseUtil for RdapResponse {
 #[allow(non_snake_case)]
 mod tests {
 
-    use axum::response::IntoResponse;
-    use http::StatusCode;
-    use icann_rdap_common::response::{
-        domain::Domain,
-        error::Error,
-        types::{Link, Notice, NoticeOrRemark},
-        RdapResponse,
+    use {
+        axum::response::IntoResponse,
+        http::StatusCode,
+        icann_rdap_common::{
+            prelude::ToResponse,
+            response::{Domain, Link, Notice, NoticeOrRemark, Rfc9083Error},
+        },
     };
 
     use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};
@@ -103,7 +105,10 @@ mod tests {
     #[test]
     fn GIVEN_non_error_WHEN_exec_response_THEN_status_code_is_200() {
         // GIVEN
-        let domain = RdapResponse::Domain(Domain::basic().ldh_name("foo.example").build());
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .build()
+            .to_response();
 
         // WHEN
         let actual = domain.response();
@@ -137,20 +142,19 @@ mod tests {
     #[test]
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
-        let given = RdapResponse::ErrorResponse(
-            Error::basic()
-                .error_code(307)
-                .notice(Notice(
-                    NoticeOrRemark::builder()
-                        .links(vec![Link::builder()
-                            .href("https://other.example.com")
-                            .value("https://other.example.com")
-                            .rel("related")
-                            .build()])
-                        .build(),
-                ))
-                .build(),
-        );
+        let given = Rfc9083Error::builder()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("related")
+                        .build()])
+                    .build(),
+            ))
+            .build()
+            .to_response();
 
         // WHEN
         let actual = given.first_notice_link_href();

@@ -1,13 +1,25 @@
-use buildstructor::Builder;
-use serde::{Deserialize, Serialize};
+//! RFC 9083 Error
+use {
+    crate::prelude::Extension,
+    serde::{Deserialize, Serialize},
+};
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
-use super::types::{Common, Link, Notice, NoticeOrRemark};
+use super::{
+    types::{Link, Notice, NoticeOrRemark},
+    Common, CommonFields, ToResponse,
+};
 
-/// Represents an RDAP error response.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
-pub struct Error {
+/// Represents an error response from an RDAP server.
+///
+/// This structure represents the JSON returned by an RDAP server
+/// describing an error.
+/// See [RFC 9083, Section 6](https://datatracker.ietf.org/doc/html/rfc9083#name-error-response-body).
+///
+/// Do not confuse this with [crate::response::RdapResponseError].
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Rfc9083Error {
     #[serde(flatten)]
     pub common: Common,
 
@@ -22,20 +34,25 @@ pub struct Error {
 }
 
 #[buildstructor::buildstructor]
-impl Error {
-    #[builder(entry = "basic")]
-    pub fn new_error_code(error_code: u16, notices: Vec<crate::response::types::Notice>) -> Self {
+impl Rfc9083Error {
+    /// Creates a new RFC 9083 Error for a specific HTTP error code.
+    #[builder(visibility = "pub")]
+    fn new(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
-            common: Common::builder().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(notices)
+                .build(),
             error_code,
             title: None,
             description: None,
         }
     }
 
-    #[builder(entry = "redirect")]
-    pub fn new_redirect(url: String) -> Self {
+    /// Creates an RFC 9083 error for an HTTP redirect.
+    #[builder(entry = "redirect", visibility = "pub")]
+    fn new_redirect(url: String, extensions: Vec<Extension>) -> Self {
         let links = vec![Link::builder()
             .href(&url)
             .value(&url)
@@ -44,7 +61,10 @@ impl Error {
             .build()];
         let notices = vec![Notice(NoticeOrRemark::builder().links(links).build())];
         Self {
-            common: Common::builder().notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .notices(notices)
+                .build(),
             error_code: 307,
             title: None,
             description: None,
@@ -56,15 +76,27 @@ impl Error {
     }
 }
 
+impl CommonFields for Rfc9083Error {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ToResponse for Rfc9083Error {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::ErrorResponse(Box::new(self))
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use super::Error;
+    use super::Rfc9083Error;
 
     #[test]
     fn GIVEN_error_code_301_WHEN_is_redirect_THEN_true() {
         // GIVEN
-        let e = Error::redirect().url("https://foo.example").build();
+        let e = Rfc9083Error::redirect().url("https://foo.example").build();
 
         // WHEN
         let actual = e.is_redirect();
@@ -76,7 +108,7 @@ mod tests {
     #[test]
     fn GIVEN_error_code_404_WHEN_is_redirect_THEN_false() {
         // GIVEN
-        let e = Error::basic().error_code(404).build();
+        let e = Rfc9083Error::builder().error_code(404).build();
 
         // WHEN
         let actual = e.is_redirect();

@@ -1,32 +1,30 @@
 use std::{fs, path::PathBuf};
 
-use clap::Parser;
-use icann_rdap_common::{
-    contact::{Contact, Email, Phone, PostalAddress},
-    media_types::RDAP_MEDIA_TYPE,
-    response::{
-        autnum::Autnum,
-        domain::Domain,
-        entity::Entity,
-        nameserver::Nameserver,
-        network::Network,
-        types::{Link, Notice, NoticeOrRemark, Remark},
+use {
+    clap::Parser,
+    icann_rdap_common::{
+        contact::{Contact, Email, Phone, PostalAddress},
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::VectorStringish,
+        response::{
+            Autnum, Domain, Entity, Link, Nameserver, Network, Notice, NoticeOrRemark, Remark,
+        },
+        VERSION,
     },
-    VERSION,
-};
-use icann_rdap_srv::{
-    config::{debug_config_vars, LOG},
-    error::RdapServerError,
-    storage::data::{
-        AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError, NameserverId,
-        NameserverOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
+    icann_rdap_srv::{
+        config::{debug_config_vars, LOG},
+        error::RdapServerError,
+        storage::data::{
+            AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError,
+            NameserverId, NameserverOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
+        },
     },
-};
-use ipnet::{Ipv4Subnets, Ipv6Subnets};
-use pct_str::{PctString, URIReserved};
-use tracing::info;
-use tracing_subscriber::{
-    fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    ipnet::{Ipv4Subnets, Ipv6Subnets},
+    pct_str::{PctString, URIReserved},
+    tracing::info,
+    tracing_subscriber::{
+        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    },
 };
 
 #[derive(Parser, Debug)]
@@ -113,7 +111,7 @@ fn make_entity_template(
         })
         .collect();
     let template = Template::Entity {
-        entity: EntityOrError::EntityObject(entity),
+        entity: EntityOrError::EntityObject(Box::new(entity)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -133,7 +131,7 @@ fn make_nameserver_template(
         })
         .collect();
     let template = Template::Nameserver {
-        nameserver: NameserverOrError::NameserverObject(nameserver),
+        nameserver: NameserverOrError::NameserverObject(Box::new(nameserver)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -145,9 +143,9 @@ fn make_domain_template(
     num_domains: u32,
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("domain"));
-    entity.roles = Some(vec!["registrant".to_string()]);
+    entity.roles = Some(VectorStringish::from("registrant"));
     let nameserver = make_test_nameserver(base_url, None)?;
-    let domain = Domain::basic()
+    let domain = Domain::builder()
         .ldh_name("example.net")
         .entity(entity)
         .nameservers(vec![nameserver])
@@ -183,7 +181,7 @@ fn make_domain_template(
         })
         .collect();
     let template = Template::Domain {
-        domain: DomainOrError::DomainObject(domain),
+        domain: DomainOrError::DomainObject(Box::new(domain)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -195,8 +193,8 @@ fn make_autnum_template(
     num_autnums: u32,
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("autnum"));
-    entity.roles = Some(vec!["registrant".to_string()]);
-    let autnum = Autnum::basic()
+    entity.roles = Some(VectorStringish::from("registrant"));
+    let autnum = Autnum::builder()
         .autnum_range(1..1)
         .entity(entity)
         .link(
@@ -227,7 +225,7 @@ fn make_autnum_template(
         .map(|x| AutnumId::builder().start_autnum(x).end_autnum(x).build())
         .collect();
     let template = Template::Autnum {
-        autnum: AutnumOrError::AutnumObject(autnum),
+        autnum: AutnumOrError::AutnumObject(Box::new(autnum)),
         ids,
     };
     save_template(data_dir, base_url, template, None)
@@ -249,7 +247,7 @@ fn make_netv4_template(
         })
         .collect();
     let template = Template::Network {
-        network: NetworkOrError::NetworkObject(network),
+        network: NetworkOrError::NetworkObject(Box::new(network)),
         ids,
     };
     save_template(data_dir, base_url, template, Some("v4"))
@@ -275,7 +273,7 @@ fn make_netv6_template(
     })
     .collect();
     let template = Template::Network {
-        network: NetworkOrError::NetworkObject(network),
+        network: NetworkOrError::NetworkObject(Box::new(network)),
         ids,
     };
     save_template(data_dir, base_url, template, Some("v6"))
@@ -311,7 +309,7 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
             .country_code("US")
             .build()])
         .build();
-    Entity::basic()
+    Entity::builder()
         .handle("TEMPLATE")
         .link(
             Link::builder()
@@ -356,8 +354,8 @@ fn make_test_nameserver(
         vec![]
     };
     let mut entity = make_test_entity(base_url, Some("nameserver"));
-    entity.roles = Some(vec!["tech".to_string()]);
-    Ok(Nameserver::basic()
+    entity.roles = Some(VectorStringish::from("tech"));
+    Ok(Nameserver::builder()
         .ldh_name("ns.template.example")
         .link(
             Link::builder()
@@ -388,8 +386,8 @@ fn make_test_nameserver(
 
 fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("network"));
-    entity.roles = Some(vec!["registrant".to_string()]);
-    let network = Network::basic()
+    entity.roles = Some(VectorStringish::from("registrant"));
+    let network = Network::builder()
         .cidr("0.0.0.0/0")
         .entity(entity)
         .link(

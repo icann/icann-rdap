@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
-use icann_rdap_common::response::{
-    autnum::Autnum, domain::Domain, entity::Entity, nameserver::Nameserver, network::Network,
+use {
+    icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network},
+    icann_rdap_srv::storage::StoreOps,
+    rstest::rstest,
 };
-use icann_rdap_srv::storage::StoreOps;
-use rstest::rstest;
 
 use crate::test_jig::TestJig;
 
@@ -18,7 +18,7 @@ async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name(db_domain).build())
+    tx.add_domain(&Domain::builder().ldh_name(db_domain).build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -36,7 +36,7 @@ async fn GIVEN_tld_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("example").build())
+    tx.add_domain(&Domain::builder().ldh_name("example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -55,7 +55,7 @@ async fn GIVEN_entity_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_entity(&Entity::basic().handle("foo").build())
+    tx.add_entity(&Entity::builder().handle("foo").build())
         .await
         .expect("add entity in tx");
     tx.commit().await.expect("tx commit");
@@ -74,7 +74,7 @@ async fn GIVEN_nameserver_WHEN_query_THEN_success() {
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
-        &Nameserver::basic()
+        &Nameserver::builder()
             .ldh_name("ns.foo.example")
             .build()
             .unwrap(),
@@ -96,7 +96,7 @@ async fn GIVEN_autnum_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_autnum(&Autnum::basic().autnum_range(700..710).build())
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
@@ -115,7 +115,7 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
-        &Network::basic()
+        &Network::builder()
             .cidr("10.0.0.0/24")
             .build()
             .expect("cidr parsing"),
@@ -141,7 +141,7 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
-        &Network::basic()
+        &Network::builder()
             .cidr(db_cidr)
             .build()
             .expect("cidr parsing"),
@@ -163,7 +163,7 @@ async fn GIVEN_url_WHEN_query_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -182,7 +182,7 @@ async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("xn--caf-dma.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("xn--caf-dma.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -200,7 +200,7 @@ async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap_with_dn_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    tx.add_domain(&Domain::basic().ldh_name("foo.example").build())
+    tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");

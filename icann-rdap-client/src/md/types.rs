@@ -1,27 +1,33 @@
-use std::any::TypeId;
-
-use lazy_static::lazy_static;
-
-use icann_rdap_common::check::string::StringCheck;
-use icann_rdap_common::httpdata::HttpData;
-use icann_rdap_common::response::types::{
-    Common, Event, Link, Links, Notices, ObjectCommon, PublicId, Remarks,
+use {
+    icann_rdap_common::prelude::ObjectCommon,
+    std::{any::TypeId, sync::LazyLock},
 };
-use icann_rdap_common::response::types::{NoticeOrRemark, RdapConformance};
-use reqwest::header::{
-    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
-    STRICT_TRANSPORT_SECURITY,
+
+use {
+    icann_rdap_common::{
+        check::StringCheck,
+        httpdata::HttpData,
+        response::{
+            Common, Event, Link, Links, NoticeOrRemark, Notices, PublicId, RdapConformance, Remarks,
+        },
+    },
+    reqwest::header::{
+        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
+        STRICT_TRANSPORT_SECURITY,
+    },
+    strum::EnumMessage,
 };
-use strum::EnumMessage;
 
 use icann_rdap_common::check::{
     CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN,
 };
 
-use super::string::{StringListUtil, StringUtil};
-use super::table::{MultiPartTable, ToMpTable};
-use super::{checks_ul, MdParams, HR};
-use super::{FromMd, ToMd};
+use super::{
+    checks_ul,
+    string::{StringListUtil, StringUtil},
+    table::{MultiPartTable, ToMpTable},
+    FromMd, MdParams, ToMd, HR,
+};
 
 impl ToMd for RdapConformance {
     fn to_md(&self, params: MdParams) -> String {
@@ -72,7 +78,7 @@ impl ToMd for Link {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(title) = &self.title {
-            md.push_str(&format!("* {}:\n", title.replace_ws()));
+            md.push_str(&format!("* {}:\n", title.replace_md_chars()));
         } else {
             md.push_str("* Link:\n")
         };
@@ -83,24 +89,27 @@ impl ToMd for Link {
             ));
         };
         if let Some(rel) = &self.rel {
-            md.push_str(&format!("* Relation:  {}\n", rel.replace_ws()));
+            md.push_str(&format!("* Relation:  {}\n", rel.replace_md_chars()));
         };
         if let Some(media_type) = &self.media_type {
-            md.push_str(&format!("* Type:      {}\n", media_type.replace_ws()));
+            md.push_str(&format!("* Type:      {}\n", media_type.replace_md_chars()));
         };
         if let Some(media) = &self.media {
-            md.push_str(&format!("* Media:     {}\n", media.replace_ws()));
+            md.push_str(&format!("* Media:     {}\n", media.replace_md_chars()));
         };
         if let Some(value) = &self.value {
-            md.push_str(&format!("* Value:     {}\n", value.replace_ws()));
+            md.push_str(&format!("* Value:     {}\n", value.replace_md_chars()));
         };
         if let Some(hreflang) = &self.hreflang {
             match hreflang {
-                icann_rdap_common::response::types::HrefLang::Lang(lang) => {
-                    md.push_str(&format!("* Language:  {}\n", lang.replace_ws()));
+                icann_rdap_common::response::HrefLang::Lang(lang) => {
+                    md.push_str(&format!("* Language:  {}\n", lang.replace_md_chars()));
                 }
-                icann_rdap_common::response::types::HrefLang::Langs(langs) => {
-                    md.push_str(&format!("* Languages: {}", langs.join(", ").replace_ws()));
+                icann_rdap_common::response::HrefLang::Langs(langs) => {
+                    md.push_str(&format!(
+                        "* Languages: {}",
+                        langs.join(", ").replace_md_chars()
+                    ));
                 }
             }
         };
@@ -145,14 +154,17 @@ impl ToMd for NoticeOrRemark {
         if let Some(title) = &self.title {
             md.push_str(&format!("{}\n", title.to_bold(params.options)));
         };
+        if let Some(nr_type) = &self.nr_type {
+            md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
+        };
         if let Some(description) = &self.description {
-            description.many().iter().for_each(|s| {
+            description.vec().iter().for_each(|s| {
                 if !s.is_whitespace_or_empty() {
-                    md.push_str(&format!("> {}\n\n", s.trim().replace_ws()))
+                    md.push_str(&format!("> {}\n\n", s.trim().replace_md_chars()))
                 }
             });
         }
-        self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
+        self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()))
             .items
             .iter()
             .filter(|item| params.check_types.contains(&item.check_class))
@@ -204,26 +216,33 @@ impl ToMd for Common {
 }
 
 const RECEIVED: &str = "Received";
+const REQUEST_URI: &str = "Request URI";
 
-lazy_static! {
-    pub static ref NAMES: [String; 6] = [
+pub static NAMES: LazyLock<[String; 7]> = LazyLock::new(|| {
+    [
         HOST.to_string(),
         reqwest::header::EXPIRES.to_string(),
         reqwest::header::CACHE_CONTROL.to_string(),
         reqwest::header::STRICT_TRANSPORT_SECURITY.to_string(),
         reqwest::header::ACCESS_CONTROL_ALLOW_ORIGIN.to_string(),
-        RECEIVED.to_string()
-    ];
-    pub static ref NAME_LEN: usize = NAMES
+        RECEIVED.to_string(),
+        REQUEST_URI.to_string(),
+    ]
+});
+pub static NAME_LEN: LazyLock<usize> = LazyLock::new(|| {
+    NAMES
         .iter()
         .max_by_key(|x| x.to_string().len())
-        .map_or(8, |x| x.to_string().len());
-}
+        .map_or(8, |x| x.to_string().len())
+});
 
 impl ToMd for HttpData {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = HR.to_string();
         md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, &self.host));
+        if let Some(request_uri) = &self.request_uri {
+            md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", REQUEST_URI, request_uri));
+        }
         if let Some(content_length) = &self.content_length {
             md.push_str(&format!(
                 " * {:<NAME_LEN$}: {}\n",
@@ -276,7 +295,7 @@ impl ToMpTable for ObjectCommon {
 
             // Status
             if let Some(status) = &self.status {
-                let values = status.iter().map(|v| v.0.as_str()).collect::<Vec<&str>>();
+                let values = status.vec();
                 table = table.nv_ul(&"Status", values.make_list_all_title_case());
             }
 
@@ -320,7 +339,7 @@ pub(crate) fn events_to_table(
     header_name: &str,
     params: MdParams,
 ) -> MultiPartTable {
-    table = table.header_ref(&header_name.to_string());
+    table = table.header_ref(&header_name.replace_md_chars());
     for event in events {
         let event_date = &event
             .event_date
@@ -350,7 +369,7 @@ pub(crate) fn links_to_table(
     mut table: MultiPartTable,
     header_name: &str,
 ) -> MultiPartTable {
-    table = table.header_ref(&header_name.to_string());
+    table = table.header_ref(&header_name.replace_md_chars());
     for link in links {
         if let Some(title) = &link.title {
             table = table.nv_ref(&"Title", &title.trim());
@@ -376,8 +395,8 @@ pub(crate) fn links_to_table(
         let hreflang_s;
         if let Some(hreflang) = &link.hreflang {
             hreflang_s = match hreflang {
-                icann_rdap_common::response::types::HrefLang::Lang(lang) => lang.to_owned(),
-                icann_rdap_common::response::types::HrefLang::Langs(langs) => langs.join(", "),
+                icann_rdap_common::response::HrefLang::Lang(lang) => lang.to_owned(),
+                icann_rdap_common::response::HrefLang::Langs(langs) => langs.join(", "),
             };
             ul.push(&hreflang_s)
         };

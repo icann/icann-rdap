@@ -1,28 +1,29 @@
-use std::io::stdout;
-use std::str::FromStr;
+use std::{io::stdout, str::FromStr};
 
-use clap::builder::styling::AnsiColor;
-use clap::builder::Styles;
-use error::RdapTestError;
-use icann_rdap_cli::dirs;
-use icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore;
-use icann_rdap_cli::rt::exec::execute_tests;
-use icann_rdap_cli::rt::exec::ExtensionGroup;
-use icann_rdap_cli::rt::exec::TestOptions;
-use icann_rdap_cli::rt::results::RunOutcome;
-use icann_rdap_cli::rt::results::TestResults;
-use icann_rdap_client::http::ClientConfig;
-use icann_rdap_client::md::MdOptions;
-use icann_rdap_client::rdap::QueryType;
-use icann_rdap_common::check::traverse_checks;
-use icann_rdap_common::check::CheckClass;
-use termimad::crossterm::style::Color::*;
-use termimad::Alignment;
-use termimad::MadSkin;
-use tracing_subscriber::filter::LevelFilter;
+#[cfg(debug_assertions)]
+use tracing::warn;
+use {
+    clap::builder::{styling::AnsiColor, Styles},
+    error::RdapTestError,
+    icann_rdap_cli::{
+        dirs,
+        dirs::fcbs::FileCacheBootstrapStore,
+        rt::{
+            exec::{execute_tests, ExtensionGroup, TestOptions},
+            results::{RunOutcome, TestResults},
+        },
+    },
+    icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType},
+    icann_rdap_common::check::{traverse_checks, CheckClass},
+    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
+    tracing::info,
+    tracing_subscriber::filter::LevelFilter,
+};
 
-use clap::{Parser, ValueEnum};
-use icann_rdap_common::VERSION;
+use {
+    clap::{Parser, ValueEnum},
+    icann_rdap_common::VERSION,
+};
 
 pub mod error;
 
@@ -350,12 +351,12 @@ enum LogLevel {
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
-            LogLevel::Off => LevelFilter::OFF,
-            LogLevel::Error => LevelFilter::ERROR,
-            LogLevel::Warn => LevelFilter::WARN,
-            LogLevel::Info => LevelFilter::INFO,
-            LogLevel::Debug => LevelFilter::DEBUG,
-            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Off => Self::OFF,
+            LogLevel::Error => Self::ERROR,
+            LogLevel::Warn => Self::WARN,
+            LogLevel::Info => Self::INFO,
+            LogLevel::Debug => Self::DEBUG,
+            LogLevel::Trace => Self::TRACE,
         }
     }
 }
@@ -380,6 +381,11 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .with_max_level(level)
         .with_writer(std::io::stderr)
         .init();
+
+    info!("ICANN RDAP {} Testing Tool", VERSION);
+
+    #[cfg(debug_assertions)]
+    warn!("This is a development build of this software.");
 
     let query_type = QueryType::from_str(&cli.query_value)?;
 

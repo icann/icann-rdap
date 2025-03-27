@@ -1,21 +1,26 @@
-use std::{any::TypeId, str::FromStr};
+use {
+    crate::prelude::ObjectCommon,
+    std::{any::TypeId, str::FromStr, sync::LazyLock},
+};
 
-use crate::{
-    media_types::RDAP_MEDIA_TYPE,
-    response::{
-        autnum::Autnum,
-        domain::Domain,
-        entity::Entity,
-        nameserver::Nameserver,
-        network::Network,
-        types::{
-            Common, ExtensionId, Link, Links, NoticeOrRemark, Notices, ObjectCommon, PublicIds,
-            RdapConformance, Remarks, StringOrStringArray,
+use {
+    crate::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::Common,
+        response::{
+            autnum::Autnum,
+            domain::Domain,
+            entity::Entity,
+            nameserver::Nameserver,
+            network::Network,
+            types::{
+                ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance,
+                Remarks,
+            },
         },
     },
+    chrono::DateTime,
 };
-use chrono::DateTime;
-use lazy_static::lazy_static;
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -24,7 +29,7 @@ use super::{
 
 impl GetChecks for RdapConformance {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items = Vec::new();
+        let mut items = vec![];
         if params.parent_type != params.root.get_type() {
             items.push(Check::RdapConformanceInvalidParent.check_item())
         };
@@ -39,38 +44,38 @@ impl GetChecks for RdapConformance {
         Checks {
             rdap_struct: super::RdapStructure::RdapConformance,
             items,
-            sub_checks: Vec::new(),
+            sub_checks: vec![],
         }
     }
 }
 
 impl GetChecks for Links {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             self.iter()
                 .for_each(|link| sub_checks.push(link.get_checks(params)));
         }
         Checks {
             rdap_struct: super::RdapStructure::Links,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
 }
 
-lazy_static! {
-    static ref RELATED_AND_SELF_LINK_PARENTS: Vec<TypeId> = vec![
+static RELATED_AND_SELF_LINK_PARENTS: LazyLock<Vec<TypeId>> = LazyLock::new(|| {
+    vec![
         TypeId::of::<Domain>(),
         TypeId::of::<Entity>(),
         TypeId::of::<Autnum>(),
         TypeId::of::<Network>(),
-    ];
-}
+    ]
+});
 
 impl GetChecks for Link {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = Vec::new();
+        let mut items: Vec<CheckItem> = vec![];
         if self.value.is_none() {
             items.push(Check::LinkMissingValueProperty.check_item())
         };
@@ -112,21 +117,21 @@ impl GetChecks for Link {
         Checks {
             rdap_struct: super::RdapStructure::Link,
             items,
-            sub_checks: Vec::new(),
+            sub_checks: vec![],
         }
     }
 }
 
 impl GetChecks for Notices {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             self.iter()
                 .for_each(|note| sub_checks.push(note.0.get_checks(params)));
         }
         Checks {
             rdap_struct: super::RdapStructure::Notices,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -134,14 +139,14 @@ impl GetChecks for Notices {
 
 impl GetChecks for Remarks {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             self.iter()
                 .for_each(|remark| sub_checks.push(remark.0.get_checks(params)));
         }
         Checks {
             rdap_struct: super::RdapStructure::Remarks,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -149,15 +154,15 @@ impl GetChecks for Remarks {
 
 impl GetChecks for NoticeOrRemark {
     fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = Vec::new();
+        let mut items: Vec<CheckItem> = vec![];
         if let Some(description) = &self.description {
-            if matches!(description, StringOrStringArray::One(_)) {
+            if description.is_string() {
                 items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
             }
         } else {
             items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
         };
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             if let Some(links) = &self.links {
                 links.iter().for_each(|link| {
@@ -166,6 +171,7 @@ impl GetChecks for NoticeOrRemark {
                 });
             };
         };
+        // TODO checks on 'type'
         Checks {
             rdap_struct: super::RdapStructure::NoticeOrRemark,
             items,
@@ -176,20 +182,20 @@ impl GetChecks for NoticeOrRemark {
 
 impl GetSubChecks for PublicIds {
     fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         self.iter().for_each(|pid| {
             if pid.id_type.is_none() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdTypeIsAbsent.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
             if pid.identifier.is_none() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 });
             }
         });
@@ -199,7 +205,7 @@ impl GetSubChecks for PublicIds {
 
 impl GetSubChecks for Common {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
         if params.do_subchecks {
             if let Some(rdap_conformance) = &self.rdap_conformance {
                 sub_checks.push(rdap_conformance.get_checks(params))
@@ -212,7 +218,7 @@ impl GetSubChecks for Common {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::RdapConformance,
                 items: vec![Check::RdapConformanceMissing.check_item()],
-                sub_checks: Vec::new(),
+                sub_checks: vec![],
             });
         }
         sub_checks
@@ -221,7 +227,7 @@ impl GetSubChecks for Common {
 
 impl GetSubChecks for ObjectCommon {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = Vec::new();
+        let mut sub_checks: Vec<Checks> = vec![];
 
         // entities
         if params.do_subchecks {
@@ -246,7 +252,7 @@ impl GetSubChecks for ObjectCommon {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::Links,
                 items: vec![Check::LinkObjectClassHasNoSelf.check_item()],
-                sub_checks: Vec::new(),
+                sub_checks: vec![],
             })
         };
 
@@ -264,21 +270,21 @@ impl GetSubChecks for ObjectCommon {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::Events,
                             items: vec![Check::EventDateIsNotRfc3339.check_item()],
-                            sub_checks: Vec::new(),
+                            sub_checks: vec![],
                         })
                     }
                 } else {
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::Events,
                         items: vec![Check::EventDateIsAbsent.check_item()],
-                        sub_checks: Vec::new(),
+                        sub_checks: vec![],
                     })
                 }
                 if e.event_action.is_none() {
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::Events,
                         items: vec![Check::EventActionIsAbsent.check_item()],
-                        sub_checks: Vec::new(),
+                        sub_checks: vec![],
                     })
                 }
             });
@@ -290,19 +296,20 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Handle,
                     items: vec![Check::HandleIsEmpty.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 })
             }
         }
 
         // Status
         if let Some(status) = &self.status {
-            let status: Vec<&str> = status.iter().map(|s| s.0.as_str()).collect();
-            if status.as_slice().is_empty_or_any_empty_or_whitespace() {
+            // TODO add check for status is string
+            let status = status.vec();
+            if status.is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Status,
                     items: vec![Check::StatusIsEmpty.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 })
             }
         }
@@ -313,7 +320,7 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Port43,
                     items: vec![Check::Port43IsEmpty.check_item()],
-                    sub_checks: Vec::new(),
+                    sub_checks: vec![],
                 })
             }
         }
@@ -329,14 +336,11 @@ mod tests {
 
     use crate::{
         check::Checks,
+        prelude::{ToResponse, VectorStringish},
         response::{
             domain::Domain,
-            entity::Entity,
             nameserver::Nameserver,
-            types::{
-                Common, Event, Extension, Link, Notice, NoticeOrRemark, ObjectCommon, PublicId,
-                Remark, StatusValue,
-            },
+            types::{Event, Link, Notice, NoticeOrRemark, PublicId, Remark},
             RdapResponse,
         },
     };
@@ -344,26 +348,18 @@ mod tests {
     use crate::check::{Check, CheckParams, GetChecks};
 
     #[test]
-    fn GIVEN_link_with_no_rel_property_WHEN_checked_THEN_link_missing_rel_property() {
+    fn check_link_with_no_rel_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link {
-                            href: Some("https://foo".to_string()),
-                            value: Some("https://foo".to_string()),
-                            rel: None,
-                            title: None,
-                            hreflang: None,
-                            media: None,
-                            media_type: None,
-                        }])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::illegal()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -381,26 +377,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_link_with_no_val_property_WHEN_checked_THEN_link_missing_val_property() {
+    fn check_link_with_no_val_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link {
-                            href: Some("https://foo".to_string()),
-                            value: None,
-                            rel: Some("about".to_string()),
-                            title: None,
-                            hreflang: None,
-                            media: None,
-                            media_type: None,
-                        }])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(Link::illegal().href("https://foo").rel("about").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -418,26 +401,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_link_with_no_href_property_WHEN_checked_THEN_link_missing_href_property() {
+    fn check_link_with_no_href_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link {
-                            value: Some("https://foo".to_string()),
-                            href: None,
-                            rel: Some("about".to_string()),
-                            title: None,
-                            hreflang: None,
-                            media: None,
-                            media_type: None,
-                        }])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(Link::illegal().value("https://foo").rel("about").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -455,22 +425,19 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_related_link_with_no_type_property_WHEN_checked_THEN_related_link_has_no_type() {
+    fn test_related_link_with_no_type_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("related")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -488,23 +455,20 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_object_related_link_with_non_rdap_type_WHEN_checked_THEN_related_link_not_rdap() {
+    fn test_object_related_link_with_non_rdap_type() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("related")
-                            .media_type("foo")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -522,22 +486,19 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_self_link_with_no_type_property_WHEN_checked_THEN_self_link_has_no_type() {
+    fn test_self_link_with_no_type_property() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("self")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -555,23 +516,20 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_self_link_with_non_rdap_type_WHEN_checked_THEN_self_link_not_rdap() {
+    fn test_self_link_with_non_rdap_type() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("self")
-                            .media_type("foo")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -581,23 +539,20 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_with_self_link_WHEN_checked_THEN_no_check_found() {
+    fn test_domain_with_self_link() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("self")
-                            .media_type("application/rdap+json")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -608,23 +563,21 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_self_link_WHEN_checked_THEN_no_check_found() {
+    fn test_nameserver_with_self_link() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("self")
-                            .media_type("application/rdap+json")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .expect("unable to build nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -635,37 +588,34 @@ mod tests {
 
     #[test]
     /// Issue #59
-    fn GIVEN_nameserver_with_self_link_and_notice_WHEN_checked_THEN_no_check_found() {
+    fn test_nameserver_with_self_link_and_notice() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .common(
-                    Common::builder()
-                        .notices(vec![Notice(
-                            NoticeOrRemark::builder()
-                                .description_entry("a notice")
-                                .links(vec![Link::builder()
-                                    .href("https://tos")
-                                    .value("https://tos")
-                                    .rel("terms-of-service")
-                                    .media_type("text/html")
-                                    .build()])
-                                .build(),
-                        )])
-                        .build(),
-                )
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("self")
-                            .media_type("application/rdap+json")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .description_entry("a notice")
+                    .link(
+                        Link::builder()
+                            .href("https://tos")
+                            .value("https://tos")
+                            .rel("terms-of-service")
+                            .media_type("text/html")
+                            .build(),
+                    )
+                    .build(),
+            ))
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .expect("build nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -677,34 +627,32 @@ mod tests {
 
     #[test]
     /// Issue #59
-    fn GIVEN_nameserver_with_self_link_and_remark_WHEN_checked_THEN_no_check_found() {
+    fn test_nameserver_with_self_link_and_remark() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .remarks(vec![Remark(
-                            NoticeOrRemark::builder()
-                                .description_entry("a notice")
-                                .links(vec![Link::builder()
-                                    .href("https://tos")
-                                    .value("https://tos")
-                                    .rel("terms-of-service")
-                                    .media_type("text/html")
-                                    .build()])
-                                .build(),
-                        )])
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("self")
-                            .media_type("application/rdap+json")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("exapmle.com")
+            .remark(Remark(
+                NoticeOrRemark::builder()
+                    .description_entry("a notice")
+                    .links(vec![Link::builder()
+                        .href("https://tos")
+                        .value("https://tos")
+                        .rel("terms-of-service")
+                        .media_type("text/html")
+                        .build()])
+                    .build(),
+            ))
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("self")
+                    .media_type("application/rdap+json")
+                    .build(),
+            )
+            .build()
+            .expect("building nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -715,23 +663,20 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_with_no_self_link_WHEN_checked_THEN_object_classes_should_have_self_link() {
+    fn test_domain_with_no_self_link() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("no_self")
-                            .media_type("foo")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("no_self")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -749,19 +694,18 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_with_no_links_WHEN_checked_THEN_object_classes_should_have_self_link() {
+    fn test_domain_with_no_links() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(ObjectCommon::domain().build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
+        dbg!(&rdap);
         checks
             .sub(crate::check::RdapStructure::Links)
             .expect("Links not found")
@@ -772,23 +716,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_event_with_no_date_WHEN_checked_THEN_event_date_absent() {
+    fn test_event_with_no_date() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .events(vec![Event {
-                            event_action: Some("foo".to_string()),
-                            event_date: None,
-                            event_actor: None,
-                            links: None,
-                        }])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(Event::illegal().event_action("foo").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -804,23 +738,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_event_with_no_action_WHEN_checked_THEN_event_action_absent() {
+    fn test_event_with_no_action() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .events(vec![Event {
-                            event_date: Some("1990-12-31T23:59:59Z".to_string()),
-                            event_action: None,
-                            event_actor: None,
-                            links: None,
-                        }])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(Event::illegal().event_date("1990-12-31T23:59:59Z").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -836,21 +760,18 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_event_with_bad_date_WHEN_checked_THEN_event_date_is_not_date() {
+    fn test_event_with_bad_date() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::domain()
-                        .events(vec![Event::builder()
-                            .event_action("foo")
-                            .event_date("bar")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(
+                Event::builder()
+                    .event_action("foo")
+                    .event_date("bar")
+                    .build(),
+            )
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -866,18 +787,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_public_id_with_no_type_WHEN_checked_THEN_type_is_absent() {
+    fn test_public_id_with_no_type() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(ObjectCommon::domain().build())
-                .public_ids(vec![PublicId {
-                    id_type: None,
-                    identifier: Some("thing".to_string()),
-                }])
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .public_id(PublicId::illegal().identifier("thing").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -893,18 +809,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_public_id_with_no_identifier_WHEN_checked_THEN_identifier_is_absent() {
+    fn test_public_id_with_no_identifier() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().build())
-                .object_common(ObjectCommon::domain().build())
-                .public_ids(vec![PublicId {
-                    identifier: None,
-                    id_type: Some("thing".to_string()),
-                }])
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .public_id(PublicId::illegal().id_type("thing").build())
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -920,19 +831,19 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_notice_with_no_description_WHEN_checked_THEN_description_absent() {
+    fn test_notice_with_no_description() {
         // GIVEN
         let notice = NoticeOrRemark {
             title: None,
             description: None,
             links: None,
+            nr_type: None,
         };
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(Common::builder().notices(vec![Notice(notice)]).build())
-                .object_common(ObjectCommon::domain().build())
-                .build(),
-        );
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .notice(Notice(notice))
+            .build()
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -951,14 +862,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_no_links_WHEN_checked_THEN_no_object_classes_should_have_self_link() {
+    fn test_nameserver_with_no_links() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .common(Common::builder().build())
-                .object_common(ObjectCommon::nameserver().build())
-                .build(),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .build()
+            .expect("building nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -968,24 +878,21 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_with_no_self_links_WHEN_checked_THEN_no_object_classes_should_have_self_link(
-    ) {
+    fn test_nameserver_with_no_self_links() {
         // GIVEN
-        let rdap = RdapResponse::Nameserver(
-            Nameserver::builder()
-                .common(Common::builder().build())
-                .object_common(
-                    ObjectCommon::nameserver()
-                        .links(vec![Link::builder()
-                            .href("https://foo")
-                            .value("https://foo")
-                            .rel("no_self")
-                            .media_type("foo")
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let rdap = Nameserver::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("no_self")
+                    .media_type("foo")
+                    .build(),
+            )
+            .build()
+            .expect("building nameserver")
+            .to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -1001,20 +908,19 @@ mod tests {
 
     #[rstest]
     #[case(vec![])]
-    #[case(vec![StatusValue("".to_string())])]
-    #[case(vec![StatusValue("  ".to_string())])]
-    #[case(vec![StatusValue("  ".to_string()), StatusValue("foo".to_string())])]
+    #[case(vec!["".to_string()])]
+    #[case(vec!["  ".to_string()])]
+    #[case(vec!["  ".to_string(), "foo".to_string()])]
     #[test]
-    fn GIVEN_nameserver_with_empty_status_WHEN_checked_THEN_status_is_empty(
-        #[case] status: Vec<StatusValue>,
-    ) {
+    fn test_nameserver_with_empty_status(#[case] status: Vec<String>) {
         // GIVEN
-        let mut ns = Nameserver::basic()
+
+        let mut ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
-        ns.object_common.status = Some(status);
-        let rdap = RdapResponse::Nameserver(ns);
+        ns.object_common.status = Some(VectorStringish::from(status));
+        let rdap = ns.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -1032,14 +938,14 @@ mod tests {
     #[case("")]
     #[case("  ")]
     #[test]
-    fn GIVEN_nameserver_with_empty_handle_WHEN_checked_THEN_handle_is_empty(#[case] handle: &str) {
+    fn test_nameserver_with_empty_handle(#[case] handle: &str) {
         // GIVEN
-        let mut ns = Nameserver::basic()
+        let mut ns = Nameserver::builder()
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
         ns.object_common.handle = Some(handle.to_string());
-        let rdap = RdapResponse::Nameserver(ns);
+        let rdap = ns.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -1054,29 +960,25 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_rdap_conformance_not_in_root_WHEN_checked_THEN_invalid_rdap_conformance_parent() {
+    fn test_rdap_conformance_not_in_root() {
         // GIVEN
-        let rdap = RdapResponse::Domain(
-            Domain::builder()
-                .common(
-                    Common::builder()
-                        .rdap_conformance(vec![Extension("foo".to_string())])
-                        .build(),
-                )
-                .object_common(
-                    ObjectCommon::domain()
-                        .entities(vec![Entity::builder()
-                            .common(
-                                Common::builder()
-                                    .rdap_conformance(vec![Extension("foo".to_string())])
-                                    .build(),
-                            )
-                            .object_common(ObjectCommon::entity().build())
-                            .build()])
-                        .build(),
-                )
-                .build(),
-        );
+        let json = r#"
+        {
+          "rdapConformance": ["rdap_level_0"],
+          "objectClassName" : "domain",
+          "handle" : "XXXX",
+          "ldhName" : "xn--fo-5ja.example",
+          "entities" :
+          [
+            {
+              "rdapConformance": ["rdap_level_0"],
+              "objectClassName" : "entity",
+              "handle" : "XXXX"
+            }
+          ]
+        }            
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));

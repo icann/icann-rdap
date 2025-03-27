@@ -9,19 +9,17 @@ impl GetChecks for DomainSearchResults {
         let sub_checks: Vec<Checks> = if params.do_subchecks {
             let mut sub_checks = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<DomainSearchResults>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
-                sub_checks.push(
-                    result.get_checks(params.from_parent(TypeId::of::<DomainSearchResults>())),
-                )
+                sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::DomainSearchResults,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -32,19 +30,17 @@ impl GetChecks for NameserverSearchResults {
         let sub_checks: Vec<Checks> = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<NameserverSearchResults>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
-                sub_checks.push(
-                    result.get_checks(params.from_parent(TypeId::of::<NameserverSearchResults>())),
-                )
+                sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::NameserverSearchResults,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }
@@ -55,19 +51,17 @@ impl GetChecks for EntitySearchResults {
         let sub_checks: Vec<Checks> = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<EntitySearchResults>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
-                sub_checks.push(
-                    result.get_checks(params.from_parent(TypeId::of::<EntitySearchResults>())),
-                )
+                sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
         Checks {
             rdap_struct: super::RdapStructure::EntitySearchResults,
-            items: Vec::new(),
+            items: vec![],
             sub_checks,
         }
     }

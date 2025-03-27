@@ -1,27 +1,32 @@
-use std::{net::IpAddr, str::FromStr};
+//! RDAP Nameserver object class.
+use {
+    crate::prelude::{Common, Extension, ObjectCommon},
+    std::{net::IpAddr, str::FromStr},
+};
 
-use buildstructor::Builder;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    types::{to_option_status, Common, Link, ObjectCommon},
-    GetSelfLink, RdapResponseError, SelfLink, ToChild,
+    to_opt_vec, to_opt_vectorstringish, types::Link, CommonFields, Entity, Event, GetSelfLink,
+    Notice, ObjectCommonFields, Port43, RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
+    VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Represents an IP address set for nameservers.
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct IpAddresses {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub v6: Option<Vec<String>>,
+    pub v6: Option<VectorStringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub v4: Option<Vec<String>>,
+    pub v4: Option<VectorStringish>,
 }
 
 #[buildstructor::buildstructor]
 impl IpAddresses {
-    #[builder(entry = "basic")]
-    pub fn new_basic(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
+    /// Builds nameserver IP address.
+    #[builder(visibility = "pub")]
+    fn new(addresses: Vec<String>) -> Result<Self, RdapResponseError> {
         let mut v4: Vec<String> = Vec::new();
         let mut v6: Vec<String> = Vec::new();
         for addr in addresses {
@@ -32,9 +37,34 @@ impl IpAddresses {
             }
         }
         Ok(Self {
-            v4: (!v4.is_empty()).then_some(v4),
-            v6: (!v6.is_empty()).then_some(v6),
+            v4: to_opt_vectorstringish(v4),
+            v6: to_opt_vectorstringish(v6),
         })
+    }
+
+    #[allow(dead_code)]
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    fn new_illegal(v6: Option<Vec<String>>, v4: Option<Vec<String>>) -> Self {
+        Self {
+            v4: v4.map(VectorStringish::from),
+            v6: v6.map(VectorStringish::from),
+        }
+    }
+
+    /// Get the IPv6 addresses.
+    pub fn v6s(&self) -> &Vec<String> {
+        self.v6
+            .as_ref()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
+    }
+
+    /// Get the IPv4 addresses.
+    pub fn v4s(&self) -> &Vec<String> {
+        self.v4
+            .as_ref()
+            .map(|v| v.vec())
+            .unwrap_or(&EMPTY_VEC_STRING)
     }
 }
 
@@ -45,17 +75,15 @@ impl IpAddresses {
 /// The following is an example.
 ///
 /// ```rust
-/// use icann_rdap_common::response::nameserver::Nameserver;
-/// use icann_rdap_common::response::entity::Entity;
-/// use icann_rdap_common::response::types::StatusValue;
+/// use icann_rdap_common::prelude::*;
 ///
-/// let ns = Nameserver::basic()
+/// let ns = Nameserver::builder()
 ///   .ldh_name("ns1.example.com")
 ///   .handle("ns1_example_com-1")
 ///   .status("active")
 ///   .address("10.0.0.1")
 ///   .address("10.0.0.2")
-///   .entity(Entity::basic().handle("FOO").build())
+///   .entity(Entity::builder().handle("FOO").build())
 ///   .build().unwrap();
 /// let c = serde_json::to_string_pretty(&ns).unwrap();
 /// eprintln!("{c}");
@@ -91,7 +119,7 @@ impl IpAddresses {
 ///     }
 ///   }
 /// ```
-#[derive(Serialize, Deserialize, Builder, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Nameserver {
     #[serde(flatten)]
     pub common: Common,
@@ -117,60 +145,91 @@ impl Nameserver {
     /// Builds a basic nameserver object.
     ///
     /// ```rust
-    /// use icann_rdap_common::response::nameserver::Nameserver;
-    /// use icann_rdap_common::response::entity::Entity;
-    /// use icann_rdap_common::response::types::StatusValue;
+    /// use icann_rdap_common::prelude::*;
     ///
-    /// let ns = Nameserver::basic()
+    /// let ns = Nameserver::builder()
     ///   .ldh_name("ns1.example.com")
     ///   .handle("ns1_example_com-1")
     ///   .status("active")
     ///   .address("10.0.0.1")
     ///   .address("10.0.0.2")
-    ///   .entity(Entity::basic().handle("FOO").build())
+    ///   .entity(Entity::builder().handle("FOO").build())
     ///   .build().unwrap();
     /// ```
-    #[builder(entry = "basic")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_ldh<T: Into<String>>(
+    fn new<T: Into<String>>(
         ldh_name: T,
         addresses: Vec<String>,
         handle: Option<String>,
-        remarks: Vec<crate::response::types::Remark>,
-        links: Vec<crate::response::types::Link>,
-        events: Vec<crate::response::types::Event>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
         statuses: Vec<String>,
-        port_43: Option<crate::response::types::Port43>,
-        entities: Vec<crate::response::entity::Entity>,
-        notices: Vec<crate::response::types::Notice>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
-            Some(IpAddresses::basic().addresses(addresses).build()?)
+            Some(IpAddresses::builder().addresses(addresses).build()?)
         } else {
             None
         };
-        let entities = (!entities.is_empty()).then_some(entities);
-        let remarks = (!remarks.is_empty()).then_some(remarks);
-        let links = (!links.is_empty()).then_some(links);
-        let events = (!events.is_empty()).then_some(events);
-        let notices = (!notices.is_empty()).then_some(notices);
         Ok(Self {
-            common: Common::level0_with_options().and_notices(notices).build(),
+            common: Common::level0()
+                .extensions(extensions)
+                .and_notices(to_opt_vec(notices))
+                .build(),
             object_common: ObjectCommon::nameserver()
                 .and_handle(handle)
-                .and_remarks(remarks)
-                .and_links(links)
-                .and_events(events)
-                .and_status(to_option_status(statuses))
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
                 .and_port_43(port_43)
-                .and_entities(entities)
+                .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
             ldh_name: Some(ldh_name.into()),
             unicode_name: None,
             ip_addresses,
         })
+    }
+
+    #[builder(entry = "illegal", visibility = "pub(crate)")]
+    #[allow(clippy::too_many_arguments)]
+    #[allow(dead_code)]
+    fn new_illegal(ldh_name: Option<String>, ip_addresses: Option<IpAddresses>) -> Self {
+        Self {
+            common: Common::level0().build(),
+            object_common: ObjectCommon::nameserver().build(),
+            ldh_name,
+            unicode_name: None,
+            ip_addresses,
+        }
+    }
+
+    /// Get the LDH name.
+    pub fn ldh_name(&self) -> Option<&str> {
+        self.ldh_name.as_deref()
+    }
+
+    /// Get the Unicode name.
+    pub fn unicode_name(&self) -> Option<&str> {
+        self.unicode_name.as_deref()
+    }
+
+    /// Get the IP addresses.
+    pub fn ip_addresses(&self) -> Option<&IpAddresses> {
+        self.ip_addresses.as_ref()
+    }
+}
+
+impl ToResponse for Nameserver {
+    fn to_response(self) -> super::RdapResponse {
+        super::RdapResponse::Nameserver(Box::new(self))
     }
 }
 
@@ -189,8 +248,23 @@ impl SelfLink for Nameserver {
 
 impl ToChild for Nameserver {
     fn to_child(mut self) -> Self {
-        self.common = Common::builder().build();
+        self.common = Common {
+            rdap_conformance: None,
+            notices: None,
+        };
         self
+    }
+}
+
+impl CommonFields for Nameserver {
+    fn common(&self) -> &Common {
+        &self.common
+    }
+}
+
+impl ObjectCommonFields for Nameserver {
+    fn object_common(&self) -> &ObjectCommon {
+        &self.object_common
     }
 }
 

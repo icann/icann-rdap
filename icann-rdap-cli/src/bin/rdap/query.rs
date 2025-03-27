@@ -1,26 +1,28 @@
-use icann_rdap_client::http::Client;
-use icann_rdap_common::check::traverse_checks;
-use icann_rdap_common::check::CheckClass;
-use icann_rdap_common::check::CheckParams;
-use icann_rdap_common::check::Checks;
-use icann_rdap_common::check::GetChecks;
-use icann_rdap_common::response::get_related_links;
-use tracing::debug;
-use tracing::error;
-use tracing::info;
-
-use icann_rdap_client::{
-    gtld::{GtldParams, ToGtldWhois},
-    md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
-    rdap::{QueryType, ResponseData},
-    rdap::{RequestData, RequestResponse, RequestResponses, SourceType},
+use {
+    icann_rdap_client::http::Client,
+    icann_rdap_common::{
+        check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks},
+        response::get_related_links,
+    },
+    tracing::{debug, error, info},
 };
-use termimad::{crossterm::style::Color::*, Alignment, MadSkin};
 
-use crate::bootstrap::get_base_url;
-use crate::bootstrap::BootstrapType;
-use crate::error::RdapCliError;
-use crate::request::do_request;
+use {
+    icann_rdap_client::{
+        gtld::{GtldParams, ToGtldWhois},
+        md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
+        rdap::{
+            QueryType, RequestData, RequestResponse, RequestResponses, ResponseData, SourceType,
+        },
+    },
+    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
+};
+
+use crate::{
+    bootstrap::{get_base_url, BootstrapType},
+    error::RdapCliError,
+    request::do_request,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OutputType {
@@ -41,6 +43,9 @@ pub(crate) enum OutputType {
 
     /// RDAP JSON with extra information.
     JsonExtra,
+
+    /// URL
+    Url,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -433,6 +438,13 @@ fn do_final_output<W: std::io::Write>(
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
         OutputType::GtldWhois => {}
+        OutputType::Url => {
+            for rr in &transactions {
+                if let Some(url) = rr.res_data.http_data.request_uri() {
+                    writeln!(write, "{url}")?;
+                }
+            }
+        }
         _ => {} // do nothing
     };
 

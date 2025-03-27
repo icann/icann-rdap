@@ -1,14 +1,16 @@
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
-use async_trait::async_trait;
-use axum::{error_handling::HandleErrorLayer, Router};
-use http::{Method, StatusCode};
-use icann_rdap_common::VERSION;
-use tokio::net::TcpListener;
-use tower::{BoxError, ServiceBuilder};
-use tower_http::{
-    cors::{Any, CorsLayer},
-    trace::TraceLayer,
+use {
+    async_trait::async_trait,
+    axum::{error_handling::HandleErrorLayer, Router},
+    http::{Method, StatusCode},
+    icann_rdap_common::VERSION,
+    tokio::net::TcpListener,
+    tower::{BoxError, ServiceBuilder},
+    tower_http::{
+        cors::{Any, CorsLayer},
+        trace::TraceLayer,
+    },
 };
 
 use crate::{
@@ -175,11 +177,11 @@ impl AppState<Mem> {
     pub async fn new_mem(
         config: MemConfig,
         service_config: &ServiceConfig,
-    ) -> Result<AppState<Mem>, RdapServerError> {
+    ) -> Result<Self, RdapServerError> {
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Mem> {
+        Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
         })
@@ -196,11 +198,11 @@ impl AppState<Pg> {
     pub async fn new_pg(
         config: PgConfig,
         service_config: &ServiceConfig,
-    ) -> Result<AppState<Pg>, RdapServerError> {
+    ) -> Result<Self, RdapServerError> {
         let storage = Pg::new(config).await?;
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
-        Ok(AppState::<Pg> {
+        Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
         })

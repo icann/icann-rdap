@@ -1,14 +1,16 @@
-use assert_cmd::Command;
-use icann_rdap_srv::config::ListenConfig;
-use icann_rdap_srv::server::AppState;
-use icann_rdap_srv::server::Listener;
-use icann_rdap_srv::storage::mem::config::MemConfig;
-use icann_rdap_srv::storage::mem::ops::Mem;
-use icann_rdap_srv::storage::CommonConfig;
-use std::time::Duration;
-use test_dir::DirBuilder;
-use test_dir::FileType;
-use test_dir::TestDir;
+use {
+    assert_cmd::Command,
+    icann_rdap_srv::{
+        config::ListenConfig,
+        server::{AppState, Listener},
+        storage::{
+            mem::{config::MemConfig, ops::Mem},
+            CommonConfig,
+        },
+    },
+    std::time::Duration,
+    test_dir::{DirBuilder, FileType, TestDir},
+};
 
 pub enum CommandType {
     Rdap,
@@ -25,24 +27,24 @@ pub struct TestJig {
 }
 
 impl TestJig {
-    pub async fn new_rdap() -> TestJig {
+    pub async fn new_rdap() -> Self {
         let common_config = CommonConfig::default();
-        TestJig::new_common_config(common_config, CommandType::Rdap).await
+        Self::new_common_config(common_config, CommandType::Rdap).await
     }
 
-    pub async fn new_rdap_with_dn_search() -> TestJig {
+    pub async fn new_rdap_with_dn_search() -> Self {
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(true)
             .build();
-        TestJig::new_common_config(common_config, CommandType::Rdap).await
+        Self::new_common_config(common_config, CommandType::Rdap).await
     }
 
-    pub async fn new_rdap_test() -> TestJig {
+    pub async fn new_rdap_test() -> Self {
         let common_config = CommonConfig::default();
-        TestJig::new_common_config(common_config, CommandType::RdapTest).await
+        Self::new_common_config(common_config, CommandType::RdapTest).await
     }
 
-    pub async fn new_common_config(common_config: CommonConfig, cmd_type: CommandType) -> TestJig {
+    pub async fn new_common_config(common_config: CommonConfig, cmd_type: CommandType) -> Self {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
@@ -63,20 +65,20 @@ impl TestJig {
             .create("cache", FileType::Dir)
             .create("config", FileType::Dir);
         let cmd = Command::new("sh"); //throw away
-        let jig = TestJig {
+        Self {
             mem,
             cmd,
             cmd_type,
             rdap_base,
             test_dir,
-        };
-        jig.new_cmd()
+        }
+        .new_cmd()
     }
 
     /// Creates a new command from an existing one but resetting necessary environment variables.
     ///
     /// Using the function allows the test jig to stay up but a new command to be executed.
-    pub fn new_cmd(self) -> TestJig {
+    pub fn new_cmd(self) -> Self {
         let cmd = match self.cmd_type {
             CommandType::Rdap => {
                 let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
@@ -102,6 +104,6 @@ impl TestJig {
                 cmd
             }
         };
-        TestJig { cmd, ..self }
+        Self { cmd, ..self }
     }
 }

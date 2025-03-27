@@ -2,18 +2,20 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
-use icann_rdap_client::{
-    md::{string::StringUtil, table::MultiPartTable, MdOptions},
-    rdap::ResponseData,
-    RdapClientError,
+use {
+    icann_rdap_client::{
+        md::{string::StringUtil, table::MultiPartTable, MdOptions},
+        rdap::ResponseData,
+        RdapClientError,
+    },
+    icann_rdap_common::{
+        check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
+        response::{ExtensionId, RdapResponse},
+    },
+    reqwest::StatusCode,
+    serde::Serialize,
+    strum_macros::Display,
 };
-use icann_rdap_common::{
-    check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-    response::{types::ExtensionId, RdapResponse},
-};
-use reqwest::StatusCode;
-use serde::Serialize;
-use strum_macros::Display;
 
 use super::exec::TestOptions;
 
@@ -29,7 +31,7 @@ pub struct TestResults {
 
 impl TestResults {
     pub fn new(query_url: String, dns_data: DnsData) -> Self {
-        TestResults {
+        Self {
             query_url,
             dns_data,
             start_time: Utc::now(),
@@ -88,7 +90,7 @@ impl TestResults {
         let mut table = MultiPartTable::new();
 
         // test results summary
-        table = table.multi(vec![
+        table = table.multi_raw(vec![
             "Start Time".to_inline(options),
             "End Time".to_inline(options),
             "Duration".to_inline(options),
@@ -107,7 +109,7 @@ impl TestResults {
             .iter()
             .filter(|r| matches!(r.outcome, RunOutcome::Tested))
             .count();
-        table = table.multi(vec![
+        table = table.multi_raw(vec![
             format_date_time(self.start_time),
             end_time_s,
             duration_s,
@@ -115,7 +117,7 @@ impl TestResults {
         ]);
 
         // dns data
-        table = table.multi(vec![
+        table = table.multi_raw(vec![
             "DNS Query".to_inline(options),
             "DNS Answer".to_inline(options),
         ]);
@@ -124,16 +126,16 @@ impl TestResults {
         } else {
             format!("{} A records", self.dns_data.v4_addrs.len())
         };
-        table = table.multi(vec!["A (v4)".to_string(), v4_cname]);
+        table = table.multi_raw(vec!["A (v4)".to_string(), v4_cname]);
         let v6_cname = if let Some(ref cname) = self.dns_data.v6_cname {
             cname.to_owned()
         } else {
             format!("{} AAAA records", self.dns_data.v6_addrs.len())
         };
-        table = table.multi(vec!["AAAA (v6)".to_string(), v6_cname]);
+        table = table.multi_raw(vec!["AAAA (v6)".to_string(), v6_cname]);
 
         // summary of each run
-        table = table.multi(vec![
+        table = table.multi_raw(vec![
             "Address".to_inline(options),
             "Attributes".to_inline(options),
             "Duration".to_inline(options),
@@ -151,10 +153,10 @@ impl TestResults {
             md.push_str(&"Service Checks".to_string().to_header(1, options));
             let mut table = MultiPartTable::new();
 
-            table = table.multi(vec!["Message".to_inline(options)]);
+            table = table.multi_raw(vec!["Message".to_inline(options)]);
             for c in &self.service_checks {
                 let message = check_item_md(c, options);
-                table = table.multi(vec![message]);
+                table = table.multi_raw(vec![message]);
             }
             md.push_str(&table.to_md_table(options));
             md.push('\n');
@@ -183,7 +185,7 @@ pub enum RunOutcome {
     NetworkError,
     HttpProtocolError,
     HttpConnectError,
-    HttpRedirectError,
+    HttpRedirectResponse,
     HttpTimeoutError,
     HttpNon200Error,
     HttpTooManyRequestsError,
@@ -206,8 +208,8 @@ pub enum RunFeature {
 impl RunOutcome {
     pub fn to_md(&self, options: &MdOptions) -> String {
         match self {
-            RunOutcome::Tested => self.to_bold(options),
-            RunOutcome::Skipped => self.to_string(),
+            Self::Tested => self.to_bold(options),
+            Self::Skipped => self.to_string(),
             _ => self.to_em(options),
         }
     }
@@ -225,11 +227,11 @@ pub struct TestRun {
 }
 
 impl TestRun {
-    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
-        TestRun {
+    fn new(features: Vec<RunFeature>, socket_addr: SocketAddr) -> Self {
+        Self {
             features,
             start_time: Utc::now(),
-            socket_addr: SocketAddr::new(IpAddr::V4(ipv4), port),
+            socket_addr,
             end_time: None,
             response_data: None,
             outcome: RunOutcome::Skipped,
@@ -237,16 +239,12 @@ impl TestRun {
         }
     }
 
+    pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
+        Self::new(features, SocketAddr::new(IpAddr::V4(ipv4), port))
+    }
+
     pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
-        TestRun {
-            features,
-            start_time: Utc::now(),
-            socket_addr: SocketAddr::new(IpAddr::V6(ipv6), port),
-            end_time: None,
-            response_data: None,
-            outcome: RunOutcome::Skipped,
-            checks: None,
-        }
+        Self::new(features, SocketAddr::new(IpAddr::V6(ipv6), port))
     }
 
     pub fn end(
@@ -269,13 +267,19 @@ impl TestRun {
                 | RdapClientError::BootstrapError(_)
                 | RdapClientError::IanaResponse(_) => RunOutcome::InternalError,
                 RdapClientError::Response(_) => RunOutcome::RdapDataError,
-                RdapClientError::Json(_) | RdapClientError::ParsingError(_) => {
-                    RunOutcome::JsonError
+                RdapClientError::Json(_) => RunOutcome::JsonError,
+                RdapClientError::ParsingError(e) => {
+                    let status_code = e.http_data.status_code();
+                    if status_code > 299 && status_code < 400 {
+                        RunOutcome::HttpRedirectResponse
+                    } else {
+                        RunOutcome::JsonError
+                    }
                 }
                 RdapClientError::IoError(_) => RunOutcome::NetworkError,
                 RdapClientError::Client(e) => {
                     if e.is_redirect() {
-                        RunOutcome::HttpRedirectError
+                        RunOutcome::HttpRedirectResponse
                     } else if e.is_connect() {
                         RunOutcome::HttpConnectError
                     } else if e.is_timeout() {
@@ -305,7 +309,7 @@ impl TestRun {
         } else {
             "n/a".to_string()
         };
-        table = table.multi(vec![
+        table = table.multi_raw(vec![
             self.socket_addr.to_string(),
             self.attribute_set(),
             duration_s,
@@ -324,7 +328,7 @@ impl TestRun {
         // if outcome is tested
         if matches!(self.outcome, RunOutcome::Tested) {
             // get check items according to class
-            let mut check_v: Vec<(String, String)> = Vec::new();
+            let mut check_v: Vec<(String, String)> = vec![];
             if let Some(ref checks) = self.checks {
                 traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
                     let message = check_item_md(item, options);
@@ -338,18 +342,18 @@ impl TestRun {
             if check_v.is_empty() {
                 table = table.header_ref(&"No issues or errors.");
             } else {
-                table = table.multi(vec![
+                table = table.multi_raw(vec![
                     "RDAP Structure".to_inline(options),
                     "Message".to_inline(options),
                 ]);
                 for c in check_v {
-                    table = table.nv(&c.0, c.1);
+                    table = table.nv_raw(&c.0, c.1);
                 }
             }
             md.push_str(&table.to_md_table(options));
         } else {
             let mut table = MultiPartTable::new();
-            table = table.multi(vec![self.outcome.to_md(options)]);
+            table = table.multi_raw(vec![self.outcome.to_md(options)]);
             md.push_str(&table.to_md_table(options));
         }
 
@@ -426,10 +430,9 @@ fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use icann_rdap_common::response::{
-        domain::Domain,
-        types::{Common, Extension},
-        RdapResponse,
+    use icann_rdap_common::{
+        prelude::ToResponse,
+        response::{Domain, Extension},
     };
 
     use super::rdap_has_expected_extension;
@@ -437,14 +440,11 @@ mod tests {
     #[test]
     fn GIVEN_expected_extension_WHEN_rdap_has_THEN_true() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("foo.example.com").build();
-        let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
-            ..domain
-        };
-        let rdap = RdapResponse::Domain(domain);
+        let domain = Domain::builder()
+            .extension(Extension::from("foo0"))
+            .ldh_name("foo.example.com")
+            .build();
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = rdap_has_expected_extension(&rdap, "foo0");
@@ -456,14 +456,11 @@ mod tests {
     #[test]
     fn GIVEN_expected_extension_WHEN_rdap_does_not_have_THEN_false() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("foo.example.com").build();
-        let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
-            ..domain
-        };
-        let rdap = RdapResponse::Domain(domain);
+        let domain = Domain::builder()
+            .extension(Extension::from("foo0"))
+            .ldh_name("foo.example.com")
+            .build();
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = rdap_has_expected_extension(&rdap, "foo1");
@@ -475,14 +472,11 @@ mod tests {
     #[test]
     fn GIVEN_compound_expected_extension_WHEN_rdap_has_THEN_true() {
         // GIVEN
-        let domain = Domain::basic().ldh_name("foo.example.com").build();
-        let domain = Domain {
-            common: Common::level0_with_options()
-                .extension(Extension::from("foo0"))
-                .build(),
-            ..domain
-        };
-        let rdap = RdapResponse::Domain(domain);
+        let domain = Domain::builder()
+            .extension(Extension::from("foo0"))
+            .ldh_name("foo.example.com")
+            .build();
+        let rdap = domain.to_response();
 
         // WHEN
         let actual = rdap_has_expected_extension(&rdap, "foo0|foo1");

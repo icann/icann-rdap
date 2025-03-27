@@ -1,8 +1,9 @@
 //! Converts RDAP structures to gTLD Whois output.
 
-use icann_rdap_common::contact::PostalAddress;
-use icann_rdap_common::response::RdapResponse;
-use std::any::TypeId;
+use {
+    icann_rdap_common::{contact::PostalAddress, response::RdapResponse},
+    std::any::TypeId,
+};
 
 pub mod domain;
 pub mod entity;
@@ -19,7 +20,7 @@ pub struct GtldParams<'a> {
 
 impl GtldParams<'_> {
     pub fn from_parent(&mut self, parent_type: TypeId) -> Self {
-        GtldParams {
+        Self {
             parent_type,
             root: self.root,
             label: self.label.clone(),
@@ -27,7 +28,7 @@ impl GtldParams<'_> {
     }
 
     pub fn next_level(&self) -> Self {
-        GtldParams {
+        Self {
             label: self.label.clone(),
             ..*self
         }
@@ -42,7 +43,7 @@ impl ToGtldWhois for RdapResponse {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
         let variant_gtld = match &self {
-            RdapResponse::Domain(domain) => domain.to_gtld_whois(params),
+            Self::Domain(domain) => domain.to_gtld_whois(params),
             _ => String::new(),
         };
         gtld.push_str(&variant_gtld);

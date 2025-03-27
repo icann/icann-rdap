@@ -1,10 +1,12 @@
 //! Code for handling HTTP caching.
 
-use buildstructor::Builder;
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use {
+    chrono::{DateTime, Duration, Utc},
+    serde::{Deserialize, Serialize},
+};
 
-#[derive(Serialize, Deserialize, Clone, Debug, Builder, PartialEq, Eq)]
+/// Represents the data from HTTP responses.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct HttpData {
     pub content_length: Option<u64>,
     pub content_type: Option<String>,
@@ -19,13 +21,50 @@ pub struct HttpData {
     pub access_control_allow_credentials: Option<String>,
     pub strict_transport_security: Option<String>,
     pub retry_after: Option<String>,
+    pub request_uri: Option<String>,
 }
 
 #[buildstructor::buildstructor]
 impl HttpData {
-    #[builder(entry = "now")]
+    #[builder(visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_now(
+    fn new(
+        content_length: Option<u64>,
+        content_type: Option<String>,
+        scheme: Option<String>,
+        host: String,
+        expires: Option<String>,
+        cache_control: Option<String>,
+        status_code: u16,
+        location: Option<String>,
+        access_control_allow_origin: Option<String>,
+        access_control_allow_credentials: Option<String>,
+        strict_transport_security: Option<String>,
+        retry_after: Option<String>,
+        received: DateTime<Utc>,
+        request_uri: Option<String>,
+    ) -> Self {
+        Self {
+            content_length,
+            content_type,
+            scheme,
+            host,
+            expires,
+            cache_control,
+            received,
+            status_code,
+            location,
+            access_control_allow_origin,
+            access_control_allow_credentials,
+            strict_transport_security,
+            retry_after,
+            request_uri,
+        }
+    }
+
+    #[builder(entry = "now", visibility = "pub")]
+    #[allow(clippy::too_many_arguments)]
+    fn new_now(
         content_length: Option<u64>,
         content_type: Option<String>,
         scheme: String,
@@ -38,6 +77,7 @@ impl HttpData {
         access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
         retry_after: Option<String>,
+        request_uri: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -53,12 +93,13 @@ impl HttpData {
             access_control_allow_credentials,
             strict_transport_security,
             retry_after,
+            request_uri,
         }
     }
 
-    #[builder(entry = "example")]
+    #[builder(entry = "example", visibility = "pub")]
     #[allow(clippy::too_many_arguments)]
-    pub fn new_example(
+    fn new_example(
         content_length: Option<u64>,
         content_type: Option<String>,
         expires: Option<String>,
@@ -69,6 +110,7 @@ impl HttpData {
         access_control_allow_credentials: Option<String>,
         strict_transport_security: Option<String>,
         retry_after: Option<String>,
+        request_uri: Option<String>,
     ) -> Self {
         Self {
             content_length,
@@ -84,6 +126,7 @@ impl HttpData {
             access_control_allow_credentials,
             strict_transport_security,
             retry_after,
+            request_uri,
         }
     }
 
@@ -106,11 +149,11 @@ impl HttpData {
         }
         if let Some(expires) = &self.expires {
             let expire_time = DateTime::parse_from_rfc2822(expires);
-            if let Ok(expire_time) = expire_time {
-                return now >= expire_time;
+            return if let Ok(expire_time) = expire_time {
+                now >= expire_time
             } else {
-                return false;
-            }
+                false
+            };
         }
         false
     }
@@ -143,15 +186,71 @@ impl HttpData {
         lines.push_str(data);
         Ok(lines)
     }
+
+    pub fn content_length(&self) -> Option<u64> {
+        self.content_length
+    }
+
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_deref()
+    }
+
+    pub fn scheme(&self) -> Option<&str> {
+        self.scheme.as_deref()
+    }
+
+    pub fn host(&self) -> &str {
+        &self.host
+    }
+
+    pub fn expires(&self) -> Option<&str> {
+        self.expires.as_deref()
+    }
+
+    pub fn cache_control(&self) -> Option<&str> {
+        self.cache_control.as_deref()
+    }
+
+    pub fn received(&self) -> &DateTime<Utc> {
+        &self.received
+    }
+
+    pub fn status_code(&self) -> u16 {
+        self.status_code
+    }
+
+    pub fn location(&self) -> Option<&str> {
+        self.location.as_deref()
+    }
+
+    pub fn access_control_allow_origin(&self) -> Option<&str> {
+        self.access_control_allow_origin.as_deref()
+    }
+
+    pub fn access_control_allow_credentials(&self) -> Option<&str> {
+        self.access_control_allow_credentials.as_deref()
+    }
+
+    pub fn strict_transport_security(&self) -> Option<&str> {
+        self.strict_transport_security.as_deref()
+    }
+
+    pub fn retry_after(&self) -> Option<&str> {
+        self.retry_after.as_deref()
+    }
+
+    pub fn request_uri(&self) -> Option<&str> {
+        self.request_uri.as_deref()
+    }
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
-    use super::HttpData;
-    use chrono::Duration;
-    use chrono::Utc;
-    use rstest::rstest;
+    use {
+        super::HttpData,
+        chrono::{Duration, Utc},
+        rstest::rstest,
+    };
 
     #[rstest]
     #[case(HttpData::example().cache_control("max-age=0").build(), 100, true)]
@@ -164,7 +263,7 @@ mod tests {
     #[case(HttpData::example().expires((Utc::now() + Duration::seconds(100)).to_rfc2822()).build(), 50, false)]
     #[case(HttpData::example().cache_control("max-age=100").expires(Utc::now().to_rfc2822()).build(), 100, false)]
     #[case(HttpData::example().cache_control("max-age=0").expires((Utc::now() + Duration::seconds(50)).to_rfc2822()).build(), 100, true)]
-    fn GIVEN_cache_data_and_max_age_WHEN_is_expired_THEN_correct(
+    fn test_cache_data_and_max_age_is_expired(
         #[case] cache_data: HttpData,
         #[case] max_age: i64,
         #[case] expected: bool,
@@ -182,10 +281,7 @@ mod tests {
     #[case(HttpData::example().cache_control("no-cache").build(), false)]
     #[case(HttpData::example().cache_control("no-store").build(), false)]
     #[case(HttpData::example().cache_control("max-age=40").build(), true)]
-    fn GIVEN_cache_control_WHEN_should_cache_THEN_correc(
-        #[case] cache_data: HttpData,
-        #[case] expected: bool,
-    ) {
+    fn test_cache_control(#[case] cache_data: HttpData, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -196,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_data_and_data_cache_WHEN_to_lines_THEN_format_correct() {
+    fn test_data_and_data_cache_to_lines() {
         // GIVEN
         let data = "foo";
         let cache_data = HttpData::example().content_length(14).build();
@@ -210,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_lines_WHEN_from_lines_THEN_parse_correctly() {
+    fn test_from_lines() {
         // GIVEN
         let data = "foo";
         let cache_data = HttpData::example().content_length(14).build();

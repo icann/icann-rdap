@@ -11,25 +11,25 @@ impl GetChecks for Autnum {
         let sub_checks = if params.do_subchecks {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Autnum>()));
+                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Autnum>())),
+                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             sub_checks
         } else {
-            Vec::new()
+            vec![]
         };
 
-        let mut items = Vec::new();
+        let mut items = vec![];
 
         if self.start_autnum.is_none() || self.end_autnum.is_none() {
             items.push(Check::AutnumMissing.check_item())
         }
 
-        if let Some(start_num) = &self.start_autnum {
-            if let Some(end_num) = &self.end_autnum {
+        if let Some(start_num) = &self.start_autnum.as_ref().and_then(|n| n.as_u32()) {
+            if let Some(end_num) = &self.end_autnum.as_ref().and_then(|n| n.as_u32()) {
                 if start_num > end_num {
                     items.push(Check::AutnumEndBeforeStart.check_item())
                 }
@@ -81,24 +81,25 @@ pub fn is_autnum_private_use(autnum: u32) -> bool {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
 
     use rstest::rstest;
 
-    use crate::response::RdapResponse;
+    use crate::prelude::ToResponse;
 
-    use crate::check::{Check, CheckParams, GetChecks};
-    use crate::response::autnum::Autnum;
+    use crate::{
+        check::{Check, CheckParams, GetChecks},
+        response::autnum::Autnum,
+    };
 
     use super::*;
 
     #[test]
-    fn GIVEN_autnum_with_empty_name_WHEN_checked_THEN_empty_name_check() {
+    fn check_autnum_with_empty_name() {
         // GIVEN
-        let mut autnum = Autnum::basic().autnum_range(700..700).build();
+        let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.name = Some("".to_string());
-        let rdap = RdapResponse::Autnum(autnum);
+        let rdap = autnum.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -112,11 +113,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_autnum_with_empty_type_WHEN_checked_THEN_empty_type_check() {
+    fn check_autnum_with_empty_type() {
         // GIVEN
-        let mut autnum = Autnum::basic().autnum_range(700..700).build();
+        let mut autnum = Autnum::builder().autnum_range(700..700).build();
         autnum.autnum_type = Some("".to_string());
-        let rdap = RdapResponse::Autnum(autnum);
+        let rdap = autnum.to_response();
 
         // WHEN
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
@@ -140,10 +141,7 @@ mod tests {
     #[case(65551, false)]
     #[case(131072, false)]
     #[case(4294967294, false)]
-    fn GIVEN_autnum_WHEN_is_reserved_THEN_correct_result(
-        #[case] autnum: u32,
-        #[case] expected: bool,
-    ) {
+    fn check_autnum_is_reserved(#[case] autnum: u32, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -162,10 +160,7 @@ mod tests {
     #[case(64512, false)]
     #[case(65535, false)]
     #[case(65552, false)]
-    fn GIVEN_autnum_WHEN_is_documentation_THEN_correct_result(
-        #[case] autnum: u32,
-        #[case] expected: bool,
-    ) {
+    fn check_autnum_is_documentation(#[case] autnum: u32, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -185,10 +180,7 @@ mod tests {
     #[case(65535, false)]
     #[case(4199999999, false)]
     #[case(4294967295, false)]
-    fn GIVEN_autnum_WHEN_is_private_use_THEN_correct_result(
-        #[case] autnum: u32,
-        #[case] expected: bool,
-    ) {
+    fn check_autnum_is_private_use(#[case] autnum: u32, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN

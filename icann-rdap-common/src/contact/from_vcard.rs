@@ -63,17 +63,37 @@ impl Contact {
         let contact = Contact::builder()
             .and_full_name(vcard.find_property("fn").get_text())
             .and_kind(vcard.find_property("kind").get_text())
-            .and_titles(vcard.find_properties("title").get_texts())
-            .and_roles(vcard.find_properties("role").get_texts())
-            .and_nick_names(vcard.find_properties("nickname").get_texts())
-            .and_organization_names(vcard.find_properties("org").get_texts())
-            .and_langs(vcard.find_properties("lang").get_langs())
-            .and_emails(vcard.find_properties("email").get_emails())
-            .and_phones(vcard.find_properties("tel").get_phones())
-            .and_postal_addresses(vcard.find_properties("adr").get_postal_addresses())
+            .titles(vcard.find_properties("title").get_texts().unwrap_or(vec![]))
+            .roles(vcard.find_properties("role").get_texts().unwrap_or(vec![]))
+            .nick_names(
+                vcard
+                    .find_properties("nickname")
+                    .get_texts()
+                    .unwrap_or(vec![]),
+            )
+            .organization_names(vcard.find_properties("org").get_texts().unwrap_or(vec![]))
+            .langs(vcard.find_properties("lang").get_langs().unwrap_or(vec![]))
+            .emails(
+                vcard
+                    .find_properties("email")
+                    .get_emails()
+                    .unwrap_or(vec![]),
+            )
+            .phones(vcard.find_properties("tel").get_phones().unwrap_or(vec![]))
+            .postal_addresses(
+                vcard
+                    .find_properties("adr")
+                    .get_postal_addresses()
+                    .unwrap_or(vec![]),
+            )
             .and_name_parts(vcard.find_property("n").get_name_parts())
-            .and_contact_uris(vcard.find_properties("contact-uri").get_texts())
-            .and_urls(vcard.find_properties("url").get_texts())
+            .contact_uris(
+                vcard
+                    .find_properties("contact-uri")
+                    .get_texts()
+                    .unwrap_or(vec![]),
+            )
+            .urls(vcard.find_properties("url").get_texts().unwrap_or(vec![]))
             .build();
 
         contact.is_non_empty().then_some(contact)
@@ -275,7 +295,7 @@ impl<'a> GetEmails<'a> for &'a [&'a Vec<Value>] {
                 let addr = (*prop).get_text()?;
                 let email = Email::builder()
                     .email(addr)
-                    .and_contexts((*prop).get_contexts())
+                    .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
                     .build();
                 Some(email)
@@ -297,8 +317,8 @@ impl<'a> GetPhones<'a> for &'a [&'a Vec<Value>] {
                 let number = (*prop).get_text()?;
                 let phone = Phone::builder()
                     .phone(number)
-                    .and_features((*prop).get_features())
-                    .and_contexts((*prop).get_contexts())
+                    .features((*prop).get_features().unwrap_or_default())
+                    .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
                     .build();
                 Some(phone)
@@ -323,7 +343,7 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                 let mut region_code: Option<String> = None;
                 let mut region_name: Option<String> = None;
                 let mut locality: Option<String> = None;
-                let mut street_parts: Vec<String> = Vec::new();
+                let mut street_parts: Vec<String> = vec![];
                 if let Some(fourth) = prop.get(3) {
                     if let Some(addr) = fourth.as_array() {
                         // the jcard address fields are in a different index of the array.
@@ -410,7 +430,7 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                 let street_parts = (!street_parts.is_empty()).then_some(street_parts);
                 PostalAddress::builder()
                     .and_full_address((*prop).get_label())
-                    .and_contexts((*prop).get_contexts())
+                    .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
                     .and_country_code(country_code)
                     .and_country_name(country_name)
@@ -418,7 +438,7 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                     .and_region_name(region_name)
                     .and_region_code(region_code)
                     .and_locality(locality)
-                    .and_street_parts(street_parts)
+                    .street_parts(street_parts.unwrap_or_default())
                     .build()
             })
             .collect::<Vec<PostalAddress>>();
@@ -457,11 +477,11 @@ impl<'a> GetNameParts<'a> for Option<&'a Vec<Value>> {
             suffixes = get_string_or_vec(e);
         };
         let name_parts = NameParts::builder()
-            .and_surnames(surnames)
-            .and_prefixes(prefixes)
-            .and_given_names(given_names)
-            .and_middle_names(middle_names)
-            .and_suffixes(suffixes)
+            .surnames(surnames.unwrap_or_default())
+            .prefixes(prefixes.unwrap_or_default())
+            .given_names(given_names.unwrap_or_default())
+            .middle_names(middle_names.unwrap_or_default())
+            .suffixes(suffixes.unwrap_or_default())
             .build();
         if name_parts.surnames.is_none()
             && name_parts.given_names.is_none()

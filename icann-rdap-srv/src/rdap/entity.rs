@@ -1,8 +1,10 @@
-use axum::{
-    extract::{Path, State},
-    response::Response,
+use {
+    axum::{
+        extract::{Path, State},
+        response::Response,
+    },
+    icann_rdap_common::response::RdapResponse,
 };
-use icann_rdap_common::response::RdapResponse;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 

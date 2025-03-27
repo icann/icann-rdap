@@ -1,9 +1,7 @@
-use super::{GtldParams, ToGtldWhois};
-use icann_rdap_common::response::domain::Domain;
-use icann_rdap_common::response::domain::SecureDns;
-use icann_rdap_common::response::nameserver::Nameserver;
-use icann_rdap_common::response::network::Network;
-use icann_rdap_common::response::types::{Event, StatusValue};
+use {
+    super::{GtldParams, ToGtldWhois},
+    icann_rdap_common::response::{Boolish, Domain, Event, Nameserver, Network, SecureDns},
+};
 
 impl ToGtldWhois for Domain {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
@@ -23,8 +21,10 @@ impl ToGtldWhois for Domain {
         gtld.push_str(&date_info);
 
         // Common Object Stuff
-        let domain_info =
-            format_domain_info(&self.object_common.status, &self.object_common.port_43);
+        let domain_info = format_domain_info(
+            &self.object_common.status.as_ref().map(|v| v.vec().clone()),
+            &self.object_common.port_43,
+        );
         gtld.push_str(&domain_info);
 
         // Enitities: registrar and abuse/tech/admin/registrant info
@@ -102,11 +102,11 @@ fn format_registry_dates(events: &Option<Vec<Event>>) -> String {
     formatted_dates
 }
 
-fn format_domain_info(status: &Option<Vec<StatusValue>>, port_43: &Option<String>) -> String {
+fn format_domain_info(status: &Option<Vec<String>>, port_43: &Option<String>) -> String {
     let mut info = String::new();
     if let Some(status) = status {
         for value in status {
-            info.push_str(&format!("Domain Status: {}\n", **value));
+            info.push_str(&format!("Domain Status: {}\n", *value));
         }
     }
     if let Some(port_43) = port_43 {
@@ -142,13 +142,21 @@ fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
     let mut dnssec_info = String::new();
 
     if let Some(secure_dns) = secure_dns {
-        if secure_dns.delegation_signed.unwrap_or(false) {
+        if secure_dns
+            .delegation_signed
+            .as_ref()
+            .unwrap_or(&Boolish::from(false))
+            .into_bool()
+        {
             dnssec_info.push_str("DNSSEC: signedDelegation\n");
             if let Some(ds_data) = &secure_dns.ds_data {
                 for ds in ds_data {
-                    if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) =
-                        (ds.key_tag, ds.algorithm, ds.digest_type, ds.digest.as_ref())
-                    {
+                    if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) = (
+                        ds.key_tag.as_ref(),
+                        ds.algorithm.as_ref(),
+                        ds.digest_type.as_ref(),
+                        ds.digest.as_ref(),
+                    ) {
                         dnssec_info.push_str(&format!(
                             "DNSSEC DS Data: {} {} {} {}\n",
                             key_tag, algorithm, digest_type, digest
@@ -183,14 +191,17 @@ fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use super::{GtldParams, ToGtldWhois};
-    use icann_rdap_common::response::domain::Domain;
-    use icann_rdap_common::response::RdapResponse;
-    use serde_json::Value;
-    use std::any::TypeId;
-    use std::error::Error;
-    use std::fs::File;
-    use std::io::Read;
+    use crate::gtld::ToGtldWhois;
+
+    use {
+        super::GtldParams,
+        icann_rdap_common::{prelude::ToResponse, response::Domain},
+    };
+
+    use {
+        serde_json::Value,
+        std::{any::TypeId, error::Error, fs::File, io::Read},
+    };
 
     fn process_gtld_file(file_path: &str) -> Result<String, Box<dyn Error>> {
         let mut file = File::open(file_path)?;
@@ -202,7 +213,7 @@ mod tests {
         let actual = serde_json::from_value::<Domain>(toplevel_json_response);
         let gtld_version_of_the_domain = match actual {
             Ok(domain) => {
-                let rdap_response = RdapResponse::Domain(Domain::basic().ldh_name("").build());
+                let rdap_response = Domain::builder().ldh_name("").build().to_response();
                 let mut gtld_params = GtldParams {
                     root: &rdap_response,
                     parent_type: TypeId::of::<Domain>(),

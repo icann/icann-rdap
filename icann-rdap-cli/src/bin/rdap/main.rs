@@ -1,31 +1,26 @@
-use bootstrap::BootstrapType;
-use clap::builder::styling::AnsiColor;
-use clap::builder::Styles;
-use error::RdapCliError;
-use icann_rdap_cli::dirs;
-use icann_rdap_client::http::create_client;
-use icann_rdap_client::http::Client;
-use icann_rdap_client::http::ClientConfig;
-use icann_rdap_common::check::CheckClass;
-use query::InrBackupBootstrap;
-use query::ProcessType;
-use query::ProcessingParams;
-use query::TldLookup;
-use std::io::IsTerminal;
-use std::str::FromStr;
-use tracing::error;
-use tracing::info;
 #[cfg(debug_assertions)]
 use tracing::warn;
-use tracing_subscriber::filter::LevelFilter;
-use write::FmtWrite;
-use write::PagerWrite;
+use {
+    bootstrap::BootstrapType,
+    clap::builder::{styling::AnsiColor, Styles},
+    error::RdapCliError,
+    icann_rdap_cli::dirs,
+    icann_rdap_client::http::{create_client, Client, ClientConfig},
+    icann_rdap_common::check::CheckClass,
+    query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup},
+    std::{io::IsTerminal, str::FromStr},
+    tracing::{error, info},
+    tracing_subscriber::filter::LevelFilter,
+    write::{FmtWrite, PagerWrite},
+};
 
-use clap::{ArgGroup, Parser, ValueEnum};
-use icann_rdap_client::rdap::QueryType;
-use icann_rdap_common::VERSION;
-use query::OutputType;
-use tokio::{join, task::spawn_blocking};
+use {
+    clap::{ArgGroup, Parser, ValueEnum},
+    icann_rdap_client::rdap::QueryType,
+    icann_rdap_common::VERSION,
+    query::OutputType,
+    tokio::{join, task::spawn_blocking},
+};
 
 use crate::query::do_query;
 
@@ -382,6 +377,9 @@ enum OtypeArg {
     /// Global Top Level Domain Output
     GtldWhois,
 
+    /// URL of RDAP servers.
+    Url,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -473,12 +471,12 @@ enum InrBackupBootstrapArg {
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
-            LogLevel::Off => LevelFilter::OFF,
-            LogLevel::Error => LevelFilter::ERROR,
-            LogLevel::Warn => LevelFilter::WARN,
-            LogLevel::Info => LevelFilter::INFO,
-            LogLevel::Debug => LevelFilter::DEBUG,
-            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Off => Self::OFF,
+            LogLevel::Error => Self::ERROR,
+            LogLevel::Warn => Self::WARN,
+            LogLevel::Info => Self::INFO,
+            LogLevel::Debug => Self::DEBUG,
+            LogLevel::Trace => Self::TRACE,
         }
     }
 }
@@ -486,7 +484,11 @@ impl From<&LogLevel> for LevelFilter {
 #[tokio::main]
 pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
-        eprintln!("\n{e}\n");
+        let ec = e.exit_code();
+        match ec {
+            202 => error!("Use -T or --allow-http to allow insecure HTTP connections."),
+            _ => eprintln!("\n{e}\n"),
+        };
         return e;
     } else {
         return RdapCliError::Success;
@@ -527,6 +529,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::PrettyJson => OutputType::PrettyJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
+        OtypeArg::Url => OutputType::Url,
     };
 
     let process_type = match cli.process_type {
@@ -689,34 +692,32 @@ async fn exec<W: std::io::Write>(
 }
 
 fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
-    if let Some(query_value) = cli.query_value.clone() {
-        if let Some(query_type) = cli.query_type {
-            let q = match query_type {
-                QtypeArg::V4 => QueryType::ipv4(&query_value)?,
-                QtypeArg::V6 => QueryType::ipv6(&query_value)?,
-                QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
-                QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
-                QtypeArg::Autnum => QueryType::autnum(&query_value)?,
-                QtypeArg::Domain => QueryType::domain(&query_value)?,
-                QtypeArg::ALabel => QueryType::alabel(&query_value)?,
-                QtypeArg::Entity => QueryType::Entity(query_value),
-                QtypeArg::Ns => QueryType::ns(&query_value)?,
-                QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
-                QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
-                QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
-                QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
-                QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
-                QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
-                QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
-                QtypeArg::Url => QueryType::Url(query_value),
-            };
-            Ok(q)
-        } else {
-            Ok(QueryType::from_str(&query_value)?)
-        }
-    } else {
-        Ok(QueryType::Help)
-    }
+    let Some(query_value) = cli.query_value.clone() else {
+        return Ok(QueryType::Help);
+    };
+    let Some(query_type) = cli.query_type else {
+        return Ok(QueryType::from_str(&query_value)?);
+    };
+    let q = match query_type {
+        QtypeArg::V4 => QueryType::ipv4(&query_value)?,
+        QtypeArg::V6 => QueryType::ipv6(&query_value)?,
+        QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
+        QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
+        QtypeArg::Autnum => QueryType::autnum(&query_value)?,
+        QtypeArg::Domain => QueryType::domain(&query_value)?,
+        QtypeArg::ALabel => QueryType::alabel(&query_value)?,
+        QtypeArg::Entity => QueryType::Entity(query_value),
+        QtypeArg::Ns => QueryType::ns(&query_value)?,
+        QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
+        QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
+        QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
+        QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
+        QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
+        QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
+        QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
+        QtypeArg::Url => QueryType::Url(query_value),
+    };
+    Ok(q)
 }
 
 #[cfg(test)]

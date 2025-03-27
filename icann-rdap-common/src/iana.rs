@@ -1,11 +1,13 @@
 //! The IANA RDAP Bootstrap Registries.
 
-use ipnet::Ipv4Net;
-use ipnet::Ipv6Net;
-use prefix_trie::PrefixMap;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use {
+    ipnet::{Ipv4Net, Ipv6Net},
+    prefix_trie::PrefixMap,
+    serde::{Deserialize, Serialize},
+    thiserror::Error,
+};
 
+/// IANA registry variants for RDAP.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum IanaRegistryType {
     RdapBootstrapDns,
@@ -16,16 +18,18 @@ pub enum IanaRegistryType {
 }
 
 impl IanaRegistryType {
+    /// Get the URL for an IANA RDAP registry.
     pub fn url(&self) -> &str {
         match self {
-            IanaRegistryType::RdapBootstrapDns => "https://data.iana.org/rdap/dns.json",
-            IanaRegistryType::RdapBootstrapAsn => "https://data.iana.org/rdap/asn.json",
-            IanaRegistryType::RdapBootstrapIpv4 => "https://data.iana.org/rdap/ipv4.json",
-            IanaRegistryType::RdapBootstrapIpv6 => "https://data.iana.org/rdap/ipv6.json",
-            IanaRegistryType::RdapObjectTags => "https://data.iana.org/rdap/object-tags.json",
+            Self::RdapBootstrapDns => "https://data.iana.org/rdap/dns.json",
+            Self::RdapBootstrapAsn => "https://data.iana.org/rdap/asn.json",
+            Self::RdapBootstrapIpv4 => "https://data.iana.org/rdap/ipv4.json",
+            Self::RdapBootstrapIpv6 => "https://data.iana.org/rdap/ipv6.json",
+            Self::RdapObjectTags => "https://data.iana.org/rdap/object-tags.json",
         }
     }
 
+    /// Get the filename in the URL for the IANA RDAP registry.
     pub fn file_name(&self) -> &str {
         let url = self.url();
         url.rsplit('/')
@@ -34,6 +38,7 @@ impl IanaRegistryType {
     }
 }
 
+/// Classes of IANA registries.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum IanaRegistry {
@@ -41,6 +46,7 @@ pub enum IanaRegistry {
     // might add IANA registrar IDs later
 }
 
+/// Represents an IANA RDAP bootstrap registry.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RdapBootstrapRegistry {
     pub version: String,
@@ -57,6 +63,7 @@ pub trait BootstrapRegistry {
     fn get_tag_bootstrap_urls(&self, tag: &str) -> Result<Vec<String>, BootstrapRegistryError>;
 }
 
+/// Errors from processing IANA RDAP bootstrap registries.
 #[derive(Debug, Error)]
 pub enum BootstrapRegistryError {
     #[error("Empty Service")]
@@ -72,9 +79,10 @@ pub enum BootstrapRegistryError {
 }
 
 impl BootstrapRegistry for IanaRegistry {
+    /// Get the URLs from the IANA domain bootstrap registry.
     fn get_dns_bootstrap_urls(&self, ldh: &str) -> Result<Vec<String>, BootstrapRegistryError> {
         let mut longest_match: Option<(usize, Vec<String>)> = None;
-        let IanaRegistry::RdapBootstrapRegistry(bootstrap) = self;
+        let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
             let tlds = service
                 .first()
@@ -94,12 +102,13 @@ impl BootstrapRegistry for IanaRegistry {
         Ok(longest.1)
     }
 
+    /// Get the URLS from the IANA autnum bootstrap registry.
     fn get_asn_bootstrap_urls(&self, asn: &str) -> Result<Vec<String>, BootstrapRegistryError> {
         let autnum = asn
             .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
             .parse::<u32>()
             .map_err(|_| BootstrapRegistryError::InvalidBootstrapInput)?;
-        let IanaRegistry::RdapBootstrapRegistry(bootstrap) = self;
+        let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
             let as_ranges = service
                 .first()
@@ -125,9 +134,10 @@ impl BootstrapRegistry for IanaRegistry {
         Err(BootstrapRegistryError::NoBootstrapUrls)
     }
 
+    /// Get the URLs from the IANA IPv4 bootstrap registry.
     fn get_ipv4_bootstrap_urls(&self, ipv4: &str) -> Result<Vec<String>, BootstrapRegistryError> {
         let mut pm: PrefixMap<Ipv4Net, Vec<String>> = PrefixMap::new();
-        let IanaRegistry::RdapBootstrapRegistry(bootstrap) = self;
+        let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
             let urls = service.last().ok_or(BootstrapRegistryError::EmptyService)?;
             for cidr in service
@@ -151,9 +161,10 @@ impl BootstrapRegistry for IanaRegistry {
         Ok(net.1.to_owned())
     }
 
+    /// Get the URLs from the IANA IPv6 bootstrap registry.
     fn get_ipv6_bootstrap_urls(&self, ipv6: &str) -> Result<Vec<String>, BootstrapRegistryError> {
         let mut pm: PrefixMap<Ipv6Net, Vec<String>> = PrefixMap::new();
-        let IanaRegistry::RdapBootstrapRegistry(bootstrap) = self;
+        let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
             let urls = service.last().ok_or(BootstrapRegistryError::EmptyService)?;
             for cidr in service
@@ -177,8 +188,9 @@ impl BootstrapRegistry for IanaRegistry {
         Ok(net.1.to_owned())
     }
 
+    /// Get the URLs from the IANA object tag bootstrap registry.
     fn get_tag_bootstrap_urls(&self, tag: &str) -> Result<Vec<String>, BootstrapRegistryError> {
-        let IanaRegistry::RdapBootstrapRegistry(bootstrap) = self;
+        let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
             let object_tag = service
                 .get(1)

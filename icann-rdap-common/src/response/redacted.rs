@@ -1,10 +1,13 @@
-use buildstructor::Builder;
-use serde::{Deserialize, Serialize};
-use std::any::TypeId;
-use std::fmt;
+//! RFC 9537.
+use {
+    buildstructor::Builder,
+    serde::{Deserialize, Serialize},
+    std::{any::TypeId, fmt},
+};
 
 use crate::check::Checks;
 
+/// Redacted registered name.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     #[serde(rename = "description")]
@@ -15,15 +18,18 @@ pub struct Name {
 }
 
 impl Name {
+    /// Get the description.
     pub fn description(&self) -> Option<&String> {
         self.description.as_ref()
     }
 
+    /// Get the redaction type.
     pub fn type_field(&self) -> Option<&String> {
         self.type_field.as_ref()
     }
 }
 
+/// Redaction reason.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Reason {
     #[serde(rename = "description")]
@@ -49,6 +55,7 @@ pub enum Method {
     ReplacementValue,
 }
 
+/// RFC 9537 redaction structure.
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Redacted {
     #[serde[rename = "name"]]
@@ -97,25 +104,27 @@ impl Default for Method {
 impl fmt::Display for Method {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Method::Removal => write!(f, "Removal"),
-            Method::EmptyValue => write!(f, "EmptyValue"),
-            Method::PartialValue => write!(f, "PartialValue"),
-            Method::ReplacementValue => write!(f, "ReplacementValue"),
+            Self::Removal => write!(f, "Removal"),
+            Self::EmptyValue => write!(f, "EmptyValue"),
+            Self::PartialValue => write!(f, "PartialValue"),
+            Self::ReplacementValue => write!(f, "ReplacementValue"),
         }
     }
 }
 
 impl Redacted {
+    /// Get the checks from Redactions.
     pub fn get_checks(&self, _check_params: crate::check::CheckParams<'_>) -> crate::check::Checks {
         Checks {
             rdap_struct: crate::check::RdapStructure::Redacted,
-            items: Vec::new(),
-            sub_checks: Vec::new(),
+            items: vec![],
+            sub_checks: vec![],
         }
     }
 
+    /// Get the type.
     pub fn get_type(&self) -> std::any::TypeId {
-        TypeId::of::<Redacted>()
+        TypeId::of::<Self>()
     }
 }
 

@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.21"
+version = "0.0.22"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -69,9 +69,6 @@ futures-util = "0.3"
 # macros to get the git version
 git-version = "0.3"
 
-# lazy static initilization
-lazy_static = "1.4"
-
 # headers (http headers)
 headers = "0.4"
 
@@ -89,7 +86,7 @@ jsonpath-rust = "=0.5.0"
 jsonpath_lib = "0.3.0"
 
 # internationalized domain names for applications
-idna = "0.5"
+idna = "1.0"
 
 # for use prefixmap
 ipnet = { version = "2.9", features = ["json"] }
@@ -151,3 +148,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # url
 url = "2.5"
+
+
+[profile.release]
+codegen-units = 1
+lto = true

@@ -1,18 +1,16 @@
 //! Creates a Reqwest client.
 
-pub use reqwest::header::{self, HeaderValue};
-pub use reqwest::Client as ReqwestClient;
-pub use reqwest::Error as ReqwestError;
+pub use reqwest::{
+    header::{self, HeaderValue},
+    Client as ReqwestClient, Error as ReqwestError,
+};
 
 use icann_rdap_common::media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE};
-use lazy_static::lazy_static;
 
 #[cfg(not(target_arch = "wasm32"))]
 use {icann_rdap_common::VERSION, std::net::SocketAddr, std::time::Duration};
 
-lazy_static! {
-    static ref ACCEPT_HEADER_VALUES: String = format!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
-}
+const ACCEPT_HEADER_VALUES: &str = const_format::formatcp!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
 
 /// Configures the HTTP client.
 pub struct ReqwestClientConfig {
@@ -61,7 +59,7 @@ pub struct ReqwestClientConfig {
 
 impl Default for ReqwestClientConfig {
     fn default() -> Self {
-        ReqwestClientConfig {
+        Self {
             user_agent_suffix: "library".to_string(),
             https_only: true,
             accept_invalid_host_names: false,
@@ -88,7 +86,7 @@ impl ReqwestClientConfig {
         origin: Option<HeaderValue>,
         timeout_secs: Option<u64>,
     ) -> Self {
-        let default = ReqwestClientConfig::default();
+        let default = Self::default();
         Self {
             user_agent_suffix: user_agent_suffix.unwrap_or(default.user_agent_suffix),
             https_only: https_only.unwrap_or(default.https_only),
@@ -216,7 +214,7 @@ fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
     let mut default_headers = header::HeaderMap::new();
     default_headers.insert(
         header::ACCEPT,
-        HeaderValue::from_static(&ACCEPT_HEADER_VALUES),
+        HeaderValue::from_static(ACCEPT_HEADER_VALUES),
     );
     if let Some(host) = &config.host {
         default_headers.insert(header::HOST, host.into());

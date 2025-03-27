@@ -1,15 +1,20 @@
 use std::{net::AddrParseError, num::ParseIntError};
 
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
+use {
+    axum::{
+        response::{IntoResponse, Response},
+        Json,
+    },
+    envmnt::errors::EnvmntError,
+    http::StatusCode,
+    icann_rdap_client::{iana::IanaResponseError, RdapClientError},
+    icann_rdap_common::{
+        prelude::ToResponse,
+        response::{RdapResponseError, Rfc9083Error},
+    },
+    ipnet::PrefixLenError,
+    thiserror::Error,
 };
-use envmnt::errors::EnvmntError;
-use http::StatusCode;
-use icann_rdap_client::{iana::IanaResponseError, RdapClientError};
-use icann_rdap_common::response::{types::Common, RdapResponse, RdapResponseError};
-use ipnet::PrefixLenError;
-use thiserror::Error;
 
 /// Errors from the RDAP Server.
 #[derive(Debug, Error)]
@@ -62,12 +67,10 @@ pub enum RdapServerError {
 
 impl IntoResponse for RdapServerError {
     fn into_response(self) -> Response {
-        let response = RdapResponse::ErrorResponse(
-            icann_rdap_common::response::error::Error::builder()
-                .error_code(500)
-                .common(Common::builder().build())
-                .build(),
-        );
+        let response = Rfc9083Error::builder()
+            .error_code(500)
+            .build()
+            .to_response();
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             [("content-type", r#"application/rdap"#)],

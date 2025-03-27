@@ -1,3 +1,12 @@
+/// Functions for types that can be turned into strings.
+///
+/// Example:
+/// ```rust
+/// use icann_rdap_common::check::*;
+///
+/// let s = "  ";
+/// assert!(s.is_whitespace_or_empty());
+/// ```
 pub trait StringCheck {
     /// Tests if the string is empty, including for if the string only has whitespace.
     fn is_whitespace_or_empty(&self) -> bool;
@@ -54,6 +63,15 @@ impl<T: ToString> StringCheck for T {
     }
 }
 
+/// Functions for types that can be turned into arrays of strings.
+///
+/// Example:
+/// ```rust
+/// use icann_rdap_common::check::*;
+///
+/// let a: &[&str] = &["foo",""];
+/// assert!(a.is_empty_or_any_empty_or_whitespace());
+/// ```
 pub trait StringListCheck {
     /// Tests if a list of strings is empty, or if any of the
     /// elemeents of the list are empty or whitespace.
@@ -73,6 +91,25 @@ impl<T: ToString> StringListCheck for &[T] {
     }
 }
 
+impl<T: ToString> StringListCheck for Vec<T> {
+    fn is_empty_or_any_empty_or_whitespace(&self) -> bool {
+        self.is_empty() || self.iter().any(|s| s.to_string().is_whitespace_or_empty())
+    }
+
+    fn is_ldh_string_list(&self) -> bool {
+        !self.is_empty() && self.iter().all(|s| s.to_string().is_ldh_string())
+    }
+}
+
+/// Functions for chars.
+///
+/// Example:
+/// ```rust
+/// use icann_rdap_common::check::*;
+///
+/// let c = 'a';
+/// assert!(c.is_ldh());
+/// ```
 pub trait CharCheck {
     /// Checks if the character is a letter, digit or a hyphen
     #[allow(clippy::wrong_self_convention)]
@@ -90,8 +127,7 @@ impl CharCheck for char {
 mod tests {
     use rstest::rstest;
 
-    use crate::check::string::CharCheck;
-    use crate::check::string::StringListCheck;
+    use crate::check::string::{CharCheck, StringListCheck};
 
     use super::StringCheck;
 
