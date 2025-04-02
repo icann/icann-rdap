@@ -92,7 +92,7 @@ pub(crate) struct ProcessingParams {
     pub max_cache_age: u32,
 }
 
-pub(crate) async fn do_query<'a, W: std::io::Write>(
+pub(crate) async fn do_query<W: std::io::Write>(
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
@@ -113,7 +113,7 @@ pub(crate) async fn do_query<'a, W: std::io::Write>(
     }
 }
 
-async fn do_domain_query<'a, W: std::io::Write>(
+async fn do_domain_query<W: std::io::Write>(
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
@@ -214,7 +214,7 @@ async fn do_domain_query<'a, W: std::io::Write>(
     Ok(())
 }
 
-async fn do_inr_query<'a, W: std::io::Write>(
+async fn do_inr_query<W: std::io::Write>(
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
