@@ -275,15 +275,13 @@ impl RdapResponse {
     }
 
     pub fn has_extension_id(&self, extension_id: ExtensionId) -> bool {
-        self.get_conformance().map_or(false, |conformance| {
-            conformance.contains(&extension_id.to_extension())
-        })
+        self.get_conformance()
+            .is_some_and(|conformance| conformance.contains(&extension_id.to_extension()))
     }
 
     pub fn has_extension(&self, extension: &str) -> bool {
-        self.get_conformance().map_or(false, |conformance| {
-            conformance.contains(&Extension::from(extension))
-        })
+        self.get_conformance()
+            .is_some_and(|conformance| conformance.contains(&Extension::from(extension)))
     }
 
     pub fn is_redirect(&self) -> bool {

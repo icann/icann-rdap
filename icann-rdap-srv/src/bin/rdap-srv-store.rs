@@ -106,9 +106,9 @@ async fn do_validate_then_move(
     while let Some(entry) = entries.next_entry().await? {
         let entry = entry.path();
         let contents = tokio::fs::read_to_string(&entry).await?;
-        if entry.extension().map_or(false, |ext| ext == "template") {
+        if entry.extension().is_some_and(|ext| ext == "template") {
             errors_found |= verify_rdap_template(&contents, &entry.to_string_lossy(), check_types)?;
-        } else if entry.extension().map_or(false, |ext| ext == "json") {
+        } else if entry.extension().is_some_and(|ext| ext == "json") {
             errors_found |= verify_rdap(&contents, &entry.to_string_lossy(), check_types)?;
         }
     }

@@ -75,7 +75,7 @@ pub enum TestExecutionError {
     UnregisteredExtension,
 }
 
-pub async fn execute_tests<'a, BS: BootstrapStore>(
+pub async fn execute_tests<BS: BootstrapStore>(
     bs: &BS,
     value: &QueryType,
     options: &TestOptions,

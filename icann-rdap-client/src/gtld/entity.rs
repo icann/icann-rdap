@@ -191,7 +191,7 @@ fn extract_role_info(
                     phone
                         .features
                         .as_ref()
-                        .map_or(true, |features| !features.contains(&"fax".to_string()))
+                        .is_none_or(|features| !features.contains(&"fax".to_string()))
                 })
                 .map(|phone| phone.phone.clone())
         })
@@ -206,7 +206,7 @@ fn extract_role_info(
                     phone
                         .features
                         .as_ref()
-                        .map_or(false, |features| features.contains(&"fax".to_string()))
+                        .is_some_and(|features| features.contains(&"fax".to_string()))
                 })
                 .map(|phone| phone.phone.clone())
         })

@@ -341,14 +341,14 @@ impl SecureDns {
 
     /// Returns true if a truish value was given, otherwise false.
     pub fn zone_signed(&self) -> bool {
-        self.zone_signed.as_ref().map_or(false, |b| b.into_bool())
+        self.zone_signed.as_ref().is_some_and(|b| b.into_bool())
     }
 
     /// Returns true if a truish value was given, otherwise false.
     pub fn delegation_signed(&self) -> bool {
         self.delegation_signed
             .as_ref()
-            .map_or(false, |b| b.into_bool())
+            .is_some_and(|b| b.into_bool())
     }
 
     /// Returns max_sig_life as a u64 if it was given, otherwise None.
