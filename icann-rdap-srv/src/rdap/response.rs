@@ -43,7 +43,7 @@ pub(crate) trait ResponseUtil {
 
 impl ResponseUtil for RdapResponse {
     fn status_code(&self) -> StatusCode {
-        if let RdapResponse::ErrorResponse(rdap_error) = self {
+        if let Self::ErrorResponse(rdap_error) = self {
             StatusCode::from_u16(rdap_error.error_code).unwrap()
         } else {
             StatusCode::OK
@@ -51,7 +51,7 @@ impl ResponseUtil for RdapResponse {
     }
 
     fn first_notice_link_href(&self) -> Option<&str> {
-        if let RdapResponse::ErrorResponse(rdap_error) = self {
+        if let Self::ErrorResponse(rdap_error) = self {
             let notices = rdap_error.common.notices.as_ref()?;
             let first_notice = notices.first()?;
             let links = first_notice.0.links.as_ref()?;

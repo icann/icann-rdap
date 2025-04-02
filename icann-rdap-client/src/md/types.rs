@@ -113,7 +113,7 @@ impl ToMd for Link {
                 }
             }
         };
-        let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
+        let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()));
         md.push_str(&checks_ul(&checks, params));
         md.push('\n');
         md

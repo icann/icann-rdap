@@ -1,5 +1,3 @@
-use std::io::ErrorKind;
-
 use minus::Pager;
 
 #[derive(Clone)]
@@ -9,7 +7,7 @@ impl<W: std::fmt::Write> std::io::Write for FmtWrite<W> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.0
             .write_str(&String::from_utf8_lossy(buf))
-            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
         Ok(buf.len())
     }
 
@@ -25,7 +23,7 @@ impl std::io::Write for PagerWrite {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.0
             .push_str(String::from_utf8_lossy(buf))
-            .map_err(|e| std::io::Error::new(ErrorKind::Other, e))?;
+            .map_err(std::io::Error::other)?;
         Ok(buf.len())
     }
 

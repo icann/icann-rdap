@@ -197,16 +197,13 @@ pub async fn load_data(
     while let Some(entry) = entries.next_entry().await? {
         let entry_path = entry.path();
         let contents = tokio::fs::read_to_string(&entry_path).await?;
-        if entry_path
-            .extension()
-            .map_or(false, |ext| ext == "template")
-        {
+        if entry_path.extension().is_some_and(|ext| ext == "template") {
             load_rdap_template(&contents, &entry_path.to_string_lossy(), &mut tx).await?;
             template_count += 1;
-        } else if entry_path.extension().map_or(false, |ext| ext == "json") {
+        } else if entry_path.extension().is_some_and(|ext| ext == "json") {
             load_rdap(&contents, &entry_path.to_string_lossy(), &mut tx).await?;
             json_count += 1;
-        } else if entry_path.extension().map_or(false, |ext| ext == "help") {
+        } else if entry_path.extension().is_some_and(|ext| ext == "help") {
             load_srvhelp(
                 &contents,
                 &entry_path.to_string_lossy(),
