@@ -235,7 +235,7 @@ impl Link {
         media_type: Option<String>,
     ) -> Self {
         let hreflang = hreflang.map(HrefLang::Lang);
-        Link {
+        Self {
             value,
             rel,
             href,
@@ -366,7 +366,7 @@ impl NoticeOrRemark {
         links: Vec<Link>,
         nr_type: Option<String>,
     ) -> Self {
-        NoticeOrRemark {
+        Self {
             title,
             description: Some(VectorStringish::from(description)),
             links: (!links.is_empty()).then_some(links),
@@ -386,7 +386,7 @@ impl NoticeOrRemark {
         let d = description
             .is_some()
             .then_some(VectorStringish::from(description.unwrap()));
-        NoticeOrRemark {
+        Self {
             title,
             description: d,
             links,
@@ -571,7 +571,7 @@ impl Event {
         event_actor: Option<String>,
         links: Option<Links>,
     ) -> Self {
-        Event {
+        Self {
             event_action,
             event_actor,
             event_date,
@@ -639,7 +639,7 @@ impl PublicId {
     /// Builds a public ID.
     #[builder(visibility = "pub")]
     fn new(id_type: String, identifier: String) -> Self {
-        PublicId {
+        Self {
             id_type: Some(id_type),
             identifier: Some(identifier),
         }
@@ -649,7 +649,7 @@ impl PublicId {
     #[builder(entry = "illegal", visibility = "pub(crate)")]
     #[allow(dead_code)]
     fn new_illegal(id_type: Option<String>, identifier: Option<String>) -> Self {
-        PublicId {
+        Self {
             id_type,
             identifier,
         }
