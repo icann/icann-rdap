@@ -53,7 +53,7 @@ impl V4Cidr {
     /// Builds an Ipv4 CIDR0.
     #[builder(visibility = "pub")]
     fn new(v4prefix: String, length: u8) -> Self {
-        V4Cidr {
+        Self {
             v4prefix: Some(v4prefix),
             length: Some(Numberish::<u8>::from(length)),
         }
@@ -96,7 +96,7 @@ impl V6Cidr {
     /// Builds an IPv6 CIDR0.
     #[builder(visibility = "pub")]
     fn new(v6prefix: String, length: u8) -> Self {
-        V6Cidr {
+        Self {
             v6prefix: Some(v6prefix),
             length: Some(Numberish::<u8>::from(length)),
         }

@@ -85,7 +85,7 @@ impl<'de> Visitor<'de> for VectorStringishVisitor {
 
 impl From<String> for VectorStringish {
     fn from(value: String) -> Self {
-        VectorStringish {
+        Self {
             vec: vec![value],
             is_string: false,
         }
@@ -94,7 +94,7 @@ impl From<String> for VectorStringish {
 
 impl From<&str> for VectorStringish {
     fn from(value: &str) -> Self {
-        VectorStringish {
+        Self {
             vec: vec![value.to_owned()],
             is_string: false,
         }
@@ -103,7 +103,7 @@ impl From<&str> for VectorStringish {
 
 impl From<Vec<String>> for VectorStringish {
     fn from(value: Vec<String>) -> Self {
-        VectorStringish {
+        Self {
             vec: value,
             is_string: false,
         }
@@ -191,7 +191,7 @@ pub struct Boolish {
 
 impl From<bool> for Boolish {
     fn from(value: bool) -> Self {
-        Boolish {
+        Self {
             inner: BoolishInner::Bool(value),
         }
     }
@@ -262,7 +262,7 @@ where
     Number: From<T>,
 {
     fn from(value: T) -> Self {
-        Numberish {
+        Self {
             inner: NumberishInner::Number(Number::from(value)),
             phatom: PhantomData,
         }
