@@ -75,26 +75,17 @@ fn format_registry_dates(events: &Option<Vec<Event>>) -> String {
     let mut formatted_dates = String::new();
     if let Some(events) = events {
         for event in events {
-            if let Some(event_action) = &event.event_action {
-                match event_action.as_str() {
-                    "last changed" => {
-                        if let Some(event_date) = &event.event_date {
-                            formatted_dates.push_str(&format!("Updated Date: {}\n", event_date));
-                        }
-                    }
-                    "registration" => {
-                        if let Some(event_date) = &event.event_date {
-                            formatted_dates.push_str(&format!("Creation Date: {}\n", event_date));
-                        }
-                    }
-                    "expiration" => {
-                        if let Some(event_date) = &event.event_date {
-                            formatted_dates
-                                .push_str(&format!("Registry Expiry Date: {}\n", event_date));
-                        }
-                    }
-                    _ => {}
+            match (event.event_action.as_deref(), &event.event_date) {
+                (Some("last changed"), Some(event_date)) => {
+                    formatted_dates.push_str(&format!("Updated Date: {}\n", event_date));
                 }
+                (Some("registration"), Some(event_date)) => {
+                    formatted_dates.push_str(&format!("Creation Date: {}\n", event_date));
+                }
+                (Some("expiration"), Some(event_date)) => {
+                    formatted_dates.push_str(&format!("Registry Expiry Date: {}\n", event_date));
+                }
+                _ => {}
             }
         }
     }
