@@ -157,7 +157,6 @@ impl Nameserver {
     ///   .build().unwrap();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new<T: Into<String>>(
         ldh_name: T,
         addresses: Vec<String>,
@@ -199,7 +198,6 @@ impl Nameserver {
     }
 
     #[builder(entry = "illegal", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     #[allow(dead_code)]
     fn new_illegal(ldh_name: Option<String>, ip_addresses: Option<IpAddresses>) -> Self {
         Self {

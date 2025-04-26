@@ -41,7 +41,6 @@ pub struct ObjectCommon {
 impl ObjectCommon {
     /// Builds [ObjectCommon] for a [crate::response::domain::Domain].
     #[builder(entry = "domain", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_domain(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -67,7 +66,6 @@ impl ObjectCommon {
 
     /// Builds [ObjectCommon] for a [crate::response::network::Network].
     #[builder(entry = "ip_network", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_ip_network(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -93,7 +91,6 @@ impl ObjectCommon {
 
     /// Builds an [ObjectCommon] for an [crate::response::autnum::Autnum].
     #[builder(entry = "autnum", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_autnum(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -119,7 +116,6 @@ impl ObjectCommon {
 
     /// Builds an [ObjectCommon] for a [crate::response::nameserver::Nameserver].
     #[builder(entry = "nameserver", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_nameserver(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -145,7 +141,6 @@ impl ObjectCommon {
 
     /// Builds an [ObjectCommon] for an [crate::response::entity::Entity].
     #[builder(entry = "entity", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_entity(
         handle: Option<String>,
         remarks: Option<Remarks>,

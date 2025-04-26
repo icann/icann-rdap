@@ -147,7 +147,6 @@ pub struct Contact {
 #[buildstructor::buildstructor]
 impl Contact {
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
         langs: Vec<Lang>,
         kind: Option<String>,
@@ -294,7 +293,6 @@ pub struct NameParts {
 #[buildstructor::buildstructor]
 impl NameParts {
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
         prefixes: Vec<String>,
         surnames: Vec<String>,
@@ -359,7 +357,6 @@ pub struct PostalAddress {
 #[buildstructor::buildstructor]
 impl PostalAddress {
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
         preference: Option<u64>,
         contexts: Vec<String>,

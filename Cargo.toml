@@ -37,7 +37,7 @@ axum-client-ip = "0.5"
 btree-range-map = "0.7.2"
 
 # macros for the builder pattern
-buildstructor = "0.5"
+buildstructor = "0.6"
 
 # CIDR utilities
 cidr = "0.3.0"

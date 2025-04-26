@@ -83,7 +83,6 @@ impl Autnum {
     ///   .build();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
         autnum_range: std::ops::Range<u32>,
         handle: Option<String>,
