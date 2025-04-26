@@ -482,7 +482,6 @@ impl Domain {
     ///   .build();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new<T: Into<String>>(
         ldh_name: T,
         unicode_name: Option<String>,
@@ -539,7 +538,6 @@ impl Domain {
     ///   .build();
     /// ```
     #[builder(entry = "idn", visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new_idn<T: Into<String>>(
         ldh_name: Option<String>,
         unicode_name: T,

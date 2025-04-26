@@ -138,7 +138,6 @@ impl Entity {
     ///   .build();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new<T: Into<String>>(
         handle: T,
         remarks: Vec<Remark>,

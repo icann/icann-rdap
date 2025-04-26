@@ -213,7 +213,6 @@ impl Network {
     ///   .build().unwrap();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
         cidr: String,
         handle: Option<String>,
@@ -276,7 +275,6 @@ impl Network {
     }
 
     #[builder(entry = "illegal", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     #[allow(dead_code)]
     fn new_illegal(
         start_address: Option<String>,
