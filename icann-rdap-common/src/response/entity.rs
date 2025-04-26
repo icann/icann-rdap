@@ -120,7 +120,7 @@ static EMPTY_NETWORKS: Vec<Network> = vec![];
 
 #[buildstructor::buildstructor]
 impl Entity {
-    /// Builds a basic autnum object.
+    /// Builds a basic entity object.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -135,6 +135,17 @@ impl Entity {
     ///   .status("active")
     ///   .role("registrant")
     ///   .contact(contact)
+    ///   .build();
+    /// ```
+    ///
+    /// An entity without a handle can be
+    /// built if a generic type is specified.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let entity = Entity::builder::<String>()
+    ///   .status("active")
     ///   .build();
     /// ```
     #[builder(visibility = "pub")]
@@ -276,12 +287,11 @@ pub enum EntityRole {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use super::Entity;
 
     #[test]
-    fn GIVEN_entity_WHEN_deserialize_THEN_success() {
+    fn test_entity_deserialize() {
         // GIVEN
         let expected = r#"
             {
