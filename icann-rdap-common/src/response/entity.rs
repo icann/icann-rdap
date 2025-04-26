@@ -139,7 +139,7 @@ impl Entity {
     /// ```
     #[builder(visibility = "pub")]
     fn new<T: Into<String>>(
-        handle: T,
+        handle: Option<T>,
         remarks: Vec<Remark>,
         links: Vec<Link>,
         events: Vec<Event>,
@@ -162,7 +162,7 @@ impl Entity {
                 .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::entity()
-                .handle(handle.into())
+                .and_handle(handle.map(|h| h.into()))
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
