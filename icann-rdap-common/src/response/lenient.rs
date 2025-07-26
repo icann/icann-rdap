@@ -162,7 +162,7 @@ enum BoolishInner {
     /// Valid RDAP.
     Bool(bool),
 
-    /// Invalide RDAP.
+    /// Invalid RDAP.
     String(String),
 }
 
@@ -232,7 +232,7 @@ enum NumberishInner {
     /// Valid RDAP.
     Number(Number),
 
-    /// Invalide RDAP.
+    /// Invalid RDAP.
     String(String),
 }
 
