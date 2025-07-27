@@ -156,6 +156,193 @@ pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
 
 pub(crate) static EMPTY_VEC_STRING: Vec<String> = vec![];
 
+/// A type that is suppose to be a string.
+///
+/// This type is provided to be lenient with misbehaving RDAP servers that
+/// serve a boolean or number when they are suppose to be serving a string.
+///
+/// Use one of the From methods for construction.
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let v = Stringish::from("one");
+/// ````
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(transparent)]
+pub struct Stringish {
+    string: String,
+    #[serde(skip)]
+    is_bool: bool,
+    #[serde(skip)]
+    is_number: bool,
+}
+
+impl<'de> Deserialize<'de> for Stringish {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(StringishVisitor)
+    }
+}
+
+struct StringishVisitor;
+
+impl<'de> Visitor<'de> for StringishVisitor {
+    type Value = Stringish;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let write_str = formatter.write_str("expected a string");
+        write_str
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Stringish {
+            string: v.to_owned(),
+            is_bool: false,
+            is_number: false,
+        })
+    }
+
+    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(Stringish {
+            string: format!("{v}"),
+            is_bool: true,
+            is_number: false,
+        })
+    }
+
+    fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(visit_number(v))
+    }
+}
+
+fn visit_number<T: Display>(v: T) -> Stringish {
+    Stringish {
+        string: format!("{v}"),
+        is_bool: false,
+        is_number: true,
+    }
+}
+
+impl From<String> for Stringish {
+    fn from(value: String) -> Self {
+        Self {
+            string: value,
+            is_bool: false,
+            is_number: false,
+        }
+    }
+}
+
+impl From<&str> for Stringish {
+    fn from(value: &str) -> Self {
+        Self {
+            string: value.to_owned(),
+            is_bool: false,
+            is_number: false,
+        }
+    }
+}
+
+impl Stringish {
+    /// Returns true if the deserialization was as a number.
+    pub fn is_number(&self) -> bool {
+        self.is_number
+    }
+
+    /// Returns true if the deserialization was as a boolean.
+    pub fn is_bool(&self) -> bool {
+        self.is_bool
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 enum BoolishInner {
