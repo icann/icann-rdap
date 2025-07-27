@@ -331,6 +331,12 @@ impl From<&str> for Stringish {
     }
 }
 
+impl Display for Stringish {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.string)
+    }
+}
+
 impl Stringish {
     /// Returns true if the deserialization was as a number.
     pub fn is_number(&self) -> bool {
@@ -581,6 +587,82 @@ mod tests {
 
         // and THEN is string
         assert!(deserialized.is_string())
+    }
+
+    //
+    // Stringish tests
+    //
+
+    #[test]
+    fn test_stringish_serialize() {
+        // GIVEN
+        let a_string = Stringish::from("one");
+
+        // WHEN
+        let serialized = to_string(&a_string).unwrap();
+
+        // THEN
+        assert_eq!(serialized, r#""one""#);
+    }
+
+    #[test]
+    fn test_stringish_deserialize_string() {
+        // GIVEN
+        let json_str = r#""one""#;
+
+        // WHEN
+        let deserialized: Stringish = from_str(json_str).unwrap();
+
+        // THEN
+        assert_eq!(deserialized, Stringish::from("one"));
+
+        // and THEN is not bool
+        assert!(!deserialized.is_bool());
+
+        // and THEN is not number
+        assert!(!deserialized.is_number());
+    }
+
+    #[test]
+    fn test_stringish_deserialize_bool() {
+        // GIVEN
+        let json_str = r#"true"#;
+
+        // WHEN
+        let deserialized: Stringish = from_str(json_str).unwrap();
+
+        // THEN
+        assert_eq!(
+            deserialized.to_string(),
+            Stringish::from("true").to_string()
+        );
+
+        // and THEN is bool
+        assert!(deserialized.is_bool());
+
+        // and THEN is not number
+        assert!(!deserialized.is_number());
+    }
+
+    #[test]
+    fn test_stringish_deserialize_number() {
+        // GIVEN
+        let json_str = r#"1234"#;
+
+        // WHEN
+        let deserialized: Stringish = from_str(json_str).unwrap();
+
+        // THEN
+        assert_eq!(
+            deserialized.to_string(),
+            Stringish::from("1234").to_string()
+        );
+
+        // and THEN is not bool
+        assert!(!deserialized.is_bool());
+
+        // and THEN is number
+        assert!(deserialized.is_number());
     }
 
     //
