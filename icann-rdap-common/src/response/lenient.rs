@@ -3,7 +3,7 @@
 use std::{fmt::Display, marker::PhantomData, str::FromStr};
 
 use {
-    serde::{de::Visitor, Deserialize, Deserializer, Serialize},
+    serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer},
     serde_json::Number,
 };
 
@@ -156,6 +156,19 @@ pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
 
 pub(crate) static EMPTY_VEC_STRING: Vec<String> = vec![];
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+enum StringishInner {
+    /// Valid RDAP.
+    String(String),
+
+    /// Invalid RDAP.
+    Bool(bool),
+
+    /// Invalid RDAP.
+    Number(Number),
+}
+
 /// A type that is suppose to be a string.
 ///
 /// This type is provided to be lenient with misbehaving RDAP servers that
@@ -167,14 +180,18 @@ pub(crate) static EMPTY_VEC_STRING: Vec<String> = vec![];
 ///
 /// let v = Stringish::from("one");
 /// ````
-#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
-#[serde(transparent)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Stringish {
-    string: String,
-    #[serde(skip)]
-    is_bool: bool,
-    #[serde(skip)]
-    is_number: bool,
+    inner: StringishInner,
+}
+
+impl Serialize for Stringish {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl<'de> Deserialize<'de> for Stringish {
@@ -182,141 +199,16 @@ impl<'de> Deserialize<'de> for Stringish {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(StringishVisitor)
-    }
-}
-
-struct StringishVisitor;
-
-impl<'de> Visitor<'de> for StringishVisitor {
-    type Value = Stringish;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let write_str = formatter.write_str("expected a string");
-        write_str
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
         Ok(Stringish {
-            string: v.to_owned(),
-            is_bool: false,
-            is_number: false,
+            inner: StringishInner::deserialize(deserializer)?,
         })
-    }
-
-    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(Stringish {
-            string: format!("{v}"),
-            is_bool: true,
-            is_number: false,
-        })
-    }
-
-    fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-
-    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(visit_number(v))
-    }
-}
-
-fn visit_number<T: Display>(v: T) -> Stringish {
-    Stringish {
-        string: format!("{v}"),
-        is_bool: false,
-        is_number: true,
     }
 }
 
 impl From<String> for Stringish {
     fn from(value: String) -> Self {
         Self {
-            string: value,
-            is_bool: false,
-            is_number: false,
+            inner: StringishInner::String(value),
         }
     }
 }
@@ -324,28 +216,30 @@ impl From<String> for Stringish {
 impl From<&str> for Stringish {
     fn from(value: &str) -> Self {
         Self {
-            string: value.to_owned(),
-            is_bool: false,
-            is_number: false,
+            inner: StringishInner::String(value.to_owned()),
         }
     }
 }
 
 impl Display for Stringish {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.string)
+        match &self.inner {
+            StringishInner::String(s) => write!(f, "{s}"),
+            StringishInner::Bool(b) => write!(f, "{b}"),
+            StringishInner::Number(n) => write!(f, "{n}"),
+        }
     }
 }
 
 impl Stringish {
     /// Returns true if the deserialization was as a number.
     pub fn is_number(&self) -> bool {
-        self.is_number
+        matches!(self.inner, StringishInner::Number(_))
     }
 
     /// Returns true if the deserialization was as a boolean.
     pub fn is_bool(&self) -> bool {
-        self.is_bool
+        matches!(self.inner, StringishInner::Bool(_))
     }
 }
 
@@ -603,6 +497,34 @@ mod tests {
 
         // THEN
         assert_eq!(serialized, r#""one""#);
+    }
+
+    #[test]
+    fn test_stringish_serialize_number() {
+        // GIVEN
+        let a_string = Stringish {
+            inner: StringishInner::Number(123.into()),
+        };
+
+        // WHEN
+        let serialized = to_string(&a_string).unwrap();
+
+        // THEN
+        assert_eq!(serialized, r#""123""#);
+    }
+
+    #[test]
+    fn test_stringish_serialize_bool() {
+        // GIVEN
+        let a_string = Stringish {
+            inner: StringishInner::Bool(true),
+        };
+
+        // WHEN
+        let serialized = to_string(&a_string).unwrap();
+
+        // THEN
+        assert_eq!(serialized, r#""true""#);
     }
 
     #[test]
