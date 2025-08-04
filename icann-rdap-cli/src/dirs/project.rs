@@ -43,7 +43,11 @@ pub fn reset() -> Result<(), std::io::Error> {
 
 /// Returns a [PathBuf] to the configuration file.
 pub fn config_path() -> PathBuf {
-    PROJECT_DIRS.config_dir().join(ENV_FILE_NAME)
+    if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
+        PathBuf::from(xdg_config).join(ENV_FILE_NAME)
+    } else {
+        PROJECT_DIRS.config_dir().join(ENV_FILE_NAME)
+    }
 }
 
 /// Returns a [PathBuf] to the cache directory for RDAP responses.
@@ -53,5 +57,9 @@ pub fn rdap_cache_path() -> PathBuf {
 
 /// Returns a [PathBuf] to the cache directory for bootstrap files.
 pub fn bootstrap_cache_path() -> PathBuf {
-    PROJECT_DIRS.cache_dir().join(BOOTSTRAP_CACHE_NAME)
+    if let Ok(xdg_cache) = std::env::var("XDG_CACHE_HOME") {
+        PathBuf::from(xdg_cache).join(BOOTSTRAP_CACHE_NAME)
+    } else {
+        PROJECT_DIRS.cache_dir().join(BOOTSTRAP_CACHE_NAME)
+    }
 }
