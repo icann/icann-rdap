@@ -944,7 +944,7 @@ mod tests {
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
-        ns.object_common.handle = Some(handle.to_string());
+        ns.object_common.handle = Some(handle.to_string().into());
         let rdap = ns.to_response();
 
         // WHEN

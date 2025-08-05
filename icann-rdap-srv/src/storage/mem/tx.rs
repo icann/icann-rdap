@@ -84,8 +84,10 @@ impl TxHandle for MemTx {
             .handle
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
-        self.entities
-            .insert(handle.to_owned(), Arc::new(entity.clone().to_response()));
+        self.entities.insert(
+            handle.to_owned().to_string(),
+            Arc::new(entity.clone().to_response()),
+        );
         Ok(())
     }
 

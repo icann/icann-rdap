@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     redacted::Redacted, to_opt_vectorstringish, Entity, Events, Link, Links, Port43, Remarks,
-    VectorStringish, EMPTY_VEC_STRING,
+    Stringish, VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Holds those types that are common in all object classes.
@@ -12,7 +12,7 @@ pub struct ObjectCommon {
     pub object_class_name: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    pub handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remarks: Option<Remarks>,
@@ -42,7 +42,7 @@ impl ObjectCommon {
     /// Builds [ObjectCommon] for a [crate::response::domain::Domain].
     #[builder(entry = "domain", visibility = "pub(crate)")]
     fn new_domain(
-        handle: Option<String>,
+        handle: Option<Stringish>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -67,7 +67,7 @@ impl ObjectCommon {
     /// Builds [ObjectCommon] for a [crate::response::network::Network].
     #[builder(entry = "ip_network", visibility = "pub(crate)")]
     fn new_ip_network(
-        handle: Option<String>,
+        handle: Option<Stringish>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -92,7 +92,7 @@ impl ObjectCommon {
     /// Builds an [ObjectCommon] for an [crate::response::autnum::Autnum].
     #[builder(entry = "autnum", visibility = "pub(crate)")]
     fn new_autnum(
-        handle: Option<String>,
+        handle: Option<Stringish>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -117,7 +117,7 @@ impl ObjectCommon {
     /// Builds an [ObjectCommon] for a [crate::response::nameserver::Nameserver].
     #[builder(entry = "nameserver", visibility = "pub(crate)")]
     fn new_nameserver(
-        handle: Option<String>,
+        handle: Option<Stringish>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -142,7 +142,7 @@ impl ObjectCommon {
     /// Builds an [ObjectCommon] for an [crate::response::entity::Entity].
     #[builder(entry = "entity", visibility = "pub(crate)")]
     fn new_entity(
-        handle: Option<String>,
+        handle: Option<Stringish>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,

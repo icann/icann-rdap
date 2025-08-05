@@ -92,11 +92,12 @@ impl GetChecks for Network {
                         items.push(Check::IpAddressEndBeforeStart.check_item())
                     }
                     if let Some(ip_version) = &self.ip_version {
-                        if (ip_version == "v4" && (start_addr.is_ipv6() || end_addr.is_ipv6()))
-                            || (ip_version == "v6" && (start_addr.is_ipv4() || end_addr.is_ipv4()))
+                        if (**ip_version == *"v4" && (start_addr.is_ipv6() || end_addr.is_ipv6()))
+                            || (**ip_version == *"v6"
+                                && (start_addr.is_ipv4() || end_addr.is_ipv4()))
                         {
                             items.push(Check::IpAddressVersionMismatch.check_item())
-                        } else if ip_version != "v4" && ip_version != "v6" {
+                        } else if **ip_version != *"v4" && **ip_version != *"v6" {
                             items.push(Check::IpAddressMalformedVersion.check_item())
                         }
                     }
@@ -194,7 +195,7 @@ mod tests {
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
-        network.name = Some("".to_string());
+        network.name = Some("".to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -215,7 +216,7 @@ mod tests {
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
-        network.network_type = Some("".to_string());
+        network.network_type = Some("".to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -345,7 +346,7 @@ mod tests {
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
-        network.ip_version = Some(version.to_string());
+        network.ip_version = Some(version.to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -370,7 +371,7 @@ mod tests {
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
-        network.ip_version = Some(version.to_string());
+        network.ip_version = Some(version.to_string().into());
         let rdap = network.to_response();
 
         // WHEN

@@ -13,7 +13,7 @@ use super::{
     to_opt_vec,
     types::{ExtensionId, Link},
     CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
-    RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
+    RdapResponseError, Remark, SelfLink, Stringish, ToChild, ToResponse,
 };
 
 /// Cidr0 structure from the Cidr0 extension.
@@ -177,18 +177,18 @@ pub struct Network {
 
     #[serde(rename = "ipVersion")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ip_version: Option<String>,
+    pub ip_version: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<Stringish>,
 
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub network_type: Option<String>,
+    pub network_type: Option<Stringish>,
 
     #[serde(rename = "parentHandle")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_handle: Option<String>,
+    pub parent_handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
@@ -215,11 +215,11 @@ impl Network {
     #[builder(visibility = "pub")]
     fn new(
         cidr: String,
-        handle: Option<String>,
+        handle: Option<Stringish>,
         country: Option<String>,
-        name: Option<String>,
-        network_type: Option<String>,
-        parent_handle: Option<String>,
+        name: Option<Stringish>,
+        network_type: Option<Stringish>,
+        parent_handle: Option<Stringish>,
         remarks: Vec<Remark>,
         links: Vec<Link>,
         events: Vec<Event>,
@@ -255,7 +255,8 @@ impl Network {
                     IpInet::V4(_) => "v4",
                     IpInet::V6(_) => "v6",
                 }
-                .to_string(),
+                .to_string()
+                .into(),
             ),
             name,
             network_type,
@@ -279,12 +280,12 @@ impl Network {
     fn new_illegal(
         start_address: Option<String>,
         end_address: Option<String>,
-        ip_version: Option<String>,
+        ip_version: Option<Stringish>,
         cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
         country: Option<String>,
-        name: Option<String>,
-        network_type: Option<String>,
-        parent_handle: Option<String>,
+        name: Option<Stringish>,
+        network_type: Option<Stringish>,
+        parent_handle: Option<Stringish>,
         notices: Vec<Notice>,
     ) -> Self {
         Self {

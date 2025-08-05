@@ -1,6 +1,6 @@
 //! Types for more lenient processing of invalid RDAP
 
-use std::{fmt::Display, marker::PhantomData, str::FromStr};
+use std::{borrow::Borrow, fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
 
 use {
     serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer},
@@ -156,7 +156,7 @@ pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
 
 pub(crate) static EMPTY_VEC_STRING: Vec<String> = vec![];
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 enum StringishInner {
     /// Valid RDAP.
@@ -182,7 +182,9 @@ enum StringishInner {
 /// ````
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Stringish {
-    inner: StringishInner,
+    value: String,
+    is_number: bool,
+    is_bool: bool,
 }
 
 impl Serialize for Stringish {
@@ -190,7 +192,7 @@ impl Serialize for Stringish {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&self.value)
     }
 }
 
@@ -199,8 +201,16 @@ impl<'de> Deserialize<'de> for Stringish {
     where
         D: Deserializer<'de>,
     {
+        let inner = StringishInner::deserialize(deserializer)?;
+        let (value, is_number, is_bool) = match inner {
+            StringishInner::String(s) => (s, false, false),
+            StringishInner::Bool(b) => (b.to_string(), false, true),
+            StringishInner::Number(n) => (n.to_string(), true, false),
+        };
         Ok(Stringish {
-            inner: StringishInner::deserialize(deserializer)?,
+            value,
+            is_number,
+            is_bool,
         })
     }
 }
@@ -208,7 +218,9 @@ impl<'de> Deserialize<'de> for Stringish {
 impl From<String> for Stringish {
     fn from(value: String) -> Self {
         Self {
-            inner: StringishInner::String(value),
+            value,
+            is_number: false,
+            is_bool: false,
         }
     }
 }
@@ -216,30 +228,72 @@ impl From<String> for Stringish {
 impl From<&str> for Stringish {
     fn from(value: &str) -> Self {
         Self {
-            inner: StringishInner::String(value.to_owned()),
+            value: value.to_owned(),
+            is_number: false,
+            is_bool: false,
         }
+    }
+}
+
+impl From<Stringish> for String {
+    fn from(value: Stringish) -> Self {
+        value.value
     }
 }
 
 impl Display for Stringish {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.inner {
-            StringishInner::String(s) => write!(f, "{s}"),
-            StringishInner::Bool(b) => write!(f, "{b}"),
-            StringishInner::Number(n) => write!(f, "{n}"),
-        }
+        write!(f, "{}", self.value)
+    }
+}
+
+impl Deref for Stringish {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl AsRef<str> for Stringish {
+    fn as_ref(&self) -> &str {
+        &self.value
+    }
+}
+
+impl Borrow<str> for Stringish {
+    fn borrow(&self) -> &str {
+        &self.value
+    }
+}
+
+impl PartialEq<str> for Stringish {
+    fn eq(&self, other: &str) -> bool {
+        self.value == other
+    }
+}
+
+impl PartialEq<&str> for Stringish {
+    fn eq(&self, other: &&str) -> bool {
+        self.value == *other
+    }
+}
+
+impl PartialEq<String> for Stringish {
+    fn eq(&self, other: &String) -> bool {
+        self.value == *other
     }
 }
 
 impl Stringish {
     /// Returns true if the deserialization was as a number.
     pub fn is_number(&self) -> bool {
-        matches!(self.inner, StringishInner::Number(_))
+        self.is_number
     }
 
     /// Returns true if the deserialization was as a boolean.
     pub fn is_bool(&self) -> bool {
-        matches!(self.inner, StringishInner::Bool(_))
+        self.is_bool
     }
 }
 
@@ -500,14 +554,54 @@ mod tests {
     }
 
     #[test]
-    fn test_stringish_serialize_number() {
+    fn test_string_from_stringish() {
         // GIVEN
-        let a_string = Stringish {
-            inner: StringishInner::Number(123.into()),
-        };
+        let stringish = Stringish::from("hello");
 
         // WHEN
-        let serialized = to_string(&a_string).unwrap();
+        let s = String::from(stringish);
+
+        // THEN
+        assert_eq!(s, "hello");
+    }
+
+    #[test]
+    fn test_stringish_deref() {
+        // GIVEN
+        let stringish = Stringish::from("hello");
+
+        // WHEN
+        let s: &str = &stringish;
+
+        // THEN
+        assert_eq!(s, "hello");
+        assert_eq!(stringish.len(), 5);
+    }
+
+    #[test]
+    fn test_stringish_more_traits() {
+        // GIVEN
+        let stringish = Stringish::from("hello");
+
+        // THEN AsRef
+        assert_eq!(stringish.as_ref(), "hello");
+
+        // THEN Borrow
+        assert_eq!(stringish.borrow() as &str, "hello");
+
+        // THEN PartialEq
+        assert!(stringish == "hello");
+        assert!(stringish == *"hello");
+        assert!(stringish == "hello".to_string());
+    }
+
+    #[test]
+    fn test_stringish_serialize_number() {
+        // GIVEN
+        let deserialized: Stringish = from_str("123").unwrap();
+
+        // WHEN
+        let serialized = to_string(&deserialized).unwrap();
 
         // THEN
         assert_eq!(serialized, r#""123""#);
@@ -516,12 +610,10 @@ mod tests {
     #[test]
     fn test_stringish_serialize_bool() {
         // GIVEN
-        let a_string = Stringish {
-            inner: StringishInner::Bool(true),
-        };
+        let deserialized: Stringish = from_str("true").unwrap();
 
         // WHEN
-        let serialized = to_string(&a_string).unwrap();
+        let serialized = to_string(&deserialized).unwrap();
 
         // THEN
         assert_eq!(serialized, r#""true""#);
@@ -554,10 +646,7 @@ mod tests {
         let deserialized: Stringish = from_str(json_str).unwrap();
 
         // THEN
-        assert_eq!(
-            deserialized.to_string(),
-            Stringish::from("true").to_string()
-        );
+        assert_eq!(deserialized.to_string(), "true");
 
         // and THEN is bool
         assert!(deserialized.is_bool());
@@ -575,10 +664,7 @@ mod tests {
         let deserialized: Stringish = from_str(json_str).unwrap();
 
         // THEN
-        assert_eq!(
-            deserialized.to_string(),
-            Stringish::from("1234").to_string()
-        );
+        assert_eq!(deserialized.to_string(), "1234");
 
         // and THEN is not bool
         assert!(!deserialized.is_bool());
