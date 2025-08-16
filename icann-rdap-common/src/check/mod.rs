@@ -432,6 +432,8 @@ pub enum Check {
     PublicIdTypeIsAbsent = 1700,
     #[strum(message = "publicId identifier is absent")]
     PublicIdIdentifierIsAbsent = 1701,
+    #[strum(message = "publicId type is not a string")]
+    PublicIdTypeIsNotString = 1702,
 
     // HTTP 1800 - 1899
     #[strum(message = "Use of access-control-allow-origin is recommended.")]
@@ -580,6 +582,7 @@ impl Check {
             Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
                 CheckClass::StdError
             }
+            Self::PublicIdTypeIsNotString => CheckClass::StdError,
 
             Self::CorsAllowOriginRecommended
             | Self::CorsAllowOriginStarRecommended

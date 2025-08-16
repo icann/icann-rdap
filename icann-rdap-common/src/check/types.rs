@@ -184,7 +184,15 @@ impl GetSubChecks for PublicIds {
     fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
         self.iter().for_each(|pid| {
-            if pid.id_type.is_none() {
+            if let Some(id_type) = &pid.id_type {
+                if id_type.is_number() || id_type.is_bool() {
+                    sub_checks.push(Checks {
+                        rdap_struct: super::RdapStructure::PublidIds,
+                        items: vec![Check::PublicIdTypeIsNotString.check_item()],
+                        sub_checks: vec![],
+                    });
+                }
+            } else {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdTypeIsAbsent.check_item()],
@@ -813,6 +821,35 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::PublicIdTypeIsAbsent)
             .expect("public id missing check");
+    }
+
+    #[test]
+    fn test_public_id_with_non_string_public_id_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "domain",
+              "ldhName" : "ns1.example.com",
+              "publicIds": [
+                {
+                  "type": 1,
+                  "identifier": "1"           
+                }
+              ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::PublidIds)
+            .expect("public ids not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::PublicIdTypeIsNotString));
     }
 
     #[test]
