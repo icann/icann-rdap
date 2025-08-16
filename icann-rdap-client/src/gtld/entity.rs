@@ -36,7 +36,7 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                                 for public_id in public_ids {
                                     if let Some(id_type) = &public_id.id_type {
                                         if let Some(identifier) = &public_id.identifier {
-                                            if id_type.as_str() == "IANA Registrar ID"
+                                            if id_type.as_ref() == "IANA Registrar ID"
                                                 && !identifier.is_empty()
                                             {
                                                 front_formatted_data += &format!(
