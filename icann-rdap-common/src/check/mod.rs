@@ -358,6 +358,8 @@ pub enum Check {
     // Network Or Autnum Name 1100 - 1199
     #[strum(message = "name appears to be empty or only whitespace")]
     NetworkOrAutnumNameIsEmpty = 1100,
+    #[strum(message = "name is not a string")]
+    NetworkOrAutnumNameIsNotString = 1101,
 
     // Network or Autnum Type 1200 - 1299
     #[strum(message = "type appears to be empty or only whitespace")]
@@ -539,9 +541,9 @@ impl Check {
                 CheckClass::StdError
             }
 
-            Self::NetworkOrAutnumNameIsEmpty
-            | Self::NetworkOrAutnumTypeIsEmpty
-            | Self::IpAddressMissing => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsEmpty => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsNotString => CheckClass::StdError,
+            Self::NetworkOrAutnumTypeIsEmpty | Self::IpAddressMissing => CheckClass::StdWarning,
             Self::IpAddressMalformed => CheckClass::StdError,
             Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
                 CheckClass::StdWarning

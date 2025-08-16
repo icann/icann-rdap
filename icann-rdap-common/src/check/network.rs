@@ -64,6 +64,9 @@ impl GetChecks for Network {
             if name.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumNameIsEmpty.check_item())
             }
+            if name.is_number() || name.is_bool() {
+                items.push(Check::NetworkOrAutnumNameIsNotString.check_item())
+            }
         }
 
         if let Some(network_type) = &self.network_type {
@@ -183,7 +186,10 @@ mod tests {
 
     use crate::{
         prelude::{Numberish, ToResponse},
-        response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+        response::{
+            network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+            RdapResponse,
+        },
     };
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -207,6 +213,35 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty));
+    }
+
+    #[test]
+    fn check_network_with_non_string_name() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": 1234,
+              "type" : "DIRECT ALLOCATION",
+              "country" : "AU",
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString));
     }
 
     #[test]

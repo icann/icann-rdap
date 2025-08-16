@@ -49,6 +49,9 @@ impl GetChecks for Autnum {
             if name.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumNameIsEmpty.check_item())
             }
+            if name.is_number() || name.is_bool() {
+                items.push(Check::NetworkOrAutnumNameIsNotString.check_item())
+            }
         }
 
         if let Some(autnum_type) = &self.autnum_type {
@@ -89,7 +92,7 @@ mod tests {
 
     use crate::{
         check::{Check, CheckParams, GetChecks},
-        response::autnum::Autnum,
+        response::{autnum::Autnum, RdapResponse},
     };
 
     use super::*;
@@ -110,6 +113,33 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty));
+    }
+
+    #[test]
+    fn check_autnum_with_non_string_name() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "autnum",
+              "handle" : "XXXX-RIR",
+              "startAutnum" : 65536,
+              "endAutnum" : 65541,
+              "name": 1234,
+              "type" : "DIRECT ALLOCATION",
+              "status" : [ "active" ],
+              "country": "AU"
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString));
     }
 
     #[test]
