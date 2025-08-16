@@ -87,7 +87,7 @@ impl Autnum {
     #[builder(visibility = "pub")]
     fn new(
         autnum_range: std::ops::Range<u32>,
-        handle: Option<String>,
+        handle: Option<Stringish>,
         remarks: Vec<Remark>,
         links: Vec<Link>,
         events: Vec<Event>,
