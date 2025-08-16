@@ -5,8 +5,10 @@ use {
 };
 
 use super::{
-    to_opt_vec, types::Link, CommonFields, Entity, Event, GetSelfLink, Notice, Numberish,
-    ObjectCommonFields, Port43, Remark, SelfLink, ToChild, ToResponse,
+    to_opt_vec,
+    types::Link,
+    CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
+    Remark, SelfLink, Stringish, ToChild, ToResponse,
 };
 
 /// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.
@@ -63,7 +65,7 @@ pub struct Autnum {
 
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub autnum_type: Option<String>,
+    pub autnum_type: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
@@ -94,7 +96,7 @@ impl Autnum {
         entities: Vec<Entity>,
         notices: Vec<Notice>,
         country: Option<String>,
-        autnum_type: Option<String>,
+        autnum_type: Option<Stringish>,
         name: Option<String>,
         extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,

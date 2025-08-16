@@ -116,7 +116,7 @@ mod tests {
     fn check_autnum_with_empty_type() {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
-        autnum.autnum_type = Some("".to_string());
+        autnum.autnum_type = Some("".to_string().into());
         let rdap = autnum.to_response();
 
         // WHEN
