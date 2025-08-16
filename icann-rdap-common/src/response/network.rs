@@ -215,11 +215,11 @@ impl Network {
     #[builder(visibility = "pub")]
     fn new(
         cidr: String,
-        handle: Option<Stringish>,
+        handle: Option<String>,
         country: Option<String>,
-        name: Option<Stringish>,
-        network_type: Option<Stringish>,
-        parent_handle: Option<Stringish>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
         remarks: Vec<Remark>,
         links: Vec<Link>,
         events: Vec<Event>,
@@ -239,7 +239,7 @@ impl Network {
                 .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::ip_network()
-                .and_handle(handle)
+                .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
@@ -258,9 +258,9 @@ impl Network {
                 .to_string()
                 .into(),
             ),
-            name,
-            network_type,
-            parent_handle,
+            name: name.map(|s| s.into()),
+            network_type: network_type.map(|s| s.into()),
+            parent_handle: parent_handle.map(|s| s.into()),
             country,
             cidr0_cidrs: match cidr {
                 IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
@@ -283,9 +283,9 @@ impl Network {
         ip_version: Option<Stringish>,
         cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
         country: Option<String>,
-        name: Option<Stringish>,
-        network_type: Option<Stringish>,
-        parent_handle: Option<Stringish>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
         notices: Vec<Notice>,
     ) -> Self {
         Self {
@@ -297,9 +297,9 @@ impl Network {
             start_address,
             end_address,
             ip_version,
-            name,
-            network_type,
-            parent_handle,
+            name: name.map(|s| s.into()),
+            network_type: network_type.map(|s| s.into()),
+            parent_handle: parent_handle.map(|s| s.into()),
             country,
             cidr0_cidrs,
         }

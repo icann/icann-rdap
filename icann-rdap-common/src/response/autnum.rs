@@ -87,7 +87,7 @@ impl Autnum {
     #[builder(visibility = "pub")]
     fn new(
         autnum_range: std::ops::Range<u32>,
-        handle: Option<Stringish>,
+        handle: Option<String>,
         remarks: Vec<Remark>,
         links: Vec<Link>,
         events: Vec<Event>,
@@ -96,8 +96,8 @@ impl Autnum {
         entities: Vec<Entity>,
         notices: Vec<Notice>,
         country: Option<String>,
-        autnum_type: Option<Stringish>,
-        name: Option<Stringish>,
+        autnum_type: Option<String>,
+        name: Option<String>,
         extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
@@ -107,7 +107,7 @@ impl Autnum {
                 .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::autnum()
-                .and_handle(handle)
+                .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
@@ -118,8 +118,8 @@ impl Autnum {
                 .build(),
             start_autnum: Some(Numberish::<u32>::from(autnum_range.start)),
             end_autnum: Some(Numberish::<u32>::from(autnum_range.end)),
-            name,
-            autnum_type,
+            name: name.map(|s| s.into()),
+            autnum_type: autnum_type.map(|s| s.into()),
             country,
         }
     }

@@ -42,7 +42,7 @@ impl ObjectCommon {
     /// Builds [ObjectCommon] for a [crate::response::domain::Domain].
     #[builder(entry = "domain", visibility = "pub(crate)")]
     fn new_domain(
-        handle: Option<Stringish>,
+        handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -53,7 +53,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "domain".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -67,7 +67,7 @@ impl ObjectCommon {
     /// Builds [ObjectCommon] for a [crate::response::network::Network].
     #[builder(entry = "ip_network", visibility = "pub(crate)")]
     fn new_ip_network(
-        handle: Option<Stringish>,
+        handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -78,7 +78,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "ip network".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -92,7 +92,7 @@ impl ObjectCommon {
     /// Builds an [ObjectCommon] for an [crate::response::autnum::Autnum].
     #[builder(entry = "autnum", visibility = "pub(crate)")]
     fn new_autnum(
-        handle: Option<Stringish>,
+        handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -103,7 +103,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "autnum".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -117,7 +117,7 @@ impl ObjectCommon {
     /// Builds an [ObjectCommon] for a [crate::response::nameserver::Nameserver].
     #[builder(entry = "nameserver", visibility = "pub(crate)")]
     fn new_nameserver(
-        handle: Option<Stringish>,
+        handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -128,7 +128,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "nameserver".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -142,7 +142,7 @@ impl ObjectCommon {
     /// Builds an [ObjectCommon] for an [crate::response::entity::Entity].
     #[builder(entry = "entity", visibility = "pub(crate)")]
     fn new_entity(
-        handle: Option<Stringish>,
+        handle: Option<String>,
         remarks: Option<Remarks>,
         links: Option<Links>,
         events: Option<Events>,
@@ -153,7 +153,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "entity".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
