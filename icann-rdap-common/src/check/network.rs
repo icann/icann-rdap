@@ -73,6 +73,9 @@ impl GetChecks for Network {
             if network_type.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumTypeIsEmpty.check_item())
             }
+            if network_type.is_number() || network_type.is_bool() {
+                items.push(Check::NetworkOrAutnumTypeIsNotString.check_item())
+            }
         }
 
         if self.start_address.is_none() || self.end_address.is_none() {
@@ -263,6 +266,35 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+    }
+
+    #[test]
+    fn check_network_with_non_string_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": "NET-RTR-1",
+              "type" : 1234,
+              "country" : "AU",
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
     }
 
     #[test]

@@ -58,6 +58,9 @@ impl GetChecks for Autnum {
             if autnum_type.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumTypeIsEmpty.check_item())
             }
+            if autnum_type.is_number() || autnum_type.is_bool() {
+                items.push(Check::NetworkOrAutnumTypeIsNotString.check_item())
+            }
         }
 
         Checks {
@@ -158,6 +161,33 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+    }
+
+    #[test]
+    fn check_autnum_with_non_string_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "autnum",
+              "handle" : "XXXX-RIR",
+              "startAutnum" : 65536,
+              "endAutnum" : 65541,
+              "name": "AS-RTR-1",
+              "type" : 1234,
+              "status" : [ "active" ],
+              "country": "AU"
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
     }
 
     #[rstest]
