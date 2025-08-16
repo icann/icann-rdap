@@ -98,6 +98,9 @@ impl GetChecks for Network {
                         items.push(Check::IpAddressEndBeforeStart.check_item())
                     }
                     if let Some(ip_version) = &self.ip_version {
+                        if ip_version.is_number() || ip_version.is_bool() {
+                            items.push(Check::IpVersionIsNotString.check_item())
+                        }
                         if (**ip_version == *"v4" && (start_addr.is_ipv6() || end_addr.is_ipv6()))
                             || (**ip_version == *"v6"
                                 && (start_addr.is_ipv4() || end_addr.is_ipv4()))
@@ -450,6 +453,35 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::IpAddressMalformedVersion));
+    }
+
+    #[test]
+    fn check_network_with_non_string_ip_version() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : 6,
+              "name": "NET-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "country" : "AU",
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::IpVersionIsNotString));
     }
 
     #[test]

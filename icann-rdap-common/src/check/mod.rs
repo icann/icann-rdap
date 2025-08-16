@@ -398,6 +398,8 @@ pub enum Check {
     IpAddressReservedNet = 1313,
     #[strum(message = "IP address array is a string.")]
     IpAddressArrayIsString = 1314,
+    #[strum(message = "IP version is not a string")]
+    IpVersionIsNotString = 1315,
 
     // Autnum 1400 - 1499
     #[strum(message = "start or end autnum is missing")]
@@ -562,6 +564,7 @@ impl Check {
             | Self::IpAddressDocumentationNet
             | Self::IpAddressReservedNet => CheckClass::Informational,
             Self::IpAddressArrayIsString => CheckClass::StdError,
+            Self::IpVersionIsNotString => CheckClass::StdError,
 
             Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
             Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
