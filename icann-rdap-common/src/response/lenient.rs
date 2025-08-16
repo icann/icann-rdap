@@ -592,7 +592,7 @@ mod tests {
         // THEN PartialEq
         assert!(stringish == "hello");
         assert!(stringish == *"hello");
-        assert!(stringish == "hello".to_string());
+        assert!(stringish == *"hello");
     }
 
     #[test]

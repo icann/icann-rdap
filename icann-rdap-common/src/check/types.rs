@@ -299,6 +299,13 @@ impl GetSubChecks for ObjectCommon {
                     sub_checks: vec![],
                 })
             }
+            if handle.is_number() || handle.is_bool() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Handle,
+                    items: vec![Check::HandleIsNotString.check_item()],
+                    sub_checks: vec![],
+                })
+            }
         }
 
         // Status
@@ -957,6 +964,30 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::HandleIsEmpty));
+    }
+
+    #[test]
+    fn test_nameserver_with_non_string_handle() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "nameserver",
+              "ldhName" : "ns1.example.com",
+              "handle" : 1234
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::Handle)
+            .expect("handle not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::HandleIsNotString));
     }
 
     #[test]

@@ -326,6 +326,8 @@ pub enum Check {
     // Handle 600 - 699
     #[strum(message = "handle appears to be empty or only whitespace")]
     HandleIsEmpty = 600,
+    #[strum(message = "handle is not a string")]
+    HandleIsNotString = 601,
 
     // Status 700 - 799
     #[strum(message = "status appears to be empty or only whitespace")]
@@ -525,6 +527,7 @@ impl Check {
             | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
 
             Self::HandleIsEmpty => CheckClass::StdWarning,
+            Self::HandleIsNotString => CheckClass::StdError,
 
             Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
             Self::UnknownRole => CheckClass::StdWarning,
