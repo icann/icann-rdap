@@ -61,7 +61,7 @@ pub struct Autnum {
     pub end_autnum: Option<Numberish<u32>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<Stringish>,
 
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -97,7 +97,7 @@ impl Autnum {
         notices: Vec<Notice>,
         country: Option<String>,
         autnum_type: Option<Stringish>,
-        name: Option<String>,
+        name: Option<Stringish>,
         extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
