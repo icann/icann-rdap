@@ -328,6 +328,8 @@ pub enum Check {
     HandleIsEmpty = 600,
     #[strum(message = "handle is not a string")]
     HandleIsNotString = 601,
+    #[strum(message = "parent handle is not a string")]
+    ParentHandleIsNotString = 602,
 
     // Status 700 - 799
     #[strum(message = "status appears to be empty or only whitespace")]
@@ -534,6 +536,7 @@ impl Check {
 
             Self::HandleIsEmpty => CheckClass::StdWarning,
             Self::HandleIsNotString => CheckClass::StdError,
+            Self::ParentHandleIsNotString => CheckClass::StdError,
 
             Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
             Self::UnknownRole => CheckClass::StdWarning,
