@@ -2,7 +2,7 @@
 
 use {
     icann_rdap_common::{
-        prelude::Numberish,
+        prelude::{Numberish, Stringish},
         response::{
             Autnum, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark, RdapResponse,
         },
@@ -141,7 +141,7 @@ async fn GIVEN_data_dir_with_entity_WHEN_mem_init_THEN_entity_is_loaded() {
             .handle
             .as_ref()
             .expect("handle is none"),
-        handle
+        &Stringish::from(handle)
     )
 }
 
@@ -184,7 +184,7 @@ async fn GIVEN_data_dir_with_entity_template_WHEN_mem_init_THEN_entities_are_loa
                 .handle
                 .as_ref()
                 .expect("handle is none"),
-            handle
+            &Stringish::from(handle)
         )
     }
 }

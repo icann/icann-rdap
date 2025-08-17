@@ -87,16 +87,16 @@ pub fn are_redactions_registered(
 }
 
 /// This function substitutes redaction_text if [is_redaction_registered] returns true.
-pub fn text_or_registered_redaction(
+pub fn text_or_registered_redaction<T: ToString + Clone>(
     rdap_response: &RdapResponse,
     redaction_type: &RedactedName,
-    text: &Option<String>,
+    text: &Option<T>,
     redaction_text: &str,
 ) -> Option<String> {
     if is_redaction_registered(rdap_response, redaction_type) {
         Some(redaction_text.to_string())
     } else {
-        text.clone()
+        text.as_ref().map(|s| s.to_string())
     }
 }
 
@@ -142,18 +142,18 @@ pub fn are_redactions_registered_for_roles(
 }
 
 /// This function substitutes redaction_text if [is_redaction_registered_for_role] return true.
-pub fn text_or_registered_redaction_for_role(
+pub fn text_or_registered_redaction_for_role<T: ToString + Clone>(
     rdap_response: &RdapResponse,
     redaction_type: &RedactedName,
     entity: &Entity,
     entity_role: &EntityRole,
-    text: &Option<String>,
+    text: &Option<T>,
     redaction_text: &str,
 ) -> Option<String> {
     if is_redaction_registered_for_role(rdap_response, redaction_type, entity, entity_role) {
         Some(redaction_text.to_string())
     } else {
-        text.clone()
+        text.as_ref().map(|s| s.to_string())
     }
 }
 

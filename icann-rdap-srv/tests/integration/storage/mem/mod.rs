@@ -213,7 +213,8 @@ async fn GIVEN_entity_in_mem_WHEN_lookup_entity_by_handle_THEN_entity_returned()
             .object_common
             .handle
             .as_ref()
-            .expect("handle is none"),
+            .expect("handle is none")
+            .to_string(),
         "foo"
     )
 }
@@ -497,7 +498,7 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_first_address_THEN_n
         },
         start_address: Some(start.to_string()),
         end_address: Some(end.to_string()),
-        ip_version: Some("v4".to_string()),
+        ip_version: Some("v4".to_string().into()),
         name: None,
         network_type: None,
         parent_handle: None,
@@ -556,7 +557,7 @@ async fn GIVEN_offbit_network_in_mem_WHEN_lookup_network_by_last_address_THEN_ne
         },
         start_address: Some(start.to_string()),
         end_address: Some(end.to_string()),
-        ip_version: Some("v4".to_string()),
+        ip_version: Some("v4".to_string().into()),
         name: None,
         network_type: None,
         parent_handle: None,

@@ -884,7 +884,8 @@ async fn make_entity(
             .object_common
             .handle
             .clone()
-            .expect("entity created without a handle"),
+            .expect("entity created without a handle")
+            .to_string(),
     });
     let output = Output {
         rdap: entity.to_response(),

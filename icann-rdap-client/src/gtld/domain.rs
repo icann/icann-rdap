@@ -1,6 +1,7 @@
 use {
     super::{GtldParams, ToGtldWhois},
     icann_rdap_common::response::{Boolish, Domain, Event, Nameserver, Network, SecureDns},
+    std::fmt::Display,
 };
 
 impl ToGtldWhois for Domain {
@@ -63,7 +64,7 @@ fn format_domain_name(domain: &Domain) -> String {
     }
 }
 
-fn format_domain_id(handle: Option<&String>) -> String {
+fn format_domain_id<T: ToString + Display>(handle: Option<&T>) -> String {
     if let Some(handle) = handle {
         format!("Registry Domain ID: {handle}\n")
     } else {

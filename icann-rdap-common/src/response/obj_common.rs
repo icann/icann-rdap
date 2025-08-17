@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     redacted::Redacted, to_opt_vectorstringish, Entity, Events, Link, Links, Port43, Remarks,
-    VectorStringish, EMPTY_VEC_STRING,
+    Stringish, VectorStringish, EMPTY_VEC_STRING,
 };
 
 /// Holds those types that are common in all object classes.
@@ -12,7 +12,7 @@ pub struct ObjectCommon {
     pub object_class_name: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    pub handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remarks: Option<Remarks>,
@@ -53,7 +53,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "domain".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -78,7 +78,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "ip network".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -103,7 +103,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "autnum".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -128,7 +128,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "nameserver".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -153,7 +153,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "entity".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,

@@ -184,14 +184,30 @@ impl GetSubChecks for PublicIds {
     fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
         self.iter().for_each(|pid| {
-            if pid.id_type.is_none() {
+            if let Some(id_type) = &pid.id_type {
+                if id_type.is_number() || id_type.is_bool() {
+                    sub_checks.push(Checks {
+                        rdap_struct: super::RdapStructure::PublidIds,
+                        items: vec![Check::PublicIdTypeIsNotString.check_item()],
+                        sub_checks: vec![],
+                    });
+                }
+            } else {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdTypeIsAbsent.check_item()],
                     sub_checks: vec![],
                 });
             }
-            if pid.identifier.is_none() {
+            if let Some(identifier) = &pid.identifier {
+                if identifier.is_number() || identifier.is_bool() {
+                    sub_checks.push(Checks {
+                        rdap_struct: super::RdapStructure::PublidIds,
+                        items: vec![Check::PublicIdIdentifierIsNotString.check_item()],
+                        sub_checks: vec![],
+                    });
+                }
+            } else {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
@@ -296,6 +312,13 @@ impl GetSubChecks for ObjectCommon {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Handle,
                     items: vec![Check::HandleIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            }
+            if handle.is_number() || handle.is_bool() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Handle,
+                    items: vec![Check::HandleIsNotString.check_item()],
                     sub_checks: vec![],
                 })
             }
@@ -809,6 +832,65 @@ mod tests {
     }
 
     #[test]
+    fn test_public_id_with_non_string_public_id_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "domain",
+              "ldhName" : "ns1.example.com",
+              "publicIds": [
+                {
+                  "type": 1,
+                  "identifier": "1"           
+                }
+              ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::PublidIds)
+            .expect("public ids not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::PublicIdTypeIsNotString));
+    }
+
+    #[test]
+    fn test_public_id_with_non_string_identifier() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "domain",
+              "handle" : "XXXX",
+              "ldhName" : "xn--fo-5ja.example",
+              "publicIds": [
+                {
+                    "type": "thing",
+                    "identifier": 1234
+                }
+              ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::PublidIds)
+            .expect("Public Ids not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::PublicIdIdentifierIsNotString));
+    }
+
+    #[test]
     fn test_public_id_with_no_identifier() {
         // GIVEN
         let rdap = Domain::builder()
@@ -944,7 +1026,7 @@ mod tests {
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
-        ns.object_common.handle = Some(handle.to_string());
+        ns.object_common.handle = Some(handle.to_string().into());
         let rdap = ns.to_response();
 
         // WHEN
@@ -957,6 +1039,30 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::HandleIsEmpty));
+    }
+
+    #[test]
+    fn test_nameserver_with_non_string_handle() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "nameserver",
+              "ldhName" : "ns1.example.com",
+              "handle" : 1234
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::Handle)
+            .expect("handle not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::HandleIsNotString));
     }
 
     #[test]

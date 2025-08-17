@@ -6,7 +6,7 @@ use {
 
 use super::{
     to_opt_vec, types::Link, CommonFields, Entity, Event, GetSelfLink, Notice, Numberish,
-    ObjectCommonFields, Port43, Remark, SelfLink, ToChild, ToResponse,
+    ObjectCommonFields, Port43, Remark, SelfLink, Stringish, ToChild, ToResponse,
 };
 
 /// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.
@@ -59,14 +59,14 @@ pub struct Autnum {
     pub end_autnum: Option<Numberish<u32>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<Stringish>,
 
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub autnum_type: Option<String>,
+    pub autnum_type: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
+    pub country: Option<Stringish>,
 }
 
 #[buildstructor::buildstructor]
@@ -105,7 +105,7 @@ impl Autnum {
                 .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::autnum()
-                .and_handle(handle)
+                .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
@@ -116,9 +116,9 @@ impl Autnum {
                 .build(),
             start_autnum: Some(Numberish::<u32>::from(autnum_range.start)),
             end_autnum: Some(Numberish::<u32>::from(autnum_range.end)),
-            name,
-            autnum_type,
-            country,
+            name: name.map(|s| s.into()),
+            autnum_type: autnum_type.map(|s| s.into()),
+            country: country.map(|s| s.into()),
         }
     }
 

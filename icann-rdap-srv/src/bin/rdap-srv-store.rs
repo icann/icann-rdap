@@ -198,7 +198,7 @@ fn verify_rdap_template(
                     match &entity {
                         EntityOrError::EntityObject(entity) => {
                             let mut entity = entity.clone();
-                            entity.object_common.handle = Some(id.handle);
+                            entity.object_common.handle = Some(id.handle.into());
                             errors_found |= check_rdap(entity.to_response(), check_types);
                         }
                         EntityOrError::ErrorResponse(error) => {
@@ -252,12 +252,12 @@ fn verify_rdap_template(
                                     IpNet::V4(v4) => {
                                         network.start_address = Some(v4.network().to_string());
                                         network.end_address = Some(v4.broadcast().to_string());
-                                        network.ip_version = Some("v4".to_string());
+                                        network.ip_version = Some("v4".to_string().into());
                                     }
                                     IpNet::V6(v6) => {
                                         network.start_address = Some(v6.network().to_string());
                                         network.end_address = Some(v6.broadcast().to_string());
-                                        network.ip_version = Some("v6".to_string());
+                                        network.ip_version = Some("v6".to_string().into());
                                     }
                                 },
                                 NetworkIdType::Range {
@@ -266,9 +266,9 @@ fn verify_rdap_template(
                                 } => {
                                     let addr: IpAddr = start_address.parse()?;
                                     if addr.is_ipv4() {
-                                        network.ip_version = Some("v4".to_string());
+                                        network.ip_version = Some("v4".to_string().into());
                                     } else {
-                                        network.ip_version = Some("v6".to_string());
+                                        network.ip_version = Some("v6".to_string().into());
                                     }
                                     network.start_address = Some(start_address);
                                     network.end_address = Some(end_address);

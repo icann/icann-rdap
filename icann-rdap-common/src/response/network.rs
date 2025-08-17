@@ -13,7 +13,7 @@ use super::{
     to_opt_vec,
     types::{ExtensionId, Link},
     CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
-    RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
+    RdapResponseError, Remark, SelfLink, Stringish, ToChild, ToResponse,
 };
 
 /// Cidr0 structure from the Cidr0 extension.
@@ -177,21 +177,21 @@ pub struct Network {
 
     #[serde(rename = "ipVersion")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ip_version: Option<String>,
+    pub ip_version: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<Stringish>,
 
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub network_type: Option<String>,
+    pub network_type: Option<Stringish>,
 
     #[serde(rename = "parentHandle")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_handle: Option<String>,
+    pub parent_handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
+    pub country: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
@@ -239,7 +239,7 @@ impl Network {
                 .and_notices(to_opt_vec(notices))
                 .build(),
             object_common: ObjectCommon::ip_network()
-                .and_handle(handle)
+                .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
                 .and_remarks(to_opt_vec(remarks))
                 .and_links(to_opt_vec(links))
                 .and_events(to_opt_vec(events))
@@ -255,12 +255,13 @@ impl Network {
                     IpInet::V4(_) => "v4",
                     IpInet::V6(_) => "v6",
                 }
-                .to_string(),
+                .to_string()
+                .into(),
             ),
-            name,
-            network_type,
-            parent_handle,
-            country,
+            name: name.map(|s| s.into()),
+            network_type: network_type.map(|s| s.into()),
+            parent_handle: parent_handle.map(|s| s.into()),
+            country: country.map(|s| s.into()),
             cidr0_cidrs: match cidr {
                 IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(cidr.first_address().to_string()),
@@ -279,7 +280,7 @@ impl Network {
     fn new_illegal(
         start_address: Option<String>,
         end_address: Option<String>,
-        ip_version: Option<String>,
+        ip_version: Option<Stringish>,
         cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
         country: Option<String>,
         name: Option<String>,
@@ -296,10 +297,10 @@ impl Network {
             start_address,
             end_address,
             ip_version,
-            name,
-            network_type,
-            parent_handle,
-            country,
+            name: name.map(|s| s.into()),
+            network_type: network_type.map(|s| s.into()),
+            parent_handle: parent_handle.map(|s| s.into()),
+            country: country.map(|s| s.into()),
             cidr0_cidrs,
         }
     }

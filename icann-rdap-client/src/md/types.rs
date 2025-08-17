@@ -1,3 +1,4 @@
+use icann_rdap_common::response::Stringish;
 use {
     icann_rdap_common::prelude::ObjectCommon,
     std::{any::TypeId, sync::LazyLock},
@@ -324,10 +325,12 @@ pub(crate) fn public_ids_to_table(
 ) -> MultiPartTable {
     for pid in publid_ids {
         table = table.nv_ref(
-            pid.id_type.as_ref().unwrap_or(&"(not given)".to_string()),
+            pid.id_type
+                .as_ref()
+                .unwrap_or(&Stringish::from("(not given)")),
             pid.identifier
                 .as_ref()
-                .unwrap_or(&"(not given)".to_string()),
+                .unwrap_or(&Stringish::from("(not given)")),
         );
     }
     table

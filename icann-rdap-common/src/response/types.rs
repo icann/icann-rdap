@@ -4,7 +4,7 @@ use {
     strum_macros::{AsRefStr, Display, EnumString},
 };
 
-use super::lenient::VectorStringish;
+use super::lenient::{Stringish, VectorStringish};
 
 /// Represents an RDAP extension identifier.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -627,11 +627,11 @@ pub struct PublicId {
     /// This are manditory per RFC 9083.
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id_type: Option<String>,
+    pub id_type: Option<Stringish>,
 
     /// This are manditory per RFC 9083.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
+    pub identifier: Option<Stringish>,
 }
 
 #[buildstructor::buildstructor]
@@ -640,8 +640,8 @@ impl PublicId {
     #[builder(visibility = "pub")]
     fn new(id_type: String, identifier: String) -> Self {
         Self {
-            id_type: Some(id_type),
-            identifier: Some(identifier),
+            id_type: Some(id_type.into()),
+            identifier: Some(identifier.into()),
         }
     }
 
@@ -650,8 +650,8 @@ impl PublicId {
     #[allow(dead_code)]
     fn new_illegal(id_type: Option<String>, identifier: Option<String>) -> Self {
         Self {
-            id_type,
-            identifier,
+            id_type: id_type.map(|s| s.into()),
+            identifier: identifier.map(|s| s.into()),
         }
     }
 
