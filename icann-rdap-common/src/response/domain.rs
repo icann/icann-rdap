@@ -12,7 +12,7 @@ use super::{
     to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, Links, PublicIds},
     CommonFields, Entity, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
-    SelfLink, ToChild, ToResponse, VectorStringish, EMPTY_VEC_STRING,
+    SelfLink, ToChild, ToResponse, VectorStringish,
 };
 
 /// Represents an RDAP variant name.
@@ -28,12 +28,12 @@ pub struct VariantName {
 }
 
 impl VariantName {
-    /// Convenience method.
+    /// Getter for ldhName.
     pub fn ldh_name(&self) -> Option<&str> {
         self.ldh_name.as_deref()
     }
 
-    /// Convenience method.
+    /// Getter for unicodeName.
     pub fn unicode_name(&self) -> Option<&str> {
         self.unicode_name.as_deref()
     }
@@ -55,8 +55,6 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-static EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
-
 #[buildstructor::buildstructor]
 impl Variant {
     #[builder(visibility = "pub")]
@@ -72,17 +70,17 @@ impl Variant {
         }
     }
 
-    /// Convenience method to get relations.
-    pub fn relations(&self) -> &Vec<String> {
+    /// Getter for relations.
+    pub fn relations(&self) -> &[String] {
         self.relations
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
-    /// Convenience method to get variant names.
-    pub fn variant_names(&self) -> &Vec<VariantName> {
-        self.variant_names.as_ref().unwrap_or(&EMPTY_VARIANT_NAMES)
+    /// Getter for variantNames.
+    pub fn variant_names(&self) -> &[VariantName] {
+        self.variant_names.as_deref().unwrap_or_default()
     }
 
     /// Convenience method.
@@ -90,9 +88,6 @@ impl Variant {
         self.idn_table.as_deref()
     }
 }
-
-static EMPTY_LINKS: Vec<Link> = vec![];
-static EMPTY_EVENTS: Vec<Event> = vec![];
 
 /// Represents `dsData`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -140,14 +135,14 @@ impl DsDatum {
         }
     }
 
-    /// Convenience method to get links.
-    pub fn links(&self) -> &Vec<Link> {
-        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    /// Getter for links.
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get events.
-    pub fn events(&self) -> &Vec<Event> {
-        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    /// Getter for events.
+    pub fn events(&self) -> &[Event] {
+        self.events.as_deref().unwrap_or_default()
     }
 
     /// Returns a u32 if it was given, otherwise None.
@@ -211,14 +206,14 @@ impl KeyDatum {
         }
     }
 
-    /// Convenience method to get links.
-    pub fn links(&self) -> &Vec<Link> {
-        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    /// Getter for links.
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get events.
-    pub fn events(&self) -> &Vec<Event> {
-        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    /// Getter for events.
+    pub fn events(&self) -> &[Event] {
+        self.events.as_deref().unwrap_or_default()
     }
 
     /// Returns a u16 if it was given, otherwise None.
@@ -236,14 +231,11 @@ impl KeyDatum {
         self.algorithm.as_ref().and_then(|n| n.as_u8())
     }
 
-    /// Convenience method.
+    /// Getter for publicKey.
     pub fn public_key(&self) -> Option<&str> {
         self.public_key.as_deref()
     }
 }
-
-static EMPTY_DS_DATA: Vec<DsDatum> = vec![];
-static EMPTY_KEY_DATA: Vec<KeyDatum> = vec![];
 
 /// Represents the DNSSEC information of a domain.
 ///
@@ -329,14 +321,14 @@ impl SecureDns {
         }
     }
 
-    /// Convenience method to get ds data.
-    pub fn ds_data(&self) -> &Vec<DsDatum> {
-        self.ds_data.as_ref().unwrap_or(&EMPTY_DS_DATA)
+    /// Getter for dsData.
+    pub fn ds_data(&self) -> &[DsDatum] {
+        self.ds_data.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get key data.
-    pub fn key_data(&self) -> &Vec<KeyDatum> {
-        self.key_data.as_ref().unwrap_or(&EMPTY_KEY_DATA)
+    /// Getter for keyData.
+    pub fn key_data(&self) -> &[KeyDatum] {
+        self.key_data.as_deref().unwrap_or_default()
     }
 
     /// Returns true if a truish value was given, otherwise false.
@@ -356,9 +348,6 @@ impl SecureDns {
         self.max_sig_life.as_ref().and_then(|n| n.as_u64())
     }
 }
-
-static EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
-static EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
 ///
@@ -433,6 +422,23 @@ static EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 ///   .nameservers(nameservers)
 ///   .secure_dns(secure_dns)
 ///   .build();
+/// ```
+///
+/// Access to the domain information should be done via the getter functions.
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let domain = Domain::builder()
+///   .ldh_name("foo.example.com")
+///   // ...
+///   .build();
+///
+/// // getter functions
+/// let ldh_name = domain.ldh_name();
+/// let unicode_name = domain.unicode_name();
+/// let nameservers = domain.nameservers();
+/// let public_ids = domain.public_ids();
+/// let variants = domain.variants();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
@@ -580,24 +586,39 @@ impl Domain {
         }
     }
 
-    /// Convenience method to get the public IDs.
-    pub fn public_ids(&self) -> &Vec<PublicId> {
-        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    /// Getter for variants.
+    pub fn variants(&self) -> &[Variant] {
+        self.variants.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get the nameservers.
-    pub fn nameservers(&self) -> &Vec<Nameserver> {
-        self.nameservers.as_ref().unwrap_or(&EMPTY_NAMESERVERS)
+    /// Getter for the publicIds.
+    pub fn public_ids(&self) -> &[PublicId] {
+        self.public_ids.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method.
+    /// Getter for the nameservers.
+    pub fn nameservers(&self) -> &[Nameserver] {
+        self.nameservers.as_deref().unwrap_or_default()
+    }
+
+    /// Getter for ldhName.
     pub fn ldh_name(&self) -> Option<&str> {
         self.ldh_name.as_deref()
     }
 
-    /// Convenience method.
+    /// Getter for unicodeName.
     pub fn unicode_name(&self) -> Option<&str> {
         self.unicode_name.as_deref()
+    }
+
+    /// Getter for secureDNS.
+    pub fn secure_dns(&self) -> Option<&SecureDns> {
+        self.secure_dns.as_ref()
+    }
+
+    /// Getter for network.
+    pub fn network(&self) -> Option<&Network> {
+        self.network.as_ref()
     }
 }
 
