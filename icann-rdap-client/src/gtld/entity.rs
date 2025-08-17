@@ -8,30 +8,61 @@ use {
 
 impl ToGtldWhois for Option<Vec<Entity>> {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
-        let mut front_formatted_data = String::new();
         let mut formatted_data = String::new();
 
         if let Some(entities) = self {
             for entity in entities {
                 for role in entity.roles() {
-                    match role.as_str() {
-                        "registrar" => {
-                            if let Some(vcard_array) = &entity.vcard_array {
-                                let role_info = extract_role_info(role, vcard_array, params);
-                                // Now use role_info to append to formatted_data
-                                if !role_info.name.is_empty() {
-                                    front_formatted_data +=
-                                        &format!("{}: {}\n", cfl(role), role_info.name);
-                                }
-                                if !role_info.org.is_empty() {
-                                    front_formatted_data +=
-                                        &format!("{} Organization: {}\n", cfl(role), role_info.org);
-                                }
-                                if !role_info.adr.is_empty() {
-                                    front_formatted_data += &role_info.adr;
-                                }
+                    let label = match role.as_str() {
+                        "registrant" => "Registrant",
+                        "technical" => "Tech",
+                        "administrative" => "Admin",
+                        "billing" => "Billing",
+                        "registrar" => "Registrar",
+                        "reseller" => "Reseller",
+                        "sponsor" => "Sponsor",
+                        "proxy" => "Proxy",
+                        "notifications" => "Notifications",
+                        "noc" => "NOC",
+                        _ => continue,
+                    };
+                    params.label = label.to_string();
+
+                    if let Some(vcard_array) = &entity.vcard_array {
+                        let role_info = extract_role_info(vcard_array, params);
+                        // Now use role_info to append to formatted_data
+                        if !role_info.name.is_empty() {
+                            if ["registrar", "reseller", "sponsor", "proxy"]
+                                .contains(&role.as_str())
+                            {
+                                formatted_data +=
+                                    &format!("{}: {}\n", params.label, role_info.name);
+                            } else {
+                                formatted_data +=
+                                    &format!("{} Name: {}\n", params.label, role_info.name);
                             }
-                            // Special Sauce for Registrar IANA ID and Abuse Contact
+                        }
+                        if !role_info.org.is_empty() {
+                            formatted_data +=
+                                &format!("{} Organization: {}\n", params.label, role_info.org);
+                        }
+                        if !role_info.adr.is_empty() {
+                            formatted_data += &role_info.adr;
+                        }
+                        if !role_info.email.is_empty() {
+                            formatted_data +=
+                                &format!("{} Email: {}\n", params.label, role_info.email);
+                        }
+                        if !role_info.phone.is_empty() {
+                            formatted_data +=
+                                &format!("{} Phone: {}\n", params.label, role_info.phone);
+                        }
+                        if !role_info.fax.is_empty() {
+                            formatted_data += &format!("{} Fax: {}\n", params.label, role_info.fax);
+                        }
+
+                        // Special Sauce for Registrar IANA ID and Abuse Contact
+                        if role.as_str() == "registrar" {
                             if let Some(public_ids) = &entity.public_ids {
                                 for public_id in public_ids {
                                     if let Some(id_type) = &public_id.id_type {
@@ -39,7 +70,7 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                                             if id_type.as_str() == "IANA Registrar ID"
                                                 && !identifier.is_empty()
                                             {
-                                                front_formatted_data += &format!(
+                                                formatted_data += &format!(
                                                     "Registrar IANA ID: {}\n",
                                                     identifier.clone()
                                                 );
@@ -48,45 +79,14 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                                     }
                                 }
                             }
-                            append_abuse_contact_info(entity, &mut front_formatted_data);
+                            append_abuse_contact_info(entity, &mut formatted_data);
                         }
-                        "technical" | "administrative" | "registrant" => {
-                            if let Some(vcard_array) = &entity.vcard_array {
-                                let role_info = extract_role_info(role, vcard_array, params);
-                                // Now use role_info to append to formatted_data
-                                if !role_info.name.is_empty() {
-                                    formatted_data +=
-                                        &format!("{} Name: {}\n", cfl(role), role_info.name);
-                                }
-                                if !role_info.org.is_empty() {
-                                    formatted_data +=
-                                        &format!("{} Organization: {}\n", cfl(role), role_info.org);
-                                }
-                                if !role_info.adr.is_empty() {
-                                    formatted_data += &role_info.adr;
-                                }
-                                if !role_info.email.is_empty() {
-                                    formatted_data +=
-                                        &format!("{} Email: {}\n", cfl(role), role_info.email);
-                                }
-                                if !role_info.phone.is_empty() {
-                                    formatted_data +=
-                                        &format!("{} Phone: {}\n", cfl(role), role_info.phone);
-                                }
-                                if !role_info.fax.is_empty() {
-                                    formatted_data +=
-                                        &format!("{} Fax: {}\n", cfl(role), role_info.fax);
-                                }
-                            }
-                        }
-                        _ => {} // Are there any roles we are missing?
                     }
                 }
             }
         }
 
-        front_formatted_data += &formatted_data;
-        front_formatted_data
+        formatted_data
     }
 }
 
@@ -137,25 +137,12 @@ fn format_address_with_label(
     postal_address.to_gtld_whois(params).to_string()
 }
 
-fn extract_role_info(
-    role: &str,
-    vcard_array: &[serde_json::Value],
-    params: &mut GtldParams,
-) -> RoleInfo {
+fn extract_role_info(vcard_array: &[serde_json::Value], params: &mut GtldParams) -> RoleInfo {
     let contact = match Contact::from_vcard(vcard_array) {
         Some(contact) => contact,
         None => return RoleInfo::default(),
     };
     let mut adr = String::new();
-    let label = match role {
-        "registrar" => "Registrar",
-        "technical" => "Technical",
-        "administrative" => "Admin",
-        "registrant" => "Registrant",
-        _ => "",
-    };
-    params.label = label.to_string();
-
     let name = contact.full_name.unwrap_or_default();
     let org = contact
         .organization_names
@@ -222,7 +209,7 @@ fn extract_role_info(
     }
 }
 
-fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String) {
+fn append_abuse_contact_info(entity: &Entity, formatted_data: &mut String) {
     if let Some(entities) = &entity.object_common.entities {
         for entity in entities {
             for role in entity.roles() {
@@ -234,7 +221,7 @@ fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String)
                                 for email in emails {
                                     let abuse_contact_email = &email.email;
                                     if !abuse_contact_email.is_empty() {
-                                        front_formatted_data.push_str(&format!(
+                                        formatted_data.push_str(&format!(
                                             "Registrar Abuse Contact Email: {}\n",
                                             abuse_contact_email
                                         ));
@@ -246,7 +233,7 @@ fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String)
                                 for phone in phones {
                                     let abuse_contact_phone = &phone.phone;
                                     if !abuse_contact_phone.is_empty() {
-                                        front_formatted_data.push_str(&format!(
+                                        formatted_data.push_str(&format!(
                                             "Registrar Abuse Contact Phone: {}\n",
                                             abuse_contact_phone
                                         ));
@@ -259,12 +246,4 @@ fn append_abuse_contact_info(entity: &Entity, front_formatted_data: &mut String)
             }
         }
     }
-}
-
-// capitalize first letter
-fn cfl(s: &str) -> String {
-    s.char_indices()
-        .next()
-        .map(|(i, c)| c.to_uppercase().collect::<String>() + &s[i + 1..])
-        .unwrap_or_default()
 }

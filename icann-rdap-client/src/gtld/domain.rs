@@ -224,26 +224,35 @@ mod tests {
     fn test_ms_click_response() {
         let expected_output =
             std::fs::read_to_string("src/test_files/microsoft.click-expected.gtld").unwrap();
+        eprintln!("--- EXPECTED ---{expected_output}--- ---");
 
-        let output = process_gtld_file("src/test_files/microsoft.click.json").unwrap();
-        assert_eq!(output, expected_output);
+        let actual = process_gtld_file("src/test_files/microsoft.click.json").unwrap();
+        eprintln!("--- ACTUAL ---{actual}--- ---");
+
+        assert_eq!(actual, expected_output);
     }
 
     #[test]
     fn test_lemonde_response() {
         let expected_output =
             std::fs::read_to_string("src/test_files/lemonde.fr-expected.gtld").unwrap();
+        eprintln!("--- EXPECTED ---{expected_output}--- ---");
 
-        let output = process_gtld_file("src/test_files/lemonde.fr.json").unwrap();
-        assert_eq!(output, expected_output);
+        let actual = process_gtld_file("src/test_files/lemonde.fr.json").unwrap();
+        eprintln!("--- ACTUAL ---{actual}--- ---");
+
+        assert_eq!(actual, expected_output);
     }
 
     #[test]
     fn test_moscow_response() {
         let expected_output =
             std::fs::read_to_string("src/test_files/home.moscow-expected.gtld").unwrap();
+        eprintln!("--- EXPECTED ---{expected_output}--- ---");
 
-        let output = process_gtld_file("src/test_files/home.moscow.json").unwrap();
-        assert_eq!(output, expected_output);
+        let actual = process_gtld_file("src/test_files/home.moscow.json").unwrap();
+        eprintln!("--- ACTUAL ---{actual}--- ---");
+
+        assert_eq!(actual, expected_output);
     }
 }

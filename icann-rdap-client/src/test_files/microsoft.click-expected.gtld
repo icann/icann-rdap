@@ -8,15 +8,6 @@ Updated Date: 2023-10-17T10:47:21.733Z
 Domain Status: client update prohibited
 Domain Status: client transfer prohibited
 Domain Status: client delete prohibited
-Registrar: MarkMonitor Inc.
-Registrar Street: 3540 East Longwing Lane, Suite 300
-Registrar City: Meridian
-Registrar State/Province: ID
-Registrar Postal Code: 83646
-Registrar Country: US
-Registrar Abuse Contact Email: abusecomplaints@markmonitor.com
-Registrar Abuse Contact Phone: tel:+1.2083895740
-Registrar Abuse Contact Phone: tel:+1.2083895771
 Registrant Organization: Microsoft Corporation
 Registrant Street: 
 Registrant City: 
@@ -28,11 +19,23 @@ Admin City:
 Admin State/Province: 
 Admin Postal Code: 
 Admin Country: 
-Technical Street: 
-Technical City: 
-Technical State/Province: 
-Technical Postal Code: 
-Technical Country: 
+Tech Street: 
+Tech City: 
+Tech State/Province: 
+Tech Postal Code: 
+Tech Country: 
+Registrar: MarkMonitor Inc.
+Registrar Street: 3540 East Longwing Lane, Suite 300
+Registrar City: Meridian
+Registrar State/Province: ID
+Registrar Postal Code: 83646
+Registrar Country: US
+Registrar Email: ccops@markmonitor.com
+Registrar Phone: tel:+1.208389574
+Registrar Fax: tel:+1.2083895771
+Registrar Abuse Contact Email: abusecomplaints@markmonitor.com
+Registrar Abuse Contact Phone: tel:+1.2083895740
+Registrar Abuse Contact Phone: tel:+1.2083895771
 Name Server: ns4-08.azure-dns.info
 Name Server: ns2-08.azure-dns.net
 Name Server: ns3-08.azure-dns.org
