@@ -32,7 +32,9 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                         let role_info = extract_role_info(vcard_array, params);
                         // Now use role_info to append to formatted_data
                         if !role_info.name.is_empty() {
-                            if ["registrar", "reseller", "sponsor", "proxy"].contains(&role.as_str()) {
+                            if ["registrar", "reseller", "sponsor", "proxy"]
+                                .contains(&role.as_str())
+                            {
                                 formatted_data +=
                                     &format!("{}: {}\n", params.label, role_info.name);
                             } else {
@@ -56,8 +58,7 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                                 &format!("{} Phone: {}\n", params.label, role_info.phone);
                         }
                         if !role_info.fax.is_empty() {
-                            formatted_data +=
-                                &format!("{} Fax: {}\n", params.label, role_info.fax);
+                            formatted_data += &format!("{} Fax: {}\n", params.label, role_info.fax);
                         }
 
                         // Special Sauce for Registrar IANA ID and Abuse Contact
@@ -136,10 +137,7 @@ fn format_address_with_label(
     postal_address.to_gtld_whois(params).to_string()
 }
 
-fn extract_role_info(
-    vcard_array: &[serde_json::Value],
-    params: &mut GtldParams,
-) -> RoleInfo {
+fn extract_role_info(vcard_array: &[serde_json::Value], params: &mut GtldParams) -> RoleInfo {
     let contact = match Contact::from_vcard(vcard_array) {
         Some(contact) => contact,
         None => return RoleInfo::default(),
