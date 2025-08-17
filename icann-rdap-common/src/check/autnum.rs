@@ -63,6 +63,12 @@ impl GetChecks for Autnum {
             }
         }
 
+        if let Some(country) = &self.country {
+            if country.is_number() || country.is_bool() {
+                items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
+            }
+        }
+
         Checks {
             rdap_struct: RdapStructure::Autnum,
             items,
@@ -188,6 +194,33 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
+    }
+
+    #[test]
+    fn check_autnum_with_non_string_country() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "autnum",
+              "handle" : "XXXX-RIR",
+              "startAutnum" : 65536,
+              "endAutnum" : 65541,
+              "name": "AS-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "status" : [ "active" ],
+              "country": 1234
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString));
     }
 
     #[rstest]

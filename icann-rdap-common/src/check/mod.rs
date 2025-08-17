@@ -512,6 +512,10 @@ pub enum Check {
     DsDatumDigestTypeIsString = 2217,
     #[strum(message = "dsData digestType is out of range.")]
     DsDatumDigestTypeIsOutOfRange = 2218,
+
+    // Network or Autnum Country 2300 - 2399
+    #[strum(message = "country is not a string")]
+    NetworkOrAutnumCountryIsNotString = 2300,
 }
 
 impl Check {
@@ -619,6 +623,8 @@ impl Check {
             | Self::DsDatumKeyTagIsOutOfRange
             | Self::DsDatumDigestTypeIsString
             | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
+
+            Self::NetworkOrAutnumCountryIsNotString => CheckClass::StdError,
         };
         CheckItem {
             check_class,

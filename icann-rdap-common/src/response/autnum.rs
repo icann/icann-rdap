@@ -66,7 +66,7 @@ pub struct Autnum {
     pub autnum_type: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
+    pub country: Option<Stringish>,
 }
 
 #[buildstructor::buildstructor]
@@ -118,7 +118,7 @@ impl Autnum {
             end_autnum: Some(Numberish::<u32>::from(autnum_range.end)),
             name: name.map(|s| s.into()),
             autnum_type: autnum_type.map(|s| s.into()),
-            country,
+            country: country.map(|s| s.into()),
         }
     }
 

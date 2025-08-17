@@ -191,7 +191,7 @@ pub struct Network {
     pub parent_handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
+    pub country: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
@@ -261,7 +261,7 @@ impl Network {
             name: name.map(|s| s.into()),
             network_type: network_type.map(|s| s.into()),
             parent_handle: parent_handle.map(|s| s.into()),
-            country,
+            country: country.map(|s| s.into()),
             cidr0_cidrs: match cidr {
                 IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(cidr.first_address().to_string()),
@@ -300,7 +300,7 @@ impl Network {
             name: name.map(|s| s.into()),
             network_type: network_type.map(|s| s.into()),
             parent_handle: parent_handle.map(|s| s.into()),
-            country,
+            country: country.map(|s| s.into()),
             cidr0_cidrs,
         }
     }

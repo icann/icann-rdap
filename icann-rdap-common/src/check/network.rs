@@ -84,6 +84,12 @@ impl GetChecks for Network {
             }
         }
 
+        if let Some(country) = &self.country {
+            if country.is_number() || country.is_bool() {
+                items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
+            }
+        }
+
         if self.start_address.is_none() || self.end_address.is_none() {
             items.push(Check::IpAddressMissing.check_item())
         }
@@ -517,6 +523,35 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::ParentHandleIsNotString));
+    }
+
+    #[test]
+    fn check_network_with_non_string_country() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": "NET-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "country" : 1234,
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString));
     }
 
     #[test]
