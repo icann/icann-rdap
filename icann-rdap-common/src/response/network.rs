@@ -58,6 +58,16 @@ impl V4Cidr {
             length: Some(Numberish::<u8>::from(length)),
         }
     }
+
+    // Get the v4Prefix.
+    pub fn v4prefix(&self) -> Option<&str> {
+        self.v4prefix.as_deref()
+    }
+
+    // Get the length.
+    pub fn length(&self) -> Option<u8> {
+        self.length.as_ref().and_then(|n| n.as_u8())
+    }
 }
 
 impl std::fmt::Display for V4Cidr {
@@ -100,6 +110,16 @@ impl V6Cidr {
             v6prefix: Some(v6prefix),
             length: Some(Numberish::<u8>::from(length)),
         }
+    }
+
+    // Get the v6Prefix.
+    pub fn v6prefix(&self) -> Option<&str> {
+        self.v6prefix.as_deref()
+    }
+
+    // Get the length.
+    pub fn length(&self) -> Option<u8> {
+        self.length.as_ref().and_then(|n| n.as_u8())
     }
 }
 
@@ -159,6 +179,21 @@ impl std::fmt::Display for V6Cidr {
 ///   ]
 /// }
 /// ```
+/// Use the getter functions to access the information in the network.
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let net = Network::builder()
+///   .cidr("10.0.0.0/24")
+///   // ...
+///   .build().unwrap();
+///
+/// // use the getters.
+/// let start_address = net.start_address();
+/// let end_address = net.end_address();
+/// let parent_handle = net.parent_handle();
+/// // ...
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Network {
     #[serde(flatten)]
@@ -196,8 +231,6 @@ pub struct Network {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
-
-static EMPTY_CIDR0CIDRS: Vec<Cidr0Cidr> = vec![];
 
 #[buildstructor::buildstructor]
 impl Network {
@@ -341,8 +374,8 @@ impl Network {
     }
 
     /// Returns the CIDR0 CIDRs of the network.
-    pub fn cidr0_cidrs(&self) -> &Vec<Cidr0Cidr> {
-        self.cidr0_cidrs.as_ref().unwrap_or(&EMPTY_CIDR0CIDRS)
+    pub fn cidr0_cidrs(&self) -> &[Cidr0Cidr] {
+        self.cidr0_cidrs.as_deref().unwrap_or_default()
     }
 }
 
