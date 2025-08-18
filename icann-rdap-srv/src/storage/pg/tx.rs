@@ -17,7 +17,7 @@ pub struct PgTx<'a> {
     db_tx: sqlx::Transaction<'a, Postgres>,
 }
 
-impl<'a> PgTx<'a> {
+impl PgTx<'_> {
     pub async fn new(pg_pool: &PgPool) -> Result<Self, RdapServerError> {
         let db_tx = pg_pool.begin().await?;
         Ok(Self { db_tx })
