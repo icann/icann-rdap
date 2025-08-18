@@ -44,16 +44,13 @@ use super::{
 /// ```
 ///
 /// Use the getter functions to get the autnum data.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
 /// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let autnum = Autnum::builder()
-///   .autnum_range(700..710) // the range of autnums
-///   .handle("AS700-1")
-///   // ...
-///   .build();
-///
-/// // get the data
+/// # use icann_rdap_common::prelude::*;
+/// # let autnum = Autnum::builder()
+/// #  .autnum_range(700..710) // the range of autnums
+/// #  .handle("AS700-1")
+/// #  .build();
 /// let start_autnum = autnum.start_autnum();
 /// let end_autnum = autnum.end_autnum();
 /// let handle = autnum.handle();

@@ -121,15 +121,13 @@ impl IpAddresses {
 /// ```
 ///
 /// Access to the nameserver information should be done via the getter functions.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
 /// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let nameserver = Nameserver::builder()
-///   .ldh_name("foo.example.com")
-///   // ...
-///   .build().unwrap();
-///
-/// // getter functions
+/// # use icann_rdap_common::prelude::*;
+/// # let nameserver = Nameserver::builder()
+/// #   .ldh_name("foo.example.com")
+/// #   .build().unwrap();
+/// let handle = nameserver.handle();
 /// let ldh_name = nameserver.ldh_name();
 /// let unicode_name = nameserver.unicode_name();
 /// let ip_addresses = nameserver.ip_addresses();

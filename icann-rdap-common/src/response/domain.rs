@@ -425,15 +425,13 @@ impl SecureDns {
 /// ```
 ///
 /// Access to the domain information should be done via the getter functions.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
 /// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let domain = Domain::builder()
-///   .ldh_name("foo.example.com")
-///   // ...
-///   .build();
-///
-/// // getter functions
+/// # use icann_rdap_common::prelude::*;
+/// # let domain = Domain::builder()
+/// #   .ldh_name("foo.example.com")
+/// #   .build();
+/// let handle = domain.handle();
 /// let ldh_name = domain.ldh_name();
 /// let unicode_name = domain.unicode_name();
 /// let nameservers = domain.nameservers();

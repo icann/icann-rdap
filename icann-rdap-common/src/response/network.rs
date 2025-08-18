@@ -180,19 +180,16 @@ impl std::fmt::Display for V6Cidr {
 /// }
 /// ```
 /// Use the getter functions to access the information in the network.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
 /// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let net = Network::builder()
-///   .cidr("10.0.0.0/24")
-///   // ...
-///   .build().unwrap();
-///
-/// // use the getters.
+/// # use icann_rdap_common::prelude::*;
+/// # let net = Network::builder()
+/// #   .cidr("10.0.0.0/24")
+/// #   .build().unwrap();
+/// let handle = net.handle();
 /// let start_address = net.start_address();
 /// let end_address = net.end_address();
 /// let parent_handle = net.parent_handle();
-/// // ...
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Network {

@@ -86,18 +86,15 @@ use super::{
 /// Use the getter functions to get the data in the entity. Because
 /// data from vCard can be difficult to handle, you can use the [Contact]
 /// abstraction for address information.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
 /// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let entity = Entity::builder()
-///   .handle("foo_example_com-1")
-///   // ...
-///   .build();
-///
-/// // get the information
+/// # use icann_rdap_common::prelude::*;
+/// # let entity = Entity::builder()
+/// #   .handle("foo_example_com-1")
+/// #   .build();
 /// let contact = entity.contact();
 /// let public_ids = entity.public_ids();
-/// // ...
+/// let handle = entity.handle();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
