@@ -480,7 +480,7 @@ impl Domain {
     /// use icann_rdap_common::prelude::*;
     ///
     /// let domain = Domain::builder()
-    ///   .ldh_name("foo.example.com")
+    ///   .ldh_name("foo.example.com") //required for this builder.
     ///   .handle("foo_example_com-1")
     ///   .status("active")
     ///   .build();
@@ -536,7 +536,7 @@ impl Domain {
     /// use icann_rdap_common::prelude::*;
     ///
     /// let domain = Domain::idn()
-    ///   .unicode_name("foo.example.com")
+    ///   .unicode_name("foo.example.com") // required for this builder
     ///   .handle("foo_example_com-1")
     ///   .status("active")
     ///   .build();

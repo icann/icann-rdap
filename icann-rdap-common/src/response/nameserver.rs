@@ -161,7 +161,7 @@ impl Nameserver {
     /// use icann_rdap_common::prelude::*;
     ///
     /// let ns = Nameserver::builder()
-    ///   .ldh_name("ns1.example.com")
+    ///   .ldh_name("ns1.example.com") //required for this builder
     ///   .handle("ns1_example_com-1")
     ///   .status("active")
     ///   .address("10.0.0.1")

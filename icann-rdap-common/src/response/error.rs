@@ -55,6 +55,15 @@ pub struct Rfc9083Error {
 #[buildstructor::buildstructor]
 impl Rfc9083Error {
     /// Creates a new RFC 9083 Error for a specific HTTP error code.
+    ///
+    /// Use this builder to create a generic error:
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let e = Rfc9083Error::builder()
+    ///   .error_code(500) //required
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);

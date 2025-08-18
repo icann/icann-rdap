@@ -46,7 +46,7 @@ pub type RdapConformance = Vec<Extension>;
 /// println!("{}", cidr0.to_string());
 /// ```
 ///
-/// To get the variants as a string:
+/// To get the enum variants as a string:
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -54,7 +54,7 @@ pub type RdapConformance = Vec<Extension>;
 /// let s = ExtensionId::Cidr0.to_string();
 /// ```
 ///
-/// To get the variants as a &str:
+/// To get the enum variants as a &str:
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -215,6 +215,23 @@ impl Link {
     }
 
     /// Builds an RDAP link.
+    ///
+    /// To create an RFC valid structure, use the builder
+    /// which will not allow omision of required fields.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let link = Link::builder()
+    ///   .value("https://example.com/domains?domain=foo.*") //required
+    ///   .rel("related")                                    //required
+    ///   .href("https://example.com/domain/foo.example")    //required
+    ///   .hreflang("ch")
+    ///   .title("Related Object")
+    ///   .media("print")
+    ///   .media_type("application/rdap+json")
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(
         value: String,
@@ -586,6 +603,18 @@ pub struct Event {
 #[buildstructor::buildstructor]
 impl Event {
     /// Builds an Event.
+    ///
+    /// Use of the builder to contruct an RFC valid structure is recommended.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let event = Event::builder()
+    ///   .event_action("expiration")         //required
+    ///   .event_date("1990-12-31T23:59:59Z") //required
+    ///   .event_actor("FOO")
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(
         event_action: String,

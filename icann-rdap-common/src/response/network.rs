@@ -237,7 +237,7 @@ impl Network {
     /// use icann_rdap_common::prelude::*;
     ///
     /// let net = Network::builder()
-    ///   .cidr("10.0.0.0/24")
+    ///   .cidr("10.0.0.0/24")     //required for this builder
     ///   .handle("NET-10-0-0-0")
     ///   .status("active")
     ///   .build().unwrap();

@@ -90,7 +90,7 @@ impl Autnum {
     /// use icann_rdap_common::prelude::*;
     ///
     /// let autnum = Autnum::builder()
-    ///   .autnum_range(700..710)
+    ///   .autnum_range(700..710)  //required for this builder
     ///   .handle("AS700-1")
     ///   .status("active")
     ///   .build();
