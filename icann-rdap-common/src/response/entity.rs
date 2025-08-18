@@ -15,7 +15,7 @@ use super::{
     to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, PublicIds},
     CommonFields, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
-    SelfLink, ToChild, ToResponse, VectorStringish, EMPTY_VEC_STRING,
+    SelfLink, ToChild, ToResponse, VectorStringish,
 };
 
 /// Represents an RDAP [entity](https://rdap.rcode3.com/protocol/object_classes.html#entity) response.
@@ -83,6 +83,22 @@ use super::{
 /// }
 /// ```
 ///
+/// Use the getter functions to get the data in the entity. Because
+/// data from vCard can be difficult to handle, you can use the [Contact]
+/// abstraction for address information.
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let entity = Entity::builder()
+///   .handle("foo_example_com-1")
+///   // ...
+///   .build();
+///
+/// // get the information
+/// let contact = entity.contact();
+/// let public_ids = entity.public_ids();
+/// // ...
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Entity {
     #[serde(flatten)]
@@ -112,11 +128,6 @@ pub struct Entity {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub networks: Option<Vec<Network>>,
 }
-
-static EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
-static EMPTY_AS_EVENT_ACTORS: Vec<Event> = vec![];
-static EMPTY_AUTNUMS: Vec<Autnum> = vec![];
-static EMPTY_NETWORKS: Vec<Network> = vec![];
 
 #[buildstructor::buildstructor]
 impl Entity {
@@ -191,40 +202,38 @@ impl Entity {
         }
     }
 
-    /// Convenience method to get a [Contact] from the impentrable vCard.
+    /// Get a [Contact] from the impentrable vCard.
     pub fn contact(&self) -> Option<Contact> {
         let vcard = self.vcard_array.as_ref()?;
         Contact::from_vcard(vcard)
     }
 
-    /// Convenience method to get the roles.
-    pub fn roles(&self) -> &Vec<String> {
+    /// Get the roles.
+    pub fn roles(&self) -> &[String] {
         self.roles
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
-    /// Convenience method to get the public IDs.
-    pub fn public_ids(&self) -> &Vec<PublicId> {
-        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    /// Get the public IDs.
+    pub fn public_ids(&self) -> &[PublicId] {
+        self.public_ids.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get the events this entity acted on.
-    pub fn as_event_actors(&self) -> &Vec<Event> {
-        self.as_event_actor
-            .as_ref()
-            .unwrap_or(&EMPTY_AS_EVENT_ACTORS)
+    /// Get the events this entity acted on.
+    pub fn as_event_actors(&self) -> &[Event] {
+        self.as_event_actor.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get the autnums.
-    pub fn autnums(&self) -> &Vec<Autnum> {
-        self.autnums.as_ref().unwrap_or(&EMPTY_AUTNUMS)
+    /// Get the autnums.
+    pub fn autnums(&self) -> &[Autnum] {
+        self.autnums.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get the networks.
-    pub fn networks(&self) -> &Vec<Network> {
-        self.networks.as_ref().unwrap_or(&EMPTY_NETWORKS)
+    /// Get the networks.
+    pub fn networks(&self) -> &[Network] {
+        self.networks.as_deref().unwrap_or_default()
     }
 }
 
