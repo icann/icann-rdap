@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     to_opt_vec, to_opt_vectorstringish, types::Link, CommonFields, Entity, Event, GetSelfLink,
     Notice, ObjectCommonFields, Port43, RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
-    VectorStringish, EMPTY_VEC_STRING,
+    VectorStringish,
 };
 
 /// Represents an IP address set for nameservers.
@@ -52,19 +52,19 @@ impl IpAddresses {
     }
 
     /// Get the IPv6 addresses.
-    pub fn v6s(&self) -> &Vec<String> {
+    pub fn v6s(&self) -> &[String] {
         self.v6
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
     /// Get the IPv4 addresses.
-    pub fn v4s(&self) -> &Vec<String> {
+    pub fn v4s(&self) -> &[String] {
         self.v4
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 }
 
@@ -118,6 +118,21 @@ impl IpAddresses {
 ///       ]
 ///     }
 ///   }
+/// ```
+///
+/// Access to the nameserver information should be done via the getter functions.
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let nameserver = Nameserver::builder()
+///   .ldh_name("foo.example.com")
+///   // ...
+///   .build().unwrap();
+///
+/// // getter functions
+/// let ldh_name = nameserver.ldh_name();
+/// let unicode_name = nameserver.unicode_name();
+/// let ip_addresses = nameserver.ip_addresses();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Nameserver {

@@ -83,7 +83,7 @@ impl Variant {
         self.variant_names.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method.
+    /// Getter for idnTable.
     pub fn idn_table(&self) -> Option<&str> {
         self.idn_table.as_deref()
     }
