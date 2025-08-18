@@ -443,8 +443,8 @@ impl NoticeOrRemark {
     }
 
     /// Returns the links associated with the notice/remark.
-    pub fn links(&self) -> Option<&Links> {
-        self.links.as_ref()
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
     /// Returns the `type` of the notice or remark.
@@ -633,8 +633,8 @@ impl Event {
     }
 
     /// Returns the links associated with the event.
-    pub fn links(&self) -> Option<&Links> {
-        self.links.as_ref()
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 }
 
