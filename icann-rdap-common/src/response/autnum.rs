@@ -42,6 +42,22 @@ use super::{
 ///   "endAutnum": 710
 /// }
 /// ```
+///
+/// Use the getter functions to get the autnum data.
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let autnum = Autnum::builder()
+///   .autnum_range(700..710) // the range of autnums
+///   .handle("AS700-1")
+///   // ...
+///   .build();
+///
+/// // get the data
+/// let start_autnum = autnum.start_autnum();
+/// let end_autnum = autnum.end_autnum();
+/// let handle = autnum.handle();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Autnum {
     #[serde(flatten)]
