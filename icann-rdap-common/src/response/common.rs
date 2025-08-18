@@ -26,26 +26,25 @@ impl Common {
     }
 }
 
-/// Empty Extensions.
-static EMPTY_EXTENSIONS: Vec<Extension> = vec![];
-/// Empty Notices.
-static EMPTY_NOTICES: Vec<Notice> = vec![];
-
 /// Convience methods for fields in  [Common].
 pub trait CommonFields {
     /// Getter for [Common].
     fn common(&self) -> &Common;
 
-    /// Getter for Vec of RDAP extensions.
-    fn extensions(&self) -> &Vec<Extension> {
+    /// Getter for the list of RDAP extensions.
+    ///
+    /// In valid RDAP, this only appears on the top most object.
+    fn extensions(&self) -> &[Extension] {
         self.common()
             .rdap_conformance
-            .as_ref()
-            .unwrap_or(&EMPTY_EXTENSIONS)
+            .as_deref()
+            .unwrap_or_default()
     }
 
-    /// Getter for Vec of Notices.
-    fn notices(&self) -> &Vec<Notice> {
-        self.common().notices.as_ref().unwrap_or(&EMPTY_NOTICES)
+    /// Getter for the Notices.
+    ///
+    /// In valid RDAP, this only appears on the top most object.
+    fn notices(&self) -> &[Notice] {
+        self.common().notices.as_deref().unwrap_or_default()
     }
 }

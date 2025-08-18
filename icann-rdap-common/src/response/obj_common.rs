@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    redacted::Redacted, to_opt_vectorstringish, Entity, Events, Link, Links, Port43, Remarks,
-    Stringish, VectorStringish, EMPTY_VEC_STRING,
+    redacted::Redacted, to_opt_vectorstringish, Entity, Event, Events, Link, Links, Port43, Remark,
+    Remarks, Stringish, VectorStringish,
 };
 
 /// Holds those types that are common in all object classes.
@@ -192,15 +192,6 @@ impl ObjectCommon {
     }
 }
 
-/// Empty Remarks.
-static EMPTY_REMARKS: Remarks = vec![];
-/// Empty Links.
-static EMPTY_LINKS: Links = vec![];
-/// Empty Events.
-static EMPTY_EVENTS: Events = vec![];
-/// Empty Entities.
-static EMPTY_ENTITIES: Vec<Entity> = vec![];
-
 /// Convenience methods for fields in [ObjectCommon].
 pub trait ObjectCommonFields {
     /// Getter for [ObjectCommon].
@@ -221,41 +212,32 @@ pub trait ObjectCommonFields {
         self.object_common().port_43.as_ref()
     }
 
-    /// Getter for [Remarks].
-    fn remarks(&self) -> &Remarks {
-        self.object_common()
-            .remarks
-            .as_ref()
-            .unwrap_or(&EMPTY_REMARKS)
+    /// Getter for list of [Remark]s.
+    fn remarks(&self) -> &[Remark] {
+        self.object_common().remarks.as_deref().unwrap_or_default()
     }
 
-    /// Getter for [Links].
-    fn links(&self) -> &Links {
-        self.object_common().links.as_ref().unwrap_or(&EMPTY_LINKS)
+    /// Getter for list of [Link]s.
+    fn links(&self) -> &[Link] {
+        self.object_common().links.as_deref().unwrap_or_default()
     }
 
-    /// Getter for [Events].
-    fn events(&self) -> &Events {
-        self.object_common()
-            .events
-            .as_ref()
-            .unwrap_or(&EMPTY_EVENTS)
+    /// Getter for list of [Event]s.
+    fn events(&self) -> &[Event] {
+        self.object_common().events.as_deref().unwrap_or_default()
     }
 
     /// Getter for status.
-    fn status(&self) -> &Vec<String> {
+    fn status(&self) -> &[String] {
         self.object_common()
             .status
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
-    /// Getter for Vec of [Entity].
-    fn entities(&self) -> &Vec<Entity> {
-        self.object_common()
-            .entities
-            .as_ref()
-            .unwrap_or(&EMPTY_ENTITIES)
+    /// Getter for list of [Entity].
+    fn entities(&self) -> &[Entity] {
+        self.object_common().entities.as_deref().unwrap_or_default()
     }
 }

@@ -154,8 +154,6 @@ pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
     (!vec.is_empty()).then_some(VectorStringish::from(vec))
 }
 
-pub(crate) static EMPTY_VEC_STRING: Vec<String> = vec![];
-
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 enum StringishInner {

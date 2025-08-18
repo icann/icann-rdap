@@ -26,6 +26,11 @@ impl DomainSearchResults {
             results,
         }
     }
+
+    /// Get the domains in the search.
+    pub fn results(&self) -> &[Domain] {
+        self.results.as_ref()
+    }
 }
 
 impl CommonFields for DomainSearchResults {
@@ -60,6 +65,11 @@ impl NameserverSearchResults {
             results,
         }
     }
+
+    /// Get the nameservers in the search.
+    pub fn results(&self) -> &[Nameserver] {
+        self.results.as_ref()
+    }
 }
 
 impl CommonFields for NameserverSearchResults {
@@ -93,6 +103,11 @@ impl EntitySearchResults {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+
+    /// Get the entities in the search.
+    pub fn results(&self) -> &[Entity] {
+        self.results.as_ref()
     }
 }
 

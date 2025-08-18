@@ -46,7 +46,7 @@ pub type RdapConformance = Vec<Extension>;
 /// println!("{}", cidr0.to_string());
 /// ```
 ///
-/// To get the variants as a string:
+/// To get the enum variants as a string:
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -54,7 +54,7 @@ pub type RdapConformance = Vec<Extension>;
 /// let s = ExtensionId::Cidr0.to_string();
 /// ```
 ///
-/// To get the variants as a &str:
+/// To get the enum variants as a &str:
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -153,6 +153,21 @@ pub type Links = Vec<Link>;
 /// Note also that this structure allows for `hreflang` to
 /// be either a single string or an array of strings. However,
 /// the builder will always construct an array of strings.
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let link = Link::builder()
+/// #  .value("https://example.com/domains?domain=foo.*")
+/// #  .rel("related")
+/// #  .href("https://example.com/domain/foo.example")
+/// #  .hreflang("ch")
+/// #  .title("Related Object")
+/// #  .media("print")
+/// #  .media_type("application/rdap+json")
+/// #  .build();
+/// let href = link.href();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Link {
     /// Represents the value part of a link in an RDAP response.
@@ -200,6 +215,23 @@ impl Link {
     }
 
     /// Builds an RDAP link.
+    ///
+    /// To create an RFC valid structure, use the builder
+    /// which will not allow omision of required fields.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let link = Link::builder()
+    ///   .value("https://example.com/domains?domain=foo.*") //required
+    ///   .rel("related")                                    //required
+    ///   .href("https://example.com/domain/foo.example")    //required
+    ///   .hreflang("ch")
+    ///   .title("Related Object")
+    ///   .media("print")
+    ///   .media_type("application/rdap+json")
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(
         value: String,
@@ -339,6 +371,16 @@ impl std::ops::Deref for Remark {
 ///   .build();
 /// ```
 ///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let nr = NoticeOrRemark::builder()
+/// #  .title("Terms of Use")
+/// #  .description_entry("Please read our terms of use.")
+/// #  .description_entry("TOS can be found in the link.")
+/// #  .build();
+/// let title = nr.title();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -410,13 +452,16 @@ impl NoticeOrRemark {
     }
 
     /// Returns the description of the notice/remark.
-    pub fn description(&self) -> Option<&VectorStringish> {
-        self.description.as_ref()
+    pub fn description(&self) -> &[String] {
+        self.description
+            .as_ref()
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
     /// Returns the links associated with the notice/remark.
-    pub fn links(&self) -> Option<&Links> {
-        self.links.as_ref()
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
     /// Returns the `type` of the notice or remark.
@@ -510,7 +555,7 @@ pub type Events = Vec<Event>;
 ///   .media_type("text/html")
 ///   .build();
 ///
-/// let nr = Event::builder()
+/// let event = Event::builder()
 ///   .event_action("expiration")
 ///   .event_date("1990-12-31T23:59:59Z")
 ///   .links(vec![link])
@@ -519,6 +564,16 @@ pub type Events = Vec<Event>;
 ///
 /// NOTE: `event_date` is to be an RFC 3339 valid date and time.
 /// The builder does not enforce RFC 3339 validity.
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let event = Event::builder()
+/// #   .event_action("expiration")
+/// #  .event_date("1990-12-31T23:59:59Z")
+/// #  .build();
+/// let event_date = event.event_date();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Event {
     /// This value is required by RFC 9083 (and 7483),
@@ -548,6 +603,18 @@ pub struct Event {
 #[buildstructor::buildstructor]
 impl Event {
     /// Builds an Event.
+    ///
+    /// Use of the builder to contruct an RFC valid structure is recommended.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let event = Event::builder()
+    ///   .event_action("expiration")         //required
+    ///   .event_date("1990-12-31T23:59:59Z") //required
+    ///   .event_actor("FOO")
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(
         event_action: String,
@@ -595,8 +662,8 @@ impl Event {
     }
 
     /// Returns the links associated with the event.
-    pub fn links(&self) -> Option<&Links> {
-        self.links.as_ref()
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 }
 
@@ -621,6 +688,16 @@ pub type PublicIds = Vec<PublicId>;
 ///   .id_type("IANA Registrar ID")
 ///   .identifier("1990")
 ///   .build();
+/// ```
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let public_id = PublicId::builder()
+/// #   .id_type("IANA Registrar ID")
+/// #   .identifier("1990")
+/// #   .build();
+/// let id_type = public_id.id_type();
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicId {

@@ -1,4 +1,37 @@
 //! RFC 9537.
+//!
+//! Using the builders to create redactions is recommended.
+//! The following is an example:
+//!
+//! ```rust
+//! use icann_rdap_common::prelude::*;
+//! use icann_rdap_common::response::redacted::*;
+//!
+//! let r_name = Name::builder().type_field("Tech Email").build();
+//! let redacted = Redacted::builder()
+//!   .name(r_name)
+//!   .build();
+//!
+//! let domain = Domain::builder()
+//!   .ldh_name("foo.example.com")
+//!   .redacted(vec![redacted])
+//!   .build();
+//! ```
+//!
+//! To get the data out of redactions, using the getters is recommended.
+//!
+//! ```rust
+//! use icann_rdap_common::response::redacted::*;
+//!
+//! let r_name = Name::builder().type_field("Tech Email").build();
+//! let redacted = Redacted::builder()
+//!   .name(r_name)
+//!   .build();
+//!
+//! // get the data from the redaction.
+//! let name_type = redacted.name().type_field();
+//! ```
+//!
 use {
     buildstructor::Builder,
     serde::{Deserialize, Serialize},
@@ -8,7 +41,7 @@ use {
 use crate::check::Checks;
 
 /// Redacted registered name.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     #[serde(rename = "description")]
     pub description: Option<String>,
@@ -19,24 +52,36 @@ pub struct Name {
 
 impl Name {
     /// Get the description.
-    pub fn description(&self) -> Option<&String> {
-        self.description.as_ref()
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
     }
 
     /// Get the redaction type.
-    pub fn type_field(&self) -> Option<&String> {
-        self.type_field.as_ref()
+    pub fn type_field(&self) -> Option<&str> {
+        self.type_field.as_deref()
     }
 }
 
 /// Redaction reason.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Reason {
     #[serde(rename = "description")]
     pub description: Option<String>,
 
     #[serde(rename = "type")]
     pub type_field: Option<String>,
+}
+
+impl Reason {
+    /// Get the description.
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    /// Get the redaction type.
+    pub fn type_field(&self) -> Option<&str> {
+        self.type_field.as_deref()
+    }
 }
 
 impl std::fmt::Display for Reason {
@@ -113,6 +158,41 @@ impl fmt::Display for Method {
 }
 
 impl Redacted {
+    /// Get the name.
+    pub fn name(&self) -> &Name {
+        &self.name
+    }
+
+    /// Get the reason.
+    pub fn reason(&self) -> Option<&Reason> {
+        self.reason.as_ref()
+    }
+
+    /// Get the prePath.
+    pub fn pre_path(&self) -> Option<&str> {
+        self.pre_path.as_deref()
+    }
+
+    /// Get the postPath.
+    pub fn post_path(&self) -> Option<&str> {
+        self.post_path.as_deref()
+    }
+
+    /// Get the replacementPath.
+    pub fn replacement_path(&self) -> Option<&str> {
+        self.replacement_path.as_deref()
+    }
+
+    /// Get the pathLang.
+    pub fn path_lang(&self) -> Option<&str> {
+        self.path_lang.as_deref()
+    }
+
+    /// Get the method.
+    pub fn method(&self) -> Option<&Method> {
+        self.method.as_ref()
+    }
+
     /// Get the checks from Redactions.
     pub fn get_checks(&self, _check_params: crate::check::CheckParams<'_>) -> crate::check::Checks {
         Checks {

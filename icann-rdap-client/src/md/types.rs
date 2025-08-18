@@ -344,12 +344,13 @@ pub(crate) fn events_to_table(
 ) -> MultiPartTable {
     table = table.header_ref(&header_name.replace_md_chars());
     for event in events {
+        let raw_event_date = event.event_date.to_owned().unwrap_or_default();
         let event_date = &event
             .event_date
             .to_owned()
             .unwrap_or("????".to_string())
             .format_date_time(params)
-            .unwrap_or_default();
+            .unwrap_or(format!("UKN FMT: {raw_event_date}"));
         let mut ul: Vec<&String> = vec![event_date];
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);

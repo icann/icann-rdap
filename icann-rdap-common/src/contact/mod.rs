@@ -76,7 +76,11 @@
 //! ]"#;
 //!
 //! let data: Vec<Value> = serde_json::from_str(json).unwrap();
-//! let contact = Contact::from_vcard(&data);
+//! let contact = Contact::from_vcard(&data).unwrap();
+//!
+//! // use the getter functions to access the data.
+//! let kind = contact.kind();
+//! let email_addr = contact.emails().first().unwrap().email();
 //! ```
 
 mod from_vcard;
@@ -249,6 +253,71 @@ impl Contact {
         self.postal_addresses = Some(vec![postal_address]);
         self
     }
+
+    /// Get the langs.
+    pub fn langs(&self) -> &[Lang] {
+        self.langs.as_deref().unwrap_or_default()
+    }
+
+    /// Get the kind.
+    pub fn kind(&self) -> Option<&str> {
+        self.kind.as_deref()
+    }
+
+    /// Get the full name.
+    pub fn full_name(&self) -> Option<&str> {
+        self.full_name.as_deref()
+    }
+
+    /// Get the name parts.
+    pub fn name_parts(&self) -> Option<&NameParts> {
+        self.name_parts.as_ref()
+    }
+
+    /// Get the nick names.
+    pub fn nick_names(&self) -> &[String] {
+        self.nick_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the titles.
+    pub fn titles(&self) -> &[String] {
+        self.titles.as_deref().unwrap_or_default()
+    }
+
+    /// Get the organizational roles.
+    pub fn roles(&self) -> &[String] {
+        self.roles.as_deref().unwrap_or_default()
+    }
+
+    /// Get the organizational names.
+    pub fn organizational_names(&self) -> &[String] {
+        self.organization_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the postal addresses.
+    pub fn postal_addresses(&self) -> &[PostalAddress] {
+        self.postal_addresses.as_deref().unwrap_or_default()
+    }
+
+    /// Get the emails.
+    pub fn emails(&self) -> &[Email] {
+        self.emails.as_deref().unwrap_or_default()
+    }
+
+    /// Get the phones.
+    pub fn phones(&self) -> &[Phone] {
+        self.phones.as_deref().unwrap_or_default()
+    }
+
+    /// Get the contact uris.
+    pub fn contact_uris(&self) -> &[String] {
+        self.contact_uris.as_deref().unwrap_or_default()
+    }
+
+    /// Get the URLs.
+    pub fn urls(&self) -> &[String] {
+        self.urls.as_deref().unwrap_or_default()
+    }
 }
 
 /// The language preference of the contact.
@@ -259,6 +328,18 @@ pub struct Lang {
 
     /// RFC 5646 language tag.
     pub tag: String,
+}
+
+impl Lang {
+    /// Get the preference.
+    pub fn preference(&self) -> Option<u64> {
+        self.preference
+    }
+
+    /// Get the RFC 5646 language tag.
+    pub fn tag(&self) -> &str {
+        self.tag.as_str()
+    }
 }
 
 impl Display for Lang {
@@ -307,6 +388,31 @@ impl NameParts {
             given_names: to_opt_vec(given_names),
             suffixes: to_opt_vec(suffixes),
         }
+    }
+
+    /// Get the name prefixes.
+    pub fn prefixes(&self) -> &[String] {
+        self.prefixes.as_deref().unwrap_or_default()
+    }
+
+    /// Get the sur names.
+    pub fn surnames(&self) -> &[String] {
+        self.surnames.as_deref().unwrap_or_default()
+    }
+
+    /// Get the middle names.
+    pub fn middle_names(&self) -> &[String] {
+        self.middle_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the given names.
+    pub fn given_names(&self) -> &[String] {
+        self.given_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the suffixes.
+    pub fn suffixes(&self) -> &[String] {
+        self.suffixes.as_deref().unwrap_or_default()
     }
 }
 
@@ -382,6 +488,68 @@ impl PostalAddress {
             postal_code,
         }
     }
+
+    /// Get the preference.
+    pub fn preference(&self) -> Option<u64> {
+        self.preference
+    }
+
+    /// Get the contexts.
+    pub fn contexts(&self) -> &[String] {
+        self.contexts.as_deref().unwrap_or_default()
+    }
+
+    /// Get the full address.
+    ///
+    /// An unstructured address. An unstructured postal address is
+    /// usually the complete postal address. That is, this string
+    /// would contain the street address, country, region, postal code, etc...
+    ///
+    /// Depending on how the postal address is given, it can either
+    /// be structured or unstructured. If it is given as unstructured,
+    /// then this value is populated.
+    ///
+    /// It is possible that a single postal address is given as both,
+    /// in which case this value is populated along with the other
+    /// values of the postal address.   
+    pub fn full_address(&self) -> Option<&str> {
+        self.full_address.as_deref()
+    }
+
+    /// Get the street parts.
+    pub fn street_parts(&self) -> &[String] {
+        self.street_parts.as_deref().unwrap_or_default()
+    }
+
+    /// Get the locality.
+    pub fn locality(&self) -> Option<&str> {
+        self.locality.as_deref()
+    }
+
+    /// Get the region name.
+    pub fn region_name(&self) -> Option<&str> {
+        self.region_name.as_deref()
+    }
+
+    /// Get the region code.
+    pub fn region_code(&self) -> Option<&str> {
+        self.region_code.as_deref()
+    }
+
+    /// Get the country name.
+    pub fn country_name(&self) -> Option<&str> {
+        self.country_name.as_deref()
+    }
+
+    /// Get the country code.
+    pub fn country_code(&self) -> Option<&str> {
+        self.country_code.as_deref()
+    }
+
+    /// Get the postal code.
+    pub fn postal_code(&self) -> Option<&str> {
+        self.postal_code.as_deref()
+    }
 }
 
 /// Represents an email address.
@@ -406,6 +574,21 @@ impl Email {
             contexts: to_opt_vec(contexts),
             email,
         }
+    }
+
+    /// Get the preference.
+    pub fn preference(&self) -> Option<u64> {
+        self.preference
+    }
+
+    /// Get the contexts.
+    pub fn contexts(&self) -> &[String] {
+        self.contexts.as_deref().unwrap_or_default()
+    }
+
+    /// Get the email address.
+    pub fn email(&self) -> &str {
+        self.email.as_str()
     }
 }
 
@@ -458,6 +641,26 @@ impl Phone {
             phone,
             features: to_opt_vec(features),
         }
+    }
+
+    /// Get the preference.
+    pub fn preference(&self) -> Option<u64> {
+        self.preference
+    }
+
+    /// Get the contexts.
+    pub fn contexts(&self) -> &[String] {
+        self.contexts.as_deref().unwrap_or_default()
+    }
+
+    /// Get the phone number.
+    pub fn phone(&self) -> &str {
+        self.phone.as_str()
+    }
+
+    /// Get the phone features.
+    pub fn features(&self) -> &[String] {
+        self.features.as_deref().unwrap_or_default()
     }
 }
 
