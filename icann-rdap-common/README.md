@@ -22,24 +22,27 @@ Usage
 Create some RDAP objects:
 
 ```rust
-// create an entity
-use icann_rdap_common::response::Entity;
+use icann_rdap_common::prelude::*;
+
+// create a simple entity
 let holder = Entity::builder().handle("foo-BAR").build();
 
+// create an entity with no handle that uses the ICANN profile.
+let holder = Entity::builder::<String>()
+  .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+  .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+  .build();
+
 // create an RDAP domain
-use icann_rdap_common::response::Domain;
 let domain = Domain::builder().ldh_name("example.com").entity(holder.clone()).build();
 
 // create an IP network
-use icann_rdap_common::response::Network;
 let net = Network::builder().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
 
 // create a nameserver
-use icann_rdap_common::response::Nameserver;
 let ns = Nameserver::builder().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
 
 // create an autnum
-use icann_rdap_common::response::Autnum;
 let autnum = Autnum::builder().autnum_range(700..700).entity(holder).build();
 ```
 
