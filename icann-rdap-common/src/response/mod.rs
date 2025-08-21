@@ -344,12 +344,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             .filter(|l| {
                 if let Some(href) = l.href() {
                     if let Some(rel) = l.rel() {
-                        rel.eq_ignore_ascii_case("related")
-                            && (href.contains("/domain/")
-                                || href.contains("/ip/")
-                                || href.contains("/autnum/")
-                                || href.contains("/nameserver/")
-                                || href.contains("/entity/"))
+                        rel.eq_ignore_ascii_case("related") && has_rdap_path(href)
                     } else {
                         false
                     }
@@ -361,6 +356,19 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             .collect::<Vec<&str>>();
     }
     urls
+}
+
+/// Returns true if the URL contains an RDAP path as defined by RFC 9082.
+pub fn has_rdap_path(url: &str) -> bool {
+    if url.contains("/domain/")
+        || url.contains("/ip/")
+        || url.contains("/autnum/")
+        || url.contains("/nameserver/")
+        || url.contains("/entity/")
+    {
+        return true;
+    }
+    false
 }
 
 /// Makes a root object class suitable for being embedded in another object class.
