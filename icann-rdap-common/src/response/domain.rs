@@ -474,7 +474,7 @@ pub struct Domain {
 
 #[buildstructor::buildstructor]
 impl Domain {
-    /// Builds a basic domain object.
+    /// Builds a basic domain object for use with embedding into response objects.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -483,6 +483,8 @@ impl Domain {
     ///   .ldh_name("foo.example.com") //required for this builder.
     ///   .handle("foo_example_com-1")
     ///   .status("active")
+    ///   .remark(Remark::builder().title("example domain").build())
+    ///   // ...
     ///   .build();
     /// ```
     #[builder(visibility = "pub")]
@@ -497,19 +499,14 @@ impl Domain {
         statuses: Vec<String>,
         port_43: Option<Port43>,
         entities: Vec<Entity>,
-        notices: Vec<Notice>,
         public_ids: Vec<PublicId>,
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
-        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0()
-                .extensions(extensions)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -530,21 +527,25 @@ impl Domain {
         }
     }
 
-    /// Builds an IDN object.
+    /// Builds a domain object for a response.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let domain = Domain::idn()
-    ///   .unicode_name("foo.example.com") // required for this builder
+    /// let domain = Domain::response_obj()
+    ///   .ldh_name("foo.example.com") //required for this builder.
     ///   .handle("foo_example_com-1")
     ///   .status("active")
+    ///   .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+    ///   .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   // ...
     ///   .build();
     /// ```
-    #[builder(entry = "idn", visibility = "pub")]
-    fn new_idn<T: Into<String>>(
-        ldh_name: Option<String>,
-        unicode_name: T,
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj<T: Into<String>>(
+        ldh_name: T,
+        unicode_name: Option<String>,
         nameservers: Vec<Nameserver>,
         handle: Option<String>,
         remarks: Vec<Remark>,
@@ -559,12 +560,64 @@ impl Domain {
         variants: Vec<Variant>,
         network: Option<Network>,
         extensions: Vec<Extension>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
+    ) -> Self {
+        let common = Common::level0()
+            .extensions(extensions)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut domain = Domain::builder()
+            .ldh_name(ldh_name)
+            .and_unicode_name(unicode_name)
+            .nameservers(nameservers)
+            .and_handle(handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .public_ids(public_ids)
+            .and_secure_dns(secure_dns)
+            .variants(variants)
+            .and_network(network)
+            .and_redacted(redacted)
+            .build();
+        domain.common = common;
+        domain
+    }
+
+    /// Builds an IDN object for use with embedding into response objects.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let domain = Domain::idn()
+    ///   .unicode_name("foo.example.com") // required for this builder
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   // ...
+    ///   .build();
+    /// ```
+    #[builder(entry = "idn", visibility = "pub")]
+    fn new_idn<T: Into<String>>(
+        ldh_name: Option<String>,
+        unicode_name: T,
+        nameservers: Vec<Nameserver>,
+        handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        public_ids: Vec<PublicId>,
+        secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
     ) -> Self {
         Self {
-            common: Common::level0()
-                .extensions(extensions)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -582,6 +635,64 @@ impl Domain {
             public_ids: to_opt_vec(public_ids),
             network,
         }
+    }
+
+    /// Builds an IDN object for a response.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let domain = Domain::idn_response_obj()
+    ///   .unicode_name("foo.example.com") // required for this builder
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+    ///   .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   // ...
+    ///   .build();
+    /// ```
+    #[builder(entry = "idn_response_obj", visibility = "pub")]
+    fn new_idn_response_obj<T: Into<String>>(
+        ldh_name: Option<String>,
+        unicode_name: T,
+        nameservers: Vec<Nameserver>,
+        handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        public_ids: Vec<PublicId>,
+        secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
+        extensions: Vec<Extension>,
+    ) -> Self {
+        let common = Common::level0()
+            .extensions(extensions)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut idn = Domain::idn()
+            .and_ldh_name(ldh_name)
+            .unicode_name(unicode_name)
+            .nameservers(nameservers)
+            .and_handle(handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .public_ids(public_ids)
+            .and_secure_dns(secure_dns)
+            .variants(variants)
+            .and_network(network)
+            .build();
+        idn.common = common;
+        idn
     }
 
     /// Getter for variants.

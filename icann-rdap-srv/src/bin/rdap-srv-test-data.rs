@@ -145,7 +145,7 @@ fn make_domain_template(
     let mut entity = make_test_entity(base_url, Some("domain"));
     entity.roles = Some(VectorStringish::from("registrant"));
     let nameserver = make_test_nameserver(base_url, None)?;
-    let domain = Domain::builder()
+    let domain = Domain::response_obj()
         .ldh_name("example.net")
         .entity(entity)
         .nameservers(vec![nameserver])

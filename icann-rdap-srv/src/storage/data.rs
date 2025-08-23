@@ -568,7 +568,7 @@ mod tests {
         // GIVEN
         let template = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
-                Domain::builder().ldh_name("foo.example").build(),
+                Domain::response_obj().ldh_name("foo.example").build(),
             )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
@@ -594,7 +594,7 @@ mod tests {
         // THEN
         let expected = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
-                Domain::builder().ldh_name("foo.example").build(),
+                Domain::response_obj().ldh_name("foo.example").build(),
             )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };

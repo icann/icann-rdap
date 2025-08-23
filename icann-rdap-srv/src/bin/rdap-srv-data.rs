@@ -970,7 +970,7 @@ async fn make_domain(
     } else {
         None
     };
-    let domain = Domain::builder()
+    let domain = Domain::response_obj()
         .ldh_name(ldh)
         .unicode_name(unicode_name)
         .and_secure_dns(secure_dns)

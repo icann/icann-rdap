@@ -318,8 +318,62 @@ impl Link {
 pub type Notices = Vec<Notice>;
 
 /// Represents an RDAP Notice.
+///
+/// It is recommended to use builder to construct an RFC valid
+/// structure.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/tou.html")
+///   .hreflang("en")
+///   .title("ToU Link")
+///   .media_type("text/html")
+///   .build();
+///
+/// let notice = Notice::builder()
+///   .title("Terms of Use")
+///   .description_entry("Please read our terms of use.")
+///   .description_entry("TOS can be found in the link.")
+///   .link(link)
+///   .build();
+/// ```
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let notice = Notice::builder()
+/// #  .title("Terms of Use")
+/// #  .description_entry("Please read our terms of use.")
+/// #  .description_entry("TOS can be found in the link.")
+/// #  .build();
+/// let title = notice.title();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Notice(pub NoticeOrRemark);
+
+#[buildstructor::buildstructor]
+impl Notice {
+    /// Builds an RDAP notice.
+    #[builder(visibility = "pub")]
+    fn new(
+        title: Option<String>,
+        description: Vec<String>,
+        links: Vec<Link>,
+        nr_type: Option<String>,
+    ) -> Self {
+        let nr = NoticeOrRemark::builder()
+            .description(description)
+            .and_title(title)
+            .links(links)
+            .and_nr_type(nr_type)
+            .build();
+        Self(nr)
+    }
+}
 
 impl std::ops::Deref for Notice {
     type Target = NoticeOrRemark;
@@ -333,8 +387,62 @@ impl std::ops::Deref for Notice {
 pub type Remarks = Vec<Remark>;
 
 /// Represents an RDAP Remark.
+///
+/// It is recommended to use builder to construct an RFC valid
+/// structure.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/tou.html")
+///   .hreflang("en")
+///   .title("ToU Link")
+///   .media_type("text/html")
+///   .build();
+///
+/// let remark = Remark::builder()
+///   .title("Terms of Use")
+///   .description_entry("Please read our terms of use.")
+///   .description_entry("TOS can be found in the link.")
+///   .link(link)
+///   .build();
+/// ```
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let remark = Remark::builder()
+/// #  .title("Terms of Use")
+/// #  .description_entry("Please read our terms of use.")
+/// #  .description_entry("TOS can be found in the link.")
+/// #  .build();
+/// let title = remark.title();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Remark(pub NoticeOrRemark);
+
+#[buildstructor::buildstructor]
+impl Remark {
+    /// Builds an RDAP notice.
+    #[builder(visibility = "pub")]
+    fn new(
+        title: Option<String>,
+        description: Vec<String>,
+        links: Vec<Link>,
+        nr_type: Option<String>,
+    ) -> Self {
+        let nr = NoticeOrRemark::builder()
+            .description(description)
+            .and_title(title)
+            .links(links)
+            .and_nr_type(nr_type)
+            .build();
+        Self(nr)
+    }
+}
 
 impl std::ops::Deref for Remark {
     type Target = NoticeOrRemark;
@@ -345,6 +453,8 @@ impl std::ops::Deref for Remark {
 }
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
+///
+/// It is probably easier to use [Notice] or [Remark] directly.
 ///
 /// RFC 9083 requires that `description` be required, but some servers
 /// do not follow this rule. Therefore, this structure allows `description`
@@ -434,16 +544,6 @@ impl NoticeOrRemark {
             links,
             nr_type,
         }
-    }
-
-    /// Converts to a [Notice].
-    pub fn notice(self) -> Notice {
-        Notice(self)
-    }
-
-    /// Converts to a [Remark].
-    pub fn remark(self) -> Remark {
-        Remark(self)
     }
 
     /// Returns the title of the notice/remark.

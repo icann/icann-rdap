@@ -961,7 +961,7 @@ mod tests {
             links: None,
             nr_type: None,
         };
-        let rdap = Domain::builder()
+        let rdap = Domain::response_obj()
             .ldh_name("example.com")
             .notice(Notice(notice))
             .build()
