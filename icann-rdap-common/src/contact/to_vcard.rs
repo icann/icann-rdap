@@ -161,10 +161,11 @@ impl Contact {
                 }
                 if let Some(country_name) = &addr.country_name {
                     lines.push(country_name.to_owned());
-                } else if let Some(country_code) = &addr.country_code {
-                    lines.push(country_code.to_owned());
                 } else {
                     lines.push("".to_string());
+                }
+                if let Some(country_code) = &addr.country_code {
+                    params.insert("cc".to_string(), Value::String(country_code.to_string()));
                 }
                 vcard.push(json!(["adr", Value::from(params), "text", lines]))
             }
@@ -224,12 +225,12 @@ fn vec_string_to_param(strings: &[String]) -> Value {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
+
     use crate::contact::{Contact, Email, Lang, NameParts, Phone, PostalAddress};
 
     #[test]
-    fn GIVEN_contact_WHEN_to_vcard_THEN_from_vcard_is_same() {
+    fn test_contact_vcard_round_trip() {
         // GIVEN
         let contact = Contact::builder()
             .full_name("Joe User")
@@ -250,6 +251,8 @@ mod tests {
             .roles(vec!["Project Lead".to_string()])
             .contact_uris(vec!["https://example.com/contact-form".to_string()])
             .postal_addresses(vec![PostalAddress::builder()
+                .context("work")
+                .country_code("CA")
                 .country_name("Canada")
                 .postal_code("G1V 2M2")
                 .region_code("QC")
@@ -287,6 +290,8 @@ mod tests {
         let actual = Contact::from_vcard(&contact.to_vcard()).expect("from vcard");
 
         // THEN
+        //   yes, contact implements Eq, but by breaking everything done
+        //   we can find where problems lie faster.
         assert_eq!(contact.full_name, actual.full_name);
         assert_eq!(contact.name_parts, actual.name_parts);
         assert_eq!(contact.kind, actual.kind);
@@ -299,5 +304,7 @@ mod tests {
         assert_eq!(contact.emails, actual.emails);
         assert_eq!(contact.contact_uris, actual.contact_uris);
         assert_eq!(contact.urls, actual.urls);
+        //   but just in case we forgot soemthing
+        assert_eq!(contact, actual);
     }
 }
