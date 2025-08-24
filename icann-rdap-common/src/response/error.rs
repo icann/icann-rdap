@@ -23,7 +23,7 @@ use super::{
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let e = Rfc9083Error::builder()
+/// let e = Rfc9083Error::response_obj()
 ///   .error_code(500)
 ///   .build();
 /// ```
@@ -32,7 +32,7 @@ use super::{
 /// See [CommonFields] for common getter functions.
 /// ```rust
 /// # use icann_rdap_common::prelude::*;
-/// # let e = Rfc9083Error::builder()
+/// # let e = Rfc9083Error::response_obj()
 /// #   .error_code(500)
 /// #   .build();
 /// let error_code = e.error_code();
@@ -60,12 +60,12 @@ impl Rfc9083Error {
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let e = Rfc9083Error::builder()
+    /// let e = Rfc9083Error::response_obj()
     ///   .error_code(500) //required
     ///   .build();
     /// ```
-    #[builder(visibility = "pub")]
-    fn new(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
             common: Common::level0()
@@ -152,7 +152,7 @@ mod tests {
     #[test]
     fn GIVEN_error_code_404_WHEN_is_redirect_THEN_false() {
         // GIVEN
-        let e = Rfc9083Error::builder().error_code(404).build();
+        let e = Rfc9083Error::response_obj().error_code(404).build();
 
         // WHEN
         let actual = e.is_redirect();

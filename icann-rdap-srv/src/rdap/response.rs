@@ -15,19 +15,19 @@ use {
 };
 
 pub static NOT_FOUND: LazyLock<RdapResponse> = LazyLock::new(|| {
-    Rfc9083Error::builder()
+    Rfc9083Error::response_obj()
         .error_code(404)
         .build()
         .to_response()
 });
 pub static NOT_IMPLEMENTED: LazyLock<RdapResponse> = LazyLock::new(|| {
-    Rfc9083Error::builder()
+    Rfc9083Error::response_obj()
         .error_code(501)
         .build()
         .to_response()
 });
 pub static BAD_REQUEST: LazyLock<RdapResponse> = LazyLock::new(|| {
-    Rfc9083Error::builder()
+    Rfc9083Error::response_obj()
         .error_code(400)
         .build()
         .to_response()
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
-        let given = Rfc9083Error::builder()
+        let given = Rfc9083Error::response_obj()
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()

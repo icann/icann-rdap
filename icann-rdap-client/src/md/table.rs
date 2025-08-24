@@ -293,7 +293,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -323,7 +323,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -354,7 +354,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -387,7 +387,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -418,7 +418,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -455,7 +455,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
