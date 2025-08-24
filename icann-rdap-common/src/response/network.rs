@@ -148,7 +148,7 @@ impl std::fmt::Display for V6Cidr {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let net = Network::builder()
+/// let net = Network::response_obj()
 ///   .cidr("10.0.0.0/24")
 ///   .handle("NET-10-0-0-0")
 ///   .status("active")
@@ -231,7 +231,7 @@ pub struct Network {
 
 #[buildstructor::buildstructor]
 impl Network {
-    /// Builds a basic IP network object.
+    /// Builds a basic IP network object for use with embedding in other objects.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -256,18 +256,11 @@ impl Network {
         statuses: Vec<String>,
         port_43: Option<Port43>,
         entities: Vec<Entity>,
-        notices: Vec<Notice>,
-        mut extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
-        let mut net_exts = vec![ExtensionId::Cidr0.to_extension()];
-        net_exts.append(&mut extensions);
         let cidr = IpInet::from_str(&cidr)?;
         Ok(Self {
-            common: Common::level0()
-                .extensions(net_exts)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::ip_network()
                 .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
                 .and_remarks(to_opt_vec(remarks))
@@ -303,6 +296,62 @@ impl Network {
                 })]),
             },
         })
+    }
+
+    /// Builds an IP network object for a resopnse.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let net = Network::response_obj()
+    ///   .cidr("10.0.0.0/24")     //required for this builder
+    ///   .handle("NET-10-0-0-0")
+    ///   .status("active")
+    ///   .extension(ExtensionId::NroRdapProfile0.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   .build().unwrap();
+    /// ```
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(
+        cidr: String,
+        handle: Option<String>,
+        country: Option<String>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        mut extensions: Vec<Extension>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
+    ) -> Result<Self, RdapResponseError> {
+        let mut net_exts = vec![ExtensionId::Cidr0.to_extension()];
+        net_exts.append(&mut extensions);
+        let common = Common::level0()
+            .extensions(net_exts)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut net = Network::builder()
+            .cidr(cidr)
+            .and_handle(handle)
+            .and_country(country)
+            .and_name(name)
+            .and_network_type(network_type)
+            .and_parent_handle(parent_handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .and_redacted(redacted)
+            .build()?;
+        net.common = common;
+        Ok(net)
     }
 
     #[builder(entry = "illegal", visibility = "pub(crate)")]

@@ -1,3 +1,5 @@
+use crate::prelude::has_rdap_path;
+
 use {
     crate::prelude::ObjectCommon,
     std::{any::TypeId, str::FromStr, sync::LazyLock},
@@ -89,6 +91,12 @@ impl GetChecks for Link {
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
                         items.push(Check::LinkRelatedIsNotRdap.check_item())
+                    } else if media_type.eq(RDAP_MEDIA_TYPE) {
+                        if let Some(ref href) = self.href {
+                            if !has_rdap_path(href) {
+                                items.push(Check::LinkRelatedNotToRdap.check_item())
+                            }
+                        }
                     }
                 } else {
                     items.push(Check::LinkRelatedHasNoType.check_item())
@@ -359,6 +367,7 @@ mod tests {
 
     use crate::{
         check::Checks,
+        media_types::RDAP_MEDIA_TYPE,
         prelude::{ToResponse, VectorStringish},
         response::{
             domain::Domain,
@@ -509,6 +518,37 @@ mod tests {
     }
 
     #[test]
+    fn test_object_related_link_with_not_rdap_path() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .media_type(RDAP_MEDIA_TYPE)
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        checks
+            .sub(crate::check::RdapStructure::Links)
+            .expect("Links not found")
+            .sub(crate::check::RdapStructure::Link)
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::LinkRelatedNotToRdap)
+            .expect("link missing check");
+    }
+
+    #[test]
     fn test_self_link_with_no_type_property() {
         // GIVEN
         let rdap = Domain::builder()
@@ -613,7 +653,7 @@ mod tests {
     /// Issue #59
     fn test_nameserver_with_self_link_and_notice() {
         // GIVEN
-        let rdap = Nameserver::builder()
+        let rdap = Nameserver::response_obj()
             .ldh_name("example.com")
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -921,7 +961,7 @@ mod tests {
             links: None,
             nr_type: None,
         };
-        let rdap = Domain::builder()
+        let rdap = Domain::response_obj()
             .ldh_name("example.com")
             .notice(Notice(notice))
             .build()

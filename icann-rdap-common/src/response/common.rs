@@ -24,6 +24,14 @@ impl Common {
             notices,
         }
     }
+
+    #[builder(visibility = "pub(crate)")]
+    fn new() -> Self {
+        Self {
+            rdap_conformance: None,
+            notices: None,
+        }
+    }
 }
 
 /// Convience methods for fields in  [Common].

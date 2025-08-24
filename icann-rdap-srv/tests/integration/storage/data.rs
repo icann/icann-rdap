@@ -297,7 +297,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
     let num2 = 800u32;
     let temp = TestDir::temp();
     let template = Template::Autnum {
-        autnum: AutnumObject(Box::new(Autnum::builder().autnum_range(0..0).build())),
+        autnum: AutnumObject(Box::new(Autnum::response_obj().autnum_range(0..0).build())),
         ids: vec![
             AutnumId::builder()
                 .start_autnum(num1)
@@ -490,7 +490,7 @@ async fn GIVEN_data_dir_with_network_template_with_range_WHEN_mem_init_THEN_netw
 async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let srvhelp = Help::builder()
+    let srvhelp = Help::response_obj()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("foo".to_string())
@@ -539,7 +539,7 @@ async fn GIVEN_data_dir_with_default_help_WHEN_mem_init_THEN_default_help_is_loa
 async fn GIVEN_data_dir_with_host_help_WHEN_mem_init_THEN_host_help_is_loaded() {
     // GIVEN
     let temp = TestDir::temp();
-    let srvhelp = Help::builder()
+    let srvhelp = Help::response_obj()
         .notice(Notice(
             NoticeOrRemark::builder()
                 .description_entry("bar".to_string())

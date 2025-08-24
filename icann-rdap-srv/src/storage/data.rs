@@ -568,7 +568,7 @@ mod tests {
         // GIVEN
         let template = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
-                Domain::builder().ldh_name("foo.example").build(),
+                Domain::response_obj().ldh_name("foo.example").build(),
             )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
@@ -594,7 +594,7 @@ mod tests {
         // THEN
         let expected = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
-                Domain::builder().ldh_name("foo.example").build(),
+                Domain::response_obj().ldh_name("foo.example").build(),
             )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
@@ -606,7 +606,7 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -648,7 +648,7 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -716,7 +716,7 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -760,7 +760,7 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),

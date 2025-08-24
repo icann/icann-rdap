@@ -178,6 +178,7 @@ impl<'a> GetTexts<'a> for &'a [&'a Vec<Value>] {
     }
 }
 
+/// Get a "pref" parameter.
 trait GetPreference<'a> {
     fn get_preference(self) -> Option<u64>;
 }
@@ -191,6 +192,7 @@ impl<'a> GetPreference<'a> for &'a Vec<Value> {
     }
 }
 
+/// Get a "label" parameter.
 trait GetLabel<'a> {
     fn get_label(self) -> Option<String>;
 }
@@ -204,8 +206,23 @@ impl<'a> GetLabel<'a> for &'a Vec<Value> {
     }
 }
 
+/// Get a "cc" parameter.
+trait GetCountryCode<'a> {
+    fn get_country_code(self) -> Option<String>;
+}
+
+impl<'a> GetCountryCode<'a> for &'a Vec<Value> {
+    fn get_country_code(self) -> Option<String> {
+        let second = self.get(1)?;
+        let second = second.as_object()?;
+        let cc = second.get("cc")?;
+        cc.as_str().map(|s| s.to_owned())
+    }
+}
+
 const CONTEXTS: [&str; 6] = ["home", "work", "office", "private", "mobile", "cell"];
 
+/// Get the vCard "type" paremeter as a JSContact context.
 trait GetContexts<'a> {
     fn get_contexts(self) -> Option<Vec<String>>;
 }
@@ -234,6 +251,7 @@ impl<'a> GetContexts<'a> for &'a Vec<Value> {
     }
 }
 
+/// Get a vCard "type" parameter as a JSContact context.
 trait GetFeatures<'a> {
     fn get_features(self) -> Option<Vec<String>>;
 }
@@ -432,7 +450,8 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                     .and_full_address((*prop).get_label())
                     .contexts((*prop).get_contexts().unwrap_or_default())
                     .and_preference((*prop).get_preference())
-                    .and_country_code(country_code)
+                    // prefer "cc" parameter but use country code in the country name field if no "cc" parameter
+                    .and_country_code((*prop).get_country_code().or(country_code))
                     .and_country_name(country_name)
                     .and_postal_code(postal_code)
                     .and_region_name(region_name)
@@ -517,14 +536,13 @@ fn get_string_or_vec(value: &Value) -> Option<Vec<String>> {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use serde_json::Value;
 
     use crate::contact::{Contact, NameParts};
 
     #[test]
-    fn GIVEN_vcard_WHEN_from_vcard_THEN_properties_are_correct() {
+    fn test_vcard_properties() {
         // GIVEN
         let vcard = r#"
           [
@@ -784,7 +802,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_vcard_with_addr_street_array_WHEN_from_vcard_THEN_properties_are_correct() {
+    fn test_addr_street_array() {
         // GIVEN
         let vcard = r#"
           [
@@ -842,5 +860,171 @@ mod tests {
         assert_eq!(addr.region_code.as_ref().expect("region code"), "QC");
         assert!(addr.region_name.is_none());
         assert_eq!(addr.postal_code.as_ref().expect("postal code"), "G1V 2M2");
+    }
+
+    #[test]
+    fn test_addr_cc_in_county_name() {
+        // GIVEN
+        let vcard = r#"
+          [
+            "vcard",
+            [
+              ["version", {}, "text", "4.0"],
+              ["fn", {}, "text", "Joe User"],
+              ["adr",
+                { "type":"work" },
+                "text",
+                [
+                  "",
+                  "Suite 1234",
+                  ["4321 Rue Blue", "1, Gawwn"],
+                  "Quebec",
+                  "QC",
+                  "G1V 2M2",
+                  "CA"
+                ]
+              ]
+            ]
+          ]
+        "#;
+
+        // WHEN
+        let actual = serde_json::from_str::<Vec<Value>>(vcard);
+
+        // THEN vcard parses
+        let actual = actual.expect("parsing vcard");
+        let actual = Contact::from_vcard(&actual).expect("vcard not found");
+
+        // THEN there is a postal addresses
+        let Some(addresses) = actual.postal_addresses else {
+            panic!("no postal addresses")
+        };
+        let Some(addr) = addresses.first() else {
+            panic!("first address not found")
+        };
+
+        // THEN there is no country name
+        assert!(addr.country_name.is_none());
+
+        // THEN there is a country code
+        assert_eq!(
+            addr.country_code.as_ref().expect("no country code found"),
+            "CA"
+        );
+    }
+
+    #[test]
+    fn test_addr_cc_param() {
+        // GIVEN
+        let vcard = r#"
+          [
+            "vcard",
+            [
+              ["version", {}, "text", "4.0"],
+              ["fn", {}, "text", "Joe User"],
+              ["adr",
+                { "cc":"CA" },
+                "text",
+                [
+                  "",
+                  "Suite 1234",
+                  ["4321 Rue Blue", "1, Gawwn"],
+                  "Quebec",
+                  "QC",
+                  "G1V 2M2",
+                  "Canada"
+                ]
+              ]
+            ]
+          ]
+        "#;
+
+        // WHEN
+        let actual = serde_json::from_str::<Vec<Value>>(vcard);
+
+        // THEN vcard parses
+        let actual = actual.expect("parsing vcard");
+        let actual = Contact::from_vcard(&actual).expect("vcard not found");
+
+        // THEN there is a postal addresses
+        let Some(addresses) = actual.postal_addresses else {
+            panic!("no postal addresses")
+        };
+        let Some(addr) = addresses.first() else {
+            panic!("first address not found")
+        };
+
+        // THEN there is a country name
+        assert_eq!(
+            addr.country_name.as_ref().expect("no country name"),
+            "Canada"
+        );
+
+        // THEN there is a country code
+        assert_eq!(
+            addr.country_code.as_ref().expect("no country code found"),
+            "CA"
+        );
+    }
+
+    #[test]
+    fn test_addr_cc_param_with_type_param() {
+        // GIVEN
+        let vcard = r#"
+          [
+            "vcard",
+            [
+              ["version", {}, "text", "4.0"],
+              ["fn", {}, "text", "Joe User"],
+              ["adr",
+                { "type":"work", "cc": "CA" },
+                "text",
+                [
+                  "",
+                  "Suite 1234",
+                  ["4321 Rue Blue", "1, Gawwn"],
+                  "Quebec",
+                  "QC",
+                  "G1V 2M2",
+                  "Canada"
+                ]
+              ]
+            ]
+          ]
+        "#;
+
+        // WHEN
+        let actual = serde_json::from_str::<Vec<Value>>(vcard);
+
+        // THEN vcard parses
+        let actual = actual.expect("parsing vcard");
+        let actual = Contact::from_vcard(&actual).expect("vcard not found");
+
+        // THEN there is a postal addresses
+        let Some(addresses) = actual.postal_addresses else {
+            panic!("no postal addresses")
+        };
+        let Some(addr) = addresses.first() else {
+            panic!("first address not found")
+        };
+
+        // THEN context is work
+        assert!(addr
+            .contexts
+            .as_ref()
+            .expect("no contexts")
+            .contains(&"work".to_string()));
+
+        // THEN there is a country name
+        assert_eq!(
+            addr.country_name.as_ref().expect("no country name"),
+            "Canada"
+        );
+
+        // THEN there is a country code
+        assert_eq!(
+            addr.country_code.as_ref().expect("no country code found"),
+            "CA"
+        );
     }
 }

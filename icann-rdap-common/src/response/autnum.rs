@@ -18,7 +18,7 @@ use super::{
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let autnum = Autnum::builder()
+/// let autnum = Autnum::response_obj()
 ///   .autnum_range(700..710) // the range of autnums
 ///   .handle("AS700-1")
 ///   .status("active")
@@ -84,7 +84,7 @@ pub struct Autnum {
 
 #[buildstructor::buildstructor]
 impl Autnum {
-    /// Builds a basic autnum object.
+    /// Builds a basic autnum object for use with embedding in other objects.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -105,18 +105,13 @@ impl Autnum {
         statuses: Vec<String>,
         port_43: Option<Port43>,
         entities: Vec<Entity>,
-        notices: Vec<Notice>,
         country: Option<String>,
         autnum_type: Option<String>,
         name: Option<String>,
-        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0()
-                .extensions(extensions)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::autnum()
                 .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
                 .and_remarks(to_opt_vec(remarks))
@@ -133,6 +128,58 @@ impl Autnum {
             autnum_type: autnum_type.map(|s| s.into()),
             country: country.map(|s| s.into()),
         }
+    }
+
+    /// Builds an autnum object as a resopnse.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let autnum = Autnum::response_obj()
+    ///   .autnum_range(700..710)  //required for this builder
+    ///   .handle("AS700-1")
+    ///   .status("active")
+    ///   .extension(ExtensionId::NroRdapProfile0.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   .build();
+    /// ```
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(
+        autnum_range: std::ops::Range<u32>,
+        handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        country: Option<String>,
+        autnum_type: Option<String>,
+        name: Option<String>,
+        extensions: Vec<Extension>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
+    ) -> Self {
+        let common = Common::level0()
+            .extensions(extensions)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut autnum = Autnum::builder()
+            .autnum_range(autnum_range)
+            .and_handle(handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .and_country(country)
+            .and_autnum_type(autnum_type)
+            .and_name(name)
+            .and_redacted(redacted)
+            .build();
+        autnum.common = common;
+        autnum
     }
 
     /// Returns the starting ASN of the range.

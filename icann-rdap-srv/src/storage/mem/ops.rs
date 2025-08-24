@@ -192,7 +192,7 @@ impl StoreOps for Mem {
                 _ => None,
             })
             .collect::<Vec<Domain>>();
-        let response = DomainSearchResults::builder()
+        let response = DomainSearchResults::response_obj()
             .results(results)
             .build()
             .to_response();

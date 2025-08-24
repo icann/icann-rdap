@@ -77,7 +77,7 @@ impl IpAddresses {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let ns = Nameserver::builder()
+/// let ns = Nameserver::response_obj()
 ///   .ldh_name("ns1.example.com")
 ///   .handle("ns1_example_com-1")
 ///   .status("active")
@@ -155,7 +155,7 @@ pub struct Nameserver {
 
 #[buildstructor::buildstructor]
 impl Nameserver {
-    /// Builds a basic nameserver object.
+    /// Builds a basic nameserver object for use with embedding into response objects.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -167,6 +167,7 @@ impl Nameserver {
     ///   .address("10.0.0.1")
     ///   .address("10.0.0.2")
     ///   .entity(Entity::builder().handle("FOO").build())
+    ///   .remark(Remark::builder().title("hidden nameserver").build())
     ///   .build().unwrap();
     /// ```
     #[builder(visibility = "pub")]
@@ -180,8 +181,6 @@ impl Nameserver {
         statuses: Vec<String>,
         port_43: Option<Port43>,
         entities: Vec<Entity>,
-        notices: Vec<Notice>,
-        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
@@ -190,10 +189,7 @@ impl Nameserver {
             None
         };
         Ok(Self {
-            common: Common::level0()
-                .extensions(extensions)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::nameserver()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -208,6 +204,57 @@ impl Nameserver {
             unicode_name: None,
             ip_addresses,
         })
+    }
+
+    /// Builds a nameserver object for a response.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let ns = Nameserver::response_obj()
+    ///   .ldh_name("ns1.example.com") //required for this builder
+    ///   .handle("ns1_example_com-1")
+    ///   .status("active")
+    ///   .address("10.0.0.1")
+    ///   .address("10.0.0.2")
+    ///   .entity(Entity::builder().handle("FOO").build())
+    ///   .extension(ExtensionId::NroRdapProfile0.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   .build().unwrap();
+    /// ```
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj<T: Into<String>>(
+        ldh_name: T,
+        addresses: Vec<String>,
+        handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        extensions: Vec<Extension>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
+    ) -> Result<Self, RdapResponseError> {
+        let common = Common::level0()
+            .extensions(extensions)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut nameserver = Nameserver::builder()
+            .ldh_name(ldh_name)
+            .addresses(addresses)
+            .and_handle(handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .and_redacted(redacted)
+            .build()?;
+        nameserver.common = common;
+        Ok(nameserver)
     }
 
     #[builder(entry = "illegal", visibility = "pub(crate)")]

@@ -608,7 +608,7 @@ fn create_redirect_file(
     let file_name = create_file_name(self_href, "template");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
-    let error = Rfc9083Error::builder()
+    let error = Rfc9083Error::response_obj()
         .error_code(307)
         .notice(Notice(
             NoticeOrRemark::builder()
@@ -869,7 +869,7 @@ async fn make_entity(
         .and_postal_code(args.postal_code)
         .build();
     contact = contact.set_postal_address(postal_address);
-    let entity = Entity::builder()
+    let entity = Entity::response_obj()
         .contact(contact)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
@@ -904,7 +904,7 @@ async fn make_nameserver(
         .expect("nameserver self href");
     let mut addrs: Vec<String> = args.v4.clone();
     addrs.append(&mut args.v6.clone());
-    let ns = Nameserver::builder()
+    let ns = Nameserver::response_obj()
         .ldh_name(args.ldh)
         .addresses(addrs)
         .notices(args.object_args.notice.clone().to_notices())
@@ -970,7 +970,7 @@ async fn make_domain(
     } else {
         None
     };
-    let domain = Domain::builder()
+    let domain = Domain::response_obj()
         .ldh_name(ldh)
         .unicode_name(unicode_name)
         .and_secure_dns(secure_dns)
@@ -1006,7 +1006,7 @@ async fn make_autnum(
         .query_url(&args.object_args.base_url)
         .expect("autnum self href");
     let autnum_range = args.start_autnum..args.end_autnum.unwrap_or(args.start_autnum);
-    let autnum = Autnum::builder()
+    let autnum = Autnum::response_obj()
         .autnum_range(autnum_range)
         .and_autnum_type(args.autnum_type)
         .and_country(args.country)
@@ -1051,7 +1051,7 @@ async fn make_network(
             .query_url(&args.object_args.base_url)
             .expect("ipv6 network self href"),
     };
-    let network = Network::builder()
+    let network = Network::response_obj()
         .cidr(args.cidr.to_string())
         .and_country(args.country)
         .and_name(args.name)
@@ -1086,7 +1086,9 @@ async fn make_network(
 }
 
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
-    let help = Help::builder().notices(args.notice.to_notices()).build();
+    let help = Help::response_obj()
+        .notices(args.notice.to_notices())
+        .build();
     let output = Output {
         rdap: help.to_response(),
         id: RdapId::Help,
