@@ -904,7 +904,7 @@ async fn make_nameserver(
         .expect("nameserver self href");
     let mut addrs: Vec<String> = args.v4.clone();
     addrs.append(&mut args.v6.clone());
-    let ns = Nameserver::builder()
+    let ns = Nameserver::response_obj()
         .ldh_name(args.ldh)
         .addresses(addrs)
         .notices(args.object_args.notice.clone().to_notices())

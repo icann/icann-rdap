@@ -355,7 +355,7 @@ fn make_test_nameserver(
     };
     let mut entity = make_test_entity(base_url, Some("nameserver"));
     entity.roles = Some(VectorStringish::from("tech"));
-    Ok(Nameserver::builder()
+    Ok(Nameserver::response_obj()
         .ldh_name("ns.template.example")
         .link(
             Link::builder()

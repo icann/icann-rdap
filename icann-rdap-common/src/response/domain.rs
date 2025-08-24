@@ -358,7 +358,7 @@ impl SecureDns {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let domain = Domain::builder()
+/// let domain = Domain::response_obj()
 ///   .ldh_name("foo.example.com")
 ///   .handle("foo_example_com-1")
 ///   .status("active")
@@ -421,6 +421,29 @@ impl SecureDns {
 ///   .status("active")
 ///   .nameservers(nameservers)
 ///   .secure_dns(secure_dns)
+///   .build();
+/// ```
+///
+/// In the example above, the nameservers are added to builder as a `Vec`. However,
+/// the builder can also take them individually.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let ns1 = Nameserver::builder()
+///   .ldh_name("ns1.example.com")
+///   .address("127.0.0.1")
+///   .build()
+///   .unwrap();
+/// let ns2 = Nameserver::builder()
+///   .ldh_name("ns2.example.com")
+///   .build()
+///   .unwrap();
+///
+/// let domain = Domain::builder()
+///   .ldh_name("foo.example.com")
+///   .nameserver(ns1)
+///   .nameserver(ns2)
 ///   .build();
 /// ```
 ///

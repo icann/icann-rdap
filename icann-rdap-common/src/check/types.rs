@@ -653,7 +653,7 @@ mod tests {
     /// Issue #59
     fn test_nameserver_with_self_link_and_notice() {
         // GIVEN
-        let rdap = Nameserver::builder()
+        let rdap = Nameserver::response_obj()
             .ldh_name("example.com")
             .notice(Notice(
                 NoticeOrRemark::builder()
