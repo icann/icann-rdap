@@ -19,8 +19,8 @@ pub struct DomainSearchResults {
 #[buildstructor::buildstructor]
 impl DomainSearchResults {
     /// Builds a domain search result.
-    #[builder(visibility = "pub")]
-    fn new(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
@@ -58,8 +58,8 @@ pub struct NameserverSearchResults {
 #[buildstructor::buildstructor]
 impl NameserverSearchResults {
     /// Builds a nameserver search result.
-    #[builder(visibility = "pub")]
-    fn new(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
@@ -97,8 +97,8 @@ pub struct EntitySearchResults {
 #[buildstructor::buildstructor]
 impl EntitySearchResults {
     /// Builds an entity search result.
-    #[builder(visibility = "pub")]
-    fn new(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
