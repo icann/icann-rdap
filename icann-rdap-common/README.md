@@ -19,33 +19,6 @@ This library can be compiled for WASM targets.
 Usage
 -----
 
-Create some RDAP objects:
-
-```rust
-use icann_rdap_common::prelude::*;
-
-// create a simple entity
-let holder = Entity::builder().handle("foo-BAR").build();
-
-// create an entity with no handle that uses the ICANN profile.
-let holder = Entity::builder::<String>()
-  .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
-  .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
-  .build();
-
-// create an RDAP domain
-let domain = Domain::builder().ldh_name("example.com").entity(holder.clone()).build();
-
-// create an IP network
-let net = Network::builder().cidr("10.0.0.0/16").entity(holder.clone()).build().unwrap();
-
-// create a nameserver
-let ns = Nameserver::builder().ldh_name("ns1.example.com").entity(holder.clone()).build().unwrap();
-
-// create an autnum
-let autnum = Autnum::builder().autnum_range(700..700).entity(holder).build();
-```
-
 Parse RDAP JSON:
 
 ```rust
@@ -80,6 +53,56 @@ let json = r#"
 
 let rdap: RdapResponse = serde_json::from_str(json).unwrap();
 assert!(matches!(rdap, RdapResponse::Network(_)));
+```
+
+Create some RDAP objects:
+
+```rust
+use icann_rdap_common::prelude::*;
+
+// create a simple entity to be used inside other objects with builder().
+let holder = Entity::builder().handle("foo-BAR").build();
+
+// create an RDAP domain response object with response_obj()
+let domain = Domain::response_obj()
+  .ldh_name("example.com")
+  .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+  .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+  .notice(Notice::builder()
+    .title("Inaccuracy resport")
+    .description_entry("Things may be wrong. But it isn't our fault.")
+    .description_entry("Read the policy for more information.")
+    .build()
+  )
+  .entity(holder.clone())
+  .build();
+
+// create an IP network to be used as a response with response_obj()
+let net = Network::response_obj()
+  .cidr("10.0.0.0/16")
+  .entity(holder.clone())
+  .extension(ExtensionId::NroRdapProfile0.as_ref())
+  .notice(Notice::builder().title("test").build())
+  .build()
+  .unwrap();
+
+// create a nameserver for a response
+let ns = Nameserver::response_obj()
+  .ldh_name("ns1.example.com")
+  .entity(holder.clone())
+  .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+  .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+  .notice(Notice::builder().title("Inaccuracy resport").build())
+  .build()
+  .unwrap();
+
+// create an autnum for a response
+let autnum = Autnum::response_obj()
+  .autnum_range(700..700)
+  .entity(holder)
+  .extension(ExtensionId::NroRdapProfile0.as_ref())
+  .notice(Notice::builder().title("test").build())
+  .build();
 ```
 
 RDAP uses jCard, the JSON version of vCard, to model "contact information"

@@ -309,7 +309,7 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
             .country_code("US")
             .build()])
         .build();
-    Entity::builder()
+    Entity::response_obj()
         .handle("TEMPLATE")
         .link(
             Link::builder()
