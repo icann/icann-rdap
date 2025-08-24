@@ -1086,7 +1086,9 @@ async fn make_network(
 }
 
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
-    let help = Help::builder().notices(args.notice.to_notices()).build();
+    let help = Help::response_obj()
+        .notices(args.notice.to_notices())
+        .build();
     let output = Output {
         rdap: help.to_response(),
         id: RdapId::Help,
