@@ -1051,7 +1051,7 @@ async fn make_network(
             .query_url(&args.object_args.base_url)
             .expect("ipv6 network self href"),
     };
-    let network = Network::builder()
+    let network = Network::response_obj()
         .cidr(args.cidr.to_string())
         .and_country(args.country)
         .and_name(args.name)

@@ -387,7 +387,7 @@ fn make_test_nameserver(
 fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("network"));
     entity.roles = Some(VectorStringish::from("registrant"));
-    let network = Network::builder()
+    let network = Network::response_obj()
         .cidr("0.0.0.0/0")
         .entity(entity)
         .link(
