@@ -297,7 +297,7 @@ async fn GIVEN_data_dir_with_autnum_template_WHEN_mem_init_THEN_autnums_are_load
     let num2 = 800u32;
     let temp = TestDir::temp();
     let template = Template::Autnum {
-        autnum: AutnumObject(Box::new(Autnum::builder().autnum_range(0..0).build())),
+        autnum: AutnumObject(Box::new(Autnum::response_obj().autnum_range(0..0).build())),
         ids: vec![
             AutnumId::builder()
                 .start_autnum(num1)

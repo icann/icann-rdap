@@ -194,7 +194,7 @@ fn make_autnum_template(
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("autnum"));
     entity.roles = Some(VectorStringish::from("registrant"));
-    let autnum = Autnum::builder()
+    let autnum = Autnum::response_obj()
         .autnum_range(1..1)
         .entity(entity)
         .link(

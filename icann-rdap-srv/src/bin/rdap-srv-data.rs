@@ -1006,7 +1006,7 @@ async fn make_autnum(
         .query_url(&args.object_args.base_url)
         .expect("autnum self href");
     let autnum_range = args.start_autnum..args.end_autnum.unwrap_or(args.start_autnum);
-    let autnum = Autnum::builder()
+    let autnum = Autnum::response_obj()
         .autnum_range(autnum_range)
         .and_autnum_type(args.autnum_type)
         .and_country(args.country)
