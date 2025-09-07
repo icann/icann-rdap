@@ -380,6 +380,12 @@ enum OtypeArg {
     /// URL of RDAP servers.
     Url,
 
+    /// Only print primary object's status, one per line.
+    StatusText,
+
+    /// Only print primary object's status as JSON.
+    StatusJson,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -530,6 +536,9 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
         OtypeArg::Url => OutputType::Url,
+        OtypeArg::StatusText => OutputType::StatusText,
+        OtypeArg::StatusJson => OutputType::StatusJson,
+
     };
 
     let process_type = match cli.process_type {
