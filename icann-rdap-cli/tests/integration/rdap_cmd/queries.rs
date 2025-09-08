@@ -243,9 +243,7 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lin
     let assert = test_jig.cmd.assert();
     assert
         .success()
-        .stdout(
-            "client delete prohibited\nclient transfer prohibited\nclient update prohibited\n",
-        );
+        .stdout("client delete prohibited\nclient transfer prohibited\nclient update prohibited\n");
 }
 
 #[tokio::test(flavor = "multi_thread")]

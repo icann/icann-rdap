@@ -538,7 +538,6 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::Url => OutputType::Url,
         OtypeArg::StatusText => OutputType::StatusText,
         OtypeArg::StatusJson => OutputType::StatusJson,
-
     };
 
     let process_type = match cli.process_type {
