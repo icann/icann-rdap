@@ -18,6 +18,8 @@ use {
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
 
+use icann_rdap_common::response::ObjectCommonFields;
+
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
     error::RdapCliError,
@@ -46,6 +48,12 @@ pub(crate) enum OutputType {
 
     /// URL
     Url,
+
+    /// Only print primary object's status, one per line.
+    StatusText,
+
+    /// Only print primary object's status as JSON.
+    StatusJson,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -443,6 +451,41 @@ fn do_final_output<W: std::io::Write>(
                 if let Some(url) = rr.res_data.http_data.request_uri() {
                     writeln!(write, "{url}")?;
                 }
+            }
+        }
+        OutputType::StatusText => {
+            use icann_rdap_common::response::RdapResponse as RR;
+            if let Some(rr) = transactions.first() {
+                let statuses: Option<&[String]> = match &rr.res_data.rdap {
+                    RR::Entity(e) => Some(e.status()),
+                    RR::Domain(d) => Some(d.status()),
+                    RR::Nameserver(n) => Some(n.status()),
+                    RR::Autnum(a) => Some(a.status()),
+                    RR::Network(n) => Some(n.status()),
+                    _ => None,
+                };
+                if let Some(list) = statuses {
+                    for s in list {
+                        writeln!(write, "{}", s)?;
+                    }
+                }
+            }
+        }
+        OutputType::StatusJson => {
+            use icann_rdap_common::response::RdapResponse as RR;
+            if let Some(rr) = transactions.first() {
+                let statuses: Option<&[String]> = match &rr.res_data.rdap {
+                    RR::Entity(e) => Some(e.status()),
+                    RR::Domain(d) => Some(d.status()),
+                    RR::Nameserver(n) => Some(n.status()),
+                    RR::Autnum(a) => Some(a.status()),
+                    RR::Network(n) => Some(n.status()),
+                    _ => None,
+                };
+                // Always print a JSON object with a status array, even if empty
+                let arr = statuses.map(|s| s.to_vec()).unwrap_or_default();
+                let obj = serde_json::json!({"status": arr});
+                writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
             }
         }
         _ => {} // do nothing

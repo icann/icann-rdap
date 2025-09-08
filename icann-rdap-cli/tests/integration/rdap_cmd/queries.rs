@@ -212,3 +212,71 @@ async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
     let assert = test_jig.cmd.assert();
     assert.success();
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lines() {
+    // GIVEN
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .status("client delete prohibited")
+            .status("client transfer prohibited")
+            .status("client update prohibited")
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("status-text")
+        .arg("-L")
+        .arg("off");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout("client delete prohibited\nclient transfer prohibited\nclient update prohibited\n");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn GIVEN_domain_with_statuses_WHEN_output_status_json_THEN_only_status_json() {
+    // GIVEN
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .status("client delete prohibited")
+            .status("client transfer prohibited")
+            .status("client update prohibited")
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("bar.example")
+        .arg("-O")
+        .arg("status-json")
+        .arg("-L")
+        .arg("off");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(
+            "{\"status\":[\"client delete prohibited\",\"client transfer prohibited\",\"client update prohibited\"]}\n",
+        );
+}
