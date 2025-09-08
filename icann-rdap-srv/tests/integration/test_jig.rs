@@ -20,7 +20,7 @@ pub struct RdapSrvStoreTestJig {
 }
 
 impl RdapSrvStoreTestJig {
-    pub fn new() -> RdapSrvStoreTestJig {
+    pub fn new() -> Self {
         let source_dir = TestDir::temp();
         let data_dir = TestDir::temp();
         let mut cmd = Command::cargo_bin("rdap-srv-store").expect("cannot find rdap-srv-store cmd");

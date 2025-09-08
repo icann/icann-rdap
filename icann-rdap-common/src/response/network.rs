@@ -13,7 +13,7 @@ use super::{
     to_opt_vec,
     types::{ExtensionId, Link},
     CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
-    RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
+    RdapResponseError, Remark, SelfLink, Stringish, ToChild, ToResponse,
 };
 
 /// Cidr0 structure from the Cidr0 extension.
@@ -53,10 +53,20 @@ impl V4Cidr {
     /// Builds an Ipv4 CIDR0.
     #[builder(visibility = "pub")]
     fn new(v4prefix: String, length: u8) -> Self {
-        V4Cidr {
+        Self {
             v4prefix: Some(v4prefix),
             length: Some(Numberish::<u8>::from(length)),
         }
+    }
+
+    // Get the v4Prefix.
+    pub fn v4prefix(&self) -> Option<&str> {
+        self.v4prefix.as_deref()
+    }
+
+    // Get the length.
+    pub fn length(&self) -> Option<u8> {
+        self.length.as_ref().and_then(|n| n.as_u8())
     }
 }
 
@@ -96,10 +106,20 @@ impl V6Cidr {
     /// Builds an IPv6 CIDR0.
     #[builder(visibility = "pub")]
     fn new(v6prefix: String, length: u8) -> Self {
-        V6Cidr {
+        Self {
             v6prefix: Some(v6prefix),
             length: Some(Numberish::<u8>::from(length)),
         }
+    }
+
+    // Get the v6Prefix.
+    pub fn v6prefix(&self) -> Option<&str> {
+        self.v6prefix.as_deref()
+    }
+
+    // Get the length.
+    pub fn length(&self) -> Option<u8> {
+        self.length.as_ref().and_then(|n| n.as_u8())
     }
 }
 
@@ -128,7 +148,7 @@ impl std::fmt::Display for V6Cidr {
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let net = Network::builder()
+/// let net = Network::response_obj()
 ///   .cidr("10.0.0.0/24")
 ///   .handle("NET-10-0-0-0")
 ///   .status("active")
@@ -159,6 +179,18 @@ impl std::fmt::Display for V6Cidr {
 ///   ]
 /// }
 /// ```
+/// Use the getter functions to access the information in the network.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let net = Network::builder()
+/// #   .cidr("10.0.0.0/24")
+/// #   .build().unwrap();
+/// let handle = net.handle();
+/// let start_address = net.start_address();
+/// let end_address = net.end_address();
+/// let parent_handle = net.parent_handle();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Network {
     #[serde(flatten)]
@@ -177,44 +209,110 @@ pub struct Network {
 
     #[serde(rename = "ipVersion")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ip_version: Option<String>,
+    pub ip_version: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<Stringish>,
 
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub network_type: Option<String>,
+    pub network_type: Option<Stringish>,
 
     #[serde(rename = "parentHandle")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_handle: Option<String>,
+    pub parent_handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
+    pub country: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
 }
 
-static EMPTY_CIDR0CIDRS: Vec<Cidr0Cidr> = vec![];
-
 #[buildstructor::buildstructor]
 impl Network {
-    /// Builds a basic IP network object.
+    /// Builds a basic IP network object for use with embedding in other objects.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
     /// let net = Network::builder()
-    ///   .cidr("10.0.0.0/24")
+    ///   .cidr("10.0.0.0/24")     //required for this builder
     ///   .handle("NET-10-0-0-0")
     ///   .status("active")
     ///   .build().unwrap();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
+        cidr: String,
+        handle: Option<String>,
+        country: Option<String>,
+        name: Option<String>,
+        network_type: Option<String>,
+        parent_handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
+    ) -> Result<Self, RdapResponseError> {
+        let cidr = IpInet::from_str(&cidr)?;
+        Ok(Self {
+            common: Common::builder().build(),
+            object_common: ObjectCommon::ip_network()
+                .and_handle(handle.map(|s| s.into()) as Option<Stringish>)
+                .and_remarks(to_opt_vec(remarks))
+                .and_links(to_opt_vec(links))
+                .and_events(to_opt_vec(events))
+                .status(statuses)
+                .and_port_43(port_43)
+                .and_entities(to_opt_vec(entities))
+                .and_redacted(redacted)
+                .build(),
+            start_address: Some(cidr.first_address().to_string()),
+            end_address: Some(cidr.last_address().to_string()),
+            ip_version: Some(
+                match cidr {
+                    IpInet::V4(_) => "v4",
+                    IpInet::V6(_) => "v6",
+                }
+                .to_string()
+                .into(),
+            ),
+            name: name.map(|s| s.into()),
+            network_type: network_type.map(|s| s.into()),
+            parent_handle: parent_handle.map(|s| s.into()),
+            country: country.map(|s| s.into()),
+            cidr0_cidrs: match cidr {
+                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
+                    v4prefix: Some(cidr.first_address().to_string()),
+                    length: Some(Numberish::<u8>::from(cidr.network_length())),
+                })]),
+                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
+                    v6prefix: Some(cidr.first_address().to_string()),
+                    length: Some(Numberish::<u8>::from(cidr.network_length())),
+                })]),
+            },
+        })
+    }
+
+    /// Builds an IP network object for a resopnse.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let net = Network::response_obj()
+    ///   .cidr("10.0.0.0/24")     //required for this builder
+    ///   .handle("NET-10-0-0-0")
+    ///   .status("active")
+    ///   .extension(ExtensionId::NroRdapProfile0.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   .build().unwrap();
+    /// ```
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(
         cidr: String,
         handle: Option<String>,
         country: Option<String>,
@@ -233,55 +331,35 @@ impl Network {
     ) -> Result<Self, RdapResponseError> {
         let mut net_exts = vec![ExtensionId::Cidr0.to_extension()];
         net_exts.append(&mut extensions);
-        let cidr = IpInet::from_str(&cidr)?;
-        Ok(Self {
-            common: Common::level0()
-                .extensions(net_exts)
-                .and_notices(to_opt_vec(notices))
-                .build(),
-            object_common: ObjectCommon::ip_network()
-                .and_handle(handle)
-                .and_remarks(to_opt_vec(remarks))
-                .and_links(to_opt_vec(links))
-                .and_events(to_opt_vec(events))
-                .status(statuses)
-                .and_port_43(port_43)
-                .and_entities(to_opt_vec(entities))
-                .and_redacted(redacted)
-                .build(),
-            start_address: Some(cidr.first_address().to_string()),
-            end_address: Some(cidr.last_address().to_string()),
-            ip_version: Some(
-                match cidr {
-                    IpInet::V4(_) => "v4",
-                    IpInet::V6(_) => "v6",
-                }
-                .to_string(),
-            ),
-            name,
-            network_type,
-            parent_handle,
-            country,
-            cidr0_cidrs: match cidr {
-                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: Some(cidr.first_address().to_string()),
-                    length: Some(Numberish::<u8>::from(cidr.network_length())),
-                })]),
-                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: Some(cidr.first_address().to_string()),
-                    length: Some(Numberish::<u8>::from(cidr.network_length())),
-                })]),
-            },
-        })
+        let common = Common::level0()
+            .extensions(net_exts)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut net = Network::builder()
+            .cidr(cidr)
+            .and_handle(handle)
+            .and_country(country)
+            .and_name(name)
+            .and_network_type(network_type)
+            .and_parent_handle(parent_handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .and_redacted(redacted)
+            .build()?;
+        net.common = common;
+        Ok(net)
     }
 
     #[builder(entry = "illegal", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     #[allow(dead_code)]
     fn new_illegal(
         start_address: Option<String>,
         end_address: Option<String>,
-        ip_version: Option<String>,
+        ip_version: Option<Stringish>,
         cidr0_cidrs: Option<Vec<Cidr0Cidr>>,
         country: Option<String>,
         name: Option<String>,
@@ -298,10 +376,10 @@ impl Network {
             start_address,
             end_address,
             ip_version,
-            name,
-            network_type,
-            parent_handle,
-            country,
+            name: name.map(|s| s.into()),
+            network_type: network_type.map(|s| s.into()),
+            parent_handle: parent_handle.map(|s| s.into()),
+            country: country.map(|s| s.into()),
             cidr0_cidrs,
         }
     }
@@ -342,8 +420,8 @@ impl Network {
     }
 
     /// Returns the CIDR0 CIDRs of the network.
-    pub fn cidr0_cidrs(&self) -> &Vec<Cidr0Cidr> {
-        self.cidr0_cidrs.as_ref().unwrap_or(&EMPTY_CIDR0CIDRS)
+    pub fn cidr0_cidrs(&self) -> &[Cidr0Cidr] {
+        self.cidr0_cidrs.as_deref().unwrap_or_default()
     }
 }
 

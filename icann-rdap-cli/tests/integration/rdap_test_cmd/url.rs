@@ -11,7 +11,7 @@ async fn GIVEN_url_WHEN_test_THEN_success() {
     test_jig.cmd.env_remove("RDAP_BASE_URL");
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
-        &Network::builder()
+        &Network::response_obj()
             .cidr("10.0.0.0/24")
             .build()
             .expect("cidr parsing"),

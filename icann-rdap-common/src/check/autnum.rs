@@ -49,11 +49,23 @@ impl GetChecks for Autnum {
             if name.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumNameIsEmpty.check_item())
             }
+            if name.is_number() || name.is_bool() {
+                items.push(Check::NetworkOrAutnumNameIsNotString.check_item())
+            }
         }
 
         if let Some(autnum_type) = &self.autnum_type {
             if autnum_type.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumTypeIsEmpty.check_item())
+            }
+            if autnum_type.is_number() || autnum_type.is_bool() {
+                items.push(Check::NetworkOrAutnumTypeIsNotString.check_item())
+            }
+        }
+
+        if let Some(country) = &self.country {
+            if country.is_number() || country.is_bool() {
+                items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
             }
         }
 
@@ -89,7 +101,7 @@ mod tests {
 
     use crate::{
         check::{Check, CheckParams, GetChecks},
-        response::autnum::Autnum,
+        response::{autnum::Autnum, RdapResponse},
     };
 
     use super::*;
@@ -98,7 +110,7 @@ mod tests {
     fn check_autnum_with_empty_name() {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
-        autnum.name = Some("".to_string());
+        autnum.name = Some("".to_string().into());
         let rdap = autnum.to_response();
 
         // WHEN
@@ -113,10 +125,37 @@ mod tests {
     }
 
     #[test]
+    fn check_autnum_with_non_string_name() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "autnum",
+              "handle" : "XXXX-RIR",
+              "startAutnum" : 65536,
+              "endAutnum" : 65541,
+              "name": 1234,
+              "type" : "DIRECT ALLOCATION",
+              "status" : [ "active" ],
+              "country": "AU"
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString));
+    }
+
+    #[test]
     fn check_autnum_with_empty_type() {
         // GIVEN
         let mut autnum = Autnum::builder().autnum_range(700..700).build();
-        autnum.autnum_type = Some("".to_string());
+        autnum.autnum_type = Some("".to_string().into());
         let rdap = autnum.to_response();
 
         // WHEN
@@ -128,6 +167,60 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+    }
+
+    #[test]
+    fn check_autnum_with_non_string_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "autnum",
+              "handle" : "XXXX-RIR",
+              "startAutnum" : 65536,
+              "endAutnum" : 65541,
+              "name": "AS-RTR-1",
+              "type" : 1234,
+              "status" : [ "active" ],
+              "country": "AU"
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
+    }
+
+    #[test]
+    fn check_autnum_with_non_string_country() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "autnum",
+              "handle" : "XXXX-RIR",
+              "startAutnum" : 65536,
+              "endAutnum" : 65541,
+              "name": "AS-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "status" : [ "active" ],
+              "country": 1234
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString));
     }
 
     #[rstest]

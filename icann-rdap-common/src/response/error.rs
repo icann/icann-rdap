@@ -18,6 +18,25 @@ use super::{
 /// See [RFC 9083, Section 6](https://datatracker.ietf.org/doc/html/rfc9083#name-error-response-body).
 ///
 /// Do not confuse this with [crate::response::RdapResponseError].
+///
+/// Use the builders to create one:
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let e = Rfc9083Error::response_obj()
+///   .error_code(500)
+///   .build();
+/// ```
+///
+/// Use the getter functions to access information.
+/// See [CommonFields] for common getter functions.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let e = Rfc9083Error::response_obj()
+/// #   .error_code(500)
+/// #   .build();
+/// let error_code = e.error_code();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Rfc9083Error {
     #[serde(flatten)]
@@ -36,8 +55,17 @@ pub struct Rfc9083Error {
 #[buildstructor::buildstructor]
 impl Rfc9083Error {
     /// Creates a new RFC 9083 Error for a specific HTTP error code.
-    #[builder(visibility = "pub")]
-    fn new(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+    ///
+    /// Use this builder to create a generic error:
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let e = Rfc9083Error::response_obj()
+    ///   .error_code(500) //required
+    ///   .build();
+    /// ```
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
             common: Common::level0()
@@ -71,6 +99,22 @@ impl Rfc9083Error {
         }
     }
 
+    /// Get the errorCode.
+    pub fn error_code(&self) -> u16 {
+        self.error_code
+    }
+
+    /// Get the title.
+    pub fn title(&self) -> Option<&str> {
+        self.title.as_deref()
+    }
+
+    /// Get the description.
+    pub fn description(&self) -> &[String] {
+        self.description.as_deref().unwrap_or_default()
+    }
+
+    /// True if the error is an HTTP redirect.
     pub fn is_redirect(&self) -> bool {
         self.error_code > 299 && self.error_code < 400
     }
@@ -108,7 +152,7 @@ mod tests {
     #[test]
     fn GIVEN_error_code_404_WHEN_is_redirect_THEN_false() {
         // GIVEN
-        let e = Rfc9083Error::builder().error_code(404).build();
+        let e = Rfc9083Error::response_obj().error_code(404).build();
 
         // WHEN
         let actual = e.is_redirect();

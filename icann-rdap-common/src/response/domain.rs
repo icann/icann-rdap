@@ -12,7 +12,7 @@ use super::{
     to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, Links, PublicIds},
     CommonFields, Entity, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
-    SelfLink, ToChild, ToResponse, VectorStringish, EMPTY_VEC_STRING,
+    SelfLink, ToChild, ToResponse, VectorStringish,
 };
 
 /// Represents an RDAP variant name.
@@ -28,12 +28,12 @@ pub struct VariantName {
 }
 
 impl VariantName {
-    /// Convenience method.
+    /// Getter for ldhName.
     pub fn ldh_name(&self) -> Option<&str> {
         self.ldh_name.as_deref()
     }
 
-    /// Convenience method.
+    /// Getter for unicodeName.
     pub fn unicode_name(&self) -> Option<&str> {
         self.unicode_name.as_deref()
     }
@@ -55,8 +55,6 @@ pub struct Variant {
     pub variant_names: Option<Vec<VariantName>>,
 }
 
-static EMPTY_VARIANT_NAMES: Vec<VariantName> = vec![];
-
 #[buildstructor::buildstructor]
 impl Variant {
     #[builder(visibility = "pub")]
@@ -72,27 +70,24 @@ impl Variant {
         }
     }
 
-    /// Convenience method to get relations.
-    pub fn relations(&self) -> &Vec<String> {
+    /// Getter for relations.
+    pub fn relations(&self) -> &[String] {
         self.relations
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
-    /// Convenience method to get variant names.
-    pub fn variant_names(&self) -> &Vec<VariantName> {
-        self.variant_names.as_ref().unwrap_or(&EMPTY_VARIANT_NAMES)
+    /// Getter for variantNames.
+    pub fn variant_names(&self) -> &[VariantName] {
+        self.variant_names.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method.
+    /// Getter for idnTable.
     pub fn idn_table(&self) -> Option<&str> {
         self.idn_table.as_deref()
     }
 }
-
-static EMPTY_LINKS: Vec<Link> = vec![];
-static EMPTY_EVENTS: Vec<Event> = vec![];
 
 /// Represents `dsData`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -140,14 +135,14 @@ impl DsDatum {
         }
     }
 
-    /// Convenience method to get links.
-    pub fn links(&self) -> &Vec<Link> {
-        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    /// Getter for links.
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get events.
-    pub fn events(&self) -> &Vec<Event> {
-        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    /// Getter for events.
+    pub fn events(&self) -> &[Event] {
+        self.events.as_deref().unwrap_or_default()
     }
 
     /// Returns a u32 if it was given, otherwise None.
@@ -211,14 +206,14 @@ impl KeyDatum {
         }
     }
 
-    /// Convenience method to get links.
-    pub fn links(&self) -> &Vec<Link> {
-        self.links.as_ref().unwrap_or(&EMPTY_LINKS)
+    /// Getter for links.
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get events.
-    pub fn events(&self) -> &Vec<Event> {
-        self.events.as_ref().unwrap_or(&EMPTY_EVENTS)
+    /// Getter for events.
+    pub fn events(&self) -> &[Event] {
+        self.events.as_deref().unwrap_or_default()
     }
 
     /// Returns a u16 if it was given, otherwise None.
@@ -236,14 +231,11 @@ impl KeyDatum {
         self.algorithm.as_ref().and_then(|n| n.as_u8())
     }
 
-    /// Convenience method.
+    /// Getter for publicKey.
     pub fn public_key(&self) -> Option<&str> {
         self.public_key.as_deref()
     }
 }
-
-static EMPTY_DS_DATA: Vec<DsDatum> = vec![];
-static EMPTY_KEY_DATA: Vec<KeyDatum> = vec![];
 
 /// Represents the DNSSEC information of a domain.
 ///
@@ -329,26 +321,26 @@ impl SecureDns {
         }
     }
 
-    /// Convenience method to get ds data.
-    pub fn ds_data(&self) -> &Vec<DsDatum> {
-        self.ds_data.as_ref().unwrap_or(&EMPTY_DS_DATA)
+    /// Getter for dsData.
+    pub fn ds_data(&self) -> &[DsDatum] {
+        self.ds_data.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method to get key data.
-    pub fn key_data(&self) -> &Vec<KeyDatum> {
-        self.key_data.as_ref().unwrap_or(&EMPTY_KEY_DATA)
+    /// Getter for keyData.
+    pub fn key_data(&self) -> &[KeyDatum] {
+        self.key_data.as_deref().unwrap_or_default()
     }
 
     /// Returns true if a truish value was given, otherwise false.
     pub fn zone_signed(&self) -> bool {
-        self.zone_signed.as_ref().map_or(false, |b| b.into_bool())
+        self.zone_signed.as_ref().is_some_and(|b| b.into_bool())
     }
 
     /// Returns true if a truish value was given, otherwise false.
     pub fn delegation_signed(&self) -> bool {
         self.delegation_signed
             .as_ref()
-            .map_or(false, |b| b.into_bool())
+            .is_some_and(|b| b.into_bool())
     }
 
     /// Returns max_sig_life as a u64 if it was given, otherwise None.
@@ -356,9 +348,6 @@ impl SecureDns {
         self.max_sig_life.as_ref().and_then(|n| n.as_u64())
     }
 }
-
-static EMPTY_PUBLIC_IDS: Vec<PublicId> = vec![];
-static EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
 ///
@@ -369,7 +358,7 @@ static EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let domain = Domain::builder()
+/// let domain = Domain::response_obj()
 ///   .ldh_name("foo.example.com")
 ///   .handle("foo_example_com-1")
 ///   .status("active")
@@ -434,6 +423,44 @@ static EMPTY_NAMESERVERS: Vec<Nameserver> = vec![];
 ///   .secure_dns(secure_dns)
 ///   .build();
 /// ```
+///
+/// In the example above, the nameservers are added to builder as a `Vec`. However,
+/// the builder can also take them individually.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let ns1 = Nameserver::builder()
+///   .ldh_name("ns1.example.com")
+///   .address("127.0.0.1")
+///   .build()
+///   .unwrap();
+/// let ns2 = Nameserver::builder()
+///   .ldh_name("ns2.example.com")
+///   .build()
+///   .unwrap();
+///
+/// let domain = Domain::builder()
+///   .ldh_name("foo.example.com")
+///   .nameserver(ns1)
+///   .nameserver(ns2)
+///   .build();
+/// ```
+///
+/// Access to the domain information should be done via the getter functions.
+/// See [CommonFields] and [ObjectCommonFields] for common getter functions.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let domain = Domain::builder()
+/// #   .ldh_name("foo.example.com")
+/// #   .build();
+/// let handle = domain.handle();
+/// let ldh_name = domain.ldh_name();
+/// let unicode_name = domain.unicode_name();
+/// let nameservers = domain.nameservers();
+/// let public_ids = domain.public_ids();
+/// let variants = domain.variants();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Domain {
     #[serde(flatten)]
@@ -470,19 +497,20 @@ pub struct Domain {
 
 #[buildstructor::buildstructor]
 impl Domain {
-    /// Builds a basic domain object.
+    /// Builds a basic domain object for use with embedding into response objects.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
     /// let domain = Domain::builder()
-    ///   .ldh_name("foo.example.com")
+    ///   .ldh_name("foo.example.com") //required for this builder.
     ///   .handle("foo_example_com-1")
     ///   .status("active")
+    ///   .remark(Remark::builder().title("example domain").build())
+    ///   // ...
     ///   .build();
     /// ```
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new<T: Into<String>>(
         ldh_name: T,
         unicode_name: Option<String>,
@@ -494,19 +522,14 @@ impl Domain {
         statuses: Vec<String>,
         port_43: Option<Port43>,
         entities: Vec<Entity>,
-        notices: Vec<Notice>,
         public_ids: Vec<PublicId>,
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
-        extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
-            common: Common::level0()
-                .extensions(extensions)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -527,22 +550,25 @@ impl Domain {
         }
     }
 
-    /// Builds an IDN object.
+    /// Builds a domain object for a response.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
     ///
-    /// let domain = Domain::idn()
-    ///   .unicode_name("foo.example.com")
+    /// let domain = Domain::response_obj()
+    ///   .ldh_name("foo.example.com") //required for this builder.
     ///   .handle("foo_example_com-1")
     ///   .status("active")
+    ///   .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+    ///   .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   // ...
     ///   .build();
     /// ```
-    #[builder(entry = "idn", visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
-    fn new_idn<T: Into<String>>(
-        ldh_name: Option<String>,
-        unicode_name: T,
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj<T: Into<String>>(
+        ldh_name: T,
+        unicode_name: Option<String>,
         nameservers: Vec<Nameserver>,
         handle: Option<String>,
         remarks: Vec<Remark>,
@@ -557,12 +583,64 @@ impl Domain {
         variants: Vec<Variant>,
         network: Option<Network>,
         extensions: Vec<Extension>,
+        redacted: Option<Vec<crate::response::redacted::Redacted>>,
+    ) -> Self {
+        let common = Common::level0()
+            .extensions(extensions)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut domain = Domain::builder()
+            .ldh_name(ldh_name)
+            .and_unicode_name(unicode_name)
+            .nameservers(nameservers)
+            .and_handle(handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .public_ids(public_ids)
+            .and_secure_dns(secure_dns)
+            .variants(variants)
+            .and_network(network)
+            .and_redacted(redacted)
+            .build();
+        domain.common = common;
+        domain
+    }
+
+    /// Builds an IDN object for use with embedding into response objects.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let domain = Domain::idn()
+    ///   .unicode_name("foo.example.com") // required for this builder
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   // ...
+    ///   .build();
+    /// ```
+    #[builder(entry = "idn", visibility = "pub")]
+    fn new_idn<T: Into<String>>(
+        ldh_name: Option<String>,
+        unicode_name: T,
+        nameservers: Vec<Nameserver>,
+        handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        public_ids: Vec<PublicId>,
+        secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
     ) -> Self {
         Self {
-            common: Common::level0()
-                .extensions(extensions)
-                .and_notices(to_opt_vec(notices))
-                .build(),
+            common: Common::builder().build(),
             object_common: ObjectCommon::domain()
                 .and_handle(handle)
                 .and_remarks(to_opt_vec(remarks))
@@ -582,24 +660,97 @@ impl Domain {
         }
     }
 
-    /// Convenience method to get the public IDs.
-    pub fn public_ids(&self) -> &Vec<PublicId> {
-        self.public_ids.as_ref().unwrap_or(&EMPTY_PUBLIC_IDS)
+    /// Builds an IDN object for a response.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let domain = Domain::idn_response_obj()
+    ///   .unicode_name("foo.example.com") // required for this builder
+    ///   .handle("foo_example_com-1")
+    ///   .status("active")
+    ///   .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
+    ///   .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
+    ///   .notice(Notice::builder().title("test").build())
+    ///   // ...
+    ///   .build();
+    /// ```
+    #[builder(entry = "idn_response_obj", visibility = "pub")]
+    fn new_idn_response_obj<T: Into<String>>(
+        ldh_name: Option<String>,
+        unicode_name: T,
+        nameservers: Vec<Nameserver>,
+        handle: Option<String>,
+        remarks: Vec<Remark>,
+        links: Vec<Link>,
+        events: Vec<Event>,
+        statuses: Vec<String>,
+        port_43: Option<Port43>,
+        entities: Vec<Entity>,
+        notices: Vec<Notice>,
+        public_ids: Vec<PublicId>,
+        secure_dns: Option<SecureDns>,
+        variants: Vec<Variant>,
+        network: Option<Network>,
+        extensions: Vec<Extension>,
+    ) -> Self {
+        let common = Common::level0()
+            .extensions(extensions)
+            .and_notices(to_opt_vec(notices))
+            .build();
+        let mut idn = Domain::idn()
+            .and_ldh_name(ldh_name)
+            .unicode_name(unicode_name)
+            .nameservers(nameservers)
+            .and_handle(handle)
+            .remarks(remarks)
+            .links(links)
+            .events(events)
+            .statuses(statuses)
+            .and_port_43(port_43)
+            .entities(entities)
+            .public_ids(public_ids)
+            .and_secure_dns(secure_dns)
+            .variants(variants)
+            .and_network(network)
+            .build();
+        idn.common = common;
+        idn
     }
 
-    /// Convenience method to get the nameservers.
-    pub fn nameservers(&self) -> &Vec<Nameserver> {
-        self.nameservers.as_ref().unwrap_or(&EMPTY_NAMESERVERS)
+    /// Getter for variants.
+    pub fn variants(&self) -> &[Variant] {
+        self.variants.as_deref().unwrap_or_default()
     }
 
-    /// Convenience method.
+    /// Getter for the publicIds.
+    pub fn public_ids(&self) -> &[PublicId] {
+        self.public_ids.as_deref().unwrap_or_default()
+    }
+
+    /// Getter for the nameservers.
+    pub fn nameservers(&self) -> &[Nameserver] {
+        self.nameservers.as_deref().unwrap_or_default()
+    }
+
+    /// Getter for ldhName.
     pub fn ldh_name(&self) -> Option<&str> {
         self.ldh_name.as_deref()
     }
 
-    /// Convenience method.
+    /// Getter for unicodeName.
     pub fn unicode_name(&self) -> Option<&str> {
         self.unicode_name.as_deref()
+    }
+
+    /// Getter for secureDNS.
+    pub fn secure_dns(&self) -> Option<&SecureDns> {
+        self.secure_dns.as_ref()
+    }
+
+    /// Getter for network.
+    pub fn network(&self) -> Option<&Network> {
+        self.network.as_ref()
     }
 }
 

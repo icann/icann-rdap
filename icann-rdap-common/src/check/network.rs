@@ -64,11 +64,29 @@ impl GetChecks for Network {
             if name.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumNameIsEmpty.check_item())
             }
+            if name.is_number() || name.is_bool() {
+                items.push(Check::NetworkOrAutnumNameIsNotString.check_item())
+            }
         }
 
         if let Some(network_type) = &self.network_type {
             if network_type.is_whitespace_or_empty() {
                 items.push(Check::NetworkOrAutnumTypeIsEmpty.check_item())
+            }
+            if network_type.is_number() || network_type.is_bool() {
+                items.push(Check::NetworkOrAutnumTypeIsNotString.check_item())
+            }
+        }
+
+        if let Some(parent_handle) = &self.parent_handle {
+            if parent_handle.is_number() || parent_handle.is_bool() {
+                items.push(Check::ParentHandleIsNotString.check_item())
+            }
+        }
+
+        if let Some(country) = &self.country {
+            if country.is_number() || country.is_bool() {
+                items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
             }
         }
 
@@ -92,11 +110,15 @@ impl GetChecks for Network {
                         items.push(Check::IpAddressEndBeforeStart.check_item())
                     }
                     if let Some(ip_version) = &self.ip_version {
-                        if (ip_version == "v4" && (start_addr.is_ipv6() || end_addr.is_ipv6()))
-                            || (ip_version == "v6" && (start_addr.is_ipv4() || end_addr.is_ipv4()))
+                        if ip_version.is_number() || ip_version.is_bool() {
+                            items.push(Check::IpVersionIsNotString.check_item())
+                        }
+                        if (**ip_version == *"v4" && (start_addr.is_ipv6() || end_addr.is_ipv6()))
+                            || (**ip_version == *"v6"
+                                && (start_addr.is_ipv4() || end_addr.is_ipv4()))
                         {
                             items.push(Check::IpAddressVersionMismatch.check_item())
-                        } else if ip_version != "v4" && ip_version != "v6" {
+                        } else if **ip_version != *"v4" && **ip_version != *"v6" {
                             items.push(Check::IpAddressMalformedVersion.check_item())
                         }
                     }
@@ -182,7 +204,10 @@ mod tests {
 
     use crate::{
         prelude::{Numberish, ToResponse},
-        response::network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+        response::{
+            network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+            RdapResponse,
+        },
     };
 
     use crate::check::{Check, CheckParams, GetChecks};
@@ -194,7 +219,7 @@ mod tests {
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
-        network.name = Some("".to_string());
+        network.name = Some("".to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -209,13 +234,42 @@ mod tests {
     }
 
     #[test]
+    fn check_network_with_non_string_name() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": 1234,
+              "type" : "DIRECT ALLOCATION",
+              "country" : "AU",
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString));
+    }
+
+    #[test]
     fn check_network_with_empty_type() {
         // GIVEN
         let mut network = Network::builder()
             .cidr("10.0.0.0/8")
             .build()
             .expect("invalid ip cidr");
-        network.network_type = Some("".to_string());
+        network.network_type = Some("".to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -227,6 +281,35 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+    }
+
+    #[test]
+    fn check_network_with_non_string_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": "NET-RTR-1",
+              "type" : 1234,
+              "country" : "AU",
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
     }
 
     #[test]
@@ -345,7 +428,7 @@ mod tests {
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
-        network.ip_version = Some(version.to_string());
+        network.ip_version = Some(version.to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -370,7 +453,7 @@ mod tests {
             .cidr(cidr)
             .build()
             .expect("invalid ip cidr");
-        network.ip_version = Some(version.to_string());
+        network.ip_version = Some(version.to_string().into());
         let rdap = network.to_response();
 
         // WHEN
@@ -382,6 +465,93 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::IpAddressMalformedVersion));
+    }
+
+    #[test]
+    fn check_network_with_non_string_ip_version() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : 6,
+              "name": "NET-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "country" : "AU",
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::IpVersionIsNotString));
+    }
+
+    #[test]
+    fn check_network_with_non_string_parent_handle() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": "NET-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "country" : "AU",
+              "parentHandle" : 1234,
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::ParentHandleIsNotString));
+    }
+
+    #[test]
+    fn check_network_with_non_string_country() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "ip network",
+              "handle" : "XXXX-RIR",
+              "startAddress" : "2001:db8::",
+              "endAddress" : "2001:db8:0:ffff:ffff:ffff:ffff:ffff",
+              "ipVersion" : "v6",
+              "name": "NET-RTR-1",
+              "type" : "DIRECT ALLOCATION",
+              "country" : 1234,
+              "parentHandle" : "YYYY-RIR",
+              "status" : [ "active" ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .items
+            .iter()
+            .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString));
     }
 
     #[test]

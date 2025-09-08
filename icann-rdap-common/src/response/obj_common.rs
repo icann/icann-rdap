@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    redacted::Redacted, to_opt_vectorstringish, Entity, Events, Link, Links, Port43, Remarks,
-    VectorStringish, EMPTY_VEC_STRING,
+    redacted::Redacted, to_opt_vectorstringish, Entity, Event, Events, Link, Links, Port43, Remark,
+    Remarks, Stringish, VectorStringish,
 };
 
 /// Holds those types that are common in all object classes.
@@ -12,7 +12,7 @@ pub struct ObjectCommon {
     pub object_class_name: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub handle: Option<String>,
+    pub handle: Option<Stringish>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remarks: Option<Remarks>,
@@ -41,7 +41,6 @@ pub struct ObjectCommon {
 impl ObjectCommon {
     /// Builds [ObjectCommon] for a [crate::response::domain::Domain].
     #[builder(entry = "domain", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_domain(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -54,7 +53,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "domain".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -67,7 +66,6 @@ impl ObjectCommon {
 
     /// Builds [ObjectCommon] for a [crate::response::network::Network].
     #[builder(entry = "ip_network", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_ip_network(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -80,7 +78,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "ip network".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -93,7 +91,6 @@ impl ObjectCommon {
 
     /// Builds an [ObjectCommon] for an [crate::response::autnum::Autnum].
     #[builder(entry = "autnum", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_autnum(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -106,7 +103,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "autnum".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -119,7 +116,6 @@ impl ObjectCommon {
 
     /// Builds an [ObjectCommon] for a [crate::response::nameserver::Nameserver].
     #[builder(entry = "nameserver", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_nameserver(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -132,7 +128,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "nameserver".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -145,7 +141,6 @@ impl ObjectCommon {
 
     /// Builds an [ObjectCommon] for an [crate::response::entity::Entity].
     #[builder(entry = "entity", visibility = "pub(crate)")]
-    #[allow(clippy::too_many_arguments)]
     fn new_entity(
         handle: Option<String>,
         remarks: Option<Remarks>,
@@ -158,7 +153,7 @@ impl ObjectCommon {
     ) -> Self {
         Self {
             object_class_name: "entity".to_string(),
-            handle,
+            handle: handle.map(|s| s.into()),
             remarks,
             links,
             events,
@@ -197,15 +192,6 @@ impl ObjectCommon {
     }
 }
 
-/// Empty Remarks.
-static EMPTY_REMARKS: Remarks = vec![];
-/// Empty Links.
-static EMPTY_LINKS: Links = vec![];
-/// Empty Events.
-static EMPTY_EVENTS: Events = vec![];
-/// Empty Entities.
-static EMPTY_ENTITIES: Vec<Entity> = vec![];
-
 /// Convenience methods for fields in [ObjectCommon].
 pub trait ObjectCommonFields {
     /// Getter for [ObjectCommon].
@@ -226,41 +212,32 @@ pub trait ObjectCommonFields {
         self.object_common().port_43.as_ref()
     }
 
-    /// Getter for [Remarks].
-    fn remarks(&self) -> &Remarks {
-        self.object_common()
-            .remarks
-            .as_ref()
-            .unwrap_or(&EMPTY_REMARKS)
+    /// Getter for list of [Remark]s.
+    fn remarks(&self) -> &[Remark] {
+        self.object_common().remarks.as_deref().unwrap_or_default()
     }
 
-    /// Getter for [Links].
-    fn links(&self) -> &Links {
-        self.object_common().links.as_ref().unwrap_or(&EMPTY_LINKS)
+    /// Getter for list of [Link]s.
+    fn links(&self) -> &[Link] {
+        self.object_common().links.as_deref().unwrap_or_default()
     }
 
-    /// Getter for [Events].
-    fn events(&self) -> &Events {
-        self.object_common()
-            .events
-            .as_ref()
-            .unwrap_or(&EMPTY_EVENTS)
+    /// Getter for list of [Event]s.
+    fn events(&self) -> &[Event] {
+        self.object_common().events.as_deref().unwrap_or_default()
     }
 
     /// Getter for status.
-    fn status(&self) -> &Vec<String> {
+    fn status(&self) -> &[String] {
         self.object_common()
             .status
             .as_ref()
-            .map(|v| v.vec())
-            .unwrap_or(&EMPTY_VEC_STRING)
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
-    /// Getter for Vec of [Entity].
-    fn entities(&self) -> &Vec<Entity> {
-        self.object_common()
-            .entities
-            .as_ref()
-            .unwrap_or(&EMPTY_ENTITIES)
+    /// Getter for list of [Entity].
+    fn entities(&self) -> &[Entity] {
+        self.object_common().entities.as_deref().unwrap_or_default()
     }
 }

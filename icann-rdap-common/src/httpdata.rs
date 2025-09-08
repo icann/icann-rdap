@@ -27,7 +27,6 @@ pub struct HttpData {
 #[buildstructor::buildstructor]
 impl HttpData {
     #[builder(visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new(
         content_length: Option<u64>,
         content_type: Option<String>,
@@ -63,7 +62,6 @@ impl HttpData {
     }
 
     #[builder(entry = "now", visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new_now(
         content_length: Option<u64>,
         content_type: Option<String>,
@@ -98,7 +96,6 @@ impl HttpData {
     }
 
     #[builder(entry = "example", visibility = "pub")]
-    #[allow(clippy::too_many_arguments)]
     fn new_example(
         content_length: Option<u64>,
         content_type: Option<String>,

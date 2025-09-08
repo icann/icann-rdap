@@ -197,16 +197,13 @@ pub async fn load_data(
     while let Some(entry) = entries.next_entry().await? {
         let entry_path = entry.path();
         let contents = tokio::fs::read_to_string(&entry_path).await?;
-        if entry_path
-            .extension()
-            .map_or(false, |ext| ext == "template")
-        {
+        if entry_path.extension().is_some_and(|ext| ext == "template") {
             load_rdap_template(&contents, &entry_path.to_string_lossy(), &mut tx).await?;
             template_count += 1;
-        } else if entry_path.extension().map_or(false, |ext| ext == "json") {
+        } else if entry_path.extension().is_some_and(|ext| ext == "json") {
             load_rdap(&contents, &entry_path.to_string_lossy(), &mut tx).await?;
             json_count += 1;
-        } else if entry_path.extension().map_or(false, |ext| ext == "help") {
+        } else if entry_path.extension().is_some_and(|ext| ext == "help") {
             load_srvhelp(
                 &contents,
                 &entry_path.to_string_lossy(),
@@ -447,7 +444,7 @@ fn make_domain_from_template(domain: &Domain, id: DomainId) -> Domain {
 fn make_entity_from_template(entity: &Entity, id: EntityId) -> Entity {
     let mut entity = entity.clone();
     entity = change_self_link(entity, "entity", &id.handle);
-    entity.object_common.handle = Some(id.handle);
+    entity.object_common.handle = Some(id.handle.into());
     entity
 }
 
@@ -479,7 +476,7 @@ fn make_network_from_template(
             IpNet::V4(v4) => {
                 network.start_address = Some(v4.network().to_string());
                 network.end_address = Some(v4.broadcast().to_string());
-                network.ip_version = Some("v4".to_string());
+                network.ip_version = Some("v4".to_string().into());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
                     v4prefix: Some(v4.network().to_string()),
                     length: Some(Numberish::<u8>::from(v4.prefix_len())),
@@ -488,7 +485,7 @@ fn make_network_from_template(
             IpNet::V6(v6) => {
                 network.start_address = Some(v6.network().to_string());
                 network.end_address = Some(v6.broadcast().to_string());
-                network.ip_version = Some("v6".to_string());
+                network.ip_version = Some("v6".to_string().into());
                 network.cidr0_cidrs = Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
                     v6prefix: Some(v6.network().to_string()),
                     length: Some(Numberish::<u8>::from(v6.prefix_len())),
@@ -501,7 +498,7 @@ fn make_network_from_template(
         } => {
             let addr: IpAddr = start_address.parse()?;
             if addr.is_ipv4() {
-                network.ip_version = Some("v4".to_string());
+                network.ip_version = Some("v4".to_string().into());
                 network.cidr0_cidrs = Some(
                     Ipv4Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
@@ -513,7 +510,7 @@ fn make_network_from_template(
                         .collect::<Vec<Cidr0Cidr>>(),
                 );
             } else {
-                network.ip_version = Some("v6".to_string());
+                network.ip_version = Some("v6".to_string().into());
                 network.cidr0_cidrs = Some(
                     Ipv6Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
@@ -559,7 +556,10 @@ fn make_network_from_template(
 #[allow(non_snake_case)]
 mod tests {
 
-    use icann_rdap_common::response::{Domain, Link};
+    use icann_rdap_common::{
+        prelude::Stringish,
+        response::{Domain, Link},
+    };
 
     use super::*;
 
@@ -568,7 +568,7 @@ mod tests {
         // GIVEN
         let template = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
-                Domain::builder().ldh_name("foo.example").build(),
+                Domain::response_obj().ldh_name("foo.example").build(),
             )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
@@ -594,7 +594,7 @@ mod tests {
         // THEN
         let expected = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
-                Domain::builder().ldh_name("foo.example").build(),
+                Domain::response_obj().ldh_name("foo.example").build(),
             )),
             ids: vec![DomainId::builder().ldh_name("bar.example").build()],
         };
@@ -606,7 +606,7 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -648,7 +648,7 @@ mod tests {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -716,7 +716,7 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -760,7 +760,7 @@ mod tests {
         // THEN
         let expected = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
-                Network::builder()
+                Network::response_obj()
                     .cidr("10.0.0.0/24")
                     .build()
                     .expect("cidr parsing"),
@@ -830,7 +830,7 @@ mod tests {
                 .handle
                 .as_ref()
                 .expect("no handle on entity"),
-            "bar"
+            &Stringish::from("bar")
         );
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(

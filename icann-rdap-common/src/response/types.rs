@@ -4,7 +4,7 @@ use {
     strum_macros::{AsRefStr, Display, EnumString},
 };
 
-use super::lenient::VectorStringish;
+use super::lenient::{Stringish, VectorStringish};
 
 /// Represents an RDAP extension identifier.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -46,7 +46,7 @@ pub type RdapConformance = Vec<Extension>;
 /// println!("{}", cidr0.to_string());
 /// ```
 ///
-/// To get the variants as a string:
+/// To get the enum variants as a string:
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -54,7 +54,7 @@ pub type RdapConformance = Vec<Extension>;
 /// let s = ExtensionId::Cidr0.to_string();
 /// ```
 ///
-/// To get the variants as a &str:
+/// To get the enum variants as a &str:
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -153,6 +153,21 @@ pub type Links = Vec<Link>;
 /// Note also that this structure allows for `hreflang` to
 /// be either a single string or an array of strings. However,
 /// the builder will always construct an array of strings.
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let link = Link::builder()
+/// #  .value("https://example.com/domains?domain=foo.*")
+/// #  .rel("related")
+/// #  .href("https://example.com/domain/foo.example")
+/// #  .hreflang("ch")
+/// #  .title("Related Object")
+/// #  .media("print")
+/// #  .media_type("application/rdap+json")
+/// #  .build();
+/// let href = link.href();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Link {
     /// Represents the value part of a link in an RDAP response.
@@ -200,6 +215,23 @@ impl Link {
     }
 
     /// Builds an RDAP link.
+    ///
+    /// To create an RFC valid structure, use the builder
+    /// which will not allow omision of required fields.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let link = Link::builder()
+    ///   .value("https://example.com/domains?domain=foo.*") //required
+    ///   .rel("related")                                    //required
+    ///   .href("https://example.com/domain/foo.example")    //required
+    ///   .hreflang("ch")
+    ///   .title("Related Object")
+    ///   .media("print")
+    ///   .media_type("application/rdap+json")
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(
         value: String,
@@ -235,7 +267,7 @@ impl Link {
         media_type: Option<String>,
     ) -> Self {
         let hreflang = hreflang.map(HrefLang::Lang);
-        Link {
+        Self {
             value,
             rel,
             href,
@@ -286,8 +318,62 @@ impl Link {
 pub type Notices = Vec<Notice>;
 
 /// Represents an RDAP Notice.
+///
+/// It is recommended to use builder to construct an RFC valid
+/// structure.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/tou.html")
+///   .hreflang("en")
+///   .title("ToU Link")
+///   .media_type("text/html")
+///   .build();
+///
+/// let notice = Notice::builder()
+///   .title("Terms of Use")
+///   .description_entry("Please read our terms of use.")
+///   .description_entry("TOS can be found in the link.")
+///   .link(link)
+///   .build();
+/// ```
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let notice = Notice::builder()
+/// #  .title("Terms of Use")
+/// #  .description_entry("Please read our terms of use.")
+/// #  .description_entry("TOS can be found in the link.")
+/// #  .build();
+/// let title = notice.title();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Notice(pub NoticeOrRemark);
+
+#[buildstructor::buildstructor]
+impl Notice {
+    /// Builds an RDAP notice.
+    #[builder(visibility = "pub")]
+    fn new(
+        title: Option<String>,
+        description: Vec<String>,
+        links: Vec<Link>,
+        nr_type: Option<String>,
+    ) -> Self {
+        let nr = NoticeOrRemark::builder()
+            .description(description)
+            .and_title(title)
+            .links(links)
+            .and_nr_type(nr_type)
+            .build();
+        Self(nr)
+    }
+}
 
 impl std::ops::Deref for Notice {
     type Target = NoticeOrRemark;
@@ -301,8 +387,62 @@ impl std::ops::Deref for Notice {
 pub type Remarks = Vec<Remark>;
 
 /// Represents an RDAP Remark.
+///
+/// It is recommended to use builder to construct an RFC valid
+/// structure.
+///
+/// ```rust
+/// use icann_rdap_common::prelude::*;
+///
+/// let link = Link::builder()
+///   .value("https://example.com/domains/foo.example")
+///   .rel("about")
+///   .href("https://example.com/tou.html")
+///   .hreflang("en")
+///   .title("ToU Link")
+///   .media_type("text/html")
+///   .build();
+///
+/// let remark = Remark::builder()
+///   .title("Terms of Use")
+///   .description_entry("Please read our terms of use.")
+///   .description_entry("TOS can be found in the link.")
+///   .link(link)
+///   .build();
+/// ```
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let remark = Remark::builder()
+/// #  .title("Terms of Use")
+/// #  .description_entry("Please read our terms of use.")
+/// #  .description_entry("TOS can be found in the link.")
+/// #  .build();
+/// let title = remark.title();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Remark(pub NoticeOrRemark);
+
+#[buildstructor::buildstructor]
+impl Remark {
+    /// Builds an RDAP notice.
+    #[builder(visibility = "pub")]
+    fn new(
+        title: Option<String>,
+        description: Vec<String>,
+        links: Vec<Link>,
+        nr_type: Option<String>,
+    ) -> Self {
+        let nr = NoticeOrRemark::builder()
+            .description(description)
+            .and_title(title)
+            .links(links)
+            .and_nr_type(nr_type)
+            .build();
+        Self(nr)
+    }
+}
 
 impl std::ops::Deref for Remark {
     type Target = NoticeOrRemark;
@@ -313,6 +453,8 @@ impl std::ops::Deref for Remark {
 }
 
 /// Represents an RDAP Notice or Remark (they are the same thing in RDAP).
+///
+/// It is probably easier to use [Notice] or [Remark] directly.
 ///
 /// RFC 9083 requires that `description` be required, but some servers
 /// do not follow this rule. Therefore, this structure allows `description`
@@ -339,6 +481,16 @@ impl std::ops::Deref for Remark {
 ///   .build();
 /// ```
 ///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let nr = NoticeOrRemark::builder()
+/// #  .title("Terms of Use")
+/// #  .description_entry("Please read our terms of use.")
+/// #  .description_entry("TOS can be found in the link.")
+/// #  .build();
+/// let title = nr.title();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct NoticeOrRemark {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -366,7 +518,7 @@ impl NoticeOrRemark {
         links: Vec<Link>,
         nr_type: Option<String>,
     ) -> Self {
-        NoticeOrRemark {
+        Self {
             title,
             description: Some(VectorStringish::from(description)),
             links: (!links.is_empty()).then_some(links),
@@ -386,22 +538,12 @@ impl NoticeOrRemark {
         let d = description
             .is_some()
             .then_some(VectorStringish::from(description.unwrap()));
-        NoticeOrRemark {
+        Self {
             title,
             description: d,
             links,
             nr_type,
         }
-    }
-
-    /// Converts to a [Notice].
-    pub fn notice(self) -> Notice {
-        Notice(self)
-    }
-
-    /// Converts to a [Remark].
-    pub fn remark(self) -> Remark {
-        Remark(self)
     }
 
     /// Returns the title of the notice/remark.
@@ -410,13 +552,16 @@ impl NoticeOrRemark {
     }
 
     /// Returns the description of the notice/remark.
-    pub fn description(&self) -> Option<&VectorStringish> {
-        self.description.as_ref()
+    pub fn description(&self) -> &[String] {
+        self.description
+            .as_ref()
+            .map(|v| v.vec().as_ref())
+            .unwrap_or_default()
     }
 
     /// Returns the links associated with the notice/remark.
-    pub fn links(&self) -> Option<&Links> {
-        self.links.as_ref()
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 
     /// Returns the `type` of the notice or remark.
@@ -510,7 +655,7 @@ pub type Events = Vec<Event>;
 ///   .media_type("text/html")
 ///   .build();
 ///
-/// let nr = Event::builder()
+/// let event = Event::builder()
 ///   .event_action("expiration")
 ///   .event_date("1990-12-31T23:59:59Z")
 ///   .links(vec![link])
@@ -519,6 +664,16 @@ pub type Events = Vec<Event>;
 ///
 /// NOTE: `event_date` is to be an RFC 3339 valid date and time.
 /// The builder does not enforce RFC 3339 validity.
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let event = Event::builder()
+/// #   .event_action("expiration")
+/// #  .event_date("1990-12-31T23:59:59Z")
+/// #  .build();
+/// let event_date = event.event_date();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Event {
     /// This value is required by RFC 9083 (and 7483),
@@ -548,6 +703,18 @@ pub struct Event {
 #[buildstructor::buildstructor]
 impl Event {
     /// Builds an Event.
+    ///
+    /// Use of the builder to contruct an RFC valid structure is recommended.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let event = Event::builder()
+    ///   .event_action("expiration")         //required
+    ///   .event_date("1990-12-31T23:59:59Z") //required
+    ///   .event_actor("FOO")
+    ///   .build();
+    /// ```
     #[builder(visibility = "pub")]
     fn new(
         event_action: String,
@@ -571,7 +738,7 @@ impl Event {
         event_actor: Option<String>,
         links: Option<Links>,
     ) -> Self {
-        Event {
+        Self {
             event_action,
             event_actor,
             event_date,
@@ -595,8 +762,8 @@ impl Event {
     }
 
     /// Returns the links associated with the event.
-    pub fn links(&self) -> Option<&Links> {
-        self.links.as_ref()
+    pub fn links(&self) -> &[Link] {
+        self.links.as_deref().unwrap_or_default()
     }
 }
 
@@ -622,16 +789,26 @@ pub type PublicIds = Vec<PublicId>;
 ///   .identifier("1990")
 ///   .build();
 /// ```
+///
+/// Use the getter functions to get the data.
+/// ```rust
+/// # use icann_rdap_common::prelude::*;
+/// # let public_id = PublicId::builder()
+/// #   .id_type("IANA Registrar ID")
+/// #   .identifier("1990")
+/// #   .build();
+/// let id_type = public_id.id_type();
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicId {
     /// This are manditory per RFC 9083.
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id_type: Option<String>,
+    pub id_type: Option<Stringish>,
 
     /// This are manditory per RFC 9083.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier: Option<String>,
+    pub identifier: Option<Stringish>,
 }
 
 #[buildstructor::buildstructor]
@@ -639,9 +816,9 @@ impl PublicId {
     /// Builds a public ID.
     #[builder(visibility = "pub")]
     fn new(id_type: String, identifier: String) -> Self {
-        PublicId {
-            id_type: Some(id_type),
-            identifier: Some(identifier),
+        Self {
+            id_type: Some(id_type.into()),
+            identifier: Some(identifier.into()),
         }
     }
 
@@ -649,9 +826,9 @@ impl PublicId {
     #[builder(entry = "illegal", visibility = "pub(crate)")]
     #[allow(dead_code)]
     fn new_illegal(id_type: Option<String>, identifier: Option<String>) -> Self {
-        PublicId {
-            id_type,
-            identifier,
+        Self {
+            id_type: id_type.map(|s| s.into()),
+            identifier: identifier.map(|s| s.into()),
         }
     }
 

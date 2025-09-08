@@ -131,19 +131,19 @@ impl QueryType {
         }
     }
 
-    pub fn domain(domain_name: &str) -> Result<QueryType, RdapClientError> {
+    pub fn domain(domain_name: &str) -> Result<Self, RdapClientError> {
         Ok(Self::Domain(DomainName::from_str(domain_name)?))
     }
 
-    pub fn alabel(alabel: &str) -> Result<QueryType, RdapClientError> {
+    pub fn alabel(alabel: &str) -> Result<Self, RdapClientError> {
         Ok(Self::ALabel(DomainName::from_str(alabel)?))
     }
 
-    pub fn ns(nameserver: &str) -> Result<QueryType, RdapClientError> {
+    pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
         Ok(Self::Nameserver(DomainName::from_str(nameserver)?))
     }
 
-    pub fn autnum(autnum: &str) -> Result<QueryType, RdapClientError> {
+    pub fn autnum(autnum: &str) -> Result<Self, RdapClientError> {
         let value = autnum
             .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
             .parse::<u32>()
@@ -151,17 +151,17 @@ impl QueryType {
         Ok(Self::AsNumber(value))
     }
 
-    pub fn ipv4(ip: &str) -> Result<QueryType, RdapClientError> {
+    pub fn ipv4(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4Addr(value))
     }
 
-    pub fn ipv6(ip: &str) -> Result<QueryType, RdapClientError> {
+    pub fn ipv6(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6Addr(value))
     }
 
-    pub fn ipv4cidr(cidr: &str) -> Result<QueryType, RdapClientError> {
+    pub fn ipv4cidr(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
             cidr::parsers::parse_loose_ip,
@@ -174,7 +174,7 @@ impl QueryType {
         }
     }
 
-    pub fn ipv6cidr(cidr: &str) -> Result<QueryType, RdapClientError> {
+    pub fn ipv6cidr(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
             cidr::parsers::parse_loose_ip,
@@ -187,12 +187,12 @@ impl QueryType {
         }
     }
 
-    pub fn domain_ns_ip_search(ip: &str) -> Result<QueryType, RdapClientError> {
+    pub fn domain_ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::DomainNsIpSearch(value))
     }
 
-    pub fn ns_ip_search(ip: &str) -> Result<QueryType, RdapClientError> {
+    pub fn ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::NameserverIpSearch(value))
     }

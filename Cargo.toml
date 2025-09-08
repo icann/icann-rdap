@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.22"
+version = "0.0.23"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -37,7 +37,7 @@ axum-client-ip = "0.5"
 btree-range-map = "0.7.2"
 
 # macros for the builder pattern
-buildstructor = "0.5"
+buildstructor = "0.6"
 
 # CIDR utilities
 cidr = "0.3.0"

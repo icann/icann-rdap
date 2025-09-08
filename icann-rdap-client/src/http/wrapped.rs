@@ -51,7 +51,6 @@ pub struct ClientConfig {
 #[buildstructor::buildstructor]
 impl ClientConfig {
     #[builder]
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_agent_suffix: Option<String>,
         https_only: Option<bool>,
@@ -89,7 +88,6 @@ impl ClientConfig {
     }
 
     #[builder(entry = "from_config", exit = "build")]
-    #[allow(clippy::too_many_arguments)]
     pub fn new_from_config(
         &self,
         user_agent_suffix: Option<String>,

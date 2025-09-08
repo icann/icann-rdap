@@ -1,3 +1,5 @@
+use crate::prelude::has_rdap_path;
+
 use {
     crate::prelude::ObjectCommon,
     std::{any::TypeId, str::FromStr, sync::LazyLock},
@@ -89,6 +91,12 @@ impl GetChecks for Link {
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
                         items.push(Check::LinkRelatedIsNotRdap.check_item())
+                    } else if media_type.eq(RDAP_MEDIA_TYPE) {
+                        if let Some(ref href) = self.href {
+                            if !has_rdap_path(href) {
+                                items.push(Check::LinkRelatedNotToRdap.check_item())
+                            }
+                        }
                     }
                 } else {
                     items.push(Check::LinkRelatedHasNoType.check_item())
@@ -184,14 +192,30 @@ impl GetSubChecks for PublicIds {
     fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
         self.iter().for_each(|pid| {
-            if pid.id_type.is_none() {
+            if let Some(id_type) = &pid.id_type {
+                if id_type.is_number() || id_type.is_bool() {
+                    sub_checks.push(Checks {
+                        rdap_struct: super::RdapStructure::PublidIds,
+                        items: vec![Check::PublicIdTypeIsNotString.check_item()],
+                        sub_checks: vec![],
+                    });
+                }
+            } else {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdTypeIsAbsent.check_item()],
                     sub_checks: vec![],
                 });
             }
-            if pid.identifier.is_none() {
+            if let Some(identifier) = &pid.identifier {
+                if identifier.is_number() || identifier.is_bool() {
+                    sub_checks.push(Checks {
+                        rdap_struct: super::RdapStructure::PublidIds,
+                        items: vec![Check::PublicIdIdentifierIsNotString.check_item()],
+                        sub_checks: vec![],
+                    });
+                }
+            } else {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::PublidIds,
                     items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
@@ -299,6 +323,13 @@ impl GetSubChecks for ObjectCommon {
                     sub_checks: vec![],
                 })
             }
+            if handle.is_number() || handle.is_bool() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Handle,
+                    items: vec![Check::HandleIsNotString.check_item()],
+                    sub_checks: vec![],
+                })
+            }
         }
 
         // Status
@@ -336,6 +367,7 @@ mod tests {
 
     use crate::{
         check::Checks,
+        media_types::RDAP_MEDIA_TYPE,
         prelude::{ToResponse, VectorStringish},
         response::{
             domain::Domain,
@@ -486,6 +518,37 @@ mod tests {
     }
 
     #[test]
+    fn test_object_related_link_with_not_rdap_path() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .media_type(RDAP_MEDIA_TYPE)
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        checks
+            .sub(crate::check::RdapStructure::Links)
+            .expect("Links not found")
+            .sub(crate::check::RdapStructure::Link)
+            .expect("Link not found")
+            .items
+            .iter()
+            .find(|c| c.check == Check::LinkRelatedNotToRdap)
+            .expect("link missing check");
+    }
+
+    #[test]
     fn test_self_link_with_no_type_property() {
         // GIVEN
         let rdap = Domain::builder()
@@ -590,7 +653,7 @@ mod tests {
     /// Issue #59
     fn test_nameserver_with_self_link_and_notice() {
         // GIVEN
-        let rdap = Nameserver::builder()
+        let rdap = Nameserver::response_obj()
             .ldh_name("example.com")
             .notice(Notice(
                 NoticeOrRemark::builder()
@@ -809,6 +872,65 @@ mod tests {
     }
 
     #[test]
+    fn test_public_id_with_non_string_public_id_type() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "domain",
+              "ldhName" : "ns1.example.com",
+              "publicIds": [
+                {
+                  "type": 1,
+                  "identifier": "1"           
+                }
+              ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::PublidIds)
+            .expect("public ids not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::PublicIdTypeIsNotString));
+    }
+
+    #[test]
+    fn test_public_id_with_non_string_identifier() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "domain",
+              "handle" : "XXXX",
+              "ldhName" : "xn--fo-5ja.example",
+              "publicIds": [
+                {
+                    "type": "thing",
+                    "identifier": 1234
+                }
+              ]
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::PublidIds)
+            .expect("Public Ids not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::PublicIdIdentifierIsNotString));
+    }
+
+    #[test]
     fn test_public_id_with_no_identifier() {
         // GIVEN
         let rdap = Domain::builder()
@@ -839,7 +961,7 @@ mod tests {
             links: None,
             nr_type: None,
         };
-        let rdap = Domain::builder()
+        let rdap = Domain::response_obj()
             .ldh_name("example.com")
             .notice(Notice(notice))
             .build()
@@ -944,7 +1066,7 @@ mod tests {
             .ldh_name("ns1.example.com")
             .build()
             .unwrap();
-        ns.object_common.handle = Some(handle.to_string());
+        ns.object_common.handle = Some(handle.to_string().into());
         let rdap = ns.to_response();
 
         // WHEN
@@ -957,6 +1079,30 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::HandleIsEmpty));
+    }
+
+    #[test]
+    fn test_nameserver_with_non_string_handle() {
+        // GIVEN
+        let json = r#"
+            {
+              "objectClassName" : "nameserver",
+              "ldhName" : "ns1.example.com",
+              "handle" : 1234
+            }
+        "#;
+        let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(checks
+            .sub(crate::check::RdapStructure::Handle)
+            .expect("handle not found")
+            .items
+            .iter()
+            .any(|c| c.check == Check::HandleIsNotString));
     }
 
     #[test]

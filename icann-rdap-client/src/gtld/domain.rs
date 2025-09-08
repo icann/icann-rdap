@@ -1,6 +1,7 @@
 use {
     super::{GtldParams, ToGtldWhois},
     icann_rdap_common::response::{Boolish, Domain, Event, Nameserver, Network, SecureDns},
+    std::fmt::Display,
 };
 
 impl ToGtldWhois for Domain {
@@ -63,7 +64,7 @@ fn format_domain_name(domain: &Domain) -> String {
     }
 }
 
-fn format_domain_id(handle: Option<&String>) -> String {
+fn format_domain_id<T: ToString + Display>(handle: Option<&T>) -> String {
     if let Some(handle) = handle {
         format!("Registry Domain ID: {handle}\n")
     } else {
@@ -75,26 +76,17 @@ fn format_registry_dates(events: &Option<Vec<Event>>) -> String {
     let mut formatted_dates = String::new();
     if let Some(events) = events {
         for event in events {
-            if let Some(event_action) = &event.event_action {
-                match event_action.as_str() {
-                    "last changed" => {
-                        if let Some(event_date) = &event.event_date {
-                            formatted_dates.push_str(&format!("Updated Date: {}\n", event_date));
-                        }
-                    }
-                    "registration" => {
-                        if let Some(event_date) = &event.event_date {
-                            formatted_dates.push_str(&format!("Creation Date: {}\n", event_date));
-                        }
-                    }
-                    "expiration" => {
-                        if let Some(event_date) = &event.event_date {
-                            formatted_dates
-                                .push_str(&format!("Registry Expiry Date: {}\n", event_date));
-                        }
-                    }
-                    _ => {}
+            match (event.event_action.as_deref(), &event.event_date) {
+                (Some("last changed"), Some(event_date)) => {
+                    formatted_dates.push_str(&format!("Updated Date: {}\n", event_date));
                 }
+                (Some("registration"), Some(event_date)) => {
+                    formatted_dates.push_str(&format!("Creation Date: {}\n", event_date));
+                }
+                (Some("expiration"), Some(event_date)) => {
+                    formatted_dates.push_str(&format!("Registry Expiry Date: {}\n", event_date));
+                }
+                _ => {}
             }
         }
     }
@@ -233,26 +225,35 @@ mod tests {
     fn test_ms_click_response() {
         let expected_output =
             std::fs::read_to_string("src/test_files/microsoft.click-expected.gtld").unwrap();
+        eprintln!("--- EXPECTED ---{expected_output}--- ---");
 
-        let output = process_gtld_file("src/test_files/microsoft.click.json").unwrap();
-        assert_eq!(output, expected_output);
+        let actual = process_gtld_file("src/test_files/microsoft.click.json").unwrap();
+        eprintln!("--- ACTUAL ---{actual}--- ---");
+
+        assert_eq!(actual, expected_output);
     }
 
     #[test]
     fn test_lemonde_response() {
         let expected_output =
             std::fs::read_to_string("src/test_files/lemonde.fr-expected.gtld").unwrap();
+        eprintln!("--- EXPECTED ---{expected_output}--- ---");
 
-        let output = process_gtld_file("src/test_files/lemonde.fr.json").unwrap();
-        assert_eq!(output, expected_output);
+        let actual = process_gtld_file("src/test_files/lemonde.fr.json").unwrap();
+        eprintln!("--- ACTUAL ---{actual}--- ---");
+
+        assert_eq!(actual, expected_output);
     }
 
     #[test]
     fn test_moscow_response() {
         let expected_output =
             std::fs::read_to_string("src/test_files/home.moscow-expected.gtld").unwrap();
+        eprintln!("--- EXPECTED ---{expected_output}--- ---");
 
-        let output = process_gtld_file("src/test_files/home.moscow.json").unwrap();
-        assert_eq!(output, expected_output);
+        let actual = process_gtld_file("src/test_files/home.moscow.json").unwrap();
+        eprintln!("--- ACTUAL ---{actual}--- ---");
+
+        assert_eq!(actual, expected_output);
     }
 }

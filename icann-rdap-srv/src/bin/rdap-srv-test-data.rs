@@ -145,7 +145,7 @@ fn make_domain_template(
     let mut entity = make_test_entity(base_url, Some("domain"));
     entity.roles = Some(VectorStringish::from("registrant"));
     let nameserver = make_test_nameserver(base_url, None)?;
-    let domain = Domain::builder()
+    let domain = Domain::response_obj()
         .ldh_name("example.net")
         .entity(entity)
         .nameservers(vec![nameserver])
@@ -194,7 +194,7 @@ fn make_autnum_template(
 ) -> Result<(), RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("autnum"));
     entity.roles = Some(VectorStringish::from("registrant"));
-    let autnum = Autnum::builder()
+    let autnum = Autnum::response_obj()
         .autnum_range(1..1)
         .entity(entity)
         .link(
@@ -309,7 +309,7 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
             .country_code("US")
             .build()])
         .build();
-    Entity::builder()
+    Entity::response_obj()
         .handle("TEMPLATE")
         .link(
             Link::builder()
@@ -355,7 +355,7 @@ fn make_test_nameserver(
     };
     let mut entity = make_test_entity(base_url, Some("nameserver"));
     entity.roles = Some(VectorStringish::from("tech"));
-    Ok(Nameserver::builder()
+    Ok(Nameserver::response_obj()
         .ldh_name("ns.template.example")
         .link(
             Link::builder()
@@ -387,7 +387,7 @@ fn make_test_nameserver(
 fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
     let mut entity = make_test_entity(base_url, Some("network"));
     entity.roles = Some(VectorStringish::from("registrant"));
-    let network = Network::builder()
+    let network = Network::response_obj()
         .cidr("0.0.0.0/0")
         .entity(entity)
         .link(

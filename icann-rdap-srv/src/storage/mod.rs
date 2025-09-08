@@ -135,7 +135,7 @@ pub struct CommonConfig {
 
 impl Default for CommonConfig {
     fn default() -> Self {
-        CommonConfig {
+        Self {
             domain_search_by_name_enable: true,
         }
     }

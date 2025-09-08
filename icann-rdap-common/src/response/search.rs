@@ -19,12 +19,17 @@ pub struct DomainSearchResults {
 #[buildstructor::buildstructor]
 impl DomainSearchResults {
     /// Builds a domain search result.
-    #[builder(visibility = "pub")]
-    fn new(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(results: Vec<Domain>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+
+    /// Get the domains in the search.
+    pub fn results(&self) -> &[Domain] {
+        self.results.as_ref()
     }
 }
 
@@ -53,12 +58,17 @@ pub struct NameserverSearchResults {
 #[buildstructor::buildstructor]
 impl NameserverSearchResults {
     /// Builds a nameserver search result.
-    #[builder(visibility = "pub")]
-    fn new(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(results: Vec<Nameserver>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+
+    /// Get the nameservers in the search.
+    pub fn results(&self) -> &[Nameserver] {
+        self.results.as_ref()
     }
 }
 
@@ -87,12 +97,17 @@ pub struct EntitySearchResults {
 #[buildstructor::buildstructor]
 impl EntitySearchResults {
     /// Builds an entity search result.
-    #[builder(visibility = "pub")]
-    fn new(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response_obj", visibility = "pub")]
+    fn new_response_obj(results: Vec<Entity>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0().extensions(extensions).build(),
             results,
         }
+    }
+
+    /// Get the entities in the search.
+    pub fn results(&self) -> &[Entity] {
+        self.results.as_ref()
     }
 }
 

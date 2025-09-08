@@ -53,8 +53,7 @@ impl Termination for RdapTestError {
             Self::Termimad(_) => 10,
 
             // I/O Errors
-            Self::IoError(_) => 40,
-            Self::TestExecutionError(_) => 40,
+            Self::IoError(_) | Self::TestExecutionError(_) => 40,
 
             // RDAP Errors
             Self::Json(_) => 100,

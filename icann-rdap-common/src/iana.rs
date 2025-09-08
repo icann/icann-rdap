@@ -197,7 +197,7 @@ impl BootstrapRegistry for IanaRegistry {
                 .ok_or(BootstrapRegistryError::InvalidBootstrapService)?
                 .first()
                 .ok_or(BootstrapRegistryError::EmptyService)?;
-            if object_tag.to_ascii_uppercase() == tag.to_ascii_uppercase() {
+            if object_tag.eq_ignore_ascii_case(tag) {
                 let urls = service.last().ok_or(BootstrapRegistryError::EmptyUrlSet)?;
                 return Ok(urls.to_owned());
             }

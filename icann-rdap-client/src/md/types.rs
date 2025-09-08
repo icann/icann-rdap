@@ -1,3 +1,4 @@
+use icann_rdap_common::response::Stringish;
 use {
     icann_rdap_common::prelude::ObjectCommon,
     std::{any::TypeId, sync::LazyLock},
@@ -113,7 +114,7 @@ impl ToMd for Link {
                 }
             }
         };
-        let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Link>()));
+        let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()));
         md.push_str(&checks_ul(&checks, params));
         md.push('\n');
         md
@@ -324,10 +325,12 @@ pub(crate) fn public_ids_to_table(
 ) -> MultiPartTable {
     for pid in publid_ids {
         table = table.nv_ref(
-            pid.id_type.as_ref().unwrap_or(&"(not given)".to_string()),
+            pid.id_type
+                .as_ref()
+                .unwrap_or(&Stringish::from("(not given)")),
             pid.identifier
                 .as_ref()
-                .unwrap_or(&"(not given)".to_string()),
+                .unwrap_or(&Stringish::from("(not given)")),
         );
     }
     table
@@ -341,12 +344,13 @@ pub(crate) fn events_to_table(
 ) -> MultiPartTable {
     table = table.header_ref(&header_name.replace_md_chars());
     for event in events {
+        let raw_event_date = event.event_date.to_owned().unwrap_or_default();
         let event_date = &event
             .event_date
             .to_owned()
             .unwrap_or("????".to_string())
             .format_date_time(params)
-            .unwrap_or_default();
+            .unwrap_or(format!("UKN FMT: {raw_event_date}"));
         let mut ul: Vec<&String> = vec![event_date];
         if let Some(event_actor) = &event.event_actor {
             ul.push(event_actor);

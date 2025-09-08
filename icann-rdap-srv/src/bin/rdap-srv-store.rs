@@ -106,9 +106,9 @@ async fn do_validate_then_move(
     while let Some(entry) = entries.next_entry().await? {
         let entry = entry.path();
         let contents = tokio::fs::read_to_string(&entry).await?;
-        if entry.extension().map_or(false, |ext| ext == "template") {
+        if entry.extension().is_some_and(|ext| ext == "template") {
             errors_found |= verify_rdap_template(&contents, &entry.to_string_lossy(), check_types)?;
-        } else if entry.extension().map_or(false, |ext| ext == "json") {
+        } else if entry.extension().is_some_and(|ext| ext == "json") {
             errors_found |= verify_rdap(&contents, &entry.to_string_lossy(), check_types)?;
         }
     }
@@ -198,7 +198,7 @@ fn verify_rdap_template(
                     match &entity {
                         EntityOrError::EntityObject(entity) => {
                             let mut entity = entity.clone();
-                            entity.object_common.handle = Some(id.handle);
+                            entity.object_common.handle = Some(id.handle.into());
                             errors_found |= check_rdap(entity.to_response(), check_types);
                         }
                         EntityOrError::ErrorResponse(error) => {
@@ -252,12 +252,12 @@ fn verify_rdap_template(
                                     IpNet::V4(v4) => {
                                         network.start_address = Some(v4.network().to_string());
                                         network.end_address = Some(v4.broadcast().to_string());
-                                        network.ip_version = Some("v4".to_string());
+                                        network.ip_version = Some("v4".to_string().into());
                                     }
                                     IpNet::V6(v6) => {
                                         network.start_address = Some(v6.network().to_string());
                                         network.end_address = Some(v6.broadcast().to_string());
-                                        network.ip_version = Some("v6".to_string());
+                                        network.ip_version = Some("v6".to_string().into());
                                     }
                                 },
                                 NetworkIdType::Range {
@@ -266,9 +266,9 @@ fn verify_rdap_template(
                                 } => {
                                     let addr: IpAddr = start_address.parse()?;
                                     if addr.is_ipv4() {
-                                        network.ip_version = Some("v4".to_string());
+                                        network.ip_version = Some("v4".to_string().into());
                                     } else {
-                                        network.ip_version = Some("v6".to_string());
+                                        network.ip_version = Some("v6".to_string().into());
                                     }
                                     network.start_address = Some(start_address);
                                     network.end_address = Some(end_address);

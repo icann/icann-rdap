@@ -104,22 +104,22 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row.
-    pub fn and_nv_ref(mut self, name: &impl ToString, value: &Option<String>) -> Self {
+    pub fn and_nv_ref<T: ToString>(mut self, name: &impl ToString, value: &Option<T>) -> Self {
         self.rows.push(Row::NameValue((
             name.to_string(),
             value
-                .as_deref()
+                .as_ref()
+                .map(|s| s.to_string())
                 .unwrap_or_default()
-                .to_string()
                 .replace_md_chars(),
         )));
         self
     }
 
     /// Add a name/value row.
-    pub fn and_nv_ref_maybe(self, name: &impl ToString, value: &Option<String>) -> Self {
+    pub fn and_nv_ref_maybe<T: ToString>(self, name: &impl ToString, value: &Option<T>) -> Self {
         if let Some(value) = value {
-            self.nv_ref(name, value)
+            self.nv_ref(name, &value.to_string())
         } else {
             self
         }
@@ -293,7 +293,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -323,7 +323,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -354,7 +354,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -387,7 +387,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -418,7 +418,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -455,7 +455,7 @@ mod tests {
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::builder()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();

@@ -304,6 +304,8 @@ pub enum Check {
     LinkObjectClassHasNoSelf = 206,
     #[strum(message = "'href' property not found in Link structure as required by RFC 9083")]
     LinkMissingHrefProperty = 207,
+    #[strum(message = "ambiguous follow because the 'href' may not contain an RDAP URL")]
+    LinkRelatedNotToRdap = 208,
 
     // Domain Variant 300 - 399
     #[strum(message = "empty domain variant is ambiguous")]
@@ -326,6 +328,10 @@ pub enum Check {
     // Handle 600 - 699
     #[strum(message = "handle appears to be empty or only whitespace")]
     HandleIsEmpty = 600,
+    #[strum(message = "handle is not a string")]
+    HandleIsNotString = 601,
+    #[strum(message = "parent handle is not a string")]
+    ParentHandleIsNotString = 602,
 
     // Status 700 - 799
     #[strum(message = "status appears to be empty or only whitespace")]
@@ -356,10 +362,14 @@ pub enum Check {
     // Network Or Autnum Name 1100 - 1199
     #[strum(message = "name appears to be empty or only whitespace")]
     NetworkOrAutnumNameIsEmpty = 1100,
+    #[strum(message = "name is not a string")]
+    NetworkOrAutnumNameIsNotString = 1101,
 
     // Network or Autnum Type 1200 - 1299
     #[strum(message = "type appears to be empty or only whitespace")]
     NetworkOrAutnumTypeIsEmpty = 1200,
+    #[strum(message = "type is not a string")]
+    NetworkOrAutnumTypeIsNotString = 1201,
 
     // IP Address 1300 - 1399
     #[strum(message = "start or end IP address is missing")]
@@ -392,6 +402,8 @@ pub enum Check {
     IpAddressReservedNet = 1313,
     #[strum(message = "IP address array is a string.")]
     IpAddressArrayIsString = 1314,
+    #[strum(message = "IP version is not a string")]
+    IpVersionIsNotString = 1315,
 
     // Autnum 1400 - 1499
     #[strum(message = "start or end autnum is missing")]
@@ -422,6 +434,10 @@ pub enum Check {
     PublicIdTypeIsAbsent = 1700,
     #[strum(message = "publicId identifier is absent")]
     PublicIdIdentifierIsAbsent = 1701,
+    #[strum(message = "publicId type is not a string")]
+    PublicIdTypeIsNotString = 1702,
+    #[strum(message = "publicId identifier is not a string")]
+    PublicIdIdentifierIsNotString = 1703,
 
     // HTTP 1800 - 1899
     #[strum(message = "Use of access-control-allow-origin is recommended.")]
@@ -498,6 +514,10 @@ pub enum Check {
     DsDatumDigestTypeIsString = 2217,
     #[strum(message = "dsData digestType is out of range.")]
     DsDatumDigestTypeIsOutOfRange = 2218,
+
+    // Network or Autnum Country 2300 - 2399
+    #[strum(message = "country is not a string")]
+    NetworkOrAutnumCountryIsNotString = 2300,
 }
 
 impl Check {
@@ -515,6 +535,7 @@ impl Check {
             | Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
             Self::LinkMissingHrefProperty => CheckClass::StdError,
+            Self::LinkRelatedNotToRdap => CheckClass::StdWarning,
 
             Self::VariantEmptyDomain => CheckClass::StdWarning,
 
@@ -525,6 +546,8 @@ impl Check {
             | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
 
             Self::HandleIsEmpty => CheckClass::StdWarning,
+            Self::HandleIsNotString => CheckClass::StdError,
+            Self::ParentHandleIsNotString => CheckClass::StdError,
 
             Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
             Self::UnknownRole => CheckClass::StdWarning,
@@ -536,9 +559,11 @@ impl Check {
                 CheckClass::StdError
             }
 
-            Self::NetworkOrAutnumNameIsEmpty
-            | Self::NetworkOrAutnumTypeIsEmpty
-            | Self::IpAddressMissing => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsEmpty => CheckClass::StdWarning,
+            Self::NetworkOrAutnumNameIsNotString => CheckClass::StdError,
+            Self::NetworkOrAutnumTypeIsEmpty => CheckClass::StdWarning,
+            Self::NetworkOrAutnumTypeIsNotString => CheckClass::StdError,
+            Self::IpAddressMissing => CheckClass::StdWarning,
             Self::IpAddressMalformed => CheckClass::StdError,
             Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
                 CheckClass::StdWarning
@@ -553,6 +578,7 @@ impl Check {
             | Self::IpAddressDocumentationNet
             | Self::IpAddressReservedNet => CheckClass::Informational,
             Self::IpAddressArrayIsString => CheckClass::StdError,
+            Self::IpVersionIsNotString => CheckClass::StdError,
 
             Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
             Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
@@ -565,6 +591,8 @@ impl Check {
             Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
                 CheckClass::StdError
             }
+            Self::PublicIdTypeIsNotString => CheckClass::StdError,
+            Self::PublicIdIdentifierIsNotString => CheckClass::StdError,
 
             Self::CorsAllowOriginRecommended
             | Self::CorsAllowOriginStarRecommended
@@ -598,6 +626,8 @@ impl Check {
             | Self::DsDatumKeyTagIsOutOfRange
             | Self::DsDatumDigestTypeIsString
             | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
+
+            Self::NetworkOrAutnumCountryIsNotString => CheckClass::StdError,
         };
         CheckItem {
             check_class,

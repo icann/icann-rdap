@@ -365,16 +365,14 @@ dependencies = [
 
 [[package]]
 name = "buildstructor"
-version = "0.5.4"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3907aac66c65520545ae3cb3c195306e20d5ed5c90bfbb992e061cf12a104d0"
+checksum = "caabaaee17b2a78d7aa349a33edc9090c6bb47e6dfb25b0da281df57628bba68"
 dependencies = [
- "lazy_static",
  "proc-macro2",
  "quote",
  "str_inflector",
  "syn 2.0.100",
- "thiserror 1.0.69",
  "try_match",
 ]
 
@@ -1446,7 +1444,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.22"
+version = "0.0.23"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1481,7 +1479,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.22"
+version = "0.0.23"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1507,7 +1505,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.22"
+version = "0.0.23"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1526,7 +1524,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.22"
+version = "0.0.23"
 dependencies = [
  "ab-radix-trie",
  "assert_cmd",
