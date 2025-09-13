@@ -159,18 +159,13 @@ async fn do_domain_query<W: std::io::Write>(
                 // copy other fields from `response`
                 ..response.clone()
             };
-            if user_wants_registrar {
-                transactions =
-                    do_no_output(processing_params, &req_data, &replaced_data, transactions);
-            } else {
-                transactions = do_output(
-                    processing_params,
-                    &req_data,
-                    &replaced_data,
-                    write,
-                    transactions,
-                )?;
-            }
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if !matches!(processing_params.process_type, ProcessType::Registry) {
@@ -184,28 +179,21 @@ async fn do_domain_query<W: std::io::Write>(
                         Ok(response_data) => {
                             registrar_response = response_data;
                             regr_source_host = registrar_response.http_data.host.to_owned();
+                            let user_wants_registy =
+                                matches!(processing_params.process_type, ProcessType::Registry);
                             regr_req_data = RequestData {
                                 req_number: 2,
-                                req_target: true,
+                                req_target: !user_wants_registy,
                                 source_host: &regr_source_host,
                                 source_type: SourceType::DomainRegistrar,
                             };
-                            if let ProcessType::Registry = processing_params.process_type {
-                                transactions = do_no_output(
-                                    processing_params,
-                                    &regr_req_data,
-                                    &registrar_response,
-                                    transactions,
-                                );
-                            } else {
-                                transactions = do_output(
-                                    processing_params,
-                                    &regr_req_data,
-                                    &registrar_response,
-                                    write,
-                                    transactions,
-                                )?;
-                            }
+                            transactions = do_output(
+                                processing_params,
+                                &regr_req_data,
+                                &registrar_response,
+                                write,
+                                transactions,
+                            )?;
                         }
                         Err(error) => return Err(error),
                     }
@@ -320,6 +308,12 @@ async fn do_basic_query<'a, W: std::io::Write>(
     Ok(())
 }
 
+/// Sends output according to output.
+///
+/// This function is to allow output from a server shortly after it is
+/// received so users see progress. This may work with some output types
+/// and not others. Even after all iterations are made with this
+/// function, [do_final_output] should be called.
 fn do_output<'a, W: std::io::Write>(
     processing_params: &ProcessingParams,
     req_data: &'a RequestData,
@@ -327,65 +321,67 @@ fn do_output<'a, W: std::io::Write>(
     write: &mut W,
     mut transactions: RequestResponses<'a>,
 ) -> Result<RequestResponses<'a>, RdapCliError> {
-    match processing_params.output_type {
-        OutputType::RenderedMarkdown => {
-            let mut skin = MadSkin::default_dark();
-            skin.set_headers_fg(Yellow);
-            skin.headers[1].align = Alignment::Center;
-            skin.headers[2].align = Alignment::Center;
-            skin.headers[3].align = Alignment::Center;
-            skin.headers[4].compound_style.set_fg(DarkGreen);
-            skin.headers[5].compound_style.set_fg(Magenta);
-            skin.headers[6].compound_style.set_fg(Cyan);
-            skin.headers[7].compound_style.set_fg(Red);
-            skin.bold.set_fg(DarkBlue);
-            skin.italic.set_fg(Red);
-            skin.quote_mark.set_fg(DarkBlue);
-            skin.table.set_fg(DarkGreen);
-            skin.table.align = Alignment::Center;
-            skin.inline_code.set_fgbg(Cyan, Reset);
-            skin.write_text_on(
-                write,
-                &response.rdap.to_md(MdParams {
-                    heading_level: 1,
+    if req_data.req_target {
+        match processing_params.output_type {
+            OutputType::RenderedMarkdown => {
+                let mut skin = MadSkin::default_dark();
+                skin.set_headers_fg(Yellow);
+                skin.headers[1].align = Alignment::Center;
+                skin.headers[2].align = Alignment::Center;
+                skin.headers[3].align = Alignment::Center;
+                skin.headers[4].compound_style.set_fg(DarkGreen);
+                skin.headers[5].compound_style.set_fg(Magenta);
+                skin.headers[6].compound_style.set_fg(Cyan);
+                skin.headers[7].compound_style.set_fg(Red);
+                skin.bold.set_fg(DarkBlue);
+                skin.italic.set_fg(Red);
+                skin.quote_mark.set_fg(DarkBlue);
+                skin.table.set_fg(DarkGreen);
+                skin.table.align = Alignment::Center;
+                skin.inline_code.set_fgbg(Cyan, Reset);
+                skin.write_text_on(
+                    write,
+                    &response.rdap.to_md(MdParams {
+                        heading_level: 1,
+                        root: &response.rdap,
+                        http_data: &response.http_data,
+                        parent_type: response.rdap.get_type(),
+                        check_types: &processing_params.check_types,
+                        options: &MdOptions::default(),
+                        req_data,
+                    }),
+                )?;
+            }
+            OutputType::Markdown => {
+                writeln!(
+                    write,
+                    "{}",
+                    response.rdap.to_md(MdParams {
+                        heading_level: 1,
+                        root: &response.rdap,
+                        http_data: &response.http_data,
+                        parent_type: response.rdap.get_type(),
+                        check_types: &processing_params.check_types,
+                        options: &MdOptions {
+                            text_style_char: '_',
+                            style_in_justify: true,
+                            ..MdOptions::default()
+                        },
+                        req_data,
+                    })
+                )?;
+            }
+            OutputType::GtldWhois => {
+                let mut params = GtldParams {
                     root: &response.rdap,
-                    http_data: &response.http_data,
                     parent_type: response.rdap.get_type(),
-                    check_types: &processing_params.check_types,
-                    options: &MdOptions::default(),
-                    req_data,
-                }),
-            )?;
-        }
-        OutputType::Markdown => {
-            writeln!(
-                write,
-                "{}",
-                response.rdap.to_md(MdParams {
-                    heading_level: 1,
-                    root: &response.rdap,
-                    http_data: &response.http_data,
-                    parent_type: response.rdap.get_type(),
-                    check_types: &processing_params.check_types,
-                    options: &MdOptions {
-                        text_style_char: '_',
-                        style_in_justify: true,
-                        ..MdOptions::default()
-                    },
-                    req_data,
-                })
-            )?;
-        }
-        OutputType::GtldWhois => {
-            let mut params = GtldParams {
-                root: &response.rdap,
-                parent_type: response.rdap.get_type(),
-                label: "".to_string(),
-            };
-            writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
-        }
-        _ => {} // do nothing
-    };
+                    label: "".to_string(),
+                };
+                writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
+            }
+            _ => {} // do nothing
+        };
+    }
 
     let req_res = RequestResponse {
         checks: do_output_checks(response),
@@ -394,21 +390,6 @@ fn do_output<'a, W: std::io::Write>(
     };
     transactions.push(req_res);
     Ok(transactions)
-}
-
-fn do_no_output<'a>(
-    _processing_params: &ProcessingParams,
-    req_data: &'a RequestData,
-    response: &'a ResponseData,
-    mut transactions: RequestResponses<'a>,
-) -> RequestResponses<'a> {
-    let req_res = RequestResponse {
-        checks: do_output_checks(response),
-        req_data,
-        res_data: response,
-    };
-    transactions.push(req_res);
-    transactions
 }
 
 fn do_output_checks(response: &ResponseData) -> Checks {
@@ -425,6 +406,10 @@ fn do_output_checks(response: &ResponseData) -> Checks {
     checks
 }
 
+/// Finishes up output.
+///
+/// Some output types will have to do all their processing in this function
+/// instead of [do_output].
 fn do_final_output<W: std::io::Write>(
     processing_params: &ProcessingParams,
     write: &mut W,
