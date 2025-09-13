@@ -18,7 +18,11 @@ use {
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
 
-use icann_rdap_common::{prelude::RdapResponse, response::ObjectCommonFields};
+use chrono::DateTime;
+use icann_rdap_common::{
+    prelude::{Event, RdapResponse},
+    response::ObjectCommonFields,
+};
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
@@ -54,6 +58,12 @@ pub(crate) enum OutputType {
 
     /// Only print primary object's status as JSON.
     StatusJson,
+
+    /// Only print primary object's events, one per line.
+    EventText,
+
+    /// Only print primary object's events as JSON.
+    EventJson,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -400,6 +410,36 @@ fn do_output<'a, W: std::io::Write>(
                     }
                 }
             }
+            OutputType::EventText => {
+                use icann_rdap_common::response::RdapResponse as RR;
+                let events: Option<&[Event]> = match &response.rdap {
+                    RR::Entity(e) => Some(e.events()),
+                    RR::Domain(d) => Some(d.events()),
+                    RR::Nameserver(n) => Some(n.events()),
+                    RR::Autnum(a) => Some(a.events()),
+                    RR::Network(n) => Some(n.events()),
+                    _ => None,
+                };
+                if let Some(events) = events {
+                    for event in events {
+                        if let Some(event_action) = &event.event_action {
+                            if let Some(date) = &event.event_date {
+                                let date = DateTime::parse_from_rfc3339(date).ok();
+                                if let Some(date) = date {
+                                    writeln!(
+                                        write,
+                                        "{} = {}",
+                                        event_action,
+                                        date.format("%a, %v %X %Z")
+                                    )?;
+                                } else {
+                                    writeln!(write, "{} = BAD DATE", event_action,)?;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             _ => {} // do nothing
         };
     }
@@ -500,6 +540,35 @@ fn do_final_output<W: std::io::Write>(
             }
             // Always print a JSON object with a status array, even if empty
             let obj = serde_json::json!({"status": statuses});
+            writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
+        }
+        OutputType::EventJson => {
+            use icann_rdap_common::response::RdapResponse as RR;
+            let mut events = vec![];
+            for rr in &transactions {
+                if rr.req_data.req_target {
+                    let obj_event: Option<&[Event]> = match &rr.res_data.rdap {
+                        RR::Entity(e) => Some(e.events()),
+                        RR::Domain(d) => Some(d.events()),
+                        RR::Nameserver(n) => Some(n.events()),
+                        RR::Autnum(a) => Some(a.events()),
+                        RR::Network(n) => Some(n.events()),
+                        _ => None,
+                    };
+                    obj_event.iter().for_each(|evs| {
+                        evs.iter()
+                            .filter(|e| e.event_action.as_ref().is_some())
+                            .filter(|e| {
+                                e.event_date
+                                    .as_ref()
+                                    .is_some_and(|ed| DateTime::parse_from_rfc3339(ed).is_ok())
+                            })
+                            .for_each(|e| events.push(e))
+                    });
+                }
+            }
+            // Always print a JSON object with a status array, even if empty
+            let obj = serde_json::json!({"events": events});
             writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
         }
         _ => {} // do nothing
