@@ -18,7 +18,7 @@ use {
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
 
-use icann_rdap_common::response::ObjectCommonFields;
+use icann_rdap_common::{prelude::RdapResponse, response::ObjectCommonFields};
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
@@ -437,22 +437,45 @@ fn do_final_output<W: std::io::Write>(
     transactions: RequestResponses<'_>,
 ) -> Result<(), RdapCliError> {
     match processing_params.output_type {
-        OutputType::Json => {
-            for req_res in &transactions {
-                writeln!(
-                    write,
-                    "{}",
-                    serde_json::to_string(&req_res.res_data.rdap).unwrap()
-                )?;
-            }
-        }
-        OutputType::PrettyJson => {
-            for req_res in &transactions {
-                writeln!(
-                    write,
-                    "{}",
-                    serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
-                )?;
+        OutputType::Json | OutputType::PrettyJson => {
+            let output_count = transactions
+                .iter()
+                .filter(|t| t.req_data.req_target)
+                .count();
+            let pretty = matches!(processing_params.output_type, OutputType::PrettyJson);
+            if output_count == 1 {
+                for req_res in &transactions {
+                    if req_res.req_data.req_target {
+                        if !pretty {
+                            writeln!(
+                                write,
+                                "{}",
+                                serde_json::to_string(&req_res.res_data.rdap).unwrap()
+                            )?;
+                        } else {
+                            writeln!(
+                                write,
+                                "{}",
+                                serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
+                            )?;
+                        }
+                        break;
+                    }
+                }
+            } else {
+                let output_vec = transactions
+                    .iter()
+                    .map(|t| &t.res_data.rdap)
+                    .collect::<Vec<&RdapResponse>>();
+                if !pretty {
+                    writeln!(write, "{}", serde_json::to_string(&output_vec).unwrap())?;
+                } else {
+                    writeln!(
+                        write,
+                        "{}",
+                        serde_json::to_string_pretty(&output_vec).unwrap()
+                    )?;
+                }
             }
         }
         OutputType::JsonExtra => {
