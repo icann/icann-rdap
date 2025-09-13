@@ -379,6 +379,11 @@ fn do_output<'a, W: std::io::Write>(
                 };
                 writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
             }
+            OutputType::Url => {
+                if let Some(url) = response.http_data.request_uri() {
+                    writeln!(write, "{url}")?;
+                }
+            }
             OutputType::StatusText => {
                 use icann_rdap_common::response::RdapResponse as RR;
                 let statuses: Option<&[String]> = match &response.rdap {
@@ -454,13 +459,6 @@ fn do_final_output<W: std::io::Write>(
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
         OutputType::GtldWhois => {}
-        OutputType::Url => {
-            for rr in &transactions {
-                if let Some(url) = rr.res_data.http_data.request_uri() {
-                    writeln!(write, "{url}")?;
-                }
-            }
-        }
         OutputType::StatusJson => {
             use icann_rdap_common::response::RdapResponse as RR;
             let mut statuses = vec![];

@@ -463,3 +463,147 @@ async fn test_domain_with_referral_for_only_registrar_with_status_output_json() 
         .success()
         .stdout("{\"status\":[\"server delete prohibited\"]}\n");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_url_output() {
+    // GIVEN domain
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type
+    test_jig.cmd.arg("bar.example").arg("-O").arg("url");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(format!("{}/domain/bar.example\n", test_jig.rdap_base));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_url_output() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("url");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert.success().stdout(format!(
+        "{}/domain/foo.example\n{}/domain/bar.example\n",
+        test_jig.rdap_base, test_jig.rdap_base
+    ));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_url_output_for_registry() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type for registry
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("url")
+        .arg("-p")
+        .arg("registry");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(format!("{}/domain/foo.example\n", test_jig.rdap_base));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_url_output_for_registrar() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type for registrar
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("url")
+        .arg("-p")
+        .arg("registrar");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(format!("{}/domain/bar.example\n", test_jig.rdap_base));
+}
