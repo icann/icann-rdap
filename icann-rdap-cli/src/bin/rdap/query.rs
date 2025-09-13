@@ -379,6 +379,22 @@ fn do_output<'a, W: std::io::Write>(
                 };
                 writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
             }
+            OutputType::StatusText => {
+                use icann_rdap_common::response::RdapResponse as RR;
+                let statuses: Option<&[String]> = match &response.rdap {
+                    RR::Entity(e) => Some(e.status()),
+                    RR::Domain(d) => Some(d.status()),
+                    RR::Nameserver(n) => Some(n.status()),
+                    RR::Autnum(a) => Some(a.status()),
+                    RR::Network(n) => Some(n.status()),
+                    _ => None,
+                };
+                if let Some(list) = statuses {
+                    for s in list {
+                        writeln!(write, "{}", s)?;
+                    }
+                }
+            }
             _ => {} // do nothing
         };
     }
@@ -442,26 +458,6 @@ fn do_final_output<W: std::io::Write>(
             for rr in &transactions {
                 if let Some(url) = rr.res_data.http_data.request_uri() {
                     writeln!(write, "{url}")?;
-                }
-            }
-        }
-        OutputType::StatusText => {
-            use icann_rdap_common::response::RdapResponse as RR;
-            for rr in &transactions {
-                if rr.req_data.req_target {
-                    let statuses: Option<&[String]> = match &rr.res_data.rdap {
-                        RR::Entity(e) => Some(e.status()),
-                        RR::Domain(d) => Some(d.status()),
-                        RR::Nameserver(n) => Some(n.status()),
-                        RR::Autnum(a) => Some(a.status()),
-                        RR::Network(n) => Some(n.status()),
-                        _ => None,
-                    };
-                    if let Some(list) = statuses {
-                        for s in list {
-                            writeln!(write, "{}", s)?;
-                        }
-                    }
                 }
             }
         }
