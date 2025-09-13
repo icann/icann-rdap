@@ -144,9 +144,12 @@ async fn do_domain_query<W: std::io::Write>(
     let registrar_response;
     match response {
         Ok(response) => {
+            let user_wants_registrar =
+                matches!(processing_params.process_type, ProcessType::Registrar);
             let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
+                req_target: !user_wants_registrar,
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
@@ -156,7 +159,7 @@ async fn do_domain_query<W: std::io::Write>(
                 // copy other fields from `response`
                 ..response.clone()
             };
-            if let ProcessType::Registrar = processing_params.process_type {
+            if user_wants_registrar {
                 transactions =
                     do_no_output(processing_params, &req_data, &replaced_data, transactions);
             } else {
@@ -183,6 +186,7 @@ async fn do_domain_query<W: std::io::Write>(
                             regr_source_host = registrar_response.http_data.host.to_owned();
                             regr_req_data = RequestData {
                                 req_number: 2,
+                                req_target: true,
                                 source_host: &regr_source_host,
                                 source_type: SourceType::DomainRegistrar,
                             };
@@ -244,6 +248,7 @@ async fn do_inr_query<W: std::io::Write>(
             let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
+                req_target: true,
                 source_host: &source_host,
                 source_type: SourceType::RegionalInternetRegistry,
             };
@@ -283,12 +288,14 @@ async fn do_basic_query<'a, W: std::io::Write>(
             let req_data = if let Some(meta) = req_data {
                 RequestData {
                     req_number: meta.req_number + 1,
+                    req_target: true,
                     source_host: meta.source_host,
                     source_type: SourceType::UncategorizedRegistry,
                 }
             } else {
                 RequestData {
                     req_number: 1,
+                    req_target: true,
                     source_host: &source_host,
                     source_type: SourceType::UncategorizedRegistry,
                 }
@@ -455,38 +462,43 @@ fn do_final_output<W: std::io::Write>(
         }
         OutputType::StatusText => {
             use icann_rdap_common::response::RdapResponse as RR;
-            if let Some(rr) = transactions.first() {
-                let statuses: Option<&[String]> = match &rr.res_data.rdap {
-                    RR::Entity(e) => Some(e.status()),
-                    RR::Domain(d) => Some(d.status()),
-                    RR::Nameserver(n) => Some(n.status()),
-                    RR::Autnum(a) => Some(a.status()),
-                    RR::Network(n) => Some(n.status()),
-                    _ => None,
-                };
-                if let Some(list) = statuses {
-                    for s in list {
-                        writeln!(write, "{}", s)?;
+            for rr in &transactions {
+                if rr.req_data.req_target {
+                    let statuses: Option<&[String]> = match &rr.res_data.rdap {
+                        RR::Entity(e) => Some(e.status()),
+                        RR::Domain(d) => Some(d.status()),
+                        RR::Nameserver(n) => Some(n.status()),
+                        RR::Autnum(a) => Some(a.status()),
+                        RR::Network(n) => Some(n.status()),
+                        _ => None,
+                    };
+                    if let Some(list) = statuses {
+                        for s in list {
+                            writeln!(write, "{}", s)?;
+                        }
                     }
                 }
             }
         }
         OutputType::StatusJson => {
             use icann_rdap_common::response::RdapResponse as RR;
-            if let Some(rr) = transactions.first() {
-                let statuses: Option<&[String]> = match &rr.res_data.rdap {
-                    RR::Entity(e) => Some(e.status()),
-                    RR::Domain(d) => Some(d.status()),
-                    RR::Nameserver(n) => Some(n.status()),
-                    RR::Autnum(a) => Some(a.status()),
-                    RR::Network(n) => Some(n.status()),
-                    _ => None,
-                };
-                // Always print a JSON object with a status array, even if empty
-                let arr = statuses.map(|s| s.to_vec()).unwrap_or_default();
-                let obj = serde_json::json!({"status": arr});
-                writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
+            let mut statuses = vec![];
+            for rr in &transactions {
+                if rr.req_data.req_target {
+                    let obj_status = match &rr.res_data.rdap {
+                        RR::Entity(e) => e.status(),
+                        RR::Domain(d) => d.status(),
+                        RR::Nameserver(n) => n.status(),
+                        RR::Autnum(a) => a.status(),
+                        RR::Network(n) => n.status(),
+                        _ => &[],
+                    };
+                    obj_status.iter().for_each(|s| statuses.push(s));
+                }
             }
+            // Always print a JSON object with a status array, even if empty
+            let obj = serde_json::json!({"status": statuses});
+            writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
         }
         _ => {} // do nothing
     };
