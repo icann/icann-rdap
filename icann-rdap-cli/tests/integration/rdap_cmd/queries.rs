@@ -14,8 +14,8 @@ use crate::test_jig::TestJig;
 #[case("foo.example", "FOO.EXAMPLE")]
 #[case("foó.example", "foó.example")] // unicode
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q_domain: &str) {
-    // GIVEN
+async fn test_domain_queries(#[case] db_domain: &str, #[case] q_domain: &str) {
+    // GIVEN domain
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name(db_domain).build())
@@ -23,17 +23,17 @@ async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg(q_domain);
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_tld_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_tld_query() {
+    // GIVEN tld to query
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("example").build())
@@ -41,18 +41,18 @@ async fn GIVEN_tld_WHEN_query_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN queried
     // without "--tld-lookup=none" then this attempts to query IANA instead of the test server
     test_jig.cmd.arg("--tld-lookup=none").arg(".example");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_entity_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_entity_query() {
+    // GIVEN entity
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_entity(&Entity::builder().handle("foo").build())
@@ -60,17 +60,17 @@ async fn GIVEN_entity_WHEN_query_THEN_success() {
         .expect("add entity in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg("foo");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_nameserver_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_nameserver_query() {
+    // GIVEN nameserver
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
@@ -83,17 +83,17 @@ async fn GIVEN_nameserver_WHEN_query_THEN_success() {
     .expect("add nameserver in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg("ns.foo.example");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_autnum_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_autnum_query() {
+    // GIVEN autnum
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
@@ -101,17 +101,17 @@ async fn GIVEN_autnum_WHEN_query_THEN_success() {
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg("700");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_network_ip_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_network_ip_query() {
+    // GIVEN network
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
@@ -124,10 +124,10 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query ip address
     test_jig.cmd.arg("10.0.0.1");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
@@ -136,8 +136,8 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
 #[case("10.0.0.0/24", "10.0.0.0/24")]
 #[case("10.0.0.0/24", "10.0.0/24")]
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[case] q_cidr: &str) {
-    // GIVEN
+async fn test_network_cidr_query(#[case] db_cidr: &str, #[case] q_cidr: &str) {
+    // GIVEN network
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
@@ -150,17 +150,17 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query by CIDR
     test_jig.cmd.arg(q_cidr);
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_url_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_url_query() {
+    // GIVEN url
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
@@ -168,18 +168,18 @@ async fn GIVEN_url_WHEN_query_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN queried
     let url = format!("{}/domain/foo.example", test_jig.rdap_base);
     test_jig.cmd.arg(url);
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
-    // GIVEN
+async fn test_idn_query_a_label() {
+    // GIVEN idn
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("xn--caf-dma.example").build())
@@ -187,17 +187,17 @@ async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query alabel
     test_jig.cmd.arg("-t").arg("a-label").arg("café.example");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
-    // GIVEN
+async fn test_domain_search() {
+    // GIVEN domain
     let mut test_jig = TestJig::new_rdap_with_dn_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
@@ -205,17 +205,17 @@ async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN search for the domain
     test_jig.cmd.arg("-t").arg("domain-name").arg("foo.*");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lines() {
-    // GIVEN
+async fn test_domain_with_status_output_text() {
+    // GIVEN domain with status
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(
@@ -230,7 +230,7 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lin
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query with status-text output type
     test_jig
         .cmd
         .arg("foo.example")
@@ -239,7 +239,7 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lin
         .arg("-L")
         .arg("off");
 
-    // THEN
+    // THEN output is text of status
     let assert = test_jig.cmd.assert();
     assert
         .success()
@@ -247,8 +247,8 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lin
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_with_statuses_WHEN_output_status_json_THEN_only_status_json() {
-    // GIVEN
+async fn test_domain_with_status_output_json() {
+    // GIVEN domain with status
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(
@@ -263,7 +263,7 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_json_THEN_only_status_jso
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query with status-json output type
     test_jig
         .cmd
         .arg("bar.example")
@@ -272,7 +272,7 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_json_THEN_only_status_jso
         .arg("-L")
         .arg("off");
 
-    // THEN
+    // THEN output type is json with status
     let assert = test_jig.cmd.assert();
     assert
         .success()
