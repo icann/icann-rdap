@@ -377,6 +377,9 @@ enum OtypeArg {
     /// Global Top Level Domain Output
     GtldWhois,
 
+    /// Routing Policy Specification Language (RPSL).
+    Rpsl,
+
     /// URL of RDAP servers.
     Url,
 
@@ -541,6 +544,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::PrettyJson => OutputType::PrettyJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
+        OtypeArg::Rpsl => OutputType::Rpsl,
         OtypeArg::Url => OutputType::Url,
         OtypeArg::StatusText => OutputType::StatusText,
         OtypeArg::StatusJson => OutputType::StatusJson,
