@@ -386,6 +386,12 @@ enum OtypeArg {
     /// Only print primary object's status as JSON.
     StatusJson,
 
+    /// Only print primary object's events, one per line.
+    EventText,
+
+    /// Only print primary object's events as JSON.
+    EventJson,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -538,6 +544,8 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::Url => OutputType::Url,
         OtypeArg::StatusText => OutputType::StatusText,
         OtypeArg::StatusJson => OutputType::StatusJson,
+        OtypeArg::EventText => OutputType::EventText,
+        OtypeArg::EventJson => OutputType::EventJson,
     };
 
     let process_type = match cli.process_type {

@@ -18,7 +18,11 @@ use {
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
 
-use icann_rdap_common::response::ObjectCommonFields;
+use chrono::DateTime;
+use icann_rdap_common::{
+    prelude::{Event, RdapResponse},
+    response::ObjectCommonFields,
+};
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
@@ -54,6 +58,12 @@ pub(crate) enum OutputType {
 
     /// Only print primary object's status as JSON.
     StatusJson,
+
+    /// Only print primary object's events, one per line.
+    EventText,
+
+    /// Only print primary object's events as JSON.
+    EventJson,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -144,9 +154,12 @@ async fn do_domain_query<W: std::io::Write>(
     let registrar_response;
     match response {
         Ok(response) => {
+            let user_wants_registrar =
+                matches!(processing_params.process_type, ProcessType::Registrar);
             let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
+                req_target: !user_wants_registrar,
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
@@ -156,18 +169,13 @@ async fn do_domain_query<W: std::io::Write>(
                 // copy other fields from `response`
                 ..response.clone()
             };
-            if let ProcessType::Registrar = processing_params.process_type {
-                transactions =
-                    do_no_output(processing_params, &req_data, &replaced_data, transactions);
-            } else {
-                transactions = do_output(
-                    processing_params,
-                    &req_data,
-                    &replaced_data,
-                    write,
-                    transactions,
-                )?;
-            }
+            transactions = do_output(
+                processing_params,
+                &req_data,
+                &replaced_data,
+                write,
+                transactions,
+            )?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if !matches!(processing_params.process_type, ProcessType::Registry) {
@@ -181,27 +189,21 @@ async fn do_domain_query<W: std::io::Write>(
                         Ok(response_data) => {
                             registrar_response = response_data;
                             regr_source_host = registrar_response.http_data.host.to_owned();
+                            let user_wants_registy =
+                                matches!(processing_params.process_type, ProcessType::Registry);
                             regr_req_data = RequestData {
                                 req_number: 2,
+                                req_target: !user_wants_registy,
                                 source_host: &regr_source_host,
                                 source_type: SourceType::DomainRegistrar,
                             };
-                            if let ProcessType::Registry = processing_params.process_type {
-                                transactions = do_no_output(
-                                    processing_params,
-                                    &regr_req_data,
-                                    &registrar_response,
-                                    transactions,
-                                );
-                            } else {
-                                transactions = do_output(
-                                    processing_params,
-                                    &regr_req_data,
-                                    &registrar_response,
-                                    write,
-                                    transactions,
-                                )?;
-                            }
+                            transactions = do_output(
+                                processing_params,
+                                &regr_req_data,
+                                &registrar_response,
+                                write,
+                                transactions,
+                            )?;
                         }
                         Err(error) => return Err(error),
                     }
@@ -244,6 +246,7 @@ async fn do_inr_query<W: std::io::Write>(
             let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
+                req_target: true,
                 source_host: &source_host,
                 source_type: SourceType::RegionalInternetRegistry,
             };
@@ -283,12 +286,14 @@ async fn do_basic_query<'a, W: std::io::Write>(
             let req_data = if let Some(meta) = req_data {
                 RequestData {
                     req_number: meta.req_number + 1,
+                    req_target: true,
                     source_host: meta.source_host,
                     source_type: SourceType::UncategorizedRegistry,
                 }
             } else {
                 RequestData {
                     req_number: 1,
+                    req_target: true,
                     source_host: &source_host,
                     source_type: SourceType::UncategorizedRegistry,
                 }
@@ -313,6 +318,12 @@ async fn do_basic_query<'a, W: std::io::Write>(
     Ok(())
 }
 
+/// Sends output according to output.
+///
+/// This function is to allow output from a server shortly after it is
+/// received so users see progress. This may work with some output types
+/// and not others. Even after all iterations are made with this
+/// function, [do_final_output] should be called.
 fn do_output<'a, W: std::io::Write>(
     processing_params: &ProcessingParams,
     req_data: &'a RequestData,
@@ -320,65 +331,118 @@ fn do_output<'a, W: std::io::Write>(
     write: &mut W,
     mut transactions: RequestResponses<'a>,
 ) -> Result<RequestResponses<'a>, RdapCliError> {
-    match processing_params.output_type {
-        OutputType::RenderedMarkdown => {
-            let mut skin = MadSkin::default_dark();
-            skin.set_headers_fg(Yellow);
-            skin.headers[1].align = Alignment::Center;
-            skin.headers[2].align = Alignment::Center;
-            skin.headers[3].align = Alignment::Center;
-            skin.headers[4].compound_style.set_fg(DarkGreen);
-            skin.headers[5].compound_style.set_fg(Magenta);
-            skin.headers[6].compound_style.set_fg(Cyan);
-            skin.headers[7].compound_style.set_fg(Red);
-            skin.bold.set_fg(DarkBlue);
-            skin.italic.set_fg(Red);
-            skin.quote_mark.set_fg(DarkBlue);
-            skin.table.set_fg(DarkGreen);
-            skin.table.align = Alignment::Center;
-            skin.inline_code.set_fgbg(Cyan, Reset);
-            skin.write_text_on(
-                write,
-                &response.rdap.to_md(MdParams {
-                    heading_level: 1,
+    if req_data.req_target {
+        match processing_params.output_type {
+            OutputType::RenderedMarkdown => {
+                let mut skin = MadSkin::default_dark();
+                skin.set_headers_fg(Yellow);
+                skin.headers[1].align = Alignment::Center;
+                skin.headers[2].align = Alignment::Center;
+                skin.headers[3].align = Alignment::Center;
+                skin.headers[4].compound_style.set_fg(DarkGreen);
+                skin.headers[5].compound_style.set_fg(Magenta);
+                skin.headers[6].compound_style.set_fg(Cyan);
+                skin.headers[7].compound_style.set_fg(Red);
+                skin.bold.set_fg(DarkBlue);
+                skin.italic.set_fg(Red);
+                skin.quote_mark.set_fg(DarkBlue);
+                skin.table.set_fg(DarkGreen);
+                skin.table.align = Alignment::Center;
+                skin.inline_code.set_fgbg(Cyan, Reset);
+                skin.write_text_on(
+                    write,
+                    &response.rdap.to_md(MdParams {
+                        heading_level: 1,
+                        root: &response.rdap,
+                        http_data: &response.http_data,
+                        parent_type: response.rdap.get_type(),
+                        check_types: &processing_params.check_types,
+                        options: &MdOptions::default(),
+                        req_data,
+                    }),
+                )?;
+            }
+            OutputType::Markdown => {
+                writeln!(
+                    write,
+                    "{}",
+                    response.rdap.to_md(MdParams {
+                        heading_level: 1,
+                        root: &response.rdap,
+                        http_data: &response.http_data,
+                        parent_type: response.rdap.get_type(),
+                        check_types: &processing_params.check_types,
+                        options: &MdOptions {
+                            text_style_char: '_',
+                            style_in_justify: true,
+                            ..MdOptions::default()
+                        },
+                        req_data,
+                    })
+                )?;
+            }
+            OutputType::GtldWhois => {
+                let mut params = GtldParams {
                     root: &response.rdap,
-                    http_data: &response.http_data,
                     parent_type: response.rdap.get_type(),
-                    check_types: &processing_params.check_types,
-                    options: &MdOptions::default(),
-                    req_data,
-                }),
-            )?;
-        }
-        OutputType::Markdown => {
-            writeln!(
-                write,
-                "{}",
-                response.rdap.to_md(MdParams {
-                    heading_level: 1,
-                    root: &response.rdap,
-                    http_data: &response.http_data,
-                    parent_type: response.rdap.get_type(),
-                    check_types: &processing_params.check_types,
-                    options: &MdOptions {
-                        text_style_char: '_',
-                        style_in_justify: true,
-                        ..MdOptions::default()
-                    },
-                    req_data,
-                })
-            )?;
-        }
-        OutputType::GtldWhois => {
-            let mut params = GtldParams {
-                root: &response.rdap,
-                parent_type: response.rdap.get_type(),
-                label: "".to_string(),
-            };
-            writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
-        }
-        _ => {} // do nothing
-    };
+                    label: "".to_string(),
+                };
+                writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
+            }
+            OutputType::Url => {
+                if let Some(url) = response.http_data.request_uri() {
+                    writeln!(write, "{url}")?;
+                }
+            }
+            OutputType::StatusText => {
+                use icann_rdap_common::response::RdapResponse as RR;
+                let statuses: Option<&[String]> = match &response.rdap {
+                    RR::Entity(e) => Some(e.status()),
+                    RR::Domain(d) => Some(d.status()),
+                    RR::Nameserver(n) => Some(n.status()),
+                    RR::Autnum(a) => Some(a.status()),
+                    RR::Network(n) => Some(n.status()),
+                    _ => None,
+                };
+                if let Some(list) = statuses {
+                    for s in list {
+                        writeln!(write, "{}", s)?;
+                    }
+                }
+            }
+            OutputType::EventText => {
+                use icann_rdap_common::response::RdapResponse as RR;
+                let events: Option<&[Event]> = match &response.rdap {
+                    RR::Entity(e) => Some(e.events()),
+                    RR::Domain(d) => Some(d.events()),
+                    RR::Nameserver(n) => Some(n.events()),
+                    RR::Autnum(a) => Some(a.events()),
+                    RR::Network(n) => Some(n.events()),
+                    _ => None,
+                };
+                if let Some(events) = events {
+                    for event in events {
+                        if let Some(event_action) = &event.event_action {
+                            if let Some(date) = &event.event_date {
+                                let date = DateTime::parse_from_rfc3339(date).ok();
+                                if let Some(date) = date {
+                                    writeln!(
+                                        write,
+                                        "{} = {}",
+                                        event_action,
+                                        date.format("%a, %v %X %Z")
+                                    )?;
+                                } else {
+                                    writeln!(write, "{} = BAD DATE", event_action,)?;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {} // do nothing
+        };
+    }
 
     let req_res = RequestResponse {
         checks: do_output_checks(response),
@@ -387,21 +451,6 @@ fn do_output<'a, W: std::io::Write>(
     };
     transactions.push(req_res);
     Ok(transactions)
-}
-
-fn do_no_output<'a>(
-    _processing_params: &ProcessingParams,
-    req_data: &'a RequestData,
-    response: &'a ResponseData,
-    mut transactions: RequestResponses<'a>,
-) -> RequestResponses<'a> {
-    let req_res = RequestResponse {
-        checks: do_output_checks(response),
-        req_data,
-        res_data: response,
-    };
-    transactions.push(req_res);
-    transactions
 }
 
 fn do_output_checks(response: &ResponseData) -> Checks {
@@ -418,75 +467,109 @@ fn do_output_checks(response: &ResponseData) -> Checks {
     checks
 }
 
+/// Finishes up output.
+///
+/// Some output types will have to do all their processing in this function
+/// instead of [do_output].
 fn do_final_output<W: std::io::Write>(
     processing_params: &ProcessingParams,
     write: &mut W,
     transactions: RequestResponses<'_>,
 ) -> Result<(), RdapCliError> {
     match processing_params.output_type {
-        OutputType::Json => {
-            for req_res in &transactions {
-                writeln!(
-                    write,
-                    "{}",
-                    serde_json::to_string(&req_res.res_data.rdap).unwrap()
-                )?;
-            }
-        }
-        OutputType::PrettyJson => {
-            for req_res in &transactions {
-                writeln!(
-                    write,
-                    "{}",
-                    serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
-                )?;
+        OutputType::Json | OutputType::PrettyJson => {
+            let output_count = transactions
+                .iter()
+                .filter(|t| t.req_data.req_target)
+                .count();
+            let pretty = matches!(processing_params.output_type, OutputType::PrettyJson);
+            if output_count == 1 {
+                for req_res in &transactions {
+                    if req_res.req_data.req_target {
+                        if !pretty {
+                            writeln!(
+                                write,
+                                "{}",
+                                serde_json::to_string(&req_res.res_data.rdap).unwrap()
+                            )?;
+                        } else {
+                            writeln!(
+                                write,
+                                "{}",
+                                serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
+                            )?;
+                        }
+                        break;
+                    }
+                }
+            } else {
+                let output_vec = transactions
+                    .iter()
+                    .map(|t| &t.res_data.rdap)
+                    .collect::<Vec<&RdapResponse>>();
+                if !pretty {
+                    writeln!(write, "{}", serde_json::to_string(&output_vec).unwrap())?;
+                } else {
+                    writeln!(
+                        write,
+                        "{}",
+                        serde_json::to_string_pretty(&output_vec).unwrap()
+                    )?;
+                }
             }
         }
         OutputType::JsonExtra => {
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
         OutputType::GtldWhois => {}
-        OutputType::Url => {
-            for rr in &transactions {
-                if let Some(url) = rr.res_data.http_data.request_uri() {
-                    writeln!(write, "{url}")?;
-                }
-            }
-        }
-        OutputType::StatusText => {
-            use icann_rdap_common::response::RdapResponse as RR;
-            if let Some(rr) = transactions.first() {
-                let statuses: Option<&[String]> = match &rr.res_data.rdap {
-                    RR::Entity(e) => Some(e.status()),
-                    RR::Domain(d) => Some(d.status()),
-                    RR::Nameserver(n) => Some(n.status()),
-                    RR::Autnum(a) => Some(a.status()),
-                    RR::Network(n) => Some(n.status()),
-                    _ => None,
-                };
-                if let Some(list) = statuses {
-                    for s in list {
-                        writeln!(write, "{}", s)?;
-                    }
-                }
-            }
-        }
         OutputType::StatusJson => {
             use icann_rdap_common::response::RdapResponse as RR;
-            if let Some(rr) = transactions.first() {
-                let statuses: Option<&[String]> = match &rr.res_data.rdap {
-                    RR::Entity(e) => Some(e.status()),
-                    RR::Domain(d) => Some(d.status()),
-                    RR::Nameserver(n) => Some(n.status()),
-                    RR::Autnum(a) => Some(a.status()),
-                    RR::Network(n) => Some(n.status()),
-                    _ => None,
-                };
-                // Always print a JSON object with a status array, even if empty
-                let arr = statuses.map(|s| s.to_vec()).unwrap_or_default();
-                let obj = serde_json::json!({"status": arr});
-                writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
+            let mut statuses = vec![];
+            for rr in &transactions {
+                if rr.req_data.req_target {
+                    let obj_status = match &rr.res_data.rdap {
+                        RR::Entity(e) => e.status(),
+                        RR::Domain(d) => d.status(),
+                        RR::Nameserver(n) => n.status(),
+                        RR::Autnum(a) => a.status(),
+                        RR::Network(n) => n.status(),
+                        _ => &[],
+                    };
+                    obj_status.iter().for_each(|s| statuses.push(s));
+                }
             }
+            // Always print a JSON object with a status array, even if empty
+            let obj = serde_json::json!({"status": statuses});
+            writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
+        }
+        OutputType::EventJson => {
+            use icann_rdap_common::response::RdapResponse as RR;
+            let mut events = vec![];
+            for rr in &transactions {
+                if rr.req_data.req_target {
+                    let obj_event: Option<&[Event]> = match &rr.res_data.rdap {
+                        RR::Entity(e) => Some(e.events()),
+                        RR::Domain(d) => Some(d.events()),
+                        RR::Nameserver(n) => Some(n.events()),
+                        RR::Autnum(a) => Some(a.events()),
+                        RR::Network(n) => Some(n.events()),
+                        _ => None,
+                    };
+                    obj_event.iter().for_each(|evs| {
+                        evs.iter()
+                            .filter(|e| e.event_action.as_ref().is_some())
+                            .filter(|e| {
+                                e.event_date
+                                    .as_ref()
+                                    .is_some_and(|ed| DateTime::parse_from_rfc3339(ed).is_ok())
+                            })
+                            .for_each(|e| events.push(e))
+                    });
+                }
+            }
+            // Always print a JSON object with a status array, even if empty
+            let obj = serde_json::json!({"events": events});
+            writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
         }
         _ => {} // do nothing
     };

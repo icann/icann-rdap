@@ -1,9 +1,11 @@
-#![allow(non_snake_case)]
-
 use {
-    icann_rdap_common::response::{Autnum, Domain, Entity, Nameserver, Network},
+    icann_rdap_common::{
+        prelude::{Event, Link},
+        response::{Autnum, Domain, Entity, Nameserver, Network},
+    },
     icann_rdap_srv::storage::StoreOps,
     rstest::rstest,
+    serde_json::Value,
 };
 
 use crate::test_jig::TestJig;
@@ -14,8 +16,8 @@ use crate::test_jig::TestJig;
 #[case("foo.example", "FOO.EXAMPLE")]
 #[case("foó.example", "foó.example")] // unicode
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q_domain: &str) {
-    // GIVEN
+async fn test_domain_queries(#[case] db_domain: &str, #[case] q_domain: &str) {
+    // GIVEN domain
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name(db_domain).build())
@@ -23,17 +25,17 @@ async fn GIVEN_domain_WHEN_query_THEN_success(#[case] db_domain: &str, #[case] q
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg(q_domain);
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_tld_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_tld_query() {
+    // GIVEN tld to query
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("example").build())
@@ -41,18 +43,18 @@ async fn GIVEN_tld_WHEN_query_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN queried
     // without "--tld-lookup=none" then this attempts to query IANA instead of the test server
     test_jig.cmd.arg("--tld-lookup=none").arg(".example");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_entity_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_entity_query() {
+    // GIVEN entity
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_entity(&Entity::builder().handle("foo").build())
@@ -60,17 +62,17 @@ async fn GIVEN_entity_WHEN_query_THEN_success() {
         .expect("add entity in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg("foo");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_nameserver_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_nameserver_query() {
+    // GIVEN nameserver
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
@@ -83,17 +85,17 @@ async fn GIVEN_nameserver_WHEN_query_THEN_success() {
     .expect("add nameserver in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg("ns.foo.example");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_autnum_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_autnum_query() {
+    // GIVEN autnum
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
@@ -101,17 +103,17 @@ async fn GIVEN_autnum_WHEN_query_THEN_success() {
         .expect("add autnum in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query
     test_jig.cmd.arg("700");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_network_ip_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_network_ip_query() {
+    // GIVEN network
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
@@ -124,10 +126,10 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query ip address
     test_jig.cmd.arg("10.0.0.1");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
@@ -136,8 +138,8 @@ async fn GIVEN_network_ip_WHEN_query_THEN_success() {
 #[case("10.0.0.0/24", "10.0.0.0/24")]
 #[case("10.0.0.0/24", "10.0.0/24")]
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[case] q_cidr: &str) {
-    // GIVEN
+async fn test_network_cidr_query(#[case] db_cidr: &str, #[case] q_cidr: &str) {
+    // GIVEN network
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_network(
@@ -150,17 +152,17 @@ async fn GIVEN_network_cidr_WHEN_query_THEN_success(#[case] db_cidr: &str, #[cas
     .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query by CIDR
     test_jig.cmd.arg(q_cidr);
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_url_WHEN_query_THEN_success() {
-    // GIVEN
+async fn test_url_query() {
+    // GIVEN url
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
@@ -168,18 +170,18 @@ async fn GIVEN_url_WHEN_query_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN queried
     let url = format!("{}/domain/foo.example", test_jig.rdap_base);
     test_jig.cmd.arg(url);
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
-    // GIVEN
+async fn test_idn_query_a_label() {
+    // GIVEN idn
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("xn--caf-dma.example").build())
@@ -187,17 +189,17 @@ async fn GIVEN_idn_WHEN_query_a_label_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN query alabel
     test_jig.cmd.arg("-t").arg("a-label").arg("café.example");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
-    // GIVEN
+async fn test_domain_search() {
+    // GIVEN domain
     let mut test_jig = TestJig::new_rdap_with_dn_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
@@ -205,17 +207,17 @@ async fn GIVEN_domain_WHEN_search_domain_names_THEN_success() {
         .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
+    // WHEN search for the domain
     test_jig.cmd.arg("-t").arg("domain-name").arg("foo.*");
 
-    // THEN
+    // THEN success
     let assert = test_jig.cmd.assert();
     assert.success();
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lines() {
-    // GIVEN
+async fn test_domain_with_status_output_text() {
+    // GIVEN domain with status
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(
@@ -230,16 +232,10 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lin
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
-    test_jig
-        .cmd
-        .arg("foo.example")
-        .arg("-O")
-        .arg("status-text")
-        .arg("-L")
-        .arg("off");
+    // WHEN query with status-text output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("status-text");
 
-    // THEN
+    // THEN output is text of status
     let assert = test_jig.cmd.assert();
     assert
         .success()
@@ -247,8 +243,61 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_text_THEN_only_status_lin
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_with_statuses_WHEN_output_status_json_THEN_only_status_json() {
-    // GIVEN
+async fn test_domain_referral_with_status_output_text() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .status("client delete prohibited")
+            .status("client transfer prohibited")
+            .status("client update prohibited")
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .status("server delete prohibited")
+            .status("server transfer prohibited")
+            .status("server update prohibited")
+            .build(),
+    )
+    .await
+    .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with status-text output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("status-text");
+
+    // THEN output is text of status
+    let assert = test_jig.cmd.assert();
+    assert.success().stdout(
+        r#"client delete prohibited
+client transfer prohibited
+client update prohibited
+server delete prohibited
+server transfer prohibited
+server update prohibited
+"#,
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_status_output_json() {
+    // GIVEN domain with status
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(
@@ -263,20 +312,523 @@ async fn GIVEN_domain_with_statuses_WHEN_output_status_json_THEN_only_status_jso
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN
-    test_jig
-        .cmd
-        .arg("bar.example")
-        .arg("-O")
-        .arg("status-json")
-        .arg("-L")
-        .arg("off");
+    // WHEN query with status-json output type
+    test_jig.cmd.arg("bar.example").arg("-O").arg("status-json");
 
-    // THEN
+    // THEN output type is json with status
     let assert = test_jig.cmd.assert();
     assert
         .success()
         .stdout(
             "{\"status\":[\"client delete prohibited\",\"client transfer prohibited\",\"client update prohibited\"]}\n",
         );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_status_output_json() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .status("client delete prohibited")
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .status("server delete prohibited")
+            .build(),
+    )
+    .await
+    .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with status-json output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("status-json");
+
+    // THEN output type is json with status
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout("{\"status\":[\"client delete prohibited\",\"server delete prohibited\"]}\n");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_referral_for_only_registry_with_status_output_json() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .status("client delete prohibited")
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .status("server delete prohibited")
+            .build(),
+    )
+    .await
+    .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with status-json output type and ask for registry only
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("status-json")
+        .arg("-p")
+        .arg("registry");
+
+    // THEN output type is json with status
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout("{\"status\":[\"client delete prohibited\"]}\n");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_referral_for_only_registrar_with_status_output_json() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .status("client delete prohibited")
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .status("server delete prohibited")
+            .build(),
+    )
+    .await
+    .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with status-json output type and ask for registry only
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("status-json")
+        .arg("-p")
+        .arg("registrar");
+
+    // THEN output type is json with status
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout("{\"status\":[\"server delete prohibited\"]}\n");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_url_output() {
+    // GIVEN domain
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type
+    test_jig.cmd.arg("bar.example").arg("-O").arg("url");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(format!("{}/domain/bar.example\n", test_jig.rdap_base));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_url_output() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("url");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert.success().stdout(format!(
+        "{}/domain/foo.example\n{}/domain/bar.example\n",
+        test_jig.rdap_base, test_jig.rdap_base
+    ));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_url_output_for_registry() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type for registry
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("url")
+        .arg("-p")
+        .arg("registry");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(format!("{}/domain/foo.example\n", test_jig.rdap_base));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_url_output_for_registrar() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with url output type for registrar
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("url")
+        .arg("-p")
+        .arg("registrar");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout(format!("{}/domain/bar.example\n", test_jig.rdap_base));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_json_output() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with json output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("json");
+
+    // THEN output type is json array
+    let assert = test_jig.cmd.assert();
+    let assert = assert.success();
+    let output = &assert.get_output().stdout;
+    let json: Value = serde_json::from_slice(output).expect("valid json");
+    assert!(json.is_array());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_json_output_for_registrar() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with json output type for registrar
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("json")
+        .arg("-p")
+        .arg("registrar");
+
+    // THEN output type is json object
+    let assert = test_jig.cmd.assert();
+    let assert = assert.success();
+    let output = &assert.get_output().stdout;
+    let json: Value = serde_json::from_slice(output).expect("valid json");
+    assert!(json.is_object());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_pretty_json_output() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with pretty json output type
+    test_jig.cmd.arg("foo.example").arg("-O").arg("pretty-json");
+
+    // THEN output type is json array
+    let assert = test_jig.cmd.assert();
+    let assert = assert.success();
+    let output = &assert.get_output().stdout;
+    let json: Value = serde_json::from_slice(output).expect("valid json");
+    assert!(json.is_array());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_referral_with_pretyy_json_output_for_registrar() {
+    // GIVEN domain that refers to another domain (e.g. registry -> registrar)
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("foo.example")
+            .link(
+                Link::builder()
+                    .rel("related")
+                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // in another server. However, to get this to work with one server, we
+                    // refer foo.example to bar.example.
+                    .href(format!("{}/domain/bar.example", test_jig.rdap_base))
+                    .value(format!("{}/domain/foo.example", test_jig.rdap_base))
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add foo domain in tx");
+    tx.add_domain(&Domain::builder().ldh_name("bar.example").build())
+        .await
+        .expect("add bar domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with pretty json output type for registrar
+    test_jig
+        .cmd
+        .arg("foo.example")
+        .arg("-O")
+        .arg("pretty-json")
+        .arg("-p")
+        .arg("registrar");
+
+    // THEN output type is json object
+    let assert = test_jig.cmd.assert();
+    let assert = assert.success();
+    let output = &assert.get_output().stdout;
+    let json: Value = serde_json::from_slice(output).expect("valid json");
+    assert!(json.is_object());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_event_text_output() {
+    // GIVEN domain
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .event(
+                Event::builder()
+                    .event_action("expiration")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with event text output type
+    test_jig.cmd.arg("bar.example").arg("-O").arg("event-text");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert
+        .success()
+        .stdout("expiration = Mon, 31-Dec-1990 23:59:59 +00:00\n");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_with_event_json_output() {
+    // GIVEN domain
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("bar.example")
+            .event(
+                Event::builder()
+                    .event_action("expiration")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build(),
+    )
+    .await
+    .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query with event json output type
+    test_jig.cmd.arg("bar.example").arg("-O").arg("event-json");
+
+    // THEN output type is the urls
+    let assert = test_jig.cmd.assert();
+    assert.success().stdout(
+        "{\"events\":[{\"eventAction\":\"expiration\",\"eventDate\":\"1990-12-31T23:59:59Z\"}]}\n",
+    );
 }
