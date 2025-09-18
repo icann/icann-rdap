@@ -44,6 +44,7 @@ impl ToGtldWhois for RdapResponse {
         let mut gtld = String::new();
         let variant_gtld = match &self {
             Self::Domain(domain) => domain.to_gtld_whois(params),
+            // if this gets expanded, the exception handling in main.rs needs to be updated
             _ => String::new(),
         };
         gtld.push_str(&variant_gtld);
