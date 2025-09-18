@@ -19,6 +19,7 @@ use {
 };
 
 use chrono::DateTime;
+use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     prelude::{Event, RdapResponse},
     response::ObjectCommonFields,
@@ -46,6 +47,9 @@ pub(crate) enum OutputType {
 
     /// Global Top Level Domain Output
     GtldWhois,
+
+    /// Routing Policy Specification Language (RPSL).
+    Rpsl,
 
     /// RDAP JSON with extra information.
     JsonExtra,
@@ -389,6 +393,12 @@ fn do_output<'a, W: std::io::Write>(
                 };
                 writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
             }
+            OutputType::Rpsl => {
+                let params = RpslParams {
+                    http_data: &response.http_data,
+                };
+                writeln!(write, "{}", response.rdap.to_rpsl(params))?;
+            }
             OutputType::Url => {
                 if let Some(url) = response.http_data.request_uri() {
                     writeln!(write, "{url}")?;
@@ -441,7 +451,7 @@ fn do_output<'a, W: std::io::Write>(
                 }
             }
             _ => {} // do nothing
-        };
+        }
     }
 
     let req_res = RequestResponse {

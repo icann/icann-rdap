@@ -33,6 +33,29 @@ async fn test_domain_queries(#[case] db_domain: &str, #[case] q_domain: &str) {
     assert.success();
 }
 
+#[rstest]
+#[case("foo.example", "foo.example")]
+#[case("foo.example", "foo.example.")]
+#[case("foo.example", "FOO.EXAMPLE")]
+#[case("foó.example", "foó.example")] // unicode
+#[tokio::test(flavor = "multi_thread")]
+async fn test_domain_queries_with_rpsl(#[case] db_domain: &str, #[case] q_domain: &str) {
+    // GIVEN domain
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&Domain::builder().ldh_name(db_domain).build())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query
+    test_jig.cmd.arg("-O").arg("rpsl").arg(q_domain);
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn test_tld_query() {
     // GIVEN tld to query
@@ -71,6 +94,24 @@ async fn test_entity_query() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_entity_query_with_rpsl() {
+    // GIVEN entity
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_entity(&Entity::builder().handle("foo").build())
+        .await
+        .expect("add entity in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query
+    test_jig.cmd.arg("-O").arg("rpsl").arg("foo");
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_nameserver_query() {
     // GIVEN nameserver
     let mut test_jig = TestJig::new_rdap().await;
@@ -87,6 +128,29 @@ async fn test_nameserver_query() {
 
     // WHEN query
     test_jig.cmd.arg("ns.foo.example");
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_nameserver_query_with_rpsl() {
+    // GIVEN nameserver
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_nameserver(
+        &Nameserver::builder()
+            .ldh_name("ns.foo.example")
+            .build()
+            .unwrap(),
+    )
+    .await
+    .expect("add nameserver in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query
+    test_jig.cmd.arg("-O").arg("rpsl").arg("ns.foo.example");
 
     // THEN success
     let assert = test_jig.cmd.assert();
@@ -112,6 +176,24 @@ async fn test_autnum_query() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_autnum_query_with_rpsl() {
+    // GIVEN autnum
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+        .await
+        .expect("add autnum in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query
+    test_jig.cmd.arg("-O").arg("rpsl").arg("700");
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_network_ip_query() {
     // GIVEN network
     let mut test_jig = TestJig::new_rdap().await;
@@ -128,6 +210,29 @@ async fn test_network_ip_query() {
 
     // WHEN query ip address
     test_jig.cmd.arg("10.0.0.1");
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_network_ip_query_with_rpsl() {
+    // GIVEN network
+    let mut test_jig = TestJig::new_rdap().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_network(
+        &Network::builder()
+            .cidr("10.0.0.0/24")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN query ip address
+    test_jig.cmd.arg("-O").arg("rpsl").arg("10.0.0.1");
 
     // THEN success
     let assert = test_jig.cmd.assert();
