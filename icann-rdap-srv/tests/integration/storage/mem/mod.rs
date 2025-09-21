@@ -656,7 +656,7 @@ async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_defaul
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_srv_help(
-        &Help::response_obj()
+        &Help::response()
             .notice(Notice(
                 NoticeOrRemark::builder()
                     .description_entry("foo".to_string())
@@ -701,7 +701,7 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
     let mem = Mem::default();
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_srv_help(
-        &Help::response_obj()
+        &Help::response()
             .notice(Notice(
                 NoticeOrRemark::builder()
                     .description_entry("bar".to_string())
