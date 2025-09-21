@@ -7,7 +7,9 @@ use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
 impl ToMd for Rfc9083Error {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(TypeId::of::<Self>())));
+        if let Some(rdap_conformance) = &self.rdap_conformance {
+            md.push_str(&rdap_conformance.to_md(params.from_parent(TypeId::of::<Self>())));
+        }
         md.push_str(HR);
         md.push('\n');
         md
