@@ -1458,6 +1458,7 @@ dependencies = [
  "icann-rdap-client",
  "icann-rdap-common",
  "icann-rdap-srv",
+ "json-pretty-compact",
  "minus",
  "pct-str",
  "prefix-trie",
@@ -1766,6 +1767,16 @@ checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json-pretty-compact"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62a9c1f06b173b0da0ccc8cae00599d7b3ceda6e76d68be9b6bc2c941adafe0e"
+dependencies = [
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

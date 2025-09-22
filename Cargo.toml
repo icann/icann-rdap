@@ -85,6 +85,9 @@ hyper = { version = "1.0", features = ["full"] }
 jsonpath-rust = "=0.5.0"
 jsonpath_lib = "0.3.0"
 
+# JSON Pretty Compact
+json-pretty-compact = "0.1.2"
+
 # internationalized domain names for applications
 idna = "1.0"
 

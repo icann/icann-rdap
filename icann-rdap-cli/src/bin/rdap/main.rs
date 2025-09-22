@@ -371,6 +371,9 @@ enum OtypeArg {
     /// Results are output as Pretty RDAP JSON.
     PrettyJson,
 
+    /// JSON output that is compact and pretty.
+    PrettyCompactJson,
+
     /// RDAP JSON with extra information.
     JsonExtra,
 
@@ -544,6 +547,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::Markdown => OutputType::Markdown,
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
+        OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
         OtypeArg::Rpsl => OutputType::Rpsl,
