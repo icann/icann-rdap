@@ -35,6 +35,9 @@ tokio.workspace = true
 
 [dev-dependencies]
 
+# goldfile
+goldenfile = "1.8"
+
 # fixture testings
 rstest = "0.17.0"
 

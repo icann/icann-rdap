@@ -103,7 +103,7 @@ impl MultiPartTable {
         self
     }
 
-    /// Add a name/value row.
+    /// Add a name/value row using a default if value is None.
     pub fn and_nv_ref<T: ToString>(mut self, name: &impl ToString, value: &Option<T>) -> Self {
         self.rows.push(Row::NameValue((
             name.to_string(),
@@ -116,7 +116,7 @@ impl MultiPartTable {
         self
     }
 
-    /// Add a name/value row.
+    /// Add a name/value row if the value is Some(T).
     pub fn and_nv_ref_maybe<T: ToString>(self, name: &impl ToString, value: &Option<T>) -> Self {
         if let Some(value) = value {
             self.nv_ref(name, &value.to_string())
@@ -125,7 +125,7 @@ impl MultiPartTable {
         }
     }
 
-    /// Add a name/value row with unordered list.
+    /// Add a name/value row with unordered list if the value is Some.
     pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
         if let Some(value) = value {
             self.nv_ul_ref(name, value)
@@ -134,7 +134,7 @@ impl MultiPartTable {
         }
     }
 
-    /// Add a name/value row with unordered list.
+    /// Add a name/value row with unordered list if the value is Some.
     pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
         if let Some(value) = value {
             self.nv_ul(name, value)

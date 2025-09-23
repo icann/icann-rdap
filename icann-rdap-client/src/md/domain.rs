@@ -45,11 +45,14 @@ impl ToMd for Domain {
         table = table.summary(header_text);
 
         // identifiers
+        //
+        // due to the nature of domains, we are guaranteed to have at least one of
+        // ldhName or unicodeName.
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref(&"LDH Name", &self.ldh_name)
-            .and_nv_ref(&"Unicode Name", &self.unicode_name)
-            .and_nv_ref(&"Handle", &domain_handle);
+            .and_nv_ref_maybe(&"LDH Name", &self.ldh_name)
+            .and_nv_ref_maybe(&"Unicode Name", &self.unicode_name)
+            .and_nv_ref_maybe(&"Handle", &domain_handle);
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -263,5 +266,88 @@ impl MdUtil for Domain {
             header_text = header_text.children_entry(network.get_header_text());
         }
         header_text.build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, io::Write};
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{Domain, ToResponse},
+    };
+
+    use crate::{
+        md::{MdOptions, MdParams, ToMd},
+        rdap::RequestData,
+    };
+
+    static MINT_PATH: &str = "src/test_files/md/domain";
+
+    #[test]
+    fn test_domain_with_ldh_and_handle() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .handle("123-ABC")
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_handle.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_domain_with_ldh_only() {
+        // GIVEN domain
+        let domain = Domain::builder().ldh_name("foo.example.com").build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_only.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 }
