@@ -284,7 +284,7 @@ mod tests {
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Domain, ToResponse},
+        prelude::{Domain, Event, ToResponse},
     };
 
     use crate::{
@@ -356,6 +356,81 @@ mod tests {
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_ldh_only.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_domain_with_ldh_with_events() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .event(
+                Event::builder()
+                    .event_action("updated")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_with_events.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_domain_with_ldh_with_empty_events() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .events(vec![])
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_ldh_with_empty_events.md")
+            .unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }

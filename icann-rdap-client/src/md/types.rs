@@ -301,7 +301,7 @@ impl ToMpTable for ObjectCommon {
             }
 
             // Port 43
-            table = table.and_nv_ref(&"Whois", &self.port_43);
+            table = table.and_nv_ref_maybe(&"Whois", &self.port_43);
         }
 
         // Events
