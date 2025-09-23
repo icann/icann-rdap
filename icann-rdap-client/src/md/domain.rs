@@ -146,20 +146,28 @@ fn do_variants(variants: &[Variant], params: MdParams) -> String {
 
 fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
     let mut md = String::new();
+    if secure_dns.zone_signed().is_none()
+        && secure_dns.delegation_signed.is_none()
+        && secure_dns.max_sig_life().is_none()
+        && secure_dns.ds_data().is_empty()
+        && secure_dns.key_data().is_empty()
+    {
+        return md;
+    }
     // multipart data
     let mut table = MultiPartTable::new();
 
     table = table
         .header_ref(&"DNSSEC Information")
-        .and_nv_ref(
+        .and_nv_ref_maybe(
             &"Zone Signed",
             &secure_dns.zone_signed.as_ref().map(|b| b.to_string()),
         )
-        .and_nv_ref(
+        .and_nv_ref_maybe(
             &"Delegation Signed",
             &secure_dns.delegation_signed.as_ref().map(|b| b.to_string()),
         )
-        .and_nv_ref(
+        .and_nv_ref_maybe(
             &"Max Sig Life",
             &secure_dns.max_sig_life.as_ref().map(|u| u.to_string()),
         );
