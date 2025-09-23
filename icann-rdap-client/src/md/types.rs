@@ -342,6 +342,9 @@ pub(crate) fn events_to_table(
     header_name: &str,
     params: MdParams,
 ) -> MultiPartTable {
+    if events.is_empty() {
+        return table;
+    }
     table = table.header_ref(&header_name.replace_md_chars());
     for event in events {
         let raw_event_date = event.event_date.to_owned().unwrap_or_default();
@@ -373,8 +376,14 @@ pub(crate) fn links_to_table(
     mut table: MultiPartTable,
     header_name: &str,
 ) -> MultiPartTable {
+    if links.is_empty() {
+        return table;
+    }
     table = table.header_ref(&header_name.replace_md_chars());
-    for link in links {
+    for (index, link) in links.iter().enumerate() {
+        if index > 0 {
+            table = table.add_separator();
+        }
         if let Some(title) = &link.title {
             table = table.nv_ref(&"Title", &title.trim());
         };
@@ -383,28 +392,19 @@ pub(crate) fn links_to_table(
             .as_ref()
             .unwrap_or(&"Link".to_string())
             .to_title_case();
-        let mut ul: Vec<&String> = vec![];
-        if let Some(href) = &link.href {
-            ul.push(href)
-        }
-        if let Some(media_type) = &link.media_type {
-            ul.push(media_type)
-        };
-        if let Some(media) = &link.media {
-            ul.push(media)
-        };
-        if let Some(value) = &link.value {
-            ul.push(value)
-        };
-        let hreflang_s;
+        let mut hreflang_s = None;
         if let Some(hreflang) = &link.hreflang {
-            hreflang_s = match hreflang {
+            hreflang_s = Some(match hreflang {
                 icann_rdap_common::response::HrefLang::Lang(lang) => lang.to_owned(),
                 icann_rdap_common::response::HrefLang::Langs(langs) => langs.join(", "),
-            };
-            ul.push(&hreflang_s)
+            });
         };
-        table = table.nv_ul_ref(&rel, ul);
+        table = table
+            .and_nv_ref(&rel, &link.value())
+            .and_nv_ref_maybe(&"Type", &link.media_type())
+            .and_nv_ref_maybe(&"Media", &link.media())
+            .and_nv_ref_maybe(&"Lang", &hreflang_s)
+            .and_nv_ref_maybe(&"HTTP Ref", &link.href());
     }
     table
 }

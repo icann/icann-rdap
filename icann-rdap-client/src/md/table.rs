@@ -21,6 +21,7 @@ pub struct MultiPartTable {
 
 enum Row {
     Header(String),
+    Separator,
     NameValue((String, String)),
     MultiValue(Vec<String>),
 }
@@ -39,6 +40,12 @@ impl MultiPartTable {
     /// Add a header row.
     pub fn header_ref(mut self, name: &impl ToString) -> Self {
         self.rows.push(Row::Header(name.to_string()));
+        self
+    }
+
+    /// Adds a separator line.
+    pub fn add_separator(mut self) -> Self {
+        self.rows.push(Row::Separator);
         self
     }
 
@@ -209,6 +216,7 @@ impl MultiPartTable {
                     Row::Header(header) => header.len(),
                     Row::NameValue((name, _value)) => name.len(),
                     Row::MultiValue(_) => 1,
+                    Row::Separator => 4,
                 })
                 .max()
                 .unwrap_or(1),
@@ -226,6 +234,7 @@ impl MultiPartTable {
                         ));
                         true
                     }
+                    Row::Separator => true,
                     Row::NameValue((name, value)) => {
                         if *state {
                             md.push_str("|-:|:-|\n");
