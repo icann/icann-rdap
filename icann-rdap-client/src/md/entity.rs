@@ -357,3 +357,51 @@ impl MdUtil for Entity {
         header_text.build()
     }
 }
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, io::Write};
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{Entity, ToResponse},
+    };
+
+    use crate::{
+        md::{MdOptions, MdParams, ToMd},
+        rdap::RequestData,
+    };
+
+    static MINT_PATH: &str = "src/test_files/md/entity";
+
+    #[test]
+    fn test_entity_with_handle() {
+        // GIVEN domain
+        let entity = Entity::builder().handle("123-ABC").build();
+        let response = entity.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Entity>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = entity.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_handle.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+}
