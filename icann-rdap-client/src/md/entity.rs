@@ -68,7 +68,7 @@ impl ToMd for Entity {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref(&"Handle", &entity_handle)
+            .and_nv_ref_maybe(&"Handle", &entity_handle)
             .and_nv_ul(&"Roles", Some(self.roles().to_vec()));
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
@@ -402,6 +402,37 @@ mod tests {
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_handle.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_entity_with_no_handle_but_roles() {
+        // GIVEN domain
+        let entity = Entity::builder::<String>().role("registrar").build();
+        let response = entity.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Entity>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = entity.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_no_handle_but_roles.md").unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }
