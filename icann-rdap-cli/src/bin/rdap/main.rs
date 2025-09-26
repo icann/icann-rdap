@@ -371,6 +371,9 @@ enum OtypeArg {
     /// Results are output as Pretty RDAP JSON.
     PrettyJson,
 
+    /// JSON output that is compact and pretty.
+    PrettyCompactJson,
+
     /// RDAP JSON with extra information.
     JsonExtra,
 
@@ -502,6 +505,8 @@ pub async fn main() -> RdapCliError {
         let ec = e.exit_code();
         match ec {
             202 => error!("Use -T or --allow-http to allow insecure HTTP connections."),
+            // we use eprintln! becuase at the point where this is thrown, the tracing subscriber is not yet instantiated.
+            205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: -O rpsl.\n"),
             _ => eprintln!("\n{e}\n"),
         };
         return e;
@@ -542,6 +547,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::Markdown => OutputType::Markdown,
         OtypeArg::Json => OutputType::Json,
         OtypeArg::PrettyJson => OutputType::PrettyJson,
+        OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
         OtypeArg::JsonExtra => OutputType::JsonExtra,
         OtypeArg::GtldWhois => OutputType::GtldWhois,
         OtypeArg::Rpsl => OutputType::Rpsl,
@@ -551,6 +557,11 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         OtypeArg::EventText => OutputType::EventText,
         OtypeArg::EventJson => OutputType::EventJson,
     };
+
+    // throw error if output type is inappropriate
+    if matches!(output_type, OutputType::GtldWhois) && !matches!(query_type, QueryType::Domain(_)) {
+        return Err(RdapCliError::GtldWhoisOutputNotImplemented);
+    }
 
     let process_type = match cli.process_type {
         Some(p) => match p {

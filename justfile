@@ -5,6 +5,10 @@ default:
 test:
     cargo test
 
+[doc('Update golden files.')]
+update_goldenfiles $UPDATE_GOLDENFILES="1":
+    cargo test
+
 [doc('Run clean and then the tests.')]
 clean_test:
     cargo clean \

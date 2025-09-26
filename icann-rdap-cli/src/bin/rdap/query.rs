@@ -24,6 +24,9 @@ use icann_rdap_common::{
     prelude::{Event, RdapResponse},
     response::ObjectCommonFields,
 };
+use json_pretty_compact::PrettyCompactFormatter;
+use serde::Serialize;
+use serde_json::Serializer;
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
@@ -44,6 +47,9 @@ pub(crate) enum OutputType {
 
     /// Results are output as Pretty RDAP JSON.
     PrettyJson,
+
+    /// JSON output that is compact and pretty.
+    PrettyCompactJson,
 
     /// Global Top Level Domain Output
     GtldWhois,
@@ -477,6 +483,27 @@ fn do_output_checks(response: &ResponseData) -> Checks {
     checks
 }
 
+fn write_json<W: std::io::Write, T: Serialize>(
+    processing_params: &ProcessingParams,
+    write: &mut W,
+    data: &T,
+) -> Result<(), RdapCliError> {
+    match processing_params.output_type {
+        OutputType::PrettyJson => {
+            writeln!(write, "{}", serde_json::to_string_pretty(&data).unwrap())?;
+        }
+        OutputType::PrettyCompactJson => {
+            let formatter = PrettyCompactFormatter::new();
+            let mut serializer = Serializer::with_formatter(write, formatter);
+            data.serialize(&mut serializer)?;
+        }
+        _ => {
+            writeln!(write, "{}", serde_json::to_string(&data).unwrap())?;
+        }
+    };
+    Ok(())
+}
+
 /// Finishes up output.
 ///
 /// Some output types will have to do all their processing in this function
@@ -487,28 +514,29 @@ fn do_final_output<W: std::io::Write>(
     transactions: RequestResponses<'_>,
 ) -> Result<(), RdapCliError> {
     match processing_params.output_type {
-        OutputType::Json | OutputType::PrettyJson => {
+        OutputType::Json | OutputType::PrettyJson | OutputType::PrettyCompactJson => {
             let output_count = transactions
                 .iter()
                 .filter(|t| t.req_data.req_target)
                 .count();
-            let pretty = matches!(processing_params.output_type, OutputType::PrettyJson);
+            // let pretty = matches!(processing_params.output_type, OutputType::PrettyJson);
             if output_count == 1 {
                 for req_res in &transactions {
                     if req_res.req_data.req_target {
-                        if !pretty {
-                            writeln!(
-                                write,
-                                "{}",
-                                serde_json::to_string(&req_res.res_data.rdap).unwrap()
-                            )?;
-                        } else {
-                            writeln!(
-                                write,
-                                "{}",
-                                serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
-                            )?;
-                        }
+                        write_json(processing_params, write, &req_res.res_data.rdap)?;
+                        // if !pretty {
+                        //     writeln!(
+                        //         write,
+                        //         "{}",
+                        //         serde_json::to_string(&req_res.res_data.rdap).unwrap()
+                        //     )?;
+                        // } else {
+                        //     writeln!(
+                        //         write,
+                        //         "{}",
+                        //         serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
+                        //     )?;
+                        // }
                         break;
                     }
                 }
@@ -517,15 +545,16 @@ fn do_final_output<W: std::io::Write>(
                     .iter()
                     .map(|t| &t.res_data.rdap)
                     .collect::<Vec<&RdapResponse>>();
-                if !pretty {
-                    writeln!(write, "{}", serde_json::to_string(&output_vec).unwrap())?;
-                } else {
-                    writeln!(
-                        write,
-                        "{}",
-                        serde_json::to_string_pretty(&output_vec).unwrap()
-                    )?;
-                }
+                write_json(processing_params, write, &output_vec)?;
+                // if !pretty {
+                //     writeln!(write, "{}", serde_json::to_string(&output_vec).unwrap())?;
+                // } else {
+                //     writeln!(
+                //         write,
+                //         "{}",
+                //         serde_json::to_string_pretty(&output_vec).unwrap()
+                //     )?;
+                // }
             }
         }
         OutputType::JsonExtra => {

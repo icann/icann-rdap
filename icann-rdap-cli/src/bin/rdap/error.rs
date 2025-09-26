@@ -35,6 +35,8 @@ pub enum RdapCliError {
     NoRegistrarFound,
     #[error("No registry found")]
     NoRegistryFound,
+    #[error("gTLD Whois output for this query is not implemented")]
+    GtldWhoisOutputNotImplemented,
 }
 
 impl RdapCliError {
@@ -61,6 +63,7 @@ impl RdapCliError {
             // User Errors
             Self::UnknownOutputType => 200,
             Self::ErrorOnChecks => 201,
+            Self::GtldWhoisOutputNotImplemented => 205,
 
             // RDAP Client Errrors
             Self::RdapClient(e) => match e {
