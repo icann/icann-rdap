@@ -130,3 +130,47 @@ fn nameservers(nameservers: &[Nameserver], params: RpslParams) -> String {
     }
     rpsl
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{Domain, Event},
+    };
+
+    use crate::rpsl::{RpslParams, ToRpsl};
+
+    static MINT_PATH: &str = "src/test_files/rpsl/domain";
+
+    #[test]
+    fn test_rpsl_domain_with_ldh_and_handle_and_events() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .handle("FOO-COM")
+            .event(
+                Event::builder()
+                    .event_action("last changed")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build();
+
+        // WHEN represented as rpsl
+        let http_data = HttpData::example().build();
+        let params = RpslParams {
+            http_data: &http_data,
+        };
+        let actual = domain.to_rpsl(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_ldh_and_handle_and_events.txt")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+}

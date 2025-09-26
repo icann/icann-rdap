@@ -295,7 +295,7 @@ mod tests {
     static MINT_PATH: &str = "src/test_files/md/domain";
 
     #[test]
-    fn test_domain_with_ldh_and_handle() {
+    fn test_md_domain_with_ldh_and_handle() {
         // GIVEN domain
         let domain = Domain::builder()
             .ldh_name("foo.example.com")
@@ -329,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_with_ldh_only() {
+    fn test_md_domain_with_ldh_only() {
         // GIVEN domain
         let domain = Domain::builder().ldh_name("foo.example.com").build();
         let response = domain.clone().to_response();
@@ -360,7 +360,7 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_with_ldh_with_events() {
+    fn test_md_domain_with_ldh_with_events() {
         // GIVEN domain
         let domain = Domain::builder()
             .ldh_name("foo.example.com")
@@ -399,7 +399,7 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_with_ldh_with_empty_events() {
+    fn test_md_domain_with_ldh_with_empty_events() {
         // GIVEN domain
         let domain = Domain::builder()
             .ldh_name("foo.example.com")
@@ -435,7 +435,7 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_with_ldh_with_empty_links() {
+    fn test_md_domain_with_ldh_with_empty_links() {
         // GIVEN domain
         let domain = Domain::builder()
             .ldh_name("foo.example.com")
@@ -469,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_with_ldh_with_one_link() {
+    fn test_md_domain_with_ldh_with_one_link() {
         // GIVEN domain
         let domain = Domain::builder()
             .ldh_name("foo.example.com")
@@ -510,7 +510,7 @@ mod tests {
     }
 
     #[test]
-    fn test_domain_with_ldh_with_two_links() {
+    fn test_md_domain_with_ldh_with_two_links() {
         // GIVEN domain
         let domain = Domain::builder()
             .ldh_name("foo.example.com")

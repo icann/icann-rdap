@@ -130,3 +130,33 @@ fn key(entity: &Entity) -> (AttrName, String) {
     let value = entity_value(entity);
     (name, value)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{httpdata::HttpData, prelude::Entity};
+
+    use crate::rpsl::{RpslParams, ToRpsl};
+
+    static MINT_PATH: &str = "src/test_files/rpsl/entity";
+
+    #[test]
+    fn test_rpsl_entity_with_handle() {
+        // GIVEN entity
+        let entity = Entity::builder().handle("123-ABC").build();
+
+        // WHEN represented as rpsl
+        let http_data = HttpData::example().build();
+        let params = RpslParams {
+            http_data: &http_data,
+        };
+        let actual = entity.to_rpsl(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_handle.txt").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+}

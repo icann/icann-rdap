@@ -375,7 +375,7 @@ mod tests {
     static MINT_PATH: &str = "src/test_files/md/entity";
 
     #[test]
-    fn test_entity_with_handle() {
+    fn test_md_entity_with_handle() {
         // GIVEN domain
         let entity = Entity::builder().handle("123-ABC").build();
         let response = entity.clone().to_response();

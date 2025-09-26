@@ -52,3 +52,36 @@ impl KeyRef for Nameserver {
         (name, value)
     }
 }
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{httpdata::HttpData, prelude::Nameserver};
+
+    use crate::rpsl::{RpslParams, ToRpsl};
+
+    static MINT_PATH: &str = "src/test_files/rpsl/nameserver";
+
+    #[test]
+    fn test_rpsl_nameserver_with_ldh_and_handle() {
+        // GIVEN nameserver
+        let ns = Nameserver::builder()
+            .ldh_name("foo.example.com")
+            .handle("123-ABC")
+            .build()
+            .unwrap();
+
+        // WHEN represented as rpsl
+        let http_data = HttpData::example().build();
+        let params = RpslParams {
+            http_data: &http_data,
+        };
+        let actual = ns.to_rpsl(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_handle.txt").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+}

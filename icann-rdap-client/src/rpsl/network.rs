@@ -57,3 +57,37 @@ impl KeyRef for Network {
         (name, value)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{httpdata::HttpData, prelude::Network};
+
+    use crate::rpsl::{RpslParams, ToRpsl};
+
+    static MINT_PATH: &str = "src/test_files/rpsl/network";
+
+    #[test]
+    fn test_rpsl_network_with_cidr_and_handle() {
+        // GIVEN network
+        let network = Network::builder()
+            .cidr("10.0.0.0/24")
+            .handle("NET10-RIR")
+            .build()
+            .unwrap();
+
+        // WHEN represented as rpsl
+        let http_data = HttpData::example().build();
+        let params = RpslParams {
+            http_data: &http_data,
+        };
+        let actual = network.to_rpsl(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_cidr_and_handle.txt").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+}

@@ -126,7 +126,7 @@ mod tests {
     static MINT_PATH: &str = "src/test_files/md/nameserver";
 
     #[test]
-    fn test_nameserver_with_ldh_and_handle() {
+    fn test_md_nameserver_with_ldh_and_handle() {
         // GIVEN nameserver
         let ns = Nameserver::builder()
             .ldh_name("foo.example.com")
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn test_nameserver_with_ldh_only() {
+    fn test_md_nameserver_with_ldh_only() {
         // GIVEN nameserver
         let ns = Nameserver::builder()
             .ldh_name("foo.example.com")
