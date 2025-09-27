@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::{
     check::{CheckParams, GetChecks, GetSubChecks},
+    prelude::ObjectCommonFields,
     response::Network,
 };
 
@@ -34,18 +35,21 @@ impl ToMd for Network {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref(&"Start Address", &self.start_address)
-            .and_nv_ref(&"End Address", &self.end_address)
-            .and_nv_ref(&"IP Version", &self.ip_version)
+            .and_nv_ref_maybe(&"Start Address", &self.start_address)
+            .and_nv_ref_maybe(&"End Address", &self.end_address)
+            .and_nv_ref_maybe(&"IP Version", &self.ip_version)
             .and_nv_ul(&"CIDR", self.cidr0_cidrs.clone())
-            .and_nv_ref(&"Handle", &self.object_common.handle)
-            .and_nv_ref(&"Parent Handle", &self.parent_handle)
-            .and_nv_ref(&"Network Type", &self.network_type)
-            .and_nv_ref(&"Network Name", &self.name)
-            .and_nv_ref(&"Country", &self.country);
+            .and_nv_ref_maybe(&"Handle", &self.object_common.handle)
+            .and_nv_ref_maybe(&"Parent Handle", &self.parent_handle)
+            .and_nv_ref_maybe(&"Network Type", &self.network_type)
+            .and_nv_ref_maybe(&"Network Name", &self.name)
+            .and_nv_ref_maybe(&"Country", &self.country);
 
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);
+
+        // remarks
+        table = self.remarks().add_to_mptable(table, params);
 
         // checks
         let check_params = CheckParams::from_md(params, typeid);
@@ -55,9 +59,6 @@ impl ToMd for Network {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // remarks
-        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
 
         // only other object classes from here
         md.push_str(HR);
@@ -104,5 +105,72 @@ impl MdUtil for Network {
             }
         };
         header_text.build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, io::Write};
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{Entity, Network, Remark, ToResponse},
+    };
+
+    use crate::{
+        md::{MdOptions, MdParams, ToMd},
+        rdap::RequestData,
+    };
+
+    static MINT_PATH: &str = "src/test_files/md/network";
+
+    #[test]
+    fn test_md_network_with_handle_and_remarks() {
+        // GIVEN autnum
+        let net = Network::builder()
+            .cidr("199.1.0.0/16")
+            .handle("123-ABC")
+            .remark(
+                Remark::builder()
+                    .title("AS Numbers Are Integers")
+                    .description_entry("Autonomous System numbers are integers.")
+                    .build(),
+            )
+            .remark(
+                Remark::builder()
+                    .title("AS Numbers Are Not Floats")
+                    .nr_type("generated")
+                    .description_entry("Autonomous System numbers are not floating point numbers.")
+                    .description_entry("They are integers.")
+                    .build(),
+            )
+            .build()
+            .unwrap();
+        let response = net.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Entity>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = net.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_handle_and_remarks.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 }

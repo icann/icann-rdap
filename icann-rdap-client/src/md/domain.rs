@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::{
     dns_types::{DnsAlgorithmType, DnsDigestType},
+    prelude::ObjectCommonFields,
     response::{Domain, SecureDns, Variant},
 };
 
@@ -68,6 +69,9 @@ impl ToMd for Domain {
             table = secure_dns.add_to_mptable(table, params);
         }
 
+        // remarks
+        table = self.remarks().add_to_mptable(table, params);
+
         // checks
         let check_params = CheckParams::from_md(params, typeid);
         let mut checks = self.object_common.get_sub_checks(check_params);
@@ -76,9 +80,6 @@ impl ToMd for Domain {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // remarks
-        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
 
         // only other object classes from here
         md.push_str(HR);
