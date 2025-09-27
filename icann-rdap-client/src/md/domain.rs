@@ -60,6 +60,9 @@ impl ToMd for Domain {
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);
 
+        // domain variants
+        table = self.variants().add_to_mptable(table, params);
+
         // checks
         let check_params = CheckParams::from_md(params, typeid);
         let mut checks = self.object_common.get_sub_checks(check_params);
@@ -68,11 +71,6 @@ impl ToMd for Domain {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // variants require a custom table
-        if let Some(variants) = &self.variants {
-            md.push_str(&do_variants(variants, params))
-        }
 
         // secure dns
         if let Some(secure_dns) = &self.secure_dns {
@@ -115,33 +113,27 @@ impl ToMd for Domain {
     }
 }
 
-fn do_variants(variants: &[Variant], params: MdParams) -> String {
-    let mut md = String::new();
-    md.push_str(&format!(
-        "|:-:|\n|{}|\n",
-        "Domain Variants".to_right_bold(8, params.options)
-    ));
-    md.push_str("|:-:|:-:|:-:|\n|Relations|IDN Table|Variant Names|\n");
-    variants.iter().for_each(|v| {
-        md.push_str(&format!(
-            "|{}|{}|{}|",
-            v.relations().make_title_case_list(),
-            v.idn_table.as_deref().unwrap_or_default(),
-            v.variant_names
-                .as_deref()
-                .unwrap_or_default()
-                .iter()
-                .map(|dv| format!(
-                    "ldh: '{}' utf:'{}'",
-                    dv.ldh_name.as_deref().unwrap_or_default(),
-                    dv.unicode_name.as_deref().unwrap_or_default()
-                ))
-                .collect::<Vec<String>>()
-                .join(", "),
-        ))
-    });
-    md.push('\n');
-    md
+impl ToMpTable for &[Variant] {
+    fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
+        if self.is_empty() {
+            return table;
+        }
+        table = table.header_ref(&"Domain Variants");
+        for variant in self.iter() {
+            for names in variant.variant_names() {
+                table = table.nv_ref(
+                    &variant.relations().make_title_case_list(),
+                    &format!(
+                        "tbl:{} ldh:'{}' utf:'{}'",
+                        variant.idn_table().unwrap_or_default(),
+                        names.ldh_name().unwrap_or_default(),
+                        names.unicode_name().unwrap_or_default()
+                    ),
+                )
+            }
+        }
+        table
+    }
 }
 
 fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
@@ -284,7 +276,7 @@ mod tests {
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Domain, Event, Link, ToResponse},
+        prelude::{Domain, Event, Link, ToResponse, Variant, VariantName},
     };
 
     use crate::{
@@ -555,6 +547,70 @@ mod tests {
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_ldh_with_two_links.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_and_variants() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .variant(
+                Variant::builder()
+                    .relation("registered")
+                    .relation("conjoined")
+                    .idn_table(".EXAMPLE Swedish")
+                    .variant_name(
+                        VariantName::builder()
+                            .ldh_name("xn--fo-8ja.example")
+                            .unicode_name("fôo.example")
+                            .build(),
+                    )
+                    .build(),
+            )
+            .variant(
+                Variant::builder()
+                    .relation("registration restricted")
+                    .relation("unregistered")
+                    .variant_name(
+                        VariantName::builder()
+                            .ldh_name("xn--fo-cka.example")
+                            .unicode_name("fõo.example")
+                            .build(),
+                    )
+                    .variant_name(
+                        VariantName::builder()
+                            .ldh_name("xn--fo-fka.example")
+                            .unicode_name("föo.example")
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_variants.md").unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }
