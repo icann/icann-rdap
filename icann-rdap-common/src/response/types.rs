@@ -561,6 +561,26 @@ impl NoticeOrRemark {
             .unwrap_or_default()
     }
 
+    /// Returns the description where lines that are
+    /// not sentences are consolidated into paragraphs.
+    pub fn description_as_pgs(&self) -> Vec<String> {
+        let mut pgs = vec![];
+        let mut acc_line = String::new();
+        for line in self.description() {
+            acc_line.push_str(line.trim());
+            if acc_line.ends_with('.') || acc_line.to_ascii_uppercase().eq(&acc_line) {
+                pgs.push(acc_line);
+                acc_line = String::new();
+            } else {
+                acc_line.push(' ');
+            }
+        }
+        if !acc_line.is_empty() {
+            pgs.push(acc_line);
+        }
+        pgs
+    }
+
     /// Returns the links associated with the notice/remark.
     pub fn links(&self) -> &[Link] {
         self.links.as_deref().unwrap_or_default()
@@ -1196,5 +1216,27 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn test_description_as_pgs() {
+        // GIVEN notice
+        let notice = Notice::builder()
+            .description_entry("This is a test")
+            .description_entry("that should be consolidated.")
+            .description_entry("SEPARATE LINE")
+            .description_entry("Another line.")
+            .build();
+
+        // WHEN converted to pgs
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert_eq!(
+            actual.first().unwrap(),
+            "This is a test that should be consolidated."
+        );
+        assert_eq!(actual.get(1).unwrap(), "SEPARATE LINE");
+        assert_eq!(actual.get(2).unwrap(), "Another line.");
     }
 }

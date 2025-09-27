@@ -158,13 +158,18 @@ impl ToMd for NoticeOrRemark {
         if let Some(nr_type) = &self.nr_type {
             md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
         };
-        if let Some(description) = &self.description {
-            description.vec().iter().for_each(|s| {
-                if !s.is_whitespace_or_empty() {
-                    md.push_str(&format!("> {}\n\n", s.trim().replace_md_chars()))
-                }
-            });
+        for line in self.description_as_pgs() {
+            if !line.is_whitespace_or_empty() {
+                md.push_str(&format!("> {}\n\n", line.replace_md_chars()))
+            }
         }
+        // if let Some(description) = &self.description {
+        //     description.vec().iter().for_each(|s| {
+        //         if !s.is_whitespace_or_empty() {
+        //             md.push_str(&format!("> {}\n\n", s.trim().replace_md_chars()))
+        //         }
+        //     });
+        // }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()))
             .items
             .iter()
