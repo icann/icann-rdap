@@ -63,6 +63,11 @@ impl ToMd for Domain {
         // domain variants
         table = self.variants().add_to_mptable(table, params);
 
+        // secure dns
+        if let Some(secure_dns) = self.secure_dns() {
+            table = secure_dns.add_to_mptable(table, params);
+        }
+
         // checks
         let check_params = CheckParams::from_md(params, typeid);
         let mut checks = self.object_common.get_sub_checks(check_params);
@@ -71,11 +76,6 @@ impl ToMd for Domain {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // secure dns
-        if let Some(secure_dns) = &self.secure_dns {
-            md.push_str(&do_secure_dns(secure_dns, params))
-        }
 
         // remarks
         md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
@@ -136,92 +136,86 @@ impl ToMpTable for &[Variant] {
     }
 }
 
-fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
-    let mut md = String::new();
-    if secure_dns.zone_signed().is_none()
-        && secure_dns.delegation_signed.is_none()
-        && secure_dns.max_sig_life().is_none()
-        && secure_dns.ds_data().is_empty()
-        && secure_dns.key_data().is_empty()
-    {
-        return md;
-    }
-    // multipart data
-    let mut table = MultiPartTable::new();
+impl ToMpTable for &SecureDns {
+    fn add_to_mptable(&self, mut table: MultiPartTable, params: MdParams) -> MultiPartTable {
+        if self.zone_signed().is_none()
+            && self.delegation_signed.is_none()
+            && self.max_sig_life().is_none()
+            && self.ds_data().is_empty()
+            && self.key_data().is_empty()
+        {
+            return table;
+        }
 
-    table = table
-        .header_ref(&"DNSSEC Information")
-        .and_nv_ref_maybe(
-            &"Zone Signed",
-            &secure_dns.zone_signed.as_ref().map(|b| b.to_string()),
-        )
-        .and_nv_ref_maybe(
-            &"Delegation Signed",
-            &secure_dns.delegation_signed.as_ref().map(|b| b.to_string()),
-        )
-        .and_nv_ref_maybe(
-            &"Max Sig Life",
-            &secure_dns.max_sig_life.as_ref().map(|u| u.to_string()),
-        );
+        // Signing summary information
+        table = table
+            .header_ref(&"DNSSEC Information")
+            .and_nv_ref_maybe(
+                &"Zone Signed",
+                &self.zone_signed.as_ref().map(|b| b.to_string()),
+            )
+            .and_nv_ref_maybe(
+                &"Delegation Signed",
+                &self.delegation_signed.as_ref().map(|b| b.to_string()),
+            )
+            .and_nv_ref_maybe(
+                &"Max Sig Life",
+                &self.max_sig_life.as_ref().map(|u| u.to_string()),
+            );
 
-    if let Some(ds_data) = &secure_dns.ds_data {
-        for (i, ds) in ds_data.iter().enumerate() {
-            let header = format!("DS Data ({i})").replace_md_chars();
-            table = table
-                .header_ref(&header)
-                .and_nv_ref(&"Key Tag", &ds.key_tag.as_ref().map(|k| k.to_string()))
-                .and_nv_ref(
-                    &"Algorithm",
-                    &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
-                )
-                .and_nv_ref(&"Digest", &ds.digest)
-                .and_nv_ref(
-                    &"Digest Type",
-                    &dns_digest_type(&ds.digest_type.as_ref().and_then(|d| d.as_u8())),
-                );
-            if let Some(events) = &ds.events {
-                let ds_header = format!("DS ({i}) Events");
-                table = events_to_table(events, table, &ds_header, params);
-            }
-            if let Some(links) = &ds.links {
-                let ds_header = format!("DS ({i}) Links");
-                table = links_to_table(links, table, &ds_header);
+        // ds data
+        if let Some(ds_data) = &self.ds_data {
+            for (i, ds) in ds_data.iter().enumerate() {
+                let header = format!("DS Data ({i})").replace_md_chars();
+                table = table
+                    .header_ref(&header)
+                    .and_nv_ref(&"Key Tag", &ds.key_tag.as_ref().map(|k| k.to_string()))
+                    .and_nv_ref(
+                        &"Algorithm",
+                        &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
+                    )
+                    .and_nv_ref(&"Digest", &ds.digest)
+                    .and_nv_ref(
+                        &"Digest Type",
+                        &dns_digest_type(&ds.digest_type.as_ref().and_then(|d| d.as_u8())),
+                    );
+                if let Some(events) = &ds.events {
+                    let ds_header = format!("DS ({i}) Events");
+                    table = events_to_table(events, table, &ds_header, params);
+                }
+                if let Some(links) = &ds.links {
+                    let ds_header = format!("DS ({i}) Links");
+                    table = links_to_table(links, table, &ds_header);
+                }
             }
         }
-    }
 
-    if let Some(key_data) = &secure_dns.key_data {
-        for (i, key) in key_data.iter().enumerate() {
-            let header = format!("Key Data ({i})").replace_md_chars();
-            table = table
-                .header_ref(&header)
-                .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
-                .and_nv_ref(&"Protocol", &key.protocol.as_ref().map(|a| a.to_string()))
-                .and_nv_ref(&"Public Key", &key.public_key)
-                .and_nv_ref(
-                    &"Algorithm",
-                    &dns_algorithm(&key.algorithm.as_ref().and_then(|a| a.as_u8())),
-                );
-            if let Some(events) = &key.events {
-                let key_header = format!("Key ({i}) Events");
-                table = events_to_table(events, table, &key_header, params);
-            }
-            if let Some(links) = &key.links {
-                let key_header = format!("Key ({i}) Links");
-                table = links_to_table(links, table, &key_header);
+        // key data
+        if let Some(key_data) = &self.key_data {
+            for (i, key) in key_data.iter().enumerate() {
+                let header = format!("Key Data ({i})").replace_md_chars();
+                table = table
+                    .header_ref(&header)
+                    .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
+                    .and_nv_ref(&"Protocol", &key.protocol.as_ref().map(|a| a.to_string()))
+                    .and_nv_ref(&"Public Key", &key.public_key)
+                    .and_nv_ref(
+                        &"Algorithm",
+                        &dns_algorithm(&key.algorithm.as_ref().and_then(|a| a.as_u8())),
+                    );
+                if let Some(events) = &key.events {
+                    let key_header = format!("Key ({i}) Events");
+                    table = events_to_table(events, table, &key_header, params);
+                }
+                if let Some(links) = &key.links {
+                    let key_header = format!("Key ({i}) Links");
+                    table = links_to_table(links, table, &key_header);
+                }
             }
         }
+
+        table
     }
-
-    // checks
-    let typeid = TypeId::of::<Domain>();
-    let check_params = CheckParams::from_md(params, typeid);
-    let checks = secure_dns.get_sub_checks(check_params);
-    table = checks_to_table(checks, table, params);
-
-    // render table
-    md.push_str(&table.to_md(params));
-    md
 }
 
 fn dns_algorithm(alg: &Option<u8>) -> Option<String> {
@@ -276,7 +270,7 @@ mod tests {
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Domain, Event, Link, ToResponse, Variant, VariantName},
+        prelude::{Domain, DsDatum, Event, Link, SecureDns, ToResponse, Variant, VariantName},
     };
 
     use crate::{
@@ -611,6 +605,72 @@ mod tests {
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_ldh_and_variants.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_and_secure_dns() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .secure_dns(
+                SecureDns::builder()
+                    .delegation_signed(true)
+                    .zone_signed(false)
+                    .max_sig_life(1)
+                    .ds_data(
+                        DsDatum::builder()
+                            .key_tag(8)
+                            .algorithm(128)
+                            .digest("12345939191039129495959920al121kk3999494994")
+                            .event(
+                                Event::builder()
+                                    .event_action("updated")
+                                    .event_date("1990-12-31T23:59:59Z")
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .ds_data(
+                        DsDatum::builder()
+                            .key_tag(4)
+                            .algorithm(12)
+                            .digest("as5902320elldwkl2909802800809803")
+                            .event(
+                                Event::builder()
+                                    .event_action("updated")
+                                    .event_date("1990-12-31T23:59:59Z")
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_secure_dns.md").unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }
