@@ -14,5 +14,4 @@
 |Registration Restricted, Unregistered|tbl: ldh:'xn--fo-fka.example' utf:'föo.example'|
 |
 
-----------------------------------------
 

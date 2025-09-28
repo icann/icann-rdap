@@ -15,7 +15,7 @@ use super::{
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
     types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
@@ -80,9 +80,6 @@ impl ToMd for Domain {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // only other object classes from here
-        md.push_str(HR);
 
         // entities
         md.push_str(
