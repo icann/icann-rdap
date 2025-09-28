@@ -356,7 +356,7 @@ fn do_output<'a, W: std::io::Write>(
                 skin.bold.set_fg(DarkBlue);
                 skin.italic.set_fg(Red);
                 skin.quote_mark.set_fg(DarkBlue);
-                skin.table.set_fg(DarkGreen);
+                skin.table.set_fg(DarkGrey);
                 skin.table.align = Alignment::Center;
                 skin.inline_code.set_fgbg(Cyan, Reset);
                 skin.write_text_on(
