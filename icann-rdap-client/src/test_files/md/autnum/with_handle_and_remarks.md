@@ -12,14 +12,14 @@
 |**   Remark 1    **|
 |-:|:-|
 |          Title|AS Numbers Are Integers|
-|              1|Autonomous System numbers are integers.|
+|              1|> Autonomous System numbers are integers.|
 |:-:|
 |**   Remark 2    **|
 |-:|:-|
 |          Title|AS Numbers Are Not Floats|
 |           Type|Generated|
-|              1|Autonomous System numbers are not floating point numbers.|
-|              2|They are integers.|
+|              1|> Autonomous System numbers are not floating point numbers.|
+|              2|> They are integers.|
 |
 
 ----------------------------------------

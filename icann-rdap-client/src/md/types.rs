@@ -200,7 +200,10 @@ impl ToMpTable for &[Remark] {
                         .map(|s| s.replace_md_chars().to_words_title_case()),
                 );
                 for (i, pg) in remark.description_as_pgs().iter().enumerate() {
-                    table = table.nv_ref(&(i + 1).to_string(), &pg.replace_md_chars());
+                    table = table.nv_ref(
+                        &(i + 1).to_string(),
+                        &format!("> {}", pg.replace_md_chars()),
+                    );
                 }
                 table = links_to_table(remark.links(), table, &format!("Remark Links {}", i + 1));
             }
