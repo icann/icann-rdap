@@ -1,4 +1,4 @@
-use icann_rdap_common::response::Stringish;
+use icann_rdap_common::{prelude::Remark, response::Stringish};
 use {
     icann_rdap_common::prelude::ObjectCommon,
     std::{any::TypeId, sync::LazyLock},
@@ -158,12 +158,10 @@ impl ToMd for NoticeOrRemark {
         if let Some(nr_type) = &self.nr_type {
             md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
         };
-        if let Some(description) = &self.description {
-            description.vec().iter().for_each(|s| {
-                if !s.is_whitespace_or_empty() {
-                    md.push_str(&format!("> {}\n\n", s.trim().replace_md_chars()))
-                }
-            });
+        for line in self.description_as_pgs() {
+            if !line.is_whitespace_or_empty() {
+                md.push_str(&format!("> {}\n\n", line.replace_md_chars()))
+            }
         }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()))
             .items
@@ -185,6 +183,32 @@ impl ToMd for NoticeOrRemark {
         }
         md.push('\n');
         md
+    }
+}
+
+impl ToMpTable for &[Remark] {
+    fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
+        if !self.is_empty() {
+            for (i, remark) in self.iter().enumerate() {
+                table = table.header_ref(&format!("Remark {}", i + 1));
+                table =
+                    table.and_nv_ref_maybe(&"Title", &remark.title().map(|s| s.replace_md_chars()));
+                table = table.and_nv_ref_maybe(
+                    &"Type",
+                    &remark
+                        .nr_type()
+                        .map(|s| s.replace_md_chars().to_words_title_case()),
+                );
+                for (i, pg) in remark.description_as_pgs().iter().enumerate() {
+                    table = table.nv_ref(
+                        &(i + 1).to_string(),
+                        &format!("> {}", pg.replace_md_chars()),
+                    );
+                }
+                table = links_to_table(remark.links(), table, &format!("Remark Links {}", i + 1));
+            }
+        }
+        table
     }
 }
 

@@ -561,6 +561,26 @@ impl NoticeOrRemark {
             .unwrap_or_default()
     }
 
+    /// Returns the description where lines that are
+    /// not sentences are consolidated into paragraphs.
+    pub fn description_as_pgs(&self) -> Vec<String> {
+        let mut pgs = vec![];
+        let mut acc_line = String::new();
+        for line in self.description() {
+            acc_line.push_str(line.trim());
+            if acc_line.ends_with('.') || acc_line.to_ascii_uppercase().eq(&acc_line) {
+                pgs.push(acc_line);
+                acc_line = String::new();
+            } else {
+                acc_line.push(' ');
+            }
+        }
+        if !acc_line.is_empty() {
+            pgs.push(acc_line);
+        }
+        pgs
+    }
+
     /// Returns the links associated with the notice/remark.
     pub fn links(&self) -> &[Link] {
         self.links.as_deref().unwrap_or_default()
@@ -846,7 +866,6 @@ impl PublicId {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use crate::{
         prelude::ObjectCommon,
@@ -856,22 +875,22 @@ mod tests {
     use super::{Event, Link, Links, NoticeOrRemark, PublicId};
 
     #[test]
-    fn GIVEN_rdap_conformance_WHEN_serialize_THEN_array_of_strings() {
-        // GIVEN
+    fn test_rdap_conformance_serialize() {
+        // GIVEN rdap conformaance
         let rdap_conformance: RdapConformance =
             vec![Extension("foo".to_string()), Extension("bar".to_string())];
 
-        // WHEN
+        // WHEN serialized
         let actual = serde_json::to_string(&rdap_conformance).unwrap();
 
-        // THEN
+        // THEN expect array of strings
         let expected = r#"["foo","bar"]"#;
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn GIVEN_an_array_of_links_WHEN_deserialize_THEN_success() {
-        // GIVEN
+    fn test_an_array_of_links_deserialize() {
+        // GIVEN array of links
         let expected = r#"
         [
             {
@@ -895,10 +914,10 @@ mod tests {
         ]   
         "#;
 
-        // WHEN
+        // WHEN deserialize
         let links = serde_json::from_str::<Links>(expected);
 
-        // THEN
+        // THEN data is correct
         let actual = links.unwrap();
         assert_eq!(actual.len(), 2);
         let actual_1 = actual.first().unwrap();
@@ -926,8 +945,8 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_an_array_of_links_with_one_lang_WHEN_deserialize_THEN_success() {
-        // GIVEN
+    fn test_an_array_of_links_with_one_lang() {
+        // GIVEN array of links with one lang
         let expected = r#"
         [
             {
@@ -951,10 +970,10 @@ mod tests {
         ]   
         "#;
 
-        // WHEN
+        // WHEN deserialize
         let links = serde_json::from_str::<Links>(expected);
 
-        // THEN
+        // THEN data is accurate
         let actual = links.unwrap();
         assert_eq!(actual.len(), 2);
         let actual_1 = actual.first().unwrap();
@@ -982,8 +1001,8 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_a_notice_or_remark_WHEN_deserialize_THEN_success() {
-        // GIVEN
+    fn test_a_notice_or_remark_deserialize() {
+        // GIVEN notice or remark
         let expected = r#"
         {
             "title" : "Terms of Use",
@@ -1004,10 +1023,10 @@ mod tests {
         }
         "#;
 
-        // WHEN
+        // WHEN deserialize
         let actual = serde_json::from_str::<NoticeOrRemark>(expected);
 
-        // THEN
+        // THEN data is accurate
         let actual = actual.unwrap();
         actual.title.as_ref().unwrap();
         let description: Vec<String> = actual.description.expect("must have description").into();
@@ -1016,8 +1035,8 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_notices_WHEN_serialize_THEN_array_of_notice_structs() {
-        // GIVEN
+    fn test_notices_serialize() {
+        // GIVEN notices
         let notices: Notices = vec![
             Notice(
                 NoticeOrRemark::builder()
@@ -1031,17 +1050,17 @@ mod tests {
             ),
         ];
 
-        // WHEN
+        // WHEN deserialize
         let actual = serde_json::to_string(&notices).unwrap();
 
-        // THEN
+        // THEN then array of notices
         let expected = r#"[{"description":["foo"]},{"description":["bar"]}]"#;
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn GIVEN_remarks_WHEN_serialize_THEN_array_of_remark_structs() {
-        // GIVEN
+    fn test_remarks_serialize() {
+        // GIVEN remarks
         let remarks: Remarks = vec![
             Remark(
                 NoticeOrRemark::builder()
@@ -1055,17 +1074,17 @@ mod tests {
             ),
         ];
 
-        // WHEN
+        // WHEN serialize
         let actual = serde_json::to_string(&remarks).unwrap();
 
-        // THEN
+        // THEN array of remarks
         let expected = r#"[{"description":["foo"]},{"description":["bar"]}]"#;
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn GIVEN_an_event_WHEN_deserialize_THEN_success() {
-        // GIVEN
+    fn test_an_event_deserialize() {
+        // GIVEN an event
         let expected = r#"
         {
             "eventAction" : "last changed",
@@ -1074,17 +1093,17 @@ mod tests {
         }
         "#;
 
-        // WHEN
+        // WHEN deserialize
         let actual = serde_json::from_str::<Event>(expected);
 
-        // THEN
+        // THEN success
         let actual = actual.unwrap();
         actual.event_actor.as_ref().unwrap();
     }
 
     #[test]
-    fn GIVEN_a_public_id_WHEN_deserialize_THEN_success() {
-        // GIVEN
+    fn test_a_public_id_deserialize() {
+        // GIVEN public id
         let expected = r#"
         {
             "type":"IANA Registrar ID",
@@ -1092,7 +1111,7 @@ mod tests {
         }
         "#;
 
-        // WHEN
+        // WHEN deserialize
         let actual = serde_json::from_str::<PublicId>(expected);
 
         // THEN
@@ -1100,8 +1119,8 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_no_self_links_WHEN_set_self_link_THEN_link_is_only_one() {
-        // GIVEN
+    fn test_set_self_link() {
+        // GIVEN no self links
         let mut oc = ObjectCommon::domain()
             .links(vec![Link::builder()
                 .href("http://bar.example")
@@ -1110,7 +1129,7 @@ mod tests {
                 .build()])
             .build();
 
-        // WHEN
+        // WHEN set self link
         oc = oc.set_self_link(
             Link::builder()
                 .href("http://foo.example")
@@ -1119,7 +1138,7 @@ mod tests {
                 .build(),
         );
 
-        // THEN
+        // THEN it is the only one
         assert_eq!(
             oc.links
                 .expect("links are empty")
@@ -1131,11 +1150,11 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_no_links_WHEN_set_self_link_THEN_link_is_only_one() {
-        // GIVEN
+    fn test_set_self_link_on_no_links() {
+        // GIVEN no links
         let mut oc = ObjectCommon::domain().build();
 
-        // WHEN
+        // WHEN set self link
         oc = oc.set_self_link(
             Link::builder()
                 .href("http://foo.example")
@@ -1144,7 +1163,7 @@ mod tests {
                 .build(),
         );
 
-        // THEN
+        // THEN then it is the only one
         assert_eq!(
             oc.links
                 .expect("links are empty")
@@ -1156,8 +1175,8 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_one_self_link_WHEN_set_self_link_THEN_link_is_only_one() {
-        // GIVEN
+    fn test_set_self_link_when_one_exists() {
+        // GIVEN one self link
         let mut oc = ObjectCommon::domain()
             .links(vec![Link::builder()
                 .href("http://bar.example")
@@ -1166,7 +1185,7 @@ mod tests {
                 .build()])
             .build();
 
-        // WHEN
+        // WHEN set self link
         oc = oc.set_self_link(
             Link::builder()
                 .href("http://foo.example")
@@ -1197,5 +1216,27 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn test_description_as_pgs() {
+        // GIVEN notice
+        let notice = Notice::builder()
+            .description_entry("This is a test")
+            .description_entry("that should be consolidated.")
+            .description_entry("SEPARATE LINE")
+            .description_entry("Another line.")
+            .build();
+
+        // WHEN converted to pgs
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert_eq!(
+            actual.first().unwrap(),
+            "This is a test that should be consolidated."
+        );
+        assert_eq!(actual.get(1).unwrap(), "SEPARATE LINE");
+        assert_eq!(actual.get(2).unwrap(), "Another line.");
     }
 }

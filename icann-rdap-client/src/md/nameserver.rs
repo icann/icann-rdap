@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use icann_rdap_common::prelude::ObjectCommonFields;
 use icann_rdap_common::response::Nameserver;
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
@@ -8,7 +9,7 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Nameserver {
@@ -54,6 +55,9 @@ impl ToMd for Nameserver {
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);
 
+        // remarks
+        table = self.remarks().add_to_mptable(table, params);
+
         // checks
         let check_params = CheckParams::from_md(params, typeid);
         let mut checks = self.object_common.get_sub_checks(check_params);
@@ -62,12 +66,6 @@ impl ToMd for Nameserver {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // remarks
-        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
-
-        // only other object classes from here
-        md.push_str(HR);
 
         // entities
         md.push_str(
