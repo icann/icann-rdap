@@ -1,16 +1,11 @@
 use std::any::TypeId;
 
-use icann_rdap_common::{
-    check::{CheckParams, GetChecks, GetSubChecks},
-    prelude::ObjectCommonFields,
-    response::Network,
-};
+use icann_rdap_common::{prelude::ObjectCommonFields, response::Network};
 
 use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Network {
@@ -50,12 +45,6 @@ impl ToMd for Network {
 
         // remarks
         table = self.remarks().add_to_mptable(table, params);
-
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
 
         // render table
         md.push_str(&table.to_md(params));

@@ -6,8 +6,6 @@ use icann_rdap_common::{
     response::{Entity, EntityRole},
 };
 
-use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
-
 use crate::rdap::registered_redactions::{
     are_redactions_registered_for_roles, is_redaction_registered_for_role,
     text_or_registered_redaction_for_role, RedactedName,
@@ -17,8 +15,8 @@ use super::{
     redacted::REDACTED_TEXT,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    types::{checks_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    types::public_ids_to_table,
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Entity {
@@ -177,12 +175,6 @@ impl ToMd for Entity {
 
         // remarks
         table = self.remarks().add_to_mptable(table, params);
-
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
 
         // render table
         md.push_str(&table.to_md(params));

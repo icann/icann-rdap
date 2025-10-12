@@ -6,16 +6,14 @@ use icann_rdap_common::{
     response::{Domain, SecureDns, Variant},
 };
 
-use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
-
 use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
 
 use super::{
     redacted::REDACTED_TEXT,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    types::{events_to_table, links_to_table, public_ids_to_table},
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
@@ -71,12 +69,6 @@ impl ToMd for Domain {
 
         // remarks
         table = self.remarks().add_to_mptable(table, params);
-
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
 
         // render table
         md.push_str(&table.to_md(params));

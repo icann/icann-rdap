@@ -5,12 +5,9 @@ use {
     buildstructor::Builder,
     icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse},
     std::{any::TypeId, char},
-    strum::EnumMessage,
 };
 
-use icann_rdap_common::check::{CheckClass, Checks, CHECK_CLASS_LEN};
-
-use self::string::StringUtil;
+use icann_rdap_common::check::CheckClass;
 
 pub mod autnum;
 pub mod domain;
@@ -156,27 +153,6 @@ impl MdUtil for RdapResponse {
             Self::Help(help) => help.get_header_text(),
         }
     }
-}
-
-pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
-    let mut md = String::new();
-    checks
-        .items
-        .iter()
-        .filter(|item| params.check_types.contains(&item.check_class))
-        .for_each(|item| {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                &item
-                    .check_class
-                    .to_string()
-                    .to_right_em(*CHECK_CLASS_LEN, params.options),
-                item.check
-                    .get_message()
-                    .expect("Check has no message. Coding error.")
-            ))
-        });
-    md
 }
 
 pub(crate) trait FromMd<'a> {
