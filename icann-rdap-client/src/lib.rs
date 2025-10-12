@@ -17,6 +17,7 @@ pub mod http;
 pub mod iana;
 pub mod md;
 pub mod rdap;
+pub mod rpsl;
 
 /// Basics necesasry for a simple clients.
 pub mod prelude {

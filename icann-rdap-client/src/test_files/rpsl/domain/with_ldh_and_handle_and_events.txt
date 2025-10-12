@@ -1,0 +1,5 @@
+domain:         foo.example.com
+nic-hdl:        FOO-COM
+last-modified:  19901231 (Mon, 31 Dec 1990 23:59:59 +0000)
+source:         example.com
+

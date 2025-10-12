@@ -1,0 +1,4 @@
+nserver:        foo.example.com
+nic-hdl:        123-ABC
+source:         example.com
+

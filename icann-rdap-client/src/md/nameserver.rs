@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use icann_rdap_common::prelude::ObjectCommonFields;
 use icann_rdap_common::response::Nameserver;
 
 use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
@@ -8,7 +9,7 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::checks_to_table,
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Nameserver {
@@ -34,11 +35,14 @@ impl ToMd for Nameserver {
         table = table.summary(header_text);
 
         // identifiers
+        //
+        // due to the nature of nameservers, we are guaranteed to have at least one of
+        // ldhName or unicodeName.
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref(&"LDH Name", &self.ldh_name)
-            .and_nv_ref(&"Unicode Name", &self.unicode_name)
-            .and_nv_ref(&"Handle", &self.object_common.handle);
+            .and_nv_ref_maybe(&"LDH Name", &self.ldh_name)
+            .and_nv_ref_maybe(&"Unicode Name", &self.unicode_name)
+            .and_nv_ref_maybe(&"Handle", &self.object_common.handle);
         if let Some(addresses) = &self.ip_addresses {
             if let Some(v4) = &addresses.v4 {
                 table = table.nv_ul_ref(&"Ipv4", v4.vec().iter().collect());
@@ -51,6 +55,9 @@ impl ToMd for Nameserver {
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);
 
+        // remarks
+        table = self.remarks().add_to_mptable(table, params);
+
         // checks
         let check_params = CheckParams::from_md(params, typeid);
         let mut checks = self.object_common.get_sub_checks(check_params);
@@ -59,12 +66,6 @@ impl ToMd for Nameserver {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // remarks
-        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
-
-        // only other object classes from here
-        md.push_str(HR);
 
         // entities
         md.push_str(
@@ -102,5 +103,92 @@ impl MdUtil for Nameserver {
             }
         };
         header_text.build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, io::Write};
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{Nameserver, ToResponse},
+    };
+
+    use crate::{
+        md::{MdOptions, MdParams, ToMd},
+        rdap::RequestData,
+    };
+
+    static MINT_PATH: &str = "src/test_files/md/nameserver";
+
+    #[test]
+    fn test_md_nameserver_with_ldh_and_handle() {
+        // GIVEN nameserver
+        let ns = Nameserver::builder()
+            .ldh_name("foo.example.com")
+            .handle("123-ABC")
+            .build()
+            .unwrap();
+        let response = ns.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Nameserver>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = ns.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_handle.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_nameserver_with_ldh_only() {
+        // GIVEN nameserver
+        let ns = Nameserver::builder()
+            .ldh_name("foo.example.com")
+            .build()
+            .unwrap();
+        let response = ns.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Nameserver>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = ns.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_only.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 }

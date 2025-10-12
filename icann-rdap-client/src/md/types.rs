@@ -1,4 +1,4 @@
-use icann_rdap_common::response::Stringish;
+use icann_rdap_common::{prelude::Remark, response::Stringish};
 use {
     icann_rdap_common::prelude::ObjectCommon,
     std::{any::TypeId, sync::LazyLock},
@@ -158,12 +158,10 @@ impl ToMd for NoticeOrRemark {
         if let Some(nr_type) = &self.nr_type {
             md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
         };
-        if let Some(description) = &self.description {
-            description.vec().iter().for_each(|s| {
-                if !s.is_whitespace_or_empty() {
-                    md.push_str(&format!("> {}\n\n", s.trim().replace_md_chars()))
-                }
-            });
+        for line in self.description_as_pgs() {
+            if !line.is_whitespace_or_empty() {
+                md.push_str(&format!("> {}\n\n", line.replace_md_chars()))
+            }
         }
         self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()))
             .items
@@ -185,6 +183,32 @@ impl ToMd for NoticeOrRemark {
         }
         md.push('\n');
         md
+    }
+}
+
+impl ToMpTable for &[Remark] {
+    fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
+        if !self.is_empty() {
+            for (i, remark) in self.iter().enumerate() {
+                table = table.header_ref(&format!("Remark {}", i + 1));
+                table =
+                    table.and_nv_ref_maybe(&"Title", &remark.title().map(|s| s.replace_md_chars()));
+                table = table.and_nv_ref_maybe(
+                    &"Type",
+                    &remark
+                        .nr_type()
+                        .map(|s| s.replace_md_chars().to_words_title_case()),
+                );
+                for (i, pg) in remark.description_as_pgs().iter().enumerate() {
+                    table = table.nv_ref(
+                        &(i + 1).to_string(),
+                        &format!("> {}", pg.replace_md_chars()),
+                    );
+                }
+                table = links_to_table(remark.links(), table, &format!("Remark Links {}", i + 1));
+            }
+        }
+        table
     }
 }
 
@@ -301,7 +325,7 @@ impl ToMpTable for ObjectCommon {
             }
 
             // Port 43
-            table = table.and_nv_ref(&"Whois", &self.port_43);
+            table = table.and_nv_ref_maybe(&"Whois", &self.port_43);
         }
 
         // Events
@@ -342,6 +366,9 @@ pub(crate) fn events_to_table(
     header_name: &str,
     params: MdParams,
 ) -> MultiPartTable {
+    if events.is_empty() {
+        return table;
+    }
     table = table.header_ref(&header_name.replace_md_chars());
     for event in events {
         let raw_event_date = event.event_date.to_owned().unwrap_or_default();
@@ -373,8 +400,14 @@ pub(crate) fn links_to_table(
     mut table: MultiPartTable,
     header_name: &str,
 ) -> MultiPartTable {
+    if links.is_empty() {
+        return table;
+    }
     table = table.header_ref(&header_name.replace_md_chars());
-    for link in links {
+    for (index, link) in links.iter().enumerate() {
+        if index > 0 {
+            table = table.add_separator();
+        }
         if let Some(title) = &link.title {
             table = table.nv_ref(&"Title", &title.trim());
         };
@@ -383,28 +416,19 @@ pub(crate) fn links_to_table(
             .as_ref()
             .unwrap_or(&"Link".to_string())
             .to_title_case();
-        let mut ul: Vec<&String> = vec![];
-        if let Some(href) = &link.href {
-            ul.push(href)
-        }
-        if let Some(media_type) = &link.media_type {
-            ul.push(media_type)
-        };
-        if let Some(media) = &link.media {
-            ul.push(media)
-        };
-        if let Some(value) = &link.value {
-            ul.push(value)
-        };
-        let hreflang_s;
+        let mut hreflang_s = None;
         if let Some(hreflang) = &link.hreflang {
-            hreflang_s = match hreflang {
+            hreflang_s = Some(match hreflang {
                 icann_rdap_common::response::HrefLang::Lang(lang) => lang.to_owned(),
                 icann_rdap_common::response::HrefLang::Langs(langs) => langs.join(", "),
-            };
-            ul.push(&hreflang_s)
+            });
         };
-        table = table.nv_ul_ref(&rel, ul);
+        table = table
+            .and_nv_ref(&rel, &link.value())
+            .and_nv_ref_maybe(&"Type", &link.media_type())
+            .and_nv_ref_maybe(&"Media", &link.media())
+            .and_nv_ref_maybe(&"Lang", &hreflang_s)
+            .and_nv_ref_maybe(&"HTTP Ref", &link.href());
     }
     table
 }

@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::{
     contact::{NameParts, PostalAddress},
+    prelude::ObjectCommonFields,
     response::{Entity, EntityRole},
 };
 
@@ -17,7 +18,7 @@ use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::{checks_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Entity {
@@ -68,7 +69,7 @@ impl ToMd for Entity {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref(&"Handle", &entity_handle)
+            .and_nv_ref_maybe(&"Handle", &entity_handle)
             .and_nv_ul(&"Roles", Some(self.roles().to_vec()));
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
@@ -174,6 +175,9 @@ impl ToMd for Entity {
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);
 
+        // remarks
+        table = self.remarks().add_to_mptable(table, params);
+
         // checks
         let check_params = CheckParams::from_md(params, typeid);
         let mut checks = self.object_common.get_sub_checks(check_params);
@@ -182,12 +186,6 @@ impl ToMd for Entity {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // remarks
-        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
-
-        // only other object classes from here
-        md.push_str(HR);
 
         // entities
         md.push_str(
@@ -355,5 +353,133 @@ impl MdUtil for Entity {
             }
         };
         header_text.build()
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, io::Write};
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{
+            redacted::{Method, Name, Redacted},
+            Entity, ToResponse,
+        },
+    };
+
+    use crate::{
+        md::{MdOptions, MdParams, ToMd},
+        rdap::RequestData,
+    };
+
+    static MINT_PATH: &str = "src/test_files/md/entity";
+
+    #[test]
+    fn test_md_entity_with_handle() {
+        // GIVEN entity
+        let entity = Entity::builder().handle("123-ABC").build();
+        let response = entity.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Entity>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = entity.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_handle.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_entity_with_no_handle_but_roles() {
+        // GIVEN entity
+        let entity = Entity::builder::<String>().role("registrar").build();
+        let response = entity.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Entity>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = entity.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_no_handle_but_roles.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_entity_with_handle_and_redactions() {
+        // GIVEN entity
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let entity = Entity::builder()
+            .handle("123-ABC")
+            .redacted(redactions)
+            .build();
+        let response = entity.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Entity>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = entity.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_redactions.md")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 }

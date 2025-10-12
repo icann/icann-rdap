@@ -1,0 +1,4 @@
+inetnum:        10.0.0.0 - 10.0.0.255
+nic-hdl:        NET10-RIR
+source:         example.com
+

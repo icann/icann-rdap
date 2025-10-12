@@ -9,7 +9,7 @@ use {
         prelude::{RdapResponse, ToNotices, ToRemarks, ToResponse, VectorStringish},
         response::{
             Autnum, Domain, DsDatum, Entity, Event, Events, Help, Link, Links, Nameserver, Network,
-            Notice, NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
+            NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
         },
         VERSION,
     },
@@ -608,20 +608,7 @@ fn create_redirect_file(
     let file_name = create_file_name(self_href, "template");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
-    let error = Rfc9083Error::response_obj()
-        .error_code(307)
-        .notice(Notice(
-            NoticeOrRemark::builder()
-                .title("Temporary Redirect")
-                .links(vec![Link::builder()
-                    .href(url)
-                    .value(self_href)
-                    .media_type(RDAP_MEDIA_TYPE)
-                    .rel("related")
-                    .build()])
-                .build(),
-        ))
-        .build();
+    let error = Rfc9083Error::redirect().url(url).build();
     let template = match id {
         RdapId::Entity(id) => Template::Entity {
             entity: EntityOrError::ErrorResponse(error),
@@ -1086,9 +1073,7 @@ async fn make_network(
 }
 
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
-    let help = Help::response_obj()
-        .notices(args.notice.to_notices())
-        .build();
+    let help = Help::response().notices(args.notice.to_notices()).build();
     let output = Output {
         rdap: help.to_response(),
         id: RdapId::Help,

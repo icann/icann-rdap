@@ -641,19 +641,7 @@ mod tests {
     }
 
     fn get_redirect_link(error: Rfc9083Error) -> String {
-        let Some(notices) = error.common.notices else {
-            panic!("no notices in error")
-        };
-        let Some(first_notice) = notices.first() else {
-            panic!("notices are empty")
-        };
-        let Some(links) = &first_notice.links else {
-            panic!("no links in notice")
-        };
-        let Some(first_link) = links.first() else {
-            panic!("links are empty")
-        };
-        let Some(href) = &first_link.href else {
+        let Some(href) = error.exterr_location else {
             panic!("link has no href")
         };
         href.clone()

@@ -15,19 +15,19 @@ use {
 };
 
 pub static NOT_FOUND: LazyLock<RdapResponse> = LazyLock::new(|| {
-    Rfc9083Error::response_obj()
+    Rfc9083Error::response()
         .error_code(404)
         .build()
         .to_response()
 });
 pub static NOT_IMPLEMENTED: LazyLock<RdapResponse> = LazyLock::new(|| {
-    Rfc9083Error::response_obj()
+    Rfc9083Error::response()
         .error_code(501)
         .build()
         .to_response()
 });
 pub static BAD_REQUEST: LazyLock<RdapResponse> = LazyLock::new(|| {
-    Rfc9083Error::response_obj()
+    Rfc9083Error::response()
         .error_code(400)
         .build()
         .to_response()
@@ -52,11 +52,7 @@ impl ResponseUtil for RdapResponse {
 
     fn first_notice_link_href(&self) -> Option<&str> {
         if let Self::ErrorResponse(rdap_error) = self {
-            let notices = rdap_error.common.notices.as_ref()?;
-            let first_notice = notices.first()?;
-            let links = first_notice.0.links.as_ref()?;
-            let first_link = links.first()?;
-            let href = first_link.href.as_ref()?;
+            let href = rdap_error.exterr_location.as_ref()?;
             Some(href)
         } else {
             None
@@ -96,7 +92,7 @@ mod tests {
         http::StatusCode,
         icann_rdap_common::{
             prelude::ToResponse,
-            response::{Domain, Link, Notice, NoticeOrRemark, Rfc9083Error},
+            response::{Domain, Rfc9083Error},
         },
     };
 
@@ -142,17 +138,8 @@ mod tests {
     #[test]
     fn GIVEN_rdap_response_with_first_link_WHEN_get_first_link_href_THEN_href_returned() {
         // GIVEN
-        let given = Rfc9083Error::response_obj()
-            .error_code(307)
-            .notice(Notice(
-                NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("related")
-                        .build()])
-                    .build(),
-            ))
+        let given = Rfc9083Error::redirect()
+            .url("https://other.example.com")
             .build()
             .to_response();
 

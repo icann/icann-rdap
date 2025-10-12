@@ -151,6 +151,11 @@ impl DsDatum {
     }
 
     /// Returns a u8 if it was given, otherwise None.
+    pub fn algorithm(&self) -> Option<u8> {
+        self.algorithm.as_ref().and_then(|n| n.as_u8())
+    }
+
+    /// Returns a u8 if it was given, otherwise None.
     pub fn digest_type(&self) -> Option<u8> {
         self.digest_type.as_ref().and_then(|n| n.as_u8())
     }
@@ -332,15 +337,13 @@ impl SecureDns {
     }
 
     /// Returns true if a truish value was given, otherwise false.
-    pub fn zone_signed(&self) -> bool {
-        self.zone_signed.as_ref().is_some_and(|b| b.into_bool())
+    pub fn zone_signed(&self) -> Option<bool> {
+        self.zone_signed.as_ref().map(|b| b.into_bool())
     }
 
     /// Returns true if a truish value was given, otherwise false.
-    pub fn delegation_signed(&self) -> bool {
-        self.delegation_signed
-            .as_ref()
-            .is_some_and(|b| b.into_bool())
+    pub fn delegation_signed(&self) -> Option<bool> {
+        self.delegation_signed.as_ref().map(|b| b.into_bool())
     }
 
     /// Returns max_sig_life as a u64 if it was given, otherwise None.

@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 use icann_rdap_common::{
     dns_types::{DnsAlgorithmType, DnsDigestType},
+    prelude::ObjectCommonFields,
     response::{Domain, SecureDns, Variant},
 };
 
@@ -14,7 +15,7 @@ use super::{
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
     types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd, HR,
+    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
@@ -45,17 +46,31 @@ impl ToMd for Domain {
         table = table.summary(header_text);
 
         // identifiers
+        //
+        // due to the nature of domains, we are guaranteed to have at least one of
+        // ldhName or unicodeName.
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref(&"LDH Name", &self.ldh_name)
-            .and_nv_ref(&"Unicode Name", &self.unicode_name)
-            .and_nv_ref(&"Handle", &domain_handle);
+            .and_nv_ref_maybe(&"LDH Name", &self.ldh_name)
+            .and_nv_ref_maybe(&"Unicode Name", &self.unicode_name)
+            .and_nv_ref_maybe(&"Handle", &domain_handle);
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
 
         // common object stuff
         table = self.object_common.add_to_mptable(table, params);
+
+        // domain variants
+        table = self.variants().add_to_mptable(table, params);
+
+        // secure dns
+        if let Some(secure_dns) = self.secure_dns() {
+            table = secure_dns.add_to_mptable(table, params);
+        }
+
+        // remarks
+        table = self.remarks().add_to_mptable(table, params);
 
         // checks
         let check_params = CheckParams::from_md(params, typeid);
@@ -65,22 +80,6 @@ impl ToMd for Domain {
 
         // render table
         md.push_str(&table.to_md(params));
-
-        // variants require a custom table
-        if let Some(variants) = &self.variants {
-            md.push_str(&do_variants(variants, params))
-        }
-
-        // secure dns
-        if let Some(secure_dns) = &self.secure_dns {
-            md.push_str(&do_secure_dns(secure_dns, params))
-        }
-
-        // remarks
-        md.push_str(&self.object_common.remarks.to_md(params.from_parent(typeid)));
-
-        // only other object classes from here
-        md.push_str(HR);
 
         // entities
         md.push_str(
@@ -112,113 +111,109 @@ impl ToMd for Domain {
     }
 }
 
-fn do_variants(variants: &[Variant], params: MdParams) -> String {
-    let mut md = String::new();
-    md.push_str(&format!(
-        "|:-:|\n|{}|\n",
-        "Domain Variants".to_right_bold(8, params.options)
-    ));
-    md.push_str("|:-:|:-:|:-:|\n|Relations|IDN Table|Variant Names|\n");
-    variants.iter().for_each(|v| {
-        md.push_str(&format!(
-            "|{}|{}|{}|",
-            v.relations().make_title_case_list(),
-            v.idn_table.as_deref().unwrap_or_default(),
-            v.variant_names
-                .as_deref()
-                .unwrap_or_default()
-                .iter()
-                .map(|dv| format!(
-                    "ldh: '{}' utf:'{}'",
-                    dv.ldh_name.as_deref().unwrap_or_default(),
-                    dv.unicode_name.as_deref().unwrap_or_default()
-                ))
-                .collect::<Vec<String>>()
-                .join(", "),
-        ))
-    });
-    md.push('\n');
-    md
+impl ToMpTable for &[Variant] {
+    fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
+        if self.is_empty() {
+            return table;
+        }
+        table = table.header_ref(&"Domain Variants");
+        for variant in self.iter() {
+            for names in variant.variant_names() {
+                table = table.nv_ref(
+                    &variant.relations().make_title_case_list(),
+                    &format!(
+                        "tbl:{} ldh:'{}' utf:'{}'",
+                        variant.idn_table().unwrap_or_default(),
+                        names.ldh_name().unwrap_or_default(),
+                        names.unicode_name().unwrap_or_default()
+                    ),
+                )
+            }
+        }
+        table
+    }
 }
 
-fn do_secure_dns(secure_dns: &SecureDns, params: MdParams) -> String {
-    let mut md = String::new();
-    // multipart data
-    let mut table = MultiPartTable::new();
+impl ToMpTable for &SecureDns {
+    fn add_to_mptable(&self, mut table: MultiPartTable, params: MdParams) -> MultiPartTable {
+        if self.zone_signed().is_none()
+            && self.delegation_signed.is_none()
+            && self.max_sig_life().is_none()
+            && self.ds_data().is_empty()
+            && self.key_data().is_empty()
+        {
+            return table;
+        }
 
-    table = table
-        .header_ref(&"DNSSEC Information")
-        .and_nv_ref(
-            &"Zone Signed",
-            &secure_dns.zone_signed.as_ref().map(|b| b.to_string()),
-        )
-        .and_nv_ref(
-            &"Delegation Signed",
-            &secure_dns.delegation_signed.as_ref().map(|b| b.to_string()),
-        )
-        .and_nv_ref(
-            &"Max Sig Life",
-            &secure_dns.max_sig_life.as_ref().map(|u| u.to_string()),
-        );
+        // Signing summary information
+        table = table
+            .header_ref(&"DNSSEC Information")
+            .and_nv_ref_maybe(
+                &"Zone Signed",
+                &self.zone_signed.as_ref().map(|b| b.to_string()),
+            )
+            .and_nv_ref_maybe(
+                &"Delegation Signed",
+                &self.delegation_signed.as_ref().map(|b| b.to_string()),
+            )
+            .and_nv_ref_maybe(
+                &"Max Sig Life",
+                &self.max_sig_life.as_ref().map(|u| u.to_string()),
+            );
 
-    if let Some(ds_data) = &secure_dns.ds_data {
-        for (i, ds) in ds_data.iter().enumerate() {
-            let header = format!("DS Data ({i})").replace_md_chars();
-            table = table
-                .header_ref(&header)
-                .and_nv_ref(&"Key Tag", &ds.key_tag.as_ref().map(|k| k.to_string()))
-                .and_nv_ref(
-                    &"Algorithm",
-                    &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
-                )
-                .and_nv_ref(&"Digest", &ds.digest)
-                .and_nv_ref(
-                    &"Digest Type",
-                    &dns_digest_type(&ds.digest_type.as_ref().and_then(|d| d.as_u8())),
-                );
-            if let Some(events) = &ds.events {
-                let ds_header = format!("DS ({i}) Events");
-                table = events_to_table(events, table, &ds_header, params);
-            }
-            if let Some(links) = &ds.links {
-                let ds_header = format!("DS ({i}) Links");
-                table = links_to_table(links, table, &ds_header);
+        // ds data
+        if let Some(ds_data) = &self.ds_data {
+            for (i, ds) in ds_data.iter().enumerate() {
+                let header = format!("DS Data ({i})").replace_md_chars();
+                table = table
+                    .header_ref(&header)
+                    .and_nv_ref(&"Key Tag", &ds.key_tag.as_ref().map(|k| k.to_string()))
+                    .and_nv_ref(
+                        &"Algorithm",
+                        &dns_algorithm(&ds.algorithm.as_ref().and_then(|a| a.as_u8())),
+                    )
+                    .and_nv_ref(&"Digest", &ds.digest)
+                    .and_nv_ref(
+                        &"Digest Type",
+                        &dns_digest_type(&ds.digest_type.as_ref().and_then(|d| d.as_u8())),
+                    );
+                if let Some(events) = &ds.events {
+                    let ds_header = format!("DS ({i}) Events");
+                    table = events_to_table(events, table, &ds_header, params);
+                }
+                if let Some(links) = &ds.links {
+                    let ds_header = format!("DS ({i}) Links");
+                    table = links_to_table(links, table, &ds_header);
+                }
             }
         }
-    }
 
-    if let Some(key_data) = &secure_dns.key_data {
-        for (i, key) in key_data.iter().enumerate() {
-            let header = format!("Key Data ({i})").replace_md_chars();
-            table = table
-                .header_ref(&header)
-                .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
-                .and_nv_ref(&"Protocol", &key.protocol.as_ref().map(|a| a.to_string()))
-                .and_nv_ref(&"Public Key", &key.public_key)
-                .and_nv_ref(
-                    &"Algorithm",
-                    &dns_algorithm(&key.algorithm.as_ref().and_then(|a| a.as_u8())),
-                );
-            if let Some(events) = &key.events {
-                let key_header = format!("Key ({i}) Events");
-                table = events_to_table(events, table, &key_header, params);
-            }
-            if let Some(links) = &key.links {
-                let key_header = format!("Key ({i}) Links");
-                table = links_to_table(links, table, &key_header);
+        // key data
+        if let Some(key_data) = &self.key_data {
+            for (i, key) in key_data.iter().enumerate() {
+                let header = format!("Key Data ({i})").replace_md_chars();
+                table = table
+                    .header_ref(&header)
+                    .and_nv_ref(&"Flags", &key.flags.as_ref().map(|k| k.to_string()))
+                    .and_nv_ref(&"Protocol", &key.protocol.as_ref().map(|a| a.to_string()))
+                    .and_nv_ref(&"Public Key", &key.public_key)
+                    .and_nv_ref(
+                        &"Algorithm",
+                        &dns_algorithm(&key.algorithm.as_ref().and_then(|a| a.as_u8())),
+                    );
+                if let Some(events) = &key.events {
+                    let key_header = format!("Key ({i}) Events");
+                    table = events_to_table(events, table, &key_header, params);
+                }
+                if let Some(links) = &key.links {
+                    let key_header = format!("Key ({i}) Links");
+                    table = links_to_table(links, table, &key_header);
+                }
             }
         }
+
+        table
     }
-
-    // checks
-    let typeid = TypeId::of::<Domain>();
-    let check_params = CheckParams::from_md(params, typeid);
-    let checks = secure_dns.get_sub_checks(check_params);
-    table = checks_to_table(checks, table, params);
-
-    // render table
-    md.push_str(&table.to_md(params));
-    md
 }
 
 fn dns_algorithm(alg: &Option<u8>) -> Option<String> {
@@ -263,5 +258,417 @@ impl MdUtil for Domain {
             header_text = header_text.children_entry(network.get_header_text());
         }
         header_text.build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{any::TypeId, io::Write};
+
+    use goldenfile::Mint;
+    use icann_rdap_common::{
+        httpdata::HttpData,
+        prelude::{Domain, DsDatum, Event, Link, SecureDns, ToResponse, Variant, VariantName},
+    };
+
+    use crate::{
+        md::{MdOptions, MdParams, ToMd},
+        rdap::RequestData,
+    };
+
+    static MINT_PATH: &str = "src/test_files/md/domain";
+
+    #[test]
+    fn test_md_domain_with_ldh_and_handle() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .handle("123-ABC")
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_handle.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_only() {
+        // GIVEN domain
+        let domain = Domain::builder().ldh_name("foo.example.com").build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_only.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_with_events() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .event(
+                Event::builder()
+                    .event_action("updated")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_with_events.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_with_empty_events() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .events(vec![])
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_ldh_with_empty_events.md")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_with_empty_links() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .links(vec![])
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_with_empty_links.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_with_one_link() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .link(
+                Link::builder()
+                    .rel("about")
+                    .value("https://foo.example")
+                    .media_type("application/json")
+                    .href("https://bar.example")
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_with_one_link.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_with_two_links() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .link(
+                Link::builder()
+                    .rel("about")
+                    .value("https://foo.example")
+                    .media_type("application/json")
+                    .href("https://bar.example")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .rel("related")
+                    .value("https://foo.example")
+                    .media_type("application/json")
+                    .href("https://foo.example")
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_with_two_links.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_and_variants() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .variant(
+                Variant::builder()
+                    .relation("registered")
+                    .relation("conjoined")
+                    .idn_table(".EXAMPLE Swedish")
+                    .variant_name(
+                        VariantName::builder()
+                            .ldh_name("xn--fo-8ja.example")
+                            .unicode_name("fôo.example")
+                            .build(),
+                    )
+                    .build(),
+            )
+            .variant(
+                Variant::builder()
+                    .relation("registration restricted")
+                    .relation("unregistered")
+                    .variant_name(
+                        VariantName::builder()
+                            .ldh_name("xn--fo-cka.example")
+                            .unicode_name("fõo.example")
+                            .build(),
+                    )
+                    .variant_name(
+                        VariantName::builder()
+                            .ldh_name("xn--fo-fka.example")
+                            .unicode_name("föo.example")
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_variants.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_and_secure_dns() {
+        // GIVEN domain
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .secure_dns(
+                SecureDns::builder()
+                    .delegation_signed(true)
+                    .zone_signed(false)
+                    .max_sig_life(1)
+                    .ds_data(
+                        DsDatum::builder()
+                            .key_tag(8)
+                            .algorithm(128)
+                            .digest("12345939191039129495959920al121kk3999494994")
+                            .event(
+                                Event::builder()
+                                    .event_action("updated")
+                                    .event_date("1990-12-31T23:59:59Z")
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .ds_data(
+                        DsDatum::builder()
+                            .key_tag(4)
+                            .algorithm(12)
+                            .digest("as5902320elldwkl2909802800809803")
+                            .event(
+                                Event::builder()
+                                    .event_action("updated")
+                                    .event_date("1990-12-31T23:59:59Z")
+                                    .build(),
+                            )
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            parent_type: TypeId::of::<Domain>(),
+            check_types: &[],
+            options: &MdOptions::default(),
+            req_data: &req_data,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile("with_ldh_and_secure_dns.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 }

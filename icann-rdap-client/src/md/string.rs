@@ -30,7 +30,7 @@ impl<T: ToString> StringUtil for T {
             .replace(|c: char| c.is_whitespace(), " ")
             .chars()
             .map(|c| match c {
-                '*' | '_' | '|' | '#' => format!("\\{c}"),
+                '*' | '|' | '#' => format!("\\{c}"),
                 _ => c.to_string(),
             })
             .collect()

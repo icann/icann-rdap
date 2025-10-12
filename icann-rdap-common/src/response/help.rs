@@ -12,7 +12,7 @@ use super::{to_opt_vec, Common, CommonFields, ToResponse};
 /// ```rust
 /// use icann_rdap_common::prelude::*;
 ///
-/// let e = Help::response_obj()
+/// let e = Help::response()
 ///   .build();
 /// ```
 ///
@@ -27,8 +27,8 @@ pub struct Help {
 #[buildstructor::buildstructor]
 impl Help {
     /// Builds a basic help response.
-    #[builder(entry = "response_obj", visibility = "pub")]
-    fn new_response_obj(notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+    #[builder(entry = "response", visibility = "pub")]
+    fn new_response(notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
         Self {
             common: Common::level0()
                 .extensions(extensions)

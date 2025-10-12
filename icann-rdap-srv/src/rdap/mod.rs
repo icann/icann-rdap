@@ -59,19 +59,7 @@ impl ToBootStrap for RdapResponse {
 }
 
 fn bootstrap_redirect(error: Rfc9083Error, path: &str, id: &str) -> RdapResponse {
-    let Some(ref notices) = error.common.notices else {
-        return error.to_response();
-    };
-    let Some(notice) = notices.first() else {
-        return error.to_response();
-    };
-    let Some(links) = &notice.links else {
-        return error.to_response();
-    };
-    let Some(link) = links.first() else {
-        return error.to_response();
-    };
-    let Some(href) = &link.href else {
+    let Some(href) = error.exterr_location else {
         return error.to_response();
     };
     let href = format!("{}{path}/{id}", href);

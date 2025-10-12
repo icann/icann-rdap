@@ -21,6 +21,7 @@ pub struct MultiPartTable {
 
 enum Row {
     Header(String),
+    Separator,
     NameValue((String, String)),
     MultiValue(Vec<String>),
 }
@@ -39,6 +40,12 @@ impl MultiPartTable {
     /// Add a header row.
     pub fn header_ref(mut self, name: &impl ToString) -> Self {
         self.rows.push(Row::Header(name.to_string()));
+        self
+    }
+
+    /// Adds a separator line.
+    pub fn add_separator(mut self) -> Self {
+        self.rows.push(Row::Separator);
         self
     }
 
@@ -103,7 +110,7 @@ impl MultiPartTable {
         self
     }
 
-    /// Add a name/value row.
+    /// Add a name/value row using a default if value is None.
     pub fn and_nv_ref<T: ToString>(mut self, name: &impl ToString, value: &Option<T>) -> Self {
         self.rows.push(Row::NameValue((
             name.to_string(),
@@ -116,7 +123,7 @@ impl MultiPartTable {
         self
     }
 
-    /// Add a name/value row.
+    /// Add a name/value row if the value is Some(T).
     pub fn and_nv_ref_maybe<T: ToString>(self, name: &impl ToString, value: &Option<T>) -> Self {
         if let Some(value) = value {
             self.nv_ref(name, &value.to_string())
@@ -125,7 +132,7 @@ impl MultiPartTable {
         }
     }
 
-    /// Add a name/value row with unordered list.
+    /// Add a name/value row with unordered list if the value is Some.
     pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
         if let Some(value) = value {
             self.nv_ul_ref(name, value)
@@ -134,7 +141,7 @@ impl MultiPartTable {
         }
     }
 
-    /// Add a name/value row with unordered list.
+    /// Add a name/value row with unordered list if the value is Some.
     pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
         if let Some(value) = value {
             self.nv_ul(name, value)
@@ -209,6 +216,7 @@ impl MultiPartTable {
                     Row::Header(header) => header.len(),
                     Row::NameValue((name, _value)) => name.len(),
                     Row::MultiValue(_) => 1,
+                    Row::Separator => 4,
                 })
                 .max()
                 .unwrap_or(1),
@@ -226,6 +234,7 @@ impl MultiPartTable {
                         ));
                         true
                     }
+                    Row::Separator => true,
                     Row::NameValue((name, value)) => {
                         if *state {
                             md.push_str("|-:|:-|\n");
@@ -290,10 +299,11 @@ mod tests {
         // WHEN
         let req_data = RequestData {
             req_number: 0,
+            req_target: true,
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response_obj()
+        let rdap_response = Rfc9083Error::response()
             .error_code(500)
             .build()
             .to_response();
@@ -320,10 +330,11 @@ mod tests {
         // WHEN
         let req_data = RequestData {
             req_number: 0,
+            req_target: true,
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response_obj()
+        let rdap_response = Rfc9083Error::response()
             .error_code(500)
             .build()
             .to_response();
@@ -351,10 +362,11 @@ mod tests {
         // WHEN
         let req_data = RequestData {
             req_number: 0,
+            req_target: true,
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response_obj()
+        let rdap_response = Rfc9083Error::response()
             .error_code(500)
             .build()
             .to_response();
@@ -384,10 +396,11 @@ mod tests {
         // WHEN
         let req_data = RequestData {
             req_number: 0,
+            req_target: true,
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response_obj()
+        let rdap_response = Rfc9083Error::response()
             .error_code(500)
             .build()
             .to_response();
@@ -415,10 +428,11 @@ mod tests {
         // WHEN
         let req_data = RequestData {
             req_number: 0,
+            req_target: true,
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response_obj()
+        let rdap_response = Rfc9083Error::response()
             .error_code(500)
             .build()
             .to_response();
@@ -452,10 +466,11 @@ mod tests {
         // WHEN
         let req_data = RequestData {
             req_number: 0,
+            req_target: true,
             source_host: "",
             source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response_obj()
+        let rdap_response = Rfc9083Error::response()
             .error_code(500)
             .build()
             .to_response();
