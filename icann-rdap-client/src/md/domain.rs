@@ -1,5 +1,3 @@
-use std::any::TypeId;
-
 use icann_rdap_common::{
     dns_types::{DnsAlgorithmType, DnsDigestType},
     prelude::ObjectCommonFields,
@@ -18,9 +16,8 @@ use super::{
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
 
         // header
         let header_text = self.get_header_text();
@@ -74,12 +71,7 @@ impl ToMd for Domain {
         md.push_str(&table.to_md(params));
 
         // entities
-        md.push_str(
-            &self
-                .object_common
-                .entities
-                .to_md(params.from_parent(typeid)),
-        );
+        md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // nameservers
         if let Some(nameservers) = &self.nameservers {
@@ -95,7 +87,7 @@ impl ToMd for Domain {
 
         // redacted
         if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -255,7 +247,7 @@ impl MdUtil for Domain {
 
 #[cfg(test)]
 mod tests {
-    use std::{any::TypeId, io::Write};
+    use std::io::Write;
 
     use goldenfile::Mint;
     use icann_rdap_common::{
@@ -291,8 +283,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -322,8 +312,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -361,8 +349,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -395,8 +381,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -431,8 +415,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -472,8 +454,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -521,8 +501,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -585,8 +563,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -651,8 +627,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };

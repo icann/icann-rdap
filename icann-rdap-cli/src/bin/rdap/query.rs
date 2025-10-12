@@ -366,8 +366,6 @@ fn do_output<'a, W: std::io::Write>(
                         heading_level: 1,
                         root: &response.rdap,
                         http_data: &response.http_data,
-                        parent_type: response.rdap.get_type(),
-                        check_types: &processing_params.check_types,
                         options: &MdOptions::default(),
                         req_data,
                     }),
@@ -381,8 +379,6 @@ fn do_output<'a, W: std::io::Write>(
                         heading_level: 1,
                         root: &response.rdap,
                         http_data: &response.http_data,
-                        parent_type: response.rdap.get_type(),
-                        check_types: &processing_params.check_types,
                         options: &MdOptions {
                             text_style_char: '_',
                             style_in_justify: true,

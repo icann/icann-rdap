@@ -1,5 +1,3 @@
-use std::any::TypeId;
-
 use icann_rdap_common::{prelude::ObjectCommonFields, response::Autnum};
 
 use super::MdHeaderText;
@@ -11,9 +9,8 @@ use super::{
 
 impl ToMd for Autnum {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
 
         let header_text = self.get_header_text();
         md.push_str(
@@ -54,16 +51,11 @@ impl ToMd for Autnum {
         md.push_str(&table.to_md(params));
 
         // entities
-        md.push_str(
-            &self
-                .object_common
-                .entities
-                .to_md(params.from_parent(typeid)),
-        );
+        md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
         if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -100,12 +92,12 @@ impl MdUtil for Autnum {
 
 #[cfg(test)]
 mod tests {
-    use std::{any::TypeId, io::Write};
+    use std::io::Write;
 
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Autnum, Entity, Remark, ToResponse},
+        prelude::{Autnum, Remark, ToResponse},
     };
 
     use crate::{
@@ -150,8 +142,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Entity>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
