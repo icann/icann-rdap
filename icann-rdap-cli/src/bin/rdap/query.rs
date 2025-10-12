@@ -390,8 +390,6 @@ fn do_output<'a, W: std::io::Write>(
             }
             OutputType::GtldWhois => {
                 let mut params = GtldParams {
-                    root: &response.rdap,
-                    parent_type: response.rdap.get_type(),
                     label: "".to_string(),
                 };
                 writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
