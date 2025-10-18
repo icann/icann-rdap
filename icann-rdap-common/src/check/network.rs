@@ -2,7 +2,7 @@ use std::{any::TypeId, net::IpAddr, str::FromStr};
 
 use cidr::IpCidr;
 
-use crate::response::network::{Cidr0Cidr, Network};
+use crate::{prelude::Stringish, response::network::Network};
 
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
 
@@ -18,39 +18,30 @@ impl GetChecks for Network {
                     .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(cidr0) = &self.cidr0_cidrs {
-                cidr0.iter().for_each(|cidr| match cidr {
-                    Cidr0Cidr::V4Cidr(v4) => {
-                        if v4.v4prefix.is_none() {
-                            sub_checks.push(Checks {
-                                rdap_struct: super::RdapStructure::Cidr0,
-                                items: vec![Check::Cidr0V4PrefixIsAbsent.check_item()],
-                                sub_checks: vec![],
-                            })
-                        }
-                        if v4.length.is_none() {
-                            sub_checks.push(Checks {
-                                rdap_struct: super::RdapStructure::Cidr0,
-                                items: vec![Check::Cidr0V4LengthIsAbsent.check_item()],
-                                sub_checks: vec![],
-                            })
-                        }
-                    }
-                    Cidr0Cidr::V6Cidr(v6) => {
-                        if v6.v6prefix.is_none() {
-                            sub_checks.push(Checks {
-                                rdap_struct: super::RdapStructure::Cidr0,
-                                items: vec![Check::Cidr0V6PrefixIsAbsent.check_item()],
-                                sub_checks: vec![],
-                            })
-                        }
-                        if v6.length.is_none() {
-                            sub_checks.push(Checks {
-                                rdap_struct: super::RdapStructure::Cidr0,
-                                items: vec![Check::Cidr0V6LengthIsAbsent.check_item()],
-                                sub_checks: vec![],
-                            })
-                        }
-                    }
+                let check = match self
+                    .network_type
+                    .as_ref()
+                    .unwrap_or(&Stringish::from("v4"))
+                    .as_ref()
+                {
+                    "v6" | "V6" => (Check::Cidr0V6PrefixIsAbsent, Check::Cidr0V6LengthIsAbsent),
+                    _ => (Check::Cidr0V4PrefixIsAbsent, Check::Cidr0V4LengthIsAbsent),
+                };
+                cidr0.iter().for_each(|cidr| {
+                    if cidr.prefix().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Cidr0,
+                            items: vec![check.0.check_item()],
+                            sub_checks: vec![],
+                        })
+                    };
+                    if cidr.length().is_none() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Cidr0,
+                            items: vec![check.1.check_item()],
+                            sub_checks: vec![],
+                        })
+                    };
                 })
             }
             sub_checks
@@ -203,9 +194,9 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        prelude::{Numberish, ToResponse},
+        prelude::{Cidr0CidrPrefix, Numberish, ToResponse},
         response::{
-            network::{Cidr0Cidr, Network, V4Cidr, V6Cidr},
+            network::{Cidr0Cidr, Network},
             RdapResponse,
         },
     };
@@ -558,10 +549,11 @@ mod tests {
     fn check_cidr0_with_v4_prefixex() {
         // GIVEN
         let network = Network::illegal()
-            .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                v4prefix: None,
+            .cidr0_cidrs(vec![Cidr0Cidr {
+                prefix: None,
                 length: Some(Numberish::<u8>::from(0)),
-            })])
+            }])
+            .network_type("v4")
             .build();
         let rdap = network.to_response();
 
@@ -582,10 +574,11 @@ mod tests {
     fn check_cidr0_with_v6_prefixex() {
         // GIVEN
         let network = Network::illegal()
-            .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                v6prefix: None,
+            .cidr0_cidrs(vec![Cidr0Cidr {
+                prefix: None,
                 length: Some(Numberish::<u8>::from(0)),
-            })])
+            }])
+            .network_type("v6")
             .build();
         let rdap = network.to_response();
 
@@ -606,10 +599,11 @@ mod tests {
     fn check_cidr0_with_v4_length() {
         // GIVEN
         let network = Network::illegal()
-            .cidr0_cidrs(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                v4prefix: Some("0.0.0.0".to_string()),
+            .cidr0_cidrs(vec![Cidr0Cidr {
+                prefix: Some(Cidr0CidrPrefix::V4Prefix("0.0.0.0".to_string())),
                 length: None,
-            })])
+            }])
+            .network_type("v4")
             .build();
         let rdap = network.to_response();
 
@@ -630,10 +624,11 @@ mod tests {
     fn check_cidr0_with_v6_length() {
         // GIVEN
         let network = Network::illegal()
-            .cidr0_cidrs(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                v6prefix: Some("0.0.0.0".to_string()),
+            .cidr0_cidrs(vec![Cidr0Cidr {
+                prefix: Some(Cidr0CidrPrefix::V6Prefix("0.0.0.0".to_string())),
                 length: None,
-            })])
+            }])
+            .network_type("v6")
             .build();
         let rdap = network.to_response();
 

@@ -77,6 +77,10 @@ pub enum RdapResponseError {
     /// An error caused with parsing a CIDR address.
     #[error(transparent)]
     CidrParse(#[from] cidr::errors::NetworkParseError),
+
+    /// The type of RDAP response is unknown.
+    #[error("Network type must either be 'v4' or 'v6'.")]
+    InvalidNetworkType,
 }
 
 /// The various types of RDAP response.

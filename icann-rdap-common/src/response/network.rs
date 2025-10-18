@@ -18,60 +18,74 @@ use super::{
 
 /// Cidr0 structure from the Cidr0 extension.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum Cidr0Cidr {
-    V4Cidr(V4Cidr),
-    V6Cidr(V6Cidr),
+pub struct Cidr0Cidr {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(flatten)]
+    pub prefix: Option<Cidr0CidrPrefix>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub length: Option<Numberish<u8>>,
+}
+
+#[buildstructor::buildstructor]
+impl Cidr0Cidr {
+    /// Builds a CIDR0.
+    #[builder(visibility = "pub")]
+    #[allow(clippy::needless_lifetimes)]
+    fn new<'a>(
+        network_type: &'a str,
+        prefix: String,
+        length: u8,
+    ) -> Result<Self, RdapResponseError> {
+        let prefix = match network_type {
+            "v4" | "V4" => Ok(Cidr0CidrPrefix::V4Prefix(prefix)),
+            "v6" | "V6" => Ok(Cidr0CidrPrefix::V6Prefix(prefix)),
+            _ => Err(RdapResponseError::InvalidNetworkType),
+        }?;
+        Ok(Self {
+            length: Some(Numberish::<u8>::from(length)),
+            prefix: Some(prefix),
+        })
+    }
+
+    /// Builds an Ipv4 CIDR0.
+    #[builder(entry = "v4", visibility = "pub")]
+    fn new_v4(prefix: String, length: u8) -> Self {
+        Self {
+            length: Some(Numberish::<u8>::from(length)),
+            prefix: Some(Cidr0CidrPrefix::V4Prefix(prefix)),
+        }
+    }
+
+    /// Builds an Ipv6 CIDR0.
+    #[builder(entry = "v6", visibility = "pub")]
+    fn new_v6(prefix: String, length: u8) -> Self {
+        Self {
+            length: Some(Numberish::<u8>::from(length)),
+            prefix: Some(Cidr0CidrPrefix::V6Prefix(prefix)),
+        }
+    }
+
+    // Get prefix as enum.
+    pub fn cidr0cidr_prefix(&self) -> Option<&Cidr0CidrPrefix> {
+        self.prefix.as_ref()
+    }
+
+    // Get the prefix.
+    pub fn prefix(&self) -> Option<String> {
+        self.prefix.clone().map(|p| match p {
+            Cidr0CidrPrefix::V4Prefix(prefix) => prefix.clone(),
+            Cidr0CidrPrefix::V6Prefix(prefix) => prefix.clone(),
+        })
+    }
+
+    // Get the length.
+    pub fn length(&self) -> Option<u8> {
+        self.length.as_ref().and_then(|n| n.as_u8())
+    }
 }
 
 impl std::fmt::Display for Cidr0Cidr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::V4Cidr(cidr) => cidr.fmt(f),
-            Self::V6Cidr(cidr) => cidr.fmt(f),
-        }
-    }
-}
-
-/// Represents a CIDR0 V4 CIDR.
-///
-/// This structure allow both the prefix
-/// and length to be optional to handle misbehaving servers, however
-/// both are required according to the CIDR0 RDAP extension. To create
-/// a valid stucture, use the builder.
-///
-/// However, it is recommended to use the builder on `Network` which will
-/// create the appropriate CIDR0 structure.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct V4Cidr {
-    pub v4prefix: Option<String>,
-    pub length: Option<Numberish<u8>>,
-}
-
-#[buildstructor::buildstructor]
-impl V4Cidr {
-    /// Builds an Ipv4 CIDR0.
-    #[builder(visibility = "pub")]
-    fn new(v4prefix: String, length: u8) -> Self {
-        Self {
-            v4prefix: Some(v4prefix),
-            length: Some(Numberish::<u8>::from(length)),
-        }
-    }
-
-    // Get the v4Prefix.
-    pub fn v4prefix(&self) -> Option<&str> {
-        self.v4prefix.as_deref()
-    }
-
-    // Get the length.
-    pub fn length(&self) -> Option<u8> {
-        self.length.as_ref().and_then(|n| n.as_u8())
-    }
-}
-
-impl std::fmt::Display for V4Cidr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let length_s = if let Some(length) = &self.length {
             length.to_string()
         } else {
@@ -80,63 +94,19 @@ impl std::fmt::Display for V4Cidr {
         write!(
             f,
             "{}/{}",
-            self.v4prefix.as_ref().unwrap_or(&"not_given".to_string()),
+            self.prefix().unwrap_or("not_given".to_string()),
             length_s
         )
     }
 }
 
-/// Represents a CIDR0 V6 CIDR.
-///
-/// This structure allow both the prefix
-/// and length to be optional to handle misbehaving servers, however
-/// both are required according to the CIDR0 RDAP extension. To create
-/// a valid stucture, use the builder.
-///
-/// However, it is recommended to use the builder on `Network` which will
-/// create the appropriate CIDR0 structure.
+// Represents the prefix choices
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct V6Cidr {
-    pub v6prefix: Option<String>,
-    pub length: Option<Numberish<u8>>,
-}
-
-#[buildstructor::buildstructor]
-impl V6Cidr {
-    /// Builds an IPv6 CIDR0.
-    #[builder(visibility = "pub")]
-    fn new(v6prefix: String, length: u8) -> Self {
-        Self {
-            v6prefix: Some(v6prefix),
-            length: Some(Numberish::<u8>::from(length)),
-        }
-    }
-
-    // Get the v6Prefix.
-    pub fn v6prefix(&self) -> Option<&str> {
-        self.v6prefix.as_deref()
-    }
-
-    // Get the length.
-    pub fn length(&self) -> Option<u8> {
-        self.length.as_ref().and_then(|n| n.as_u8())
-    }
-}
-
-impl std::fmt::Display for V6Cidr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let length_s = if let Some(length) = &self.length {
-            length.to_string()
-        } else {
-            "not_given".to_string()
-        };
-        write!(
-            f,
-            "{}/{}",
-            self.v6prefix.as_ref().unwrap_or(&"not_given".to_string()),
-            length_s
-        )
-    }
+pub enum Cidr0CidrPrefix {
+    #[serde(rename = "v4prefix")]
+    V4Prefix(String),
+    #[serde(rename = "v6prefix")]
+    V6Prefix(String),
 }
 
 /// Represents an RDAP [IP network](https://rdap.rcode3.com/protocol/object_classes.html#ip-network) response.
@@ -286,14 +256,14 @@ impl Network {
             parent_handle: parent_handle.map(|s| s.into()),
             country: country.map(|s| s.into()),
             cidr0_cidrs: match cidr {
-                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: Some(cidr.first_address().to_string()),
-                    length: Some(Numberish::<u8>::from(cidr.network_length())),
-                })]),
-                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: Some(cidr.first_address().to_string()),
-                    length: Some(Numberish::<u8>::from(cidr.network_length())),
-                })]),
+                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::v4()
+                    .length(cidr.network_length())
+                    .prefix(cidr.first_address().to_string())
+                    .build()]),
+                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::v6()
+                    .length(cidr.network_length())
+                    .prefix(cidr.first_address().to_string())
+                    .build()]),
             },
         })
     }
@@ -467,12 +437,113 @@ impl ObjectCommonFields for Network {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
-    use crate::response::network::Network;
+    use crate::{
+        prelude::{Cidr0Cidr, Cidr0CidrPrefix, Common, ObjectCommon},
+        response::network::Network,
+    };
 
     #[test]
-    fn GIVEN_network_WHEN_deserialize_THEN_success() {
+    fn test_cidr0_v4_round_trip() {
+        // GIVEN network with cidr0
+        let expected = r#"{"objectClassName":"ip network","cidr0_cidrs":[{"v4prefix":"10.0.0.0","length":8}]}"#;
+
+        // WHEN deserialize
+        let net = serde_json::from_str::<Network>(expected).expect("deserialize network");
+
+        // WHEN serialize
+        let actual = serde_json::to_string(&net).expect("serialize network");
+
+        // THEN expected and actual match
+        assert_eq!(expected, &actual);
+    }
+
+    #[test]
+    fn test_cidr0_v4_deserialize() {
+        // GIVEN network with cidr0
+        let expected = r#"{"objectClassName":"ip network","cidr0_cidrs":[{"v4prefix":"10.0.0.0","length":8}]}"#;
+
+        // WHEN deserialize
+        let actual = serde_json::from_str::<Network>(expected).expect("deserialize network");
+
+        // THEN prefix and length are as expected
+        let cidr0 = actual.cidr0_cidrs().first().expect("cidr0 present");
+        assert_eq!(&cidr0.prefix().expect("prefix"), "10.0.0.0");
+        assert_eq!(cidr0.length().expect("length"), 8);
+    }
+
+    #[test]
+    fn test_cidr0_v6_round_trip() {
+        // GIVEN network with cidr0
+        let expected = r#"{"objectClassName":"ip network","cidr0_cidrs":[{"v6prefix":"2620:1EC::","length":36}]}"#;
+
+        // WHEN deserialize
+        let net = serde_json::from_str::<Network>(expected).expect("deserialize network");
+
+        // WHEN serialize
+        let actual = serde_json::to_string(&net).expect("serialize network");
+
+        // THEN expected and actual match
+        assert_eq!(expected, &actual);
+    }
+
+    #[test]
+    fn test_cidr0_v6_deserialize() {
+        // GIVEN network with cidr0
+        let expected = r#"{"objectClassName":"ip network","cidr0_cidrs":[{"v6prefix":"2620:1EC::","length":36}]}"#;
+
+        // WHEN deserialize
+        let actual = serde_json::from_str::<Network>(expected).expect("deserialize network");
+
+        // THEN prefix and length are as expected
+        let cidr0 = actual.cidr0_cidrs().first().expect("cidr0 present");
+        assert_eq!(&cidr0.prefix().expect("prefix"), "2620:1EC::");
+        assert_eq!(cidr0.length().expect("length"), 36);
+    }
+
+    #[test]
+    fn test_cidr0_v4_serialize() {
+        // GIVEN network with cidr0
+        let net = Network {
+            common: Common {
+                rdap_conformance: None,
+                notices: None,
+            },
+            object_common: ObjectCommon {
+                object_class_name: "ip network".to_string(),
+                handle: None,
+                remarks: None,
+                links: None,
+                events: None,
+                status: None,
+                port_43: None,
+                entities: None,
+                redacted: None,
+            },
+            start_address: None,
+            end_address: None,
+            ip_version: None,
+            name: None,
+            network_type: None,
+            parent_handle: None,
+            country: None,
+            cidr0_cidrs: Some(vec![Cidr0Cidr {
+                prefix: Some(Cidr0CidrPrefix::V4Prefix("10.0.0.0".to_string())),
+                length: Some(8.into()),
+            }]),
+        };
+
+        // WHEN serialize
+        let actual = serde_json::to_string(&net).expect("network serialize");
+
+        // THEN expected = actual
+        let expected = r#"{"objectClassName":"ip network","cidr0_cidrs":[{"v4prefix":"10.0.0.0","length":8}]}"#;
+        assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn test_big_network_deserializion() {
+        // GIVEN a big network
         let expected = r#"
         {
           "objectClassName" : "ip network",
