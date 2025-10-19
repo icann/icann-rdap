@@ -28,6 +28,9 @@ impl<T: ToString> StringUtil for T {
     fn replace_md_chars(self) -> String {
         self.to_string()
             .replace(|c: char| c.is_whitespace(), " ")
+            .replace("*** ", " ")
+            .replace("** ", " ")
+            .replace("* ", " ")
             .chars()
             .map(|c| match c {
                 '*' | '|' | '#' => format!("\\{c}"),
@@ -263,5 +266,17 @@ mod tests {
 
         // THEN
         assert_eq!(actual, "Foo Bar, Bizz Buzz");
+    }
+
+    #[test]
+    fn test_replace_md_chars() {
+        // GIVEN
+        let s = "The *brown* | fox # \tjumped*** over** the* fence.";
+
+        // WHEN
+        let actual = s.replace_md_chars();
+
+        // THEN
+        assert_eq!(r#"The \*brown \| fox \#  jumped over the fence."#, &actual);
     }
 }

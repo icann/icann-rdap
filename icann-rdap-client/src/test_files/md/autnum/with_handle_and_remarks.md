@@ -20,6 +20,7 @@
 |           Type|Generated|
 |              1|> Autonomous System numbers are not floating point numbers.|
 |              2|> They are integers.|
+|              3|> This line has escaped markdown chars.  foo \\| bar \\# baz |
 |
 
 
