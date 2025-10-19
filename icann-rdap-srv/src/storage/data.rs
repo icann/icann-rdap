@@ -538,7 +538,6 @@ fn make_network_from_template(
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
 
     use icann_rdap_common::{
@@ -549,7 +548,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_template_domain_WHEN_serialize_THEN_success() {
+    fn test_template_domain_serialize() {
         // GIVEN
         let template = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
@@ -569,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_domain_text_WHEN_deserialize_THEN_success() {
+    fn test_template_domain_text_deserialize() {
         // GIVEN
         let json_text = r#"{"domain":{"object":{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
 
@@ -587,7 +586,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_cidr_WHEN_serialize_THEN_success() {
+    fn test_template_network_with_cidr_serialize() {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
@@ -629,7 +628,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_start_and_end_WHEN_serialize_THEN_success() {
+    fn test_template_network_with_start_and_end_serialize() {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
@@ -676,7 +675,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_cidr_text_WHEN_deserialize_THEN_success() {
+    fn test_template_network_with_cidr_text_deserialize() {
         // GIVEN
         let text = r#"
         {
@@ -716,7 +715,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_range_text_WHEN_deserialize_THEN_success() {
+    fn test_template_network_with_range_text_deserialize() {
         // GIVEN
         let text = r#"
         {
@@ -761,7 +760,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_and_id_WHEN_make_domain_THEN_ldh_and_self_change() {
+    fn test_make_domain_with_domain_and_id() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("foo.example")
@@ -791,7 +790,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_id_WHEN_make_entity_THEN_handle_and_self_change() {
+    fn test_make_entity_with_entity_and_id() {
         // GIVEN
         let entity = Entity::builder()
             .handle("foo")
@@ -825,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_and_id_WHEN_make_nameserver_THEN_ldh_and_self_change() {
+    fn test_make_ns_with_nameserver_and_id() {
         // GIVEN
         let nameserver = Nameserver::builder()
             .ldh_name("ns.foo.example")
@@ -856,7 +855,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_autnum_and_id_WHEN_make_autnum_THEN_nums_and_self_change() {
+    fn test_make_autnum_with_autnum_and_id() {
         // GIVEN
         let autnum = Autnum::builder()
             .autnum_range(700..710)
@@ -893,7 +892,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_and_id_with_range_WHEN_make_network_THEN_range_and_cidr_and_self_change() {
+    fn test_make_network_with_id_and_range() {
         // GIVEN
         let network = Network::builder()
             .cidr("10.0.0.0/24")
@@ -943,7 +942,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_and_id_with_cdir_WHEN_make_network_THEN_range_and_cidr_and_self_change() {
+    fn test_make_network_with_cidr_and_id() {
         // GIVEN
         let network = Network::builder()
             .cidr("10.0.0.0/24")
