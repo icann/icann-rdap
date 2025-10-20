@@ -640,14 +640,13 @@ impl Check {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use crate::check::RdapStructure;
 
     use super::{contains_check, traverse_checks, Check, CheckClass, CheckItem, Checks};
 
     #[test]
-    fn GIVEN_info_checks_WHEN_traversed_for_info_THEN_found() {
+    fn test_traverse_info_checks() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
@@ -671,7 +670,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_specwarn_checks_WHEN_traversed_for_info_THEN_not_found() {
+    fn test_traverse_specwarn_checks_for_info() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
@@ -695,7 +694,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_info_subchecks_WHEN_traversed_for_info_THEN_found() {
+    fn test_traverse_info_subchecks() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
@@ -723,7 +722,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_specwarn_subchecks_WHEN_traversed_for_info_THEN_not_found() {
+    fn test_traverse_specwarn_subchecks_for_info() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
@@ -751,7 +750,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_checks_and_subchecks_WHEN_traversed_THEN_tree_structure_shows_tree() {
+    fn test_traverse_checks_and_subchecks() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
