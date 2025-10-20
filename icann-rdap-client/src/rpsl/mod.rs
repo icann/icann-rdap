@@ -83,6 +83,8 @@ pub enum AttrName {
     AutnumRange,
     #[strum(serialize = "billing-c")]
     BillingC,
+    #[strum(serialize = "cidr")]
+    Cidr,
     #[strum(serialize = "created")]
     Created,
     #[strum(serialize = "deleg-signed")]

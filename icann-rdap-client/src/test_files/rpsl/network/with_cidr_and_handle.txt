@@ -1,4 +1,5 @@
 inetnum:        10.0.0.0 - 10.0.0.255
+cidr:           10.0.0.0/24
 nic-hdl:        NET10-RIR
 source:         example.com
 

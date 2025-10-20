@@ -21,6 +21,11 @@ impl ToRpsl for Network {
         // type
         rpsl = push_optional_attribute(rpsl, AttrName::Type, self.network_type());
 
+        // cidr0
+        for cidr in self.cidr0_cidrs() {
+            rpsl = push_manditory_attribute(rpsl, AttrName::Cidr, &cidr.to_string());
+        }
+
         // name
         rpsl = push_optional_attribute(rpsl, AttrName::NetName, self.name());
 

@@ -10,7 +10,7 @@ use {
         prelude::Numberish,
         response::{
             Autnum, Cidr0Cidr, Domain, Entity, GetSelfLink, Nameserver, Network, RdapResponse,
-            SelfLink, V4Cidr, V6Cidr,
+            SelfLink,
         },
     },
     ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets},
@@ -477,19 +477,19 @@ fn make_network_from_template(
                 network.start_address = Some(v4.network().to_string());
                 network.end_address = Some(v4.broadcast().to_string());
                 network.ip_version = Some("v4".to_string().into());
-                network.cidr0_cidrs = Some(vec![Cidr0Cidr::V4Cidr(V4Cidr {
-                    v4prefix: Some(v4.network().to_string()),
-                    length: Some(Numberish::<u8>::from(v4.prefix_len())),
-                })]);
+                network.cidr0_cidrs = Some(vec![Cidr0Cidr::v4()
+                    .prefix(v4.network().to_string())
+                    .length(v4.prefix_len())
+                    .build()])
             }
             IpNet::V6(v6) => {
                 network.start_address = Some(v6.network().to_string());
                 network.end_address = Some(v6.broadcast().to_string());
                 network.ip_version = Some("v6".to_string().into());
-                network.cidr0_cidrs = Some(vec![Cidr0Cidr::V6Cidr(V6Cidr {
-                    v6prefix: Some(v6.network().to_string()),
-                    length: Some(Numberish::<u8>::from(v6.prefix_len())),
-                })]);
+                network.cidr0_cidrs = Some(vec![Cidr0Cidr::v6()
+                    .prefix(v6.network().to_string())
+                    .length(v6.prefix_len())
+                    .build()]);
             }
         },
         NetworkIdType::Range {
@@ -502,10 +502,10 @@ fn make_network_from_template(
                 network.cidr0_cidrs = Some(
                     Ipv4Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
-                            Cidr0Cidr::V4Cidr(V4Cidr {
-                                v4prefix: Some(net.network().to_string()),
-                                length: Some(Numberish::<u8>::from(net.prefix_len())),
-                            })
+                            Cidr0Cidr::v4()
+                                .prefix(net.network().to_string())
+                                .length(net.prefix_len())
+                                .build()
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
                 );
@@ -514,10 +514,10 @@ fn make_network_from_template(
                 network.cidr0_cidrs = Some(
                     Ipv6Subnets::new(start_address.parse()?, end_address.parse()?, 0)
                         .map(|net| {
-                            Cidr0Cidr::V6Cidr(V6Cidr {
-                                v6prefix: Some(net.network().to_string()),
-                                length: Some(Numberish::<u8>::from(net.prefix_len())),
-                            })
+                            Cidr0Cidr::v6()
+                                .prefix(net.network().to_string())
+                                .length(net.prefix_len())
+                                .build()
                         })
                         .collect::<Vec<Cidr0Cidr>>(),
                 );
@@ -531,29 +531,13 @@ fn make_network_from_template(
         .as_ref()
         .expect("cidrs should be on network")
         .first()
-        .map(|cidr| match cidr {
-            Cidr0Cidr::V4Cidr(cidr) => {
-                format!(
-                    "{}/{}",
-                    cidr.v4prefix.as_ref().expect("no v4prefix"),
-                    cidr.length.as_ref().expect("no v4 length")
-                )
-            }
-            Cidr0Cidr::V6Cidr(cidr) => {
-                format!(
-                    "{}/{}",
-                    cidr.v6prefix.as_ref().expect("no v6prefix"),
-                    cidr.length.as_ref().expect("no v6 length")
-                )
-            }
-        })
+        .map(|cidr| cidr.to_string())
         .expect("cidrs on network are empty");
     network = change_self_link(network, "ip", &first_cidr);
     Ok(network)
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
 
     use icann_rdap_common::{
@@ -564,7 +548,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_template_domain_WHEN_serialize_THEN_success() {
+    fn test_template_domain_serialize() {
         // GIVEN
         let template = Template::Domain {
             domain: DomainOrError::DomainObject(Box::new(
@@ -584,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_domain_text_WHEN_deserialize_THEN_success() {
+    fn test_template_domain_text_deserialize() {
         // GIVEN
         let json_text = r#"{"domain":{"object":{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"foo.example"}},"ids":[{"ldhName":"bar.example"}]}"#;
 
@@ -602,7 +586,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_cidr_WHEN_serialize_THEN_success() {
+    fn test_template_network_with_cidr_serialize() {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
@@ -644,7 +628,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_start_and_end_WHEN_serialize_THEN_success() {
+    fn test_template_network_with_start_and_end_serialize() {
         // GIVEN
         let template = Template::Network {
             network: NetworkOrError::NetworkObject(Box::new(
@@ -691,7 +675,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_cidr_text_WHEN_deserialize_THEN_success() {
+    fn test_template_network_with_cidr_text_deserialize() {
         // GIVEN
         let text = r#"
         {
@@ -731,7 +715,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_template_network_with_range_text_WHEN_deserialize_THEN_success() {
+    fn test_template_network_with_range_text_deserialize() {
         // GIVEN
         let text = r#"
         {
@@ -776,7 +760,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_domain_and_id_WHEN_make_domain_THEN_ldh_and_self_change() {
+    fn test_make_domain_with_domain_and_id() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("foo.example")
@@ -806,7 +790,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_id_WHEN_make_entity_THEN_handle_and_self_change() {
+    fn test_make_entity_with_entity_and_id() {
         // GIVEN
         let entity = Entity::builder()
             .handle("foo")
@@ -840,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nameserver_and_id_WHEN_make_nameserver_THEN_ldh_and_self_change() {
+    fn test_make_ns_with_nameserver_and_id() {
         // GIVEN
         let nameserver = Nameserver::builder()
             .ldh_name("ns.foo.example")
@@ -871,7 +855,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_autnum_and_id_WHEN_make_autnum_THEN_nums_and_self_change() {
+    fn test_make_autnum_with_autnum_and_id() {
         // GIVEN
         let autnum = Autnum::builder()
             .autnum_range(700..710)
@@ -908,7 +892,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_and_id_with_range_WHEN_make_network_THEN_range_and_cidr_and_self_change() {
+    fn test_make_network_with_id_and_range() {
         // GIVEN
         let network = Network::builder()
             .cidr("10.0.0.0/24")
@@ -947,11 +931,9 @@ mod tests {
             "11.0.0.255"
         );
         let cidr0 = actual.cidr0_cidrs.as_ref().expect("no cidr0");
-        let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
-            panic!("no v4 cidr")
-        };
-        assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
-        assert_eq!(v4cidr.length, Some(Numberish::<u8>::from(24)));
+        let v4cidr = cidr0.first().expect("cidr0 is empty");
+        assert_eq!(v4cidr.prefix(), Some("11.0.0.0".to_string()));
+        assert_eq!(v4cidr.length(), Some(24));
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
@@ -960,7 +942,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_network_and_id_with_cdir_WHEN_make_network_THEN_range_and_cidr_and_self_change() {
+    fn test_make_network_with_cidr_and_id() {
         // GIVEN
         let network = Network::builder()
             .cidr("10.0.0.0/24")
@@ -998,11 +980,9 @@ mod tests {
             "11.0.0.255"
         );
         let cidr0 = actual.cidr0_cidrs.as_ref().expect("no cidr0");
-        let Cidr0Cidr::V4Cidr(v4cidr) = cidr0.first().expect("cidr0 is empty") else {
-            panic!("no v4 cidr")
-        };
-        assert_eq!(v4cidr.v4prefix, Some("11.0.0.0".to_string()));
-        assert_eq!(v4cidr.length, Some(Numberish::<u8>::from(24)));
+        let v4cidr = cidr0.first().expect("cidr0 is empty");
+        assert_eq!(v4cidr.prefix(), Some("11.0.0.0".to_string()));
+        assert_eq!(v4cidr.length(), Some(24));
         let self_link = actual.get_self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),

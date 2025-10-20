@@ -125,6 +125,7 @@ mod tests {
                     .nr_type("generated")
                     .description_entry("Autonomous System numbers are not floating point numbers.")
                     .description_entry("They are integers.")
+                    .description_entry("This line has escaped markdown chars. * foo | bar # baz")
                     .build(),
             )
             .build();
