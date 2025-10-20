@@ -12,7 +12,7 @@ use super::{
 
 impl GetChecks for Entity {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
-        let sub_checks = if params.do_subchecks {
+        let sub_checks = {
             let mut sub_checks: Vec<Checks> = self
                 .common
                 .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
@@ -25,8 +25,6 @@ impl GetChecks for Entity {
                 sub_checks.append(&mut public_ids.get_sub_checks(params));
             }
             sub_checks
-        } else {
-            vec![]
         };
 
         let mut items = vec![];

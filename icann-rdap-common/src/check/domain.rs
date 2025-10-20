@@ -6,7 +6,7 @@ use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubCh
 
 impl GetChecks for Domain {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
-        let sub_checks = if params.do_subchecks {
+        let sub_checks = {
             let mut sub_checks: Vec<Checks> = self
                 .common
                 .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
@@ -22,8 +22,6 @@ impl GetChecks for Domain {
                 sub_checks.append(&mut secure_dns.get_sub_checks(params));
             }
             sub_checks
-        } else {
-            vec![]
         };
 
         let mut items = vec![];
@@ -307,7 +305,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -333,7 +330,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -358,7 +354,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -384,7 +379,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -409,7 +403,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -435,7 +428,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -466,7 +458,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -500,7 +491,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -531,7 +521,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -565,7 +554,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -599,7 +587,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()
@@ -630,7 +617,6 @@ mod tests {
 
         // WHEN
         let checks = secure_dns.get_sub_checks(CheckParams {
-            do_subchecks: false,
             root: &Domain::builder()
                 .ldh_name("example.com")
                 .build()

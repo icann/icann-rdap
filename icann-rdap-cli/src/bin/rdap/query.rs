@@ -466,7 +466,6 @@ fn do_output<'a, W: std::io::Write>(
 
 fn do_output_checks(response: &ResponseData) -> Checks {
     let check_params = CheckParams {
-        do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
         allow_unreg_ext: false,

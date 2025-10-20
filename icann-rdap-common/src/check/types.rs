@@ -54,10 +54,8 @@ impl GetChecks for RdapConformance {
 impl GetChecks for Links {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            self.iter()
-                .for_each(|link| sub_checks.push(link.get_checks(params)));
-        }
+        self.iter()
+            .for_each(|link| sub_checks.push(link.get_checks(params)));
         Checks {
             rdap_struct: super::RdapStructure::Links,
             items: vec![],
@@ -133,10 +131,8 @@ impl GetChecks for Link {
 impl GetChecks for Notices {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            self.iter()
-                .for_each(|note| sub_checks.push(note.0.get_checks(params)));
-        }
+        self.iter()
+            .for_each(|note| sub_checks.push(note.0.get_checks(params)));
         Checks {
             rdap_struct: super::RdapStructure::Notices,
             items: vec![],
@@ -148,10 +144,8 @@ impl GetChecks for Notices {
 impl GetChecks for Remarks {
     fn get_checks(&self, params: CheckParams) -> Checks {
         let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            self.iter()
-                .for_each(|remark| sub_checks.push(remark.0.get_checks(params)));
-        }
+        self.iter()
+            .for_each(|remark| sub_checks.push(remark.0.get_checks(params)));
         Checks {
             rdap_struct: super::RdapStructure::Remarks,
             items: vec![],
@@ -171,13 +165,10 @@ impl GetChecks for NoticeOrRemark {
             items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
         };
         let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            if let Some(links) = &self.links {
-                links.iter().for_each(|link| {
-                    sub_checks
-                        .push(link.get_checks(params.from_parent(TypeId::of::<NoticeOrRemark>())))
-                });
-            };
+        if let Some(links) = &self.links {
+            links.iter().for_each(|link| {
+                sub_checks.push(link.get_checks(params.from_parent(TypeId::of::<NoticeOrRemark>())))
+            });
         };
         // TODO checks on 'type'
         Checks {
@@ -230,13 +221,11 @@ impl GetSubChecks for PublicIds {
 impl GetSubChecks for Common {
     fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            if let Some(rdap_conformance) = &self.rdap_conformance {
-                sub_checks.push(rdap_conformance.get_checks(params))
-            };
-            if let Some(notices) = &self.notices {
-                sub_checks.push(notices.get_checks(params))
-            };
+        if let Some(rdap_conformance) = &self.rdap_conformance {
+            sub_checks.push(rdap_conformance.get_checks(params))
+        };
+        if let Some(notices) = &self.notices {
+            sub_checks.push(notices.get_checks(params))
         };
         if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {
             sub_checks.push(Checks {
@@ -254,13 +243,11 @@ impl GetSubChecks for ObjectCommon {
         let mut sub_checks: Vec<Checks> = vec![];
 
         // entities
-        if params.do_subchecks {
-            if let Some(entities) = &self.entities {
-                entities
-                    .iter()
-                    .for_each(|e| sub_checks.push(e.get_checks(params)))
-            };
-        }
+        if let Some(entities) = &self.entities {
+            entities
+                .iter()
+                .for_each(|e| sub_checks.push(e.get_checks(params)))
+        };
 
         // links
         if let Some(links) = &self.links {

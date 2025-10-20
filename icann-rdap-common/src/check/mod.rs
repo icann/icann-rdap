@@ -172,7 +172,6 @@ pub trait GetChecks {
 /// Parameters for finding checks.
 #[derive(Clone, Copy)]
 pub struct CheckParams<'a> {
-    pub do_subchecks: bool,
     pub root: &'a RdapResponse,
     pub parent_type: TypeId,
     pub allow_unreg_ext: bool,
@@ -181,7 +180,6 @@ pub struct CheckParams<'a> {
 impl CheckParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
         Self {
-            do_subchecks: self.do_subchecks,
             root: self.root,
             parent_type,
             allow_unreg_ext: self.allow_unreg_ext,
@@ -190,7 +188,6 @@ impl CheckParams<'_> {
 
     pub fn for_rdap(rdap: &RdapResponse) -> CheckParams<'_> {
         CheckParams {
-            do_subchecks: true,
             root: rdap,
             parent_type: rdap.get_type(),
             allow_unreg_ext: false,

@@ -397,7 +397,6 @@ fn format_date_time(date: DateTime<Utc>) -> String {
 
 fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
     let check_params = CheckParams {
-        do_subchecks: true,
         root: &response.rdap,
         parent_type: response.rdap.get_type(),
         allow_unreg_ext: options.allow_unregistered_extensions,
