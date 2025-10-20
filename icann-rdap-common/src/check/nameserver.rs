@@ -10,9 +10,10 @@ use super::{
 impl GetChecks for Nameserver {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = {
-            let mut sub_checks: Vec<Checks> = vec![self
-                .common
-                .get_checks(params.from_parent(TypeId::of::<Self>()))];
+            let mut sub_checks: Vec<Checks> = GetSubChecks::get_sub_checks(
+                &self.common,
+                params.from_parent(TypeId::of::<Self>()),
+            );
             sub_checks.append(
                 &mut self
                     .object_common

@@ -206,9 +206,8 @@ impl GetChecks for PublicIds {
     }
 }
 
-impl GetChecks for Common {
-    fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = vec![];
+impl GetSubChecks for Common {
+    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
         if let Some(rdap_conformance) = &self.rdap_conformance {
             sub_checks.push(rdap_conformance.get_checks(params))
@@ -217,13 +216,13 @@ impl GetChecks for Common {
             sub_checks.push(notices.get_checks(params))
         };
         if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {
-            items.push(Check::RdapConformanceMissing.check_item());
+            sub_checks.push(Checks {
+                rdap_struct: super::RdapStructure::RdapConformance,
+                items: vec![Check::RdapConformanceMissing.check_item()],
+                sub_checks: vec![],
+            });
         }
-        Checks {
-            rdap_struct: super::RdapStructure::RdapConformance,
-            items,
-            sub_checks,
-        }
+        sub_checks
     }
 }
 
