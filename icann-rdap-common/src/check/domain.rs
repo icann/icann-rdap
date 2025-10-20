@@ -7,9 +7,11 @@ use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubCh
 impl GetChecks for Domain {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = {
-            let mut sub_checks: Vec<Checks> = self
-                .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+            let mut sub_checks: Vec<Checks> = vec![];
+            sub_checks.push(
+                self.common
+                    .get_checks(params.from_parent(TypeId::of::<Self>())),
+            );
             sub_checks.append(
                 &mut self
                     .object_common

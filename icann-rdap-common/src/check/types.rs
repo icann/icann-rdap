@@ -206,8 +206,9 @@ impl GetChecks for PublicIds {
     }
 }
 
-impl GetSubChecks for Common {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
+impl GetChecks for Common {
+    fn get_checks(&self, params: CheckParams) -> Checks {
+        let mut items: Vec<CheckItem> = vec![];
         let mut sub_checks: Vec<Checks> = vec![];
         if let Some(rdap_conformance) = &self.rdap_conformance {
             sub_checks.push(rdap_conformance.get_checks(params))
@@ -216,13 +217,13 @@ impl GetSubChecks for Common {
             sub_checks.push(notices.get_checks(params))
         };
         if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {
-            sub_checks.push(Checks {
-                rdap_struct: super::RdapStructure::RdapConformance,
-                items: vec![Check::RdapConformanceMissing.check_item()],
-                sub_checks: vec![],
-            });
+            items.push(Check::RdapConformanceMissing.check_item());
         }
-        sub_checks
+        Checks {
+            rdap_struct: super::RdapStructure::RdapConformance,
+            items,
+            sub_checks,
+        }
     }
 }
 
@@ -341,7 +342,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        check::Checks,
+        check::{contains_check, Checks},
         media_types::RDAP_MEDIA_TYPE,
         prelude::{ToResponse, VectorStringish},
         response::{
@@ -947,15 +948,10 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        checks
-            .sub(crate::check::RdapStructure::Notices)
-            .expect("Notices not found")
-            .sub(crate::check::RdapStructure::NoticeOrRemark)
-            .expect("Notice/Remark not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::NoticeOrRemarkDescriptionIsAbsent)
-            .expect("description missing check");
+        assert!(contains_check(
+            Check::NoticeOrRemarkDescriptionIsAbsent,
+            &checks
+        ));
     }
 
     #[test]
@@ -1105,15 +1101,19 @@ mod tests {
         let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Entity)
-            .expect("entity not found")
-            .sub(crate::check::RdapStructure::RdapConformance)
-            .expect("rdap conformance not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::RdapConformanceInvalidParent)
-            .expect("check missing");
+        dbg!(&checks);
+        assert!(contains_check(Check::RdapConformanceInvalidParent, &checks));
+        // checks
+        //     .sub(crate::check::RdapStructure::Entity)
+        //     .expect("entity not found")
+        //     .sub(crate::check::RdapStructure::RdapConformance)
+        //     .expect("rdap conformance not found")
+        //     .sub(crate::check::RdapStructure::RdapConformance)
+        //     .expect("rdap conformance not found")
+        //     .items
+        //     .iter()
+        //     .find(|c| c.check == Check::RdapConformanceInvalidParent)
+        //     .expect("check missing");
     }
 
     fn find_any_check(checks: &Checks, check_type: Check) -> bool {

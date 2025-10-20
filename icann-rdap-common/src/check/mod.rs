@@ -247,6 +247,12 @@ where
     found
 }
 
+// Is a check found in any check or subcheck.
+pub fn contains_check(check: Check, checks: &Checks) -> bool {
+    checks.items.iter().any(|c| c.check == check)
+        || checks.sub_checks.iter().any(|c| contains_check(check, c))
+}
+
 /// Returns true if the check is in a check list
 pub fn is_checked(check: Check, checks: &[Checks]) -> bool {
     checks.iter().any(|c| is_checked_item(check, c))
@@ -638,7 +644,7 @@ impl Check {
 mod tests {
     use crate::check::RdapStructure;
 
-    use super::{traverse_checks, Check, CheckClass, CheckItem, Checks};
+    use super::{contains_check, traverse_checks, Check, CheckClass, CheckItem, Checks};
 
     #[test]
     fn GIVEN_info_checks_WHEN_traversed_for_info_THEN_found() {
@@ -777,5 +783,58 @@ mod tests {
         dbg!(&structs);
         assert!(structs.contains(&"[ROOT]/entity".to_string()));
         assert!(structs.contains(&"[ROOT]/entity/autnum".to_string()));
+    }
+
+    #[test]
+    fn test_contains_check_with_item() {
+        // GIVEN check structure
+        let checks = Checks {
+            rdap_struct: RdapStructure::Autnum,
+            items: vec![Check::RdapConformanceMissing.check_item()],
+            sub_checks: vec![],
+        };
+
+        // WHEN
+        let found = contains_check(Check::RdapConformanceMissing, &checks);
+
+        // THEN
+        assert!(found);
+    }
+
+    #[test]
+    fn test_contains_check_with_subchecks() {
+        // GIVEN check structure
+        let sub_check = Checks {
+            rdap_struct: RdapStructure::Entity,
+            items: vec![Check::RdapConformanceInvalidParent.check_item()],
+            sub_checks: vec![],
+        };
+        let checks = Checks {
+            rdap_struct: RdapStructure::Autnum,
+            items: vec![],
+            sub_checks: vec![sub_check],
+        };
+
+        // WHEN
+        let found = contains_check(Check::RdapConformanceInvalidParent, &checks);
+
+        // THEN
+        assert!(found);
+    }
+
+    #[test]
+    fn test_not_contains_check_with_item() {
+        // GIVEN check structure
+        let checks = Checks {
+            rdap_struct: RdapStructure::Autnum,
+            items: vec![],
+            sub_checks: vec![],
+        };
+
+        // WHEN
+        let found = contains_check(Check::RdapConformanceMissing, &checks);
+
+        // THEN
+        assert!(!found);
     }
 }
