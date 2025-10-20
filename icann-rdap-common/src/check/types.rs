@@ -1103,17 +1103,6 @@ mod tests {
         // THEN
         dbg!(&checks);
         assert!(contains_check(Check::RdapConformanceInvalidParent, &checks));
-        // checks
-        //     .sub(crate::check::RdapStructure::Entity)
-        //     .expect("entity not found")
-        //     .sub(crate::check::RdapStructure::RdapConformance)
-        //     .expect("rdap conformance not found")
-        //     .sub(crate::check::RdapStructure::RdapConformance)
-        //     .expect("rdap conformance not found")
-        //     .items
-        //     .iter()
-        //     .find(|c| c.check == Check::RdapConformanceInvalidParent)
-        //     .expect("check missing");
     }
 
     fn find_any_check(checks: &Checks, check_type: Check) -> bool {
