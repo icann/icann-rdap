@@ -179,42 +179,30 @@ impl GetChecks for NoticeOrRemark {
     }
 }
 
-impl GetSubChecks for PublicIds {
-    fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = vec![];
+impl GetChecks for PublicIds {
+    fn get_checks(&self, _params: CheckParams) -> Checks {
+        let mut items: Vec<CheckItem> = vec![];
         self.iter().for_each(|pid| {
             if let Some(id_type) = &pid.id_type {
                 if id_type.is_number() || id_type.is_bool() {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::PublidIds,
-                        items: vec![Check::PublicIdTypeIsNotString.check_item()],
-                        sub_checks: vec![],
-                    });
+                    items.push(Check::PublicIdTypeIsNotString.check_item());
                 }
             } else {
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::PublidIds,
-                    items: vec![Check::PublicIdTypeIsAbsent.check_item()],
-                    sub_checks: vec![],
-                });
+                items.push(Check::PublicIdTypeIsAbsent.check_item());
             }
             if let Some(identifier) = &pid.identifier {
                 if identifier.is_number() || identifier.is_bool() {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::PublidIds,
-                        items: vec![Check::PublicIdIdentifierIsNotString.check_item()],
-                        sub_checks: vec![],
-                    });
+                    items.push(Check::PublicIdIdentifierIsNotString.check_item());
                 }
             } else {
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::PublidIds,
-                    items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
-                    sub_checks: vec![],
-                });
+                items.push(Check::PublicIdIdentifierIsAbsent.check_item());
             }
         });
-        sub_checks
+        Checks {
+            rdap_struct: super::RdapStructure::PublidIds,
+            items,
+            sub_checks: vec![],
+        }
     }
 }
 

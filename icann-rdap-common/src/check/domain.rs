@@ -16,7 +16,7 @@ impl GetChecks for Domain {
                     .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(public_ids) = &self.public_ids {
-                sub_checks.append(&mut public_ids.get_sub_checks(params));
+                sub_checks.push(public_ids.get_checks(params));
             }
             if let Some(secure_dns) = &self.secure_dns {
                 sub_checks.append(&mut secure_dns.get_sub_checks(params));
