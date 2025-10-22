@@ -35,6 +35,8 @@ pub use obj_common::*;
 pub use search::*;
 #[doc(inline)]
 pub use types::*;
+#[doc(inline)]
+pub use values::*;
 
 pub(crate) mod autnum;
 pub(crate) mod common;
@@ -49,6 +51,7 @@ pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
 pub(crate) mod search;
 pub(crate) mod types;
+pub(crate) mod values;
 
 /// An error caused be processing an RDAP response.
 ///
@@ -396,7 +399,7 @@ pub fn opt_to_vec<T>(opt: Option<Vec<T>>) -> Vec<T> {
 mod tests {
     use serde_json::Value;
 
-    use crate::media_types::RDAP_MEDIA_TYPE;
+    use crate::{media_types::RDAP_MEDIA_TYPE, prelude::ExtensionId};
 
     use super::{get_related_links, Domain, Link, RdapResponse, ToResponse};
 
@@ -423,7 +426,7 @@ mod tests {
         let actual = RdapResponse::try_from(expected).unwrap();
 
         // THEN
-        assert!(actual.has_extension_id(crate::response::types::ExtensionId::Redacted));
+        assert!(actual.has_extension_id(ExtensionId::Redacted));
     }
 
     #[test]

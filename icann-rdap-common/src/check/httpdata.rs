@@ -1,4 +1,4 @@
-use crate::{httpdata::HttpData, media_types::RDAP_MEDIA_TYPE, response::types::ExtensionId};
+use crate::{httpdata::HttpData, media_types::RDAP_MEDIA_TYPE, prelude::ExtensionId};
 
 use super::{Check, Checks, GetChecks};
 
@@ -63,8 +63,8 @@ mod tests {
         check::{Check, CheckParams, GetChecks},
         httpdata::HttpData,
         media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE},
-        prelude::{Common, ObjectCommon, ToResponse},
-        response::{domain::Domain, types::ExtensionId},
+        prelude::{Common, ExtensionId, ObjectCommon, ToResponse},
+        response::domain::Domain,
     };
 
     #[test]

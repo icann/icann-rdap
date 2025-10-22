@@ -10,10 +10,9 @@ use {
 };
 
 use super::{
-    to_opt_vec,
-    types::{ExtensionId, Link},
-    CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
-    RdapResponseError, Remark, SelfLink, Stringish, ToChild, ToResponse,
+    to_opt_vec, types::Link, CommonFields, Entity, Event, ExtensionId, GetSelfLink, Notice,
+    Numberish, ObjectCommonFields, Port43, RdapResponseError, Remark, SelfLink, Stringish, ToChild,
+    ToResponse,
 };
 
 /// Cidr0 structure from the Cidr0 extension.

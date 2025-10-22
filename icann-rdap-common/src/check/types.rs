@@ -1,4 +1,4 @@
-use crate::prelude::has_rdap_path;
+use crate::prelude::{has_rdap_path, ExtensionId};
 
 use {
     crate::prelude::ObjectCommon,
@@ -15,10 +15,7 @@ use {
             entity::Entity,
             nameserver::Nameserver,
             network::Network,
-            types::{
-                ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance,
-                Remarks,
-            },
+            types::{Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance, Remarks},
         },
     },
     chrono::DateTime,
