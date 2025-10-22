@@ -215,8 +215,8 @@ impl GetChecks for RdapResponse {
 
 /// Trait to get checks for groups of data structures such as those
 /// related to [crate::response::Common] and [crate::response::ObjectCommon].
-pub trait GetSubChecks {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
+pub trait GetGroupChecks {
+    fn get_group_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
 
 /// Traverse the checks, and return true if one is found.

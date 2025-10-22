@@ -2,20 +2,22 @@ use std::any::TypeId;
 
 use crate::response::domain::{Domain, SecureDns};
 
-use super::{string::StringCheck, Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{
+    string::StringCheck, Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks,
+};
 
 impl GetChecks for Domain {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = vec![];
-            sub_checks.append(&mut GetSubChecks::get_sub_checks(
+            sub_checks.append(&mut GetGroupChecks::get_group_checks(
                 &self.common,
                 params.from_parent(TypeId::of::<Self>()),
             ));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
+                    .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(public_ids) = &self.public_ids {
                 sub_checks.push(public_ids.get_checks(params));

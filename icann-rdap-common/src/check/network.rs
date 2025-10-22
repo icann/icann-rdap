@@ -4,19 +4,19 @@ use cidr::IpCidr;
 
 use crate::{prelude::Stringish, response::network::Network};
 
-use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks};
 
 impl GetChecks for Network {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = {
-            let mut sub_checks: Vec<Checks> = GetSubChecks::get_sub_checks(
+            let mut sub_checks: Vec<Checks> = GetGroupChecks::get_group_checks(
                 &self.common,
                 params.from_parent(TypeId::of::<Self>()),
             );
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
+                    .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(cidr0) = &self.cidr0_cidrs {
                 let check = match self

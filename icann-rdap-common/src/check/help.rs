@@ -2,14 +2,14 @@ use std::any::TypeId;
 
 use crate::response::help::Help;
 
-use super::{CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{CheckParams, Checks, GetChecks, GetGroupChecks};
 
 impl GetChecks for Help {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let sub_checks = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+                .get_group_checks(params.from_parent(TypeId::of::<Self>()));
             sub_checks
         };
         Checks {

@@ -3,21 +3,21 @@ use std::any::TypeId;
 use crate::response::autnum::Autnum;
 
 use super::{
-    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks, RdapStructure,
+    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
 };
 
 impl GetChecks for Autnum {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = vec![];
-            sub_checks.append(&mut GetSubChecks::get_sub_checks(
+            sub_checks.append(&mut GetGroupChecks::get_group_checks(
                 &self.common,
                 params.from_parent(TypeId::of::<Self>()),
             ));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
+                    .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
             sub_checks
         };

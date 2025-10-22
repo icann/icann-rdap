@@ -23,7 +23,7 @@ use {
 
 use super::{
     string::{StringCheck, StringListCheck},
-    Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks,
+    Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks,
 };
 
 impl GetChecks for RdapConformance {
@@ -203,8 +203,8 @@ impl GetChecks for PublicIds {
     }
 }
 
-impl GetSubChecks for Common {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
+impl GetGroupChecks for Common {
+    fn get_group_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
         if let Some(rdap_conformance) = &self.rdap_conformance {
             sub_checks.push(rdap_conformance.get_checks(params))
@@ -223,8 +223,8 @@ impl GetSubChecks for Common {
     }
 }
 
-impl GetSubChecks for ObjectCommon {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
+impl GetGroupChecks for ObjectCommon {
+    fn get_group_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
 
         // entities

@@ -2,14 +2,14 @@ use std::any::TypeId;
 
 use crate::response::search::{DomainSearchResults, EntitySearchResults, NameserverSearchResults};
 
-use super::{CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{CheckParams, Checks, GetChecks, GetGroupChecks};
 
 impl GetChecks for DomainSearchResults {
     fn get_checks(&self, params: CheckParams) -> super::Checks {
         let sub_checks: Vec<Checks> = {
             let mut sub_checks = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+                .get_group_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
                 sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
@@ -28,7 +28,7 @@ impl GetChecks for NameserverSearchResults {
         let sub_checks: Vec<Checks> = {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+                .get_group_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
                 sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
@@ -47,7 +47,7 @@ impl GetChecks for EntitySearchResults {
         let sub_checks: Vec<Checks> = {
             let mut sub_checks: Vec<Checks> = self
                 .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+                .get_group_checks(params.from_parent(TypeId::of::<Self>()));
             self.results.iter().for_each(|result| {
                 sub_checks.push(result.get_checks(params.from_parent(TypeId::of::<Self>())))
             });
