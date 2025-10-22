@@ -414,10 +414,10 @@ enum CheckTypeArg {
     SpecNote,
 
     /// Checks for STD 95 warnings.
-    StdWarn,
+    Std95Warn,
 
     /// Checks for STD 95 errors.
-    StdError,
+    Std95Error,
 
     /// Cidr0 errors.
     Cidr0Error,
@@ -574,8 +574,8 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     let check_types = if cli.check_type.is_empty() {
         vec![
             CheckClass::Informational,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
+            CheckClass::Std95Warning,
+            CheckClass::Std95Error,
             CheckClass::Cidr0Error,
             CheckClass::IcannError,
         ]
@@ -583,8 +583,8 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         vec![
             CheckClass::Informational,
             CheckClass::SpecificationNote,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
+            CheckClass::Std95Warning,
+            CheckClass::Std95Error,
             CheckClass::Cidr0Error,
             CheckClass::IcannError,
         ]
@@ -594,8 +594,8 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             .map(|c| match c {
                 CheckTypeArg::Info => CheckClass::Informational,
                 CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
-                CheckTypeArg::StdWarn => CheckClass::StdWarning,
-                CheckTypeArg::StdError => CheckClass::StdError,
+                CheckTypeArg::Std95Warn => CheckClass::Std95Warning,
+                CheckTypeArg::Std95Error => CheckClass::Std95Error,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
                 CheckTypeArg::IcannError => CheckClass::IcannError,
                 CheckTypeArg::All => panic!("check type for all should have been handled."),

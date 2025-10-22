@@ -66,14 +66,14 @@ pub enum CheckClass {
     ///
     /// This class represents warnings that may cause some clients to be unable
     /// to conduct some operations.
-    #[strum(serialize = "StdWarn")]
-    StdWarning,
+    #[strum(serialize = "Std95Warn")]
+    Std95Warning,
 
     /// STD 95 Errors
     ///
     /// This class represetns errors in the RDAP with respect to STD 95.
-    #[strum(serialize = "StdErr")]
-    StdError,
+    #[strum(serialize = "Std95Err")]
+    Std95Error,
 
     /// Cidr0 Errors
     ///
@@ -528,51 +528,51 @@ impl Check {
     pub fn check_item(self) -> CheckItem {
         let check_class = match self {
             Self::RdapConformanceMissing | Self::RdapConformanceInvalidParent => {
-                CheckClass::StdError
+                CheckClass::Std95Error
             }
-            Self::UnknownExtention => CheckClass::StdWarning,
+            Self::UnknownExtention => CheckClass::Std95Warning,
 
-            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::StdError,
+            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::Std95Error,
             Self::LinkRelatedHasNoType
             | Self::LinkRelatedIsNotRdap
             | Self::LinkSelfHasNoType
-            | Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
+            | Self::LinkSelfIsNotRdap => CheckClass::Std95Warning,
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
-            Self::LinkMissingHrefProperty => CheckClass::StdError,
-            Self::LinkRelatedNotToRdap => CheckClass::StdWarning,
+            Self::LinkMissingHrefProperty => CheckClass::Std95Error,
+            Self::LinkRelatedNotToRdap => CheckClass::Std95Warning,
 
-            Self::VariantEmptyDomain => CheckClass::StdWarning,
+            Self::VariantEmptyDomain => CheckClass::Std95Warning,
 
             Self::EventDateIsAbsent
             | Self::EventDateIsNotRfc3339
             | Self::EventActionIsAbsent
             | Self::NoticeOrRemarkDescriptionIsAbsent
-            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
+            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::Std95Error,
 
-            Self::HandleIsEmpty => CheckClass::StdWarning,
-            Self::HandleIsNotString => CheckClass::StdError,
-            Self::ParentHandleIsNotString => CheckClass::StdError,
+            Self::HandleIsEmpty => CheckClass::Std95Warning,
+            Self::HandleIsNotString => CheckClass::Std95Error,
+            Self::ParentHandleIsNotString => CheckClass::Std95Error,
 
-            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
-            Self::UnknownRole => CheckClass::StdWarning,
-            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::StdError,
+            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::Std95Error,
+            Self::UnknownRole => CheckClass::Std95Warning,
+            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::Std95Error,
             Self::LdhNameDocumentation => CheckClass::Informational,
-            Self::LdhNameDoesNotMatchUnicode => CheckClass::StdWarning,
+            Self::LdhNameDoesNotMatchUnicode => CheckClass::Std95Warning,
 
             Self::UnicodeNameInvalidDomain | Self::UnicodeNameInvalidUnicode => {
-                CheckClass::StdError
+                CheckClass::Std95Error
             }
 
-            Self::NetworkOrAutnumNameIsEmpty => CheckClass::StdWarning,
-            Self::NetworkOrAutnumNameIsNotString => CheckClass::StdError,
-            Self::NetworkOrAutnumTypeIsEmpty => CheckClass::StdWarning,
-            Self::NetworkOrAutnumTypeIsNotString => CheckClass::StdError,
-            Self::IpAddressMissing => CheckClass::StdWarning,
-            Self::IpAddressMalformed => CheckClass::StdError,
+            Self::NetworkOrAutnumNameIsEmpty => CheckClass::Std95Warning,
+            Self::NetworkOrAutnumNameIsNotString => CheckClass::Std95Error,
+            Self::NetworkOrAutnumTypeIsEmpty => CheckClass::Std95Warning,
+            Self::NetworkOrAutnumTypeIsNotString => CheckClass::Std95Error,
+            Self::IpAddressMissing => CheckClass::Std95Warning,
+            Self::IpAddressMalformed => CheckClass::Std95Error,
             Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
-                CheckClass::StdWarning
+                CheckClass::Std95Warning
             }
-            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::StdError,
+            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::Std95Error,
             Self::IpAddressThisNetwork
             | Self::IpAddressPrivateUse
             | Self::IpAddressSharedNat
@@ -581,27 +581,27 @@ impl Check {
             | Self::IpAddressUniqueLocal
             | Self::IpAddressDocumentationNet
             | Self::IpAddressReservedNet => CheckClass::Informational,
-            Self::IpAddressArrayIsString => CheckClass::StdError,
-            Self::IpVersionIsNotString => CheckClass::StdError,
+            Self::IpAddressArrayIsString => CheckClass::Std95Error,
+            Self::IpVersionIsNotString => CheckClass::Std95Error,
 
-            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
+            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::Std95Warning,
             Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
                 CheckClass::Informational
             }
 
-            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::StdError,
+            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::Std95Error,
             Self::VcardFnIsEmpty => CheckClass::SpecificationNote,
 
             Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
-                CheckClass::StdError
+                CheckClass::Std95Error
             }
-            Self::PublicIdTypeIsNotString => CheckClass::StdError,
-            Self::PublicIdIdentifierIsNotString => CheckClass::StdError,
+            Self::PublicIdTypeIsNotString => CheckClass::Std95Error,
+            Self::PublicIdIdentifierIsNotString => CheckClass::Std95Error,
 
             Self::CorsAllowOriginRecommended
             | Self::CorsAllowOriginStarRecommended
-            | Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
-            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::StdError,
+            | Self::CorsAllowCredentialsNotRecommended => CheckClass::Std95Warning,
+            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::Std95Error,
 
             Self::Cidr0V4PrefixIsAbsent
             | Self::Cidr0V4LengthIsAbsent
@@ -610,9 +610,9 @@ impl Check {
 
             Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::IcannError,
 
-            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::StdError,
+            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::Std95Error,
             Self::NoARecords | Self::NoAAAARecords => CheckClass::SpecificationNote,
-            Self::ExpectedExtensionNotFound => CheckClass::StdError,
+            Self::ExpectedExtensionNotFound => CheckClass::Std95Error,
             Self::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
 
             Self::DelegationSignedIsString
@@ -629,9 +629,9 @@ impl Check {
             | Self::DsDatumKeyTagIsString
             | Self::DsDatumKeyTagIsOutOfRange
             | Self::DsDatumDigestTypeIsString
-            | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
+            | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::Std95Error,
 
-            Self::NetworkOrAutnumCountryIsNotString => CheckClass::StdError,
+            Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
         };
         CheckItem {
             check_class,
@@ -676,7 +676,7 @@ mod tests {
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
             items: vec![CheckItem {
-                check_class: CheckClass::StdWarning,
+                check_class: CheckClass::Std95Warning,
                 check: Check::VariantEmptyDomain,
             }],
             sub_checks: vec![],
@@ -731,7 +731,7 @@ mod tests {
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
                 items: vec![CheckItem {
-                    check_class: CheckClass::StdWarning,
+                    check_class: CheckClass::Std95Warning,
                     check: Check::VariantEmptyDomain,
                 }],
                 sub_checks: vec![],
