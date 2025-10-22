@@ -128,16 +128,6 @@ pub enum NrType {
     ObjectTruncatedDueToUnexplainableReasons,
     #[strum(serialize = "object redacted due to authorization")]
     ObjectRedactedDueToAuthorization,
-    #[strum(serialize = "check class informational")]
-    CheckClassInformational, // TODO register with IANA
-    #[strum(serialize = "check class specification note")]
-    CheckClassSpecificationNote, // TODO register with IANA
-    #[strum(serialize = "check class STD 95 warning")]
-    CheckClassStandardsWarning, // TODO register with IANA
-    #[strum(serialize = "check class STD 95 error")]
-    CheckClassStandardsError, // TODO register with IANA
-    #[strum(serialize = "check class CIDR0 error")]
-    CheckClassCidr0Error, // TODO register with IANA
-    #[strum(serialize = "check class gTLD Profile error")]
-    CheckClassGtldProfileError, // TODO register with IANA
+    #[strum(serialize = "conformance check")]
+    ConformanceCheck, // TODO register with IANA
 }
