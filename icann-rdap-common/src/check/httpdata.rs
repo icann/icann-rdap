@@ -25,7 +25,7 @@ impl GetChecks for HttpData {
             items.push(Check::ContentTypeIsAbsent.check_item());
         }
 
-        // checks for ICANN profile
+        // checks for Gtld profile
         if params
             .root
             .has_extension_id(ExtensionId::IcannRdapTechnicalImplementationGuide0)

@@ -81,11 +81,11 @@ pub enum CheckClass {
     #[strum(serialize = "Cidr0Err")]
     Cidr0Error,
 
-    /// ICANN Profile Errors
+    /// Gtld Profile Errors
     ///
     /// This class represents errors with respect to the gTLD RDAP profile.
-    #[strum(serialize = "IcannErr")]
-    IcannError,
+    #[strum(serialize = "GtldProfileErr")]
+    GtldProfileError,
 }
 
 /// Represents the name of an RDAP structure for which a check appears.
@@ -465,7 +465,7 @@ pub enum Check {
     #[strum(message = "Cidr0 v6 length is absent")]
     Cidr0V6LengthIsAbsent = 1903,
 
-    // ICANN Profile 2000 - 2099
+    // Gtld Profile 2000 - 2099
     #[strum(message = "RDAP Service Must use HTTPS.")]
     MustUseHttps = 2000,
     #[strum(message = "access-control-allow-origin is not asterisk")]
@@ -483,7 +483,7 @@ pub enum Check {
     #[strum(message = "Expected extension not found.")]
     ExpectedExtensionNotFound = 2104,
     #[strum(message = "IPv6 Support Required.")]
-    Ipv6SupportRequiredByIcann = 2105,
+    Ipv6SupportRequiredByGtldProfile = 2105,
 
     // Secure DNS 2200 - 2299
     #[strum(message = "delegationSigned is a string not a bool.")]
@@ -608,12 +608,12 @@ impl Check {
             | Self::Cidr0V6PrefixIsAbsent
             | Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
 
-            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::IcannError,
+            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::GtldProfileError,
 
             Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::Std95Error,
             Self::NoARecords | Self::NoAAAARecords => CheckClass::SpecificationNote,
             Self::ExpectedExtensionNotFound => CheckClass::Std95Error,
-            Self::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
+            Self::Ipv6SupportRequiredByGtldProfile => CheckClass::GtldProfileError,
 
             Self::DelegationSignedIsString
             | Self::ZoneSignedIsString

@@ -311,8 +311,8 @@ enum CheckTypeArg {
     /// Cidr0 errors.
     Cidr0Error,
 
-    /// ICANN Profile errors.
-    IcannError,
+    /// Gtld Profile errors.
+    GtldProfileError,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -394,7 +394,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             CheckClass::Std95Warning,
             CheckClass::Std95Error,
             CheckClass::Cidr0Error,
-            CheckClass::IcannError,
+            CheckClass::GtldProfileError,
         ]
     } else if cli.check_type.contains(&CheckTypeArg::All) {
         vec![
@@ -403,7 +403,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             CheckClass::Std95Warning,
             CheckClass::Std95Error,
             CheckClass::Cidr0Error,
-            CheckClass::IcannError,
+            CheckClass::GtldProfileError,
         ]
     } else {
         cli.check_type
@@ -414,7 +414,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
                 CheckTypeArg::Std95Warn => CheckClass::Std95Warning,
                 CheckTypeArg::Std95Error => CheckClass::Std95Error,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
-                CheckTypeArg::IcannError => CheckClass::IcannError,
+                CheckTypeArg::GtldProfileError => CheckClass::GtldProfileError,
                 CheckTypeArg::All => panic!("check type for all should have been handled."),
             })
             .collect::<Vec<CheckClass>>()
@@ -513,7 +513,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .filter(|c| {
             matches!(
                 c,
-                CheckClass::Std95Error | CheckClass::Cidr0Error | CheckClass::IcannError
+                CheckClass::Std95Error | CheckClass::Cidr0Error | CheckClass::GtldProfileError
             )
         })
         .copied()

@@ -59,7 +59,7 @@ impl TestResults {
         if self.dns_data.v6_addrs.is_empty() {
             self.service_checks.push(Check::NoAAAARecords.check_item());
 
-            // see if required by ICANN
+            // see if required by Gtld Profile
             let tig0 = ExtensionId::IcannRdapTechnicalImplementationGuide0.to_string();
             let tig1 = ExtensionId::IcannRdapTechnicalImplementationGuide1.to_string();
             let both_tigs = format!("{tig0}|{tig1}");
@@ -68,7 +68,7 @@ impl TestResults {
                 || options.expect_extensions.contains(&both_tigs)
             {
                 self.service_checks
-                    .push(Check::Ipv6SupportRequiredByIcann.check_item())
+                    .push(Check::Ipv6SupportRequiredByGtldProfile.check_item())
             }
         }
     }
