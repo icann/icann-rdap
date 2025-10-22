@@ -110,3 +110,34 @@ pub enum EntityRole {
     Notifications,
     Noc,
 }
+
+/// Notice/Remark Values.
+#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+pub enum NrType {
+    #[strum(serialize = "result set truncated due to authorization")]
+    ResultSetTruncatedDueToAuthorization,
+    #[strum(serialize = "result set truncated due to excessive load")]
+    ResultSetTruncatedDueToExcessiveLoad,
+    #[strum(serialize = "result set truncated due to unexplainable reasons")]
+    ResultSetTruncatedDueToUnexplainableReasons,
+    #[strum(serialize = "object truncated due to authorization")]
+    ObjectTruncatedDueToAuthorization,
+    #[strum(serialize = "object truncated due to excessive load")]
+    ObjectTruncatedDueToExcessiveLoad,
+    #[strum(serialize = "object truncated due to unexplainable reasons")]
+    ObjectTruncatedDueToUnexplainableReasons,
+    #[strum(serialize = "object redacted due to authorization")]
+    ObjectRedactedDueToAuthorization,
+    #[strum(serialize = "check class informational")]
+    CheckClassInformational, // TODO register with IANA
+    #[strum(serialize = "check class specification note")]
+    CheckClassSpecificationNote, // TODO register with IANA
+    #[strum(serialize = "check class STD 95 warning")]
+    CheckClassStandardsWarning, // TODO register with IANA
+    #[strum(serialize = "check class STD 95 error")]
+    CheckClassStandardsError, // TODO register with IANA
+    #[strum(serialize = "check class CIDR0 error")]
+    CheckClassCidr0Error, // TODO register with IANA
+    #[strum(serialize = "check class gTLD Profile error")]
+    CheckClassGtldProfileError, // TODO register with IANA
+}
