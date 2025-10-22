@@ -20,6 +20,7 @@ mod help;
 mod httpdata;
 mod nameserver;
 mod network;
+pub mod process;
 mod search;
 mod string;
 mod types;
