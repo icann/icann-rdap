@@ -93,3 +93,20 @@ impl ExtensionId {
         Extension(self.to_string())
     }
 }
+
+/// IANA registered roles for entities.
+#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum EntityRole {
+    Registrant,
+    Technical,
+    Administrative,
+    Abuse,
+    Billing,
+    Registrar,
+    Reseller,
+    Sponsor,
+    Proxy,
+    Notifications,
+    Noc,
+}

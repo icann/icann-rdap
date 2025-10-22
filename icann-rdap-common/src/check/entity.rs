@@ -1,9 +1,6 @@
 use std::{any::TypeId, str::FromStr};
 
-use crate::{
-    contact::Contact,
-    response::entity::{Entity, EntityRole},
-};
+use crate::{contact::Contact, prelude::EntityRole, response::entity::Entity};
 
 use super::{
     string::{StringCheck, StringListCheck},

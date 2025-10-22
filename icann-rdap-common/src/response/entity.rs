@@ -6,7 +6,6 @@ use {
     },
     serde::{Deserialize, Serialize},
     serde_json::Value,
-    strum_macros::{Display, EnumString},
 };
 
 use super::{
@@ -342,23 +341,6 @@ impl ObjectCommonFields for Entity {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
     }
-}
-
-/// IANA registered roles for entities.
-#[derive(PartialEq, Eq, Debug, EnumString, Display)]
-#[strum(serialize_all = "lowercase")]
-pub enum EntityRole {
-    Registrant,
-    Technical,
-    Administrative,
-    Abuse,
-    Billing,
-    Registrar,
-    Reseller,
-    Sponsor,
-    Proxy,
-    Notifications,
-    Noc,
 }
 
 #[cfg(test)]
