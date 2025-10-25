@@ -33,6 +33,16 @@ impl GetChecks for Entity {
                 sub_checks.push(entity.get_checks(params));
             }
 
+            // nets
+            for net in self.networks() {
+                sub_checks.push(net.get_checks(params));
+            }
+
+            // autnums
+            for asn in self.autnums() {
+                sub_checks.push(asn.get_checks(params));
+            }
+
             sub_checks
         };
 
@@ -81,7 +91,7 @@ impl GetChecks for Entity {
 mod tests {
     use crate::{
         check::{contains_check, Check, CheckParams, GetChecks},
-        prelude::{Entity, ToResponse},
+        prelude::{Autnum, Entity, Network, ToResponse},
     };
 
     #[test]
@@ -90,6 +100,44 @@ mod tests {
         let entity = Entity::builder()
             .handle("foo")
             .entity(Entity::builder().handle("").build())
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = entity.get_checks(CheckParams::for_rdap(&entity));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_entity_with_net_empty_handle() {
+        // GIVEN
+        let entity = Entity::builder()
+            .handle("foo")
+            .network(
+                Network::builder()
+                    .cidr("10.0.0.0/8")
+                    .handle("")
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = entity.get_checks(CheckParams::for_rdap(&entity));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_entity_with_autnum_empty_handle() {
+        // GIVEN
+        let entity = Entity::builder()
+            .handle("foo")
+            .autnum(Autnum::builder().autnum_range(701..703).handle("").build())
             .build()
             .to_response();
 
