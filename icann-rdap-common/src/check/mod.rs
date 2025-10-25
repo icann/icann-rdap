@@ -329,6 +329,8 @@ pub enum Check {
     NoticeOrRemarkDescriptionIsAbsent = 500,
     #[strum(message = "RFC 9083 requires a description to be an array of strings")]
     NoticeOrRemarkDescriptionIsString = 501,
+    #[strum(message = "type for notice/remark is unknown")]
+    NoticeOrRemarkUnknownType = 502,
 
     // Handle 600 - 699
     #[strum(message = "handle appears to be empty or only whitespace")]
@@ -551,6 +553,7 @@ impl Check {
             | Self::EventActionIsAbsent
             | Self::NoticeOrRemarkDescriptionIsAbsent
             | Self::NoticeOrRemarkDescriptionIsString => CheckClass::Std95Error,
+            Self::NoticeOrRemarkUnknownType => CheckClass::Std95Warning,
 
             Self::HandleIsEmpty => CheckClass::Std95Warning,
             Self::HandleIsNotString => CheckClass::Std95Error,

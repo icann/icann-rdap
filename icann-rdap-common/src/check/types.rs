@@ -1,4 +1,4 @@
-use crate::prelude::{has_rdap_path, ExtensionId, StatusValue};
+use crate::prelude::{has_rdap_path, ExtensionId, NrType, StatusValue};
 
 use {
     crate::prelude::ObjectCommon,
@@ -161,13 +161,18 @@ impl GetChecks for NoticeOrRemark {
         } else {
             items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
         };
+        if let Some(nr_type) = self.nr_type() {
+            let s = NrType::from_str(nr_type);
+            if s.is_err() {
+                items.push(Check::NoticeOrRemarkUnknownType.check_item());
+            }
+        }
         let mut sub_checks: Vec<Checks> = vec![];
         if let Some(links) = &self.links {
             links.iter().for_each(|link| {
                 sub_checks.push(link.get_checks(params.from_parent(TypeId::of::<NoticeOrRemark>())))
             });
         };
-        // TODO checks on 'type'
         Checks {
             rdap_struct: super::RdapStructure::NoticeOrRemark,
             items,
@@ -961,6 +966,27 @@ mod tests {
     }
 
     #[test]
+    fn test_notice_with_unknown_type() {
+        // GIVEN
+        let notice = Notice::builder()
+            .nr_type("unknwon_type")
+            .description_entry("stuff")
+            .build();
+        let rdap = Domain::response_obj()
+            .ldh_name("example.com")
+            .notice(notice)
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::NoticeOrRemarkUnknownType, &checks));
+    }
+
+    #[test]
     fn test_nameserver_with_no_links() {
         // GIVEN
         let rdap = Nameserver::builder()
@@ -1046,7 +1072,7 @@ mod tests {
         let checks = domain.get_checks(CheckParams::for_rdap(&domain));
 
         // THEN
-        assert!(find_any_check(&checks, Check::StatusValueUnknown));
+        assert!(contains_check(Check::StatusValueUnknown, &checks));
     }
 
     #[rstest]
