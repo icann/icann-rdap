@@ -38,6 +38,12 @@ impl GetChecks for Domain {
             if let Some(net) = self.network() {
                 sub_checks.push(net.get_checks(params));
             }
+
+            // nameservers
+            for ns in self.nameservers() {
+                sub_checks.push(ns.get_checks(params));
+            }
+
             sub_checks
         };
 
@@ -204,7 +210,7 @@ mod tests {
 
     use crate::{
         check::{contains_check, Check, CheckParams, GetChecks},
-        prelude::{Entity, Network},
+        prelude::{Entity, Nameserver, Network},
     };
 
     #[rstest]
@@ -632,6 +638,28 @@ mod tests {
             .network(
                 Network::builder()
                     .cidr("10.0.0.0/8")
+                    .handle("")
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_domain_with_ns_empty_handle() {
+        // GIVEN
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .nameserver(
+                Nameserver::builder()
+                    .ldh_name("ns.foo.example")
                     .handle("")
                     .build()
                     .unwrap(),
