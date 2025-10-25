@@ -15,13 +15,13 @@ pub fn get_checks(
         parent_type: rdap.get_type(),
         allow_unreg_ext,
     };
-    let mut checks = rdap.get_checks(check_params);
+    let mut checks = rdap.get_checks(None, check_params);
 
     if let Some(http_data) = http_data {
         // add these to the root check structure
         checks
             .items
-            .append(&mut http_data.get_checks(check_params).items);
+            .append(&mut http_data.get_checks(None, check_params).items);
     }
 
     // add expected extension checks

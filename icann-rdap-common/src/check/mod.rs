@@ -132,12 +132,26 @@ pub enum RdapStructure {
 /// Checks are found on object classes and structures defined in [RdapStructure].
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Checks {
+    /// The structure for which this check is relevant.
     pub rdap_struct: RdapStructure,
+    /// Index of the structure in an array.
+    pub index: Option<usize>,
+    /// The check items for this structure.
     pub items: Vec<CheckItem>,
+    /// Sub or child checks belonging to substructures.
     pub sub_checks: Vec<Checks>,
 }
 
 impl Checks {
+    pub fn for_item(rdap_struct: RdapStructure, check_item: CheckItem) -> Self {
+        Self {
+            rdap_struct,
+            index: None,
+            items: vec![check_item],
+            sub_checks: vec![],
+        }
+    }
+
     pub fn sub(&self, rdap_struct: RdapStructure) -> Option<&Self> {
         self.sub_checks
             .iter()
@@ -167,7 +181,7 @@ impl std::fmt::Display for CheckItem {
 
 /// Trait for an item that can get checks.
 pub trait GetChecks {
-    fn get_checks(&self, params: CheckParams) -> Checks;
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks;
 }
 
 /// Parameters for finding checks.
@@ -197,18 +211,18 @@ impl CheckParams<'_> {
 }
 
 impl GetChecks for RdapResponse {
-    fn get_checks(&self, params: CheckParams) -> Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
         match &self {
-            Self::Entity(e) => e.get_checks(params),
-            Self::Domain(d) => d.get_checks(params),
-            Self::Nameserver(n) => n.get_checks(params),
-            Self::Autnum(a) => a.get_checks(params),
-            Self::Network(n) => n.get_checks(params),
-            Self::DomainSearchResults(r) => r.get_checks(params),
-            Self::EntitySearchResults(r) => r.get_checks(params),
-            Self::NameserverSearchResults(r) => r.get_checks(params),
-            Self::ErrorResponse(e) => e.get_checks(params),
-            Self::Help(h) => h.get_checks(params),
+            Self::Entity(e) => e.get_checks(index, params),
+            Self::Domain(d) => d.get_checks(index, params),
+            Self::Nameserver(n) => n.get_checks(index, params),
+            Self::Autnum(a) => a.get_checks(index, params),
+            Self::Network(n) => n.get_checks(index, params),
+            Self::DomainSearchResults(r) => r.get_checks(index, params),
+            Self::EntitySearchResults(r) => r.get_checks(index, params),
+            Self::NameserverSearchResults(r) => r.get_checks(index, params),
+            Self::ErrorResponse(e) => e.get_checks(index, params),
+            Self::Help(h) => h.get_checks(index, params),
         }
     }
 }
@@ -231,9 +245,12 @@ where
 {
     let mut found = false;
     let struct_tree = format!(
-        "{}/{}",
+        "{}/{}{}",
         parent_tree.unwrap_or_else(|| "[ROOT]".to_string()),
-        checks.rdap_struct
+        checks.rdap_struct,
+        checks
+            .index
+            .map_or_else(|| "".to_string(), |i| format!("/[{i}]")),
     );
     for item in &checks.items {
         if classes.contains(&item.check_class) {
@@ -661,6 +678,7 @@ mod tests {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
                 check: Check::VariantEmptyDomain,
@@ -685,6 +703,7 @@ mod tests {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![CheckItem {
                 check_class: CheckClass::Std95Warning,
                 check: Check::VariantEmptyDomain,
@@ -709,9 +728,11 @@ mod tests {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![],
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
+                index: None,
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
                     check: Check::VariantEmptyDomain,
@@ -737,9 +758,11 @@ mod tests {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![],
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
+                index: None,
                 items: vec![CheckItem {
                     check_class: CheckClass::Std95Warning,
                     check: Check::VariantEmptyDomain,
@@ -765,12 +788,14 @@ mod tests {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
                 check: Check::RdapConformanceInvalidParent,
             }],
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
+                index: None,
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
                     check: Check::VariantEmptyDomain,
@@ -798,11 +823,10 @@ mod tests {
     #[test]
     fn test_contains_check_with_item() {
         // GIVEN check structure
-        let checks = Checks {
-            rdap_struct: RdapStructure::Autnum,
-            items: vec![Check::RdapConformanceMissing.check_item()],
-            sub_checks: vec![],
-        };
+        let checks = Checks::for_item(
+            RdapStructure::Autnum,
+            Check::RdapConformanceMissing.check_item(),
+        );
 
         // WHEN
         let found = contains_check(Check::RdapConformanceMissing, &checks);
@@ -814,13 +838,13 @@ mod tests {
     #[test]
     fn test_contains_check_with_subchecks() {
         // GIVEN check structure
-        let sub_check = Checks {
-            rdap_struct: RdapStructure::Entity,
-            items: vec![Check::RdapConformanceInvalidParent.check_item()],
-            sub_checks: vec![],
-        };
+        let sub_check = Checks::for_item(
+            RdapStructure::Entity,
+            Check::RdapConformanceInvalidParent.check_item(),
+        );
         let checks = Checks {
             rdap_struct: RdapStructure::Autnum,
+            index: None,
             items: vec![],
             sub_checks: vec![sub_check],
         };
@@ -837,6 +861,7 @@ mod tests {
         // GIVEN check structure
         let checks = Checks {
             rdap_struct: RdapStructure::Autnum,
+            index: None,
             items: vec![],
             sub_checks: vec![],
         };

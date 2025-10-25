@@ -401,12 +401,12 @@ fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
         parent_type: response.rdap.get_type(),
         allow_unreg_ext: options.allow_unregistered_extensions,
     };
-    let mut checks = response.rdap.get_checks(check_params);
+    let mut checks = response.rdap.get_checks(None, check_params);
 
     // httpdata checks
     checks
         .items
-        .append(&mut response.http_data.get_checks(check_params).items);
+        .append(&mut response.http_data.get_checks(None, check_params).items);
 
     // add expected extension checks
     for ext in &options.expect_extensions {

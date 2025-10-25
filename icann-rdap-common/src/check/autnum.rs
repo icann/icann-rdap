@@ -7,7 +7,7 @@ use super::{
 };
 
 impl GetChecks for Autnum {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = vec![];
             sub_checks.append(&mut GetGroupChecks::get_group_checks(
@@ -21,8 +21,8 @@ impl GetChecks for Autnum {
             );
 
             // entities
-            for entity in self.entities() {
-                sub_checks.push(entity.get_checks(params));
+            for (i, entity) in self.entities().iter().enumerate() {
+                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             sub_checks
@@ -77,6 +77,7 @@ impl GetChecks for Autnum {
 
         Checks {
             rdap_struct: RdapStructure::Autnum,
+            index,
             items,
             sub_checks,
         }
@@ -121,7 +122,7 @@ mod tests {
         let rdap = autnum.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -149,7 +150,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -166,7 +167,7 @@ mod tests {
         let rdap = autnum.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -194,7 +195,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -221,7 +222,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -300,7 +301,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = autnum.get_checks(CheckParams::for_rdap(&autnum));
+        let checks = autnum.get_checks(None, CheckParams::for_rdap(&autnum));
 
         // THEN
         assert!(contains_check(Check::HandleIsEmpty, &checks));

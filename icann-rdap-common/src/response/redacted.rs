@@ -197,6 +197,7 @@ impl Redacted {
     pub fn get_checks(&self, _check_params: crate::check::CheckParams<'_>) -> crate::check::Checks {
         Checks {
             rdap_struct: crate::check::RdapStructure::Redacted,
+            index: None,
             items: vec![],
             sub_checks: vec![],
         }

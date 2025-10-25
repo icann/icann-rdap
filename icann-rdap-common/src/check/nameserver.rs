@@ -8,7 +8,7 @@ use super::{
 };
 
 impl GetChecks for Nameserver {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = GetGroupChecks::get_group_checks(
                 &self.common,
@@ -21,8 +21,8 @@ impl GetChecks for Nameserver {
             );
 
             // entities
-            for entity in self.entities() {
-                sub_checks.push(entity.get_checks(params));
+            for (i, entity) in self.entities().iter().enumerate() {
+                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             sub_checks
@@ -72,6 +72,7 @@ impl GetChecks for Nameserver {
 
         Checks {
             rdap_struct: super::RdapStructure::Nameserver,
+            index,
             items,
             sub_checks,
         }
@@ -97,7 +98,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -117,7 +118,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -137,7 +138,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -157,7 +158,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -177,7 +178,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -199,7 +200,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         assert!(contains_check(Check::HandleIsEmpty, &checks));

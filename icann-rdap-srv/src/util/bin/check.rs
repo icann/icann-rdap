@@ -46,11 +46,14 @@ pub fn to_check_classes(args: &CheckArgs) -> Vec<CheckClass> {
 
 /// Print errors and returns true if a check is found.
 pub fn check_rdap(rdap: RdapResponse, check_types: &[CheckClass]) -> bool {
-    let checks = rdap.get_checks(CheckParams {
-        root: &rdap,
-        parent_type: rdap.get_type(),
-        allow_unreg_ext: true,
-    });
+    let checks = rdap.get_checks(
+        None,
+        CheckParams {
+            root: &rdap,
+            parent_type: rdap.get_type(),
+            allow_unreg_ext: true,
+        },
+    );
     traverse_checks(
         &checks,
         check_types,

@@ -10,7 +10,7 @@ use crate::{
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks};
 
 impl GetChecks for Network {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = GetGroupChecks::get_group_checks(
                 &self.common,
@@ -31,10 +31,11 @@ impl GetChecks for Network {
                     "v6" | "V6" => (Check::Cidr0V6PrefixIsAbsent, Check::Cidr0V6LengthIsAbsent),
                     _ => (Check::Cidr0V4PrefixIsAbsent, Check::Cidr0V4LengthIsAbsent),
                 };
-                cidr0.iter().for_each(|cidr| {
+                cidr0.iter().enumerate().for_each(|(i, cidr)| {
                     if cidr.prefix().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::Cidr0,
+                            index: Some(i),
                             items: vec![check.0.check_item()],
                             sub_checks: vec![],
                         })
@@ -42,6 +43,7 @@ impl GetChecks for Network {
                     if cidr.length().is_none() {
                         sub_checks.push(Checks {
                             rdap_struct: super::RdapStructure::Cidr0,
+                            index: Some(i),
                             items: vec![check.1.check_item()],
                             sub_checks: vec![],
                         })
@@ -50,8 +52,8 @@ impl GetChecks for Network {
             }
 
             // entities
-            for entity in self.entities() {
-                sub_checks.push(entity.get_checks(params));
+            for (i, entity) in self.entities().iter().enumerate() {
+                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             sub_checks
@@ -190,6 +192,7 @@ impl GetChecks for Network {
 
         Checks {
             rdap_struct: super::RdapStructure::IpNetwork,
+            index,
             items,
             sub_checks,
         }
@@ -223,7 +226,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -253,7 +256,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -273,7 +276,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -303,7 +306,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -323,7 +326,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -344,7 +347,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -365,7 +368,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -386,7 +389,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -409,7 +412,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -432,7 +435,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -457,7 +460,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -487,7 +490,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -516,7 +519,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -545,7 +548,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -567,7 +570,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -592,7 +595,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -617,7 +620,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -642,7 +645,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -666,7 +669,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = net.get_checks(CheckParams::for_rdap(&net));
+        let checks = net.get_checks(None, CheckParams::for_rdap(&net));
 
         // THEN
         assert!(contains_check(Check::HandleIsEmpty, &checks));

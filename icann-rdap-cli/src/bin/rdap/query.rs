@@ -470,10 +470,10 @@ fn do_output_checks(response: &ResponseData) -> Checks {
         parent_type: response.rdap.get_type(),
         allow_unreg_ext: false,
     };
-    let mut checks = response.rdap.get_checks(check_params);
+    let mut checks = response.rdap.get_checks(None, check_params);
     checks
         .items
-        .append(&mut response.http_data.get_checks(check_params).items);
+        .append(&mut response.http_data.get_checks(None, check_params).items);
     checks
 }
 

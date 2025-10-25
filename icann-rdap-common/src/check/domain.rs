@@ -10,7 +10,7 @@ use super::{
 };
 
 impl GetChecks for Domain {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = vec![];
             sub_checks.append(&mut GetGroupChecks::get_group_checks(
@@ -23,25 +23,25 @@ impl GetChecks for Domain {
                     .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(public_ids) = &self.public_ids {
-                sub_checks.push(public_ids.get_checks(params));
+                sub_checks.push(public_ids.get_checks(None, params));
             }
             if let Some(secure_dns) = &self.secure_dns {
-                sub_checks.push(secure_dns.get_checks(params));
+                sub_checks.push(secure_dns.get_checks(None, params));
             }
 
             // entities
-            for entity in self.entities() {
-                sub_checks.push(entity.get_checks(params));
+            for (i, entity) in self.entities().iter().enumerate() {
+                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             // network
             if let Some(net) = self.network() {
-                sub_checks.push(net.get_checks(params));
+                sub_checks.push(net.get_checks(None, params));
             }
 
             // nameservers
-            for ns in self.nameservers() {
-                sub_checks.push(ns.get_checks(params));
+            for (i, ns) in self.nameservers().iter().enumerate() {
+                sub_checks.push(ns.get_checks(Some(i), params));
             }
 
             sub_checks
@@ -104,6 +104,7 @@ impl GetChecks for Domain {
 
         Checks {
             rdap_struct: super::RdapStructure::Domain,
+            index,
             items,
             sub_checks,
         }
@@ -111,7 +112,7 @@ impl GetChecks for Domain {
 }
 
 impl GetChecks for SecureDns {
-    fn get_checks(&self, _params: CheckParams) -> Checks {
+    fn get_checks(&self, index: Option<usize>, _params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = vec![];
         if let Some(delegation_signed) = &self.delegation_signed {
             if delegation_signed.is_string() {
@@ -189,6 +190,7 @@ impl GetChecks for SecureDns {
 
         Checks {
             rdap_struct: super::RdapStructure::SecureDns,
+            index,
             items,
             sub_checks: vec![],
         }
@@ -223,7 +225,7 @@ mod tests {
         let rdap = domain.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -239,7 +241,7 @@ mod tests {
         let rdap = domain.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -256,7 +258,7 @@ mod tests {
         let rdap = domain.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -274,14 +276,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 1);
@@ -299,14 +304,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert!(checks.items.is_empty());
@@ -323,14 +331,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 1);
@@ -348,14 +359,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert!(checks.items.is_empty());
@@ -372,14 +386,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 1);
@@ -397,14 +414,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert!(checks.items.is_empty());
@@ -427,14 +447,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 3);
@@ -460,14 +483,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert!(checks.items.is_empty());
@@ -490,14 +516,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 3);
@@ -529,14 +558,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 3);
@@ -562,14 +594,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert!(checks.items.is_empty());
@@ -592,14 +627,17 @@ mod tests {
         .unwrap();
 
         // WHEN
-        let checks = secure_dns.get_checks(CheckParams {
-            root: &Domain::builder()
-                .ldh_name("example.com")
-                .build()
-                .to_response(),
-            parent_type: TypeId::of::<SecureDns>(),
-            allow_unreg_ext: false,
-        });
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
 
         // THEN
         assert_eq!(checks.items.len(), 3);
@@ -624,7 +662,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+        let checks = domain.get_checks(None, CheckParams::for_rdap(&domain));
 
         // THEN
         assert!(contains_check(Check::HandleIsEmpty, &checks));
@@ -646,7 +684,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+        let checks = domain.get_checks(None, CheckParams::for_rdap(&domain));
 
         // THEN
         assert!(contains_check(Check::HandleIsEmpty, &checks));
@@ -668,7 +706,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+        let checks = domain.get_checks(None, CheckParams::for_rdap(&domain));
 
         // THEN
         assert!(contains_check(Check::HandleIsEmpty, &checks));
