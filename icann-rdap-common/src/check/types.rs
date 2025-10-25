@@ -245,14 +245,6 @@ impl GetGroupChecks for ObjectCommon {
     fn get_group_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
 
-        // entities
-        if let Some(entities) = &self.entities {
-            entities
-                .iter()
-                .enumerate()
-                .for_each(|(i, e)| sub_checks.push(e.get_checks(Some(i), params)))
-        };
-
         // links
         if let Some(links) = &self.links {
             sub_checks.push(links.get_checks(None, params));
