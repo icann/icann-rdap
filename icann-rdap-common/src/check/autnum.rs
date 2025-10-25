@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::response::autnum::Autnum;
+use crate::{prelude::ObjectCommonFields, response::autnum::Autnum};
 
 use super::{
     string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
@@ -19,6 +19,12 @@ impl GetChecks for Autnum {
                     .object_common
                     .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
+
+            // entities
+            for entity in self.entities() {
+                sub_checks.push(entity.get_checks(params));
+            }
+
             sub_checks
         };
 
@@ -97,7 +103,8 @@ mod tests {
 
     use rstest::rstest;
 
-    use crate::prelude::ToResponse;
+    use crate::check::contains_check;
+    use crate::prelude::{Entity, ToResponse};
 
     use crate::{
         check::{Check, CheckParams, GetChecks},
@@ -281,5 +288,21 @@ mod tests {
 
         // THEN
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_autnum_with_entity_empty_handle() {
+        // GIVEN
+        let autnum = Autnum::builder()
+            .autnum_range(701..703)
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = autnum.get_checks(CheckParams::for_rdap(&autnum));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }
