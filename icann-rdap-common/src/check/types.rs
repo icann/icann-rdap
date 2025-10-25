@@ -1,4 +1,4 @@
-use crate::prelude::{has_rdap_path, EventActionValue, ExtensionId, NrType, StatusValue};
+use crate::prelude::{has_rdap_path, Event, EventActionValue, ExtensionId, NrType, StatusValue};
 
 use {
     crate::prelude::ObjectCommon,
@@ -272,42 +272,7 @@ impl GetGroupChecks for ObjectCommon {
         // events
         if let Some(events) = &self.events {
             events.iter().enumerate().for_each(|(i, e)| {
-                if let Some(date) = &e.event_date {
-                    let date = DateTime::parse_from_rfc3339(date);
-                    if date.is_err() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Events,
-                            index: Some(i),
-                            items: vec![Check::EventDateIsNotRfc3339.check_item()],
-                            sub_checks: vec![],
-                        })
-                    }
-                } else {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::Events,
-                        index: Some(i),
-                        items: vec![Check::EventDateIsAbsent.check_item()],
-                        sub_checks: vec![],
-                    })
-                }
-                if let Some(event_action) = &e.event_action {
-                    let ea_value = EventActionValue::from_str(event_action);
-                    if ea_value.is_err() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Events,
-                            index: Some(i),
-                            items: vec![Check::EventActionIsUnknown.check_item()],
-                            sub_checks: vec![],
-                        })
-                    }
-                } else {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::Events,
-                        index: Some(i),
-                        items: vec![Check::EventActionIsAbsent.check_item()],
-                        sub_checks: vec![],
-                    })
-                }
+                sub_checks.push(e.get_checks(Some(i), params));
             });
         }
 
@@ -369,6 +334,34 @@ impl GetGroupChecks for ObjectCommon {
         }
 
         sub_checks
+    }
+}
+
+impl GetChecks for Event {
+    fn get_checks(&self, index: Option<usize>, _params: CheckParams) -> Checks {
+        let mut items = vec![];
+        if let Some(date) = &self.event_date {
+            let date = DateTime::parse_from_rfc3339(date);
+            if date.is_err() {
+                items.push(Check::EventDateIsNotRfc3339.check_item());
+            }
+        } else {
+            items.push(Check::EventDateIsAbsent.check_item());
+        }
+        if let Some(event_action) = &self.event_action {
+            let ea_value = EventActionValue::from_str(event_action);
+            if ea_value.is_err() {
+                items.push(Check::EventActionIsUnknown.check_item());
+            }
+        } else {
+            items.push(Check::EventActionIsAbsent.check_item());
+        }
+        Checks {
+            rdap_struct: super::RdapStructure::Event,
+            index,
+            items,
+            sub_checks: vec![],
+        }
     }
 }
 
@@ -803,13 +796,7 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Events)
-            .expect("Events not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::EventDateIsAbsent)
-            .expect("event missing check");
+        assert!(contains_check(Check::EventDateIsAbsent, &checks));
     }
 
     #[test]
@@ -825,13 +812,7 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Events)
-            .expect("Events not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::EventActionIsAbsent)
-            .expect("event missing check");
+        assert!(contains_check(Check::EventActionIsAbsent, &checks));
     }
 
     #[test]
@@ -873,13 +854,7 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Events)
-            .expect("Events not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::EventDateIsNotRfc3339)
-            .expect("event missing check");
+        assert!(contains_check(Check::EventDateIsNotRfc3339, &checks));
     }
 
     #[test]

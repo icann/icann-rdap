@@ -112,7 +112,7 @@ impl GetChecks for Domain {
 }
 
 impl GetChecks for SecureDns {
-    fn get_checks(&self, index: Option<usize>, _params: CheckParams) -> Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = vec![];
         if let Some(delegation_signed) = &self.delegation_signed {
             if delegation_signed.is_string() {
@@ -130,8 +130,10 @@ impl GetChecks for SecureDns {
             }
         }
 
+        let mut sub_checks = vec![];
         if let Some(key_data) = &self.key_data {
-            for key_datum in key_data {
+            for (i, key_datum) in key_data.iter().enumerate() {
+                let mut items = vec![];
                 if let Some(alg) = &key_datum.algorithm {
                     if alg.is_string() {
                         items.push(Check::KeyDatumAlgorithmIsString.check_item());
@@ -156,11 +158,22 @@ impl GetChecks for SecureDns {
                         items.push(Check::KeyDatumProtocolIsOutOfRange.check_item());
                     }
                 }
+                let mut event_checks = vec![];
+                for (i, event) in key_datum.events().iter().enumerate() {
+                    event_checks.push(event.get_checks(Some(i), params));
+                }
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::KeyData,
+                    index: Some(i),
+                    items,
+                    sub_checks: event_checks,
+                });
             }
         }
 
         if let Some(ds_data) = &self.ds_data {
-            for ds_datum in ds_data {
+            for (i, ds_datum) in ds_data.iter().enumerate() {
+                let mut items = vec![];
                 if let Some(alg) = &ds_datum.algorithm {
                     if alg.is_string() {
                         items.push(Check::DsDatumAlgorithmIsString.check_item());
@@ -185,6 +198,16 @@ impl GetChecks for SecureDns {
                         items.push(Check::DsDatumDigestTypeIsOutOfRange.check_item());
                     }
                 }
+                let mut event_checks = vec![];
+                for (i, event) in ds_datum.events().iter().enumerate() {
+                    event_checks.push(event.get_checks(Some(i), params));
+                }
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::DsData,
+                    index: Some(i),
+                    items,
+                    sub_checks: event_checks,
+                });
             }
         }
 
@@ -192,7 +215,7 @@ impl GetChecks for SecureDns {
             rdap_struct: super::RdapStructure::SecureDns,
             index,
             items,
-            sub_checks: vec![],
+            sub_checks,
         }
     }
 }
@@ -460,10 +483,9 @@ mod tests {
         );
 
         // THEN
-        assert_eq!(checks.items.len(), 3);
-        assert!(is_checked_item(Check::KeyDatumAlgorithmIsString, &checks));
-        assert!(is_checked_item(Check::KeyDatumFlagsIsString, &checks));
-        assert!(is_checked_item(Check::KeyDatumProtocolIsString, &checks));
+        assert!(contains_check(Check::KeyDatumAlgorithmIsString, &checks));
+        assert!(contains_check(Check::KeyDatumFlagsIsString, &checks));
+        assert!(contains_check(Check::KeyDatumProtocolIsString, &checks));
     }
 
     #[test]
@@ -529,16 +551,12 @@ mod tests {
         );
 
         // THEN
-        assert_eq!(checks.items.len(), 3);
-        assert!(is_checked_item(
+        assert!(contains_check(
             Check::KeyDatumAlgorithmIsOutOfRange,
             &checks
         ));
-        assert!(is_checked_item(Check::KeyDatumFlagsIsOutOfRange, &checks));
-        assert!(is_checked_item(
-            Check::KeyDatumProtocolIsOutOfRange,
-            &checks
-        ));
+        assert!(contains_check(Check::KeyDatumFlagsIsOutOfRange, &checks));
+        assert!(contains_check(Check::KeyDatumProtocolIsOutOfRange, &checks));
     }
 
     #[test]
@@ -571,10 +589,9 @@ mod tests {
         );
 
         // THEN
-        assert_eq!(checks.items.len(), 3);
-        assert!(is_checked_item(Check::DsDatumAlgorithmIsString, &checks));
-        assert!(is_checked_item(Check::DsDatumKeyTagIsString, &checks));
-        assert!(is_checked_item(Check::DsDatumDigestTypeIsString, &checks));
+        assert!(contains_check(Check::DsDatumAlgorithmIsString, &checks));
+        assert!(contains_check(Check::DsDatumKeyTagIsString, &checks));
+        assert!(contains_check(Check::DsDatumDigestTypeIsString, &checks));
     }
 
     #[test]
@@ -640,13 +657,10 @@ mod tests {
         );
 
         // THEN
-        assert_eq!(checks.items.len(), 3);
-        assert!(is_checked_item(
-            Check::DsDatumAlgorithmIsOutOfRange,
-            &checks
-        ));
-        assert!(is_checked_item(Check::DsDatumKeyTagIsOutOfRange, &checks));
-        assert!(is_checked_item(
+        dbg!(&checks);
+        assert!(contains_check(Check::DsDatumAlgorithmIsOutOfRange, &checks));
+        assert!(contains_check(Check::DsDatumKeyTagIsOutOfRange, &checks));
+        assert!(contains_check(
             Check::DsDatumDigestTypeIsOutOfRange,
             &checks
         ));
