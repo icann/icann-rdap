@@ -1,4 +1,4 @@
-use crate::prelude::{has_rdap_path, ExtensionId};
+use crate::prelude::{has_rdap_path, ExtensionId, StatusValue};
 
 use {
     crate::prelude::ObjectCommon,
@@ -306,7 +306,6 @@ impl GetGroupChecks for ObjectCommon {
 
         // Status
         if let Some(status) = &self.status {
-            // TODO add check for status is string
             let status = status.vec();
             if status.is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
@@ -314,6 +313,17 @@ impl GetGroupChecks for ObjectCommon {
                     items: vec![Check::StatusIsEmpty.check_item()],
                     sub_checks: vec![],
                 })
+            } else {
+                for value in status {
+                    let status_value = StatusValue::from_str(value);
+                    if status_value.is_err() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Status,
+                            items: vec![Check::StatusValueUnknown.check_item()],
+                            sub_checks: vec![],
+                        })
+                    }
+                }
             }
         }
 
@@ -1021,6 +1031,22 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::StatusIsEmpty));
+    }
+
+    #[test]
+    fn test_unknown_status_value() {
+        // GIVEN
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .status("not_a_valid")
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+
+        // THEN
+        assert!(find_any_check(&checks, Check::StatusValueUnknown));
     }
 
     #[rstest]

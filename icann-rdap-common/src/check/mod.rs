@@ -341,6 +341,8 @@ pub enum Check {
     // Status 700 - 799
     #[strum(message = "status appears to be empty or only whitespace")]
     StatusIsEmpty = 700,
+    #[strum(message = "status value not registered")]
+    StatusValueUnknown = 701,
 
     // Role 800 - 899
     #[strum(message = "role appears to be empty or only whitespace")]
@@ -555,6 +557,7 @@ impl Check {
             Self::ParentHandleIsNotString => CheckClass::Std95Error,
 
             Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::Std95Error,
+            Self::StatusValueUnknown => CheckClass::Std95Warning,
             Self::UnknownRole => CheckClass::Std95Warning,
             Self::RoleIsString | Self::LdhNameInvalid => CheckClass::Std95Error,
             Self::LdhNameDocumentation => CheckClass::Informational,
