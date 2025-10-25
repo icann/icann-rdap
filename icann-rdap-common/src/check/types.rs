@@ -1,4 +1,6 @@
-use crate::prelude::{has_rdap_path, Event, EventActionValue, ExtensionId, NrType, StatusValue};
+use crate::prelude::{
+    has_rdap_path, Event, EventActionValue, ExtensionId, Notice, NrType, Remark, StatusValue,
+};
 
 use {
     crate::prelude::ObjectCommon,
@@ -15,7 +17,7 @@ use {
             entity::Entity,
             nameserver::Nameserver,
             network::Network,
-            types::{Link, NoticeOrRemark, Notices, PublicIds, RdapConformance, Remarks},
+            types::{Link, NoticeOrRemark, PublicIds, RdapConformance},
         },
     },
     chrono::DateTime,
@@ -23,7 +25,7 @@ use {
 
 use super::{
     string::{StringCheck, StringListCheck},
-    Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks,
+    Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
 };
 
 impl GetChecks for RdapConformance {
@@ -114,66 +116,50 @@ impl GetChecks for Link {
     }
 }
 
-impl GetChecks for Notices {
+impl GetChecks for Notice {
     fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = vec![];
-        self.iter()
-            .enumerate()
-            .for_each(|(i, note)| sub_checks.push(note.0.get_checks(Some(i), params)));
-        Checks {
-            rdap_struct: super::RdapStructure::Notices,
-            index,
-            items: vec![],
-            sub_checks,
-        }
+        get_checks_for_notice_or_remark(self, RdapStructure::Notice, index, params)
     }
 }
 
-impl GetChecks for Remarks {
+impl GetChecks for Remark {
     fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = vec![];
-        self.iter()
-            .enumerate()
-            .for_each(|(i, remark)| sub_checks.push(remark.0.get_checks(Some(i), params)));
-        Checks {
-            rdap_struct: super::RdapStructure::Remarks,
-            index,
-            items: vec![],
-            sub_checks,
-        }
+        get_checks_for_notice_or_remark(self, RdapStructure::Remark, index, params)
     }
 }
 
-impl GetChecks for NoticeOrRemark {
-    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = vec![];
-        if let Some(description) = &self.description {
-            if description.is_string() {
-                items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
-            }
-        } else {
-            items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
-        };
-        if let Some(nr_type) = self.nr_type() {
-            let s = NrType::from_str(nr_type);
-            if s.is_err() {
-                items.push(Check::NoticeOrRemarkUnknownType.check_item());
-            }
+fn get_checks_for_notice_or_remark(
+    nr: &NoticeOrRemark,
+    rdap_struct: RdapStructure,
+    index: Option<usize>,
+    params: CheckParams,
+) -> Checks {
+    let mut items: Vec<CheckItem> = vec![];
+    if let Some(description) = &nr.description {
+        if description.is_string() {
+            items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
         }
-        let mut sub_checks: Vec<Checks> = vec![];
-        if let Some(links) = &self.links {
-            links.iter().enumerate().for_each(|(i, link)| {
-                sub_checks.push(
-                    link.get_checks(Some(i), params.from_parent(TypeId::of::<NoticeOrRemark>())),
-                )
-            });
-        };
-        Checks {
-            rdap_struct: super::RdapStructure::NoticeOrRemark,
-            index,
-            items,
-            sub_checks,
+    } else {
+        items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
+    };
+    if let Some(nr_type) = nr.nr_type() {
+        let s = NrType::from_str(nr_type);
+        if s.is_err() {
+            items.push(Check::NoticeOrRemarkUnknownType.check_item());
         }
+    }
+    let mut sub_checks: Vec<Checks> = vec![];
+    if let Some(links) = &nr.links {
+        links.iter().enumerate().for_each(|(i, link)| {
+            sub_checks
+                .push(link.get_checks(Some(i), params.from_parent(TypeId::of::<NoticeOrRemark>())))
+        });
+    };
+    Checks {
+        rdap_struct,
+        index,
+        items,
+        sub_checks,
     }
 }
 
@@ -212,8 +198,10 @@ impl GetGroupChecks for Common {
             sub_checks.push(rdap_conformance.get_checks(None, params))
         };
         if let Some(notices) = &self.notices {
-            sub_checks.push(notices.get_checks(None, params))
-        };
+            for (i, notice) in notices.iter().enumerate() {
+                sub_checks.push(notice.get_checks(Some(i), params));
+            }
+        }
         if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::RdapConformance,
@@ -253,7 +241,9 @@ impl GetGroupChecks for ObjectCommon {
 
         // remarks
         if let Some(remarks) = &self.remarks {
-            sub_checks.push(remarks.get_checks(None, params))
+            for (i, remark) in remarks.iter().enumerate() {
+                sub_checks.push(remark.get_checks(Some(i), params));
+            }
         };
 
         // events
