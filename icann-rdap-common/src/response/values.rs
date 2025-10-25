@@ -128,6 +128,100 @@ pub enum NrType {
     ObjectTruncatedDueToUnexplainableReasons,
     #[strum(serialize = "object redacted due to authorization")]
     ObjectRedactedDueToAuthorization,
-    #[strum(serialize = "conformance check")]
-    ConformanceCheck, // TODO register with IANA
+}
+
+/// Status Values
+#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+pub enum StatusValue {
+    #[strum(serialize = "validated")]
+    Validated,
+    #[strum(serialize = "renew prohibited")]
+    RenewProhibited,
+    #[strum(serialize = "update prohibited")]
+    UpdatedProhibited,
+    #[strum(serialize = "transfer prohibited")]
+    TransferProhibited,
+    #[strum(serialize = "delete prohibited")]
+    DeleteProhibited,
+    #[strum(serialize = "proxy")]
+    Proxy,
+    #[strum(serialize = "private")]
+    Private,
+    #[strum(serialize = "removed")]
+    Removed,
+    #[strum(serialize = "obscured")]
+    Obscured,
+    #[strum(serialize = "associated")]
+    Associated,
+    #[strum(serialize = "active")]
+    Active,
+    #[strum(serialize = "inactive")]
+    Inactive,
+    #[strum(serialize = "locked")]
+    Locked,
+    #[strum(serialize = "pending create")]
+    PendingCreate,
+    #[strum(serialize = "pending renew")]
+    PendingRenew,
+    #[strum(serialize = "pending transfer")]
+    PendingTransfer,
+    #[strum(serialize = "pending update")]
+    PendingUpdate,
+    #[strum(serialize = "pending delete")]
+    PendingDelete,
+    #[strum(serialize = "add period")]
+    AddPeriod,
+    #[strum(serialize = "auto renew period")]
+    AutoRenewPeriod,
+    #[strum(serialize = "client delete period")]
+    ClientDeleteProhibited,
+    #[strum(serialize = "pending restore")]
+    PendingRestore,
+    #[strum(serialize = "redemption period")]
+    RedemptionPeriod,
+    #[strum(serialize = "renew period")]
+    RenewPeriod,
+    #[strum(serialize = "server delete prohibited")]
+    ServerDeleteProhibited,
+    #[strum(serialize = "server renew prohibited")]
+    ServerRenewProhibited,
+    #[strum(serialize = "server transfer prohibited")]
+    ServerTransferProhibited,
+    #[strum(serialize = "server hold")]
+    ServerHold,
+    #[strum(serialize = "transfer hold")]
+    TransferPeriod,
+    #[strum(serialize = "administrative")]
+    Administrative,
+    #[strum(serialize = "reserved")]
+    Reserved,
+}
+
+/// Event Actions
+#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+pub enum EventActionValue {
+    #[strum(serialize = "registration")]
+    Registration,
+    #[strum(serialize = "reregistration")]
+    Reregistration,
+    #[strum(serialize = "last changed")]
+    LastChanged,
+    #[strum(serialize = "expiration")]
+    Expiration,
+    #[strum(serialize = "deletion")]
+    Deletion,
+    #[strum(serialize = "reinstantiation")]
+    Reinstantiation,
+    #[strum(serialize = "transfer")]
+    Transfer,
+    #[strum(serialize = "locked")]
+    Locked,
+    #[strum(serialize = "unlocked")]
+    Unlocked,
+    #[strum(serialize = "last update of RDAP database")]
+    LastUpdateOfRDAPDatabase,
+    #[strum(serialize = "registrar expiration")]
+    RegistrarExpiration,
+    #[strum(serialize = "enum validation expiration")]
+    EnumValidationExpiration,
 }
