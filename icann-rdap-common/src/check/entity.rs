@@ -1,6 +1,10 @@
 use std::{any::TypeId, str::FromStr};
 
-use crate::{contact::Contact, prelude::EntityRole, response::entity::Entity};
+use crate::{
+    contact::Contact,
+    prelude::{EntityRole, ObjectCommonFields},
+    response::entity::Entity,
+};
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -23,6 +27,12 @@ impl GetChecks for Entity {
             if let Some(public_ids) = &self.public_ids {
                 sub_checks.push(public_ids.get_checks(params));
             }
+
+            // entities
+            for entity in self.entities() {
+                sub_checks.push(entity.get_checks(params));
+            }
+
             sub_checks
         };
 
@@ -64,5 +74,29 @@ impl GetChecks for Entity {
             items,
             sub_checks,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        check::{contains_check, Check, CheckParams, GetChecks},
+        prelude::{Entity, ToResponse},
+    };
+
+    #[test]
+    fn test_entity_with_entity_empty_handle() {
+        // GIVEN
+        let entity = Entity::builder()
+            .handle("foo")
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = entity.get_checks(CheckParams::for_rdap(&entity));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }
