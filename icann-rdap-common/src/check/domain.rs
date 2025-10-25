@@ -1,6 +1,9 @@
 use std::any::TypeId;
 
-use crate::response::domain::{Domain, SecureDns};
+use crate::{
+    prelude::ObjectCommonFields,
+    response::domain::{Domain, SecureDns},
+};
 
 use super::{
     string::StringCheck, Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks,
@@ -24,6 +27,16 @@ impl GetChecks for Domain {
             }
             if let Some(secure_dns) = &self.secure_dns {
                 sub_checks.push(secure_dns.get_checks(params));
+            }
+
+            // entities
+            for entity in self.entities() {
+                sub_checks.push(entity.get_checks(params));
+            }
+
+            // network
+            if let Some(net) = self.network() {
+                sub_checks.push(net.get_checks(params));
             }
             sub_checks
         };
@@ -189,7 +202,10 @@ mod tests {
         rstest::rstest,
     };
 
-    use crate::check::{Check, CheckParams, GetChecks};
+    use crate::{
+        check::{contains_check, Check, CheckParams, GetChecks},
+        prelude::{Entity, Network},
+    };
 
     #[rstest]
     #[case("")]
@@ -590,5 +606,43 @@ mod tests {
             Check::DsDatumDigestTypeIsOutOfRange,
             &checks
         ));
+    }
+
+    #[test]
+    fn test_domain_with_entity_empty_handle() {
+        // GIVEN
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_domain_with_network_empty_handle() {
+        // GIVEN
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .network(
+                Network::builder()
+                    .cidr("10.0.0.0/8")
+                    .handle("")
+                    .build()
+                    .unwrap(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = domain.get_checks(CheckParams::for_rdap(&domain));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }
