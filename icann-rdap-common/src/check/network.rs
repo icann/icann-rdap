@@ -2,7 +2,10 @@ use std::{any::TypeId, net::IpAddr, str::FromStr};
 
 use cidr::IpCidr;
 
-use crate::{prelude::Stringish, response::network::Network};
+use crate::{
+    prelude::{ObjectCommonFields, Stringish},
+    response::network::Network,
+};
 
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks};
 
@@ -45,6 +48,12 @@ impl GetChecks for Network {
                     };
                 })
             }
+
+            // entities
+            for entity in self.entities() {
+                sub_checks.push(entity.get_checks(params));
+            }
+
             sub_checks
         };
 
@@ -193,7 +202,8 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        prelude::{Cidr0CidrPrefix, Numberish, ToResponse},
+        check::contains_check,
+        prelude::{Cidr0CidrPrefix, Entity, Numberish, ToResponse},
         response::{
             network::{Cidr0Cidr, Network},
             RdapResponse,
@@ -642,5 +652,23 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::Cidr0V6LengthIsAbsent));
+    }
+
+    #[test]
+    fn test_net_with_entity_empty_handle() {
+        // GIVEN
+        let net = Network::builder()
+            .handle("foo")
+            .cidr("10.0.0.0/8")
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .unwrap()
+            .to_response();
+
+        // WHEN
+        let checks = net.get_checks(CheckParams::for_rdap(&net));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }
