@@ -173,8 +173,16 @@ pub enum StatusValue {
     AddPeriod,
     #[strum(serialize = "auto renew period")]
     AutoRenewPeriod,
-    #[strum(serialize = "client delete period")]
+    #[strum(serialize = "client delete prohibited")]
     ClientDeleteProhibited,
+    #[strum(serialize = "client hold")]
+    ClientHold,
+    #[strum(serialize = "client renew prohibited")]
+    ClientRenewProhibited,
+    #[strum(serialize = "client transfer prohibited")]
+    ClientTransferProhibited,
+    #[strum(serialize = "client update prohibited")]
+    ClientUpdateProhibited,
     #[strum(serialize = "pending restore")]
     PendingRestore,
     #[strum(serialize = "redemption period")]
@@ -187,6 +195,8 @@ pub enum StatusValue {
     ServerRenewProhibited,
     #[strum(serialize = "server transfer prohibited")]
     ServerTransferProhibited,
+    #[strum(serialize = "server update prohibited")]
+    ServerUpdateProhibited,
     #[strum(serialize = "server hold")]
     ServerHold,
     #[strum(serialize = "transfer hold")]
