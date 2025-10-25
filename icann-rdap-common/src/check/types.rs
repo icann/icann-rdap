@@ -1,4 +1,4 @@
-use crate::prelude::{has_rdap_path, ExtensionId, NrType, StatusValue};
+use crate::prelude::{has_rdap_path, EventActionValue, ExtensionId, NrType, StatusValue};
 
 use {
     crate::prelude::ObjectCommon,
@@ -281,7 +281,16 @@ impl GetGroupChecks for ObjectCommon {
                         sub_checks: vec![],
                     })
                 }
-                if e.event_action.is_none() {
+                if let Some(event_action) = &e.event_action {
+                    let ea_value = EventActionValue::from_str(event_action);
+                    if ea_value.is_err() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Events,
+                            items: vec![Check::EventActionIsUnknown.check_item()],
+                            sub_checks: vec![],
+                        })
+                    }
+                } else {
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::Events,
                         items: vec![Check::EventActionIsAbsent.check_item()],
@@ -807,6 +816,27 @@ mod tests {
             .iter()
             .find(|c| c.check == Check::EventActionIsAbsent)
             .expect("event missing check");
+    }
+
+    #[test]
+    fn test_event_with_unknown_action() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(
+                Event::builder()
+                    .event_action("unknown")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(contains_check(Check::EventActionIsUnknown, &checks));
     }
 
     #[test]
