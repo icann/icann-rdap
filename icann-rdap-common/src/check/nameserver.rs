@@ -1,6 +1,6 @@
 use std::{any::TypeId, net::IpAddr, str::FromStr};
 
-use crate::response::nameserver::Nameserver;
+use crate::{prelude::ObjectCommonFields, response::nameserver::Nameserver};
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -19,6 +19,12 @@ impl GetChecks for Nameserver {
                     .object_common
                     .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
+
+            // entities
+            for entity in self.entities() {
+                sub_checks.push(entity.get_checks(params));
+            }
+
             sub_checks
         };
 
@@ -76,7 +82,7 @@ impl GetChecks for Nameserver {
 mod tests {
     use {crate::prelude::*, rstest::rstest};
 
-    use crate::check::{Check, CheckParams, GetChecks};
+    use crate::check::{contains_check, Check, CheckParams, GetChecks};
 
     #[rstest]
     #[case("")]
@@ -179,5 +185,23 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::IpAddressMalformed));
+    }
+
+    #[test]
+    fn test_ns_with_entity_empty_handle() {
+        // GIVEN
+        let ns = Nameserver::builder()
+            .handle("foo")
+            .ldh_name("ns.foo.example")
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .unwrap()
+            .to_response();
+
+        // WHEN
+        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }
