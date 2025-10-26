@@ -132,51 +132,55 @@ impl GetChecks for SecureDns {
 
         let mut sub_checks = vec![];
         if let Some(key_data) = &self.key_data {
-            for (i, key_datum) in key_data.iter().enumerate() {
-                let mut items = vec![];
-                if let Some(alg) = &key_datum.algorithm {
-                    if alg.is_string() {
-                        items.push(Check::KeyDatumAlgorithmIsString.check_item());
+            if key_data.is_empty() {
+                items.push(Check::KeyDataArrayIsEmpty.check_item());
+            } else {
+                for (i, key_datum) in key_data.iter().enumerate() {
+                    let mut items = vec![];
+                    if let Some(alg) = &key_datum.algorithm {
+                        if alg.is_string() {
+                            items.push(Check::KeyDatumAlgorithmIsString.check_item());
+                        }
+                        if alg.as_u8().is_none() {
+                            items.push(Check::KeyDatumAlgorithmIsOutOfRange.check_item());
+                        }
                     }
-                    if alg.as_u8().is_none() {
-                        items.push(Check::KeyDatumAlgorithmIsOutOfRange.check_item());
+                    if let Some(flags) = &key_datum.flags {
+                        if flags.is_string() {
+                            items.push(Check::KeyDatumFlagsIsString.check_item());
+                        }
+                        if flags.as_u16().is_none() {
+                            items.push(Check::KeyDatumFlagsIsOutOfRange.check_item());
+                        }
                     }
-                }
-                if let Some(flags) = &key_datum.flags {
-                    if flags.is_string() {
-                        items.push(Check::KeyDatumFlagsIsString.check_item());
+                    if let Some(protocol) = &key_datum.protocol {
+                        if protocol.is_string() {
+                            items.push(Check::KeyDatumProtocolIsString.check_item());
+                        }
+                        if protocol.as_u8().is_none() {
+                            items.push(Check::KeyDatumProtocolIsOutOfRange.check_item());
+                        }
                     }
-                    if flags.as_u16().is_none() {
-                        items.push(Check::KeyDatumFlagsIsOutOfRange.check_item());
+                    let mut event_checks = vec![];
+                    if key_datum.events().is_empty() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Events,
+                            index: None,
+                            items: vec![Check::EventsArrayIsEmpty.check_item()],
+                            sub_checks: vec![],
+                        })
+                    } else {
+                        key_datum.events().iter().enumerate().for_each(|(i, e)| {
+                            event_checks.push(e.get_checks(Some(i), params));
+                        });
                     }
-                }
-                if let Some(protocol) = &key_datum.protocol {
-                    if protocol.is_string() {
-                        items.push(Check::KeyDatumProtocolIsString.check_item());
-                    }
-                    if protocol.as_u8().is_none() {
-                        items.push(Check::KeyDatumProtocolIsOutOfRange.check_item());
-                    }
-                }
-                let mut event_checks = vec![];
-                if key_datum.events().is_empty() {
                     sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::Events,
-                        index: None,
-                        items: vec![Check::EventsArrayIsEmpty.check_item()],
-                        sub_checks: vec![],
-                    })
-                } else {
-                    key_datum.events().iter().enumerate().for_each(|(i, e)| {
-                        event_checks.push(e.get_checks(Some(i), params));
+                        rdap_struct: super::RdapStructure::KeyData,
+                        index: Some(i),
+                        items,
+                        sub_checks: event_checks,
                     });
                 }
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::KeyData,
-                    index: Some(i),
-                    items,
-                    sub_checks: event_checks,
-                });
             }
         }
 

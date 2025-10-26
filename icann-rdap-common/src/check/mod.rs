@@ -557,6 +557,9 @@ pub enum Check {
     DsDatumDigestTypeIsString = 2217,
     #[strum(message = "dsData digestType is out of range.")]
     DsDatumDigestTypeIsOutOfRange = 2218,
+    // empty arrays
+    #[strum(message = "keyData array is empty.")]
+    KeyDataArrayIsEmpty = 2219,
 
     // Network or Autnum Country 2300 - 2399
     #[strum(message = "country is not a string")]
@@ -675,6 +678,7 @@ impl Check {
             | Self::DsDatumKeyTagIsOutOfRange
             | Self::DsDatumDigestTypeIsString
             | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::Std95Error,
+            Self::KeyDataArrayIsEmpty => CheckClass::Std95Warning,
 
             Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
         };
