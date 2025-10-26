@@ -582,6 +582,39 @@ mod tests {
     }
 
     #[test]
+    fn test_key_datum_events_array_is_empty() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "keyData": [
+                    {
+                        "events": []
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
+
+        // THEN
+        dbg!(&checks);
+        let event_checks = checks.sub_checks.first().unwrap();
+        assert!(is_checked_item(Check::EventsArrayIsEmpty, event_checks));
+    }
+
+    #[test]
     fn test_ds_data_attributes_as_string() {
         // GIVEN
         let secure_dns = serde_json::from_str::<SecureDns>(
@@ -686,6 +719,39 @@ mod tests {
             Check::DsDatumDigestTypeIsOutOfRange,
             &checks
         ));
+    }
+
+    #[test]
+    fn test_ds_datum_events_array_is_empty() {
+        // GIVEN
+        let secure_dns = serde_json::from_str::<SecureDns>(
+            r#"{
+                "dsData": [
+                    {
+                        "events": []
+                    }
+                ]
+            }"#,
+        )
+        .unwrap();
+
+        // WHEN
+        let checks = secure_dns.get_checks(
+            None,
+            CheckParams {
+                root: &Domain::builder()
+                    .ldh_name("example.com")
+                    .build()
+                    .to_response(),
+                parent_type: TypeId::of::<SecureDns>(),
+                allow_unreg_ext: false,
+            },
+        );
+
+        // THEN
+        dbg!(&checks);
+        let event_checks = checks.sub_checks.first().unwrap();
+        assert!(is_checked_item(Check::EventsArrayIsEmpty, event_checks));
     }
 
     #[test]

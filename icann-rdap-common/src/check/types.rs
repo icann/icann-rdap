@@ -851,6 +851,35 @@ mod tests {
     }
 
     #[test]
+    fn test_events_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.events = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(contains_check(Check::EventsArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_events_array_is_absent() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(!contains_check(Check::EventsArrayIsEmpty, &checks));
+    }
+
+    #[test]
     fn test_public_id_with_no_type() {
         // GIVEN
         let rdap = Domain::builder()
@@ -1001,6 +1030,66 @@ mod tests {
     }
 
     #[test]
+    fn test_entity_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.entities = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::EntityArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_remarks_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.remarks = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::RemarksArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_notices_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.common.notices = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::NoticesArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_links_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.links = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::LinksArrayIsEmpty, &checks));
+    }
+
+    #[test]
     fn test_nameserver_with_no_links() {
         // GIVEN
         let rdap = Nameserver::builder()
@@ -1131,6 +1220,21 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::HandleIsNotString));
+    }
+
+    #[test]
+    fn test_rdap_conformance_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.common.rdap_conformance = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::RdapConformanceIsEmpty, &checks));
     }
 
     #[test]

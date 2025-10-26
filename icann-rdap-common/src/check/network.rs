@@ -654,6 +654,24 @@ mod tests {
     }
 
     #[test]
+    fn test_cidr0_array_is_empty() {
+        // GIVEN
+        let mut network = Network::builder()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
+        network.cidr0_cidrs = Some(vec![]);
+        let rdap = network.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::Cidr0ArrayIsEmpty, &checks));
+    }
+
+    #[test]
     fn test_net_with_entity_empty_handle() {
         // GIVEN
         let net = Network::builder()
