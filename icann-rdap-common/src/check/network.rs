@@ -11,6 +11,8 @@ use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroup
 
 impl GetChecks for Network {
     fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
+        let mut items = vec![];
+
         let sub_checks = {
             let mut sub_checks: Vec<Checks> = GetGroupChecks::get_group_checks(
                 &self.common,
@@ -22,33 +24,37 @@ impl GetChecks for Network {
                     .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(cidr0) = &self.cidr0_cidrs {
-                let check = match self
-                    .network_type
-                    .as_ref()
-                    .unwrap_or(&Stringish::from("v4"))
-                    .as_ref()
-                {
-                    "v6" | "V6" => (Check::Cidr0V6PrefixIsAbsent, Check::Cidr0V6LengthIsAbsent),
-                    _ => (Check::Cidr0V4PrefixIsAbsent, Check::Cidr0V4LengthIsAbsent),
-                };
-                cidr0.iter().enumerate().for_each(|(i, cidr)| {
-                    if cidr.prefix().is_none() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Cidr0,
-                            index: Some(i),
-                            items: vec![check.0.check_item()],
-                            sub_checks: vec![],
-                        })
+                if cidr0.is_empty() {
+                    items.push(Check::Cidr0ArrayIsEmpty.check_item());
+                } else {
+                    let check = match self
+                        .network_type
+                        .as_ref()
+                        .unwrap_or(&Stringish::from("v4"))
+                        .as_ref()
+                    {
+                        "v6" | "V6" => (Check::Cidr0V6PrefixIsAbsent, Check::Cidr0V6LengthIsAbsent),
+                        _ => (Check::Cidr0V4PrefixIsAbsent, Check::Cidr0V4LengthIsAbsent),
                     };
-                    if cidr.length().is_none() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Cidr0,
-                            index: Some(i),
-                            items: vec![check.1.check_item()],
-                            sub_checks: vec![],
-                        })
-                    };
-                })
+                    cidr0.iter().enumerate().for_each(|(i, cidr)| {
+                        if cidr.prefix().is_none() {
+                            sub_checks.push(Checks {
+                                rdap_struct: super::RdapStructure::Cidr0,
+                                index: Some(i),
+                                items: vec![check.0.check_item()],
+                                sub_checks: vec![],
+                            })
+                        };
+                        if cidr.length().is_none() {
+                            sub_checks.push(Checks {
+                                rdap_struct: super::RdapStructure::Cidr0,
+                                index: Some(i),
+                                items: vec![check.1.check_item()],
+                                sub_checks: vec![],
+                            })
+                        };
+                    })
+                }
             }
 
             // entities
@@ -58,8 +64,6 @@ impl GetChecks for Network {
 
             sub_checks
         };
-
-        let mut items = vec![];
 
         if let Some(name) = &self.name {
             if name.is_whitespace_or_empty() {

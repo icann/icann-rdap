@@ -503,6 +503,8 @@ pub enum Check {
     Cidr0V6PrefixIsAbsent = 1902,
     #[strum(message = "Cidr0 v6 length is absent")]
     Cidr0V6LengthIsAbsent = 1903,
+    #[strum(message = "Cidr0 array is empty.")]
+    Cidr0ArrayIsEmpty = 1904,
 
     // Gtld Profile 2000 - 2099
     #[strum(message = "RDAP Service Must use HTTPS.")]
@@ -657,6 +659,7 @@ impl Check {
             | Self::Cidr0V4LengthIsAbsent
             | Self::Cidr0V6PrefixIsAbsent
             | Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
+            Self::Cidr0ArrayIsEmpty => CheckClass::Cidr0Error,
 
             Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::GtldProfileError,
 
