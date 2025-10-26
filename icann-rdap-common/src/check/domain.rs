@@ -185,51 +185,55 @@ impl GetChecks for SecureDns {
         }
 
         if let Some(ds_data) = &self.ds_data {
-            for (i, ds_datum) in ds_data.iter().enumerate() {
-                let mut items = vec![];
-                if let Some(alg) = &ds_datum.algorithm {
-                    if alg.is_string() {
-                        items.push(Check::DsDatumAlgorithmIsString.check_item());
+            if ds_data.is_empty() {
+                items.push(Check::DsDataArrayIsEmpty.check_item());
+            } else {
+                for (i, ds_datum) in ds_data.iter().enumerate() {
+                    let mut items = vec![];
+                    if let Some(alg) = &ds_datum.algorithm {
+                        if alg.is_string() {
+                            items.push(Check::DsDatumAlgorithmIsString.check_item());
+                        }
+                        if alg.as_u8().is_none() {
+                            items.push(Check::DsDatumAlgorithmIsOutOfRange.check_item());
+                        }
                     }
-                    if alg.as_u8().is_none() {
-                        items.push(Check::DsDatumAlgorithmIsOutOfRange.check_item());
+                    if let Some(key_tag) = &ds_datum.key_tag {
+                        if key_tag.is_string() {
+                            items.push(Check::DsDatumKeyTagIsString.check_item());
+                        }
+                        if key_tag.as_u32().is_none() {
+                            items.push(Check::DsDatumKeyTagIsOutOfRange.check_item());
+                        }
                     }
-                }
-                if let Some(key_tag) = &ds_datum.key_tag {
-                    if key_tag.is_string() {
-                        items.push(Check::DsDatumKeyTagIsString.check_item());
+                    if let Some(digest_type) = &ds_datum.digest_type {
+                        if digest_type.is_string() {
+                            items.push(Check::DsDatumDigestTypeIsString.check_item());
+                        }
+                        if digest_type.as_u8().is_none() {
+                            items.push(Check::DsDatumDigestTypeIsOutOfRange.check_item());
+                        }
                     }
-                    if key_tag.as_u32().is_none() {
-                        items.push(Check::DsDatumKeyTagIsOutOfRange.check_item());
+                    let mut event_checks = vec![];
+                    if ds_datum.events().is_empty() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Events,
+                            index: None,
+                            items: vec![Check::EventsArrayIsEmpty.check_item()],
+                            sub_checks: vec![],
+                        })
+                    } else {
+                        ds_datum.events().iter().enumerate().for_each(|(i, e)| {
+                            event_checks.push(e.get_checks(Some(i), params));
+                        });
                     }
-                }
-                if let Some(digest_type) = &ds_datum.digest_type {
-                    if digest_type.is_string() {
-                        items.push(Check::DsDatumDigestTypeIsString.check_item());
-                    }
-                    if digest_type.as_u8().is_none() {
-                        items.push(Check::DsDatumDigestTypeIsOutOfRange.check_item());
-                    }
-                }
-                let mut event_checks = vec![];
-                if ds_datum.events().is_empty() {
                     sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::Events,
-                        index: None,
-                        items: vec![Check::EventsArrayIsEmpty.check_item()],
-                        sub_checks: vec![],
-                    })
-                } else {
-                    ds_datum.events().iter().enumerate().for_each(|(i, e)| {
-                        event_checks.push(e.get_checks(Some(i), params));
+                        rdap_struct: super::RdapStructure::DsData,
+                        index: Some(i),
+                        items,
+                        sub_checks: event_checks,
                     });
                 }
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::DsData,
-                    index: Some(i),
-                    items,
-                    sub_checks: event_checks,
-                });
             }
         }
 

@@ -560,6 +560,8 @@ pub enum Check {
     // empty arrays
     #[strum(message = "keyData array is empty.")]
     KeyDataArrayIsEmpty = 2219,
+    #[strum(message = "dsData array is empty.")]
+    DsDataArrayIsEmpty = 2220,
 
     // Network or Autnum Country 2300 - 2399
     #[strum(message = "country is not a string")]
@@ -678,7 +680,7 @@ impl Check {
             | Self::DsDatumKeyTagIsOutOfRange
             | Self::DsDatumDigestTypeIsString
             | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::Std95Error,
-            Self::KeyDataArrayIsEmpty => CheckClass::Std95Warning,
+            Self::KeyDataArrayIsEmpty | Self::DsDataArrayIsEmpty => CheckClass::Std95Warning,
 
             Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
         };
