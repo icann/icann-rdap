@@ -347,6 +347,8 @@ pub enum Check {
     EventActionIsAbsent = 402,
     #[strum(message = "event action is unknown")]
     EventActionIsUnknown = 403,
+    #[strum(message = "event array is empty")]
+    EventsArrayIsEmpty = 404,
 
     // Notice Or Remark 500 - 599
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
@@ -578,6 +580,7 @@ impl Check {
             | Self::NoticeOrRemarkDescriptionIsAbsent
             | Self::NoticeOrRemarkDescriptionIsString => CheckClass::Std95Error,
             Self::EventActionIsUnknown => CheckClass::Std95Warning,
+            Self::EventsArrayIsEmpty => CheckClass::Std95Warning,
             Self::NoticeOrRemarkUnknownType => CheckClass::Std95Warning,
 
             Self::HandleIsEmpty => CheckClass::Std95Warning,

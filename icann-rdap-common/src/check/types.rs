@@ -248,9 +248,18 @@ impl GetGroupChecks for ObjectCommon {
 
         // events
         if let Some(events) = &self.events {
-            events.iter().enumerate().for_each(|(i, e)| {
-                sub_checks.push(e.get_checks(Some(i), params));
-            });
+            if events.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Events,
+                    index: None,
+                    items: vec![Check::EventsArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                events.iter().enumerate().for_each(|(i, e)| {
+                    sub_checks.push(e.get_checks(Some(i), params));
+                });
+            }
         }
 
         // handle
