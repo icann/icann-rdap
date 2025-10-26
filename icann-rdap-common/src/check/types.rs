@@ -211,8 +211,17 @@ impl GetGroupChecks for Common {
             sub_checks.push(rdap_conformance.get_checks(None, params))
         };
         if let Some(notices) = &self.notices {
-            for (i, notice) in notices.iter().enumerate() {
-                sub_checks.push(notice.get_checks(Some(i), params));
+            if notices.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Notices,
+                    index: None,
+                    items: vec![Check::NoticesArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                });
+            } else {
+                for (i, notice) in notices.iter().enumerate() {
+                    sub_checks.push(notice.get_checks(Some(i), params));
+                }
             }
         }
         if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {

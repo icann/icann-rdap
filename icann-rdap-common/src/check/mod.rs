@@ -361,6 +361,8 @@ pub enum Check {
     NoticeOrRemarkDescriptionIsString = 501,
     #[strum(message = "type for notice/remark is unknown")]
     NoticeOrRemarkUnknownType = 502,
+    #[strum(message = "notices array is empty")]
+    NoticesArrayIsEmpty = 503,
 
     // Handle 600 - 699
     #[strum(message = "handle appears to be empty or only whitespace")]
@@ -587,6 +589,7 @@ impl Check {
             Self::EventActionIsUnknown => CheckClass::Std95Warning,
             Self::EventsArrayIsEmpty => CheckClass::Std95Warning,
             Self::NoticeOrRemarkUnknownType => CheckClass::Std95Warning,
+            Self::NoticesArrayIsEmpty => CheckClass::Std95Warning,
 
             Self::HandleIsEmpty => CheckClass::Std95Warning,
             Self::HandleIsNotString => CheckClass::Std95Error,
