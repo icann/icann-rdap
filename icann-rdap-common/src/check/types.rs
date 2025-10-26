@@ -399,16 +399,18 @@ impl GetChecks for Event {
             items.push(Check::EventActionIsAbsent.check_item());
         }
         let mut sub_checks = vec![];
-        if self.links().is_empty() {
-            sub_checks.push(Checks {
-                rdap_struct: super::RdapStructure::Links,
-                index: None,
-                items: vec![Check::LinksArrayIsEmpty.check_item()],
-                sub_checks: vec![],
-            })
-        } else {
-            for (i, link) in self.links().iter().enumerate() {
-                sub_checks.push(link.get_checks(Some(i), params));
+        if let Some(links) = &self.links {
+            if links.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Links,
+                    index: None,
+                    items: vec![Check::LinksArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, link) in links.iter().enumerate() {
+                    sub_checks.push(link.get_checks(Some(i), params));
+                }
             }
         }
         Checks {
