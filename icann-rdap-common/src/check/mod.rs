@@ -333,6 +333,8 @@ pub enum Check {
     LinkMissingHrefProperty = 207,
     #[strum(message = "ambiguous follow because the 'href' may not contain an RDAP URL")]
     LinkRelatedNotToRdap = 208,
+    #[strum(message = "links array is empty")]
+    LinksArrayIsEmpty = 209,
 
     // Domain Variant 300 - 399
     #[strum(message = "empty domain variant is ambiguous")]
@@ -571,6 +573,7 @@ impl Check {
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
             Self::LinkMissingHrefProperty => CheckClass::Std95Error,
             Self::LinkRelatedNotToRdap => CheckClass::Std95Warning,
+            Self::LinksArrayIsEmpty => CheckClass::Std95Warning,
 
             Self::VariantEmptyDomain => CheckClass::Std95Warning,
 

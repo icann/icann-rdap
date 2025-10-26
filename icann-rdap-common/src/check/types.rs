@@ -150,10 +150,20 @@ fn get_checks_for_notice_or_remark(
     }
     let mut sub_checks: Vec<Checks> = vec![];
     if let Some(links) = &nr.links {
-        links.iter().enumerate().for_each(|(i, link)| {
-            sub_checks
-                .push(link.get_checks(Some(i), params.from_parent(TypeId::of::<NoticeOrRemark>())))
-        });
+        if links.is_empty() {
+            sub_checks.push(Checks {
+                rdap_struct: super::RdapStructure::Links,
+                index: None,
+                items: vec![Check::LinksArrayIsEmpty.check_item()],
+                sub_checks: vec![],
+            })
+        } else {
+            links.iter().enumerate().for_each(|(i, link)| {
+                sub_checks.push(
+                    link.get_checks(Some(i), params.from_parent(TypeId::of::<NoticeOrRemark>())),
+                )
+            });
+        }
     };
     Checks {
         rdap_struct,
@@ -220,8 +230,17 @@ impl GetGroupChecks for ObjectCommon {
 
         // links
         if let Some(links) = &self.links {
-            for (i, link) in links.iter().enumerate() {
-                sub_checks.push(link.get_checks(Some(i), params));
+            if links.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Links,
+                    index: None,
+                    items: vec![Check::LinksArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, link) in links.iter().enumerate() {
+                    sub_checks.push(link.get_checks(Some(i), params));
+                }
             }
         } else if params.root.get_type() != TypeId::of::<Nameserver>()
             && params.parent_type != TypeId::of::<Nameserver>()
@@ -343,8 +362,17 @@ impl GetChecks for Event {
             items.push(Check::EventActionIsAbsent.check_item());
         }
         let mut sub_checks = vec![];
-        for (i, link) in self.links().iter().enumerate() {
-            sub_checks.push(link.get_checks(Some(i), params));
+        if self.links().is_empty() {
+            sub_checks.push(Checks {
+                rdap_struct: super::RdapStructure::Links,
+                index: None,
+                items: vec![Check::LinksArrayIsEmpty.check_item()],
+                sub_checks: vec![],
+            })
+        } else {
+            for (i, link) in self.links().iter().enumerate() {
+                sub_checks.push(link.get_checks(Some(i), params));
+            }
         }
         Checks {
             rdap_struct: super::RdapStructure::Event,
