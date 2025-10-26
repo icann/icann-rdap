@@ -154,17 +154,19 @@ impl GetChecks for SecureDns {
                         }
                     }
                     let mut event_checks = vec![];
-                    if key_datum.events().is_empty() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Events,
-                            index: None,
-                            items: vec![Check::EventsArrayIsEmpty.check_item()],
-                            sub_checks: vec![],
-                        })
-                    } else {
-                        key_datum.events().iter().enumerate().for_each(|(i, e)| {
-                            event_checks.push(e.get_checks(Some(i), params));
-                        });
+                    if let Some(events) = &key_datum.events {
+                        if events.is_empty() {
+                            sub_checks.push(Checks {
+                                rdap_struct: super::RdapStructure::Events,
+                                index: None,
+                                items: vec![Check::EventsArrayIsEmpty.check_item()],
+                                sub_checks: vec![],
+                            })
+                        } else {
+                            events.iter().enumerate().for_each(|(i, e)| {
+                                event_checks.push(e.get_checks(Some(i), params));
+                            });
+                        }
                     }
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::KeyData,
@@ -207,17 +209,19 @@ impl GetChecks for SecureDns {
                         }
                     }
                     let mut event_checks = vec![];
-                    if ds_datum.events().is_empty() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Events,
-                            index: None,
-                            items: vec![Check::EventsArrayIsEmpty.check_item()],
-                            sub_checks: vec![],
-                        })
-                    } else {
-                        ds_datum.events().iter().enumerate().for_each(|(i, e)| {
-                            event_checks.push(e.get_checks(Some(i), params));
-                        });
+                    if let Some(events) = &ds_datum.events {
+                        if events.is_empty() {
+                            sub_checks.push(Checks {
+                                rdap_struct: super::RdapStructure::Events,
+                                index: None,
+                                items: vec![Check::EventsArrayIsEmpty.check_item()],
+                                sub_checks: vec![],
+                            })
+                        } else {
+                            events.iter().enumerate().for_each(|(i, e)| {
+                                event_checks.push(e.get_checks(Some(i), params));
+                            });
+                        }
                     }
                     sub_checks.push(Checks {
                         rdap_struct: super::RdapStructure::DsData,
