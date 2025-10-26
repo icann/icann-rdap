@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::{prelude::ObjectCommonFields, response::autnum::Autnum};
+use crate::response::autnum::Autnum;
 
 use super::{
     string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
@@ -19,11 +19,6 @@ impl GetChecks for Autnum {
                     .object_common
                     .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
-
-            // entities
-            for (i, entity) in self.entities().iter().enumerate() {
-                sub_checks.push(entity.get_checks(Some(i), params));
-            }
 
             sub_checks
         };

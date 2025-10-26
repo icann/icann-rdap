@@ -1,9 +1,6 @@
 use std::any::TypeId;
 
-use crate::{
-    prelude::ObjectCommonFields,
-    response::domain::{Domain, SecureDns},
-};
+use crate::response::domain::{Domain, SecureDns};
 
 use super::{
     string::StringCheck, Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks,
@@ -27,11 +24,6 @@ impl GetChecks for Domain {
             }
             if let Some(secure_dns) = &self.secure_dns {
                 sub_checks.push(secure_dns.get_checks(None, params));
-            }
-
-            // entities
-            for (i, entity) in self.entities().iter().enumerate() {
-                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             // network

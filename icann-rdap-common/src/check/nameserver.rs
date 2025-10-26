@@ -1,6 +1,6 @@
 use std::{any::TypeId, net::IpAddr, str::FromStr};
 
-use crate::{prelude::ObjectCommonFields, response::nameserver::Nameserver};
+use crate::response::nameserver::Nameserver;
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -19,11 +19,6 @@ impl GetChecks for Nameserver {
                     .object_common
                     .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
-
-            // entities
-            for (i, entity) in self.entities().iter().enumerate() {
-                sub_checks.push(entity.get_checks(Some(i), params));
-            }
 
             sub_checks
         };

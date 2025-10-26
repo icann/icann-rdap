@@ -2,10 +2,7 @@ use std::{any::TypeId, net::IpAddr, str::FromStr};
 
 use cidr::IpCidr;
 
-use crate::{
-    prelude::{ObjectCommonFields, Stringish},
-    response::network::Network,
-};
+use crate::{prelude::Stringish, response::network::Network};
 
 use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks};
 
@@ -55,11 +52,6 @@ impl GetChecks for Network {
                         };
                     })
                 }
-            }
-
-            // entities
-            for (i, entity) in self.entities().iter().enumerate() {
-                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             sub_checks

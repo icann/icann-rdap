@@ -240,6 +240,22 @@ impl GetGroupChecks for ObjectCommon {
     fn get_group_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
 
+        // entities
+        if let Some(entities) = &self.entities {
+            if entities.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Entities,
+                    index: None,
+                    items: vec![Check::EntityArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, entity) in entities.iter().enumerate() {
+                    sub_checks.push(entity.get_checks(Some(i), params));
+                }
+            }
+        }
+
         // links
         if let Some(links) = &self.links {
             if links.is_empty() {

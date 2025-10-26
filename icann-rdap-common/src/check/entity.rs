@@ -1,10 +1,6 @@
 use std::{any::TypeId, str::FromStr};
 
-use crate::{
-    contact::Contact,
-    prelude::{EntityRole, ObjectCommonFields},
-    response::entity::Entity,
-};
+use crate::{contact::Contact, prelude::EntityRole, response::entity::Entity};
 
 use super::{
     string::{StringCheck, StringListCheck},
@@ -26,11 +22,6 @@ impl GetChecks for Entity {
             );
             if let Some(public_ids) = &self.public_ids {
                 sub_checks.push(public_ids.get_checks(None, params));
-            }
-
-            // entities
-            for (i, entity) in self.entities().iter().enumerate() {
-                sub_checks.push(entity.get_checks(Some(i), params));
             }
 
             // nets

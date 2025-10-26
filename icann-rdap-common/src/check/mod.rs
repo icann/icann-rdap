@@ -105,6 +105,7 @@ pub enum RdapStructure {
     Domain,
     DomainSearchResults,
     DsData,
+    Entities,
     Entity,
     EntitySearchResults,
     Event,
@@ -568,6 +569,10 @@ pub enum Check {
     // Network or Autnum Country 2300 - 2399
     #[strum(message = "country is not a string")]
     NetworkOrAutnumCountryIsNotString = 2300,
+
+    // Entities 2400 - 2499
+    #[strum(message = "entity array is empty")]
+    EntityArrayIsEmpty = 2400,
 }
 
 impl Check {
@@ -686,6 +691,8 @@ impl Check {
             Self::KeyDataArrayIsEmpty | Self::DsDataArrayIsEmpty => CheckClass::Std95Warning,
 
             Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
+
+            Self::EntityArrayIsEmpty => CheckClass::Std95Warning,
         };
         CheckItem {
             check_class,
