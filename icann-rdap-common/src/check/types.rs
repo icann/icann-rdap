@@ -272,8 +272,17 @@ impl GetGroupChecks for ObjectCommon {
 
         // remarks
         if let Some(remarks) = &self.remarks {
-            for (i, remark) in remarks.iter().enumerate() {
-                sub_checks.push(remark.get_checks(Some(i), params));
+            if remarks.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Remarks,
+                    index: None,
+                    items: vec![Check::RemarksArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, remark) in remarks.iter().enumerate() {
+                    sub_checks.push(remark.get_checks(Some(i), params));
+                }
             }
         };
 
