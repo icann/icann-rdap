@@ -313,6 +313,8 @@ pub enum Check {
     RdapConformanceInvalidParent = 101,
     #[strum(message = "declared extension may not be registered.")]
     UnknownExtention = 102,
+    #[strum(message = "'rdapConformance' is empty.")]
+    RdapConformanceIsEmpty = 103,
 
     // Link 200 - 299
     #[strum(message = "'value' property not found in Link structure as required by RFC 9083")]
@@ -560,9 +562,9 @@ pub enum Check {
 impl Check {
     pub fn check_item(self) -> CheckItem {
         let check_class = match self {
-            Self::RdapConformanceMissing | Self::RdapConformanceInvalidParent => {
-                CheckClass::Std95Error
-            }
+            Self::RdapConformanceMissing
+            | Self::RdapConformanceInvalidParent
+            | Self::RdapConformanceIsEmpty => CheckClass::Std95Error,
             Self::UnknownExtention => CheckClass::Std95Warning,
 
             Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::Std95Error,

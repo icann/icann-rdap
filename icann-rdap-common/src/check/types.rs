@@ -42,6 +42,9 @@ impl GetChecks for RdapConformance {
                 }
             }
         }
+        if self.is_empty() {
+            items.push(Check::RdapConformanceIsEmpty.check_item());
+        }
         Checks {
             rdap_struct: super::RdapStructure::RdapConformance,
             index,
