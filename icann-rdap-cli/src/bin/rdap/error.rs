@@ -21,7 +21,7 @@ pub enum RdapCliError {
     Minus(#[from] MinusError),
     #[error("Unknown output type")]
     UnknownOutputType,
-    #[error("RDAP response failed checks.")]
+    #[error("RDAP response failed checks. DISUSED")]
     ErrorOnChecks,
     #[error(transparent)]
     Json(#[from] serde_json::Error),

@@ -1,10 +1,10 @@
 use {
     icann_rdap_client::http::Client,
     icann_rdap_common::{
-        check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks},
+        check::{CheckParams, Checks, GetChecks},
         response::get_related_links,
     },
-    tracing::{debug, error, info},
+    tracing::{debug, info},
 };
 
 use {
@@ -111,11 +111,9 @@ pub(crate) enum InrBackupBootstrap {
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
-    pub check_types: Vec<CheckClass>,
     pub process_type: ProcessType,
     pub tld_lookup: TldLookup,
     pub inr_backup_bootstrap: InrBackupBootstrap,
-    pub error_on_checks: bool,
     pub no_cache: bool,
     pub max_cache_age: u32,
 }
@@ -606,33 +604,6 @@ fn do_final_output<W: std::io::Write>(
         }
         _ => {} // do nothing
     };
-
-    let mut checks_found = false;
-    // we don't want to error on informational
-    let error_check_types: Vec<CheckClass> = processing_params
-        .check_types
-        .iter()
-        .filter(|ct| *ct != &CheckClass::Informational)
-        .copied()
-        .collect();
-    for req_res in &transactions {
-        let found = traverse_checks(
-            &req_res.checks,
-            &error_check_types,
-            None,
-            &mut |struct_tree, check_item| {
-                if processing_params.error_on_checks {
-                    error!("{struct_tree} -> {check_item}")
-                }
-            },
-        );
-        if found {
-            checks_found = true
-        }
-    }
-    if checks_found && processing_params.error_on_checks {
-        return Err(RdapCliError::ErrorOnChecks);
-    }
 
     Ok(())
 }
