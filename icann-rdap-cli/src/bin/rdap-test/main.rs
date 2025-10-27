@@ -1,7 +1,8 @@
 use std::{io::stdout, str::FromStr};
 
-use icann_rdap_common::check::{CheckItem, CheckSummary};
-use strum::VariantArray;
+use icann_rdap_common::check::{
+    CheckItem, CheckSummary, ALL_CHECK_CLASSES, ERROR_CHECK_CLASSES, WARNING_CHECK_CLASSES,
+};
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -395,20 +396,11 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     let query_type = QueryType::from_str(&cli.query_value)?;
 
     let check_classes = if cli.check_type.is_empty() {
-        CheckClass::VARIANTS.to_owned()
+        ALL_CHECK_CLASSES.to_owned()
     } else if cli.check_type.contains(&CheckTypeArg::Warning) {
-        vec![
-            CheckClass::Std95Warning,
-            CheckClass::Std95Error,
-            CheckClass::Cidr0Error,
-            CheckClass::GtldProfileError,
-        ]
+        WARNING_CHECK_CLASSES.to_owned()
     } else if cli.check_type.contains(&CheckTypeArg::Error) {
-        vec![
-            CheckClass::Std95Error,
-            CheckClass::Cidr0Error,
-            CheckClass::GtldProfileError,
-        ]
+        ERROR_CHECK_CLASSES.to_owned()
     } else {
         cli.check_type
             .iter()

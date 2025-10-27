@@ -11,6 +11,7 @@ use {
 
 #[doc(inline)]
 pub use string::*;
+use strum::VariantArray;
 
 mod autnum;
 mod domain;
@@ -89,6 +90,22 @@ pub enum CheckClass {
     #[strum(serialize = "GtldProfileErr")]
     GtldProfileError,
 }
+
+/// All check classes
+pub static ALL_CHECK_CLASSES: &[CheckClass] = CheckClass::VARIANTS;
+/// All warning and error check clases.
+pub static WARNING_CHECK_CLASSES: &[CheckClass] = &[
+    CheckClass::Std95Warning,
+    CheckClass::Std95Error,
+    CheckClass::Cidr0Error,
+    CheckClass::GtldProfileError,
+];
+/// All error check classes.
+pub static ERROR_CHECK_CLASSES: &[CheckClass] = &[
+    CheckClass::Std95Error,
+    CheckClass::Cidr0Error,
+    CheckClass::GtldProfileError,
+];
 
 /// Represents the name of an RDAP structure for which a check appears.
 ///
