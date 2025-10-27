@@ -18,12 +18,16 @@ use {
 use chrono::DateTime;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
+    check::{
+        process::do_check_processing, traverse_checks, ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES,
+    },
     prelude::{Event, RdapResponse},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
 use serde::Serialize;
 use serde_json::Serializer;
+use tracing::warn;
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
@@ -565,6 +569,32 @@ fn do_final_output<W: std::io::Write>(
         }
         _ => {} // do nothing
     };
+
+    for tx in transactions {
+        if let Some(request_uri) = tx.res_data.http_data.request_uri() {
+            let mut checks_found = false;
+            let mut warnings_found = false;
+            let checks =
+                do_check_processing(&tx.res_data.rdap, Some(&tx.res_data.http_data), None, true);
+            traverse_checks(
+                &checks,
+                ALL_CHECK_CLASSES,
+                None,
+                &mut |_struct_name, item| {
+                    if WARNING_CHECK_CLASSES.contains(&item.check_class) {
+                        warnings_found = true;
+                    } else {
+                        checks_found = true;
+                    }
+                },
+            );
+            if warnings_found {
+                warn!("Service issues found. To analyze, use 'rdap-test {request_uri}'.");
+            } else if checks_found {
+                info!("Use 'rdap-test {request_uri}' to see service notes.");
+            }
+        }
+    }
 
     Ok(())
 }
