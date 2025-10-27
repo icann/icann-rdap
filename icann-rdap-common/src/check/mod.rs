@@ -6,7 +6,7 @@ use {
     crate::response::RdapResponse,
     serde::{Deserialize, Serialize},
     strum::{EnumMessage, IntoEnumIterator},
-    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr},
+    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr, VariantArray},
 };
 
 #[doc(inline)]
@@ -46,6 +46,7 @@ pub static CHECK_CLASS_LEN: LazyLock<usize> = LazyLock::new(|| {
     Deserialize,
     Clone,
     Copy,
+    VariantArray,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
