@@ -499,19 +499,6 @@ fn do_final_output<W: std::io::Write>(
                 for req_res in &transactions {
                     if req_res.req_data.req_target {
                         write_json(processing_params, write, &req_res.res_data.rdap)?;
-                        // if !pretty {
-                        //     writeln!(
-                        //         write,
-                        //         "{}",
-                        //         serde_json::to_string(&req_res.res_data.rdap).unwrap()
-                        //     )?;
-                        // } else {
-                        //     writeln!(
-                        //         write,
-                        //         "{}",
-                        //         serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
-                        //     )?;
-                        // }
                         break;
                     }
                 }
@@ -521,15 +508,6 @@ fn do_final_output<W: std::io::Write>(
                     .map(|t| &t.res_data.rdap)
                     .collect::<Vec<&RdapResponse>>();
                 write_json(processing_params, write, &output_vec)?;
-                // if !pretty {
-                //     writeln!(write, "{}", serde_json::to_string(&output_vec).unwrap())?;
-                // } else {
-                //     writeln!(
-                //         write,
-                //         "{}",
-                //         serde_json::to_string_pretty(&output_vec).unwrap()
-                //     )?;
-                // }
             }
         }
         OutputType::JsonExtra => {
