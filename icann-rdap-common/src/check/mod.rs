@@ -186,6 +186,21 @@ impl std::fmt::Display for CheckItem {
     }
 }
 
+// Represents a summary of a [CheckItem] when it is processed for the purposes of serialization.
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CheckSummary {
+    pub code: usize,
+    pub structure: String,
+    pub message: String,
+    pub item: CheckItem,
+}
+
+impl CheckSummary {
+    pub fn summarize(&self) -> (String, String) {
+        (self.structure.clone(), self.item.to_string())
+    }
+}
+
 /// Trait for an item that can get checks.
 pub trait GetChecks {
     fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks;

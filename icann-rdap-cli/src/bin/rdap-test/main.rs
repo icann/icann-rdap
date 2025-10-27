@@ -1,5 +1,7 @@
 use std::{io::stdout, str::FromStr};
 
+use icann_rdap_common::check::{CheckItem, CheckSummary};
+use strum::VariantArray;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -14,7 +16,7 @@ use {
         },
     },
     icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType},
-    icann_rdap_common::check::{traverse_checks, CheckClass},
+    icann_rdap_common::check::CheckClass,
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
     tracing::info,
     tracing_subscriber::filter::LevelFilter,
@@ -293,8 +295,11 @@ enum OtypeArg {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum CheckTypeArg {
-    /// All checks.
-    All,
+    /// All warnings and errors.
+    Warning,
+
+    /// All errors.
+    Error,
 
     /// Informational items.
     Info,
@@ -390,17 +395,16 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     let query_type = QueryType::from_str(&cli.query_value)?;
 
     let check_classes = if cli.check_type.is_empty() {
+        CheckClass::VARIANTS.to_owned()
+    } else if cli.check_type.contains(&CheckTypeArg::Warning) {
         vec![
             CheckClass::Std95Warning,
             CheckClass::Std95Error,
             CheckClass::Cidr0Error,
             CheckClass::GtldProfileError,
         ]
-    } else if cli.check_type.contains(&CheckTypeArg::All) {
+    } else if cli.check_type.contains(&CheckTypeArg::Error) {
         vec![
-            CheckClass::Informational,
-            CheckClass::SpecificationNote,
-            CheckClass::Std95Warning,
             CheckClass::Std95Error,
             CheckClass::Cidr0Error,
             CheckClass::GtldProfileError,
@@ -415,7 +419,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
                 CheckTypeArg::Std95Error => CheckClass::Std95Error,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
                 CheckTypeArg::GtldProfileError => CheckClass::GtldProfileError,
-                CheckTypeArg::All => panic!("check type for all should have been handled."),
+                _ => panic!("check type should have been handled."),
             })
             .collect::<Vec<CheckClass>>()
     };
@@ -459,6 +463,9 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     // execute tests
     let test_results = execute_tests(&bs, &query_type, &options, &client_config).await?;
 
+    // filtered test results
+    let test_results = filter_test_results(&check_classes, test_results);
+
     // output results
     let md_options = MdOptions::default();
     match cli.output_type {
@@ -478,13 +485,10 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             skin.table.set_fg(DarkGrey);
             skin.table.align = Alignment::Center;
             skin.inline_code.set_fgbg(Cyan, Reset);
-            skin.write_text_on(
-                &mut stdout(),
-                &test_results.to_md(&md_options, &check_classes),
-            )?;
+            skin.write_text_on(&mut stdout(), &test_results.to_md(&md_options))?;
         }
         OtypeArg::Markdown => {
-            println!("{}", test_results.to_md(&md_options, &check_classes));
+            println!("{}", test_results.to_md(&md_options));
         }
         OtypeArg::Json => {
             println!("{}", serde_json::to_string(&test_results).unwrap());
@@ -545,11 +549,11 @@ fn are_there_checks(classes: Vec<CheckClass>, test_results: &TestResults) -> boo
         .test_runs
         .iter()
         .filter(|r| {
-            if let Some(checks) = &r.checks {
-                traverse_checks(checks, &classes, None, &mut |_, _| {})
-            } else {
-                false
-            }
+            r.summaries
+                .as_deref()
+                .unwrap_or_default()
+                .iter()
+                .any(|s| classes.contains(&s.item.check_class))
         })
         .count();
     // see if there are any classes in the service checks
@@ -559,6 +563,35 @@ fn are_there_checks(classes: Vec<CheckClass>, test_results: &TestResults) -> boo
         .filter(|c| classes.contains(&c.check_class))
         .count();
     run_count + service_count != 0
+}
+
+fn filter_test_results(classes: &[CheckClass], test_results: TestResults) -> TestResults {
+    // filter service checks
+    let filtered_service_checks: Vec<CheckItem> = test_results
+        .service_checks
+        .into_iter()
+        .filter(|c| classes.contains(&c.check_class))
+        .collect();
+
+    // filter test runs
+    let mut filtered_test_runs = vec![];
+    for mut test_run in test_results.test_runs {
+        let filtered_summary: Vec<CheckSummary> = test_run
+            .summaries
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|s| classes.contains(&s.item.check_class))
+            .collect();
+        test_run.summaries = Some(filtered_summary);
+        filtered_test_runs.push(test_run);
+    }
+
+    // return
+    TestResults {
+        service_checks: filtered_service_checks,
+        test_runs: filtered_test_runs,
+        ..test_results
+    }
 }
 
 #[cfg(test)]

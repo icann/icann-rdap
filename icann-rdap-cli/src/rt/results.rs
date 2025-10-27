@@ -2,6 +2,10 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
+use icann_rdap_common::check::{
+    process::{do_check_processing, get_summaries},
+    CheckSummary,
+};
 use {
     icann_rdap_client::{
         md::{string::StringUtil, table::MultiPartTable, MdOptions},
@@ -9,8 +13,8 @@ use {
         RdapClientError,
     },
     icann_rdap_common::{
-        check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-        response::{ExtensionId, RdapResponse},
+        check::{Check, CheckClass, CheckItem, Checks},
+        response::ExtensionId,
     },
     reqwest::StatusCode,
     serde::Serialize,
@@ -77,7 +81,7 @@ impl TestResults {
         self.test_runs.push(test_run);
     }
 
-    pub fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
+    pub fn to_md(&self, options: &MdOptions) -> String {
         let mut md = String::new();
 
         // h1
@@ -164,7 +168,7 @@ impl TestResults {
 
         // each run in detail
         for run in &self.test_runs {
-            md.push_str(&run.to_md(options, check_classes));
+            md.push_str(&run.to_md(options));
         }
         md
     }
@@ -223,7 +227,7 @@ pub struct TestRun {
     pub end_time: Option<DateTime<Utc>>,
     pub response_data: Option<ResponseData>,
     pub outcome: RunOutcome,
-    pub checks: Option<Checks>,
+    pub summaries: Option<Vec<CheckSummary>>,
 }
 
 impl TestRun {
@@ -235,7 +239,7 @@ impl TestRun {
             end_time: None,
             response_data: None,
             outcome: RunOutcome::Skipped,
-            checks: None,
+            summaries: None,
         }
     }
 
@@ -255,7 +259,7 @@ impl TestRun {
         if let Ok(response_data) = rdap_response {
             self.end_time = Some(Utc::now());
             self.outcome = RunOutcome::Tested;
-            self.checks = Some(do_checks(&response_data, options));
+            self.summaries = Some(get_summaries(&do_checks(&response_data, options), None));
             self.response_data = Some(response_data);
         } else {
             self.outcome = match rdap_response.err().unwrap() {
@@ -318,7 +322,7 @@ impl TestRun {
         table
     }
 
-    fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
+    fn to_md(&self, options: &MdOptions) -> String {
         let mut md = String::new();
 
         // h1
@@ -329,12 +333,10 @@ impl TestRun {
         if matches!(self.outcome, RunOutcome::Tested) {
             // get check items according to class
             let mut check_v: Vec<(String, String)> = vec![];
-            if let Some(ref checks) = self.checks {
-                traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
-                    let message = check_item_md(item, options);
-                    check_v.push((struct_name.to_string(), message))
-                });
-            };
+            for summary in self.summaries.as_deref().unwrap_or_default() {
+                let message = check_item_md(&summary.item, options);
+                check_v.push((summary.structure.to_string(), message));
+            }
 
             // table
             let mut table = MultiPartTable::new();
@@ -396,91 +398,10 @@ fn format_date_time(date: DateTime<Utc>) -> String {
 }
 
 fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
-    let check_params = CheckParams {
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-        allow_unreg_ext: options.allow_unregistered_extensions,
-    };
-    let mut checks = response.rdap.get_checks(None, check_params);
-
-    // httpdata checks
-    checks
-        .items
-        .append(&mut response.http_data.get_checks(None, check_params).items);
-
-    // add expected extension checks
-    for ext in &options.expect_extensions {
-        if !rdap_has_expected_extension(&response.rdap, ext) {
-            checks
-                .items
-                .push(Check::ExpectedExtensionNotFound.check_item());
-        }
-    }
-
-    //return
-    checks
-}
-
-fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
-    let count = ext.split('|').filter(|s| rdap.has_extension(s)).count();
-    count > 0
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-mod tests {
-    use icann_rdap_common::{
-        prelude::ToResponse,
-        response::{Domain, Extension},
-    };
-
-    use super::rdap_has_expected_extension;
-
-    #[test]
-    fn GIVEN_expected_extension_WHEN_rdap_has_THEN_true() {
-        // GIVEN
-        let domain = Domain::response_obj()
-            .extension(Extension::from("foo0"))
-            .ldh_name("foo.example.com")
-            .build();
-        let rdap = domain.to_response();
-
-        // WHEN
-        let actual = rdap_has_expected_extension(&rdap, "foo0");
-
-        // THEN
-        assert!(actual);
-    }
-
-    #[test]
-    fn GIVEN_expected_extension_WHEN_rdap_does_not_have_THEN_false() {
-        // GIVEN
-        let domain = Domain::response_obj()
-            .extension(Extension::from("foo0"))
-            .ldh_name("foo.example.com")
-            .build();
-        let rdap = domain.to_response();
-
-        // WHEN
-        let actual = rdap_has_expected_extension(&rdap, "foo1");
-
-        // THEN
-        assert!(!actual);
-    }
-
-    #[test]
-    fn GIVEN_compound_expected_extension_WHEN_rdap_has_THEN_true() {
-        // GIVEN
-        let domain = Domain::response_obj()
-            .extension(Extension::from("foo0"))
-            .ldh_name("foo.example.com")
-            .build();
-        let rdap = domain.to_response();
-
-        // WHEN
-        let actual = rdap_has_expected_extension(&rdap, "foo0|foo1");
-
-        // THEN
-        assert!(actual);
-    }
+    do_check_processing(
+        &response.rdap,
+        Some(&response.http_data),
+        Some(&options.expect_extensions),
+        options.allow_unregistered_extensions,
+    )
 }
