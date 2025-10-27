@@ -1,9 +1,6 @@
 use {
     icann_rdap_client::http::Client,
-    icann_rdap_common::{
-        check::{CheckParams, Checks, GetChecks},
-        response::get_related_links,
-    },
+    icann_rdap_common::response::get_related_links,
     tracing::{debug, info},
 };
 
@@ -454,25 +451,11 @@ fn do_output<'a, W: std::io::Write>(
     }
 
     let req_res = RequestResponse {
-        checks: do_output_checks(response),
         req_data,
         res_data: response,
     };
     transactions.push(req_res);
     Ok(transactions)
-}
-
-fn do_output_checks(response: &ResponseData) -> Checks {
-    let check_params = CheckParams {
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-        allow_unreg_ext: false,
-    };
-    let mut checks = response.rdap.get_checks(None, check_params);
-    checks
-        .items
-        .append(&mut response.http_data.get_checks(None, check_params).items);
-    checks
 }
 
 fn write_json<W: std::io::Write, T: Serialize>(
