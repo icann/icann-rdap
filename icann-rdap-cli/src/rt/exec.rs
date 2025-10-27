@@ -5,6 +5,9 @@ use std::{
     str::FromStr,
 };
 
+use icann_rdap_client::rdap::ResponseData;
+use icann_rdap_common::{httpdata::HttpData, prelude::RdapResponse};
+
 use {
     hickory_client::{
         client::{AsyncClient, ClientConnection, ClientHandle},
@@ -24,22 +27,52 @@ use {
     url::ParseError,
 };
 
-use crate::rt::results::{RunFeature, TestRun};
+use crate::rt::results::{HttpResults, RunFeature, TestRun};
 
-use super::results::{DnsData, TestResults};
+use super::results::{DnsData, StringResult, TestResults};
 
-#[derive(Default)]
 pub struct TestOptions {
+    pub test_type: TestType,
+    pub expect_extensions: Vec<String>,
+    pub expect_groups: Vec<ExtensionGroup>,
+    pub allow_unregistered_extensions: bool,
+}
+
+impl Default for TestOptions {
+    fn default() -> Self {
+        Self {
+            test_type: TestType::String(StringTestOptions {
+                json: String::default(),
+            }),
+            expect_extensions: vec![],
+            expect_groups: vec![],
+            allow_unregistered_extensions: false,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum TestType {
+    Http(HttpTestOptions),
+    String(StringTestOptions),
+}
+
+#[derive(Clone)]
+pub struct HttpTestOptions {
+    pub value: QueryType,
+    pub client_config: ClientConfig,
     pub skip_v4: bool,
     pub skip_v6: bool,
     pub skip_origin: bool,
     pub origin_value: String,
     pub chase_referral: bool,
-    pub expect_extensions: Vec<String>,
-    pub expect_groups: Vec<ExtensionGroup>,
-    pub allow_unregistered_extensions: bool,
     pub one_addr: bool,
     pub dns_resolver: Option<String>,
+}
+
+#[derive(Clone)]
+pub struct StringTestOptions {
+    pub json: String,
 }
 
 #[derive(Clone)]
@@ -77,37 +110,52 @@ pub enum TestExecutionError {
 
 pub async fn execute_tests<BS: BootstrapStore>(
     bs: &BS,
-    value: &QueryType,
     options: &TestOptions,
-    client_config: &ClientConfig,
 ) -> Result<TestResults, TestExecutionError> {
-    let bs_client = create_client(client_config)?;
+    match &options.test_type {
+        TestType::Http(_) => execute_http_tests(bs, options).await,
+        TestType::String(_) => execute_string_test(options),
+    }
+}
+
+pub async fn execute_http_tests<BS: BootstrapStore>(
+    bs: &BS,
+    options: &TestOptions,
+) -> Result<TestResults, TestExecutionError> {
+    let TestType::Http(http_options) = &options.test_type else {
+        panic!("invalid execution path for http")
+    };
+
+    let bs_client = create_client(&http_options.client_config)?;
 
     // normalize extensions
     let extensions = normalize_extension_ids(options)?;
     let options = &TestOptions {
+        test_type: options.test_type.clone(),
         expect_extensions: extensions,
         expect_groups: options.expect_groups.clone(),
-        origin_value: options.origin_value.clone(),
-        dns_resolver: options.dns_resolver.clone(),
         ..*options
     };
 
     // get the query url
-    let mut query_url = match value {
+    let mut query_url = match &http_options.value {
         QueryType::Help => return Err(TestExecutionError::UnsupportedQueryType),
         QueryType::Url(url) => url.to_owned(),
         _ => {
-            let base_url = qtype_to_bootstrap_url(&bs_client, bs, value, |reg| {
-                info!("Fetching IANA registry {} for value {value}", reg.url())
+            let base_url = qtype_to_bootstrap_url(&bs_client, bs, &http_options.value, |reg| {
+                info!(
+                    "Fetching IANA registry {} for value {}",
+                    reg.url(),
+                    http_options.value
+                )
             })
             .await?;
-            value.query_url(&base_url)?
+            http_options.value.query_url(&base_url)?
         }
     };
     // if the URL to test is a referral
-    if options.chase_referral {
-        let client = create_client(client_config)?;
+    if http_options.chase_referral {
+        let client = create_client(&http_options.client_config)?;
         info!("Fetching referral from {query_url}");
         let response_data = rdap_url_request(&query_url, &client).await?;
         query_url = get_related_links(&response_data.rdap)
@@ -131,33 +179,47 @@ pub async fn execute_tests<BS: BootstrapStore>(
 
     info!("Testing {query_url}");
     let dns_data = get_dns_records(host, options).await?;
-    let mut test_results = TestResults::new(query_url.clone(), dns_data.clone());
+    let mut http_results = HttpResults::new(query_url.clone(), dns_data.clone());
 
     let mut more_runs = true;
     for v4 in dns_data.v4_addrs {
         // test run without origin
         let mut test_run = TestRun::new_v4(vec![], v4, port);
-        if !options.skip_v4 && more_runs {
-            let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
-            info!("Sending request to {}", test_run.socket_addr);
+        if !http_options.skip_v4 && more_runs {
+            let client = create_client_with_addr(
+                &http_options.client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
-        test_results.add_test_run(test_run);
+        http_results.add_test_run(test_run);
 
         // test run with origin
         let mut test_run = TestRun::new_v4(vec![RunFeature::OriginHeader], v4, port);
-        if !options.skip_v4 && !options.skip_origin && more_runs {
-            let client_config = ClientConfig::from_config(client_config)
-                .origin(HeaderValue::from_str(&options.origin_value)?)
+        if !http_options.skip_v4 && !http_options.skip_origin && more_runs {
+            let client_config = ClientConfig::from_config(&http_options.client_config)
+                .origin(HeaderValue::from_str(&http_options.origin_value)?)
                 .build();
-            let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
-            info!("Sending request to {}", test_run.socket_addr);
+            let client = create_client_with_addr(
+                &client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
-        test_results.add_test_run(test_run);
-        if options.one_addr {
+        http_results.add_test_run(test_run);
+        if http_options.one_addr {
             more_runs = false;
         }
     }
@@ -166,37 +228,55 @@ pub async fn execute_tests<BS: BootstrapStore>(
     for v6 in dns_data.v6_addrs {
         // test run without origin
         let mut test_run = TestRun::new_v6(vec![], v6, port);
-        if !options.skip_v6 && more_runs {
-            let client = create_client_with_addr(client_config, host, test_run.socket_addr)?;
-            info!("Sending request to {}", test_run.socket_addr);
+        if !http_options.skip_v6 && more_runs {
+            let client = create_client_with_addr(
+                &http_options.client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
-        test_results.add_test_run(test_run);
+        http_results.add_test_run(test_run);
 
         // test run with origin
         let mut test_run = TestRun::new_v6(vec![RunFeature::OriginHeader], v6, port);
-        if !options.skip_v6 && !options.skip_origin && more_runs {
-            let client_config = ClientConfig::from_config(client_config)
-                .origin(HeaderValue::from_str(&options.origin_value)?)
+        if !http_options.skip_v6 && !http_options.skip_origin && more_runs {
+            let client_config = ClientConfig::from_config(&http_options.client_config)
+                .origin(HeaderValue::from_str(&http_options.origin_value)?)
                 .build();
-            let client = create_client_with_addr(&client_config, host, test_run.socket_addr)?;
-            info!("Sending request to {}", test_run.socket_addr);
+            let client = create_client_with_addr(
+                &client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
             let rdap_response = rdap_url_request(&query_url, &client).await;
             test_run = test_run.end(rdap_response, options);
         }
-        test_results.add_test_run(test_run);
-        if options.one_addr {
+        http_results.add_test_run(test_run);
+        if http_options.one_addr {
             more_runs = false;
         }
     }
 
-    test_results.end(options);
+    http_results.end(options);
     info!("Testing complete.");
-    Ok(test_results)
+    Ok(TestResults::Http(http_results))
 }
 
 async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, TestExecutionError> {
+    let TestType::Http(http_options) = &options.test_type else {
+        panic!("invalid execution path for http")
+    };
+
     // short circuit dns if these are ip addresses
     if let Ok(ip4) = Ipv4Addr::from_str(host) {
         return Ok(DnsData {
@@ -215,7 +295,10 @@ async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, T
     }
 
     let def_dns_resolver = "8.8.8.8:53".to_string();
-    let dns_resolver = options.dns_resolver.as_ref().unwrap_or(&def_dns_resolver);
+    let dns_resolver = http_options
+        .dns_resolver
+        .as_ref()
+        .unwrap_or(&def_dns_resolver);
     let conn = UdpClientConnection::new(dns_resolver.parse()?)
         .unwrap()
         .new_stream(None);
@@ -305,6 +388,26 @@ async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, T
     }
 
     Ok(dns_data)
+}
+
+pub fn execute_string_test(options: &TestOptions) -> Result<TestResults, TestExecutionError> {
+    let TestType::String(string_options) = &options.test_type else {
+        panic!("invalid execution path for http")
+    };
+    let mut test_run = TestRun::new(vec![]);
+    let rdap =
+        serde_json::from_str::<RdapResponse>(&string_options.json).map_err(RdapClientError::Json);
+    let res_data = match rdap {
+        Ok(rdap) => Ok(ResponseData {
+            rdap_type: "unknown".to_string(),
+            rdap,
+            http_data: HttpData::now().scheme("file").host("localhost").build(),
+        }),
+        Err(e) => Err(e),
+    };
+    test_run = test_run.end(res_data, options);
+    let string_result = StringResult::new(test_run);
+    Ok(TestResults::String(Box::new(string_result)))
 }
 
 fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestExecutionError> {

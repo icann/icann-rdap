@@ -16,7 +16,7 @@ use {
 use crate::RdapClientError;
 
 /// Defines the various types of RDAP lookups and searches.
-#[derive(Display, Debug)]
+#[derive(Display, Debug, Clone)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]
     IpV4Addr(Ipv4Addr),
