@@ -1499,6 +1499,7 @@ dependencies = [
  "serial_test",
  "strum",
  "strum_macros",
+ "tempfile",
  "termimad",
  "test_dir",
  "thiserror 1.0.69",

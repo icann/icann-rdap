@@ -582,9 +582,14 @@ fn format_date_time(date: DateTime<Utc>) -> String {
 }
 
 fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
+    let http_data = if matches!(options.test_type, super::exec::TestType::Http(_)) {
+        Some(&response.http_data)
+    } else {
+        None
+    };
     do_check_processing(
         &response.rdap,
-        Some(&response.http_data),
+        http_data,
         Some(&options.expect_extensions),
         options.allow_unregistered_extensions,
     )
