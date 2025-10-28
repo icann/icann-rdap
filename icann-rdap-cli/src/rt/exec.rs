@@ -185,95 +185,100 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
     let dns_data = get_dns_records(host, http_options).await?;
     let mut http_results = HttpResults::new(query_url.clone(), dns_data.clone());
 
-    let mut more_runs = true;
-    for v4 in dns_data.v4_addrs {
-        // test run without origin
-        let mut test_run = TestRun::new_v4(vec![], v4, port);
-        if !http_options.skip_v4 && more_runs {
-            let client = create_client_with_addr(
-                &http_options.client_config,
-                host,
-                test_run.socket_addr.expect("socket"),
-            )?;
-            info!(
-                "Sending request to {}",
-                test_run.socket_addr.expect("socket")
-            );
-            let rdap_response = rdap_url_request(&query_url, &client).await;
-            test_run = test_run.end(rdap_response, options);
-        }
-        http_results.add_test_run(test_run);
+    execute_http_tests_for_family(
+        dns_data.v4_addrs,
+        port,
+        TestRun::new_v4,
+        http_options.skip_v4,
+        &query_url,
+        host,
+        http_options,
+        options,
+        &mut http_results,
+    )
+    .await?;
 
-        // test run with origin
-        let mut test_run = TestRun::new_v4(vec![RunFeature::OriginHeader], v4, port);
-        if !http_options.skip_v4 && !http_options.skip_origin && more_runs {
-            let client_config = ClientConfig::from_config(&http_options.client_config)
-                .origin(HeaderValue::from_str(&http_options.origin_value)?)
-                .build();
-            let client = create_client_with_addr(
-                &client_config,
-                host,
-                test_run.socket_addr.expect("socket"),
-            )?;
-            info!(
-                "Sending request to {}",
-                test_run.socket_addr.expect("socket")
-            );
-            let rdap_response = rdap_url_request(&query_url, &client).await;
-            test_run = test_run.end(rdap_response, options);
-        }
-        http_results.add_test_run(test_run);
-        if http_options.one_addr {
-            more_runs = false;
-        }
-    }
-
-    let mut more_runs = true;
-    for v6 in dns_data.v6_addrs {
-        // test run without origin
-        let mut test_run = TestRun::new_v6(vec![], v6, port);
-        if !http_options.skip_v6 && more_runs {
-            let client = create_client_with_addr(
-                &http_options.client_config,
-                host,
-                test_run.socket_addr.expect("socket"),
-            )?;
-            info!(
-                "Sending request to {}",
-                test_run.socket_addr.expect("socket")
-            );
-            let rdap_response = rdap_url_request(&query_url, &client).await;
-            test_run = test_run.end(rdap_response, options);
-        }
-        http_results.add_test_run(test_run);
-
-        // test run with origin
-        let mut test_run = TestRun::new_v6(vec![RunFeature::OriginHeader], v6, port);
-        if !http_options.skip_v6 && !http_options.skip_origin && more_runs {
-            let client_config = ClientConfig::from_config(&http_options.client_config)
-                .origin(HeaderValue::from_str(&http_options.origin_value)?)
-                .build();
-            let client = create_client_with_addr(
-                &client_config,
-                host,
-                test_run.socket_addr.expect("socket"),
-            )?;
-            info!(
-                "Sending request to {}",
-                test_run.socket_addr.expect("socket")
-            );
-            let rdap_response = rdap_url_request(&query_url, &client).await;
-            test_run = test_run.end(rdap_response, options);
-        }
-        http_results.add_test_run(test_run);
-        if http_options.one_addr {
-            more_runs = false;
-        }
-    }
+    execute_http_tests_for_family(
+        dns_data.v6_addrs,
+        port,
+        TestRun::new_v6,
+        http_options.skip_v6,
+        &query_url,
+        host,
+        http_options,
+        options,
+        &mut http_results,
+    )
+    .await?;
 
     http_results.end(options);
     info!("Testing complete.");
     Ok(TestResults::Http(http_results))
+}
+
+// Helper function for a family of addresses (v4 or v6)
+async fn execute_http_tests_for_family<A>(
+    addrs: Vec<A>,
+    port: u16,
+    new_run_fn: impl Fn(Vec<RunFeature>, A, u16) -> TestRun,
+    should_skip: bool,
+    query_url: &str,
+    host: &str,
+    http_options: &HttpTestOptions,
+    options: &TestOptions,
+    http_results: &mut HttpResults,
+) -> Result<(), TestExecutionError>
+where
+    A: Copy,
+{
+    let mut more_runs = true;
+    for addr in addrs {
+        if !more_runs {
+            break;
+        }
+
+        // test run without origin
+        let mut test_run = new_run_fn(vec![], addr, port);
+        if !should_skip {
+            let client = create_client_with_addr(
+                &http_options.client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
+            let rdap_response = rdap_url_request(query_url, &client).await;
+            test_run = test_run.end(rdap_response, options);
+        }
+        http_results.add_test_run(test_run);
+
+        // test run with origin
+        let mut test_run = new_run_fn(vec![RunFeature::OriginHeader], addr, port);
+        if !should_skip && !http_options.skip_origin {
+            let client_config = ClientConfig::from_config(&http_options.client_config)
+                .origin(HeaderValue::from_str(&http_options.origin_value)?)
+                .build();
+            let client = create_client_with_addr(
+                &client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
+            let rdap_response = rdap_url_request(query_url, &client).await;
+            test_run = test_run.end(rdap_response, options);
+        }
+        http_results.add_test_run(test_run);
+
+        if http_options.one_addr {
+            more_runs = false;
+        }
+    }
+    Ok(())
 }
 
 async fn get_dns_records(
