@@ -113,18 +113,16 @@ pub async fn execute_tests<BS: BootstrapStore>(
     options: &TestOptions,
 ) -> Result<TestResults, TestExecutionError> {
     match &options.test_type {
-        TestType::Http(_) => execute_http_tests(bs, options).await,
-        TestType::String(_) => execute_string_test(options),
+        TestType::Http(http_options) => execute_http_tests(bs, http_options, options).await,
+        TestType::String(string_options) => execute_string_test(string_options, options),
     }
 }
 
 pub async fn execute_http_tests<BS: BootstrapStore>(
     bs: &BS,
+    http_options: &HttpTestOptions,
     options: &TestOptions,
 ) -> Result<TestResults, TestExecutionError> {
-    let TestType::Http(http_options) = &options.test_type else {
-        panic!("invalid execution path for http")
-    };
 
     let bs_client = create_client(&http_options.client_config)?;
 
@@ -178,7 +176,7 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
         .ok_or(TestExecutionError::NoHostToResolve)?;
 
     info!("Testing {query_url}");
-    let dns_data = get_dns_records(host, options).await?;
+    let dns_data = get_dns_records(host, http_options).await?;
     let mut http_results = HttpResults::new(query_url.clone(), dns_data.clone());
 
     let mut more_runs = true;
@@ -272,10 +270,10 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
     Ok(TestResults::Http(http_results))
 }
 
-async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, TestExecutionError> {
-    let TestType::Http(http_options) = &options.test_type else {
-        panic!("invalid execution path for http")
-    };
+async fn get_dns_records(
+    host: &str,
+    http_options: &HttpTestOptions,
+) -> Result<DnsData, TestExecutionError> {
 
     // short circuit dns if these are ip addresses
     if let Ok(ip4) = Ipv4Addr::from_str(host) {
@@ -390,10 +388,10 @@ async fn get_dns_records(host: &str, options: &TestOptions) -> Result<DnsData, T
     Ok(dns_data)
 }
 
-pub fn execute_string_test(options: &TestOptions) -> Result<TestResults, TestExecutionError> {
-    let TestType::String(string_options) = &options.test_type else {
-        panic!("invalid execution path for http")
-    };
+pub fn execute_string_test(
+    string_options: &StringTestOptions,
+    options: &TestOptions,
+) -> Result<TestResults, TestExecutionError> {
     let mut test_run = TestRun::new(vec![]);
     let rdap =
         serde_json::from_str::<RdapResponse>(&string_options.json).map_err(RdapClientError::Json);
