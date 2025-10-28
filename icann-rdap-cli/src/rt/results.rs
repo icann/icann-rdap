@@ -2,6 +2,10 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
+use icann_rdap_common::check::{
+    process::{do_check_processing, get_summaries},
+    CheckSummary,
+};
 use {
     icann_rdap_client::{
         md::{string::StringUtil, table::MultiPartTable, MdOptions},
@@ -9,8 +13,8 @@ use {
         RdapClientError,
     },
     icann_rdap_common::{
-        check::{traverse_checks, Check, CheckClass, CheckItem, CheckParams, Checks, GetChecks},
-        response::{ExtensionId, RdapResponse},
+        check::{Check, CheckClass, CheckItem, Checks},
+        response::ExtensionId,
     },
     reqwest::StatusCode,
     serde::Serialize,
@@ -19,25 +23,70 @@ use {
 
 use super::exec::TestOptions;
 
-#[derive(Debug, Serialize)]
-pub struct TestResults {
+#[derive(Debug, Serialize, Clone)]
+pub enum TestResults {
+    Http(HttpResults),
+    String(Box<StringResult>),
+}
+
+impl TestResults {
+    pub fn to_md(&self, options: &MdOptions) -> String {
+        match self {
+            TestResults::Http(http_results) => http_results.to_md(options),
+            TestResults::String(string_result) => string_result.to_md(options),
+        }
+    }
+
+    pub fn execution_errors(&self) -> bool {
+        match self {
+            TestResults::Http(http_results) => http_results.execution_errors(),
+            TestResults::String(string_result) => string_result.execution_errors(),
+        }
+    }
+
+    pub fn are_there_checks(&self, classes: Vec<CheckClass>) -> bool {
+        match self {
+            TestResults::Http(http_results) => http_results.are_there_checks(classes),
+            TestResults::String(string_result) => string_result.are_there_checks(classes),
+        }
+    }
+
+    pub fn filter_test_results(&self, classes: Vec<CheckClass>) -> TestResults {
+        match self {
+            TestResults::Http(http_results) => {
+                TestResults::Http(http_results.clone().filter_test_results(&classes))
+            }
+            TestResults::String(string_result) => TestResults::String(Box::new(
+                string_result.clone().filter_test_results(&classes),
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct HttpResults {
     pub query_url: String,
-    pub dns_data: DnsData,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
+    pub dns_data: DnsData,
     pub service_checks: Vec<CheckItem>,
     pub test_runs: Vec<TestRun>,
 }
 
-impl TestResults {
+#[derive(Debug, Serialize, Clone)]
+pub struct StringResult {
+    pub test_run: Option<TestRun>,
+}
+
+impl HttpResults {
     pub fn new(query_url: String, dns_data: DnsData) -> Self {
         Self {
             query_url,
             dns_data,
-            start_time: Utc::now(),
-            end_time: None,
             service_checks: vec![],
             test_runs: vec![],
+            start_time: Utc::now(),
+            end_time: None,
         }
     }
 
@@ -59,7 +108,7 @@ impl TestResults {
         if self.dns_data.v6_addrs.is_empty() {
             self.service_checks.push(Check::NoAAAARecords.check_item());
 
-            // see if required by ICANN
+            // see if required by Gtld Profile
             let tig0 = ExtensionId::IcannRdapTechnicalImplementationGuide0.to_string();
             let tig1 = ExtensionId::IcannRdapTechnicalImplementationGuide1.to_string();
             let both_tigs = format!("{tig0}|{tig1}");
@@ -68,7 +117,7 @@ impl TestResults {
                 || options.expect_extensions.contains(&both_tigs)
             {
                 self.service_checks
-                    .push(Check::Ipv6SupportRequiredByIcann.check_item())
+                    .push(Check::Ipv6SupportRequiredByGtldProfile.check_item())
             }
         }
     }
@@ -77,7 +126,7 @@ impl TestResults {
         self.test_runs.push(test_run);
     }
 
-    pub fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
+    pub fn to_md(&self, options: &MdOptions) -> String {
         let mut md = String::new();
 
         // h1
@@ -164,9 +213,128 @@ impl TestResults {
 
         // each run in detail
         for run in &self.test_runs {
-            md.push_str(&run.to_md(options, check_classes));
+            md.push_str(&run.to_md(options));
         }
         md
+    }
+
+    pub fn execution_errors(&self) -> bool {
+        self.test_runs
+            .iter()
+            .filter(|r| !matches!(r.outcome, RunOutcome::Tested | RunOutcome::Skipped))
+            .count()
+            != 0
+    }
+
+    pub fn are_there_checks(&self, classes: Vec<CheckClass>) -> bool {
+        // see if there are any checks in the test runs
+        let run_count = self
+            .test_runs
+            .iter()
+            .filter(|r| {
+                r.summaries
+                    .as_deref()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|s| classes.contains(&s.item.check_class))
+            })
+            .count();
+        // see if there are any classes in the service checks
+        let service_count = self
+            .service_checks
+            .iter()
+            .filter(|c| classes.contains(&c.check_class))
+            .count();
+        run_count + service_count != 0
+    }
+
+    pub fn filter_test_results(self, classes: &[CheckClass]) -> Self {
+        // filter service checks
+        let filtered_service_checks: Vec<CheckItem> = self
+            .service_checks
+            .into_iter()
+            .filter(|c| classes.contains(&c.check_class))
+            .collect();
+
+        // filter test runs
+        let mut filtered_test_runs = vec![];
+        for mut test_run in self.test_runs {
+            let filtered_summary: Vec<CheckSummary> = test_run
+                .summaries
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|s| classes.contains(&s.item.check_class))
+                .collect();
+            test_run.summaries = Some(filtered_summary);
+            filtered_test_runs.push(test_run);
+        }
+
+        // return
+        Self {
+            service_checks: filtered_service_checks,
+            test_runs: filtered_test_runs,
+            ..self
+        }
+    }
+}
+
+impl StringResult {
+    pub fn new(test_run: TestRun) -> Self {
+        Self {
+            test_run: Some(test_run),
+        }
+    }
+
+    pub fn to_md(&self, options: &MdOptions) -> String {
+        let mut md = String::new();
+
+        if let Some(test_run) = &self.test_run {
+            md.push_str(&test_run.to_md(options));
+        }
+        md
+    }
+
+    pub fn execution_errors(&self) -> bool {
+        self.test_run
+            .iter()
+            .filter(|r| !matches!(r.outcome, RunOutcome::Tested | RunOutcome::Skipped))
+            .count()
+            != 0
+    }
+
+    pub fn are_there_checks(&self, classes: Vec<CheckClass>) -> bool {
+        // see if there are any checks in the test runs
+        let run_count = self
+            .test_run
+            .iter()
+            .filter(|r| {
+                r.summaries
+                    .as_deref()
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|s| classes.contains(&s.item.check_class))
+            })
+            .count();
+        run_count != 0
+    }
+
+    pub fn filter_test_results(self, classes: &[CheckClass]) -> Self {
+        // filter test runs
+        let mut filtered_test_run = None;
+        if let Some(mut test_run) = self.test_run {
+            let filtered_summary: Vec<CheckSummary> = test_run
+                .summaries
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|s| classes.contains(&s.item.check_class))
+                .collect();
+            test_run.summaries = Some(filtered_summary);
+            filtered_test_run = Some(test_run);
+        }
+        // return
+        Self {
+            test_run: filtered_test_run,
+        }
     }
 }
 
@@ -178,7 +346,7 @@ pub struct DnsData {
     pub v6_addrs: Vec<Ipv6Addr>,
 }
 
-#[derive(Debug, Serialize, Display)]
+#[derive(Debug, Serialize, Display, Clone)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum RunOutcome {
     Tested,
@@ -199,7 +367,7 @@ pub enum RunOutcome {
     Skipped,
 }
 
-#[derive(Debug, Serialize, Display)]
+#[derive(Debug, Serialize, Display, Clone)]
 #[strum(serialize_all = "snake_case")]
 pub enum RunFeature {
     OriginHeader,
@@ -215,36 +383,48 @@ impl RunOutcome {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct TestRun {
     pub features: Vec<RunFeature>,
-    pub socket_addr: SocketAddr,
+    pub socket_addr: Option<SocketAddr>,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
     pub response_data: Option<ResponseData>,
     pub outcome: RunOutcome,
-    pub checks: Option<Checks>,
+    pub summaries: Option<Vec<CheckSummary>>,
 }
 
 impl TestRun {
-    fn new(features: Vec<RunFeature>, socket_addr: SocketAddr) -> Self {
+    pub fn new(features: Vec<RunFeature>) -> Self {
         Self {
             features,
             start_time: Utc::now(),
-            socket_addr,
+            socket_addr: None,
             end_time: None,
             response_data: None,
             outcome: RunOutcome::Skipped,
-            checks: None,
+            summaries: None,
+        }
+    }
+
+    pub fn new_ip(features: Vec<RunFeature>, socket_addr: SocketAddr) -> Self {
+        Self {
+            features,
+            start_time: Utc::now(),
+            socket_addr: Some(socket_addr),
+            end_time: None,
+            response_data: None,
+            outcome: RunOutcome::Skipped,
+            summaries: None,
         }
     }
 
     pub fn new_v4(features: Vec<RunFeature>, ipv4: Ipv4Addr, port: u16) -> Self {
-        Self::new(features, SocketAddr::new(IpAddr::V4(ipv4), port))
+        Self::new_ip(features, SocketAddr::new(IpAddr::V4(ipv4), port))
     }
 
     pub fn new_v6(features: Vec<RunFeature>, ipv6: Ipv6Addr, port: u16) -> Self {
-        Self::new(features, SocketAddr::new(IpAddr::V6(ipv6), port))
+        Self::new_ip(features, SocketAddr::new(IpAddr::V6(ipv6), port))
     }
 
     pub fn end(
@@ -255,7 +435,7 @@ impl TestRun {
         if let Ok(response_data) = rdap_response {
             self.end_time = Some(Utc::now());
             self.outcome = RunOutcome::Tested;
-            self.checks = Some(do_checks(&response_data, options));
+            self.summaries = Some(get_summaries(&do_checks(&response_data, options), None));
             self.response_data = Some(response_data);
         } else {
             self.outcome = match rdap_response.err().unwrap() {
@@ -310,7 +490,7 @@ impl TestRun {
             "n/a".to_string()
         };
         table = table.multi_raw(vec![
-            self.socket_addr.to_string(),
+            socket_addr_string(self.socket_addr),
             self.attribute_set(),
             duration_s,
             self.outcome.to_md(options),
@@ -318,23 +498,25 @@ impl TestRun {
         table
     }
 
-    fn to_md(&self, options: &MdOptions, check_classes: &[CheckClass]) -> String {
+    fn to_md(&self, options: &MdOptions) -> String {
         let mut md = String::new();
 
         // h1
-        let header_value = format!("{} - {}", self.socket_addr, self.attribute_set());
+        let header_value = format!(
+            "{} - {}",
+            socket_addr_string(self.socket_addr),
+            self.attribute_set()
+        );
         md.push_str(&format!("\n{}\n", header_value.to_header(1, options)));
 
         // if outcome is tested
         if matches!(self.outcome, RunOutcome::Tested) {
             // get check items according to class
             let mut check_v: Vec<(String, String)> = vec![];
-            if let Some(ref checks) = self.checks {
-                traverse_checks(checks, check_classes, None, &mut |struct_name, item| {
-                    let message = check_item_md(item, options);
-                    check_v.push((struct_name.to_string(), message))
-                });
-            };
+            for summary in self.summaries.as_deref().unwrap_or_default() {
+                let message = check_item_md(&summary.item, options);
+                check_v.push((summary.structure.to_string(), message));
+            }
 
             // table
             let mut table = MultiPartTable::new();
@@ -361,11 +543,7 @@ impl TestRun {
     }
 
     fn attribute_set(&self) -> String {
-        let socket_type = if self.socket_addr.is_ipv4() {
-            "v4"
-        } else {
-            "v6"
-        };
+        let socket_type = socket_type_string(self.socket_addr);
         if !self.features.is_empty() {
             format!(
                 "{socket_type}, {}",
@@ -378,6 +556,26 @@ impl TestRun {
         } else {
             socket_type.to_string()
         }
+    }
+}
+
+fn socket_type_string(sock: Option<SocketAddr>) -> String {
+    if let Some(sock) = sock {
+        if sock.is_ipv4() {
+            "v4".to_string()
+        } else {
+            "v6".to_string()
+        }
+    } else {
+        "file".to_string()
+    }
+}
+
+fn socket_addr_string(sock: Option<SocketAddr>) -> String {
+    if let Some(sock) = sock {
+        sock.to_string()
+    } else {
+        "localhost".to_string()
     }
 }
 
@@ -396,92 +594,15 @@ fn format_date_time(date: DateTime<Utc>) -> String {
 }
 
 fn do_checks(response: &ResponseData, options: &TestOptions) -> Checks {
-    let check_params = CheckParams {
-        do_subchecks: true,
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-        allow_unreg_ext: options.allow_unregistered_extensions,
+    let http_data = if matches!(options.test_type, super::exec::TestType::Http(_)) {
+        Some(&response.http_data)
+    } else {
+        None
     };
-    let mut checks = response.rdap.get_checks(check_params);
-
-    // httpdata checks
-    checks
-        .items
-        .append(&mut response.http_data.get_checks(check_params).items);
-
-    // add expected extension checks
-    for ext in &options.expect_extensions {
-        if !rdap_has_expected_extension(&response.rdap, ext) {
-            checks
-                .items
-                .push(Check::ExpectedExtensionNotFound.check_item());
-        }
-    }
-
-    //return
-    checks
-}
-
-fn rdap_has_expected_extension(rdap: &RdapResponse, ext: &str) -> bool {
-    let count = ext.split('|').filter(|s| rdap.has_extension(s)).count();
-    count > 0
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-mod tests {
-    use icann_rdap_common::{
-        prelude::ToResponse,
-        response::{Domain, Extension},
-    };
-
-    use super::rdap_has_expected_extension;
-
-    #[test]
-    fn GIVEN_expected_extension_WHEN_rdap_has_THEN_true() {
-        // GIVEN
-        let domain = Domain::response_obj()
-            .extension(Extension::from("foo0"))
-            .ldh_name("foo.example.com")
-            .build();
-        let rdap = domain.to_response();
-
-        // WHEN
-        let actual = rdap_has_expected_extension(&rdap, "foo0");
-
-        // THEN
-        assert!(actual);
-    }
-
-    #[test]
-    fn GIVEN_expected_extension_WHEN_rdap_does_not_have_THEN_false() {
-        // GIVEN
-        let domain = Domain::response_obj()
-            .extension(Extension::from("foo0"))
-            .ldh_name("foo.example.com")
-            .build();
-        let rdap = domain.to_response();
-
-        // WHEN
-        let actual = rdap_has_expected_extension(&rdap, "foo1");
-
-        // THEN
-        assert!(!actual);
-    }
-
-    #[test]
-    fn GIVEN_compound_expected_extension_WHEN_rdap_has_THEN_true() {
-        // GIVEN
-        let domain = Domain::response_obj()
-            .extension(Extension::from("foo0"))
-            .ldh_name("foo.example.com")
-            .build();
-        let rdap = domain.to_response();
-
-        // WHEN
-        let actual = rdap_has_expected_extension(&rdap, "foo0|foo1");
-
-        // THEN
-        assert!(actual);
-    }
+    do_check_processing(
+        &response.rdap,
+        http_data,
+        Some(&options.expect_extensions),
+        options.allow_unregistered_extensions,
+    )
 }

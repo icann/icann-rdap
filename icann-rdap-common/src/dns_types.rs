@@ -252,7 +252,7 @@ pub enum DomainNameError {
 }
 
 /// Represents a Domain name.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DomainName {
     domain_name: String,
     ascii: String,

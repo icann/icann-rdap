@@ -311,8 +311,6 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
         });
@@ -342,8 +340,6 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
         });
@@ -374,8 +370,6 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
         });
@@ -408,8 +402,6 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
         });
@@ -440,8 +432,6 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
         });
@@ -478,8 +468,6 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
         });

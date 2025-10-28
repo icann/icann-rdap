@@ -185,14 +185,11 @@ fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
 mod tests {
     use crate::gtld::ToGtldWhois;
 
-    use {
-        super::GtldParams,
-        icann_rdap_common::{prelude::ToResponse, response::Domain},
-    };
+    use {super::GtldParams, icann_rdap_common::response::Domain};
 
     use {
         serde_json::Value,
-        std::{any::TypeId, error::Error, fs::File, io::Read},
+        std::{error::Error, fs::File, io::Read},
     };
 
     fn process_gtld_file(file_path: &str) -> Result<String, Box<dyn Error>> {
@@ -205,10 +202,7 @@ mod tests {
         let actual = serde_json::from_value::<Domain>(toplevel_json_response);
         let gtld_version_of_the_domain = match actual {
             Ok(domain) => {
-                let rdap_response = Domain::builder().ldh_name("").build().to_response();
                 let mut gtld_params = GtldParams {
-                    root: &rdap_response,
-                    parent_type: TypeId::of::<Domain>(),
                     label: "".to_string(),
                 };
                 domain.to_gtld_whois(&mut gtld_params)

@@ -4,23 +4,23 @@ use crate::response::nameserver::Nameserver;
 
 use super::{
     string::{StringCheck, StringListCheck},
-    Check, CheckParams, Checks, GetChecks, GetSubChecks,
+    Check, CheckParams, Checks, GetChecks, GetGroupChecks,
 };
 
 impl GetChecks for Nameserver {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
-        let sub_checks = if params.do_subchecks {
-            let mut sub_checks: Vec<Checks> = self
-                .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
+        let sub_checks = {
+            let mut sub_checks: Vec<Checks> = GetGroupChecks::get_group_checks(
+                &self.common,
+                params.from_parent(TypeId::of::<Self>()),
+            );
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
+                    .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
+
             sub_checks
-        } else {
-            vec![]
         };
 
         let mut items = vec![];
@@ -67,6 +67,7 @@ impl GetChecks for Nameserver {
 
         Checks {
             rdap_struct: super::RdapStructure::Nameserver,
+            index,
             items,
             sub_checks,
         }
@@ -77,7 +78,7 @@ impl GetChecks for Nameserver {
 mod tests {
     use {crate::prelude::*, rstest::rstest};
 
-    use crate::check::{Check, CheckParams, GetChecks};
+    use crate::check::{contains_check, Check, CheckParams, GetChecks};
 
     #[rstest]
     #[case("")]
@@ -92,7 +93,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -112,7 +113,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -132,7 +133,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -152,7 +153,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -172,7 +173,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = ns.get_checks(CheckParams::for_rdap(&ns));
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
 
         // THEN
         dbg!(&checks);
@@ -180,5 +181,23 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::IpAddressMalformed));
+    }
+
+    #[test]
+    fn test_ns_with_entity_empty_handle() {
+        // GIVEN
+        let ns = Nameserver::builder()
+            .handle("foo")
+            .ldh_name("ns.foo.example")
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .unwrap()
+            .to_response();
+
+        // WHEN
+        let checks = ns.get_checks(None, CheckParams::for_rdap(&ns));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }

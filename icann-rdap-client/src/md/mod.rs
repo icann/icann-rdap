@@ -3,14 +3,9 @@
 use {
     crate::rdap::rr::RequestData,
     buildstructor::Builder,
-    icann_rdap_common::{check::CheckParams, httpdata::HttpData, response::RdapResponse},
-    std::{any::TypeId, char},
-    strum::EnumMessage,
+    icann_rdap_common::{httpdata::HttpData, response::RdapResponse},
+    std::char,
 };
-
-use icann_rdap_common::check::{CheckClass, Checks, CHECK_CLASS_LEN};
-
-use self::string::StringUtil;
 
 pub mod autnum;
 pub mod domain;
@@ -72,20 +67,16 @@ pub struct MdParams<'a> {
     pub heading_level: usize,
     pub root: &'a RdapResponse,
     pub http_data: &'a HttpData,
-    pub parent_type: TypeId,
-    pub check_types: &'a [CheckClass],
     pub options: &'a MdOptions,
     pub req_data: &'a RequestData<'a>,
 }
 
 impl MdParams<'_> {
-    pub fn from_parent(&self, parent_type: TypeId) -> Self {
+    pub fn from_parent(&self) -> Self {
         Self {
-            parent_type,
             heading_level: self.heading_level,
             root: self.root,
             http_data: self.http_data,
-            check_types: self.check_types,
             options: self.options,
             req_data: self.req_data,
         }
@@ -154,52 +145,6 @@ impl MdUtil for RdapResponse {
             Self::NameserverSearchResults(results) => results.get_header_text(),
             Self::ErrorResponse(error) => error.get_header_text(),
             Self::Help(help) => help.get_header_text(),
-        }
-    }
-}
-
-pub(crate) fn checks_ul(checks: &Checks, params: MdParams) -> String {
-    let mut md = String::new();
-    checks
-        .items
-        .iter()
-        .filter(|item| params.check_types.contains(&item.check_class))
-        .for_each(|item| {
-            md.push_str(&format!(
-                "* {}: {}\n",
-                &item
-                    .check_class
-                    .to_string()
-                    .to_right_em(*CHECK_CLASS_LEN, params.options),
-                item.check
-                    .get_message()
-                    .expect("Check has no message. Coding error.")
-            ))
-        });
-    md
-}
-
-pub(crate) trait FromMd<'a> {
-    fn from_md(md_params: MdParams<'a>, parent_type: TypeId) -> Self;
-    fn from_md_no_parent(md_params: MdParams<'a>) -> Self;
-}
-
-impl<'a> FromMd<'a> for CheckParams<'a> {
-    fn from_md(md_params: MdParams<'a>, parent_type: TypeId) -> Self {
-        Self {
-            do_subchecks: false,
-            root: md_params.root,
-            parent_type,
-            allow_unreg_ext: false,
-        }
-    }
-
-    fn from_md_no_parent(md_params: MdParams<'a>) -> Self {
-        Self {
-            do_subchecks: false,
-            root: md_params.root,
-            parent_type: md_params.parent_type,
-            allow_unreg_ext: false,
         }
     }
 }

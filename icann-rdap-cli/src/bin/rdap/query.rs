@@ -1,10 +1,7 @@
 use {
     icann_rdap_client::http::Client,
-    icann_rdap_common::{
-        check::{traverse_checks, CheckClass, CheckParams, Checks, GetChecks},
-        response::get_related_links,
-    },
-    tracing::{debug, error, info},
+    icann_rdap_common::response::get_related_links,
+    tracing::{debug, info},
 };
 
 use {
@@ -21,12 +18,16 @@ use {
 use chrono::DateTime;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
+    check::{
+        process::do_check_processing, traverse_checks, ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES,
+    },
     prelude::{Event, RdapResponse},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
 use serde::Serialize;
 use serde_json::Serializer;
+use tracing::warn;
 
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
@@ -111,11 +112,9 @@ pub(crate) enum InrBackupBootstrap {
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
-    pub check_types: Vec<CheckClass>,
     pub process_type: ProcessType,
     pub tld_lookup: TldLookup,
     pub inr_backup_bootstrap: InrBackupBootstrap,
-    pub error_on_checks: bool,
     pub no_cache: bool,
     pub max_cache_age: u32,
 }
@@ -366,8 +365,6 @@ fn do_output<'a, W: std::io::Write>(
                         heading_level: 1,
                         root: &response.rdap,
                         http_data: &response.http_data,
-                        parent_type: response.rdap.get_type(),
-                        check_types: &processing_params.check_types,
                         options: &MdOptions::default(),
                         req_data,
                     }),
@@ -381,8 +378,6 @@ fn do_output<'a, W: std::io::Write>(
                         heading_level: 1,
                         root: &response.rdap,
                         http_data: &response.http_data,
-                        parent_type: response.rdap.get_type(),
-                        check_types: &processing_params.check_types,
                         options: &MdOptions {
                             text_style_char: '_',
                             style_in_justify: true,
@@ -394,8 +389,6 @@ fn do_output<'a, W: std::io::Write>(
             }
             OutputType::GtldWhois => {
                 let mut params = GtldParams {
-                    root: &response.rdap,
-                    parent_type: response.rdap.get_type(),
                     label: "".to_string(),
                 };
                 writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
@@ -462,26 +455,11 @@ fn do_output<'a, W: std::io::Write>(
     }
 
     let req_res = RequestResponse {
-        checks: do_output_checks(response),
         req_data,
         res_data: response,
     };
     transactions.push(req_res);
     Ok(transactions)
-}
-
-fn do_output_checks(response: &ResponseData) -> Checks {
-    let check_params = CheckParams {
-        do_subchecks: true,
-        root: &response.rdap,
-        parent_type: response.rdap.get_type(),
-        allow_unreg_ext: false,
-    };
-    let mut checks = response.rdap.get_checks(check_params);
-    checks
-        .items
-        .append(&mut response.http_data.get_checks(check_params).items);
-    checks
 }
 
 fn write_json<W: std::io::Write, T: Serialize>(
@@ -525,19 +503,6 @@ fn do_final_output<W: std::io::Write>(
                 for req_res in &transactions {
                     if req_res.req_data.req_target {
                         write_json(processing_params, write, &req_res.res_data.rdap)?;
-                        // if !pretty {
-                        //     writeln!(
-                        //         write,
-                        //         "{}",
-                        //         serde_json::to_string(&req_res.res_data.rdap).unwrap()
-                        //     )?;
-                        // } else {
-                        //     writeln!(
-                        //         write,
-                        //         "{}",
-                        //         serde_json::to_string_pretty(&req_res.res_data.rdap).unwrap()
-                        //     )?;
-                        // }
                         break;
                     }
                 }
@@ -547,15 +512,6 @@ fn do_final_output<W: std::io::Write>(
                     .map(|t| &t.res_data.rdap)
                     .collect::<Vec<&RdapResponse>>();
                 write_json(processing_params, write, &output_vec)?;
-                // if !pretty {
-                //     writeln!(write, "{}", serde_json::to_string(&output_vec).unwrap())?;
-                // } else {
-                //     writeln!(
-                //         write,
-                //         "{}",
-                //         serde_json::to_string_pretty(&output_vec).unwrap()
-                //     )?;
-                // }
             }
         }
         OutputType::JsonExtra => {
@@ -614,31 +570,30 @@ fn do_final_output<W: std::io::Write>(
         _ => {} // do nothing
     };
 
-    let mut checks_found = false;
-    // we don't want to error on informational
-    let error_check_types: Vec<CheckClass> = processing_params
-        .check_types
-        .iter()
-        .filter(|ct| *ct != &CheckClass::Informational)
-        .copied()
-        .collect();
-    for req_res in &transactions {
-        let found = traverse_checks(
-            &req_res.checks,
-            &error_check_types,
-            None,
-            &mut |struct_tree, check_item| {
-                if processing_params.error_on_checks {
-                    error!("{struct_tree} -> {check_item}")
-                }
-            },
-        );
-        if found {
-            checks_found = true
+    for tx in transactions {
+        if let Some(request_uri) = tx.res_data.http_data.request_uri() {
+            let mut checks_found = false;
+            let mut warnings_found = false;
+            let checks =
+                do_check_processing(&tx.res_data.rdap, Some(&tx.res_data.http_data), None, true);
+            traverse_checks(
+                &checks,
+                ALL_CHECK_CLASSES,
+                None,
+                &mut |_struct_name, item| {
+                    if WARNING_CHECK_CLASSES.contains(&item.check_class) {
+                        warnings_found = true;
+                    } else {
+                        checks_found = true;
+                    }
+                },
+            );
+            if warnings_found {
+                warn!("Service issues found. To analyze, use 'rdap-test {request_uri}'.");
+            } else if checks_found {
+                info!("Use 'rdap-test {request_uri}' to see service notes.");
+            }
         }
-    }
-    if checks_found && processing_params.error_on_checks {
-        return Err(RdapCliError::ErrorOnChecks);
     }
 
     Ok(())

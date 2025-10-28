@@ -5,7 +5,7 @@ use {icann_rdap_common::response::Network, icann_rdap_srv::storage::StoreOps};
 use crate::test_jig::TestJig;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_url_used_with_base_url_WHEN_query_THEN_success() {
+async fn test_url_used_with_base_url() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
@@ -29,7 +29,7 @@ async fn GIVEN_url_used_with_base_url_WHEN_query_THEN_success() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_url_used_with_no_base_url_WHEN_query_THEN_success() {
+async fn test_url_used_with_no_base_url() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     test_jig.cmd.env_remove("RDAP_BASE_URL");

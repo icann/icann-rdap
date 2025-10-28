@@ -1,4 +1,6 @@
-use crate::prelude::has_rdap_path;
+use crate::prelude::{
+    has_rdap_path, Event, EventActionValue, ExtensionId, Notice, NrType, Remark, StatusValue,
+};
 
 use {
     crate::prelude::ObjectCommon,
@@ -15,10 +17,7 @@ use {
             entity::Entity,
             nameserver::Nameserver,
             network::Network,
-            types::{
-                ExtensionId, Link, Links, NoticeOrRemark, Notices, PublicIds, RdapConformance,
-                Remarks,
-            },
+            types::{Link, NoticeOrRemark, PublicIds, RdapConformance},
         },
     },
     chrono::DateTime,
@@ -26,11 +25,11 @@ use {
 
 use super::{
     string::{StringCheck, StringListCheck},
-    Check, CheckItem, CheckParams, Checks, GetChecks, GetSubChecks,
+    Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
 };
 
 impl GetChecks for RdapConformance {
-    fn get_checks(&self, params: CheckParams) -> Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
         let mut items = vec![];
         if params.parent_type != params.root.get_type() {
             items.push(Check::RdapConformanceInvalidParent.check_item())
@@ -43,25 +42,14 @@ impl GetChecks for RdapConformance {
                 }
             }
         }
+        if self.is_empty() {
+            items.push(Check::RdapConformanceIsEmpty.check_item());
+        }
         Checks {
             rdap_struct: super::RdapStructure::RdapConformance,
+            index,
             items,
             sub_checks: vec![],
-        }
-    }
-}
-
-impl GetChecks for Links {
-    fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            self.iter()
-                .for_each(|link| sub_checks.push(link.get_checks(params)));
-        }
-        Checks {
-            rdap_struct: super::RdapStructure::Links,
-            items: vec![],
-            sub_checks,
         }
     }
 }
@@ -76,7 +64,7 @@ static RELATED_AND_SELF_LINK_PARENTS: LazyLock<Vec<TypeId>> = LazyLock::new(|| {
 });
 
 impl GetChecks for Link {
-    fn get_checks(&self, params: CheckParams) -> Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = vec![];
         if self.value.is_none() {
             items.push(Check::LinkMissingValueProperty.check_item())
@@ -124,123 +112,122 @@ impl GetChecks for Link {
         }
         Checks {
             rdap_struct: super::RdapStructure::Link,
+            index,
             items,
             sub_checks: vec![],
         }
     }
 }
 
-impl GetChecks for Notices {
-    fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            self.iter()
-                .for_each(|note| sub_checks.push(note.0.get_checks(params)));
-        }
-        Checks {
-            rdap_struct: super::RdapStructure::Notices,
-            items: vec![],
-            sub_checks,
-        }
+impl GetChecks for Notice {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
+        get_checks_for_notice_or_remark(self, RdapStructure::Notice, index, params)
     }
 }
 
-impl GetChecks for Remarks {
-    fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            self.iter()
-                .for_each(|remark| sub_checks.push(remark.0.get_checks(params)));
-        }
-        Checks {
-            rdap_struct: super::RdapStructure::Remarks,
-            items: vec![],
-            sub_checks,
-        }
+impl GetChecks for Remark {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
+        get_checks_for_notice_or_remark(self, RdapStructure::Remark, index, params)
     }
 }
 
-impl GetChecks for NoticeOrRemark {
-    fn get_checks(&self, params: CheckParams) -> Checks {
-        let mut items: Vec<CheckItem> = vec![];
-        if let Some(description) = &self.description {
-            if description.is_string() {
-                items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
-            }
+fn get_checks_for_notice_or_remark(
+    nr: &NoticeOrRemark,
+    rdap_struct: RdapStructure,
+    index: Option<usize>,
+    params: CheckParams,
+) -> Checks {
+    let mut items: Vec<CheckItem> = vec![];
+    if let Some(description) = &nr.description {
+        if description.is_string() {
+            items.push(Check::NoticeOrRemarkDescriptionIsString.check_item())
+        }
+    } else {
+        items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
+    };
+    if let Some(nr_type) = nr.nr_type() {
+        let s = NrType::from_str(nr_type);
+        if s.is_err() {
+            items.push(Check::NoticeOrRemarkUnknownType.check_item());
+        }
+    }
+    let mut sub_checks: Vec<Checks> = vec![];
+    if let Some(links) = &nr.links {
+        if links.is_empty() {
+            sub_checks.push(Checks {
+                rdap_struct: super::RdapStructure::Links,
+                index: None,
+                items: vec![Check::LinksArrayIsEmpty.check_item()],
+                sub_checks: vec![],
+            })
         } else {
-            items.push(Check::NoticeOrRemarkDescriptionIsAbsent.check_item())
-        };
-        let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            if let Some(links) = &self.links {
-                links.iter().for_each(|link| {
-                    sub_checks
-                        .push(link.get_checks(params.from_parent(TypeId::of::<NoticeOrRemark>())))
-                });
-            };
-        };
-        // TODO checks on 'type'
-        Checks {
-            rdap_struct: super::RdapStructure::NoticeOrRemark,
-            items,
-            sub_checks,
+            links.iter().enumerate().for_each(|(i, link)| {
+                sub_checks.push(
+                    link.get_checks(Some(i), params.from_parent(TypeId::of::<NoticeOrRemark>())),
+                )
+            });
         }
+    };
+    Checks {
+        rdap_struct,
+        index,
+        items,
+        sub_checks,
     }
 }
 
-impl GetSubChecks for PublicIds {
-    fn get_sub_checks(&self, _params: CheckParams) -> Vec<Checks> {
-        let mut sub_checks: Vec<Checks> = vec![];
+impl GetChecks for PublicIds {
+    fn get_checks(&self, index: Option<usize>, _params: CheckParams) -> Checks {
+        let mut items: Vec<CheckItem> = vec![];
         self.iter().for_each(|pid| {
             if let Some(id_type) = &pid.id_type {
                 if id_type.is_number() || id_type.is_bool() {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::PublidIds,
-                        items: vec![Check::PublicIdTypeIsNotString.check_item()],
-                        sub_checks: vec![],
-                    });
+                    items.push(Check::PublicIdTypeIsNotString.check_item());
                 }
             } else {
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::PublidIds,
-                    items: vec![Check::PublicIdTypeIsAbsent.check_item()],
-                    sub_checks: vec![],
-                });
+                items.push(Check::PublicIdTypeIsAbsent.check_item());
             }
             if let Some(identifier) = &pid.identifier {
                 if identifier.is_number() || identifier.is_bool() {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::PublidIds,
-                        items: vec![Check::PublicIdIdentifierIsNotString.check_item()],
-                        sub_checks: vec![],
-                    });
+                    items.push(Check::PublicIdIdentifierIsNotString.check_item());
                 }
             } else {
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::PublidIds,
-                    items: vec![Check::PublicIdIdentifierIsAbsent.check_item()],
-                    sub_checks: vec![],
-                });
+                items.push(Check::PublicIdIdentifierIsAbsent.check_item());
             }
         });
-        sub_checks
+        Checks {
+            rdap_struct: super::RdapStructure::PublidIds,
+            index,
+            items,
+            sub_checks: vec![],
+        }
     }
 }
 
-impl GetSubChecks for Common {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
+impl GetGroupChecks for Common {
+    fn get_group_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
-        if params.do_subchecks {
-            if let Some(rdap_conformance) = &self.rdap_conformance {
-                sub_checks.push(rdap_conformance.get_checks(params))
-            };
-            if let Some(notices) = &self.notices {
-                sub_checks.push(notices.get_checks(params))
-            };
+        if let Some(rdap_conformance) = &self.rdap_conformance {
+            sub_checks.push(rdap_conformance.get_checks(None, params))
         };
+        if let Some(notices) = &self.notices {
+            if notices.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Notices,
+                    index: None,
+                    items: vec![Check::NoticesArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                });
+            } else {
+                for (i, notice) in notices.iter().enumerate() {
+                    sub_checks.push(notice.get_checks(Some(i), params));
+                }
+            }
+        }
         if params.parent_type == params.root.get_type() && self.rdap_conformance.is_none() {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::RdapConformance,
+                index: None,
                 items: vec![Check::RdapConformanceMissing.check_item()],
                 sub_checks: vec![],
             });
@@ -249,22 +236,40 @@ impl GetSubChecks for Common {
     }
 }
 
-impl GetSubChecks for ObjectCommon {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks> {
+impl GetGroupChecks for ObjectCommon {
+    fn get_group_checks(&self, params: CheckParams) -> Vec<Checks> {
         let mut sub_checks: Vec<Checks> = vec![];
 
         // entities
-        if params.do_subchecks {
-            if let Some(entities) = &self.entities {
-                entities
-                    .iter()
-                    .for_each(|e| sub_checks.push(e.get_checks(params)))
-            };
+        if let Some(entities) = &self.entities {
+            if entities.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Entities,
+                    index: None,
+                    items: vec![Check::EntityArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, entity) in entities.iter().enumerate() {
+                    sub_checks.push(entity.get_checks(Some(i), params));
+                }
+            }
         }
 
         // links
         if let Some(links) = &self.links {
-            sub_checks.push(links.get_checks(params));
+            if links.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Links,
+                    index: None,
+                    items: vec![Check::LinksArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, link) in links.iter().enumerate() {
+                    sub_checks.push(link.get_checks(Some(i), params));
+                }
+            }
         } else if params.root.get_type() != TypeId::of::<Nameserver>()
             && params.parent_type != TypeId::of::<Nameserver>()
         // because some registries do not model nameservers directly,
@@ -275,6 +280,7 @@ impl GetSubChecks for ObjectCommon {
         {
             sub_checks.push(Checks {
                 rdap_struct: super::RdapStructure::Links,
+                index: None,
                 items: vec![Check::LinkObjectClassHasNoSelf.check_item()],
                 sub_checks: vec![],
             })
@@ -282,36 +288,34 @@ impl GetSubChecks for ObjectCommon {
 
         // remarks
         if let Some(remarks) = &self.remarks {
-            sub_checks.push(remarks.get_checks(params))
+            if remarks.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Remarks,
+                    index: None,
+                    items: vec![Check::RemarksArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, remark) in remarks.iter().enumerate() {
+                    sub_checks.push(remark.get_checks(Some(i), params));
+                }
+            }
         };
 
         // events
         if let Some(events) = &self.events {
-            events.iter().for_each(|e| {
-                if let Some(date) = &e.event_date {
-                    let date = DateTime::parse_from_rfc3339(date);
-                    if date.is_err() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Events,
-                            items: vec![Check::EventDateIsNotRfc3339.check_item()],
-                            sub_checks: vec![],
-                        })
-                    }
-                } else {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::Events,
-                        items: vec![Check::EventDateIsAbsent.check_item()],
-                        sub_checks: vec![],
-                    })
-                }
-                if e.event_action.is_none() {
-                    sub_checks.push(Checks {
-                        rdap_struct: super::RdapStructure::Events,
-                        items: vec![Check::EventActionIsAbsent.check_item()],
-                        sub_checks: vec![],
-                    })
-                }
-            });
+            if events.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Events,
+                    index: None,
+                    items: vec![Check::EventsArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                events.iter().enumerate().for_each(|(i, e)| {
+                    sub_checks.push(e.get_checks(Some(i), params));
+                });
+            }
         }
 
         // handle
@@ -319,6 +323,7 @@ impl GetSubChecks for ObjectCommon {
             if handle.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Handle,
+                    index: None,
                     items: vec![Check::HandleIsEmpty.check_item()],
                     sub_checks: vec![],
                 })
@@ -326,6 +331,7 @@ impl GetSubChecks for ObjectCommon {
             if handle.is_number() || handle.is_bool() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Handle,
+                    index: None,
                     items: vec![Check::HandleIsNotString.check_item()],
                     sub_checks: vec![],
                 })
@@ -334,14 +340,26 @@ impl GetSubChecks for ObjectCommon {
 
         // Status
         if let Some(status) = &self.status {
-            // TODO add check for status is string
             let status = status.vec();
             if status.is_empty_or_any_empty_or_whitespace() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Status,
+                    index: None,
                     items: vec![Check::StatusIsEmpty.check_item()],
                     sub_checks: vec![],
                 })
+            } else {
+                for (i, value) in status.iter().enumerate() {
+                    let status_value = StatusValue::from_str(value);
+                    if status_value.is_err() {
+                        sub_checks.push(Checks {
+                            rdap_struct: super::RdapStructure::Status,
+                            index: Some(i),
+                            items: vec![Check::StatusValueUnknown.check_item()],
+                            sub_checks: vec![],
+                        })
+                    }
+                }
             }
         }
 
@@ -350,6 +368,7 @@ impl GetSubChecks for ObjectCommon {
             if port43.is_whitespace_or_empty() {
                 sub_checks.push(Checks {
                     rdap_struct: super::RdapStructure::Port43,
+                    index: None,
                     items: vec![Check::Port43IsEmpty.check_item()],
                     sub_checks: vec![],
                 })
@@ -360,13 +379,56 @@ impl GetSubChecks for ObjectCommon {
     }
 }
 
+impl GetChecks for Event {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
+        let mut items = vec![];
+        if let Some(date) = &self.event_date {
+            let date = DateTime::parse_from_rfc3339(date);
+            if date.is_err() {
+                items.push(Check::EventDateIsNotRfc3339.check_item());
+            }
+        } else {
+            items.push(Check::EventDateIsAbsent.check_item());
+        }
+        if let Some(event_action) = &self.event_action {
+            let ea_value = EventActionValue::from_str(event_action);
+            if ea_value.is_err() {
+                items.push(Check::EventActionIsUnknown.check_item());
+            }
+        } else {
+            items.push(Check::EventActionIsAbsent.check_item());
+        }
+        let mut sub_checks = vec![];
+        if let Some(links) = &self.links {
+            if links.is_empty() {
+                sub_checks.push(Checks {
+                    rdap_struct: super::RdapStructure::Links,
+                    index: None,
+                    items: vec![Check::LinksArrayIsEmpty.check_item()],
+                    sub_checks: vec![],
+                })
+            } else {
+                for (i, link) in links.iter().enumerate() {
+                    sub_checks.push(link.get_checks(Some(i), params));
+                }
+            }
+        }
+        Checks {
+            rdap_struct: super::RdapStructure::Event,
+            index,
+            items,
+            sub_checks: vec![],
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
     use rstest::rstest;
 
     use crate::{
-        check::Checks,
+        check::{contains_check, Checks},
         media_types::RDAP_MEDIA_TYPE,
         prelude::{ToResponse, VectorStringish},
         response::{
@@ -394,18 +456,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkMissingRelProperty)
-            .expect("link rel missing check");
+        assert!(contains_check(Check::LinkMissingRelProperty, &checks));
     }
 
     #[test]
@@ -418,18 +472,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkMissingValueProperty)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkMissingValueProperty, &checks));
     }
 
     #[test]
@@ -442,18 +488,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkMissingHrefProperty)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkMissingHrefProperty, &checks));
     }
 
     #[test]
@@ -472,18 +510,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkRelatedHasNoType)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkRelatedHasNoType, &checks));
     }
 
     #[test]
@@ -503,18 +533,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkRelatedIsNotRdap)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkRelatedIsNotRdap, &checks));
     }
 
     #[test]
@@ -534,18 +556,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkRelatedNotToRdap)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkRelatedNotToRdap, &checks));
     }
 
     #[test]
@@ -564,18 +578,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkSelfHasNoType)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkSelfHasNoType, &checks));
     }
 
     #[test]
@@ -595,7 +601,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(find_any_check(&checks, Check::LinkSelfIsNotRdap));
@@ -618,7 +624,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -643,7 +649,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
@@ -681,7 +687,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -718,7 +724,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -742,18 +748,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .sub(crate::check::RdapStructure::Link)
-            .expect("Link not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::LinkObjectClassHasNoSelf)
-            .expect("link missing check");
+        assert!(contains_check(Check::LinkObjectClassHasNoSelf, &checks));
     }
 
     #[test]
@@ -765,7 +763,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&rdap);
@@ -788,16 +786,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Events)
-            .expect("Events not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::EventDateIsAbsent)
-            .expect("event missing check");
+        assert!(contains_check(Check::EventDateIsAbsent, &checks));
     }
 
     #[test]
@@ -810,16 +802,31 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Events)
-            .expect("Events not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::EventActionIsAbsent)
-            .expect("event missing check");
+        assert!(contains_check(Check::EventActionIsAbsent, &checks));
+    }
+
+    #[test]
+    fn test_event_with_unknown_action() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .event(
+                Event::builder()
+                    .event_action("unknown")
+                    .event_date("1990-12-31T23:59:59Z")
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(contains_check(Check::EventActionIsUnknown, &checks));
     }
 
     #[test]
@@ -837,16 +844,39 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Events)
-            .expect("Events not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::EventDateIsNotRfc3339)
-            .expect("event missing check");
+        assert!(contains_check(Check::EventDateIsNotRfc3339, &checks));
+    }
+
+    #[test]
+    fn test_events_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.events = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(contains_check(Check::EventsArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_events_array_is_absent() {
+        // GIVEN
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        assert!(!contains_check(Check::EventsArrayIsEmpty, &checks));
     }
 
     #[test]
@@ -859,7 +889,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -889,7 +919,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -919,7 +949,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -940,7 +970,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         checks
@@ -968,19 +998,95 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
-        checks
-            .sub(crate::check::RdapStructure::Notices)
-            .expect("Notices not found")
-            .sub(crate::check::RdapStructure::NoticeOrRemark)
-            .expect("Notice/Remark not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::NoticeOrRemarkDescriptionIsAbsent)
-            .expect("description missing check");
+        assert!(contains_check(
+            Check::NoticeOrRemarkDescriptionIsAbsent,
+            &checks
+        ));
+    }
+
+    #[test]
+    fn test_notice_with_unknown_type() {
+        // GIVEN
+        let notice = Notice::builder()
+            .nr_type("unknwon_type")
+            .description_entry("stuff")
+            .build();
+        let rdap = Domain::response_obj()
+            .ldh_name("example.com")
+            .notice(notice)
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::NoticeOrRemarkUnknownType, &checks));
+    }
+
+    #[test]
+    fn test_entity_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.entities = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::EntityArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_remarks_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.remarks = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::RemarksArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_notices_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.common.notices = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::NoticesArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_links_array_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.object_common.links = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::LinksArrayIsEmpty, &checks));
     }
 
     #[test]
@@ -993,7 +1099,7 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks.sub(crate::check::RdapStructure::Links).is_none());
@@ -1017,15 +1123,10 @@ mod tests {
             .to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(!checks
-            .sub(crate::check::RdapStructure::Links)
-            .expect("Links not found")
-            .items
-            .iter()
-            .any(|c| c.check == Check::LinkObjectClassHasNoSelf));
+        assert!(!contains_check(Check::LinkObjectClassHasNoSelf, &checks));
     }
 
     #[rstest]
@@ -1045,7 +1146,7 @@ mod tests {
         let rdap = ns.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -1054,6 +1155,22 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::StatusIsEmpty));
+    }
+
+    #[test]
+    fn test_unknown_status_value() {
+        // GIVEN
+        let domain = Domain::builder()
+            .ldh_name("foo.example")
+            .status("not_a_valid")
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = domain.get_checks(None, CheckParams::for_rdap(&domain));
+
+        // THEN
+        assert!(contains_check(Check::StatusValueUnknown, &checks));
     }
 
     #[rstest]
@@ -1070,7 +1187,7 @@ mod tests {
         let rdap = ns.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -1094,7 +1211,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -1103,6 +1220,21 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::HandleIsNotString));
+    }
+
+    #[test]
+    fn test_rdap_conformance_is_empty() {
+        // GIVEN
+        let mut rdap = Domain::builder().ldh_name("example.com").build();
+        rdap.common.rdap_conformance = Some(vec![]);
+        let rdap = rdap.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::RdapConformanceIsEmpty, &checks));
     }
 
     #[test]
@@ -1127,18 +1259,11 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        checks
-            .sub(crate::check::RdapStructure::Entity)
-            .expect("entity not found")
-            .sub(crate::check::RdapStructure::RdapConformance)
-            .expect("rdap conformance not found")
-            .items
-            .iter()
-            .find(|c| c.check == Check::RdapConformanceInvalidParent)
-            .expect("check missing");
+        dbg!(&checks);
+        assert!(contains_check(Check::RdapConformanceInvalidParent, &checks));
     }
 
     fn find_any_check(checks: &Checks, check_type: Check) -> bool {

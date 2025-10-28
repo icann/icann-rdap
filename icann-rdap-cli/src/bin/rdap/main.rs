@@ -6,7 +6,6 @@ use {
     error::RdapCliError,
     icann_rdap_cli::dirs,
     icann_rdap_client::http::{create_client, Client, ClientConfig},
-    icann_rdap_common::check::CheckClass,
     query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
@@ -143,24 +142,6 @@ struct Cli {
         default_value_t = OtypeArg::Auto,
     )]
     output_type: OtypeArg,
-
-    /// Check type.
-    ///
-    /// Specifies the type of checks to conduct on the RDAP
-    /// responses. These are RDAP specific checks and not
-    /// JSON validation which is done automatically. This
-    /// argument may be specified multiple times to include
-    /// multiple check types.
-    #[arg(short = 'C', long, required = false, value_enum)]
-    check_type: Vec<CheckTypeArg>,
-
-    /// Error if RDAP checks found.
-    ///
-    /// The program will log error messages for non-info
-    /// checks found in the RDAP response(s) and exit with a
-    /// non-zero status.
-    #[arg(long, env = "RDAP_ERROR_ON_CHECK")]
-    error_on_checks: bool,
 
     /// Process Type
     ///
@@ -403,30 +384,6 @@ enum OtypeArg {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum CheckTypeArg {
-    /// All checks.
-    All,
-
-    /// Informational items.
-    Info,
-
-    /// Specification Notes
-    SpecNote,
-
-    /// Checks for STD 95 warnings.
-    StdWarn,
-
-    /// Checks for STD 95 errors.
-    StdError,
-
-    /// Cidr0 errors.
-    Cidr0Error,
-
-    /// ICANN Profile errors.
-    IcannError,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum LogLevel {
     /// No logging.
     Off,
@@ -571,38 +528,6 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         None => ProcessType::Standard,
     };
 
-    let check_types = if cli.check_type.is_empty() {
-        vec![
-            CheckClass::Informational,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
-            CheckClass::Cidr0Error,
-            CheckClass::IcannError,
-        ]
-    } else if cli.check_type.contains(&CheckTypeArg::All) {
-        vec![
-            CheckClass::Informational,
-            CheckClass::SpecificationNote,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
-            CheckClass::Cidr0Error,
-            CheckClass::IcannError,
-        ]
-    } else {
-        cli.check_type
-            .iter()
-            .map(|c| match c {
-                CheckTypeArg::Info => CheckClass::Informational,
-                CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
-                CheckTypeArg::StdWarn => CheckClass::StdWarning,
-                CheckTypeArg::StdError => CheckClass::StdError,
-                CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
-                CheckTypeArg::IcannError => CheckClass::IcannError,
-                CheckTypeArg::All => panic!("check type for all should have been handled."),
-            })
-            .collect::<Vec<CheckClass>>()
-    };
-
     let bootstrap_type = if let Some(ref tag) = cli.base {
         BootstrapType::Hint(tag.to_string())
     } else if let Some(ref base_url) = cli.base_url {
@@ -624,11 +549,9 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
-        check_types,
         process_type,
         tld_lookup,
         inr_backup_bootstrap,
-        error_on_checks: cli.error_on_checks,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
     };

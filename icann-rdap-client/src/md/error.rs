@@ -1,5 +1,3 @@
-use std::any::TypeId;
-
 use icann_rdap_common::response::Rfc9083Error;
 
 use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
@@ -8,7 +6,7 @@ impl ToMd for Rfc9083Error {
     fn to_md(&self, params: MdParams) -> String {
         let mut md = String::new();
         if let Some(rdap_conformance) = &self.rdap_conformance {
-            md.push_str(&rdap_conformance.to_md(params.from_parent(TypeId::of::<Self>())));
+            md.push_str(&rdap_conformance.to_md(params.from_parent()));
         }
         md.push_str(HR);
         md.push('\n');

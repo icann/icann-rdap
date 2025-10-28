@@ -1,12 +1,8 @@
-use std::any::TypeId;
-
 use icann_rdap_common::{
     dns_types::{DnsAlgorithmType, DnsDigestType},
     prelude::ObjectCommonFields,
     response::{Domain, SecureDns, Variant},
 };
-
-use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
 
 use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
 
@@ -14,15 +10,14 @@ use super::{
     redacted::REDACTED_TEXT,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    types::{events_to_table, links_to_table, public_ids_to_table},
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
 
         // header
         let header_text = self.get_header_text();
@@ -72,22 +67,11 @@ impl ToMd for Domain {
         // remarks
         table = self.remarks().add_to_mptable(table, params);
 
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
-
         // render table
         md.push_str(&table.to_md(params));
 
         // entities
-        md.push_str(
-            &self
-                .object_common
-                .entities
-                .to_md(params.from_parent(typeid)),
-        );
+        md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // nameservers
         if let Some(nameservers) = &self.nameservers {
@@ -103,7 +87,7 @@ impl ToMd for Domain {
 
         // redacted
         if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -263,7 +247,7 @@ impl MdUtil for Domain {
 
 #[cfg(test)]
 mod tests {
-    use std::{any::TypeId, io::Write};
+    use std::io::Write;
 
     use goldenfile::Mint;
     use icann_rdap_common::{
@@ -299,8 +283,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -330,8 +312,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -369,8 +349,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -403,8 +381,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -439,8 +415,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -480,8 +454,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -529,8 +501,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -593,8 +563,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };
@@ -659,8 +627,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };

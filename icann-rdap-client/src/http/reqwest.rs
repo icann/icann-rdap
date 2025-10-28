@@ -13,6 +13,7 @@ use {icann_rdap_common::VERSION, std::net::SocketAddr, std::time::Duration};
 const ACCEPT_HEADER_VALUES: &str = const_format::formatcp!("{RDAP_MEDIA_TYPE}, {JSON_MEDIA_TYPE}");
 
 /// Configures the HTTP client.
+#[derive(Clone)]
 pub struct ReqwestClientConfig {
     /// This string is appended to the user agent.
     ///

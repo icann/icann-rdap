@@ -1,21 +1,13 @@
-use std::any::TypeId;
-
-use icann_rdap_common::{
-    check::{CheckParams, GetChecks, GetSubChecks},
-    prelude::ObjectCommonFields,
-    response::Network,
-};
+use icann_rdap_common::{prelude::ObjectCommonFields, response::Network};
 
 use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Network {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params));
 
@@ -51,26 +43,15 @@ impl ToMd for Network {
         // remarks
         table = self.remarks().add_to_mptable(table, params);
 
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
-
         // render table
         md.push_str(&table.to_md(params));
 
         // entities
-        md.push_str(
-            &self
-                .object_common
-                .entities
-                .to_md(params.from_parent(typeid)),
-        );
+        md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
         if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -107,12 +88,12 @@ impl MdUtil for Network {
 
 #[cfg(test)]
 mod tests {
-    use std::{any::TypeId, io::Write};
+    use std::io::Write;
 
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Entity, Network, Remark, ToResponse},
+        prelude::{Network, Remark, ToResponse},
     };
 
     use crate::{
@@ -158,8 +139,6 @@ mod tests {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Entity>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
         };

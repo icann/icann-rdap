@@ -39,7 +39,7 @@ impl Default for RequestOptions {
 }
 
 /// Configures the HTTP client.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ClientConfig {
     /// Config for the Reqwest client.
     client_config: ReqwestClientConfig,

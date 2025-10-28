@@ -125,8 +125,8 @@ sqlx = { version = "0.7", features = [
 ] }
 
 # enum utilities
-strum = "0.24"
-strum_macros = "0.24"
+strum = "0.27"
+strum_macros = "0.27"
 
 # terminal markdown generator
 termimad = "0.31"

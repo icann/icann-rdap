@@ -57,3 +57,6 @@ test_dir = "0.2.0"
 
 # tracing
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# temp files
+tempfile = "3.10.1"

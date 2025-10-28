@@ -1,5 +1,11 @@
-use std::{io::stdout, str::FromStr};
+use std::{
+    io::{stdout, Read},
+    str::FromStr,
+};
 
+use clap::Args;
+use icann_rdap_cli::rt::exec::{HttpTestOptions, StringTestOptions, TestType};
+use icann_rdap_common::check::{ALL_CHECK_CLASSES, ERROR_CHECK_CLASSES, WARNING_CHECK_CLASSES};
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -8,13 +14,10 @@ use {
     icann_rdap_cli::{
         dirs,
         dirs::fcbs::FileCacheBootstrapStore,
-        rt::{
-            exec::{execute_tests, ExtensionGroup, TestOptions},
-            results::{RunOutcome, TestResults},
-        },
+        rt::exec::{execute_tests, ExtensionGroup, TestOptions},
     },
     icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType},
-    icann_rdap_common::check::{traverse_checks, CheckClass},
+    icann_rdap_common::check::CheckClass,
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
     tracing::info,
     tracing_subscriber::filter::LevelFilter,
@@ -43,11 +46,14 @@ impl CliStyles {
 #[command(author, version = VERSION, about, long_about, styles = CliStyles::cli_styles())]
 /// This program aids in the troubleshooting of issues with RDAP servers.
 struct Cli {
-    /// Value to be queried in RDAP.
-    ///
-    /// This is the value to query. For example, a domain name or IP address.
-    #[arg()]
-    query_value: String,
+    #[command(flatten)]
+    http: HttpArgGroup,
+
+    #[command(flatten)]
+    file: FileInputArgGroup,
+
+    #[command(flatten)]
+    pipe: PipeInputArgGroup,
 
     /// Output format.
     ///
@@ -84,6 +90,58 @@ struct Cli {
         default_value_t = LogLevel::Info
     )]
     log_level: LogLevel,
+
+    /// Expect extension.
+    ///
+    /// Expect the RDAP response to contain a specific extension ID.
+    /// If a response does not contain the expected RDAP extension ID,
+    /// it will be added as an failed check. This parameter may also
+    /// take the form of "foo1|foo2" to be mean either expect "foo1" or
+    /// "foo2".
+    ///
+    /// This value may be repeated more than once.
+    #[arg(
+        short = 'e',
+        long,
+        required = false,
+        env = "RDAP_TEST_EXPECT_EXTENSIONS"
+    )]
+    expect_extensions: Vec<String>,
+
+    /// Expect extension group.
+    ///
+    /// Extension groups are known sets of extensions.
+    ///
+    /// This value may be repeated more than once.
+    #[arg(
+        short = 'g',
+        long,
+        required = false,
+        value_enum,
+        env = "RDAP_TEST_EXPECT_EXTENSION_GROUP"
+    )]
+    expect_group: Vec<ExtensionGroupArg>,
+
+    /// Allow unregistered extensions.
+    ///
+    /// Do not flag unregistered extensions.
+    #[arg(
+        short = 'E',
+        long,
+        required = false,
+        env = "RDAP_TEST_ALLOW_UNREGISTERED_EXTENSIONS"
+    )]
+    allow_unregistered_extensions: bool,
+}
+
+#[derive(Args, Debug)]
+#[group(id = "http", multiple = true, conflicts_with_all = ["file", "pipe"])]
+struct HttpArgGroup {
+    /// Value to be queried in RDAP.
+    ///
+    /// This is the value to query. For example, a domain name or IP address.
+    #[arg(required = false)]
+    query_value: Option<String>,
 
     /// DNS Resolver
     ///
@@ -231,48 +289,24 @@ struct Cli {
     /// referral to the registrar from the registry.
     #[arg(short = 'r', long, required = false)]
     referral: bool,
+}
 
-    /// Expect extension.
+#[derive(Args, Debug)]
+#[group(id = "file", multiple = true, conflicts_with_all = ["http", "pipe"])]
+struct FileInputArgGroup {
+    /// File to test.
     ///
-    /// Expect the RDAP response to contain a specific extension ID.
-    /// If a response does not contain the expected RDAP extension ID,
-    /// it will be added as an failed check. This parameter may also
-    /// take the form of "foo1|foo2" to be mean either expect "foo1" or
-    /// "foo2".
-    ///
-    /// This value may be repeated more than once.
-    #[arg(
-        short = 'e',
-        long,
-        required = false,
-        env = "RDAP_TEST_EXPECT_EXTENSIONS"
-    )]
-    expect_extensions: Vec<String>,
+    /// Specifies a file to read.
+    #[arg(long, required = false)]
+    in_file: Option<String>,
+}
 
-    /// Expect extension group.
-    ///
-    /// Extension groups are known sets of extensions.
-    ///
-    /// This value may be repeated more than once.
-    #[arg(
-        short = 'g',
-        long,
-        required = false,
-        value_enum,
-        env = "RDAP_TEST_EXPECT_EXTENSION_GROUP"
-    )]
-    expect_group: Vec<ExtensionGroupArg>,
-
-    /// Allow unregistered extensions.
-    ///
-    /// Do not flag unregistered extensions.
-    #[arg(
-        short = 'E',
-        long,
-        required = false,
-        env = "RDAP_TEST_ALLOW_UNREGISTERED_EXTENSIONS"
-    )]
-    allow_unregistered_extensions: bool,
+#[derive(Args, Debug)]
+#[group(id = "pipe", multiple = true, conflicts_with_all = ["http", "file"])]
+struct PipeInputArgGroup {
+    /// Read file from stdin.
+    #[arg(long, required = false)]
+    stdin: bool,
 }
 
 /// Represents the output type possibilities.
@@ -293,8 +327,11 @@ enum OtypeArg {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum CheckTypeArg {
-    /// All checks.
-    All,
+    /// All warnings and errors.
+    Warning,
+
+    /// All errors.
+    Error,
 
     /// Informational items.
     Info,
@@ -303,16 +340,16 @@ enum CheckTypeArg {
     SpecNote,
 
     /// Checks for STD 95 warnings.
-    StdWarn,
+    Std95Warn,
 
     /// Checks for STD 95 errors.
-    StdError,
+    Std95Error,
 
     /// Cidr0 errors.
     Cidr0Error,
 
-    /// ICANN Profile errors.
-    IcannError,
+    /// Gtld Profile errors.
+    GtldProfileError,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -387,35 +424,23 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     #[cfg(debug_assertions)]
     warn!("This is a development build of this software.");
 
-    let query_type = QueryType::from_str(&cli.query_value)?;
-
     let check_classes = if cli.check_type.is_empty() {
-        vec![
-            CheckClass::StdWarning,
-            CheckClass::StdError,
-            CheckClass::Cidr0Error,
-            CheckClass::IcannError,
-        ]
-    } else if cli.check_type.contains(&CheckTypeArg::All) {
-        vec![
-            CheckClass::Informational,
-            CheckClass::SpecificationNote,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
-            CheckClass::Cidr0Error,
-            CheckClass::IcannError,
-        ]
+        ALL_CHECK_CLASSES.to_owned()
+    } else if cli.check_type.contains(&CheckTypeArg::Warning) {
+        WARNING_CHECK_CLASSES.to_owned()
+    } else if cli.check_type.contains(&CheckTypeArg::Error) {
+        ERROR_CHECK_CLASSES.to_owned()
     } else {
         cli.check_type
             .iter()
             .map(|c| match c {
                 CheckTypeArg::Info => CheckClass::Informational,
                 CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
-                CheckTypeArg::StdWarn => CheckClass::StdWarning,
-                CheckTypeArg::StdError => CheckClass::StdError,
+                CheckTypeArg::Std95Warn => CheckClass::Std95Warning,
+                CheckTypeArg::Std95Error => CheckClass::Std95Error,
                 CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
-                CheckTypeArg::IcannError => CheckClass::IcannError,
-                CheckTypeArg::All => panic!("check type for all should have been handled."),
+                CheckTypeArg::GtldProfileError => CheckClass::GtldProfileError,
+                _ => panic!("check type should have been handled."),
             })
             .collect::<Vec<CheckClass>>()
     };
@@ -431,33 +456,52 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
 
     let bs = FileCacheBootstrapStore;
 
+    let client_config = ClientConfig::builder()
+        .user_agent_suffix("RT")
+        .https_only(!cli.http.allow_http)
+        .accept_invalid_host_names(cli.http.allow_invalid_host_names)
+        .accept_invalid_certificates(cli.http.allow_invalid_certificates)
+        .follow_redirects(cli.http.follow_redirects)
+        .timeout_secs(cli.http.timeout_secs)
+        .max_retry_secs(cli.http.max_retry_secs)
+        .def_retry_secs(cli.http.def_retry_secs)
+        .max_retries(cli.http.max_retries)
+        .build();
+
+    let test_type = if cli.http.query_value.is_some() {
+        TestType::Http(HttpTestOptions {
+            skip_v4: cli.http.skip_v4,
+            skip_v6: cli.http.skip_v6,
+            skip_origin: cli.http.skip_origin,
+            origin_value: cli.http.origin_value,
+            chase_referral: cli.http.referral,
+            one_addr: cli.http.one_addr,
+            dns_resolver: Some(cli.http.dns_resolver),
+            value: QueryType::from_str(&cli.http.query_value.unwrap_or_default())?,
+            client_config,
+        })
+    } else {
+        let mut json = String::new();
+        if let Some(in_file) = cli.file.in_file {
+            json.push_str(&std::fs::read_to_string(in_file)?);
+        } else {
+            std::io::stdin().read_to_string(&mut json)?;
+        };
+        TestType::String(StringTestOptions { json })
+    };
+
     let options = TestOptions {
-        skip_v4: cli.skip_v4,
-        skip_v6: cli.skip_v6,
-        skip_origin: cli.skip_origin,
-        origin_value: cli.origin_value,
-        chase_referral: cli.referral,
         expect_extensions: cli.expect_extensions,
         expect_groups,
         allow_unregistered_extensions: cli.allow_unregistered_extensions,
-        one_addr: cli.one_addr,
-        dns_resolver: Some(cli.dns_resolver),
+        test_type,
     };
 
-    let client_config = ClientConfig::builder()
-        .user_agent_suffix("RT")
-        .https_only(!cli.allow_http)
-        .accept_invalid_host_names(cli.allow_invalid_host_names)
-        .accept_invalid_certificates(cli.allow_invalid_certificates)
-        .follow_redirects(cli.follow_redirects)
-        .timeout_secs(cli.timeout_secs)
-        .max_retry_secs(cli.max_retry_secs)
-        .def_retry_secs(cli.def_retry_secs)
-        .max_retries(cli.max_retries)
-        .build();
-
     // execute tests
-    let test_results = execute_tests(&bs, &query_type, &options, &client_config).await?;
+    let test_results = execute_tests(&bs, &options).await?;
+
+    // filtered test results
+    let test_results = test_results.filter_test_results(check_classes.clone());
 
     // output results
     let md_options = MdOptions::default();
@@ -478,13 +522,10 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             skin.table.set_fg(DarkGrey);
             skin.table.align = Alignment::Center;
             skin.inline_code.set_fgbg(Cyan, Reset);
-            skin.write_text_on(
-                &mut stdout(),
-                &test_results.to_md(&md_options, &check_classes),
-            )?;
+            skin.write_text_on(&mut stdout(), &test_results.to_md(&md_options))?;
         }
         OtypeArg::Markdown => {
-            println!("{}", test_results.to_md(&md_options, &check_classes));
+            println!("{}", test_results.to_md(&md_options));
         }
         OtypeArg::Json => {
             println!("{}", serde_json::to_string(&test_results).unwrap());
@@ -496,12 +537,7 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
 
     // if some tests could not execute
     //
-    let execution_errors = test_results
-        .test_runs
-        .iter()
-        .filter(|r| !matches!(r.outcome, RunOutcome::Tested | RunOutcome::Skipped))
-        .count();
-    if execution_errors != 0 {
+    if test_results.execution_errors() {
         return Err(RdapTestError::TestsCompletedExecutionErrors);
     }
 
@@ -513,13 +549,13 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .filter(|c| {
             matches!(
                 c,
-                CheckClass::StdError | CheckClass::Cidr0Error | CheckClass::IcannError
+                CheckClass::Std95Error | CheckClass::Cidr0Error | CheckClass::GtldProfileError
             )
         })
         .copied()
         .collect::<Vec<CheckClass>>();
     // return proper exit code if errors found
-    if are_there_checks(error_classes, &test_results) {
+    if test_results.are_there_checks(error_classes) {
         return Err(RdapTestError::TestsCompletedErrorsFound);
     }
 
@@ -528,37 +564,15 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
     // get the warning classes but only if they were specified.
     let warning_classes = check_classes
         .iter()
-        .filter(|c| matches!(c, CheckClass::StdWarning))
+        .filter(|c| matches!(c, CheckClass::Std95Warning))
         .copied()
         .collect::<Vec<CheckClass>>();
     // return proper exit code if errors found
-    if are_there_checks(warning_classes, &test_results) {
+    if test_results.are_there_checks(warning_classes) {
         return Err(RdapTestError::TestsCompletedWarningsFound);
     }
 
     Ok(())
-}
-
-fn are_there_checks(classes: Vec<CheckClass>, test_results: &TestResults) -> bool {
-    // see if there are any checks in the test runs
-    let run_count = test_results
-        .test_runs
-        .iter()
-        .filter(|r| {
-            if let Some(checks) = &r.checks {
-                traverse_checks(checks, &classes, None, &mut |_, _| {})
-            } else {
-                false
-            }
-        })
-        .count();
-    // see if there are any classes in the service checks
-    let service_count = test_results
-        .service_checks
-        .iter()
-        .filter(|c| classes.contains(&c.check_class))
-        .count();
-    run_count + service_count != 0
 }
 
 #[cfg(test)]

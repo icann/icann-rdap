@@ -1,7 +1,6 @@
 //! Structures that describe a request/response.
 
 use {
-    icann_rdap_common::check::Checks,
     serde::{Deserialize, Serialize},
     strum_macros::Display,
 };
@@ -50,7 +49,6 @@ pub struct RequestData<'a> {
 pub struct RequestResponse<'a> {
     pub req_data: &'a RequestData<'a>,
     pub res_data: &'a ResponseData,
-    pub checks: Checks,
 }
 
 /// The primary purpose for this struct is to allow deserialization for testing.
@@ -61,7 +59,6 @@ pub struct RequestResponseOwned<'a> {
     #[serde(borrow)]
     pub req_data: RequestData<'a>,
     pub res_data: ResponseData,
-    pub checks: Checks,
 }
 
 /// A [Vec] of [RequestResponse].
