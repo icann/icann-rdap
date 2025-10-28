@@ -129,7 +129,6 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
     http_options: &HttpTestOptions,
     options: &TestOptions,
 ) -> Result<TestResults, TestExecutionError> {
-
     let bs_client = create_client(&http_options.client_config)?;
 
     // normalize extensions
@@ -217,6 +216,7 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
 }
 
 // Helper function for a family of addresses (v4 or v6)
+#[allow(clippy::too_many_arguments)] //allowed here because all but one parameter are diff types
 async fn execute_http_tests_for_family<A>(
     addrs: Vec<A>,
     port: u16,
@@ -285,7 +285,6 @@ async fn get_dns_records(
     host: &str,
     http_options: &HttpTestOptions,
 ) -> Result<DnsData, TestExecutionError> {
-
     // short circuit dns if these are ip addresses
     if let Ok(ip4) = Ipv4Addr::from_str(host) {
         return Ok(DnsData {
@@ -308,8 +307,7 @@ async fn get_dns_records(
         .dns_resolver
         .as_ref()
         .unwrap_or(&def_dns_resolver);
-    let conn = UdpClientConnection::new(dns_resolver.parse()?)?
-        .new_stream(None);
+    let conn = UdpClientConnection::new(dns_resolver.parse()?)?.new_stream(None);
     let (mut client, bg) = AsyncClient::connect(conn).await?;
 
     // make sure to run the background task
@@ -355,11 +353,7 @@ async fn get_dns_records(
     }
 
     // Create a query future
-    let query = client.query(
-        Name::from_str(host)?,
-        DNSClass::IN,
-        RecordType::AAAA,
-    );
+    let query = client.query(Name::from_str(host)?, DNSClass::IN, RecordType::AAAA);
 
     // wait for its response
     let response = query.await?;
