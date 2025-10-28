@@ -11,6 +11,8 @@ use icann_rdap_common::{httpdata::HttpData, prelude::RdapResponse};
 use {
     hickory_client::{
         client::{AsyncClient, ClientConnection, ClientHandle},
+        error::ClientError,
+        proto::error::ProtoError,
         rr::{DNSClass, Name, RecordType},
         udp::UdpClientConnection,
     },
@@ -106,6 +108,10 @@ pub enum TestExecutionError {
     NoReferralToChase,
     #[error("Unregistered extension")]
     UnregisteredExtension,
+    #[error("Hickory Client Error: {0}")]
+    HickoryClient(#[from] ClientError),
+    #[error("Hickory Proto Error: {0}")]
+    HickoryProto(#[from] ProtoError),
 }
 
 pub async fn execute_tests<BS: BootstrapStore>(
@@ -297,10 +303,9 @@ async fn get_dns_records(
         .dns_resolver
         .as_ref()
         .unwrap_or(&def_dns_resolver);
-    let conn = UdpClientConnection::new(dns_resolver.parse()?)
-        .unwrap()
+    let conn = UdpClientConnection::new(dns_resolver.parse()?)?
         .new_stream(None);
-    let (mut client, bg) = AsyncClient::connect(conn).await.unwrap();
+    let (mut client, bg) = AsyncClient::connect(conn).await?;
 
     // make sure to run the background task
     tokio::spawn(bg);
@@ -308,10 +313,10 @@ async fn get_dns_records(
     let mut dns_data = DnsData::default();
 
     // Create a query future
-    let query = client.query(Name::from_str(host).unwrap(), DNSClass::IN, RecordType::A);
+    let query = client.query(Name::from_str(host)?, DNSClass::IN, RecordType::A);
 
     // wait for its response
-    let response = query.await.unwrap();
+    let response = query.await?;
 
     for answer in response.answers() {
         match answer.record_type() {
@@ -346,13 +351,13 @@ async fn get_dns_records(
 
     // Create a query future
     let query = client.query(
-        Name::from_str(host).unwrap(),
+        Name::from_str(host)?,
         DNSClass::IN,
         RecordType::AAAA,
     );
 
     // wait for its response
-    let response = query.await.unwrap();
+    let response = query.await?;
 
     for answer in response.answers() {
         match answer.record_type() {
