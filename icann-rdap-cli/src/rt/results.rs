@@ -490,7 +490,7 @@ impl TestRun {
             "n/a".to_string()
         };
         table = table.multi_raw(vec![
-            sock_type(self.socket_addr),
+            socket_addr_string(self.socket_addr),
             self.attribute_set(),
             duration_s,
             self.outcome.to_md(options),
@@ -502,7 +502,11 @@ impl TestRun {
         let mut md = String::new();
 
         // h1
-        let header_value = format!("{} - {}", sock_type(self.socket_addr), self.attribute_set());
+        let header_value = format!(
+            "{} - {}",
+            socket_addr_string(self.socket_addr),
+            self.attribute_set()
+        );
         md.push_str(&format!("\n{}\n", header_value.to_header(1, options)));
 
         // if outcome is tested
@@ -539,7 +543,7 @@ impl TestRun {
     }
 
     fn attribute_set(&self) -> String {
-        let socket_type = sock_type(self.socket_addr);
+        let socket_type = socket_type_string(self.socket_addr);
         if !self.features.is_empty() {
             format!(
                 "{socket_type}, {}",
@@ -555,7 +559,7 @@ impl TestRun {
     }
 }
 
-fn sock_type(sock: Option<SocketAddr>) -> String {
+fn socket_type_string(sock: Option<SocketAddr>) -> String {
     if let Some(sock) = sock {
         if sock.is_ipv4() {
             "v4".to_string()
@@ -564,6 +568,14 @@ fn sock_type(sock: Option<SocketAddr>) -> String {
         }
     } else {
         "file".to_string()
+    }
+}
+
+fn socket_addr_string(sock: Option<SocketAddr>) -> String {
+    if let Some(sock) = sock {
+        sock.to_string()
+    } else {
+        "localhost".to_string()
     }
 }
 
