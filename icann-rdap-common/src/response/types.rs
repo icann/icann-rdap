@@ -275,12 +275,14 @@ impl Notice {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
+        simple_redaction_key: Option<String>,
     ) -> Self {
         let nr = NoticeOrRemark::builder()
             .description(description)
             .and_title(title)
             .links(links)
             .and_nr_type(nr_type)
+            .and_simple_redaction_key(simple_redaction_key)
             .build();
         Self(nr)
     }
@@ -344,12 +346,14 @@ impl Remark {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
+        simple_redaction_key: Option<String>,
     ) -> Self {
         let nr = NoticeOrRemark::builder()
             .description(description)
             .and_title(title)
             .links(links)
             .and_nr_type(nr_type)
+            .and_simple_redaction_key(simple_redaction_key)
             .build();
         Self(nr)
     }
@@ -417,6 +421,11 @@ pub struct NoticeOrRemark {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nr_type: Option<String>,
+
+    /// Redaction key from the simple redaction extension.
+    #[serde(rename = "simpleRedaction_key")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub simple_redaction_key: Option<String>,
 }
 
 #[buildstructor::buildstructor]
@@ -428,12 +437,14 @@ impl NoticeOrRemark {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
+        simple_redaction_key: Option<String>,
     ) -> Self {
         Self {
             title,
             description: Some(VectorStringish::from(description)),
             links: (!links.is_empty()).then_some(links),
             nr_type,
+            simple_redaction_key,
         }
     }
 
@@ -445,6 +456,7 @@ impl NoticeOrRemark {
         description: Option<Vec<String>>,
         links: Option<Vec<Link>>,
         nr_type: Option<String>,
+        simple_redaction_key: Option<String>,
     ) -> Self {
         let d = description
             .is_some()
@@ -454,6 +466,7 @@ impl NoticeOrRemark {
             description: d,
             links,
             nr_type,
+            simple_redaction_key,
         }
     }
 
