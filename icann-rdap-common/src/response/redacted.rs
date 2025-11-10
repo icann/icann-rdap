@@ -44,9 +44,11 @@ use crate::check::Checks;
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     #[serde(rename = "description")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub type_field: Option<String>,
 }
 
@@ -66,9 +68,11 @@ impl Name {
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Reason {
     #[serde(rename = "description")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub type_field: Option<String>,
 }
 
