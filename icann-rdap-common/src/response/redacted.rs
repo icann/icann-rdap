@@ -97,7 +97,9 @@ impl std::fmt::Display for Reason {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub enum Method {
+    #[default]
     Removal,
     EmptyValue,
     PartialValue,
@@ -141,12 +143,6 @@ impl Default for Name {
             description: Some(String::default()),
             type_field: None,
         }
-    }
-}
-
-impl Default for Method {
-    fn default() -> Self {
-        Self::Removal // according to IETF draft this is the default
     }
 }
 
