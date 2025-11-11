@@ -33,6 +33,7 @@
 //! ```
 //!
 use {
+    crate::prelude::RdapResponse,
     buildstructor::Builder,
     serde::{Deserialize, Serialize},
     std::{any::TypeId, fmt},
@@ -206,6 +207,38 @@ impl Redacted {
     /// Get the type.
     pub fn get_type(&self) -> std::any::TypeId {
         TypeId::of::<Self>()
+    }
+}
+
+static EMPTY_REDACTED_ARRAY: [Redacted; 0] = [];
+
+/// Get the redactions for an [RdapResponse].
+pub fn redactions(rdap: &RdapResponse) -> &[Redacted] {
+    match rdap {
+        RdapResponse::Entity(entity) => {
+            entity.object_common.redacted.as_deref().unwrap_or_default()
+        }
+        RdapResponse::Domain(domain) => {
+            domain.object_common.redacted.as_deref().unwrap_or_default()
+        }
+        RdapResponse::Nameserver(nameserver) => nameserver
+            .object_common
+            .redacted
+            .as_deref()
+            .unwrap_or_default(),
+        RdapResponse::Autnum(autnum) => {
+            autnum.object_common.redacted.as_deref().unwrap_or_default()
+        }
+        RdapResponse::Network(network) => network
+            .object_common
+            .redacted
+            .as_deref()
+            .unwrap_or_default(),
+        _ => {
+            // RFC 9537 is very underspecified when it comes to anything
+            // other than the object classes.
+            &EMPTY_REDACTED_ARRAY
+        }
     }
 }
 
