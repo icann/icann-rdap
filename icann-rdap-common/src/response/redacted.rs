@@ -210,12 +210,11 @@ impl Redacted {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_redaction_WHEN_set_THEN_success() {
+    fn test_redaction_builder() {
         // GIVEN
         let name = Name {
             description: Some("Registry Domain ID".to_string()),
@@ -258,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_WHEN_deserialize_THEN_success() {
+    fn test_redaction_deserialization() {
         // GIVEN
         let expected = r#"
         {
