@@ -4,7 +4,7 @@ use icann_rdap_common::{
     response::{Domain, SecureDns, Variant},
 };
 
-use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
+use crate::rdap::redacted::{self, text_or_registered_redaction};
 
 use super::{
     redacted::REDACTED_TEXT,
@@ -32,7 +32,7 @@ impl ToMd for Domain {
 
         let domain_handle = text_or_registered_redaction(
             params.root,
-            &registered_redactions::RedactedName::RegistryDomainId,
+            &redacted::RedactedName::RegistryDomainId,
             &self.object_common.handle,
             REDACTED_TEXT,
         );
