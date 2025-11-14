@@ -190,6 +190,17 @@ impl ObjectCommon {
             None
         }
     }
+
+    /// Gets the first entity by the given role.
+    ///
+    /// Use [crate::response::EntityRole] to get registered role names.
+    pub fn get_entity_by_role(&self, role: &str) -> Option<&Entity> {
+        self.entities
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .find(|e| e.roles().iter().any(|r| r.eq(role)))
+    }
 }
 
 /// Convenience methods for fields in [ObjectCommon].
@@ -239,5 +250,161 @@ pub trait ObjectCommonFields {
     /// Getter for list of [Entity].
     fn entities(&self) -> &[Entity] {
         self.object_common().entities.as_deref().unwrap_or_default()
+    }
+
+    /// Gets the first entity by the given role.
+    ///
+    /// See [ObjectCommon::get_entity_by_role].
+    fn get_entity_by_role(&self, role: &str) -> Option<&Entity> {
+        self.object_common().get_entity_by_role(role)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_entity(handle: &str, roles: Vec<&str>) -> Entity {
+        Entity::builder()
+            .handle(handle)
+            .roles(roles.into_iter().map(|s| s.to_string()).collect())
+            .build()
+    }
+
+    #[test]
+    fn test_get_entity_by_role_found() {
+        // GIVEN
+        let entity1 = create_test_entity("entity1", vec!["registrant", "administrative"]);
+        let entity2 = create_test_entity("entity2", vec!["registrar", "technical"]);
+        let entity3 = create_test_entity("entity3", vec!["abuse"]);
+
+        let obj_common = ObjectCommon::entity()
+            .and_entities(Some(vec![entity1, entity2, entity3]))
+            .build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("registrar");
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().handle(), Some("entity2"));
+    }
+
+    #[test]
+    fn test_get_entity_by_role_not_found() {
+        // GIVEN
+        let entity1 = create_test_entity("entity1", vec!["registrant", "administrative"]);
+        let entity2 = create_test_entity("entity2", vec!["registrar", "technical"]);
+
+        let obj_common = ObjectCommon::entity()
+            .and_entities(Some(vec![entity1, entity2]))
+            .build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("abuse");
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_entity_by_role_no_entities() {
+        // GIVEN
+        let obj_common = ObjectCommon::entity().build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("registrant");
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_entity_by_role_empty_entities() {
+        // GIVEN
+        let obj_common = ObjectCommon::entity().and_entities(Some(vec![])).build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("registrant");
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_entity_by_role_multiple_matches_returns_first() {
+        // GIVEN
+        let entity1 = create_test_entity("entity1", vec!["registrar", "technical"]);
+        let entity2 = create_test_entity("entity2", vec!["registrar", "administrative"]);
+        let entity3 = create_test_entity("entity3", vec!["abuse"]);
+
+        let obj_common = ObjectCommon::entity()
+            .and_entities(Some(vec![entity1, entity2, entity3]))
+            .build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("registrar");
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().handle(), Some("entity1"));
+    }
+
+    #[test]
+    fn test_get_entity_by_role_entity_with_no_roles() {
+        // GIVEN
+        let entity1 = create_test_entity("entity1", vec![]);
+        let entity2 = create_test_entity("entity2", vec!["registrar"]);
+
+        let obj_common = ObjectCommon::entity()
+            .and_entities(Some(vec![entity1, entity2]))
+            .build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("registrar");
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().handle(), Some("entity2"));
+    }
+
+    #[test]
+    fn test_get_entity_by_role_case_sensitive() {
+        // GIVEN
+        let entity1 = create_test_entity("entity1", vec!["Registrar"]);
+        let entity2 = create_test_entity("entity2", vec!["registrar"]);
+
+        let obj_common = ObjectCommon::entity()
+            .and_entities(Some(vec![entity1, entity2]))
+            .build();
+
+        // WHEN
+        let result_lower = obj_common.get_entity_by_role("registrar");
+        let result_upper = obj_common.get_entity_by_role("Registrar");
+
+        // THEN
+        assert!(result_lower.is_some());
+        assert_eq!(result_lower.unwrap().handle(), Some("entity2"));
+
+        assert!(result_upper.is_some());
+        assert_eq!(result_upper.unwrap().handle(), Some("entity1"));
+    }
+
+    #[test]
+    fn test_get_entity_by_role_with_domain_object() {
+        // GIVEN
+        let entity1 = create_test_entity("entity1", vec!["registrant"]);
+        let entity2 = create_test_entity("entity2", vec!["registrar"]);
+
+        let obj_common = ObjectCommon::domain()
+            .and_entities(Some(vec![entity1, entity2]))
+            .build();
+
+        // WHEN
+        let result = obj_common.get_entity_by_role("registrant");
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().handle(), Some("entity1"));
     }
 }
