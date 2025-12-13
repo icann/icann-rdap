@@ -1,5 +1,7 @@
 //! Changes RFC 9537 redactions to simple redactions
 
+use crate::rdap::redacted::simplify_email::simplify_registrant_email;
+use crate::rdap::redacted::simplify_email::simplify_tech_email;
 use crate::rdap::redacted::simplify_ids::simplify_registry_domain_id;
 use crate::rdap::redacted::simplify_ids::simplify_registry_registrant_id;
 use crate::rdap::redacted::simplify_ids::simplify_registry_tech_id;
@@ -74,12 +76,12 @@ fn simplify_domain_redactions(mut domain: Box<Domain>, only_pre_path: bool) -> R
                     RedactedName::RegistrantPhoneExt => simplify_registrant_phone_ext(domain),
                     RedactedName::RegistrantFax => simplify_registrant_fax(domain),
                     RedactedName::RegistrantFaxExt => simplify_registrant_fax_ext(domain),
-                    RedactedName::RegistrantEmail => todo!(),
+                    RedactedName::RegistrantEmail => simplify_registrant_email(domain),
                     RedactedName::RegistryTechId => simplify_registry_tech_id(domain),
                     RedactedName::TechName => simplify_tech_name(domain),
                     RedactedName::TechPhone => simplify_tech_phone(domain),
                     RedactedName::TechPhoneExt => simplify_tech_phone_ext(domain),
-                    RedactedName::TechEmail => todo!(),
+                    RedactedName::TechEmail => simplify_tech_email(domain),
                 };
             }
         }
