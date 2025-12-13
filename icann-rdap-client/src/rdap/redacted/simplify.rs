@@ -5,6 +5,12 @@ use crate::rdap::redacted::simplify_ids::simplify_registry_registrant_id;
 use crate::rdap::redacted::simplify_ids::simplify_registry_tech_id;
 use crate::rdap::redacted::simplify_names::simplify_registrant_name;
 use crate::rdap::redacted::simplify_names::simplify_tech_name;
+use crate::rdap::redacted::simplify_phones::simplify_registrant_fax;
+use crate::rdap::redacted::simplify_phones::simplify_registrant_fax_ext;
+use crate::rdap::redacted::simplify_phones::simplify_registrant_phone;
+use crate::rdap::redacted::simplify_phones::simplify_registrant_phone_ext;
+use crate::rdap::redacted::simplify_phones::simplify_tech_phone;
+use crate::rdap::redacted::simplify_phones::simplify_tech_phone_ext;
 use std::str::FromStr;
 
 use icann_rdap_common::prelude::{redacted::Redacted, Domain, RdapResponse, Remark, ToResponse};
@@ -64,15 +70,15 @@ fn simplify_domain_redactions(mut domain: Box<Domain>, only_pre_path: bool) -> R
                     RedactedName::RegistrantStreet => todo!(),
                     RedactedName::RegistrantCity => todo!(),
                     RedactedName::RegistrantPostalCode => todo!(),
-                    RedactedName::RegistrantPhone => todo!(),
-                    RedactedName::RegistrantPhoneExt => todo!(),
-                    RedactedName::RegistrantFax => todo!(),
-                    RedactedName::RegistrantFaxExt => todo!(),
+                    RedactedName::RegistrantPhone => simplify_registrant_phone(domain),
+                    RedactedName::RegistrantPhoneExt => simplify_registrant_phone_ext(domain),
+                    RedactedName::RegistrantFax => simplify_registrant_fax(domain),
+                    RedactedName::RegistrantFaxExt => simplify_registrant_fax_ext(domain),
                     RedactedName::RegistrantEmail => todo!(),
                     RedactedName::RegistryTechId => simplify_registry_tech_id(domain),
                     RedactedName::TechName => simplify_tech_name(domain),
-                    RedactedName::TechPhone => todo!(),
-                    RedactedName::TechPhoneExt => todo!(),
+                    RedactedName::TechPhone => simplify_tech_phone(domain),
+                    RedactedName::TechPhoneExt => simplify_tech_phone_ext(domain),
                     RedactedName::TechEmail => todo!(),
                 };
             }
