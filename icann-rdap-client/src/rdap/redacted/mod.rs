@@ -9,3 +9,4 @@ pub(crate) mod registered_redactions;
 pub(crate) mod simplify;
 mod simplify_ids;
 mod simplify_names;
+mod simplify_phones;
