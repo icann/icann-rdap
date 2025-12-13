@@ -117,140 +117,118 @@ fn simplify_phone_ext(mut domain: Box<Domain>, role: &EntityRole, feature: &str)
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::prelude::*;
-
-    use super::*;
+    use crate::rdap::redacted::simplify_phones::{
+        simplify_registrant_fax, simplify_registrant_phone, simplify_tech_phone, REDACTED_FAX,
+        REDACTED_PHONE,
+    };
+    use icann_rdap_common::prelude::{Contact, Domain, Entity, Phone};
 
     fn given_domain_with_phone_contact(
         role: &str,
         phone_number: &str,
         feature: &str,
     ) -> Box<Domain> {
-        let json = format!(
-            r#"
-        {{
-            "objectClassName": "domain",
-            "ldhName": "example.com",
-            "entities": [
-                {{
-                    "objectClassName": "entity",
-                    "handle": "test-entity",
-                    "roles": ["{}"],
-                    "vcardArray": [
-                        "vcard",
-                        [
-                            ["version", {{}}, "text", "4.0"],
-                            ["fn", {{}}, "text", "Test User"],
-                            ["tel", {{"type": ["{}"]}}, "text", "{}"]
-                        ]
-                    ]
-                }}
-            ]
-        }}
-        "#,
-            role, feature, phone_number
-        );
+        let phone = Phone::builder()
+            .phone(phone_number.to_string())
+            .features(vec![feature.to_string()])
+            .build();
 
-        serde_json::from_str(&json).unwrap()
+        let contact = Contact::builder()
+            .full_name("Test User")
+            .phone(phone)
+            .build();
+
+        let entity = Entity::builder()
+            .handle("test-entity")
+            .role(role.to_string())
+            .contact(contact)
+            .build();
+
+        let domain = Domain::response_obj()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        Box::new(domain)
     }
 
     fn given_domain_without_entities() -> Box<Domain> {
-        let json = r#"
-        {
-            "objectClassName": "domain",
-            "ldhName": "example.com"
-        }
-        "#;
+        let domain = Domain::response_obj().ldh_name("example.com").build();
 
-        serde_json::from_str(&json).unwrap()
+        Box::new(domain)
     }
 
     fn given_domain_with_entity_without_contact(role: &str) -> Box<Domain> {
-        let json = format!(
-            r#"
-        {{
-            "objectClassName": "domain",
-            "ldhName": "example.com",
-            "entities": [
-                {{
-                    "objectClassName": "entity",
-                    "handle": "test-entity",
-                    "roles": ["{}"]
-                }}
-            ]
-        }}
-        "#,
-            role
-        );
+        let entity = Entity::builder()
+            .handle("test-entity")
+            .role(role.to_string())
+            .build();
 
-        serde_json::from_str(&json).unwrap()
+        let domain = Domain::response_obj()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        Box::new(domain)
     }
 
     fn given_domain_with_contact_without_phones(role: &str) -> Box<Domain> {
-        let json = format!(
-            r#"
-        {{
-            "objectClassName": "domain",
-            "ldhName": "example.com",
-            "entities": [
-                {{
-                    "objectClassName": "entity",
-                    "handle": "test-entity",
-                    "roles": ["{}"],
-                    "vcardArray": [
-                        "vcard",
-                        [
-                            ["version", {{}}, "text", "4.0"],
-                            ["fn", {{}}, "text", "Test User"]
-                        ]
-                    ]
-                }}
-            ]
-        }}
-        "#,
-            role
-        );
+        let contact = Contact::builder().full_name("Test User").build();
 
-        serde_json::from_str(&json).unwrap()
+        let entity = Entity::builder()
+            .handle("test-entity")
+            .role(role.to_string())
+            .contact(contact)
+            .build();
+
+        let domain = Domain::response_obj()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        Box::new(domain)
     }
 
     fn given_domain_with_multiple_entities() -> Box<Domain> {
-        let json = r#"
-        {
-            "objectClassName": "domain",
-            "ldhName": "example.com",
-            "entities": [
-                {
-                    "objectClassName": "entity",
-                    "handle": "registrant-entity",
-                    "roles": ["registrant"],
-                    "vcardArray": [
-                        "vcard",
-                        [
-                            ["version", {}, "text", "4.0"],
-                            ["fn", {}, "text", "Registrant User"],
-                            ["tel", {"type": ["voice"]}, "text", "+1-555-111-1111"]
-                        ]
-                    ]
-                },
-                {
-                    "objectClassName": "entity",
-                    "handle": "admin-entity",
-                    "roles": ["administrative"],
-                    "vcardArray": [
-                        "vcard",
-                        [
-                            ["version", {}, "text", "4.0"],
-                            ["fn", {}, "text", "Admin User"],
-                            ["tel", {"type": ["voice"]}, "text", "+1-555-222-2222"]
-                        ]
-                    ]
-                }
-            ]
-        }
-        "#;
+        let registrant_phone = Phone::builder()
+            .phone("+1-555-111-1111".to_string())
+            .features(vec!["voice".to_string()])
+            .build();
 
-        serde_json::from_str(&json).unwrap()
+        let registrant_contact = Contact::builder()
+            .full_name("Registrant User")
+            .phone(registrant_phone)
+            .build();
+
+        let registrant_entity = Entity::builder()
+            .handle("registrant-entity")
+            .role("registrant".to_string())
+            .contact(registrant_contact)
+            .build();
+
+        let admin_phone = Phone::builder()
+            .phone("+1-555-222-2222".to_string())
+            .features(vec!["voice".to_string()])
+            .build();
+
+        let admin_contact = Contact::builder()
+            .full_name("Admin User")
+            .phone(admin_phone)
+            .build();
+
+        let admin_entity = Entity::builder()
+            .handle("admin-entity")
+            .role("administrative".to_string())
+            .contact(admin_contact)
+            .build();
+
+        let domain = Domain::response_obj()
+            .ldh_name("example.com")
+            .entity(registrant_entity)
+            .entity(admin_entity)
+            .build();
+
+        Box::new(domain)
     }
 
     #[test]
