@@ -4,10 +4,7 @@ use icann_rdap_common::{
     response::{Domain, SecureDns, Variant},
 };
 
-use crate::rdap::redacted::{self, text_or_registered_redaction};
-
 use super::{
-    redacted::REDACTED_TEXT,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
     types::{events_to_table, links_to_table, public_ids_to_table},
@@ -30,13 +27,6 @@ impl ToMd for Domain {
         // multipart data
         let mut table = MultiPartTable::new();
 
-        let domain_handle = text_or_registered_redaction(
-            params.root,
-            &redacted::RedactedName::RegistryDomainId,
-            &self.object_common.handle,
-            REDACTED_TEXT,
-        );
-
         // summary
         table = table.summary(header_text);
 
@@ -48,7 +38,7 @@ impl ToMd for Domain {
             .header_ref(&"Identifiers")
             .and_nv_ref_maybe(&"LDH Name", &self.ldh_name)
             .and_nv_ref_maybe(&"Unicode Name", &self.unicode_name)
-            .and_nv_ref_maybe(&"Handle", &domain_handle);
+            .and_nv_ref_maybe(&"Handle", &self.handle());
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
