@@ -69,23 +69,35 @@ fn simplify_domain_redactions(mut domain: Box<Domain>, only_pre_path: bool) -> R
             let r_name = RedactedName::from_str(r_type);
             if let Ok(registered_redaction) = r_name {
                 domain = match registered_redaction {
-                    RedactedName::RegistryDomainId => simplify_registry_domain_id(domain),
-                    RedactedName::RegistryRegistrantId => simplify_registry_registrant_id(domain),
-                    RedactedName::RegistrantName => simplify_registrant_name(domain),
-                    RedactedName::RegistrantOrganization => simplify_registrant_org(domain),
-                    RedactedName::RegistrantStreet => simplify_registrant_street(domain),
-                    RedactedName::RegistrantCity => simplify_registrant_city(domain),
-                    RedactedName::RegistrantPostalCode => simplify_registrant_postal_code(domain),
-                    RedactedName::RegistrantPhone => simplify_registrant_phone(domain),
-                    RedactedName::RegistrantPhoneExt => simplify_registrant_phone_ext(domain),
-                    RedactedName::RegistrantFax => simplify_registrant_fax(domain),
-                    RedactedName::RegistrantFaxExt => simplify_registrant_fax_ext(domain),
-                    RedactedName::RegistrantEmail => simplify_registrant_email(domain),
-                    RedactedName::RegistryTechId => simplify_registry_tech_id(domain),
-                    RedactedName::TechName => simplify_tech_name(domain),
-                    RedactedName::TechPhone => simplify_tech_phone(domain),
-                    RedactedName::TechPhoneExt => simplify_tech_phone_ext(domain),
-                    RedactedName::TechEmail => simplify_tech_email(domain),
+                    RedactedName::RegistryDomainId => {
+                        simplify_registry_domain_id(domain, redaction)
+                    }
+                    RedactedName::RegistryRegistrantId => {
+                        simplify_registry_registrant_id(domain, redaction)
+                    }
+                    RedactedName::RegistrantName => simplify_registrant_name(domain, redaction),
+                    RedactedName::RegistrantOrganization => {
+                        simplify_registrant_org(domain, redaction)
+                    }
+                    RedactedName::RegistrantStreet => simplify_registrant_street(domain, redaction),
+                    RedactedName::RegistrantCity => simplify_registrant_city(domain, redaction),
+                    RedactedName::RegistrantPostalCode => {
+                        simplify_registrant_postal_code(domain, redaction)
+                    }
+                    RedactedName::RegistrantPhone => simplify_registrant_phone(domain, redaction),
+                    RedactedName::RegistrantPhoneExt => {
+                        simplify_registrant_phone_ext(domain, redaction)
+                    }
+                    RedactedName::RegistrantFax => simplify_registrant_fax(domain, redaction),
+                    RedactedName::RegistrantFaxExt => {
+                        simplify_registrant_fax_ext(domain, redaction)
+                    }
+                    RedactedName::RegistrantEmail => simplify_registrant_email(domain, redaction),
+                    RedactedName::RegistryTechId => simplify_registry_tech_id(domain, redaction),
+                    RedactedName::TechName => simplify_tech_name(domain, redaction),
+                    RedactedName::TechPhone => simplify_tech_phone(domain, redaction),
+                    RedactedName::TechPhoneExt => simplify_tech_phone_ext(domain, redaction),
+                    RedactedName::TechEmail => simplify_tech_email(domain, redaction),
                 };
             }
         }
@@ -106,6 +118,7 @@ fn is_only_pre_path(only_pre_path: bool, redaction: &Redacted) -> bool {
 pub(crate) fn add_remark(
     key: &str,
     desc: &str,
+    redacted: &Redacted,
     remarks: Option<Vec<Remark>>,
 ) -> Option<Vec<Remark>> {
     let mut remarks = remarks.unwrap_or_default();
@@ -115,9 +128,15 @@ pub(crate) fn add_remark(
             .unwrap_or_default()
             .eq(key)
     }) {
+        let mut remark_desc = vec![desc.to_string()];
+        if let Some(reason) = redacted.reason() {
+            if let Some(reason_desc) = reason.description() {
+                remark_desc.push(reason_desc.to_string());
+            }
+        }
         let remark = Remark::builder()
             .simple_redaction_key(key)
-            .description_entry(desc)
+            .description(remark_desc)
             .build();
         remarks.push(remark);
     }
@@ -129,6 +148,12 @@ mod tests {
     use super::{add_remark, is_only_pre_path};
 
     use icann_rdap_common::response::redacted::{Name, Redacted};
+
+    fn get_test_redacted() -> Redacted {
+        Redacted::builder()
+            .name(Name::builder().type_field("Tech Email").build())
+            .build()
+    }
 
     #[test]
     fn test_is_only_pre_path_returns_true_when_only_pre_path_and_pre_path_exists() {
@@ -302,9 +327,10 @@ mod tests {
         let key = "test_key";
         let desc = "test description";
         let remarks = None;
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should return a vector with one remark
         assert!(result.is_some());
@@ -323,9 +349,10 @@ mod tests {
         let key = "test_key";
         let desc = "test description";
         let remarks = Some(vec![]);
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should return a vector with one remark
         assert!(result.is_some());
@@ -348,9 +375,10 @@ mod tests {
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![existing_remark]);
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should return a vector with two remarks
         assert!(result.is_some());
@@ -377,9 +405,10 @@ mod tests {
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![existing_remark]);
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should return the original vector unchanged (no duplicate key)
         assert!(result.is_some());
@@ -406,9 +435,10 @@ mod tests {
             .description_entry("description2")
             .build();
         let remarks = Some(vec![remark1, remark2]);
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should return a vector with three remarks
         assert!(result.is_some());
@@ -437,9 +467,10 @@ mod tests {
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![remark1, remark2]);
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should return the original vector unchanged (no duplicate key)
         assert!(result.is_some());
@@ -462,9 +493,10 @@ mod tests {
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![existing_remark]);
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should add the new remark since no existing remark has the same key
         assert!(result.is_some());
@@ -484,9 +516,10 @@ mod tests {
         let key = "";
         let desc = "";
         let remarks = None;
+        let redacted = get_test_redacted();
 
         // WHEN calling add_remark
-        let result = add_remark(key, desc, remarks);
+        let result = add_remark(key, desc, &redacted, remarks);
 
         // THEN it should still create a remark with empty strings
         assert!(result.is_some());

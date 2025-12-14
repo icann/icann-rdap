@@ -1,21 +1,21 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{Domain, EntityRole};
+use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
 
 use crate::rdap::redacted::add_remark;
 
 static REDACTED_EMAIL: &str = "redacted_email@redacted.invalid";
 static REDACTED_EMAIL_DESC: &str = "Email redacted.";
 
-pub(crate) fn simplify_registrant_email(domain: Box<Domain>) -> Box<Domain> {
-    simplify_email(domain, &EntityRole::Registrant)
+pub(crate) fn simplify_registrant_email(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
+    simplify_email(domain, &EntityRole::Registrant, redaction)
 }
 
-pub(crate) fn simplify_tech_email(domain: Box<Domain>) -> Box<Domain> {
-    simplify_email(domain, &EntityRole::Technical)
+pub(crate) fn simplify_tech_email(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
+    simplify_email(domain, &EntityRole::Technical, redaction)
 }
 
-fn simplify_email(mut domain: Box<Domain>, role: &EntityRole) -> Box<Domain> {
+fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redacted) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&role.to_string()) {
@@ -29,6 +29,7 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole) -> Box<Domain> {
                         entity.object_common.remarks = add_remark(
                             REDACTED_EMAIL,
                             REDACTED_EMAIL_DESC,
+                            redaction,
                             entity.object_common.remarks.clone(),
                         );
                     }
@@ -43,12 +44,19 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole) -> Box<Domain> {
 
 #[cfg(test)]
 mod tests {
+    use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::Remark;
     use icann_rdap_common::prelude::{Contact, Email, Entity};
     use icann_rdap_common::response::ObjectCommonFields;
     use serde_json::Value;
 
     use super::*;
+
+    fn get_test_redacted() -> Redacted {
+        Redacted::builder()
+            .name(Name::builder().type_field("Tech Email").build())
+            .build()
+    }
 
     #[test]
     fn test_simplify_registrant_email_with_registrant_entity_with_contact_and_emails() {
@@ -80,7 +88,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant's contact emails should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -149,7 +157,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should have vcard_array but no remark (no emails to redact)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -176,7 +184,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged (no contact to modify)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -216,7 +224,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN only the first registrant should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -267,7 +275,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant entity should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -310,7 +318,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN no entities should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -334,7 +342,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged
         assert!(result.object_common.entities.is_none());
@@ -369,7 +377,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant should have both existing and new remarks
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -431,7 +439,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant should not have duplicate redaction remark
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -481,7 +489,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain));
+        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
 
         // THEN the entity should be redacted (it has registrant role)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -521,7 +529,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity's contact emails should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -580,7 +588,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged (no contact to modify)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -619,7 +627,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN only the first technical entity should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -670,7 +678,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -713,7 +721,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN no entities should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -737,7 +745,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged
         assert!(result.object_common.entities.is_none());
@@ -772,7 +780,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity should have both existing and new remarks
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -834,7 +842,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity should not have duplicate redaction remark
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -884,7 +892,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the entity should be redacted (it has technical role)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -920,7 +928,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain));
+        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity's contact should have vcard_array but no remark
         let entities = result.object_common.entities.as_ref().unwrap();

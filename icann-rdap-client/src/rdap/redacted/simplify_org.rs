@@ -1,13 +1,16 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{Domain, EntityRole};
+use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
 
 use crate::rdap::redacted::add_remark;
 
 static REDACTED_ORG: &str = "////REDACTED_ORGANIZATION////";
 static REDACTED_ORG_DESC: &str = "Organization redacted.";
 
-pub(crate) fn simplify_registrant_org(mut domain: Box<Domain>) -> Box<Domain> {
+pub(crate) fn simplify_registrant_org(
+    mut domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
@@ -18,6 +21,7 @@ pub(crate) fn simplify_registrant_org(mut domain: Box<Domain>) -> Box<Domain> {
                     entity.object_common.remarks = add_remark(
                         REDACTED_ORG,
                         REDACTED_ORG_DESC,
+                        redaction,
                         entity.object_common.remarks.clone(),
                     );
                     break; // Only modify first registrant
@@ -30,9 +34,15 @@ pub(crate) fn simplify_registrant_org(mut domain: Box<Domain>) -> Box<Domain> {
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::prelude::*;
+    use icann_rdap_common::prelude::{redacted::Name, *};
 
     use super::*;
+
+    fn get_test_redacted() -> Redacted {
+        Redacted::builder()
+            .name(Name::builder().type_field("Tech Email").build())
+            .build()
+    }
 
     #[test]
     fn given_domain_with_registrant_entity_when_simplify_registrant_org_then_redacts_organization()
@@ -52,7 +62,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_org(Box::new(domain));
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -110,7 +120,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_org(Box::new(domain));
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -143,7 +153,7 @@ mod tests {
         let domain = Domain::builder().ldh_name("example.com").build();
 
         // When
-        let result = simplify_registrant_org(Box::new(domain));
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
 
         // Then
         assert!(result.object_common.entities.is_none());
@@ -167,7 +177,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_org(Box::new(domain));
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -197,7 +207,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_org(Box::new(domain));
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -231,7 +241,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_org(Box::new(domain));
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();

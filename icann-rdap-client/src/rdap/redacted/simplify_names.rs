@@ -1,13 +1,16 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{Domain, EntityRole};
+use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
 
 use crate::rdap::redacted::add_remark;
 
 static REDACTED_NAME: &str = "////REDACTED_NAME////";
 static REDACTED_NAME_DESC: &str = "Name redacted.";
 
-pub(crate) fn simplify_registrant_name(mut domain: Box<Domain>) -> Box<Domain> {
+pub(crate) fn simplify_registrant_name(
+    mut domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
@@ -18,6 +21,7 @@ pub(crate) fn simplify_registrant_name(mut domain: Box<Domain>) -> Box<Domain> {
                     entity.object_common.remarks = add_remark(
                         REDACTED_NAME,
                         REDACTED_NAME_DESC,
+                        redaction,
                         entity.object_common.remarks.clone(),
                     );
                     break; // Only modify first registrant
@@ -28,7 +32,7 @@ pub(crate) fn simplify_registrant_name(mut domain: Box<Domain>) -> Box<Domain> {
     domain
 }
 
-pub(crate) fn simplify_tech_name(mut domain: Box<Domain>) -> Box<Domain> {
+pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&EntityRole::Technical.to_string()) {
@@ -39,6 +43,7 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>) -> Box<Domain> {
                     entity.object_common.remarks = add_remark(
                         REDACTED_NAME,
                         REDACTED_NAME_DESC,
+                        redaction,
                         entity.object_common.remarks.clone(),
                     );
                     break; // Only modify first tech
@@ -51,12 +56,19 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>) -> Box<Domain> {
 
 #[cfg(test)]
 mod tests {
+    use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::Remark;
     use icann_rdap_common::prelude::{Contact, Entity};
     use icann_rdap_common::response::ObjectCommonFields;
     use serde_json::Value;
 
     use super::*;
+
+    fn get_test_redacted() -> Redacted {
+        Redacted::builder()
+            .name(Name::builder().type_field("Tech Email").build())
+            .build()
+    }
 
     #[test]
     fn test_simplify_registrant_name_with_registrant_entity_with_contact() {
@@ -76,7 +88,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant's contact full name should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -136,7 +148,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged (no contact to modify)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -171,7 +183,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN only the first registrant should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -218,7 +230,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant entity should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -261,7 +273,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN no entities should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -285,7 +297,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged
         assert!(result.object_common.entities.is_none());
@@ -316,7 +328,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant should have both existing and new remarks
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -374,7 +386,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant should not have duplicate redaction remark
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -420,7 +432,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the entity should be redacted (it has registrant role)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -456,7 +468,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_registrant_name
-        let result = simplify_registrant_name(Box::new(domain));
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
 
         // THEN the registrant's contact should have redacted full name
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -518,7 +530,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity's contact full name should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -578,7 +590,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged (no contact to modify)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -613,7 +625,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN only the first technical entity should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -660,7 +672,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -703,7 +715,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN no entities should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -727,7 +739,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the domain should be unchanged
         assert!(result.object_common.entities.is_none());
@@ -758,7 +770,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity should have both existing and new remarks
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -816,7 +828,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity should not have duplicate redaction remark
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -862,7 +874,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the entity should be redacted (it has technical role)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -898,7 +910,7 @@ mod tests {
             .build();
 
         // WHEN calling simplify_tech_name
-        let result = simplify_tech_name(Box::new(domain));
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
 
         // THEN the technical entity's contact should have redacted full name
         let entities = result.object_common.entities.as_ref().unwrap();

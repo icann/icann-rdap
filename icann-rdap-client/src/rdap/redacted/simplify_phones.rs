@@ -2,7 +2,7 @@
 
 use std::sync::LazyLock;
 
-use icann_rdap_common::prelude::{Domain, EntityRole};
+use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
 use regex::Regex;
 
 use crate::rdap::redacted::add_remark;
@@ -19,32 +19,43 @@ static REDACTED_FAX_DESC: &str = "Fax redacted.";
 static REDACTED_FAX_EXT: &str = "////REDACTED_FAX_EXT////";
 static REDACTED_FAX_EXT_DESC: &str = "Fax extension redacted.";
 
-pub(crate) fn simplify_registrant_phone(domain: Box<Domain>) -> Box<Domain> {
-    simplify_phone(domain, &EntityRole::Registrant, "voice")
+pub(crate) fn simplify_registrant_phone(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
+    simplify_phone(domain, &EntityRole::Registrant, "voice", redaction)
 }
 
-pub(crate) fn simplify_registrant_phone_ext(domain: Box<Domain>) -> Box<Domain> {
-    simplify_phone_ext(domain, &EntityRole::Registrant, "voice")
+pub(crate) fn simplify_registrant_phone_ext(
+    domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
+    simplify_phone_ext(domain, &EntityRole::Registrant, "voice", redaction)
 }
 
-pub(crate) fn simplify_registrant_fax(domain: Box<Domain>) -> Box<Domain> {
-    simplify_phone(domain, &EntityRole::Registrant, "fax")
+pub(crate) fn simplify_registrant_fax(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
+    simplify_phone(domain, &EntityRole::Registrant, "fax", redaction)
 }
 
-pub(crate) fn simplify_registrant_fax_ext(domain: Box<Domain>) -> Box<Domain> {
-    simplify_phone_ext(domain, &EntityRole::Registrant, "fax")
+pub(crate) fn simplify_registrant_fax_ext(
+    domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
+    simplify_phone_ext(domain, &EntityRole::Registrant, "fax", redaction)
 }
 
-pub(crate) fn simplify_tech_phone(domain: Box<Domain>) -> Box<Domain> {
-    simplify_phone(domain, &EntityRole::Technical, "voice")
+pub(crate) fn simplify_tech_phone(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
+    simplify_phone(domain, &EntityRole::Technical, "voice", redaction)
 }
 
-pub(crate) fn simplify_tech_phone_ext(domain: Box<Domain>) -> Box<Domain> {
-    simplify_phone_ext(domain, &EntityRole::Technical, "voice")
+pub(crate) fn simplify_tech_phone_ext(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
+    simplify_phone_ext(domain, &EntityRole::Technical, "voice", redaction)
 }
 
-fn simplify_phone(mut domain: Box<Domain>, role: &EntityRole, feature: &str) -> Box<Domain> {
-    let (redaction, redaction_desc) = match feature {
+fn simplify_phone(
+    mut domain: Box<Domain>,
+    role: &EntityRole,
+    feature: &str,
+    redaction: &Redacted,
+) -> Box<Domain> {
+    let (redaction_key, redaction_desc) = match feature {
         "fax" => (REDACTED_FAX, REDACTED_FAX_DESC),
         _ => (REDACTED_PHONE, REDACTED_PHONE_DESC),
     };
@@ -56,10 +67,11 @@ fn simplify_phone(mut domain: Box<Domain>, role: &EntityRole, feature: &str) -> 
                     if let Some(mut phones) = contact.phones {
                         for phone in phones.iter_mut() {
                             if phone.features().contains(&feature.to_string()) {
-                                phone.phone = redaction.to_string();
+                                phone.phone = redaction_key.to_string();
                                 entity.object_common.remarks = add_remark(
-                                    redaction,
+                                    redaction_key,
                                     redaction_desc,
+                                    redaction,
                                     entity.object_common.remarks.clone(),
                                 );
                             }
@@ -75,8 +87,13 @@ fn simplify_phone(mut domain: Box<Domain>, role: &EntityRole, feature: &str) -> 
     domain
 }
 
-fn simplify_phone_ext(mut domain: Box<Domain>, role: &EntityRole, feature: &str) -> Box<Domain> {
-    let (redaction, redaction_desc) = match feature {
+fn simplify_phone_ext(
+    mut domain: Box<Domain>,
+    role: &EntityRole,
+    feature: &str,
+    redaction: &Redacted,
+) -> Box<Domain> {
+    let (redaction_key, redaction_desc) = match feature {
         "fax" => (REDACTED_FAX_EXT, REDACTED_FAX_EXT_DESC),
         _ => (REDACTED_PHONE_EXT, REDACTED_PHONE_EXT_DESC),
     };
@@ -92,14 +109,18 @@ fn simplify_phone_ext(mut domain: Box<Domain>, role: &EntityRole, feature: &str)
                                     static EXT_RE: LazyLock<Regex> =
                                         LazyLock::new(|| Regex::new(r";ext=[^;]*").unwrap());
                                     phone.phone = EXT_RE
-                                        .replace_all(&phone.phone, format!(";ext={}", redaction))
+                                        .replace_all(
+                                            &phone.phone,
+                                            format!(";ext={}", redaction_key),
+                                        )
                                         .to_string();
                                 } else {
-                                    phone.phone = format!("{} {}", phone.phone, redaction);
+                                    phone.phone = format!("{} {}", phone.phone, redaction_key);
                                 }
                                 entity.object_common.remarks = add_remark(
-                                    redaction,
+                                    redaction_key,
                                     redaction_desc,
+                                    redaction,
                                     entity.object_common.remarks.clone(),
                                 );
                             }
@@ -122,7 +143,16 @@ mod tests {
         simplify_registrant_phone_ext, simplify_tech_phone, simplify_tech_phone_ext, REDACTED_FAX,
         REDACTED_PHONE,
     };
-    use icann_rdap_common::prelude::{Contact, Domain, Entity, Phone};
+    use icann_rdap_common::prelude::{
+        redacted::{Name, Redacted},
+        Contact, Domain, Entity, Phone,
+    };
+
+    fn get_test_redacted() -> Redacted {
+        Redacted::builder()
+            .name(Name::builder().type_field("Tech Email").build())
+            .build()
+    }
 
     fn given_domain_with_phone_contact(
         role: &str,
@@ -324,7 +354,7 @@ mod tests {
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "voice");
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN the phone should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -342,7 +372,7 @@ mod tests {
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4568", "fax");
 
         // WHEN simplifying registrant fax
-        let result = simplify_registrant_fax(domain);
+        let result = simplify_registrant_fax(domain, &get_test_redacted());
 
         // THEN the fax should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -360,7 +390,7 @@ mod tests {
         let domain = given_domain_with_phone_contact("technical", "+1-555-987-6543", "voice");
 
         // WHEN simplifying technical phone
-        let result = simplify_tech_phone(domain);
+        let result = simplify_tech_phone(domain, &get_test_redacted());
 
         // THEN the phone should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -378,7 +408,7 @@ mod tests {
         let domain = given_domain_with_phone_contact("administrative", "+1-555-123-4567", "voice");
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN the phone should not be redacted (role doesn't match)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -396,7 +426,7 @@ mod tests {
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "sms");
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN the phone should not be redacted (feature doesn't match)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -414,7 +444,7 @@ mod tests {
         let domain = given_domain_without_entities();
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN no entities should be present and no error should occur
         assert!(result.object_common.entities.is_none());
@@ -426,7 +456,7 @@ mod tests {
         let domain = given_domain_with_entity_without_contact("registrant");
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN the entity should be preserved but have no contact
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -440,7 +470,7 @@ mod tests {
         let domain = given_domain_with_contact_without_phones("registrant");
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN the contact should be preserved but have no phones
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -455,7 +485,7 @@ mod tests {
         let domain = given_domain_with_multiple_entities();
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
         let entities = result.object_common.entities.as_ref().unwrap();
 
         // THEN only the registrant entity's phone should be redacted
@@ -475,7 +505,7 @@ mod tests {
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "voice");
 
         // WHEN simplifying registrant phone
-        let result = simplify_registrant_phone(domain);
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
 
         // THEN a remark about phone redaction should be added
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -499,7 +529,7 @@ mod tests {
             given_domain_with_phone_extension("registrant", "+1-555-123-4567;ext=123", "voice");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the phone extension should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -522,7 +552,7 @@ mod tests {
             given_domain_with_phone_extension("registrant", "+1-555-123-4568;ext=456", "fax");
 
         // WHEN simplifying registrant fax extension
-        let result = simplify_registrant_fax_ext(domain);
+        let result = simplify_registrant_fax_ext(domain, &get_test_redacted());
 
         // THEN the fax extension should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -545,7 +575,7 @@ mod tests {
             given_domain_with_phone_extension("technical", "+1-555-987-6543;ext=789", "voice");
 
         // WHEN simplifying technical phone extension
-        let result = simplify_tech_phone_ext(domain);
+        let result = simplify_tech_phone_ext(domain, &get_test_redacted());
 
         // THEN the phone extension should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -567,7 +597,7 @@ mod tests {
         let domain = given_domain_with_phone_extension("registrant", "+1-555-123-4567", "voice");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the redaction should be appended to the phone number
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -590,7 +620,7 @@ mod tests {
             given_domain_with_phone_extension("administrative", "+1-555-123-4567;ext=123", "voice");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the phone extension should not be redacted (role doesn't match)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -610,7 +640,7 @@ mod tests {
             given_domain_with_phone_extension("registrant", "+1-555-123-4567;ext=123", "sms");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the phone extension should not be redacted (feature doesn't match)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -629,7 +659,7 @@ mod tests {
         let domain = given_domain_with_multiple_phones_with_extensions("registrant");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN only phones with voice feature should be modified
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -654,7 +684,7 @@ mod tests {
         let domain = given_domain_with_complex_phone_extensions("registrant");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN only the extension part should be redacted, other parameters preserved
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -677,7 +707,7 @@ mod tests {
             given_domain_with_phone_extension("registrant", "+1-555-123-4568;ext=456", "fax");
 
         // WHEN simplifying registrant voice phone extension (not fax)
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the fax extension should not be redacted (feature doesn't match voice)
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -696,7 +726,7 @@ mod tests {
             given_domain_with_phone_extension("registrant", "+1-555-123-4567;ext=123", "voice");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN a remark about phone extension redaction should be added
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -717,7 +747,7 @@ mod tests {
         let domain = given_domain_without_entities();
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN no entities should be present and no error should occur
         assert!(result.object_common.entities.is_none());
@@ -729,7 +759,7 @@ mod tests {
         let domain = given_domain_with_entity_without_contact("registrant");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the entity should be preserved but have no contact
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -743,7 +773,7 @@ mod tests {
         let domain = given_domain_with_contact_without_phones("registrant");
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(domain);
+        let result = simplify_registrant_phone_ext(domain, &get_test_redacted());
 
         // THEN the contact should be preserved but have no phones
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -795,7 +825,7 @@ mod tests {
             .build();
 
         // WHEN simplifying registrant phone extension
-        let result = simplify_registrant_phone_ext(Box::new(domain));
+        let result = simplify_registrant_phone_ext(Box::new(domain), &get_test_redacted());
         let entities = result.object_common.entities.as_ref().unwrap();
 
         // THEN only the registrant entity's phone extension should be redacted

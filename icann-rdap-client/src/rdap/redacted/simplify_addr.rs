@@ -1,6 +1,6 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{Domain, EntityRole};
+use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
 
 use crate::rdap::redacted::add_remark;
 
@@ -13,7 +13,10 @@ static REDACTED_CITY_DESC: &str = "City redacted.";
 static REDACTED_POSTAL_CODE: &str = "////REDACTED_POSTAL_CODE////";
 static REDACTED_POSTAL_CODE_DESC: &str = "Postal code redacted.";
 
-pub(crate) fn simplify_registrant_street(mut domain: Box<Domain>) -> Box<Domain> {
+pub(crate) fn simplify_registrant_street(
+    mut domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
@@ -27,6 +30,7 @@ pub(crate) fn simplify_registrant_street(mut domain: Box<Domain>) -> Box<Domain>
                         entity.object_common.remarks = add_remark(
                             REDACTED_STREET,
                             REDACTED_STREET_DESC,
+                            redaction,
                             entity.object_common.remarks.clone(),
                         );
                     }
@@ -39,7 +43,10 @@ pub(crate) fn simplify_registrant_street(mut domain: Box<Domain>) -> Box<Domain>
     domain
 }
 
-pub(crate) fn simplify_registrant_city(mut domain: Box<Domain>) -> Box<Domain> {
+pub(crate) fn simplify_registrant_city(
+    mut domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
@@ -53,6 +60,7 @@ pub(crate) fn simplify_registrant_city(mut domain: Box<Domain>) -> Box<Domain> {
                         entity.object_common.remarks = add_remark(
                             REDACTED_CITY,
                             REDACTED_CITY_DESC,
+                            redaction,
                             entity.object_common.remarks.clone(),
                         );
                     }
@@ -65,7 +73,10 @@ pub(crate) fn simplify_registrant_city(mut domain: Box<Domain>) -> Box<Domain> {
     domain
 }
 
-pub(crate) fn simplify_registrant_postal_code(mut domain: Box<Domain>) -> Box<Domain> {
+pub(crate) fn simplify_registrant_postal_code(
+    mut domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
@@ -79,6 +90,7 @@ pub(crate) fn simplify_registrant_postal_code(mut domain: Box<Domain>) -> Box<Do
                         entity.object_common.remarks = add_remark(
                             REDACTED_POSTAL_CODE,
                             REDACTED_POSTAL_CODE_DESC,
+                            redaction,
                             entity.object_common.remarks.clone(),
                         );
                     }
@@ -93,9 +105,15 @@ pub(crate) fn simplify_registrant_postal_code(mut domain: Box<Domain>) -> Box<Do
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::prelude::*;
+    use icann_rdap_common::prelude::{redacted::Name, *};
 
     use super::*;
+
+    fn get_test_redacted() -> Redacted {
+        Redacted::builder()
+            .name(Name::builder().type_field("Tech Email").build())
+            .build()
+    }
 
     // Tests for simplify_registrant_street
     #[test]
@@ -121,7 +139,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_street(Box::new(domain));
+        let result = simplify_registrant_street(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -190,7 +208,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_street(Box::new(domain));
+        let result = simplify_registrant_street(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -236,7 +254,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_street(Box::new(domain));
+        let result = simplify_registrant_street(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -269,7 +287,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_city(Box::new(domain));
+        let result = simplify_registrant_city(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -322,7 +340,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_city(Box::new(domain));
+        let result = simplify_registrant_city(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -366,7 +384,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_postal_code(Box::new(domain));
+        let result = simplify_registrant_postal_code(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -420,7 +438,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_postal_code(Box::new(domain));
+        let result = simplify_registrant_postal_code(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -449,7 +467,7 @@ mod tests {
         let domain = Domain::builder().ldh_name("example.com").build();
 
         // When
-        let result = simplify_registrant_street(Box::new(domain));
+        let result = simplify_registrant_street(Box::new(domain), &get_test_redacted());
 
         // Then
         assert!(result.object_common.entities.is_none());
@@ -475,7 +493,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_city(Box::new(domain));
+        let result = simplify_registrant_city(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -504,7 +522,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_postal_code(Box::new(domain));
+        let result = simplify_registrant_postal_code(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -545,7 +563,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_street(Box::new(domain));
+        let result = simplify_registrant_street(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
@@ -593,7 +611,7 @@ mod tests {
             .build();
 
         // When
-        let result = simplify_registrant_city(Box::new(domain));
+        let result = simplify_registrant_city(Box::new(domain), &get_test_redacted());
 
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
