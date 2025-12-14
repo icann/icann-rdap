@@ -32,7 +32,7 @@ use tracing::warn;
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
     error::RdapCliError,
-    request::do_request,
+    request::request_and_process,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -159,7 +159,7 @@ async fn do_domain_query<W: std::io::Write>(
         get_base_url(&processing_params.bootstrap_type, client, query_type).await?
     };
 
-    let response = do_request(&base_url, query_type, processing_params, client).await;
+    let response = request_and_process(&base_url, query_type, processing_params, client).await;
     let registrar_response;
     match response {
         Ok(response) => {
@@ -172,19 +172,7 @@ async fn do_domain_query<W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            let replaced_rdap = replace_redacted_items(response.rdap.clone());
-            let replaced_data = ResponseData {
-                rdap: replaced_rdap,
-                // copy other fields from `response`
-                ..response.clone()
-            };
-            transactions = do_output(
-                processing_params,
-                &req_data,
-                &replaced_data,
-                write,
-                transactions,
-            )?;
+            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
             let regr_source_host;
             let regr_req_data: RequestData;
             if !matches!(processing_params.process_type, ProcessType::Registry) {
@@ -193,7 +181,8 @@ async fn do_domain_query<W: std::io::Write>(
                     debug!("Registrar RDAP Url: {url}");
                     let query_type = QueryType::Url(url.to_string());
                     let registrar_response_result =
-                        do_request(&base_url, &query_type, processing_params, client).await;
+                        request_and_process(&base_url, &query_type, processing_params, client)
+                            .await;
                     match registrar_response_result {
                         Ok(response_data) => {
                             registrar_response = response_data;
@@ -249,7 +238,7 @@ async fn do_inr_query<W: std::io::Write>(
     {
         base_url = Ok("https://rdap.arin.net/registry".to_string());
     };
-    let response = do_request(&base_url?, query_type, processing_params, client).await;
+    let response = request_and_process(&base_url?, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -288,7 +277,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
 ) -> Result<(), RdapCliError> {
     let mut transactions = RequestResponses::new();
     let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
-    let response = do_request(&base_url, query_type, processing_params, client).await;
+    let response = request_and_process(&base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();

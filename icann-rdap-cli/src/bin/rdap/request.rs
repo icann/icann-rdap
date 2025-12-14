@@ -3,6 +3,10 @@ use std::{
     io::{BufRead, BufReader},
 };
 
+use icann_rdap_client::{
+    md::redacted::replace_redacted_items, rdap::redacted::simplify_redactions,
+};
+
 use {
     icann_rdap_client::{
         http::Client,
@@ -15,6 +19,7 @@ use {
 
 use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};
 
+/// This function handles making requests and caching.
 pub(crate) async fn do_request(
     base_url: &str,
     query_type: &QueryType,
@@ -85,4 +90,26 @@ pub(crate) async fn do_request(
         }
     }
     Ok(response)
+}
+
+/// This function issues request and does processing on the responses.
+pub(crate) async fn request_and_process(
+    base_url: &str,
+    query_type: &QueryType,
+    processing_params: &ProcessingParams,
+    client: &Client,
+) -> Result<ResponseData, RdapCliError> {
+    let response = do_request(base_url, query_type, processing_params, client).await;
+    if let Ok(response) = response {
+        let rdap = replace_redacted_items(response.rdap.clone());
+        let rdap = simplify_redactions(rdap, true);
+        let response = ResponseData {
+            rdap,
+            // copy other fields from `response`
+            ..response.clone()
+        };
+        Ok(response)
+    } else {
+        response
+    }
 }
