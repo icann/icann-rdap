@@ -7,6 +7,7 @@ use crate::rdap::redacted::simplify_ids::simplify_registry_registrant_id;
 use crate::rdap::redacted::simplify_ids::simplify_registry_tech_id;
 use crate::rdap::redacted::simplify_names::simplify_registrant_name;
 use crate::rdap::redacted::simplify_names::simplify_tech_name;
+use crate::rdap::redacted::simplify_org::simplify_registrant_org;
 use crate::rdap::redacted::simplify_phones::simplify_registrant_fax;
 use crate::rdap::redacted::simplify_phones::simplify_registrant_fax_ext;
 use crate::rdap::redacted::simplify_phones::simplify_registrant_phone;
@@ -68,7 +69,7 @@ fn simplify_domain_redactions(mut domain: Box<Domain>, only_pre_path: bool) -> R
                     RedactedName::RegistryDomainId => simplify_registry_domain_id(domain),
                     RedactedName::RegistryRegistrantId => simplify_registry_registrant_id(domain),
                     RedactedName::RegistrantName => simplify_registrant_name(domain),
-                    RedactedName::RegistrantOrganization => todo!(),
+                    RedactedName::RegistrantOrganization => simplify_registrant_org(domain),
                     RedactedName::RegistrantStreet => todo!(),
                     RedactedName::RegistrantCity => todo!(),
                     RedactedName::RegistrantPostalCode => todo!(),

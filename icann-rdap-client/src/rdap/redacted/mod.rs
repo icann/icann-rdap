@@ -10,4 +10,5 @@ pub(crate) mod simplify;
 mod simplify_email;
 mod simplify_ids;
 mod simplify_names;
+mod simplify_org;
 mod simplify_phones;
