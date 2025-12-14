@@ -1,5 +1,8 @@
 //! Changes RFC 9537 redactions to simple redactions
 
+use crate::rdap::redacted::simplify_addr::simplify_registrant_city;
+use crate::rdap::redacted::simplify_addr::simplify_registrant_postal_code;
+use crate::rdap::redacted::simplify_addr::simplify_registrant_street;
 use crate::rdap::redacted::simplify_email::simplify_registrant_email;
 use crate::rdap::redacted::simplify_email::simplify_tech_email;
 use crate::rdap::redacted::simplify_ids::simplify_registry_domain_id;
@@ -70,9 +73,9 @@ fn simplify_domain_redactions(mut domain: Box<Domain>, only_pre_path: bool) -> R
                     RedactedName::RegistryRegistrantId => simplify_registry_registrant_id(domain),
                     RedactedName::RegistrantName => simplify_registrant_name(domain),
                     RedactedName::RegistrantOrganization => simplify_registrant_org(domain),
-                    RedactedName::RegistrantStreet => todo!(),
-                    RedactedName::RegistrantCity => todo!(),
-                    RedactedName::RegistrantPostalCode => todo!(),
+                    RedactedName::RegistrantStreet => simplify_registrant_street(domain),
+                    RedactedName::RegistrantCity => simplify_registrant_city(domain),
+                    RedactedName::RegistrantPostalCode => simplify_registrant_postal_code(domain),
                     RedactedName::RegistrantPhone => simplify_registrant_phone(domain),
                     RedactedName::RegistrantPhoneExt => simplify_registrant_phone_ext(domain),
                     RedactedName::RegistrantFax => simplify_registrant_fax(domain),

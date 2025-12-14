@@ -7,6 +7,7 @@ pub use simplify::*;
 
 pub(crate) mod registered_redactions;
 pub(crate) mod simplify;
+mod simplify_addr;
 mod simplify_email;
 mod simplify_ids;
 mod simplify_names;
