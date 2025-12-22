@@ -990,7 +990,7 @@ mod tests {
             description: None,
             links: None,
             nr_type: None,
-            simple_redaction_key: None,
+            simple_redaction_keys: None,
         };
         let rdap = Domain::response_obj()
             .ldh_name("example.com")

@@ -1,4 +1,6 @@
 //! Common data structures, etc...
+use std::ops::DerefMut;
+
 use serde::{Deserialize, Serialize};
 
 use super::lenient::{Stringish, VectorStringish};
@@ -275,14 +277,14 @@ impl Notice {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
-        simple_redaction_key: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         let nr = NoticeOrRemark::builder()
             .description(description)
             .and_title(title)
             .links(links)
             .and_nr_type(nr_type)
-            .and_simple_redaction_key(simple_redaction_key)
+            .and_simple_redaction_keys(simple_redaction_keys)
             .build();
         Self(nr)
     }
@@ -337,6 +339,12 @@ pub type Remarks = Vec<Remark>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Remark(pub NoticeOrRemark);
 
+impl DerefMut for Remark {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[buildstructor::buildstructor]
 impl Remark {
     /// Builds an RDAP notice.
@@ -346,14 +354,14 @@ impl Remark {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
-        simple_redaction_key: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         let nr = NoticeOrRemark::builder()
             .description(description)
             .and_title(title)
             .links(links)
             .and_nr_type(nr_type)
-            .and_simple_redaction_key(simple_redaction_key)
+            .and_simple_redaction_keys(simple_redaction_keys)
             .build();
         Self(nr)
     }
@@ -423,9 +431,9 @@ pub struct NoticeOrRemark {
     pub nr_type: Option<String>,
 
     /// Redaction key from the simple redaction extension.
-    #[serde(rename = "simpleRedaction_key")]
+    #[serde(rename = "simpleRedaction_keys")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub simple_redaction_key: Option<String>,
+    pub simple_redaction_keys: Option<Vec<String>>,
 }
 
 #[buildstructor::buildstructor]
@@ -437,14 +445,14 @@ impl NoticeOrRemark {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
-        simple_redaction_key: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         Self {
             title,
             description: Some(VectorStringish::from(description)),
             links: (!links.is_empty()).then_some(links),
             nr_type,
-            simple_redaction_key,
+            simple_redaction_keys,
         }
     }
 
@@ -456,7 +464,7 @@ impl NoticeOrRemark {
         description: Option<Vec<String>>,
         links: Option<Vec<Link>>,
         nr_type: Option<String>,
-        simple_redaction_key: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         let d = description
             .is_some()
@@ -466,7 +474,7 @@ impl NoticeOrRemark {
             description: d,
             links,
             nr_type,
-            simple_redaction_key,
+            simple_redaction_keys,
         }
     }
 
@@ -513,6 +521,16 @@ impl NoticeOrRemark {
     /// These values are suppose to come from the IANA RDAP registry.
     pub fn nr_type(&self) -> Option<&str> {
         self.nr_type.as_deref()
+    }
+
+    /// Returns the simple redactions keys.
+    pub fn simple_redaction_keys(&self) -> &[String] {
+        self.simple_redaction_keys.as_deref().unwrap_or_default()
+    }
+
+    /// Returns true if a key is a simple redaction key for this notice or remark.
+    pub fn has_simple_redaction_key(&self, key: &str) -> bool {
+        self.simple_redaction_keys().iter().any(|k| k.eq(key))
     }
 }
 

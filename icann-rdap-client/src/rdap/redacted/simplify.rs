@@ -121,22 +121,36 @@ pub(crate) fn add_remark(
     redacted: &Redacted,
     remarks: Option<Vec<Remark>>,
 ) -> Option<Vec<Remark>> {
+    let desc_entry = if let Some(reason) = redacted.reason().and_then(|r| r.description()) {
+        let reason = if reason.ends_with('.') {
+            reason.to_string()
+        } else {
+            format!("{reason}.")
+        };
+        format!("{desc} : {reason}")
+    } else {
+        desc.to_string()
+    };
     let mut remarks = remarks.unwrap_or_default();
-    if !remarks.iter().any(|r| {
-        r.simple_redaction_key
-            .as_deref()
-            .unwrap_or_default()
-            .eq(key)
-    }) {
-        let mut remark_desc = vec![desc.to_string()];
-        if let Some(reason) = redacted.reason() {
-            if let Some(reason_desc) = reason.description() {
-                remark_desc.push(reason_desc.to_string());
+    let mut remark_needed = true;
+    for remark in remarks.iter_mut() {
+        if let Some(keys) = &remark.simple_redaction_keys {
+            if !keys.iter().any(|k| k.eq(key)) {
+                let mut keys = keys.clone();
+                keys.push(key.to_string());
+                remark.simple_redaction_keys = Some(keys);
+                let mut description = remark.description().to_vec();
+                description.push(desc_entry.clone());
+                remark.description = Some(description.into());
             }
+            remark_needed = false;
         }
+    }
+    if remark_needed {
         let remark = Remark::builder()
-            .simple_redaction_key(key)
-            .description(remark_desc)
+            .title("RFC9537 to Simple Redactions")
+            .simple_redaction_keys(vec![key.to_string()])
+            .description_entry(desc_entry)
             .build();
         remarks.push(remark);
     }
@@ -336,7 +350,7 @@ mod tests {
         assert!(result.is_some());
         let result_vec = result.unwrap();
         assert_eq!(result_vec.len(), 1);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), Some(key));
+        assert!(result_vec[0].has_simple_redaction_key(key));
         assert_eq!(
             result_vec[0].description.as_ref().unwrap().vec().first(),
             Some(&desc.to_string())
@@ -358,7 +372,7 @@ mod tests {
         assert!(result.is_some());
         let result_vec = result.unwrap();
         assert_eq!(result_vec.len(), 1);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), Some(key));
+        assert!(result_vec[0].has_simple_redaction_key(key));
         assert_eq!(
             result_vec[0].description.as_ref().unwrap().vec().first(),
             Some(&desc.to_string())
@@ -371,7 +385,7 @@ mod tests {
         let key = "new_key";
         let desc = "new description";
         let existing_remark = icann_rdap_common::prelude::Remark::builder()
-            .simple_redaction_key("existing_key")
+            .simple_redaction_keys(vec!["existing_key".to_string()])
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![existing_remark]);
@@ -379,20 +393,14 @@ mod tests {
 
         // WHEN calling add_remark
         let result = add_remark(key, desc, &redacted, remarks);
+        dbg!(&result);
 
-        // THEN it should return a vector with two remarks
+        // THEN it should return a vector with one remark
         assert!(result.is_some());
         let result_vec = result.unwrap();
-        assert_eq!(result_vec.len(), 2);
-        assert_eq!(
-            result_vec[0].simple_redaction_key.as_deref(),
-            Some("existing_key")
-        );
-        assert_eq!(result_vec[1].simple_redaction_key.as_deref(), Some(key));
-        assert_eq!(
-            result_vec[1].description.as_ref().unwrap().vec().first(),
-            Some(&desc.to_string())
-        );
+        assert_eq!(result_vec.len(), 1);
+        assert!(result_vec[0].has_simple_redaction_key("existing_key"));
+        assert!(result_vec[0].has_simple_redaction_key(key));
     }
 
     #[test]
@@ -401,7 +409,7 @@ mod tests {
         let key = "test_key";
         let desc = "new description";
         let existing_remark = icann_rdap_common::prelude::Remark::builder()
-            .simple_redaction_key(key)
+            .simple_redaction_keys(vec![key.to_string()])
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![existing_remark]);
@@ -414,7 +422,7 @@ mod tests {
         assert!(result.is_some());
         let result_vec = result.unwrap();
         assert_eq!(result_vec.len(), 1);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), Some(key));
+        assert!(result_vec[0].has_simple_redaction_key(key));
         assert_eq!(
             result_vec[0].description.as_ref().unwrap().vec().first(),
             Some(&"existing description".to_string())
@@ -427,11 +435,11 @@ mod tests {
         let key = "new_key";
         let desc = "new description";
         let remark1 = icann_rdap_common::prelude::Remark::builder()
-            .simple_redaction_key("key1")
+            .simple_redaction_keys(vec!["key1".to_string()])
             .description_entry("description1")
             .build();
         let remark2 = icann_rdap_common::prelude::Remark::builder()
-            .simple_redaction_key("key2")
+            .simple_redaction_keys(vec!["key2".to_string()])
             .description_entry("description2")
             .build();
         let remarks = Some(vec![remark1, remark2]);
@@ -440,17 +448,13 @@ mod tests {
         // WHEN calling add_remark
         let result = add_remark(key, desc, &redacted, remarks);
 
-        // THEN it should return a vector with three remarks
+        // THEN it should return a vector with two remarks
         assert!(result.is_some());
         let result_vec = result.unwrap();
-        assert_eq!(result_vec.len(), 3);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), Some("key1"));
-        assert_eq!(result_vec[1].simple_redaction_key.as_deref(), Some("key2"));
-        assert_eq!(result_vec[2].simple_redaction_key.as_deref(), Some(key));
-        assert_eq!(
-            result_vec[2].description.as_ref().unwrap().vec().first(),
-            Some(&desc.to_string())
-        );
+        assert_eq!(result_vec.len(), 2);
+        assert!(result_vec[0].has_simple_redaction_key("key1"));
+        assert!(result_vec[1].has_simple_redaction_key("key2"));
+        assert!(result_vec[0].has_simple_redaction_key(key));
     }
 
     #[test]
@@ -459,11 +463,11 @@ mod tests {
         let key = "key2";
         let desc = "new description";
         let remark1 = icann_rdap_common::prelude::Remark::builder()
-            .simple_redaction_key("key1")
+            .simple_redaction_keys(vec!["key1".to_string()])
             .description_entry("description1")
             .build();
         let remark2 = icann_rdap_common::prelude::Remark::builder()
-            .simple_redaction_key(key)
+            .simple_redaction_keys(vec![key.to_string()])
             .description_entry("existing description")
             .build();
         let remarks = Some(vec![remark1, remark2]);
@@ -476,8 +480,8 @@ mod tests {
         assert!(result.is_some());
         let result_vec = result.unwrap();
         assert_eq!(result_vec.len(), 2);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), Some("key1"));
-        assert_eq!(result_vec[1].simple_redaction_key.as_deref(), Some(key));
+        assert!(result_vec[0].has_simple_redaction_key("key1"));
+        assert!(result_vec[1].has_simple_redaction_key(key));
         assert_eq!(
             result_vec[1].description.as_ref().unwrap().vec().first(),
             Some(&"existing description".to_string())
@@ -502,8 +506,8 @@ mod tests {
         assert!(result.is_some());
         let result_vec = result.unwrap();
         assert_eq!(result_vec.len(), 2);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), None);
-        assert_eq!(result_vec[1].simple_redaction_key.as_deref(), Some(key));
+        assert!(result_vec[0].simple_redaction_keys().is_empty());
+        assert!(result_vec[1].has_simple_redaction_key(key));
         assert_eq!(
             result_vec[1].description.as_ref().unwrap().vec().first(),
             Some(&desc.to_string())
@@ -525,7 +529,7 @@ mod tests {
         assert!(result.is_some());
         let result_vec = result.unwrap();
         assert_eq!(result_vec.len(), 1);
-        assert_eq!(result_vec[0].simple_redaction_key.as_deref(), Some(key));
+        assert!(result_vec[0].has_simple_redaction_key(key));
         assert_eq!(
             result_vec[0].description.as_ref().unwrap().vec().first(),
             Some(&desc.to_string())

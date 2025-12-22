@@ -163,10 +163,7 @@ mod tests {
         assert!(entity.object_common.remarks.is_some());
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_STREET
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_STREET));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec()[0],
             REDACTED_STREET_DESC
@@ -308,10 +305,7 @@ mod tests {
         assert!(entity.object_common.remarks.is_some());
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_CITY
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_CITY));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec()[0],
             REDACTED_CITY_DESC
@@ -353,10 +347,7 @@ mod tests {
 
         assert!(entity.object_common.remarks.is_some());
         let remarks = entity.object_common.remarks.as_ref().unwrap();
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_CITY
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_CITY));
     }
 
     // Tests for simplify_registrant_postal_code
@@ -405,10 +396,7 @@ mod tests {
         assert!(entity.object_common.remarks.is_some());
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_POSTAL_CODE
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_POSTAL_CODE));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec()[0],
             REDACTED_POSTAL_CODE_DESC
@@ -454,10 +442,7 @@ mod tests {
 
         assert!(entity.object_common.remarks.is_some());
         let remarks = entity.object_common.remarks.as_ref().unwrap();
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_POSTAL_CODE
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_POSTAL_CODE));
     }
 
     // Common edge case tests
@@ -623,10 +608,7 @@ mod tests {
         assert_eq!(remarks[0].title.as_ref().unwrap(), "Existing Remark");
 
         // Second remark should be the redaction remark
-        assert_eq!(
-            remarks[1].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_CITY
-        );
+        assert!(remarks[1].has_simple_redaction_key(REDACTED_CITY));
         assert_eq!(
             remarks[1].description.as_ref().unwrap().vec()[0],
             REDACTED_CITY_DESC

@@ -129,10 +129,7 @@ mod tests {
         // AND a remark should be added
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec().first(),
             Some(&REDACTED_EMAIL_DESC.to_string())
@@ -237,10 +234,7 @@ mod tests {
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
 
         // Second entity (tech) should be unchanged
         assert_eq!(entities[1].handle(), Some("tech_456"));
@@ -292,10 +286,7 @@ mod tests {
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
     }
 
     #[test]
@@ -350,72 +341,10 @@ mod tests {
     }
 
     #[test]
-    fn test_simplify_registrant_email_with_registrant_entity_with_existing_remarks() {
-        // GIVEN a registrant entity with existing remarks and contact with emails
-        let existing_remark = Remark::builder()
-            .simple_redaction_key("existing_key")
-            .description_entry("existing description")
-            .build();
-
-        let email = Email::builder()
-            .email("alice@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .contact(contact)
-            .remarks(vec![existing_remark])
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the registrant should have both existing and new remarks
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
-
-        let remarks = registrant.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 2);
-
-        // First remark should be the existing one
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some("existing_key")
-        );
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&"existing description".to_string())
-        );
-
-        // Second remark should be the redaction remark
-        assert_eq!(
-            remarks[1].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
-        assert_eq!(
-            remarks[1].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_EMAIL_DESC.to_string())
-        );
-    }
-
-    #[test]
     fn test_simplify_registrant_email_with_registrant_entity_with_same_redaction_remark() {
         // GIVEN a registrant entity with existing redaction remark and contact with emails
         let existing_remark = Remark::builder()
-            .simple_redaction_key(REDACTED_EMAIL)
+            .simple_redaction_keys(vec![REDACTED_EMAIL.to_string()])
             .description_entry("existing redaction description")
             .build();
 
@@ -453,10 +382,7 @@ mod tests {
         assert_eq!(remarks.len(), 1);
 
         // Should only have the existing remark (no duplicate)
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec().first(),
             Some(&"existing redaction description".to_string())
@@ -501,10 +427,7 @@ mod tests {
 
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
     }
 
     #[test]
@@ -563,10 +486,7 @@ mod tests {
         // AND a remark should be added
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec().first(),
             Some(&REDACTED_EMAIL_DESC.to_string())
@@ -640,10 +560,7 @@ mod tests {
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
 
         // Second entity (registrant) should be unchanged
         assert_eq!(entities[1].handle(), Some("registrant_123"));
@@ -695,10 +612,7 @@ mod tests {
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
     }
 
     #[test]
@@ -753,72 +667,10 @@ mod tests {
     }
 
     #[test]
-    fn test_simplify_tech_email_with_tech_entity_with_existing_remarks() {
-        // GIVEN a technical entity with existing remarks and contact with emails
-        let existing_remark = Remark::builder()
-            .simple_redaction_key("existing_key")
-            .description_entry("existing description")
-            .build();
-
-        let email = Email::builder()
-            .email("alice.tech@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .contact(contact)
-            .remarks(vec![existing_remark])
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the technical entity should have both existing and new remarks
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let tech = &entities[0];
-        assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
-
-        let remarks = tech.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 2);
-
-        // First remark should be the existing one
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some("existing_key")
-        );
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&"existing description".to_string())
-        );
-
-        // Second remark should be the redaction remark
-        assert_eq!(
-            remarks[1].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
-        assert_eq!(
-            remarks[1].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_EMAIL_DESC.to_string())
-        );
-    }
-
-    #[test]
     fn test_simplify_tech_email_with_tech_entity_with_same_redaction_remark() {
         // GIVEN a technical entity with existing redaction remark and contact with emails
         let existing_remark = Remark::builder()
-            .simple_redaction_key(REDACTED_EMAIL)
+            .simple_redaction_keys(vec![REDACTED_EMAIL.to_string()])
             .description_entry("existing redaction description")
             .build();
 
@@ -856,10 +708,7 @@ mod tests {
         assert_eq!(remarks.len(), 1);
 
         // Should only have the existing remark (no duplicate)
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec().first(),
             Some(&"existing redaction description".to_string())
@@ -904,10 +753,7 @@ mod tests {
 
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_deref(),
-            Some(REDACTED_EMAIL)
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
     }
 
     #[test]

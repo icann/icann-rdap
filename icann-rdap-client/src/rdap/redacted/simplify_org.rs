@@ -81,10 +81,7 @@ mod tests {
         assert!(entity.object_common.remarks.is_some());
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-        assert_eq!(
-            remarks[0].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_ORG
-        );
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_ORG));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec()[0],
             REDACTED_ORG_DESC
@@ -253,10 +250,7 @@ mod tests {
         assert_eq!(remarks[0].title.as_ref().unwrap(), "Existing Remark");
 
         // Second remark should be the redaction remark
-        assert_eq!(
-            remarks[1].simple_redaction_key.as_ref().unwrap(),
-            REDACTED_ORG
-        );
+        assert!(remarks[1].has_simple_redaction_key(REDACTED_ORG));
         assert_eq!(
             remarks[1].description.as_ref().unwrap().vec()[0],
             REDACTED_ORG_DESC
