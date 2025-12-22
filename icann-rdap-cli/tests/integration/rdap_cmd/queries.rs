@@ -511,7 +511,7 @@ async fn test_domain_with_referral_for_only_registry_with_status_output_json() {
         .arg("foo.example")
         .arg("-O")
         .arg("status-json")
-        .arg("-p")
+        .arg("-l")
         .arg("registry");
 
     // THEN output type is json with status
@@ -560,7 +560,7 @@ async fn test_domain_with_referral_for_only_registrar_with_status_output_json() 
         .arg("foo.example")
         .arg("-O")
         .arg("status-json")
-        .arg("-p")
+        .arg("-l")
         .arg("registrar");
 
     // THEN output type is json with status
@@ -661,7 +661,7 @@ async fn test_domain_referral_with_url_output_for_registry() {
         .arg("foo.example")
         .arg("-O")
         .arg("url")
-        .arg("-p")
+        .arg("-l")
         .arg("registry");
 
     // THEN output type is the urls
@@ -704,7 +704,7 @@ async fn test_domain_referral_with_url_output_for_registrar() {
         .arg("foo.example")
         .arg("-O")
         .arg("url")
-        .arg("-p")
+        .arg("-l")
         .arg("registrar");
 
     // THEN output type is the urls
@@ -785,7 +785,7 @@ async fn test_domain_referral_with_json_output_for_registrar() {
         .arg("foo.example")
         .arg("-O")
         .arg("json")
-        .arg("-p")
+        .arg("-l")
         .arg("registrar");
 
     // THEN output type is json object
@@ -867,7 +867,7 @@ async fn test_domain_referral_with_pretyy_json_output_for_registrar() {
         .arg("foo.example")
         .arg("-O")
         .arg("pretty-json")
-        .arg("-p")
+        .arg("-l")
         .arg("registrar");
 
     // THEN output type is json object

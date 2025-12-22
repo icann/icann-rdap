@@ -143,17 +143,17 @@ struct Cli {
     )]
     output_type: OtypeArg,
 
-    /// Process Type
+    /// Link Target
     ///
-    /// Specifies a process for handling the data.
+    /// Specifies the link target.
     #[arg(
-        short = 'p',
+        short = 'l',
         long,
         required = false,
-        env = "RDAP_PROCESS_TYPE",
+        env = "RDAP_LINK_TARGET",
         value_enum
     )]
-    process_type: Option<ProcTypeArg>,
+    link_target: Option<LinkTargetArg>,
 
     /// Pager Usage.
     ///
@@ -405,11 +405,11 @@ enum LogLevel {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum ProcTypeArg {
-    /// Only display the data from the domain registrar.
+enum LinkTargetArg {
+    /// Psuedo-link-target, equal to "related".
     Registrar,
 
-    /// Only display the data from the domain registry.
+    /// Psuedo-link-target for the origin.
     Registry,
 }
 
@@ -520,10 +520,10 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         return Err(RdapCliError::GtldWhoisOutputNotImplemented);
     }
 
-    let process_type = match cli.process_type {
+    let process_type = match cli.link_target {
         Some(p) => match p {
-            ProcTypeArg::Registrar => ProcessType::Registrar,
-            ProcTypeArg::Registry => ProcessType::Registry,
+            LinkTargetArg::Registrar => ProcessType::Registrar,
+            LinkTargetArg::Registry => ProcessType::Registry,
         },
         None => ProcessType::Standard,
     };
