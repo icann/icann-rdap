@@ -78,7 +78,7 @@ pub(crate) enum OutputType {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum ProcessType {
+pub(crate) enum LinkTarget {
     /// Standard data processing.
     Standard,
 
@@ -112,7 +112,7 @@ pub(crate) enum InrBackupBootstrap {
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
-    pub process_type: ProcessType,
+    pub link_target: LinkTarget,
     pub tld_lookup: TldLookup,
     pub inr_backup_bootstrap: InrBackupBootstrap,
     pub no_cache: bool,
@@ -164,7 +164,7 @@ async fn do_domain_query<W: std::io::Write>(
     match response {
         Ok(response) => {
             let user_wants_registrar =
-                matches!(processing_params.process_type, ProcessType::Registrar);
+                matches!(processing_params.link_target, LinkTarget::Registrar);
             let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
@@ -175,7 +175,7 @@ async fn do_domain_query<W: std::io::Write>(
             transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
             let regr_source_host;
             let regr_req_data: RequestData;
-            if !matches!(processing_params.process_type, ProcessType::Registry) {
+            if !matches!(processing_params.link_target, LinkTarget::Registry) {
                 if let Some(url) = get_related_links(&response.rdap).first() {
                     info!("Querying domain name from registrar.");
                     debug!("Registrar RDAP Url: {url}");
@@ -188,7 +188,7 @@ async fn do_domain_query<W: std::io::Write>(
                             registrar_response = response_data;
                             regr_source_host = registrar_response.http_data.host.to_owned();
                             let user_wants_registy =
-                                matches!(processing_params.process_type, ProcessType::Registry);
+                                matches!(processing_params.link_target, LinkTarget::Registry);
                             regr_req_data = RequestData {
                                 req_number: 2,
                                 req_target: !user_wants_registy,
@@ -205,14 +205,14 @@ async fn do_domain_query<W: std::io::Write>(
                         }
                         Err(error) => return Err(error),
                     }
-                } else if matches!(processing_params.process_type, ProcessType::Registrar) {
+                } else if matches!(processing_params.link_target, LinkTarget::Registrar) {
                     return Err(RdapCliError::NoRegistrarFound);
                 }
             }
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => {
-            if matches!(processing_params.process_type, ProcessType::Registry) {
+            if matches!(processing_params.link_target, LinkTarget::Registry) {
                 return Err(RdapCliError::NoRegistryFound);
             } else {
                 return Err(error);

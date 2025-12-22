@@ -6,7 +6,7 @@ use {
     error::RdapCliError,
     icann_rdap_cli::dirs,
     icann_rdap_client::http::{create_client, Client, ClientConfig},
-    query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup},
+    query::{InrBackupBootstrap, LinkTarget, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
     tracing_subscriber::filter::LevelFilter,
@@ -522,10 +522,10 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
 
     let process_type = match cli.link_target {
         Some(p) => match p {
-            LinkTargetArg::Registrar => ProcessType::Registrar,
-            LinkTargetArg::Registry => ProcessType::Registry,
+            LinkTargetArg::Registrar => LinkTarget::Registrar,
+            LinkTargetArg::Registry => LinkTarget::Registry,
         },
-        None => ProcessType::Standard,
+        None => LinkTarget::Standard,
     };
 
     let bootstrap_type = if let Some(ref tag) = cli.base {
@@ -549,7 +549,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
-        process_type,
+        link_target: process_type,
         tld_lookup,
         inr_backup_bootstrap,
         no_cache: cli.no_cache,
