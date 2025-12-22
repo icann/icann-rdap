@@ -7,6 +7,7 @@ pub trait StringUtil {
     fn replace_md_chars(self) -> String;
     fn to_em(self, options: &MdOptions) -> String;
     fn to_bold(self, options: &MdOptions) -> String;
+    fn to_strikethrough(self, options: &MdOptions) -> String;
     fn to_inline(self, options: &MdOptions) -> String;
     fn to_header(self, level: usize, options: &MdOptions) -> String;
     fn to_right(self, width: usize, options: &MdOptions) -> String;
@@ -57,6 +58,10 @@ impl<T: ToString> StringUtil for T {
             options.text_style_char,
             options.text_style_char
         )
+    }
+
+    fn to_strikethrough(self, _options: &MdOptions) -> String {
+        format!("~~{}~~", self.to_string(),)
     }
 
     fn to_inline(self, _options: &MdOptions) -> String {

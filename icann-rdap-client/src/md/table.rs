@@ -1,5 +1,7 @@
 use std::cmp::max;
 
+use icann_rdap_common::prelude::Remark;
+
 use super::{string::StringUtil, MdHeaderText, MdOptions, MdParams, ToMd};
 
 pub(crate) trait ToMpTable {
@@ -17,6 +19,7 @@ pub(crate) trait ToMpTable {
 /// multiline row, so this creates multiple rows where the name is left blank.
 pub struct MultiPartTable {
     rows: Vec<Row>,
+    value_highlights: Vec<String>,
 }
 
 enum Row {
@@ -34,7 +37,24 @@ impl Default for MultiPartTable {
 
 impl MultiPartTable {
     pub fn new() -> Self {
-        Self { rows: vec![] }
+        Self {
+            rows: vec![],
+            value_highlights: vec![],
+        }
+    }
+
+    pub fn new_with_value_hightlights(value_highlights: Vec<String>) -> Self {
+        Self {
+            rows: vec![],
+            value_highlights,
+        }
+    }
+
+    pub fn new_with_value_hightlights_from_remarks(remarks: &[Remark]) -> Self {
+        Self {
+            rows: vec![],
+            value_highlights: get_value_highlights(remarks),
+        }
     }
 
     /// Add a header row.
@@ -241,8 +261,8 @@ impl MultiPartTable {
                         };
                         md.push_str(&format!(
                             "|{}|{}|\n",
-                            name.to_right(col_type_width, options),
-                            value
+                            &name.to_right(col_type_width, options),
+                            highlight_value(value, &self.value_highlights, options)
                         ));
                         false
                     }
@@ -277,6 +297,29 @@ impl ToMd for MultiPartTable {
     fn to_md(&self, params: super::MdParams) -> String {
         self.to_md_table(params.options)
     }
+}
+
+fn highlight_value(value: &str, values_to_highlight: &[String], options: &MdOptions) -> String {
+    let mut value = value.to_string();
+    for hl in values_to_highlight {
+        value = value.replace(hl, &hl.to_strikethrough(options));
+    }
+    value
+}
+
+pub(crate) fn get_value_highlights(remarks: &[Remark]) -> Vec<String> {
+    let mut highlights = vec![];
+    for remark in remarks {
+        if let Some(keys) = &remark.simple_redaction_keys {
+            for key in keys {
+                highlights.push(key.clone());
+            }
+            if let Some(title) = &remark.title {
+                highlights.push(title.clone())
+            }
+        }
+    }
+    highlights
 }
 
 #[cfg(test)]

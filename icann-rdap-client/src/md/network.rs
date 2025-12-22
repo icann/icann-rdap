@@ -19,7 +19,7 @@ impl ToMd for Network {
         );
 
         // multipart data
-        let mut table = MultiPartTable::new();
+        let mut table = MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks());
 
         // summary
         table = table.summary(header_text);
