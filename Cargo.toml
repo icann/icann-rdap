@@ -60,6 +60,9 @@ dotenv = "0.15.0"
 # environment variable utilities
 envmnt = "0.10.4"
 
+# enumflags
+enumflags2 = "0.7"
+
 # futures
 futures = "0.3"
 
@@ -116,7 +119,7 @@ serde = { version = "1.0", features = [ "derive" ] }
 serde_json = "1.0"
 
 # sqlx (async db)
-sqlx = { version = "0.7", features = [
+sqlx = { version = "0.8", features = [
     "runtime-tokio-rustls",
     "postgres",
     "chrono",

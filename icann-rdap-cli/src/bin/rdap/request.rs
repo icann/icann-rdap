@@ -3,6 +3,11 @@ use std::{
     io::{BufRead, BufReader},
 };
 
+use icann_rdap_client::{
+    md::redacted::replace_redacted_items, rdap::redacted::simplify_redactions,
+};
+use icann_rdap_common::prelude::RdapResponse;
+
 use {
     icann_rdap_client::{
         http::Client,
@@ -13,8 +18,13 @@ use {
     tracing::{debug, info},
 };
 
-use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};
+use crate::{
+    dirs::rdap_cache_path,
+    error::RdapCliError,
+    query::{ProcessingParams, RedactionFlag},
+};
 
+/// This function handles making requests and caching.
 pub(crate) async fn do_request(
     base_url: &str,
     query_type: &QueryType,
@@ -85,4 +95,38 @@ pub(crate) async fn do_request(
         }
     }
     Ok(response)
+}
+
+/// This function issues request and does processing on the responses.
+pub(crate) async fn request_and_process(
+    base_url: &str,
+    query_type: &QueryType,
+    processing_params: &ProcessingParams,
+    client: &Client,
+) -> Result<ResponseData, RdapCliError> {
+    let response = do_request(base_url, query_type, processing_params, client).await?;
+    let processed_rdap = process_redactions(response.rdap, &processing_params.redaction_flags);
+
+    Ok(ResponseData {
+        rdap: processed_rdap,
+        // copy other fields from `response`
+        ..response
+    })
+}
+
+fn process_redactions(
+    rdap: icann_rdap_common::prelude::RdapResponse,
+    redaction_flags: &enumflags2::BitFlags<RedactionFlag>,
+) -> RdapResponse {
+    let processed_rdap = if redaction_flags.contains(RedactionFlag::DoRfc9537Redactions) {
+        replace_redacted_items(rdap)
+    } else {
+        rdap
+    };
+
+    if !redaction_flags.contains(RedactionFlag::DoNotSimplifyRfc9537) {
+        simplify_redactions(processed_rdap, false)
+    } else {
+        processed_rdap
+    }
 }

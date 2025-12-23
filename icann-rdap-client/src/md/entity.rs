@@ -1,16 +1,10 @@
 use icann_rdap_common::{
     contact::{NameParts, PostalAddress},
     prelude::ObjectCommonFields,
-    response::{Entity, EntityRole},
-};
-
-use crate::rdap::registered_redactions::{
-    are_redactions_registered_for_roles, is_redaction_registered_for_role,
-    text_or_registered_redaction_for_role, RedactedName,
+    response::Entity,
 };
 
 use super::{
-    redacted::REDACTED_TEXT,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::public_ids_to_table,
@@ -30,33 +24,12 @@ impl ToMd for Entity {
                 .to_header(params.heading_level, params.options),
         );
 
-        // A note about the RFC 9537 redactions. A lot of this code is to do RFC 9537 redactions
-        // that are registered with the IANA. As RFC 9537 is horribly broken, it is likely only
-        // gTLD registries will use registered redactions, and when they do they will use all
-        // of them. Therefore, as horribly complicated as this logic is, it attempts to simplify
-        // things by assuming all the registrations will be used at once, which will be the case
-        // in the gTLD space.
-
-        // check if registrant or tech ids are RFC 9537 redacted
-        let mut entity_handle = text_or_registered_redaction_for_role(
-            params.root,
-            &RedactedName::RegistryRegistrantId,
-            self,
-            &EntityRole::Registrant,
-            &self.object_common.handle,
-            REDACTED_TEXT,
-        );
-        entity_handle = text_or_registered_redaction_for_role(
-            params.root,
-            &RedactedName::RegistryTechId,
-            self,
-            &EntityRole::Technical,
-            &entity_handle,
-            REDACTED_TEXT,
-        );
-
         // multipart data
-        let mut table = MultiPartTable::new();
+        let mut table = if params.highlight_simple_redactions {
+            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+        } else {
+            MultiPartTable::new()
+        };
 
         // summary
         table = table.summary(header_text);
@@ -64,106 +37,28 @@ impl ToMd for Entity {
         // identifiers
         table = table
             .header_ref(&"Identifiers")
-            .and_nv_ref_maybe(&"Handle", &entity_handle)
+            .and_nv_ref_maybe(&"Handle", &self.handle())
             .and_nv_ul(&"Roles", Some(self.roles().to_vec()));
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
 
         if let Some(contact) = self.contact() {
-            // nutty RFC 9537 redaction stuff
-
-            // check if registrant or tech name are redacted
-            let mut registrant_name = text_or_registered_redaction_for_role(
-                params.root,
-                &RedactedName::RegistrantName,
-                self,
-                &EntityRole::Registrant,
-                &contact.full_name,
-                REDACTED_TEXT,
-            );
-            registrant_name = text_or_registered_redaction_for_role(
-                params.root,
-                &RedactedName::TechName,
-                self,
-                &EntityRole::Technical,
-                &registrant_name,
-                REDACTED_TEXT,
-            );
-
-            // check to see if registrant postal address parts are redacted
-            let postal_addresses = if are_redactions_registered_for_roles(
-                params.root,
-                &[
-                    &RedactedName::RegistrantStreet,
-                    &RedactedName::RegistrantCity,
-                    &RedactedName::RegistrantPostalCode,
-                ],
-                self,
-                &[&EntityRole::Registrant],
-            ) {
-                let mut new_pas = contact.postal_addresses.clone();
-                if let Some(ref mut new_pas) = new_pas {
-                    new_pas.iter_mut().for_each(|pa| {
-                        pa.street_parts = Some(vec![REDACTED_TEXT.to_string()]);
-                        pa.locality = Some(REDACTED_TEXT.to_string());
-                        pa.postal_code = Some(REDACTED_TEXT.to_string());
-                    })
-                }
-                new_pas
-            } else {
-                contact.postal_addresses
-            };
-
             table = table
                 .header_ref(&"Contact")
                 .and_nv_ref_maybe(&"Kind", &contact.kind)
-                .and_nv_ref_maybe(&"Full Name", &registrant_name)
+                .and_nv_ref_maybe(&"Full Name", &contact.full_name())
                 .and_nv_ul(&"Titles", contact.titles)
                 .and_nv_ul(&"Org Roles", contact.roles)
                 .and_nv_ul(&"Nicknames", contact.nick_names);
-            if is_redaction_registered_for_role(
-                params.root,
-                &RedactedName::RegistrantOrganization,
-                self,
-                &EntityRole::Registrant,
-            ) {
-                table = table.nv_ref(&"Organization Name", &REDACTED_TEXT.to_string());
-            } else {
-                table = table.and_nv_ul(&"Organization Names", contact.organization_names);
-            }
+            table = table.and_nv_ul(&"Organization Names", contact.organization_names);
             table = table.and_nv_ul(&"Languages", contact.langs);
-            if are_redactions_registered_for_roles(
-                params.root,
-                &[
-                    &RedactedName::RegistrantPhone,
-                    &RedactedName::RegistrantPhoneExt,
-                    &RedactedName::RegistrantFax,
-                    &RedactedName::RegistrantFaxExt,
-                    &RedactedName::TechPhone,
-                    &RedactedName::TechPhoneExt,
-                ],
-                self,
-                &[&EntityRole::Registrant, &EntityRole::Technical],
-            ) {
-                table = table.nv_ref(&"Phones", &REDACTED_TEXT.to_string());
-            } else {
-                table = table.and_nv_ul(&"Phones", contact.phones);
-            }
-            if are_redactions_registered_for_roles(
-                params.root,
-                &[&RedactedName::TechEmail, &RedactedName::RegistrantEmail],
-                self,
-                &[&EntityRole::Registrant, &EntityRole::Technical],
-            ) {
-                table = table.nv_ref(&"Emails", &REDACTED_TEXT.to_string());
-            } else {
-                table = table.and_nv_ul(&"Emails", contact.emails);
-            }
+            table = table.and_nv_ul(&"Phones", contact.phones);
+            table = table.and_nv_ul(&"Emails", contact.emails);
             table = table
                 .and_nv_ul(&"Web Contact", contact.contact_uris)
                 .and_nv_ul(&"URLs", contact.urls);
-            table = postal_addresses.add_to_mptable(table, params);
+            table = contact.postal_addresses.add_to_mptable(table, params);
             table = contact.name_parts.add_to_mptable(table, params)
         }
 
@@ -180,8 +75,10 @@ impl ToMd for Entity {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+        if params.show_rfc9537_redactions {
+            if let Some(redacted) = &self.object_common.redacted {
+                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+            }
         }
 
         md.push('\n');
@@ -379,6 +276,8 @@ mod tests {
             http_data: &http_data,
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = entity.to_md(params);
 
@@ -408,6 +307,8 @@ mod tests {
             http_data: &http_data,
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = entity.to_md(params);
 
@@ -450,6 +351,8 @@ mod tests {
             http_data: &http_data,
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: true,
+            highlight_simple_redactions: false,
         };
         let actual = entity.to_md(params);
 
@@ -457,6 +360,52 @@ mod tests {
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint
             .new_goldenfile("with_handle_and_redactions.md")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_entity_with_handle_and_no_show_redactions() {
+        // GIVEN entity
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let entity = Entity::builder()
+            .handle("123-ABC")
+            .redacted(redactions)
+            .build();
+        let response = entity.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
+        };
+        let actual = entity.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_no_show_redactions.md")
             .unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }

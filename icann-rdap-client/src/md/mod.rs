@@ -69,6 +69,8 @@ pub struct MdParams<'a> {
     pub http_data: &'a HttpData,
     pub options: &'a MdOptions,
     pub req_data: &'a RequestData<'a>,
+    pub show_rfc9537_redactions: bool,
+    pub highlight_simple_redactions: bool,
 }
 
 impl MdParams<'_> {
@@ -79,6 +81,8 @@ impl MdParams<'_> {
             http_data: self.http_data,
             options: self.options,
             req_data: self.req_data,
+            show_rfc9537_redactions: self.show_rfc9537_redactions,
+            highlight_simple_redactions: self.highlight_simple_redactions,
         }
     }
 

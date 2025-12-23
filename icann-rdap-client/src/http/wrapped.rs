@@ -1,5 +1,7 @@
 //! Wrapped Client.
 
+#![allow(mismatched_lifetime_syntaxes)] // TODO see if this can be removed with a buildstructor upgrade
+
 pub use reqwest::{header::HeaderValue, Client as ReqwestClient, Error as ReqwestError};
 use {
     icann_rdap_common::httpdata::HttpData,

@@ -20,7 +20,11 @@ impl ToMd for Autnum {
         );
 
         // multipart data
-        let mut table = MultiPartTable::new();
+        let mut table = if params.highlight_simple_redactions {
+            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+        } else {
+            MultiPartTable::new()
+        };
 
         // summary
         table = table.summary(header_text);
@@ -54,8 +58,10 @@ impl ToMd for Autnum {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+        if params.show_rfc9537_redactions {
+            if let Some(redacted) = &self.object_common.redacted {
+                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+            }
         }
 
         md.push('\n');
@@ -97,7 +103,10 @@ mod tests {
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Autnum, Remark, ToResponse},
+        prelude::{
+            redacted::{Method, Name, Redacted},
+            Autnum, Remark, ToResponse,
+        },
     };
 
     use crate::{
@@ -145,12 +154,108 @@ mod tests {
             http_data: &http_data,
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = autnum.to_md(params);
 
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_handle_and_remarks.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_autnum_with_handle_and_redactions() {
+        // GIVEN autnum
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let autnum = Autnum::builder()
+            .autnum_range(701..703)
+            .handle("123-ABC")
+            .redacted(redactions)
+            .build();
+        let response = autnum.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: true,
+            highlight_simple_redactions: false,
+        };
+        let actual = autnum.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_redactions.md")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_autnum_with_handle_and_no_show_redactions() {
+        // GIVEN autnum
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let autnum = Autnum::builder()
+            .autnum_range(701..703)
+            .handle("123-ABC")
+            .redacted(redactions)
+            .build();
+        let response = autnum.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+            source_host: "example",
+            source_type: crate::rdap::SourceType::DomainRegistry,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
+        };
+        let actual = autnum.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_no_show_redactions.md")
+            .unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }

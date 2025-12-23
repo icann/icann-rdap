@@ -617,10 +617,8 @@ impl Check {
             Self::UnknownExtention => CheckClass::Std95Warning,
 
             Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::Std95Error,
-            Self::LinkRelatedHasNoType
-            | Self::LinkRelatedIsNotRdap
-            | Self::LinkSelfHasNoType
-            | Self::LinkSelfIsNotRdap => CheckClass::Std95Warning,
+            Self::LinkRelatedHasNoType | Self::LinkRelatedIsNotRdap => CheckClass::Std95Warning,
+            Self::LinkSelfHasNoType | Self::LinkSelfIsNotRdap => CheckClass::Std95Error,
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
             Self::LinkMissingHrefProperty => CheckClass::Std95Error,
             Self::LinkRelatedNotToRdap => CheckClass::Std95Warning,

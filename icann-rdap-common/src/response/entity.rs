@@ -300,6 +300,25 @@ impl Entity {
     pub fn networks(&self) -> &[Network] {
         self.networks.as_deref().unwrap_or_default()
     }
+
+    /// True if an entity is an a role.
+    ///
+    /// Registered roles can be found in [crate::response::EntityRole]. This method
+    /// purposefully allows using unregistered roles as well.
+    ///
+    /// ```rust
+    /// use icann_rdap_common::prelude::*;
+    ///
+    /// let entity = Entity::response_obj()
+    ///   .handle("foo_example_com-1")
+    ///   .role("registrant")
+    ///   .build();
+    ///
+    /// assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
+    /// ```
+    pub fn is_entity_role(&self, role: &str) -> bool {
+        self.roles().iter().any(|r| r.eq(role))
+    }
 }
 
 impl ToResponse for Entity {

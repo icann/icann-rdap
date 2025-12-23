@@ -1,5 +1,7 @@
 //! Creates a Reqwest client.
 
+#![allow(mismatched_lifetime_syntaxes)] // TODO see if this can be removed with a buildstructor upgrade
+
 pub use reqwest::{
     header::{self, HeaderValue},
     Client as ReqwestClient, Error as ReqwestError,

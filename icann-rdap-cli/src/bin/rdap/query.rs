@@ -16,6 +16,7 @@ use {
 };
 
 use chrono::DateTime;
+use enumflags2::{bitflags, BitFlags};
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     check::{
@@ -32,7 +33,7 @@ use tracing::warn;
 use crate::{
     bootstrap::{get_base_url, BootstrapType},
     error::RdapCliError,
-    request::do_request,
+    request::request_and_process,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -78,7 +79,7 @@ pub(crate) enum OutputType {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum ProcessType {
+pub(crate) enum LinkTarget {
     /// Standard data processing.
     Standard,
 
@@ -109,14 +110,33 @@ pub(crate) enum InrBackupBootstrap {
     None,
 }
 
+/// Redaction Flags.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[bitflags]
+#[repr(u64)]
+pub(crate) enum RedactionFlag {
+    /// Highlight Simple Redactions.
+    HighlightSimpleRedactions,
+
+    /// Show RFC 9537 redaction directives.
+    ShowRfc9537,
+
+    /// Do not turn RFC 9537 redactions into Simple Redactions.
+    DoNotSimplifyRfc9537,
+
+    /// Process RFC 9537 Redactions
+    DoRfc9537Redactions,
+}
+
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
-    pub process_type: ProcessType,
+    pub link_target: LinkTarget,
     pub tld_lookup: TldLookup,
     pub inr_backup_bootstrap: InrBackupBootstrap,
     pub no_cache: bool,
     pub max_cache_age: u32,
+    pub redaction_flags: BitFlags<RedactionFlag>,
 }
 
 pub(crate) async fn do_query<W: std::io::Write>(
@@ -159,12 +179,12 @@ async fn do_domain_query<W: std::io::Write>(
         get_base_url(&processing_params.bootstrap_type, client, query_type).await?
     };
 
-    let response = do_request(&base_url, query_type, processing_params, client).await;
+    let response = request_and_process(&base_url, query_type, processing_params, client).await;
     let registrar_response;
     match response {
         Ok(response) => {
             let user_wants_registrar =
-                matches!(processing_params.process_type, ProcessType::Registrar);
+                matches!(processing_params.link_target, LinkTarget::Registrar);
             let source_host = response.http_data.host.to_owned();
             let req_data = RequestData {
                 req_number: 1,
@@ -172,34 +192,23 @@ async fn do_domain_query<W: std::io::Write>(
                 source_host: &source_host,
                 source_type: SourceType::DomainRegistry,
             };
-            let replaced_rdap = replace_redacted_items(response.rdap.clone());
-            let replaced_data = ResponseData {
-                rdap: replaced_rdap,
-                // copy other fields from `response`
-                ..response.clone()
-            };
-            transactions = do_output(
-                processing_params,
-                &req_data,
-                &replaced_data,
-                write,
-                transactions,
-            )?;
+            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
             let regr_source_host;
             let regr_req_data: RequestData;
-            if !matches!(processing_params.process_type, ProcessType::Registry) {
+            if !matches!(processing_params.link_target, LinkTarget::Registry) {
                 if let Some(url) = get_related_links(&response.rdap).first() {
                     info!("Querying domain name from registrar.");
                     debug!("Registrar RDAP Url: {url}");
                     let query_type = QueryType::Url(url.to_string());
                     let registrar_response_result =
-                        do_request(&base_url, &query_type, processing_params, client).await;
+                        request_and_process(&base_url, &query_type, processing_params, client)
+                            .await;
                     match registrar_response_result {
                         Ok(response_data) => {
                             registrar_response = response_data;
                             regr_source_host = registrar_response.http_data.host.to_owned();
                             let user_wants_registy =
-                                matches!(processing_params.process_type, ProcessType::Registry);
+                                matches!(processing_params.link_target, LinkTarget::Registry);
                             regr_req_data = RequestData {
                                 req_number: 2,
                                 req_target: !user_wants_registy,
@@ -216,14 +225,14 @@ async fn do_domain_query<W: std::io::Write>(
                         }
                         Err(error) => return Err(error),
                     }
-                } else if matches!(processing_params.process_type, ProcessType::Registrar) {
+                } else if matches!(processing_params.link_target, LinkTarget::Registrar) {
                     return Err(RdapCliError::NoRegistrarFound);
                 }
             }
             do_final_output(processing_params, write, transactions)?;
         }
         Err(error) => {
-            if matches!(processing_params.process_type, ProcessType::Registry) {
+            if matches!(processing_params.link_target, LinkTarget::Registry) {
                 return Err(RdapCliError::NoRegistryFound);
             } else {
                 return Err(error);
@@ -249,7 +258,7 @@ async fn do_inr_query<W: std::io::Write>(
     {
         base_url = Ok("https://rdap.arin.net/registry".to_string());
     };
-    let response = do_request(&base_url?, query_type, processing_params, client).await;
+    let response = request_and_process(&base_url?, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -288,7 +297,7 @@ async fn do_basic_query<'a, W: std::io::Write>(
 ) -> Result<(), RdapCliError> {
     let mut transactions = RequestResponses::new();
     let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
-    let response = do_request(&base_url, query_type, processing_params, client).await;
+    let response = request_and_process(&base_url, query_type, processing_params, client).await;
     match response {
         Ok(response) => {
             let source_host = response.http_data.host.to_owned();
@@ -367,6 +376,12 @@ fn do_output<'a, W: std::io::Write>(
                         http_data: &response.http_data,
                         options: &MdOptions::default(),
                         req_data,
+                        show_rfc9537_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::ShowRfc9537),
+                        highlight_simple_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::HighlightSimpleRedactions),
                     }),
                 )?;
             }
@@ -384,6 +399,12 @@ fn do_output<'a, W: std::io::Write>(
                             ..MdOptions::default()
                         },
                         req_data,
+                        show_rfc9537_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::ShowRfc9537),
+                        highlight_simple_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::HighlightSimpleRedactions),
                     })
                 )?;
             }

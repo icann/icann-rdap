@@ -1,3 +1,4 @@
+use enumflags2::BitFlags;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -6,7 +7,7 @@ use {
     error::RdapCliError,
     icann_rdap_cli::dirs,
     icann_rdap_client::http::{create_client, Client, ClientConfig},
-    query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup},
+    query::{InrBackupBootstrap, LinkTarget, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
     tracing_subscriber::filter::LevelFilter,
@@ -21,7 +22,7 @@ use {
     tokio::{join, task::spawn_blocking},
 };
 
-use crate::query::do_query;
+use crate::query::{do_query, RedactionFlag};
 
 pub mod bootstrap;
 pub mod error;
@@ -143,17 +144,29 @@ struct Cli {
     )]
     output_type: OtypeArg,
 
-    /// Process Type
+    /// Link Target
     ///
-    /// Specifies a process for handling the data.
+    /// Specifies the link target.
     #[arg(
-        short = 'p',
+        short = 'l',
         long,
         required = false,
-        env = "RDAP_PROCESS_TYPE",
+        env = "RDAP_LINK_TARGET",
         value_enum
     )]
-    process_type: Option<ProcTypeArg>,
+    link_target: Option<LinkTargetArg>,
+
+    /// Redaction flags.
+    ///
+    /// Control the processing and display of redactions.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_REDACTION_FLAGS",
+        value_delimiter = ',',
+        value_enum
+    )]
+    redaction_flag: Vec<RedactionFlagArg>,
 
     /// Pager Usage.
     ///
@@ -405,11 +418,11 @@ enum LogLevel {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum ProcTypeArg {
-    /// Only display the data from the domain registrar.
+enum LinkTargetArg {
+    /// Psuedo-link-target, equal to "related".
     Registrar,
 
-    /// Only display the data from the domain registry.
+    /// Psuedo-link-target for the origin.
     Registry,
 }
 
@@ -441,6 +454,21 @@ enum InrBackupBootstrapArg {
 
     /// No backup for INR bootstraps.
     None,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum RedactionFlagArg {
+    /// Highlight Simple Redactions.
+    HighlightSimpleRedactions,
+
+    /// Show RFC 9537 redaction directives.
+    ShowRfc9537,
+
+    /// Do not turn RFC 9537 redactions into Simple Redactions.
+    DoNotSimplifyRfc9537,
+
+    /// Process RFC 9537 redactions.
+    DoRfc9537Redactions,
 }
 
 impl From<&LogLevel> for LevelFilter {
@@ -520,12 +548,12 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         return Err(RdapCliError::GtldWhoisOutputNotImplemented);
     }
 
-    let process_type = match cli.process_type {
+    let process_type = match cli.link_target {
         Some(p) => match p {
-            ProcTypeArg::Registrar => ProcessType::Registrar,
-            ProcTypeArg::Registry => ProcessType::Registry,
+            LinkTargetArg::Registrar => LinkTarget::Registrar,
+            LinkTargetArg::Registry => LinkTarget::Registry,
         },
-        None => ProcessType::Standard,
+        None => LinkTarget::Standard,
     };
 
     let bootstrap_type = if let Some(ref tag) = cli.base {
@@ -546,14 +574,31 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         InrBackupBootstrapArg::None => InrBackupBootstrap::None,
     };
 
+    let mut redaction_flags: BitFlags<RedactionFlag> = BitFlags::EMPTY;
+    for flag in cli.redaction_flag {
+        match flag {
+            RedactionFlagArg::HighlightSimpleRedactions => {
+                redaction_flags |= RedactionFlag::HighlightSimpleRedactions
+            }
+            RedactionFlagArg::ShowRfc9537 => redaction_flags |= RedactionFlag::ShowRfc9537,
+            RedactionFlagArg::DoNotSimplifyRfc9537 => {
+                redaction_flags |= RedactionFlag::DoNotSimplifyRfc9537
+            }
+            RedactionFlagArg::DoRfc9537Redactions => {
+                redaction_flags |= RedactionFlag::DoRfc9537Redactions
+            }
+        }
+    }
+
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
-        process_type,
+        link_target: process_type,
         tld_lookup,
         inr_backup_bootstrap,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
+        redaction_flags,
     };
 
     let client_config = ClientConfig::builder()

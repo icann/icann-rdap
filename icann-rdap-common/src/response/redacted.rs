@@ -33,6 +33,7 @@
 //! ```
 //!
 use {
+    crate::prelude::RdapResponse,
     buildstructor::Builder,
     serde::{Deserialize, Serialize},
     std::{any::TypeId, fmt},
@@ -44,9 +45,11 @@ use crate::check::Checks;
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Name {
     #[serde(rename = "description")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub type_field: Option<String>,
 }
 
@@ -66,9 +69,11 @@ impl Name {
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct Reason {
     #[serde(rename = "description")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub type_field: Option<String>,
 }
 
@@ -93,7 +98,9 @@ impl std::fmt::Display for Reason {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub enum Method {
+    #[default]
     Removal,
     EmptyValue,
     PartialValue,
@@ -137,12 +144,6 @@ impl Default for Name {
             description: Some(String::default()),
             type_field: None,
         }
-    }
-}
-
-impl Default for Method {
-    fn default() -> Self {
-        Self::Removal // according to IETF draft this is the default
     }
 }
 
@@ -209,13 +210,44 @@ impl Redacted {
     }
 }
 
+static EMPTY_REDACTED_ARRAY: [Redacted; 0] = [];
+
+/// Get the redactions for an [RdapResponse].
+pub fn redactions(rdap: &RdapResponse) -> &[Redacted] {
+    match rdap {
+        RdapResponse::Entity(entity) => {
+            entity.object_common.redacted.as_deref().unwrap_or_default()
+        }
+        RdapResponse::Domain(domain) => {
+            domain.object_common.redacted.as_deref().unwrap_or_default()
+        }
+        RdapResponse::Nameserver(nameserver) => nameserver
+            .object_common
+            .redacted
+            .as_deref()
+            .unwrap_or_default(),
+        RdapResponse::Autnum(autnum) => {
+            autnum.object_common.redacted.as_deref().unwrap_or_default()
+        }
+        RdapResponse::Network(network) => network
+            .object_common
+            .redacted
+            .as_deref()
+            .unwrap_or_default(),
+        _ => {
+            // RFC 9537 is very underspecified when it comes to anything
+            // other than the object classes.
+            &EMPTY_REDACTED_ARRAY
+        }
+    }
+}
+
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_redaction_WHEN_set_THEN_success() {
+    fn test_redaction_builder() {
         // GIVEN
         let name = Name {
             description: Some("Registry Domain ID".to_string()),
@@ -258,7 +290,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_WHEN_deserialize_THEN_success() {
+    fn test_redaction_deserialization() {
         // GIVEN
         let expected = r#"
         {
