@@ -163,7 +163,7 @@ struct Cli {
         long,
         required = false,
         env = "RDAP_REDACTION_FLAGS",
-        value_delimiter = '.',
+        value_delimiter = ',',
         value_enum
     )]
     redaction_flag: Vec<RedactionFlagArg>,
