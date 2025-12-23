@@ -19,6 +19,7 @@ chrono.workspace = true
 const_format.workspace = true
 directories.workspace = true
 dotenv.workspace = true
+enumflags2.workspace = true
 hickory-client.workspace = true
 json-pretty-compact.workspace = true
 minus.workspace = true

@@ -1,3 +1,4 @@
+use enumflags2::BitFlags;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -21,7 +22,7 @@ use {
     tokio::{join, task::spawn_blocking},
 };
 
-use crate::query::do_query;
+use crate::query::{do_query, RedactionFlag};
 
 pub mod bootstrap;
 pub mod error;
@@ -154,6 +155,18 @@ struct Cli {
         value_enum
     )]
     link_target: Option<LinkTargetArg>,
+
+    /// Redaction flags.
+    ///
+    /// Control the processing and display of redactions.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_REDACTION_FLAGS",
+        value_delimiter = '.',
+        value_enum
+    )]
+    redaction_flag: Vec<RedactionFlagArg>,
 
     /// Pager Usage.
     ///
@@ -443,6 +456,21 @@ enum InrBackupBootstrapArg {
     None,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum RedactionFlagArg {
+    /// Highlight Simple Redactions.
+    HighlightSimpleRedactions,
+
+    /// Show RFC 9537 redaction directives.
+    ShowRfc9537,
+
+    /// Do not turn RFC 9537 redactions into Simple Redactions.
+    DoNotSimplifyRfc9537,
+
+    /// Process RFC 9537 redactions.
+    DoRfc9537Redactions,
+}
+
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
@@ -546,6 +574,22 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         InrBackupBootstrapArg::None => InrBackupBootstrap::None,
     };
 
+    let mut redaction_flags: BitFlags<RedactionFlag> = BitFlags::EMPTY;
+    for flag in cli.redaction_flag {
+        match flag {
+            RedactionFlagArg::HighlightSimpleRedactions => {
+                redaction_flags |= RedactionFlag::HighlightSimpleRedactions
+            }
+            RedactionFlagArg::ShowRfc9537 => redaction_flags |= RedactionFlag::ShowRfc9537,
+            RedactionFlagArg::DoNotSimplifyRfc9537 => {
+                redaction_flags |= RedactionFlag::DoNotSimplifyRfc9537
+            }
+            RedactionFlagArg::DoRfc9537Redactions => {
+                redaction_flags |= RedactionFlag::DoRfc9537Redactions
+            }
+        }
+    }
+
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
@@ -554,6 +598,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         inr_backup_bootstrap,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
+        redaction_flags,
     };
 
     let client_config = ClientConfig::builder()

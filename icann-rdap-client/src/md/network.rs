@@ -19,7 +19,11 @@ impl ToMd for Network {
         );
 
         // multipart data
-        let mut table = MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks());
+        let mut table = if params.highlight_simple_redactions {
+            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+        } else {
+            MultiPartTable::new()
+        };
 
         // summary
         table = table.summary(header_text);
@@ -50,8 +54,10 @@ impl ToMd for Network {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+        if params.show_rfc9537_redactions {
+            if let Some(redacted) = &self.object_common.redacted {
+                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+            }
         }
 
         md.push('\n');
@@ -141,6 +147,8 @@ mod tests {
             http_data: &http_data,
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = net.to_md(params);
 

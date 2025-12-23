@@ -17,7 +17,11 @@ use {
     tracing::{debug, info},
 };
 
-use crate::{dirs::rdap_cache_path, error::RdapCliError, query::ProcessingParams};
+use crate::{
+    dirs::rdap_cache_path,
+    error::RdapCliError,
+    query::{ProcessingParams, RedactionFlag},
+};
 
 /// This function handles making requests and caching.
 pub(crate) async fn do_request(
@@ -101,8 +105,22 @@ pub(crate) async fn request_and_process(
 ) -> Result<ResponseData, RdapCliError> {
     let response = do_request(base_url, query_type, processing_params, client).await;
     if let Ok(response) = response {
-        let rdap = replace_redacted_items(response.rdap.clone());
-        let rdap = simplify_redactions(rdap, true);
+        let rdap = if processing_params
+            .redaction_flags
+            .contains(RedactionFlag::DoRfc9537Redactions)
+        {
+            replace_redacted_items(response.rdap.clone())
+        } else {
+            response.rdap.clone()
+        };
+        let rdap = if !processing_params
+            .redaction_flags
+            .contains(RedactionFlag::DoNotSimplifyRfc9537)
+        {
+            simplify_redactions(rdap, false)
+        } else {
+            rdap
+        };
         let response = ResponseData {
             rdap,
             // copy other fields from `response`

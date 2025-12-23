@@ -16,6 +16,7 @@ use {
 };
 
 use chrono::DateTime;
+use enumflags2::{bitflags, BitFlags};
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     check::{
@@ -109,6 +110,24 @@ pub(crate) enum InrBackupBootstrap {
     None,
 }
 
+/// Redaction Flags.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[bitflags]
+#[repr(u64)]
+pub(crate) enum RedactionFlag {
+    /// Highlight Simple Redactions.
+    HighlightSimpleRedactions,
+
+    /// Show RFC 9537 redaction directives.
+    ShowRfc9537,
+
+    /// Do not turn RFC 9537 redactions into Simple Redactions.
+    DoNotSimplifyRfc9537,
+
+    /// Process RFC 9537 Redactions
+    DoRfc9537Redactions,
+}
+
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
@@ -117,6 +136,7 @@ pub(crate) struct ProcessingParams {
     pub inr_backup_bootstrap: InrBackupBootstrap,
     pub no_cache: bool,
     pub max_cache_age: u32,
+    pub redaction_flags: BitFlags<RedactionFlag>,
 }
 
 pub(crate) async fn do_query<W: std::io::Write>(
@@ -356,6 +376,12 @@ fn do_output<'a, W: std::io::Write>(
                         http_data: &response.http_data,
                         options: &MdOptions::default(),
                         req_data,
+                        show_rfc9537_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::ShowRfc9537),
+                        highlight_simple_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::HighlightSimpleRedactions),
                     }),
                 )?;
             }
@@ -373,6 +399,12 @@ fn do_output<'a, W: std::io::Write>(
                             ..MdOptions::default()
                         },
                         req_data,
+                        show_rfc9537_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::ShowRfc9537),
+                        highlight_simple_redactions: processing_params
+                            .redaction_flags
+                            .contains(RedactionFlag::HighlightSimpleRedactions),
                     })
                 )?;
             }

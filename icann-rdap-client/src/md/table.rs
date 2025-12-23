@@ -302,7 +302,7 @@ impl ToMd for MultiPartTable {
 fn highlight_value(value: &str, values_to_highlight: &[String], options: &MdOptions) -> String {
     let mut value = value.to_string();
     for hl in values_to_highlight {
-        value = value.replace(hl, &hl.to_strikethrough(options));
+        value = value.replace(hl, &hl.to_em(options));
     }
     value
 }
@@ -356,6 +356,8 @@ mod tests {
             http_data: &HttpData::example().build(),
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(actual, "|:-:|\n|__foo__|\n|\n\n")
@@ -385,6 +387,8 @@ mod tests {
             http_data: &HttpData::example().build(),
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
@@ -415,6 +419,8 @@ mod tests {
             http_data: &HttpData::example().build(),
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(
@@ -447,6 +453,8 @@ mod tests {
             http_data: &HttpData::example().build(),
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
@@ -477,6 +485,8 @@ mod tests {
             http_data: &HttpData::example().build(),
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(
@@ -513,6 +523,8 @@ mod tests {
             http_data: &HttpData::example().build(),
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(

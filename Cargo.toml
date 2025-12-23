@@ -60,6 +60,9 @@ dotenv = "0.15.0"
 # environment variable utilities
 envmnt = "0.10.4"
 
+# enumflags
+enumflags2 = "0.7"
+
 # futures
 futures = "0.3"
 

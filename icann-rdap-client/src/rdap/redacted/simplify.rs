@@ -62,7 +62,7 @@ fn simplify_domain_redactions(mut domain: Box<Domain>, only_pre_path: bool) -> R
     let binding = domain.object_common.redacted.clone();
     let redactions = binding.as_deref().unwrap_or_default();
     for redaction in redactions {
-        if !is_only_pre_path(only_pre_path, redaction) {
+        if is_only_pre_path(only_pre_path, redaction) {
             continue;
         }
         if let Some(r_type) = redaction.name().type_field() {
