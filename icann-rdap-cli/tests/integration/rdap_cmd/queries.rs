@@ -8,7 +8,7 @@ use {
     },
     icann_rdap_srv::storage::StoreOps,
     rstest::rstest,
-    serde_json::Value,
+    serde_json::{json, Value},
 };
 
 use crate::test_jig::TestJig;
@@ -425,11 +425,10 @@ async fn test_domain_with_status_output_json() {
 
     // THEN output type is json with status
     let assert = test_jig.cmd.assert();
-    assert
-        .success()
-        .stdout(
-            "{\"status\":[\"client delete prohibited\",\"client transfer prohibited\",\"client update prohibited\"]}\n",
-        );
+    let expected_json = json!({
+        "status": ["client delete prohibited", "client transfer prohibited", "client update prohibited"]
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -470,9 +469,10 @@ async fn test_domain_referral_with_status_output_json() {
 
     // THEN output type is json with status
     let assert = test_jig.cmd.assert();
-    assert
-        .success()
-        .stdout("{\"status\":[\"client delete prohibited\",\"server delete prohibited\"]}\n");
+    let expected_json = json!({
+        "status": ["client delete prohibited", "server delete prohibited"]
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -519,9 +519,10 @@ async fn test_domain_with_referral_for_only_registry_with_status_output_json() {
 
     // THEN output type is json with status
     let assert = test_jig.cmd.assert();
-    assert
-        .success()
-        .stdout("{\"status\":[\"client delete prohibited\"]}\n");
+    let expected_json = json!({
+        "status": ["client delete prohibited"]
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -568,9 +569,10 @@ async fn test_domain_with_referral_for_only_registrar_with_status_output_json() 
 
     // THEN output type is json with status
     let assert = test_jig.cmd.assert();
-    assert
-        .success()
-        .stdout("{\"status\":[\"server delete prohibited\"]}\n");
+    let expected_json = json!({
+        "status": ["server delete prohibited"]
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -936,9 +938,13 @@ async fn test_domain_with_event_json_output() {
 
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
-    assert.success().stdout(
-        "{\"events\":[{\"eventAction\":\"expiration\",\"eventDate\":\"1990-12-31T23:59:59Z\"}]}\n",
-    );
+    let expected_json = json!({
+        "events": [{
+            "eventAction": "expiration",
+            "eventDate": "1990-12-31T23:59:59Z"
+        }]
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -969,9 +975,15 @@ async fn test_domain_with_redaction_env() {
 
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
-    assert.success().stdout(
-        "{\"objectClassName\":\"domain\",\"redacted\":[{\"name\":{\"type\":\"Domain ID\"},\"method\":\"removal\"}],\"ldhName\":\"bar.example\"}\n"
-    );
+    let expected_json = json!({
+        "objectClassName": "domain",
+        "redacted": [{
+            "name": {"type": "Domain ID"},
+            "method": "removal"
+        }],
+        "ldhName": "bar.example"
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -1006,9 +1018,15 @@ async fn test_domain_with_redaction_flags() {
 
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
-    assert.success().stdout(
-        "{\"objectClassName\":\"domain\",\"redacted\":[{\"name\":{\"type\":\"Domain ID\"},\"method\":\"removal\"}],\"ldhName\":\"bar.example\"}\n"
-    );
+    let expected_json = json!({
+        "objectClassName": "domain",
+        "redacted": [{
+            "name": {"type": "Domain ID"},
+            "method": "removal"
+        }],
+        "ldhName": "bar.example"
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -1041,7 +1059,19 @@ async fn test_domain_with_simple_redaction_flags() {
 
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
-    assert.success().stdout(
-        "{\"objectClassName\":\"domain\",\"handle\":\"////REDACTED_ID////\",\"remarks\":[{\"title\":\"RFC9537 to Simple Redactions\",\"description\":[\"ID redacted.\"],\"simpleRedaction_keys\":[\"////REDACTED_ID////\"]}],\"redacted\":[{\"name\":{\"type\":\"Registry Domain ID\"},\"method\":\"removal\"}],\"ldhName\":\"bar.example\"}\n"
-    );
+    let expected_json = json!({
+        "objectClassName": "domain",
+        "handle": "////REDACTED_ID////",
+        "remarks": [{
+            "title": "RFC9537 to Simple Redactions",
+            "description": ["ID redacted."],
+            "simpleRedaction_keys": ["////REDACTED_ID////"]
+        }],
+        "redacted": [{
+            "name": {"type": "Registry Domain ID"},
+            "method": "removal"
+        }],
+        "ldhName": "bar.example"
+    });
+    assert.success().stdout(format!("{}\n", expected_json));
 }
