@@ -6,6 +6,7 @@ use std::{
 use icann_rdap_client::{
     md::redacted::replace_redacted_items, rdap::redacted::simplify_redactions,
 };
+use icann_rdap_common::prelude::RdapResponse;
 
 use {
     icann_rdap_client::{
@@ -103,31 +104,29 @@ pub(crate) async fn request_and_process(
     processing_params: &ProcessingParams,
     client: &Client,
 ) -> Result<ResponseData, RdapCliError> {
-    let response = do_request(base_url, query_type, processing_params, client).await;
-    if let Ok(response) = response {
-        let rdap = if processing_params
-            .redaction_flags
-            .contains(RedactionFlag::DoRfc9537Redactions)
-        {
-            replace_redacted_items(response.rdap.clone())
-        } else {
-            response.rdap.clone()
-        };
-        let rdap = if !processing_params
-            .redaction_flags
-            .contains(RedactionFlag::DoNotSimplifyRfc9537)
-        {
-            simplify_redactions(rdap, false)
-        } else {
-            rdap
-        };
-        let response = ResponseData {
-            rdap,
-            // copy other fields from `response`
-            ..response.clone()
-        };
-        Ok(response)
+    let response = do_request(base_url, query_type, processing_params, client).await?;
+    let processed_rdap = process_redactions(response.rdap, &processing_params.redaction_flags);
+
+    Ok(ResponseData {
+        rdap: processed_rdap,
+        // copy other fields from `response`
+        ..response
+    })
+}
+
+fn process_redactions(
+    rdap: icann_rdap_common::prelude::RdapResponse,
+    redaction_flags: &enumflags2::BitFlags<RedactionFlag>,
+) -> RdapResponse {
+    let processed_rdap = if redaction_flags.contains(RedactionFlag::DoRfc9537Redactions) {
+        replace_redacted_items(rdap)
     } else {
-        response
+        rdap
+    };
+
+    if !redaction_flags.contains(RedactionFlag::DoNotSimplifyRfc9537) {
+        simplify_redactions(processed_rdap, false)
+    } else {
+        processed_rdap
     }
 }
