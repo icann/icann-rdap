@@ -115,13 +115,8 @@ fn is_only_pre_path(only_pre_path: bool, redaction: &Redacted) -> bool {
     false
 }
 
-pub(crate) fn add_remark(
-    key: &str,
-    desc: &str,
-    redacted: &Redacted,
-    remarks: Option<Vec<Remark>>,
-) -> Option<Vec<Remark>> {
-    let desc_entry = if let Some(reason) = redacted.reason().and_then(|r| r.description()) {
+fn format_description_entry(desc: &str, redacted: &Redacted) -> String {
+    if let Some(reason) = redacted.reason().and_then(|r| r.description()) {
         let reason = if reason.ends_with('.') {
             reason.to_string()
         } else {
@@ -130,31 +125,49 @@ pub(crate) fn add_remark(
         format!("{desc} : {reason}")
     } else {
         desc.to_string()
-    };
-    let mut remarks = remarks.unwrap_or_default();
-    let mut remark_needed = true;
-    for remark in remarks.iter_mut() {
-        if let Some(keys) = &remark.simple_redaction_keys {
-            if !keys.iter().any(|k| k.eq(key)) {
-                let mut keys = keys.clone();
-                keys.push(key.to_string());
-                remark.simple_redaction_keys = Some(keys);
-                let mut description = remark.description().to_vec();
-                description.push(desc_entry.clone());
-                remark.description = Some(description.into());
-            }
-            remark_needed = false;
-        }
     }
-    if remark_needed {
-        let remark = Remark::builder()
+}
+
+pub(crate) fn add_remark(
+    key: &str,
+    desc: &str,
+    redacted: &Redacted,
+    remarks: Option<Vec<Remark>>,
+) -> Option<Vec<Remark>> {
+    let desc_entry = format_description_entry(desc, redacted);
+    let mut updated_remarks = remarks.unwrap_or_default();
+
+    // Look for existing remark with simple_redaction_keys to append to
+    if let Some(remark) = updated_remarks
+        .iter_mut()
+        .find(|r| !r.simple_redaction_keys().is_empty())
+    {
+        // Found a remark with simple_redaction_keys
+        if !remark.simple_redaction_keys().iter().any(|k| k == key) {
+            // Key doesn't exist yet, add it
+            if let Some(keys) = &mut remark.simple_redaction_keys {
+                let mut new_keys = keys.clone();
+                new_keys.push(key.to_string());
+                remark.simple_redaction_keys = Some(new_keys);
+            }
+
+            // Add description entry
+            let mut description = remark.description().to_vec();
+            description.push(desc_entry);
+            remark.description = Some(description.into());
+        }
+        // Key already exists, nothing to do
+    } else {
+        // No remark with simple_redaction_keys found, create new one
+        let new_remark = Remark::builder()
             .title("RFC9537 to Simple Redactions")
             .simple_redaction_keys(vec![key.to_string()])
             .description_entry(desc_entry)
             .build();
-        remarks.push(remark);
+        updated_remarks.push(new_remark);
     }
-    Some(remarks)
+
+    Some(updated_remarks)
 }
 
 #[cfg(test)]
