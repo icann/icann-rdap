@@ -1,26 +1,8 @@
 //! Structures that describe a request/response.
 
-use {
-    serde::{Deserialize, Serialize},
-    strum_macros::Display,
-};
+use serde::{Deserialize, Serialize};
 
 use crate::rdap::request::ResponseData;
-
-/// Types of RDAP servers.
-#[derive(Serialize, Deserialize, Display, Clone, Copy)]
-pub enum SourceType {
-    #[strum(serialize = "Domain Registry")]
-    DomainRegistry,
-    #[strum(serialize = "Domain Registrar")]
-    DomainRegistrar,
-    #[strum(serialize = "Regional Internet Registry")]
-    RegionalInternetRegistry,
-    #[strum(serialize = "Local Internet Registry")]
-    LocalInternetRegistry,
-    #[strum(serialize = "Uncategorized Registry")]
-    UncategorizedRegistry,
-}
 
 /// Represents meta data about the request.
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -39,9 +21,6 @@ pub struct RequestData<'a> {
     /// A human-friendly name to identify the source of the information.
     /// Examples might be "registry", "registrar", etc...
     pub source_host: &'a str,
-
-    /// Represents the type of source.
-    pub source_type: SourceType,
 }
 
 /// Structure for serializing request and response data.

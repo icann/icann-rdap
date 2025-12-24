@@ -327,10 +327,7 @@ pub(crate) fn get_value_highlights(remarks: &[Remark]) -> Vec<String> {
 mod tests {
     use icann_rdap_common::{httpdata::HttpData, prelude::ToResponse, response::Rfc9083Error};
 
-    use crate::{
-        md::ToMd,
-        rdap::rr::{RequestData, SourceType},
-    };
+    use crate::{md::ToMd, rdap::rr::RequestData};
 
     use super::MultiPartTable;
 
@@ -344,7 +341,6 @@ mod tests {
             req_number: 0,
             req_target: true,
             source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -375,7 +371,6 @@ mod tests {
             req_number: 0,
             req_target: true,
             source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -407,7 +402,6 @@ mod tests {
             req_number: 0,
             req_target: true,
             source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -441,7 +435,6 @@ mod tests {
             req_number: 0,
             req_target: true,
             source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -473,7 +466,6 @@ mod tests {
             req_number: 0,
             req_target: true,
             source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -511,7 +503,6 @@ mod tests {
             req_number: 0,
             req_target: true,
             source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)

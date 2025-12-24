@@ -183,8 +183,7 @@ impl ToMd for Common {
             md.push('\n');
             md.push_str(HR);
             let header_text = format!(
-                "Response from {} at {}",
-                params.req_data.source_type,
+                "Response from {}",
                 params.req_data.source_host.to_title_case()
             );
             md.push_str(&header_text.to_header(params.heading_level, params.options));

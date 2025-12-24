@@ -142,7 +142,6 @@ mod tests {
             req_number: 1,
             req_target: false,
             source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
@@ -188,7 +187,6 @@ mod tests {
             req_number: 1,
             req_target: false,
             source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
@@ -236,7 +234,6 @@ mod tests {
             req_number: 1,
             req_target: false,
             source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,

@@ -8,9 +8,7 @@ use {
     icann_rdap_client::{
         gtld::{GtldParams, ToGtldWhois},
         md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
-        rdap::{
-            QueryType, RequestData, RequestResponse, RequestResponses, ResponseData, SourceType,
-        },
+        rdap::{QueryType, RequestData, RequestResponse, RequestResponses, ResponseData},
     },
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
@@ -190,7 +188,6 @@ async fn do_domain_query<W: std::io::Write>(
                 req_number: 1,
                 req_target: !user_wants_registrar,
                 source_host: &source_host,
-                source_type: SourceType::DomainRegistry,
             };
             transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
             let regr_source_host;
@@ -213,7 +210,6 @@ async fn do_domain_query<W: std::io::Write>(
                                 req_number: 2,
                                 req_target: !user_wants_registy,
                                 source_host: &regr_source_host,
-                                source_type: SourceType::DomainRegistrar,
                             };
                             transactions = do_output(
                                 processing_params,
@@ -266,7 +262,6 @@ async fn do_inr_query<W: std::io::Write>(
                 req_number: 1,
                 req_target: true,
                 source_host: &source_host,
-                source_type: SourceType::RegionalInternetRegistry,
             };
             let replaced_rdap = replace_redacted_items(response.rdap.clone());
             let replaced_data = ResponseData {
@@ -306,14 +301,12 @@ async fn do_basic_query<'a, W: std::io::Write>(
                     req_number: meta.req_number + 1,
                     req_target: true,
                     source_host: meta.source_host,
-                    source_type: SourceType::UncategorizedRegistry,
                 }
             } else {
                 RequestData {
                     req_number: 1,
                     req_target: true,
                     source_host: &source_host,
-                    source_type: SourceType::UncategorizedRegistry,
                 }
             };
             let replaced_rdap = replace_redacted_items(response.rdap.clone());
