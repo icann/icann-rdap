@@ -7,7 +7,7 @@ use {
     error::RdapCliError,
     icann_rdap_cli::dirs,
     icann_rdap_client::http::{create_client, Client, ClientConfig},
-    query::{InrBackupBootstrap, LinkTarget, ProcessingParams, TldLookup},
+    query::{InrBackupBootstrap, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
     tracing_subscriber::filter::LevelFilter,
@@ -22,7 +22,7 @@ use {
     tokio::{join, task::spawn_blocking},
 };
 
-use crate::query::{do_query, RedactionFlag};
+use crate::query::{default_link_params, exec_queries, LinkParams, RedactionFlag};
 
 pub mod bootstrap;
 pub mod error;
@@ -59,6 +59,10 @@ impl CliStyles {
 #[command(group(
             ArgGroup::new("output")
                 .args(["output_type", "json", "rpsl"]),
+        ))]
+#[command(group(
+            ArgGroup::new("target")
+                .args(["link_target", "registry", "registrar", "up", "down", "bottom", "top"]),
         ))]
 #[command(before_long_help(BEFORE_LONG_HELP))]
 #[command(after_long_help(AFTER_LONG_HELP))]
@@ -158,15 +162,50 @@ struct Cli {
 
     /// Link Target
     ///
-    /// Specifies the link target.
-    #[arg(
-        short = 'l',
-        long,
-        required = false,
-        env = "RDAP_LINK_TARGET",
-        value_enum
-    )]
-    link_target: Option<LinkTargetArg>,
+    /// Specifies a link target. If no link target is given, the
+    /// default is "related". More than one link target may be given.
+    /// A value of "_none" indicates no link target.
+    #[arg(long, required = false, value_enum)]
+    link_target: Vec<String>,
+
+    /// Only Show Link Target
+    ///
+    /// Unless specified, all responses are shown.
+    /// When specified, only the link target is shown.
+    #[arg(long, required = false)]
+    only_show_target: Option<bool>,
+
+    /// The minimum number of times to query for a link target.
+    #[arg(long, required = false)]
+    min_link_depth: Option<usize>,
+
+    /// The maximum number of times to query for a link target.
+    #[arg(long, required = false)]
+    max_link_depth: Option<usize>,
+
+    /// Set link target parameters for a domain registry.
+    #[arg(long, required = false, conflicts_with = "link_target")]
+    registry: bool,
+
+    /// Set link target parameters for a domain registrar.
+    #[arg(long, required = false, conflicts_with = "link_target")]
+    registrar: bool,
+
+    /// Set link target parameters for a parent network.
+    #[arg(long, required = false, conflicts_with = "link_target")]
+    up: bool,
+
+    /// Set link target parameters for the child networks.
+    #[arg(long, required = false, conflicts_with = "link_target")]
+    down: bool,
+
+    /// Set link target parameters for the least specific network.
+    #[arg(long, required = false, conflicts_with = "link_target")]
+    top: bool,
+
+    /// Set link target parameters for the most specific networks.
+    #[arg(long, required = false, conflicts_with = "link_target")]
+    bottom: bool,
 
     /// Redaction flags.
     ///
@@ -430,15 +469,6 @@ enum LogLevel {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum LinkTargetArg {
-    /// Psuedo-link-target, equal to "related".
-    Registrar,
-
-    /// Psuedo-link-target for the origin.
-    Registry,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum PagerType {
     /// Use the embedded pager.
     Embedded,
@@ -566,12 +596,60 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         return Err(RdapCliError::GtldWhoisOutputNotImplemented);
     }
 
-    let process_type = match cli.link_target {
-        Some(p) => match p {
-            LinkTargetArg::Registrar => LinkTarget::Registrar,
-            LinkTargetArg::Registry => LinkTarget::Registry,
-        },
-        None => LinkTarget::Standard,
+    let link_params = if cli.registry {
+        LinkParams {
+            link_targets: vec![],
+            only_show_target: false,
+            min_link_depth: 1,
+            max_link_depth: 1,
+        }
+    } else if cli.registrar {
+        LinkParams {
+            link_targets: vec!["related".to_string()],
+            only_show_target: true,
+            min_link_depth: 2,
+            max_link_depth: 3,
+        }
+    } else if cli.up {
+        LinkParams {
+            link_targets: vec!["rdap-up".to_string(), "rdap-active".to_string()],
+            only_show_target: true,
+            min_link_depth: 2,
+            max_link_depth: 2,
+        }
+    } else if cli.down {
+        LinkParams {
+            link_targets: vec!["rdap-down".to_string(), "rdap-active".to_string()],
+            only_show_target: true,
+            min_link_depth: 2,
+            max_link_depth: 2,
+        }
+    } else if cli.top {
+        LinkParams {
+            link_targets: vec!["rdap-top".to_string(), "rdap-active".to_string()],
+            only_show_target: true,
+            min_link_depth: 2,
+            max_link_depth: 2,
+        }
+    } else if cli.bottom {
+        LinkParams {
+            link_targets: vec!["rdap-bottom".to_string(), "rdap-active".to_string()],
+            only_show_target: true,
+            min_link_depth: 2,
+            max_link_depth: 2,
+        }
+    } else if cli.link_target.contains(&"_none".to_string()) {
+        let def_link_params = default_link_params(&query_type);
+        LinkParams {
+            link_targets: vec![],
+            only_show_target: cli
+                .only_show_target
+                .unwrap_or(def_link_params.only_show_target),
+            min_link_depth: cli.min_link_depth.unwrap_or(def_link_params.min_link_depth),
+            max_link_depth: cli.max_link_depth.unwrap_or(def_link_params.max_link_depth),
+        }
+    } else {
+        default_link_params(&query_type)
     };
 
     let bootstrap_type = if let Some(ref tag) = cli.base {
@@ -611,12 +689,12 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
-        link_target: process_type,
         tld_lookup,
         inr_backup_bootstrap,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
         redaction_flags,
+        link_params,
     };
 
     let client_config = ClientConfig::builder()
@@ -698,7 +776,7 @@ async fn exec<W: std::io::Write>(
     } else {
         info!("query is {query_type}");
     }
-    let result = do_query(query_type, processing_params, client, &mut output).await;
+    let result = exec_queries(query_type, processing_params, client, &mut output).await;
     match result {
         Ok(_) => Ok(()),
         Err(error) => {

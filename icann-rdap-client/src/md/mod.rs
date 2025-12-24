@@ -68,7 +68,7 @@ pub struct MdParams<'a> {
     pub root: &'a RdapResponse,
     pub http_data: &'a HttpData,
     pub options: &'a MdOptions,
-    pub req_data: &'a RequestData<'a>,
+    pub req_data: &'a RequestData,
     pub show_rfc9537_redactions: bool,
     pub highlight_simple_redactions: bool,
 }

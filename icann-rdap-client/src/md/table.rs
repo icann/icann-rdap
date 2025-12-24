@@ -340,7 +340,6 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -370,7 +369,6 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -401,7 +399,6 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -434,7 +431,6 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -465,7 +461,6 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)
@@ -502,7 +497,6 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
         };
         let rdap_response = Rfc9083Error::response()
             .error_code(500)

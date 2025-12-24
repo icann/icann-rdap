@@ -514,8 +514,7 @@ async fn test_domain_with_referral_for_only_registry_with_status_output_json() {
         .arg("foo.example")
         .arg("-O")
         .arg("status-json")
-        .arg("-l")
-        .arg("registry");
+        .arg("--registry");
 
     // THEN output type is json with status
     let assert = test_jig.cmd.assert();
@@ -564,8 +563,7 @@ async fn test_domain_with_referral_for_only_registrar_with_status_output_json() 
         .arg("foo.example")
         .arg("-O")
         .arg("status-json")
-        .arg("-l")
-        .arg("registrar");
+        .arg("--registrar");
 
     // THEN output type is json with status
     let assert = test_jig.cmd.assert();
@@ -666,8 +664,7 @@ async fn test_domain_referral_with_url_output_for_registry() {
         .arg("foo.example")
         .arg("-O")
         .arg("url")
-        .arg("-l")
-        .arg("registry");
+        .arg("--registry");
 
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
@@ -709,8 +706,7 @@ async fn test_domain_referral_with_url_output_for_registrar() {
         .arg("foo.example")
         .arg("-O")
         .arg("url")
-        .arg("-l")
-        .arg("registrar");
+        .arg("--registrar");
 
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
@@ -790,8 +786,7 @@ async fn test_domain_referral_with_json_output_for_registrar() {
         .arg("foo.example")
         .arg("-O")
         .arg("json")
-        .arg("-l")
-        .arg("registrar");
+        .arg("--registrar");
 
     // THEN output type is json object
     let assert = test_jig.cmd.assert();
@@ -872,8 +867,7 @@ async fn test_domain_referral_with_pretyy_json_output_for_registrar() {
         .arg("foo.example")
         .arg("-O")
         .arg("pretty-json")
-        .arg("-l")
-        .arg("registrar");
+        .arg("--registrar");
 
     // THEN output type is json object
     let assert = test_jig.cmd.assert();
