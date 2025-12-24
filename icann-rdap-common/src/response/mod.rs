@@ -325,8 +325,21 @@ pub trait SelfLink: GetSelfLink {
     fn set_self_link(self, link: Link) -> Self;
 }
 
-/// Gets the `href` of a link with `rel` of "related" and `type` with the RDAP media type.
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
+    let related = &["related".to_string()];
+    get_relationship_links(related, rdap_response)
+}
+
+/// Gets the `href` of a link with `rel` of relationships.
+///
+/// This function will get the `href` from an RDAP object's links where the `rel`
+/// is a combination of the given relationships and the `type` is an RDAP media type.
+/// If no link with an RDAP media type is found, it will attempt to find a link that
+/// is formatted as a known RDAP URL.
+pub fn get_relationship_links<'b>(
+    relationships: &[String],
+    rdap_response: &'b RdapResponse,
+) -> Vec<&'b str> {
     let Some(links) = rdap_response.get_links() else {
         return vec![];
     };
@@ -335,7 +348,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
         .iter()
         .filter_map(|l| match (&l.href, &l.rel, &l.media_type) {
             (Some(href), Some(rel), Some(media_type))
-                if rel.eq_ignore_ascii_case("related")
+                if is_relationship(rel, relationships)
                     && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE) =>
             {
                 Some(href.as_str())
@@ -351,7 +364,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             .filter(|l| {
                 if let Some(href) = l.href() {
                     if let Some(rel) = l.rel() {
-                        rel.eq_ignore_ascii_case("related") && has_rdap_path(href)
+                        is_relationship(rel, relationships) && has_rdap_path(href)
                     } else {
                         false
                     }
@@ -363,6 +376,18 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             .collect::<Vec<&str>>();
     }
     urls
+}
+
+fn is_relationship(rel: &str, relationships: &[String]) -> bool {
+    let mut splits: usize = 0;
+    let num_found = rel
+        .split_whitespace()
+        .filter(|r| {
+            splits += 1;
+            relationships.iter().any(|s| r.eq_ignore_ascii_case(s))
+        })
+        .count();
+    splits == num_found && num_found == relationships.len()
 }
 
 /// Returns true if the URL contains an RDAP path as defined by RFC 9082.
@@ -399,7 +424,10 @@ pub fn opt_to_vec<T>(opt: Option<Vec<T>>) -> Vec<T> {
 mod tests {
     use serde_json::Value;
 
-    use crate::{media_types::RDAP_MEDIA_TYPE, prelude::ExtensionId};
+    use crate::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::{get_relationship_links, ExtensionId},
+    };
 
     use super::{get_related_links, Domain, Link, RdapResponse, ToResponse};
 
@@ -661,5 +689,98 @@ mod tests {
         // THEN
         assert!(!links.is_empty());
         assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_rdap_up_and_rdap_active_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up rdap-active")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links =
+            get_relationship_links(&["rdap-up".to_string(), "rdap-active".to_string()], &rdap);
+
+        // THEN
+        assert!(!links.is_empty());
+        assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_rdap_active_and_rdap_up_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up rdap-active")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links =
+            get_relationship_links(&["rdap-active".to_string(), "rdap-up".to_string()], &rdap);
+
+        // THEN
+        assert!(!links.is_empty());
+        assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_only_one_relationship_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up rdap-active")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links = get_relationship_links(&["rdap-up".to_string()], &rdap);
+
+        // THEN
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_get_too_many_relationship_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links =
+            get_relationship_links(&["rdap-active".to_string(), "rdap-up".to_string()], &rdap);
+
+        // THEN
+        assert!(links.is_empty());
     }
 }
