@@ -56,6 +56,10 @@ impl CliStyles {
             ArgGroup::new("base_specify")
                 .args(["base", "base_url"]),
         ))]
+#[command(group(
+            ArgGroup::new("output")
+                .args(["output_type", "json", "rpsl"]),
+        ))]
 #[command(before_long_help(BEFORE_LONG_HELP))]
 #[command(after_long_help(AFTER_LONG_HELP))]
 /// This program queries network registry information from domain name registries and registrars
@@ -143,6 +147,14 @@ struct Cli {
         default_value_t = OtypeArg::Auto,
     )]
     output_type: OtypeArg,
+
+    /// Shortcut for "-O pretty-compact-json"
+    #[arg(long, required = false, conflicts_with = "output_type")]
+    json: bool,
+
+    /// Shortcut for "-O rpsl"
+    #[arg(long, required = false, conflicts_with = "output_type")]
+    rpsl: bool,
 
     /// Link Target
     ///
@@ -520,27 +532,33 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         PagerType::Auto => std::io::stdout().is_terminal(),
     };
 
-    let output_type = match cli.output_type {
-        OtypeArg::Auto => {
-            if std::io::stdout().is_terminal() {
-                OutputType::RenderedMarkdown
-            } else {
-                OutputType::Json
+    let output_type = if cli.json {
+        OutputType::PrettyCompactJson
+    } else if cli.rpsl {
+        OutputType::Rpsl
+    } else {
+        match cli.output_type {
+            OtypeArg::Auto => {
+                if std::io::stdout().is_terminal() {
+                    OutputType::RenderedMarkdown
+                } else {
+                    OutputType::Json
+                }
             }
+            OtypeArg::RenderedMarkdown => OutputType::RenderedMarkdown,
+            OtypeArg::Markdown => OutputType::Markdown,
+            OtypeArg::Json => OutputType::Json,
+            OtypeArg::PrettyJson => OutputType::PrettyJson,
+            OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
+            OtypeArg::JsonExtra => OutputType::JsonExtra,
+            OtypeArg::GtldWhois => OutputType::GtldWhois,
+            OtypeArg::Rpsl => OutputType::Rpsl,
+            OtypeArg::Url => OutputType::Url,
+            OtypeArg::StatusText => OutputType::StatusText,
+            OtypeArg::StatusJson => OutputType::StatusJson,
+            OtypeArg::EventText => OutputType::EventText,
+            OtypeArg::EventJson => OutputType::EventJson,
         }
-        OtypeArg::RenderedMarkdown => OutputType::RenderedMarkdown,
-        OtypeArg::Markdown => OutputType::Markdown,
-        OtypeArg::Json => OutputType::Json,
-        OtypeArg::PrettyJson => OutputType::PrettyJson,
-        OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
-        OtypeArg::JsonExtra => OutputType::JsonExtra,
-        OtypeArg::GtldWhois => OutputType::GtldWhois,
-        OtypeArg::Rpsl => OutputType::Rpsl,
-        OtypeArg::Url => OutputType::Url,
-        OtypeArg::StatusText => OutputType::StatusText,
-        OtypeArg::StatusJson => OutputType::StatusJson,
-        OtypeArg::EventText => OutputType::EventText,
-        OtypeArg::EventJson => OutputType::EventJson,
     };
 
     // throw error if output type is inappropriate
