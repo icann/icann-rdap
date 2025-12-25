@@ -649,7 +649,18 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             max_link_depth: cli.max_link_depth.unwrap_or(def_link_params.max_link_depth),
         }
     } else {
-        default_link_params(&query_type)
+        let def_link_params = default_link_params(&query_type);
+        LinkParams {
+            link_targets: match cli.link_target.is_empty() {
+                true => def_link_params.link_targets,
+                false => cli.link_target,
+            },
+            only_show_target: cli
+                .only_show_target
+                .unwrap_or(def_link_params.only_show_target),
+            min_link_depth: cli.min_link_depth.unwrap_or(def_link_params.min_link_depth),
+            max_link_depth: cli.max_link_depth.unwrap_or(def_link_params.max_link_depth),
+        }
     };
 
     let bootstrap_type = if let Some(ref tag) = cli.base {

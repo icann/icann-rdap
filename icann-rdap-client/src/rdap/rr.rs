@@ -19,19 +19,9 @@ pub struct RequestData {
     pub req_target: bool,
 }
 
-/// Structure for serializing request and response data.
-#[derive(Clone, Serialize)]
-pub struct RequestResponse<'a> {
-    pub req_data: &'a RequestData,
-    pub res_data: &'a ResponseData,
-}
-
 /// The primary purpose for this struct is to allow deserialization for testing.
 #[derive(Clone, Deserialize, Serialize)]
-pub struct RequestResponseOwned {
+pub struct RequestResponse {
     pub req_data: RequestData,
     pub res_data: ResponseData,
 }
-
-/// A [Vec] of [RequestResponse].
-pub type RequestResponses<'a> = Vec<RequestResponse<'a>>;

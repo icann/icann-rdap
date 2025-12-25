@@ -31,8 +31,8 @@ pub enum RdapCliError {
     InvalidBootstrap,
     #[error("Bootstrap not found")]
     BootstrapNotFound,
-    #[error("No registrar found")]
-    NoRegistrarFound,
+    #[error("Link target '{0}' not found.")]
+    LinkTargetNotFound(String),
     #[error("No registry found")]
     NoRegistryFound,
     #[error("gTLD Whois output for this query is not implemented")]
@@ -57,7 +57,7 @@ impl RdapCliError {
             Self::Iana(_) => 101,
             Self::InvalidBootstrap => 102,
             Self::BootstrapNotFound => 103,
-            Self::NoRegistrarFound => 104,
+            Self::LinkTargetNotFound(_) => 104,
             Self::NoRegistryFound => 105,
 
             // User Errors
