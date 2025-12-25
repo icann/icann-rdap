@@ -35,6 +35,10 @@ smoke_ip_query:
 smoke_domain_query:
     cargo run --bin rdap -- -L debug icann.org
 
+[doc('Look at the rdap help.')]
+smoke_rdap_help:
+    cargo run --bin rdap -- --help
+
 [doc('Run an IP conformace check smoke test.')]
 smoke_ip_check:
     cargo run --bin rdap-test -- 199.4.138.53
@@ -43,3 +47,6 @@ smoke_ip_check:
 smoke_domain_check:
     cargo run --bin rdap-test -- icann.org
 
+[doc('Look at the rdap-test help.')]
+smoke_rdap_test_help:
+    cargo run --bin rdap-test -- --help

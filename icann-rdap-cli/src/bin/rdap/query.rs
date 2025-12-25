@@ -14,6 +14,7 @@ use {
 
 use chrono::DateTime;
 use enumflags2::{bitflags, BitFlags};
+use icann_rdap_cli::args::target::LinkParams;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     check::{
@@ -122,13 +123,6 @@ pub(crate) struct ProcessingParams {
     pub max_cache_age: u32,
     pub redaction_flags: BitFlags<RedactionFlag>,
     pub link_params: LinkParams,
-}
-
-pub(crate) struct LinkParams {
-    pub link_targets: Vec<String>,
-    pub only_show_target: bool,
-    pub min_link_depth: usize,
-    pub max_link_depth: usize,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -251,33 +245,6 @@ async fn determine_base_url(
             }
         }
         _ => get_base_url(&processing_params.bootstrap_type, client, query_type).await,
-    }
-}
-
-pub(crate) fn default_link_params(query_type: &QueryType) -> LinkParams {
-    match query_type {
-        QueryType::IpV4Addr(_)
-        | QueryType::IpV6Addr(_)
-        | QueryType::IpV4Cidr(_)
-        | QueryType::IpV6Cidr(_)
-        | QueryType::AsNumber(_) => LinkParams {
-            link_targets: vec![],
-            only_show_target: false,
-            min_link_depth: 1,
-            max_link_depth: 1,
-        },
-        QueryType::Domain(_) => LinkParams {
-            link_targets: vec!["related".to_string()],
-            only_show_target: false,
-            min_link_depth: 1,
-            max_link_depth: 3,
-        },
-        _ => LinkParams {
-            link_targets: vec![],
-            only_show_target: false,
-            min_link_depth: 1,
-            max_link_depth: 1,
-        },
     }
 }
 
