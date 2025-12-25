@@ -6,7 +6,10 @@ use std::{
 };
 
 use icann_rdap_client::rdap::ResponseData;
-use icann_rdap_common::{httpdata::HttpData, prelude::RdapResponse};
+use icann_rdap_common::{
+    httpdata::HttpData,
+    prelude::{get_relationship_links, RdapResponse},
+};
 
 use {
     hickory_client::{
@@ -22,14 +25,17 @@ use {
         rdap::{rdap_url_request, QueryType},
         RdapClientError,
     },
-    icann_rdap_common::response::{get_related_links, ExtensionId},
+    icann_rdap_common::response::ExtensionId,
     reqwest::{header::HeaderValue, Url},
     thiserror::Error,
     tracing::{debug, info},
     url::ParseError,
 };
 
-use crate::rt::results::{HttpResults, RunFeature, TestRun};
+use crate::{
+    args::target::LinkParams,
+    rt::results::{HttpResults, RunFeature, TestRun},
+};
 
 use super::results::{DnsData, StringResult, TestResults};
 
@@ -43,9 +49,11 @@ pub struct TestOptions {
 impl Default for TestOptions {
     fn default() -> Self {
         Self {
-            test_type: TestType::String(StringTestOptions {
-                json: String::default(),
-            }),
+            test_type: TestType::String {
+                field1: StringTestOptions {
+                    json: String::default(),
+                },
+            },
             expect_extensions: vec![],
             expect_groups: vec![],
             allow_unregistered_extensions: false,
@@ -55,8 +63,8 @@ impl Default for TestOptions {
 
 #[derive(Clone)]
 pub enum TestType {
-    Http(HttpTestOptions),
-    String(StringTestOptions),
+    Http(Box<HttpTestOptions>),
+    String { field1: StringTestOptions },
 }
 
 #[derive(Clone)]
@@ -67,9 +75,9 @@ pub struct HttpTestOptions {
     pub skip_v6: bool,
     pub skip_origin: bool,
     pub origin_value: String,
-    pub chase_referral: bool,
     pub one_addr: bool,
     pub dns_resolver: Option<String>,
+    pub link_params: LinkParams,
 }
 
 #[derive(Clone)]
@@ -120,7 +128,9 @@ pub async fn execute_tests<BS: BootstrapStore>(
 ) -> Result<TestResults, TestExecutionError> {
     match &options.test_type {
         TestType::Http(http_options) => execute_http_tests(bs, http_options, options).await,
-        TestType::String(string_options) => execute_string_test(string_options, options),
+        TestType::String {
+            field1: string_options,
+        } => execute_string_test(string_options, options),
     }
 }
 
@@ -156,17 +166,35 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
             http_options.value.query_url(&base_url)?
         }
     };
-    // if the URL to test is a referral
-    if http_options.chase_referral {
+
+    for req_number in 1..http_options.link_params.max_link_depth {
         let client = create_client(&http_options.client_config)?;
         info!("Fetching referral from {query_url}");
         let response_data = rdap_url_request(&query_url, &client).await?;
-        query_url = get_related_links(&response_data.rdap)
-            .first()
-            .ok_or(TestExecutionError::NoReferralToChase)?
-            .to_string();
-        info!("Referral is {query_url}");
+        if let Some(url) =
+            get_relationship_links(&http_options.link_params.link_targets, &response_data.rdap)
+                .first()
+        {
+            info!("Found referral to {url}");
+            query_url = url.to_string();
+        } else if req_number < http_options.link_params.min_link_depth {
+            return Err(TestExecutionError::NoReferralToChase);
+        } else {
+            break;
+        }
     }
+
+    // // if the URL to test is a referral
+    // if http_options.chase_referral {
+    //     let client = create_client(&http_options.client_config)?;
+    //     info!("Fetching referral from {query_url}");
+    //     let response_data = rdap_url_request(&query_url, &client).await?;
+    //     query_url = get_related_links(&response_data.rdap)
+    //         .first()
+    //         .ok_or(TestExecutionError::NoReferralToChase)?
+    //         .to_string();
+    //     info!("Referral is {query_url}");
+    // }
 
     let parsed_url = Url::parse(&query_url)?;
     let port = parsed_url.port().unwrap_or_else(|| {

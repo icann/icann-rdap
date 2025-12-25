@@ -55,6 +55,7 @@ pub struct LinkTargetArgs {
     bottom: bool,
 }
 
+#[derive(Clone)]
 pub struct LinkParams {
     pub link_targets: Vec<String>,
     pub only_show_target: bool,
