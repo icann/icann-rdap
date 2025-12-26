@@ -1,3 +1,5 @@
+use icann_rdap_common::rdns::reverse_dns_to_ip;
+
 use {
     axum::{
         extract::{Path, State},
@@ -38,13 +40,18 @@ pub(crate) async fn domain_by_name(
 
     if state.get_bootstrap() && !matches!(domain, RdapResponse::Domain(_)) && !domain.is_redirect()
     {
-        let mut dn_slice = domain_name.as_str();
-        while let Some(less_specific) = dn_slice.split_once('.') {
-            let found = storage.get_domain_by_ldh(less_specific.1).await?;
-            if found.is_redirect() {
-                return Ok(found.to_domain_bootstrap(&domain_name).response());
-            } else {
-                dn_slice = less_specific.1;
+        if let Some(ip) = reverse_dns_to_ip(domain_name.as_str()) {
+            let network = storage.get_network_by_ipaddr(&ip.to_string()).await?;
+            return Ok(network.to_domain_bootstrap(&domain_name).response());
+        } else {
+            let mut dn_slice = domain_name.as_str();
+            while let Some(less_specific) = dn_slice.split_once('.') {
+                let found = storage.get_domain_by_ldh(less_specific.1).await?;
+                if found.is_redirect() {
+                    return Ok(found.to_domain_bootstrap(&domain_name).response());
+                } else {
+                    dn_slice = less_specific.1;
+                }
             }
         }
     }
