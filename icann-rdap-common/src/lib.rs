@@ -6,6 +6,7 @@ pub mod dns_types;
 pub mod httpdata;
 pub mod iana;
 pub mod media_types;
+pub mod rdns;
 pub mod response;
 
 /// Basics RDAP structures.
