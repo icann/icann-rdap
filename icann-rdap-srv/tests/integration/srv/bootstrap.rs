@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use {
     icann_rdap_client::{
         http::{create_client, ClientConfig},
@@ -15,8 +13,7 @@ use {
 use crate::test_jig::SrvTestJig;
 
 #[tokio::test]
-async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status_code_is_redirect()
-{
+async fn test_bootstrap_with_less_specific_domain() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -53,7 +50,7 @@ async fn GIVEN_bootstrap_with_less_specific_domain_WHEN_query_domain_THEN_status
 
 #[tokio::test]
 #[should_panic]
-async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_should_panic() {
+async fn test_bootstrap_with_no_less_specific_domain() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -79,7 +76,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_domain_WHEN_query_domain_THEN_sho
 }
 
 #[tokio::test]
-async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is_redirect() {
+async fn test_bootstrap_with_less_specific_ns() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -116,7 +113,7 @@ async fn GIVEN_bootstrap_with_less_specific_ns_WHEN_query_ns_THEN_status_code_is
 
 #[tokio::test]
 #[should_panic]
-async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_panic() {
+async fn test_bootstrap_with_no_less_specific_ns() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -142,7 +139,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ns_WHEN_query_ns_THEN_should_pani
 }
 
 #[tokio::test]
-async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is_redirect() {
+async fn test_bootstrap_with_less_specific_ip() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -183,7 +180,7 @@ async fn GIVEN_bootstrap_with_less_specific_ip_WHEN_query_ip_THEN_status_code_is
 
 #[tokio::test]
 #[should_panic]
-async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_panic() {
+async fn test_bootstrap_with_no_less_specific_ip() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -213,8 +210,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_ip_WHEN_query_ip_THEN_should_pani
 }
 
 #[tokio::test]
-async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status_code_is_redirect()
-{
+async fn test_bootstrap_with_less_specific_autnum() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -254,7 +250,7 @@ async fn GIVEN_bootstrap_with_less_specific_autnum_WHEN_query_autnum_THEN_status
 
 #[tokio::test]
 #[should_panic]
-async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_should_panic() {
+async fn test_bootstrap_with_no_less_specific_autnum() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -283,7 +279,7 @@ async fn GIVEN_bootstrap_with_no_less_specific_autnum_WHEN_query_autnum_THEN_sho
 }
 
 #[tokio::test]
-async fn GIVEN_bootstrap_with_specific_tag_WHEN_query_entity_THEN_status_code_is_redirect() {
+async fn test_bootstrap_with_specific_tag() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -319,8 +315,7 @@ async fn GIVEN_bootstrap_with_specific_tag_WHEN_query_entity_THEN_status_code_is
 }
 
 #[tokio::test]
-async fn GIVEN_bootstrap_with_specific_tag_lowercase_WHEN_query_entity_THEN_status_code_is_redirect(
-) {
+async fn test_bootstrap_with_specific_tag_lowercase() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -357,7 +352,7 @@ async fn GIVEN_bootstrap_with_specific_tag_lowercase_WHEN_query_entity_THEN_stat
 
 #[tokio::test]
 #[should_panic]
-async fn GIVEN_bootstrap_with_no_specific_tag_WHEN_query_entity_THEN_should_panic() {
+async fn test_bootstrap_with_no_specific_tag() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
