@@ -71,7 +71,7 @@ impl RdapCliError {
                 RdapClientError::Client(ce) => {
                     if ce.is_builder() {
                         match ce.url() {
-                            Some(url) if url.scheme() == "http" => 202,
+                            Some(url) if url.scheme() == "http" => 206,
                             _ => 42,
                         }
                     } else {
