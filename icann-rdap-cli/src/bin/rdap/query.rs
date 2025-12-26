@@ -219,6 +219,7 @@ async fn determine_base_url(
         | QueryType::IpV6Addr(_)
         | QueryType::IpV4Cidr(_)
         | QueryType::IpV6Cidr(_)
+        | QueryType::ReverseDNs(_)
         | QueryType::AsNumber(_) => {
             let mut base_url =
                 get_base_url(&processing_params.bootstrap_type, client, query_type).await;

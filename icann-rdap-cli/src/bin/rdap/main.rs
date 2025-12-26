@@ -323,6 +323,9 @@ enum QtypeArg {
     /// A-Label Domain Lookup
     ALabel,
 
+    /// Reverse Domain Lookup
+    Rdns,
+
     /// Entity Lookup
     Entity,
 
@@ -700,6 +703,7 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::Autnum => QueryType::autnum(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
+        QtypeArg::Rdns => QueryType::rdns_ipstr(&query_value)?,
         QtypeArg::Entity => QueryType::Entity(query_value),
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
