@@ -341,7 +341,7 @@ mod tests {
             req_number: 0,
             req_target: true,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -370,7 +370,7 @@ mod tests {
             req_number: 0,
             req_target: true,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -400,7 +400,7 @@ mod tests {
             req_number: 0,
             req_target: true,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -432,7 +432,7 @@ mod tests {
             req_number: 0,
             req_target: true,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -462,7 +462,7 @@ mod tests {
             req_number: 0,
             req_target: true,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -498,7 +498,7 @@ mod tests {
             req_number: 0,
             req_target: true,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();

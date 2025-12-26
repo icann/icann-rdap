@@ -276,7 +276,7 @@ impl RdapResponse {
             Self::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
-            Self::ErrorResponse(e) => e.rdap_conformance.as_ref(),
+            Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
             Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }

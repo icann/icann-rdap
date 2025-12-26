@@ -5,7 +5,7 @@ use {
         http::{create_client, ClientConfig},
         rdap::{rdap_request, QueryType},
     },
-    icann_rdap_common::response::Rfc9083Error,
+    icann_rdap_common::response::{Link, Notice, NoticeOrRemark, Rfc9083Error},
     icann_rdap_srv::storage::{
         data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
         StoreOps,
@@ -24,8 +24,17 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             ldh_name: "foo.example".to_string(),
             unicode_name: None,
         },
-        &Rfc9083Error::redirect()
-            .url("https://other.example.com")
+        &Rfc9083Error::response_obj()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
+                        .build()])
+                    .build(),
+            ))
             .build(),
     )
     .await
@@ -65,8 +74,17 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
             ldh_name: "ns.foo.example".to_string(),
             unicode_name: None,
         },
-        &Rfc9083Error::redirect()
-            .url("https://other.example.com")
+        &Rfc9083Error::response_obj()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
+                        .build()])
+                    .build(),
+            ))
             .build(),
     )
     .await
@@ -105,8 +123,17 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
         &EntityId {
             handle: "foo".to_string(),
         },
-        &Rfc9083Error::redirect()
-            .url("https://other.example.com")
+        &Rfc9083Error::response_obj()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
+                        .build()])
+                    .build(),
+            ))
             .build(),
     )
     .await
@@ -146,8 +173,17 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             start_autnum: 700,
             end_autnum: 710,
         },
-        &Rfc9083Error::redirect()
-            .url("https://other.example.com")
+        &Rfc9083Error::response_obj()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
+                        .build()])
+                    .build(),
+            ))
             .build(),
     )
     .await
@@ -186,8 +222,17 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
         &NetworkId {
             network_id: NetworkIdType::Cidr("10.0.0.0/16".parse().expect("parsing cidr")),
         },
-        &Rfc9083Error::redirect()
-            .url("https://other.example.com")
+        &Rfc9083Error::response_obj()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
+                        .build()])
+                    .build(),
+            ))
             .build(),
     )
     .await
@@ -229,8 +274,17 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
                 end_address: "10.0.0.255".to_string(),
             },
         },
-        &Rfc9083Error::redirect()
-            .url("https://other.example.com")
+        &Rfc9083Error::response_obj()
+            .error_code(307)
+            .notice(Notice(
+                NoticeOrRemark::builder()
+                    .links(vec![Link::builder()
+                        .href("https://other.example.com")
+                        .value("https://other.example.com")
+                        .rel("about")
+                        .build()])
+                    .build(),
+            ))
             .build(),
     )
     .await

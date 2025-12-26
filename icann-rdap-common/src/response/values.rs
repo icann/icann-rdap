@@ -51,8 +51,6 @@ pub enum ExtensionId {
     Farv1,
     #[strum(serialize = "fred")]
     Fred,
-    #[strum(serialize = "extErr")]
-    ExtendedError, // TODO register this extension
     #[strum(serialize = "icann_rdap_response_profile_0")]
     IcannRdapResponseProfile0,
     #[strum(serialize = "icann_rdap_response_profile_1")]
