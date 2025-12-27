@@ -1,6 +1,8 @@
 //! JSContact for Contact
 use serde::{Deserialize, Serialize};
 
+use crate::contact::{Contact, PostalAddress};
+
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct JsContactCard {
     #[serde(rename = "@type")]
@@ -32,12 +34,12 @@ pub struct JsContactCard {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct Organizations {
-    pub org: Org,
+    pub org: Option<Org>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct Org {
-    pub name: String,
+    pub name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
@@ -57,12 +59,12 @@ pub struct KindValue {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct Addresses {
-    pub addr: Option<PostalAddress>,
-    pub address_one: Option<PostalAddress>,
+    pub addr: Option<Address>,
+    pub address_one: Option<Address>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub struct PostalAddress {
+pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub components: Option<Vec<Name>>,
 
@@ -129,13 +131,164 @@ pub struct Links {
     pub contact_uri: Option<ContactUri>,
 }
 
+impl Contact {
+    pub fn to_jscontact(&self) -> JsContactCard {
+        JsContactCard {
+            card_type: "Card".to_string(),
+            version: "2.0".to_string(),
+            language: self.lang().map(|l| l.tag().to_string()),
+            organizations: Some(Organizations {
+                org: Some(Org {
+                    name: self.organization_name().map(|s| s.to_owned()),
+                }),
+            }),
+            name: Some(Name {
+                full: self.full_name().map(|s| s.to_owned()),
+                components: self.name_parts().map(|np| {
+                    let mut components = vec![];
+                    if let Some(prefix) = np.prefix() {
+                        components.push(KindValue {
+                            kind: "title".to_string(),
+                            value: prefix.to_owned(),
+                        })
+                    };
+                    if let Some(given_name) = np.given_name() {
+                        components.push(KindValue {
+                            kind: "given".to_string(),
+                            value: given_name.to_owned(),
+                        })
+                    };
+                    if let Some(middle_name) = np.middle_name() {
+                        components.push(KindValue {
+                            kind: "given2".to_string(),
+                            value: middle_name.to_owned(),
+                        })
+                    };
+                    if let Some(surname) = np.surname() {
+                        components.push(KindValue {
+                            kind: "surname".to_string(),
+                            value: surname.to_owned(),
+                        })
+                    };
+                    if let Some(surname) = np.surnames().get(1) {
+                        components.push(KindValue {
+                            kind: "surname2".to_string(),
+                            value: surname.to_owned(),
+                        })
+                    };
+                    if let Some(suffix) = np.suffix() {
+                        components.push(KindValue {
+                            kind: "credential".to_string(),
+                            value: suffix.to_owned(),
+                        })
+                    };
+                    components
+                }),
+            }),
+            addresses: self.postal_addresses.as_ref().map(|pas| {
+                let addresses = Addresses {
+                    addr: pas.first().map(postal_address_to_address),
+                    address_one: pas.get(1).map(postal_address_to_address),
+                };
+                addresses
+            }),
+            phones: Some(Phones {
+                voice: self
+                    .voice_phone()
+                    .or_else(|| self.fax_phone())
+                    .map(phone_to_phone),
+                fax: self.fax_phone().map(phone_to_phone),
+            }),
+            emails: self.emails().first().map(|email| Emails {
+                email: Email {
+                    address: email.email().to_owned(),
+                },
+            }),
+            links: links(self),
+        }
+    }
+}
+
+fn postal_address_to_address(addr: &PostalAddress) -> Address {
+    let mut components = vec![];
+    for part in addr.street_parts() {
+        components.push(KindValue {
+            kind: "name".to_string(),
+            value: part.to_owned(),
+        })
+    }
+    if let Some(locality) = addr.locality() {
+        components.push(KindValue {
+            kind: "locality".to_string(),
+            value: locality.to_owned(),
+        })
+    }
+    if let Some(region) = addr.region_name() {
+        components.push(KindValue {
+            kind: "region".to_string(),
+            value: region.to_owned(),
+        })
+    }
+    if let Some(country) = addr.country_name() {
+        components.push(KindValue {
+            kind: "country".to_string(),
+            value: country.to_owned(),
+        })
+    }
+    if let Some(postal) = addr.postal_code() {
+        components.push(KindValue {
+            kind: "postalcode".to_string(),
+            value: postal.to_owned(),
+        })
+    }
+    let name = Name {
+        full: addr.full_address().map(|s| s.to_owned()),
+        components: Some(components),
+    };
+    Address {
+        country_code: addr.country_code().map(|s| s.to_owned()),
+        components: Some(vec![name]),
+    }
+}
+
+fn phone_to_phone(phone: &super::Phone) -> Phone {
+    let voice = phone.features().contains(&"voice".to_string());
+    let fax = phone.features().contains(&"fax".to_string());
+    let features = if voice || fax {
+        Some(Features {
+            voice: voice.then_some(true),
+            fax: fax.then_some(true),
+        })
+    } else {
+        None
+    };
+    Phone {
+        features,
+        number: phone.phone().to_owned(),
+    }
+}
+
+fn links(contact: &Contact) -> Option<Links> {
+    if contact.urls().is_empty() || contact.contact_uris().is_empty() {
+        return None;
+    }
+    //else
+    Some(Links {
+        url: contact.url().map(|u| Url { uri: u.to_owned() }),
+        contact_uri: contact.contact_uri().map(|u| ContactUri {
+            kind: "contact".to_string(),
+            uri: u.to_owned(),
+        }),
+    })
+}
+
 #[cfg(test)]
 mod test {
     use indoc::indoc;
 
     use crate::contact::jscontact::{
-        Addresses, ContactUri, Email, Emails, Features, JsContactCard, KindValue, Links, Name, Org,
-        Organizations, Phone, Phones, PostalAddress, Url,
+        Address, Addresses, ContactUri, Email, Emails, Features, JsContactCard, KindValue, Links,
+        Name, Org, Organizations, Phone, Phones, Url,
     };
 
     const DRAFT_EXAMPLE: &str = indoc! {r#"
@@ -201,9 +354,9 @@ mod test {
             version: "2.0".to_string(),
             language: Some("en".to_string()),
             organizations: Some(Organizations {
-                org: Org {
-                    name: "Acme Ltd".to_string(),
-                },
+                org: Some(Org {
+                    name: Some("Acme Ltd".to_string()),
+                }),
             }),
             name: Some(Name {
                 full: Some("Bob Smurd".to_string()),
@@ -219,7 +372,7 @@ mod test {
                 ]),
             }),
             addresses: Some(Addresses {
-                addr: Some(PostalAddress {
+                addr: Some(Address {
                     components: Some(vec![Name {
                         full: Some("123 Glendale Blvd".to_string()),
                         components: Some(vec![
@@ -235,7 +388,7 @@ mod test {
                     }]),
                     country_code: Some("US".to_string()),
                 }),
-                address_one: Some(PostalAddress {
+                address_one: Some(Address {
                     components: Some(vec![Name {
                         full: Some("123 Glendale Blvd".to_string()),
                         components: Some(vec![

@@ -260,6 +260,11 @@ impl Contact {
         self.langs.as_deref().unwrap_or_default()
     }
 
+    /// Get the first language tag.
+    pub fn lang(&self) -> Option<&Lang> {
+        self.langs().first()
+    }
+
     /// Get the kind.
     pub fn kind(&self) -> Option<&str> {
         self.kind.as_deref()
@@ -290,14 +295,14 @@ impl Contact {
         self.roles.as_deref().unwrap_or_default()
     }
 
-    /// Get the organizational names.
-    pub fn organizational_names(&self) -> &[String] {
+    /// Get the organization names.
+    pub fn organization_names(&self) -> &[String] {
         self.organization_names.as_deref().unwrap_or_default()
     }
 
-    /// Get the first organizational name.
-    pub fn organizational_name(&self) -> Option<&str> {
-        self.organizational_names().first().map(|x| x.as_str())
+    /// Get the first organization name.
+    pub fn organization_name(&self) -> Option<&str> {
+        self.organization_names().first().map(|x| x.as_str())
     }
 
     /// Get the postal addresses.
@@ -328,6 +333,20 @@ impl Contact {
     /// Get the first phone.
     pub fn phone(&self) -> Option<&Phone> {
         self.phones().first()
+    }
+
+    /// Get the first phone with the voice feature.
+    pub fn voice_phone(&self) -> Option<&Phone> {
+        self.phones()
+            .iter()
+            .find(|phone| phone.features().contains(&"voice".to_string()))
+    }
+
+    /// Get the first phone with the fax feature.
+    pub fn fax_phone(&self) -> Option<&Phone> {
+        self.phones()
+            .iter()
+            .find(|phone| phone.features().contains(&"fax".to_string()))
     }
 
     /// Get the contact uris.
@@ -426,9 +445,19 @@ impl NameParts {
         self.prefixes.as_deref().unwrap_or_default()
     }
 
+    /// Get the first prefix.
+    pub fn prefix(&self) -> Option<&str> {
+        self.prefixes().first().map(|x| x.as_str())
+    }
+
     /// Get the sur names.
     pub fn surnames(&self) -> &[String] {
         self.surnames.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first surname.
+    pub fn surname(&self) -> Option<&str> {
+        self.surnames().first().map(|x| x.as_str())
     }
 
     /// Get the middle names.
@@ -436,14 +465,29 @@ impl NameParts {
         self.middle_names.as_deref().unwrap_or_default()
     }
 
+    /// Get the first middle name.
+    pub fn middle_name(&self) -> Option<&str> {
+        self.middle_names().first().map(|x| x.as_str())
+    }
+
     /// Get the given names.
     pub fn given_names(&self) -> &[String] {
         self.given_names.as_deref().unwrap_or_default()
     }
 
+    /// Get the first given name.
+    pub fn given_name(&self) -> Option<&str> {
+        self.given_names().first().map(|x| x.as_str())
+    }
+
     /// Get the suffixes.
     pub fn suffixes(&self) -> &[String] {
         self.suffixes.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first suffix.
+    pub fn suffix(&self) -> Option<&str> {
+        self.suffixes().first().map(|x| x.as_str())
     }
 }
 
