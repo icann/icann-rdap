@@ -84,6 +84,7 @@
 //! ```
 
 mod from_vcard;
+mod jscontact;
 mod to_vcard;
 
 use std::fmt::Display;
@@ -294,9 +295,19 @@ impl Contact {
         self.organization_names.as_deref().unwrap_or_default()
     }
 
+    /// Get the first organizational name.
+    pub fn organizational_name(&self) -> Option<&str> {
+        self.organizational_names().first().map(|x| x.as_str())
+    }
+
     /// Get the postal addresses.
     pub fn postal_addresses(&self) -> &[PostalAddress] {
         self.postal_addresses.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first postal address.
+    pub fn postal_address(&self) -> Option<&PostalAddress> {
+        self.postal_addresses().first()
     }
 
     /// Get the emails.
@@ -304,9 +315,19 @@ impl Contact {
         self.emails.as_deref().unwrap_or_default()
     }
 
+    /// Get the first email.
+    pub fn email(&self) -> Option<&Email> {
+        self.emails().first()
+    }
+
     /// Get the phones.
     pub fn phones(&self) -> &[Phone] {
         self.phones.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first phone.
+    pub fn phone(&self) -> Option<&Phone> {
+        self.phones().first()
     }
 
     /// Get the contact uris.
@@ -314,9 +335,19 @@ impl Contact {
         self.contact_uris.as_deref().unwrap_or_default()
     }
 
+    /// Get the first contact uri.
+    pub fn contact_uri(&self) -> Option<&str> {
+        self.contact_uris().first().map(|x| x.as_str())
+    }
+
     /// Get the URLs.
     pub fn urls(&self) -> &[String] {
         self.urls.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first URL.
+    pub fn url(&self) -> Option<&str> {
+        self.urls().first().map(|x| x.as_str())
     }
 }
 

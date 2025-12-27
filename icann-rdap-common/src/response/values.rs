@@ -59,6 +59,8 @@ pub enum ExtensionId {
     IcannRdapTechnicalImplementationGuide0,
     #[strum(serialize = "icann_rdap_technical_implementation_guide_1")]
     IcannRdapTechnicalImplementationGuide1,
+    #[strum(serialize = "jscontact")]
+    JsContact,
     #[strum(serialize = "nro_rdap_profile_0")]
     NroRdapProfile0,
     #[strum(serialize = "nro_rdap_profile_asn_flat_0")]
