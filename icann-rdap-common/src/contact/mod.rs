@@ -433,7 +433,29 @@ pub struct Localizable {
     pub postal_addresses: Option<Vec<PostalAddress>>,
 }
 
+#[buildstructor::buildstructor]
 impl Localizable {
+    #[builder(visibility = "pub")]
+    fn new(
+        full_name: Option<String>,
+        name_parts: Option<NameParts>,
+        nick_names: Vec<String>,
+        titles: Vec<String>,
+        roles: Vec<String>,
+        organization_names: Vec<String>,
+        postal_addresses: Vec<PostalAddress>,
+    ) -> Self {
+        Self {
+            full_name,
+            name_parts,
+            nick_names: to_opt_vec(nick_names),
+            titles: to_opt_vec(titles),
+            roles: to_opt_vec(roles),
+            organization_names: to_opt_vec(organization_names),
+            postal_addresses: to_opt_vec(postal_addresses),
+        }
+    }
+
     /// Get the full name.
     pub fn full_name(&self) -> Option<&str> {
         self.full_name.as_deref()

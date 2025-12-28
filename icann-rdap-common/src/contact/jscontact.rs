@@ -159,36 +159,201 @@ impl Contact {
             card_type: "Card".to_string(),
             version: "2.0".to_string(),
             language: self.lang().map(|l| l.tag().to_string()),
-            organizations: org_to_orgs(self.organization_name()),
-            name: name_to_name(self.full_name(), self.name_parts()),
-            addresses: addresses_to_addresses(self.postal_addresses()),
-            phones: phones_to_phones(self.prefer_voice_phone(), self.fax_phone()),
-            emails: emails_to_email(self.emails()),
-            links: links(self),
+            organizations: org_to_jscontact(self.organization_name()),
+            name: name_to_jscontact(self.full_name(), self.name_parts()),
+            addresses: addresses_to_jscontact(self.postal_addresses()),
+            phones: phones_to_jscontact(self.prefer_voice_phone(), self.fax_phone()),
+            emails: emails_to_jscontact(self.emails()),
+            links: links_to_jscontact(self),
             localizations: if self.localizations_is_empty() {
                 None
             } else {
                 let mut hm = HashMap::new();
                 for (tag, local) in self.localizations_iter() {
-                    hm.insert(tag.to_owned(), local.to_jscontact());
+                    hm.insert(tag.to_owned(), local.to_localization());
                 }
                 Some(hm)
             },
         }
     }
-}
 
-impl Localizable {
-    pub fn to_jscontact(&self) -> Localization {
-        Localization {
-            organizations: org_to_orgs(self.organization_name()),
-            name: name_to_name(self.full_name(), self.name_parts()),
-            addresses: addresses_to_addresses(self.postal_addresses()),
+    pub fn from_jscontact(jscontact: &JsContactCard) -> Contact {
+        let mut builder = Contact::builder();
+        if let Some(lang) = &jscontact.language {
+            builder = builder.lang(super::Lang {
+                preference: None,
+                tag: lang.to_owned(),
+            });
+        };
+        if let Some(phones) = &jscontact.phones {
+            if let Some(voice) = &phones.voice {
+                builder = builder.phone(
+                    super::Phone::builder()
+                        .phone(voice.number.clone())
+                        .feature("voice".to_string())
+                        .build(),
+                )
+            }
+            if let Some(fax) = &phones.fax {
+                builder = builder.phone(
+                    super::Phone::builder()
+                        .phone(fax.number.clone())
+                        .feature("fax".to_string())
+                        .build(),
+                )
+            }
+        };
+        if let Some(emails) = &jscontact.emails {
+            builder = builder.email(
+                super::Email::builder()
+                    .email(emails.email.address.to_owned())
+                    .build(),
+            )
+        };
+        if let Some(links) = &jscontact.links {
+            if let Some(url) = &links.url {
+                builder = builder.url(url.uri.to_owned())
+            }
+            if let Some(contact_uri) = &links.contact_uri {
+                builder = builder.url(contact_uri.uri.to_owned())
+            }
         }
+        let builder = builder
+            .organization_names(jscontact_to_org_names(&jscontact.organizations))
+            .and_name_parts(jscontact_to_nameparts(&jscontact.name))
+            .postal_addresses(jscontact_to_postaladdresses(&jscontact.addresses))
+            .and_full_name(jscontact_to_fullname(&jscontact.name));
+        let mut contact = builder.build();
+        if let Some(localizations) = &jscontact.localizations {
+            for (tag, local) in localizations {
+                contact =
+                    contact.set_localization(tag.to_owned(), Localizable::from_jscontact(local));
+            }
+        }
+        contact
     }
 }
 
-fn org_to_orgs(organization_name: Option<&str>) -> Option<Organizations> {
+impl Localizable {
+    pub fn to_localization(&self) -> Localization {
+        Localization {
+            organizations: org_to_jscontact(self.organization_name()),
+            name: name_to_jscontact(self.full_name(), self.name_parts()),
+            addresses: addresses_to_jscontact(self.postal_addresses()),
+        }
+    }
+
+    pub fn from_jscontact(localization: &Localization) -> Self {
+        Localizable::builder()
+            .organization_names(jscontact_to_org_names(&localization.organizations))
+            .and_name_parts(jscontact_to_nameparts(&localization.name))
+            .postal_addresses(jscontact_to_postaladdresses(&localization.addresses))
+            .and_full_name(jscontact_to_fullname(&localization.name))
+            .build()
+    }
+}
+
+fn jscontact_to_postaladdresses(addresses: &Option<Addresses>) -> Vec<PostalAddress> {
+    let mut postal_addresses = vec![];
+    if let Some(addresses) = addresses {
+        if let Some(addr) = &addresses.addr {
+            postal_addresses.push(address_to_postaladdress(addr));
+        }
+        if let Some(addr) = &addresses.address_one {
+            postal_addresses.push(address_to_postaladdress(addr));
+        }
+    }
+    postal_addresses
+}
+
+fn address_to_postaladdress(addr: &Address) -> PostalAddress {
+    let mut street_parts = vec![];
+    let mut locality = None;
+    let mut region = None;
+    let mut country = None;
+    let mut postal_code = None;
+    if let Some(Name {
+        components: Some(components),
+        ..
+    }) = &addr.name
+    {
+        for component in components {
+            if component.kind.eq_ignore_ascii_case("name") {
+                street_parts.push(component.value.to_owned());
+            }
+            if component.kind.eq_ignore_ascii_case("locality") {
+                locality = Some(component.value.to_owned());
+            }
+            if component.kind.eq_ignore_ascii_case("region") {
+                region = Some(component.value.to_owned());
+            }
+            if component.kind.eq_ignore_ascii_case("country") {
+                country = Some(component.value.to_owned());
+            }
+            if component.kind.eq_ignore_ascii_case("postalcode") {
+                postal_code = Some(component.value.to_owned());
+            }
+        }
+    }
+    let builder = PostalAddress::builder()
+        .and_full_address(addr.name.as_ref().and_then(|n| n.full.to_owned()))
+        .street_parts(street_parts)
+        .and_locality(locality)
+        .and_region_name(region)
+        .and_country_name(country)
+        .and_postal_code(postal_code)
+        .and_country_code(addr.country_code.to_owned());
+    builder.build()
+}
+
+fn jscontact_to_nameparts(name: &Option<Name>) -> Option<NameParts> {
+    if let Some(Name {
+        components: Some(components),
+        ..
+    }) = name
+    {
+        let mut np = NameParts::builder();
+        for component in components {
+            if component.kind.eq_ignore_ascii_case("title") {
+                np = np.prefix(component.value.to_owned())
+            }
+            if component.kind.eq_ignore_ascii_case("given")
+                || component.kind.eq_ignore_ascii_case("given2")
+            {
+                np = np.given_name(component.value.to_owned())
+            }
+            if component.kind.eq_ignore_ascii_case("surname")
+                || component.kind.eq_ignore_ascii_case("surname2")
+            {
+                np = np.surname(component.value.to_owned())
+            }
+            if component.kind.eq_ignore_ascii_case("credentials") {
+                np = np.suffix(component.value.to_owned())
+            }
+            if component.kind.eq_ignore_ascii_case("generation") {
+                np = np.generation(component.value.to_owned())
+            }
+        }
+        Some(np.build())
+    } else {
+        None
+    }
+}
+
+fn jscontact_to_fullname(name: &Option<Name>) -> Option<String> {
+    name.as_ref().and_then(|n| n.full.to_owned())
+}
+
+fn jscontact_to_org_names(organizations: &Option<Organizations>) -> Vec<String> {
+    organizations
+        .as_ref()
+        .and_then(|o| o.org.as_ref())
+        .and_then(|o| o.name.as_ref())
+        .map(|n| vec![n.to_owned()])
+        .unwrap_or_default()
+}
+
+fn org_to_jscontact(organization_name: Option<&str>) -> Option<Organizations> {
     Some(Organizations {
         org: Some(Org {
             name: organization_name.map(|s| s.to_owned()),
@@ -196,7 +361,7 @@ fn org_to_orgs(organization_name: Option<&str>) -> Option<Organizations> {
     })
 }
 
-fn name_to_name(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Option<Name> {
+fn name_to_jscontact(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Option<Name> {
     Some(Name {
         full: full_name.map(|s| s.to_owned()),
         components: name_parts.map(|np| {
@@ -248,7 +413,7 @@ fn name_to_name(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Opti
     })
 }
 
-fn emails_to_email(emails: &[super::Email]) -> Option<Emails> {
+fn emails_to_jscontact(emails: &[super::Email]) -> Option<Emails> {
     emails.first().map(|email| Emails {
         email: Email {
             address: email.email().to_owned(),
@@ -256,19 +421,19 @@ fn emails_to_email(emails: &[super::Email]) -> Option<Emails> {
     })
 }
 
-fn addresses_to_addresses(addresses: &[PostalAddress]) -> Option<Addresses> {
+fn addresses_to_jscontact(addresses: &[PostalAddress]) -> Option<Addresses> {
     if addresses.is_empty() {
         None
     } else {
         let addresses = Addresses {
-            addr: addresses.first().map(postal_address_to_address),
-            address_one: addresses.get(1).map(postal_address_to_address),
+            addr: addresses.first().map(postal_address_to_jscontact),
+            address_one: addresses.get(1).map(postal_address_to_jscontact),
         };
         Some(addresses)
     }
 }
 
-fn postal_address_to_address(addr: &PostalAddress) -> Address {
+fn postal_address_to_jscontact(addr: &PostalAddress) -> Address {
     let mut components = vec![];
     for part in addr.street_parts() {
         components.push(KindValue {
@@ -310,14 +475,14 @@ fn postal_address_to_address(addr: &PostalAddress) -> Address {
     }
 }
 
-fn phones_to_phones(voice: Option<&super::Phone>, fax: Option<&super::Phone>) -> Option<Phones> {
+fn phones_to_jscontact(voice: Option<&super::Phone>, fax: Option<&super::Phone>) -> Option<Phones> {
     Some(Phones {
-        voice: voice.map(phone_to_phone),
-        fax: fax.map(phone_to_phone),
+        voice: voice.map(phone_to_jscontact),
+        fax: fax.map(phone_to_jscontact),
     })
 }
 
-fn phone_to_phone(phone: &super::Phone) -> Phone {
+fn phone_to_jscontact(phone: &super::Phone) -> Phone {
     let voice = phone.features().contains(&"voice".to_string());
     let fax = phone.features().contains(&"fax".to_string());
     let features = if voice || fax {
@@ -334,7 +499,7 @@ fn phone_to_phone(phone: &super::Phone) -> Phone {
     }
 }
 
-fn links(contact: &Contact) -> Option<Links> {
+fn links_to_jscontact(contact: &Contact) -> Option<Links> {
     if contact.urls().is_empty() || contact.contact_uris().is_empty() {
         return None;
     }
