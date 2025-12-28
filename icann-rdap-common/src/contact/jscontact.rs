@@ -187,6 +187,12 @@ impl Contact {
                             value: suffix.to_owned(),
                         })
                     };
+                    if let Some(generation) = np.generation() {
+                        components.push(KindValue {
+                            kind: "generation".to_string(),
+                            value: generation.to_owned(),
+                        })
+                    };
                     components
                 }),
             }),
