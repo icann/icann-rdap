@@ -34,7 +34,19 @@ pub struct JsContactCard {
     pub links: Option<Links>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub localizations: Option<HashMap<String, JsContactCard>>,
+    pub localizations: Option<HashMap<String, Localization>>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+pub struct Localization {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub organizations: Option<Organizations>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<Name>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub addresses: Option<Addresses>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
@@ -167,18 +179,11 @@ impl Contact {
 }
 
 impl Localizable {
-    pub fn to_jscontact(&self) -> JsContactCard {
-        JsContactCard {
-            card_type: "Card".to_string(),
-            version: "2.0".to_string(),
-            language: None,
+    pub fn to_jscontact(&self) -> Localization {
+        Localization {
             organizations: org_to_orgs(self.organization_name()),
             name: name_to_name(self.full_name(), self.name_parts()),
             addresses: addresses_to_addresses(self.postal_addresses()),
-            phones: None,
-            emails: None,
-            links: None,
-            localizations: None,
         }
     }
 }
@@ -410,6 +415,54 @@ mod test {
           }
       }"#};
 
+    const DRAFT_EXAMPLE2: &str = indoc! {r#"
+            {
+              "@type": "Card",
+              "version": "2.0",
+              "language": "en",
+              "name": {
+                "full": "Vasya Pupkin"
+              },
+              "organizations": {
+                "org": {
+                  "name": "My Company"
+                }
+              },
+              "addresses": {
+                "addr": {
+                  "components": [
+                    { "kind": "name", "value": "1 Street" },
+                    { "kind": "postOfficeBox", "value": "01001" },
+                    { "kind": "locality", "value": "Kyiv" }
+                  ],
+                  "countryCode": "UA"
+                }
+              },
+              "localizations": {
+                "ua": {
+                  "addresses": {
+                    "addr": {
+                      "components": [
+                       { "kind": "name", "value": "1, Улица" },
+                       { "kind": "postOfficeBox", "value": "01001" },
+                       { "kind": "locality", "value": "Киев" }
+                      ],
+                      "countryCode": "UA"
+                    }
+                  },
+                  "name": {
+                    "full": "Вася Пупкин"
+                  },
+                  "organizations": {
+                    "org": {
+                      "name": "Моя Компания"
+                    }
+                  }
+                }
+              }
+            }
+        "#};
+
     fn test_jscontact_card() -> JsContactCard {
         JsContactCard {
             card_type: "Card".to_string(),
@@ -533,6 +586,22 @@ mod test {
 
         // WHEN
         let de_ser = serde_json::from_str::<JsContactCard>(DRAFT_EXAMPLE1).expect("valid json");
+        let ser = serde_json::to_string_pretty(&de_ser).expect("serialize json");
+        let actual = serde_json::from_str::<JsContactCard>(&ser).expect("valid json");
+        dbg!(&actual);
+
+        // THEN
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_roundtrip_example2() {
+        // GIVEN
+        let expected = serde_json::from_str::<JsContactCard>(DRAFT_EXAMPLE2).expect("valid json");
+        dbg!(&expected);
+
+        // WHEN
+        let de_ser = serde_json::from_str::<JsContactCard>(DRAFT_EXAMPLE2).expect("valid json");
         let ser = serde_json::to_string_pretty(&de_ser).expect("serialize json");
         let actual = serde_json::from_str::<JsContactCard>(&ser).expect("valid json");
         dbg!(&actual);
