@@ -410,7 +410,7 @@ impl Display for Lang {
 /// Name parts of a name.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NameParts {
-    /// Name prefixes.
+    /// Name prefixes such as titles or honorifics (e.g. "Mr., Mrs., Dr.").
     pub prefixes: Option<Vec<String>>,
 
     /// Surnames or last names.
@@ -422,8 +422,11 @@ pub struct NameParts {
     /// Given or first names.
     pub given_names: Option<Vec<String>>,
 
-    /// Name suffixes.
+    /// Name suffixes such as credentials and honorifics (e.g. "Esq.").
     pub suffixes: Option<Vec<String>>,
+
+    /// Generation markers (e.g. "Jr.", "III").
+    pub generations: Option<Vec<String>>,
 }
 
 #[buildstructor::buildstructor]
@@ -435,6 +438,7 @@ impl NameParts {
         middle_names: Vec<String>,
         given_names: Vec<String>,
         suffixes: Vec<String>,
+        generations: Vec<String>,
     ) -> Self {
         Self {
             prefixes: to_opt_vec(prefixes),
@@ -442,6 +446,7 @@ impl NameParts {
             middle_names: to_opt_vec(middle_names),
             given_names: to_opt_vec(given_names),
             suffixes: to_opt_vec(suffixes),
+            generations: to_opt_vec(generations),
         }
     }
 
@@ -493,6 +498,16 @@ impl NameParts {
     /// Get the first suffix.
     pub fn suffix(&self) -> Option<&str> {
         self.suffixes().first().map(|x| x.as_str())
+    }
+
+    /// Get the generations.
+    pub fn generations(&self) -> &[String] {
+        self.generations.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first generation.
+    pub fn generation(&self) -> Option<&str> {
+        self.generations().first().map(|x| x.as_str())
     }
 }
 
