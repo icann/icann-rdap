@@ -193,10 +193,7 @@ impl Contact {
                 addresses
             }),
             phones: Some(Phones {
-                voice: self
-                    .voice_phone()
-                    .or_else(|| self.fax_phone())
-                    .map(phone_to_phone),
+                voice: self.prefer_voice_phone().map(phone_to_phone),
                 fax: self.fax_phone().map(phone_to_phone),
             }),
             emails: self.emails().first().map(|email| Emails {

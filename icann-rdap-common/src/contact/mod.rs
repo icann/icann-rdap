@@ -349,6 +349,11 @@ impl Contact {
             .find(|phone| phone.features().contains(&"fax".to_string()))
     }
 
+    /// Get the voice phone else get the first phone.
+    pub fn prefer_voice_phone(&self) -> Option<&Phone> {
+        self.voice_phone().or_else(|| self.phone())
+    }
+
     /// Get the contact uris.
     pub fn contact_uris(&self) -> &[String] {
         self.contact_uris.as_deref().unwrap_or_default()
