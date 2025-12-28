@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::contact::{Contact, PostalAddress};
+use crate::contact::{Contact, Localizable, NameParts, PostalAddress};
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct JsContactCard {
@@ -147,84 +147,119 @@ impl Contact {
             card_type: "Card".to_string(),
             version: "2.0".to_string(),
             language: self.lang().map(|l| l.tag().to_string()),
-            organizations: Some(Organizations {
-                org: Some(Org {
-                    name: self.organization_name().map(|s| s.to_owned()),
-                }),
-            }),
-            name: Some(Name {
-                full: self.full_name().map(|s| s.to_owned()),
-                components: self.name_parts().map(|np| {
-                    let mut components = vec![];
-                    if let Some(prefix) = np.prefix() {
-                        components.push(KindValue {
-                            kind: "title".to_string(),
-                            value: prefix.to_owned(),
-                        })
-                    };
-                    if let Some(given_name) = np.given_name() {
-                        components.push(KindValue {
-                            kind: "given".to_string(),
-                            value: given_name.to_owned(),
-                        })
-                    };
-                    if let Some(middle_name) = np.middle_name() {
-                        components.push(KindValue {
-                            kind: "given2".to_string(),
-                            value: middle_name.to_owned(),
-                        })
-                    };
-                    if let Some(surname) = np.surname() {
-                        components.push(KindValue {
-                            kind: "surname".to_string(),
-                            value: surname.to_owned(),
-                        })
-                    };
-                    if let Some(surname) = np.surnames().get(1) {
-                        components.push(KindValue {
-                            kind: "surname2".to_string(),
-                            value: surname.to_owned(),
-                        })
-                    };
-                    if let Some(suffix) = np.suffix() {
-                        components.push(KindValue {
-                            kind: "credential".to_string(),
-                            value: suffix.to_owned(),
-                        })
-                    };
-                    if let Some(generation) = np.generation() {
-                        components.push(KindValue {
-                            kind: "generation".to_string(),
-                            value: generation.to_owned(),
-                        })
-                    };
-                    components
-                }),
-            }),
-            addresses: if self.postal_addresses().is_empty() {
+            organizations: org_to_orgs(self.organization_name()),
+            name: name_to_name(self.full_name(), self.name_parts()),
+            addresses: addresses_to_addresses(self.postal_addresses()),
+            phones: phones_to_phones(self.prefer_voice_phone(), self.fax_phone()),
+            emails: emails_to_email(self.emails()),
+            links: links(self),
+            localizations: if self.localizations_is_empty() {
                 None
             } else {
-                let addresses = Addresses {
-                    addr: self.postal_address().map(postal_address_to_address),
-                    address_one: self
-                        .postal_addresses()
-                        .get(1)
-                        .map(postal_address_to_address),
-                };
-                Some(addresses)
+                let mut hm = HashMap::new();
+                for (tag, local) in self.localizations_iter() {
+                    hm.insert(tag.to_owned(), local.to_jscontact());
+                }
+                Some(hm)
             },
-            phones: Some(Phones {
-                voice: self.prefer_voice_phone().map(phone_to_phone),
-                fax: self.fax_phone().map(phone_to_phone),
-            }),
-            emails: self.emails().first().map(|email| Emails {
-                email: Email {
-                    address: email.email().to_owned(),
-                },
-            }),
-            links: links(self),
+        }
+    }
+}
+
+impl Localizable {
+    pub fn to_jscontact(&self) -> JsContactCard {
+        JsContactCard {
+            card_type: "Card".to_string(),
+            version: "2.0".to_string(),
+            language: None,
+            organizations: org_to_orgs(self.organization_name()),
+            name: name_to_name(self.full_name(), self.name_parts()),
+            addresses: addresses_to_addresses(self.postal_addresses()),
+            phones: None,
+            emails: None,
+            links: None,
             localizations: None,
         }
+    }
+}
+
+fn org_to_orgs(organization_name: Option<&str>) -> Option<Organizations> {
+    Some(Organizations {
+        org: Some(Org {
+            name: organization_name.map(|s| s.to_owned()),
+        }),
+    })
+}
+
+fn name_to_name(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Option<Name> {
+    Some(Name {
+        full: full_name.map(|s| s.to_owned()),
+        components: name_parts.map(|np| {
+            let mut components = vec![];
+            if let Some(prefix) = np.prefix() {
+                components.push(KindValue {
+                    kind: "title".to_string(),
+                    value: prefix.to_owned(),
+                })
+            };
+            if let Some(given_name) = np.given_name() {
+                components.push(KindValue {
+                    kind: "given".to_string(),
+                    value: given_name.to_owned(),
+                })
+            };
+            if let Some(middle_name) = np.middle_name() {
+                components.push(KindValue {
+                    kind: "given2".to_string(),
+                    value: middle_name.to_owned(),
+                })
+            };
+            if let Some(surname) = np.surname() {
+                components.push(KindValue {
+                    kind: "surname".to_string(),
+                    value: surname.to_owned(),
+                })
+            };
+            if let Some(surname) = np.surnames().get(1) {
+                components.push(KindValue {
+                    kind: "surname2".to_string(),
+                    value: surname.to_owned(),
+                })
+            };
+            if let Some(suffix) = np.suffix() {
+                components.push(KindValue {
+                    kind: "credential".to_string(),
+                    value: suffix.to_owned(),
+                })
+            };
+            if let Some(generation) = np.generation() {
+                components.push(KindValue {
+                    kind: "generation".to_string(),
+                    value: generation.to_owned(),
+                })
+            };
+            components
+        }),
+    })
+}
+
+fn emails_to_email(emails: &[super::Email]) -> Option<Emails> {
+    emails.first().map(|email| Emails {
+        email: Email {
+            address: email.email().to_owned(),
+        },
+    })
+}
+
+fn addresses_to_addresses(addresses: &[PostalAddress]) -> Option<Addresses> {
+    if addresses.is_empty() {
+        None
+    } else {
+        let addresses = Addresses {
+            addr: addresses.first().map(postal_address_to_address),
+            address_one: addresses.get(1).map(postal_address_to_address),
+        };
+        Some(addresses)
     }
 }
 
@@ -268,6 +303,13 @@ fn postal_address_to_address(addr: &PostalAddress) -> Address {
         country_code: addr.country_code().map(|s| s.to_owned()),
         name: Some(name),
     }
+}
+
+fn phones_to_phones(voice: Option<&super::Phone>, fax: Option<&super::Phone>) -> Option<Phones> {
+    Some(Phones {
+        voice: voice.map(phone_to_phone),
+        fax: fax.map(phone_to_phone),
+    })
 }
 
 fn phone_to_phone(phone: &super::Phone) -> Phone {

@@ -87,7 +87,7 @@ mod from_vcard;
 mod jscontact;
 mod to_vcard;
 
-use std::fmt::Display;
+use std::{collections::BTreeMap, fmt::Display};
 
 use buildstructor::Builder;
 
@@ -129,6 +129,9 @@ pub struct Contact {
 
     /// The unlocalalized parts.
     unlocalized: Localizable,
+
+    /// Localizations
+    localizations: BTreeMap<String, Localizable>,
 }
 
 #[buildstructor::buildstructor]
@@ -165,6 +168,7 @@ impl Contact {
             phones: to_opt_vec(phones),
             contact_uris: to_opt_vec(contact_uris),
             urls: to_opt_vec(urls),
+            localizations: BTreeMap::new(),
         }
     }
 
@@ -183,6 +187,12 @@ impl Contact {
             || self.phones.is_some()
             || self.contact_uris.is_some()
             || self.urls.is_some()
+    }
+
+    /// Set a localization.
+    pub fn set_localization(mut self, lang: String, localization: Localizable) -> Self {
+        self.localizations.insert(lang, localization);
+        self
     }
 
     /// Set the set of emails.
@@ -381,6 +391,21 @@ impl Contact {
     pub fn url(&self) -> Option<&str> {
         self.urls().first().map(|x| x.as_str())
     }
+
+    /// Get a localization for a language tag.
+    pub fn localization(&self, lang: &str) -> Option<&Localizable> {
+        self.localizations.get(lang)
+    }
+
+    /// Get an iterator over the localizations.
+    pub fn localizations_iter(&self) -> impl Iterator<Item = (&String, &Localizable)> {
+        self.localizations.iter()
+    }
+
+    /// Are there no localizations.
+    pub fn localizations_is_empty(&self) -> bool {
+        self.localizations.is_empty()
+    }
 }
 
 /// Represents parts of the contact that can be localized.
@@ -406,6 +431,53 @@ pub struct Localizable {
 
     /// Postal addresses.
     pub postal_addresses: Option<Vec<PostalAddress>>,
+}
+
+impl Localizable {
+    /// Get the full name.
+    pub fn full_name(&self) -> Option<&str> {
+        self.full_name.as_deref()
+    }
+
+    /// Get the name parts.
+    pub fn name_parts(&self) -> Option<&NameParts> {
+        self.name_parts.as_ref()
+    }
+
+    /// Get the nick names.
+    pub fn nick_names(&self) -> &[String] {
+        self.nick_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the titles.
+    pub fn titles(&self) -> &[String] {
+        self.titles.as_deref().unwrap_or_default()
+    }
+
+    /// Get the organizational roles.
+    pub fn roles(&self) -> &[String] {
+        self.roles.as_deref().unwrap_or_default()
+    }
+
+    /// Get the organization names.
+    pub fn organization_names(&self) -> &[String] {
+        self.organization_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first organization name.
+    pub fn organization_name(&self) -> Option<&str> {
+        self.organization_names().first().map(|x| x.as_str())
+    }
+
+    /// Get the postal addresses.
+    pub fn postal_addresses(&self) -> &[PostalAddress] {
+        self.postal_addresses.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first postal address.
+    pub fn postal_address(&self) -> Option<&PostalAddress> {
+        self.postal_addresses().first()
+    }
 }
 
 /// The language preference of the contact.
