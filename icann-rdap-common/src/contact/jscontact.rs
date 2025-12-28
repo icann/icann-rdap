@@ -13,6 +13,9 @@ pub struct JsContactCard {
     pub version: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -158,6 +161,7 @@ impl Contact {
         JsContactCard {
             card_type: "Card".to_string(),
             version: "2.0".to_string(),
+            kind: self.kind().map(|s| s.to_string()),
             language: self.lang().map(|l| l.tag().to_string()),
             organizations: org_to_jscontact(self.organization_name()),
             name: name_to_jscontact(self.full_name(), self.name_parts()),
@@ -219,6 +223,7 @@ impl Contact {
             }
         }
         let builder = builder
+            .and_kind(jscontact.kind.as_ref().map(|s| s.to_owned()))
             .organization_names(jscontact_to_org_names(&jscontact.organizations))
             .and_name_parts(jscontact_to_nameparts(&jscontact.name))
             .postal_addresses(jscontact_to_postaladdresses(&jscontact.addresses))
@@ -632,6 +637,7 @@ mod test {
         JsContactCard {
             card_type: "Card".to_string(),
             version: "2.0".to_string(),
+            kind: Some("individual".to_string()),
             language: Some("en".to_string()),
             organizations: Some(Organizations {
                 org: Some(Org {
