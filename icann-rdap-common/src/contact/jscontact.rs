@@ -59,14 +59,19 @@ pub struct KindValue {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct Addresses {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub addr: Option<Address>,
+
+    #[serde(rename = "addresses-1")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub address_one: Option<Address>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub components: Option<Vec<Name>>,
+    #[serde(flatten)]
+    pub name: Option<Name>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "countryCode")]
@@ -244,7 +249,7 @@ fn postal_address_to_address(addr: &PostalAddress) -> Address {
     };
     Address {
         country_code: addr.country_code().map(|s| s.to_owned()),
-        components: Some(vec![name]),
+        name: Some(name),
     }
 }
 
@@ -288,7 +293,7 @@ mod test {
         Name, Org, Organizations, Phone, Phones, Url,
     };
 
-    const DRAFT_EXAMPLE: &str = indoc! {r#"
+    const DRAFT_EXAMPLE1: &str = indoc! {r#"
       {
           "@type": "Card",
           "version": "2.0",
@@ -370,7 +375,7 @@ mod test {
             }),
             addresses: Some(Addresses {
                 addr: Some(Address {
-                    components: Some(vec![Name {
+                    name: Some(Name {
                         full: Some("123 Glendale Blvd".to_string()),
                         components: Some(vec![
                             KindValue {
@@ -382,11 +387,11 @@ mod test {
                                 value: "Maryland".to_string(),
                             },
                         ]),
-                    }]),
+                    }),
                     country_code: Some("US".to_string()),
                 }),
                 address_one: Some(Address {
-                    components: Some(vec![Name {
+                    name: Some(Name {
                         full: Some("123 Glendale Blvd".to_string()),
                         components: Some(vec![
                             KindValue {
@@ -398,7 +403,7 @@ mod test {
                                 value: "Maryland".to_string(),
                             },
                         ]),
-                    }]),
+                    }),
                     country_code: Some("US".to_string()),
                 }),
             }),
@@ -438,7 +443,7 @@ mod test {
     #[test]
     fn test_deserialize_example_from_draft() {
         // GIVEN
-        let expected = DRAFT_EXAMPLE;
+        let expected = DRAFT_EXAMPLE1;
 
         // WHEN
         let actual = serde_json::from_str::<JsContactCard>(expected);
@@ -457,5 +462,21 @@ mod test {
 
         // THEN
         eprintln!("\n{}\n", actual.unwrap());
+    }
+
+    #[test]
+    fn test_roundtrip_example1() {
+        // GIVEN
+        let expected = serde_json::from_str::<JsContactCard>(DRAFT_EXAMPLE1).expect("valid json");
+        dbg!(&expected);
+
+        // WHEN
+        let de_ser = serde_json::from_str::<JsContactCard>(DRAFT_EXAMPLE1).expect("valid json");
+        let ser = serde_json::to_string_pretty(&de_ser).expect("serialize json");
+        let actual = serde_json::from_str::<JsContactCard>(&ser).expect("valid json");
+        dbg!(&actual);
+
+        // THEN
+        assert_eq!(expected, actual);
     }
 }
