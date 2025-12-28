@@ -46,20 +46,20 @@ impl ToMd for Entity {
         if let Some(contact) = self.contact() {
             table = table
                 .header_ref(&"Contact")
-                .and_nv_ref_maybe(&"Kind", &contact.kind)
+                .and_nv_ref_maybe(&"Kind", &contact.kind())
                 .and_nv_ref_maybe(&"Full Name", &contact.full_name())
-                .and_nv_ul(&"Titles", contact.titles)
-                .and_nv_ul(&"Org Roles", contact.roles)
-                .and_nv_ul(&"Nicknames", contact.nick_names);
-            table = table.and_nv_ul(&"Organization Names", contact.organization_names);
-            table = table.and_nv_ul(&"Languages", contact.langs);
-            table = table.and_nv_ul(&"Phones", contact.phones);
-            table = table.and_nv_ul(&"Emails", contact.emails);
+                .nv_ul(&"Titles", contact.titles().to_vec())
+                .nv_ul(&"Org Roles", contact.roles().to_vec())
+                .nv_ul(&"Nicknames", contact.nick_names().to_vec());
+            table = table.nv_ul(&"Organization Names", contact.organization_names().to_vec());
+            table = table.nv_ul(&"Languages", contact.langs().to_vec());
+            table = table.nv_ul(&"Phones", contact.phones().to_vec());
+            table = table.nv_ul(&"Emails", contact.emails().to_vec());
             table = table
-                .and_nv_ul(&"Web Contact", contact.contact_uris)
-                .and_nv_ul(&"URLs", contact.urls);
-            table = contact.postal_addresses.add_to_mptable(table, params);
-            table = contact.name_parts.add_to_mptable(table, params)
+                .nv_ul(&"Web Contact", contact.contact_uris().to_vec())
+                .nv_ul(&"URLs", contact.urls().to_vec());
+            table = contact.postal_addresses().add_to_mptable(table, params);
+            table = contact.name_parts().add_to_mptable(table, params)
         }
 
         // common object stuff
@@ -98,12 +98,10 @@ impl ToMd for Option<Vec<Entity>> {
     }
 }
 
-impl ToMpTable for Option<Vec<PostalAddress>> {
+impl ToMpTable for &[PostalAddress] {
     fn add_to_mptable(&self, mut table: MultiPartTable, params: MdParams) -> MultiPartTable {
-        if let Some(addrs) = self {
-            for addr in addrs {
-                table = addr.add_to_mptable(table, params);
-            }
+        for addr in *self {
+            table = addr.add_to_mptable(table, params);
         }
         table
     }
@@ -177,23 +175,23 @@ impl ToMpTable for PostalAddress {
     }
 }
 
-impl ToMpTable for Option<NameParts> {
+impl ToMpTable for Option<&NameParts> {
     fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
-        if let Some(parts) = self {
-            if let Some(prefixes) = &parts.prefixes {
-                table = table.nv(&"Honorifics", prefixes.join(", "));
+        if let Some(parts) = *self {
+            if !parts.prefixes().is_empty() {
+                table = table.nv(&"Honorifics", parts.prefixes().join(", "));
             }
-            if let Some(given_names) = &parts.given_names {
-                table = table.nv_ul(&"Given Names", given_names.to_vec());
+            if !parts.given_names().is_empty() {
+                table = table.nv_ul(&"Given Names", parts.given_names().to_vec());
             }
-            if let Some(middle_names) = &parts.middle_names {
-                table = table.nv_ul(&"Middle Names", middle_names.to_vec());
+            if !parts.middle_names().is_empty() {
+                table = table.nv_ul(&"Middle Names", parts.middle_names().to_vec());
             }
-            if let Some(surnames) = &parts.surnames {
-                table = table.nv_ul(&"Surnames", surnames.to_vec());
+            if !parts.surnames().is_empty() {
+                table = table.nv_ul(&"Surnames", parts.surnames().to_vec());
             }
-            if let Some(suffixes) = &parts.suffixes {
-                table = table.nv(&"Suffixes", suffixes.join(", "));
+            if !parts.suffixes().is_empty() {
+                table = table.nv(&"Suffixes", parts.suffixes().join(", "));
             }
         }
         table

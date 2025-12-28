@@ -636,59 +636,47 @@ mod tests {
         let actual = Contact::from_vcard(&actual).expect("vcard not found");
 
         // full name
-        assert_eq!(actual.full_name.expect("full_name not found"), "Joe User");
+        assert_eq!(actual.full_name().expect("full_name not found"), "Joe User");
 
         // kind
-        assert_eq!(actual.kind.expect("kind not found"), "individual");
+        assert_eq!(actual.kind().expect("kind not found"), "individual");
 
         // titles
         assert_eq!(
-            actual
-                .titles
-                .expect("no titles")
-                .first()
-                .expect("titles empty"),
+            actual.titles().first().expect("titles empty"),
             "Research Scientist"
         );
 
         // roles
-        assert_eq!(
-            actual
-                .roles
-                .expect("no roles")
-                .first()
-                .expect("roles empty"),
-            "Project Lead"
-        );
+        assert_eq!(actual.roles().first().expect("roles empty"), "Project Lead");
 
         // organization names
         assert_eq!(
             actual
-                .organization_names
-                .expect("no organization_names")
+                .organization_names()
                 .first()
                 .expect("organization_names empty"),
             "Example"
         );
 
         // nick names
-        assert!(actual.nick_names.is_none());
+        assert!(actual.nick_names().is_empty());
 
         // langs
-        let Some(langs) = actual.langs else {
-            panic!("langs not found")
-        };
-        assert_eq!(langs.len(), 2);
-        assert_eq!(langs.first().expect("first lang").tag, "fr");
-        assert_eq!(langs.first().expect("first lang").preference, Some(1));
-        assert_eq!(langs.get(1).expect("second lang").tag, "en");
-        assert_eq!(langs.get(1).expect("second lang").preference, Some(2));
+        assert_eq!(actual.langs().len(), 2);
+        assert_eq!(actual.langs().first().expect("first lang").tag, "fr");
+        assert_eq!(
+            actual.langs().first().expect("first lang").preference,
+            Some(1)
+        );
+        assert_eq!(actual.langs().get(1).expect("second lang").tag, "en");
+        assert_eq!(
+            actual.langs().get(1).expect("second lang").preference,
+            Some(2)
+        );
 
         // emails
-        let Some(emails) = actual.emails else {
-            panic!("emails not found")
-        };
-        let Some(email) = emails.first() else {
+        let Some(email) = actual.email() else {
             panic!("no email found")
         };
         assert_eq!(email.email, "joe.user@example.com");
@@ -699,10 +687,7 @@ mod tests {
             .contains(&"work".to_string()));
 
         // phones
-        let Some(phones) = actual.phones else {
-            panic!("no phones found")
-        };
-        let Some(phone) = phones.first() else {
+        let Some(phone) = actual.phone() else {
             panic!("no first phone")
         };
         assert_eq!(phone.phone, "tel:+1-555-555-1234;ext=102");
@@ -716,7 +701,7 @@ mod tests {
             .as_ref()
             .expect("no features")
             .contains(&"voice".to_string()));
-        let Some(phone) = phones.last() else {
+        let Some(phone) = actual.phones().last() else {
             panic!("no last phone")
         };
         assert_eq!(phone.phone, "tel:+1-555-555-4321");
@@ -732,10 +717,7 @@ mod tests {
             .contains(&"video".to_string()));
 
         // postal addresses
-        let Some(addresses) = actual.postal_addresses else {
-            panic!("no postal addresses")
-        };
-        let Some(addr) = addresses.first() else {
+        let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
         assert!(addr
@@ -756,7 +738,7 @@ mod tests {
         assert_eq!(addr.region_code.as_ref().expect("region code"), "QC");
         assert!(addr.region_name.is_none());
         assert_eq!(addr.postal_code.as_ref().expect("postal code"), "G1V 2M2");
-        let Some(addr) = addresses.last() else {
+        let Some(addr) = actual.postal_addresses().last() else {
             panic!("last address not found")
         };
         assert!(addr
@@ -770,7 +752,7 @@ mod tests {
         );
 
         // name parts
-        let Some(name_parts) = actual.name_parts else {
+        let Some(name_parts) = actual.name_parts() else {
             panic!("no name parts")
         };
         let expected = NameParts::builder()
@@ -778,7 +760,7 @@ mod tests {
             .given_names(vec!["Joe".to_string()])
             .suffixes(vec!["ing. jr".to_string(), "M.Sc.".to_string()])
             .build();
-        assert_eq!(name_parts, expected);
+        assert_eq!(name_parts, &expected);
 
         // contact-uris
         assert_eq!(
@@ -835,13 +817,10 @@ mod tests {
         let actual = Contact::from_vcard(&actual).expect("vcard not found");
 
         // full name
-        assert_eq!(actual.full_name.expect("full_name not found"), "Joe User");
+        assert_eq!(actual.full_name().expect("full_name not found"), "Joe User");
 
         // postal addresses
-        let Some(addresses) = actual.postal_addresses else {
-            panic!("no postal addresses")
-        };
-        let Some(addr) = addresses.first() else {
+        let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
         assert!(addr
@@ -896,10 +875,7 @@ mod tests {
         let actual = Contact::from_vcard(&actual).expect("vcard not found");
 
         // THEN there is a postal addresses
-        let Some(addresses) = actual.postal_addresses else {
-            panic!("no postal addresses")
-        };
-        let Some(addr) = addresses.first() else {
+        let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
 
@@ -947,10 +923,7 @@ mod tests {
         let actual = Contact::from_vcard(&actual).expect("vcard not found");
 
         // THEN there is a postal addresses
-        let Some(addresses) = actual.postal_addresses else {
-            panic!("no postal addresses")
-        };
-        let Some(addr) = addresses.first() else {
+        let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
 
@@ -1001,10 +974,7 @@ mod tests {
         let actual = Contact::from_vcard(&actual).expect("vcard not found");
 
         // THEN there is a postal addresses
-        let Some(addresses) = actual.postal_addresses else {
-            panic!("no postal addresses")
-        };
-        let Some(addr) = addresses.first() else {
+        let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
 

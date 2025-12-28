@@ -22,11 +22,13 @@ pub(crate) fn simplify_registrant_street(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut addrs) = contact.postal_addresses {
-                        for addr in addrs.iter_mut() {
+                    if !contact.postal_addresses().is_empty() {
+                        let mut all_addrs = vec![];
+                        for addr in contact.postal_addresses().to_vec().iter_mut() {
                             addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
+                            all_addrs.push(addr.clone());
                         }
-                        contact.postal_addresses = Some(addrs);
+                        contact = contact.set_postal_addresses(all_addrs);
                         entity.object_common.remarks = add_remark(
                             REDACTED_STREET,
                             REDACTED_STREET_DESC,
@@ -52,11 +54,13 @@ pub(crate) fn simplify_registrant_city(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut addrs) = contact.postal_addresses {
-                        for addr in addrs.iter_mut() {
+                    if !contact.postal_addresses().is_empty() {
+                        let mut all_addrs = vec![];
+                        for addr in contact.postal_addresses().to_vec().iter_mut() {
                             addr.locality = Some(REDACTED_CITY.to_string());
+                            all_addrs.push(addr.clone());
                         }
-                        contact.postal_addresses = Some(addrs);
+                        contact = contact.set_postal_addresses(all_addrs);
                         entity.object_common.remarks = add_remark(
                             REDACTED_CITY,
                             REDACTED_CITY_DESC,
@@ -82,11 +86,13 @@ pub(crate) fn simplify_registrant_postal_code(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut addrs) = contact.postal_addresses {
-                        for addr in addrs.iter_mut() {
+                    if !contact.postal_addresses().is_empty() {
+                        let mut all_addrs = vec![];
+                        for addr in contact.postal_addresses().to_vec().iter_mut() {
                             addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
+                            all_addrs.push(addr.clone());
                         }
-                        contact.postal_addresses = Some(addrs);
+                        contact = contact.set_postal_addresses(all_addrs);
                         entity.object_common.remarks = add_remark(
                             REDACTED_POSTAL_CODE,
                             REDACTED_POSTAL_CODE_DESC,
@@ -149,7 +155,7 @@ mod tests {
 
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 1);
             let address = &addresses[0];
             assert_eq!(
@@ -215,7 +221,7 @@ mod tests {
         let registrant_entity = &entities[0];
         if let Some(vcard) = &registrant_entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(
                 addresses[0].street_parts,
                 Some(vec![REDACTED_STREET.to_string()])
@@ -226,7 +232,7 @@ mod tests {
         let admin_entity = &entities[1];
         if let Some(vcard) = &admin_entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(
                 addresses[0].street_parts,
                 Some(vec!["456 Admin St".to_string()])
@@ -294,7 +300,7 @@ mod tests {
 
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 1);
             let address = &addresses[0];
             assert_eq!(address.street_parts, Some(vec!["123 Main St".to_string()]));
@@ -341,7 +347,7 @@ mod tests {
         let entity = &entities[0];
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(addresses[0].locality, Some(REDACTED_CITY.to_string()));
         }
 
@@ -385,7 +391,7 @@ mod tests {
 
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 1);
             let address = &addresses[0];
             assert_eq!(address.street_parts, Some(vec!["123 Main St".to_string()]));
@@ -433,7 +439,7 @@ mod tests {
         let entity = &entities[0];
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(
                 addresses[0].postal_code,
                 Some(REDACTED_POSTAL_CODE.to_string())
@@ -486,7 +492,7 @@ mod tests {
         let entity = &entities[0];
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(addresses[0].locality, Some("Admin City".to_string()));
         }
         assert!(entity.object_common.remarks.is_none());
@@ -555,7 +561,7 @@ mod tests {
         let entity = &entities[0];
         if let Some(vcard) = &entity.vcard_array {
             let contact = Contact::from_vcard(vcard).unwrap();
-            let addresses = contact.postal_addresses.as_ref().unwrap();
+            let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 2);
             assert_eq!(
                 addresses[0].street_parts,

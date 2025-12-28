@@ -143,11 +143,8 @@ fn extract_role_info(vcard_array: &[serde_json::Value], params: &mut GtldParams)
         None => return RoleInfo::default(),
     };
     let mut adr = String::new();
-    let name = contact.full_name.unwrap_or_default();
-    let org = contact
-        .organization_names
-        .and_then(|orgs| orgs.first().cloned())
-        .unwrap_or_default();
+    let name = contact.full_name().unwrap_or_default();
+    let org = contact.organization_name().unwrap_or_default();
 
     // TODO this is a workout to get the address out of the contact. Replace this when from_vcard is fixed
     for vcard in vcard_array.iter() {
@@ -165,8 +162,8 @@ fn extract_role_info(vcard_array: &[serde_json::Value], params: &mut GtldParams)
     }
 
     let email = contact
-        .emails
-        .and_then(|emails| emails.first().map(|email| email.email.clone()))
+        .email()
+        .map(|email| email.email.clone())
         .unwrap_or_default();
     let phone = contact
         .phones
@@ -200,8 +197,8 @@ fn extract_role_info(vcard_array: &[serde_json::Value], params: &mut GtldParams)
         .unwrap_or_default();
 
     RoleInfo {
-        name,
-        org,
+        name: name.to_owned(),
+        org: org.to_owned(),
         adr,
         email,
         phone,

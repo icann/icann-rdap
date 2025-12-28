@@ -58,7 +58,7 @@ impl GetChecks for Entity {
 
         if let Some(vcard) = &self.vcard_array {
             if let Some(contact) = Contact::from_vcard(vcard) {
-                if let Some(full_name) = contact.full_name {
+                if let Some(full_name) = contact.full_name() {
                     if full_name.is_whitespace_or_empty() {
                         items.push(Check::VcardFnIsEmpty.check_item())
                     }

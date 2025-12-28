@@ -25,11 +25,11 @@ impl Contact {
         // start the vcard with the version.
         let mut vcard: Vec<Value> = vec![json!(["version", {}, "text", "4.0"])];
 
-        if let Some(full_name) = &self.full_name {
+        if let Some(full_name) = &self.full_name() {
             vcard.push(json!(["fn", {}, "text", full_name]));
         }
 
-        if let Some(name_parts) = &self.name_parts {
+        if let Some(name_parts) = &self.name_parts() {
             let surnames = vec_string_to_value(&name_parts.surnames);
             let given_names = vec_string_to_value(&name_parts.given_names);
             let middle_names = vec_string_to_value(&name_parts.middle_names);
@@ -62,28 +62,20 @@ impl Contact {
             }
         }
 
-        if let Some(org_names) = &self.organization_names {
-            for org_name in org_names {
-                vcard.push(json!(["org", {}, "text", org_name]));
-            }
+        for org_name in self.organization_names() {
+            vcard.push(json!(["org", {}, "text", org_name]));
         }
 
-        if let Some(titles) = &self.titles {
-            for title in titles {
-                vcard.push(json!(["title", {}, "text", title]));
-            }
+        for title in self.titles() {
+            vcard.push(json!(["title", {}, "text", title]));
         }
 
-        if let Some(roles) = &self.roles {
-            for role in roles {
-                vcard.push(json!(["role", {}, "text", role]));
-            }
+        for role in self.roles() {
+            vcard.push(json!(["role", {}, "text", role]));
         }
 
-        if let Some(nick_names) = &self.nick_names {
-            for nick_name in nick_names {
-                vcard.push(json!(["nickname", {}, "text", nick_name]));
-            }
+        for nick_name in self.nick_names() {
+            vcard.push(json!(["nickname", {}, "text", nick_name]));
         }
 
         if let Some(emails) = &self.emails {
@@ -117,58 +109,56 @@ impl Contact {
             }
         }
 
-        if let Some(addrs) = &self.postal_addresses {
-            for addr in addrs {
-                let mut params: Map<String, Value> = Map::new();
-                if let Some(pref) = addr.preference {
-                    params.insert("pref".to_string(), Value::String(pref.to_string()));
-                }
-                if let Some(contexts) = addr.contexts.as_ref() {
-                    params.insert("type".to_string(), vec_string_to_param(contexts));
-                }
-                if let Some(full_address) = &addr.full_address {
-                    params.insert(
-                        "label".to_string(),
-                        Value::from_str(full_address).expect("serializing full address"),
-                    );
-                }
-                let mut lines: Vec<String> = vec![];
-                if let Some(street_parts) = &addr.street_parts {
-                    lines.push(street_parts.first().cloned().unwrap_or("".to_string()));
-                    lines.push(street_parts.get(1).cloned().unwrap_or("".to_string()));
-                    lines.push(street_parts.get(2).cloned().unwrap_or("".to_string()));
-                } else {
-                    lines.push("".to_string());
-                    lines.push("".to_string());
-                    lines.push("".to_string());
-                }
-                if let Some(locality) = &addr.locality {
-                    lines.push(locality.to_owned());
-                } else {
-                    lines.push("".to_string());
-                }
-                if let Some(region_name) = &addr.region_name {
-                    lines.push(region_name.to_owned());
-                } else if let Some(region_code) = &addr.region_code {
-                    lines.push(region_code.to_owned());
-                } else {
-                    lines.push("".to_string());
-                }
-                if let Some(postal_code) = &addr.postal_code {
-                    lines.push(postal_code.to_owned());
-                } else {
-                    lines.push("".to_string());
-                }
-                if let Some(country_name) = &addr.country_name {
-                    lines.push(country_name.to_owned());
-                } else {
-                    lines.push("".to_string());
-                }
-                if let Some(country_code) = &addr.country_code {
-                    params.insert("cc".to_string(), Value::String(country_code.to_string()));
-                }
-                vcard.push(json!(["adr", Value::from(params), "text", lines]))
+        for addr in self.postal_addresses() {
+            let mut params: Map<String, Value> = Map::new();
+            if let Some(pref) = addr.preference {
+                params.insert("pref".to_string(), Value::String(pref.to_string()));
             }
+            if let Some(contexts) = addr.contexts.as_ref() {
+                params.insert("type".to_string(), vec_string_to_param(contexts));
+            }
+            if let Some(full_address) = &addr.full_address {
+                params.insert(
+                    "label".to_string(),
+                    Value::from_str(full_address).expect("serializing full address"),
+                );
+            }
+            let mut lines: Vec<String> = vec![];
+            if let Some(street_parts) = &addr.street_parts {
+                lines.push(street_parts.first().cloned().unwrap_or("".to_string()));
+                lines.push(street_parts.get(1).cloned().unwrap_or("".to_string()));
+                lines.push(street_parts.get(2).cloned().unwrap_or("".to_string()));
+            } else {
+                lines.push("".to_string());
+                lines.push("".to_string());
+                lines.push("".to_string());
+            }
+            if let Some(locality) = &addr.locality {
+                lines.push(locality.to_owned());
+            } else {
+                lines.push("".to_string());
+            }
+            if let Some(region_name) = &addr.region_name {
+                lines.push(region_name.to_owned());
+            } else if let Some(region_code) = &addr.region_code {
+                lines.push(region_code.to_owned());
+            } else {
+                lines.push("".to_string());
+            }
+            if let Some(postal_code) = &addr.postal_code {
+                lines.push(postal_code.to_owned());
+            } else {
+                lines.push("".to_string());
+            }
+            if let Some(country_name) = &addr.country_name {
+                lines.push(country_name.to_owned());
+            } else {
+                lines.push("".to_string());
+            }
+            if let Some(country_code) = &addr.country_code {
+                params.insert("cc".to_string(), Value::String(country_code.to_string()));
+            }
+            vcard.push(json!(["adr", Value::from(params), "text", lines]))
         }
 
         if let Some(contact_uris) = &self.contact_uris {
@@ -292,14 +282,14 @@ mod tests {
         // THEN
         //   yes, contact implements Eq, but by breaking everything done
         //   we can find where problems lie faster.
-        assert_eq!(contact.full_name, actual.full_name);
-        assert_eq!(contact.name_parts, actual.name_parts);
+        assert_eq!(contact.full_name(), actual.full_name());
+        assert_eq!(contact.name_parts(), actual.name_parts());
         assert_eq!(contact.kind, actual.kind);
         assert_eq!(contact.langs, actual.langs);
-        assert_eq!(contact.organization_names, actual.organization_names);
-        assert_eq!(contact.titles, actual.titles);
-        assert_eq!(contact.roles, actual.roles);
-        assert_eq!(contact.postal_addresses, actual.postal_addresses);
+        assert_eq!(contact.organization_names(), actual.organization_names());
+        assert_eq!(contact.titles(), actual.titles());
+        assert_eq!(contact.roles(), actual.roles());
+        assert_eq!(contact.postal_addresses(), actual.postal_addresses());
         assert_eq!(contact.phones, actual.phones);
         assert_eq!(contact.emails, actual.emails);
         assert_eq!(contact.contact_uris, actual.contact_uris);

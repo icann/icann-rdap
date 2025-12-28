@@ -1,9 +1,11 @@
 //! JSContact for Contact
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::contact::{Contact, PostalAddress};
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct JsContactCard {
     #[serde(rename = "@type")]
     pub card_type: String,
@@ -30,19 +32,22 @@ pub struct JsContactCard {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub links: Option<Links>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub localizations: Option<HashMap<String, JsContactCard>>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Organizations {
     pub org: Option<Org>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Org {
     pub name: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Name {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full: Option<String>,
@@ -51,13 +56,13 @@ pub struct Name {
     pub components: Option<Vec<KindValue>>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct KindValue {
     pub kind: String,
     pub value: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Addresses {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub addr: Option<Address>,
@@ -67,7 +72,7 @@ pub struct Addresses {
     pub address_one: Option<Address>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(flatten)]
@@ -78,7 +83,7 @@ pub struct Address {
     pub country_code: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Features {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voice: Option<bool>,
@@ -87,7 +92,7 @@ pub struct Features {
     pub fax: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Phone {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub features: Option<Features>,
@@ -95,7 +100,7 @@ pub struct Phone {
     pub number: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Phones {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voice: Option<Phone>,
@@ -104,29 +109,29 @@ pub struct Phones {
     pub fax: Option<Phone>,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Emails {
     pub email: Email,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Email {
     pub address: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Url {
     pub uri: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct ContactUri {
     pub kind: String,
 
     pub uri: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Links {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<Url>,
@@ -196,13 +201,18 @@ impl Contact {
                     components
                 }),
             }),
-            addresses: self.postal_addresses.as_ref().map(|pas| {
+            addresses: if self.postal_addresses().is_empty() {
+                None
+            } else {
                 let addresses = Addresses {
-                    addr: pas.first().map(postal_address_to_address),
-                    address_one: pas.get(1).map(postal_address_to_address),
+                    addr: self.postal_address().map(postal_address_to_address),
+                    address_one: self
+                        .postal_addresses()
+                        .get(1)
+                        .map(postal_address_to_address),
                 };
-                addresses
-            }),
+                Some(addresses)
+            },
             phones: Some(Phones {
                 voice: self.prefer_voice_phone().map(phone_to_phone),
                 fax: self.fax_phone().map(phone_to_phone),
@@ -213,6 +223,7 @@ impl Contact {
                 },
             }),
             links: links(self),
+            localizations: None,
         }
     }
 }
@@ -292,6 +303,7 @@ fn links(contact: &Contact) -> Option<Links> {
 
 #[cfg(test)]
 mod test {
+
     use indoc::indoc;
 
     use crate::contact::jscontact::{
@@ -443,6 +455,7 @@ mod test {
                     uri: "https://example.org".to_owned(),
                 }),
             }),
+            localizations: None,
         }
     }
 

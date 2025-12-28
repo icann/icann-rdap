@@ -115,27 +115,6 @@ pub struct Contact {
     /// The kind such as individual, company, etc...
     pub kind: Option<String>,
 
-    /// Full name of the contact.
-    pub full_name: Option<String>,
-
-    /// Structured parts of the name.
-    pub name_parts: Option<NameParts>,
-
-    /// Nick names.
-    pub nick_names: Option<Vec<String>>,
-
-    /// Titles.
-    pub titles: Option<Vec<String>>,
-
-    /// Organizational Roles
-    pub roles: Option<Vec<String>>,
-
-    /// Organization names.
-    pub organization_names: Option<Vec<String>>,
-
-    /// Postal addresses.
-    pub postal_addresses: Option<Vec<PostalAddress>>,
-
     /// Email addresses.
     pub emails: Option<Vec<Email>>,
 
@@ -147,6 +126,9 @@ pub struct Contact {
 
     /// URLs
     pub urls: Option<Vec<String>>,
+
+    /// The unlocalalized parts.
+    unlocalized: Localizable,
 }
 
 #[buildstructor::buildstructor]
@@ -170,13 +152,15 @@ impl Contact {
         Self {
             langs: to_opt_vec(langs),
             kind,
-            full_name,
-            name_parts,
-            nick_names: to_opt_vec(nick_names),
-            titles: to_opt_vec(titles),
-            roles: to_opt_vec(roles),
-            organization_names: to_opt_vec(organization_names),
-            postal_addresses: to_opt_vec(postal_addresses),
+            unlocalized: Localizable {
+                full_name,
+                name_parts,
+                nick_names: to_opt_vec(nick_names),
+                titles: to_opt_vec(titles),
+                roles: to_opt_vec(roles),
+                organization_names: to_opt_vec(organization_names),
+                postal_addresses: to_opt_vec(postal_addresses),
+            },
             emails: to_opt_vec(emails),
             phones: to_opt_vec(phones),
             contact_uris: to_opt_vec(contact_uris),
@@ -188,13 +172,13 @@ impl Contact {
     pub fn is_non_empty(&self) -> bool {
         self.langs.is_some()
             || self.kind.is_some()
-            || self.full_name.is_some()
-            || self.name_parts.is_some()
-            || self.nick_names.is_some()
-            || self.titles.is_some()
-            || self.roles.is_some()
-            || self.organization_names.is_some()
-            || self.postal_addresses.is_some()
+            || self.unlocalized.full_name.is_some()
+            || self.unlocalized.name_parts.is_some()
+            || self.unlocalized.nick_names.is_some()
+            || self.unlocalized.titles.is_some()
+            || self.unlocalized.roles.is_some()
+            || self.unlocalized.organization_names.is_some()
+            || self.unlocalized.postal_addresses.is_some()
             || self.emails.is_some()
             || self.phones.is_some()
             || self.contact_uris.is_some()
@@ -251,7 +235,25 @@ impl Contact {
 
     /// Set the set of postal addresses to only be the passed in postal address.
     pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
-        self.postal_addresses = Some(vec![postal_address]);
+        self.unlocalized.postal_addresses = Some(vec![postal_address]);
+        self
+    }
+
+    /// Set the complete set of postal addresses.
+    pub fn set_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
+        self.unlocalized.postal_addresses = Some(postal_addresses);
+        self
+    }
+
+    /// Set the full name.
+    pub fn set_full_name(mut self, full_name: String) -> Self {
+        self.unlocalized.full_name = Some(full_name);
+        self
+    }
+
+    /// Set the organization names.
+    pub fn set_organization_names(mut self, organization_names: Vec<String>) -> Self {
+        self.unlocalized.organization_names = Some(organization_names);
         self
     }
 
@@ -272,32 +274,35 @@ impl Contact {
 
     /// Get the full name.
     pub fn full_name(&self) -> Option<&str> {
-        self.full_name.as_deref()
+        self.unlocalized.full_name.as_deref()
     }
 
     /// Get the name parts.
     pub fn name_parts(&self) -> Option<&NameParts> {
-        self.name_parts.as_ref()
+        self.unlocalized.name_parts.as_ref()
     }
 
     /// Get the nick names.
     pub fn nick_names(&self) -> &[String] {
-        self.nick_names.as_deref().unwrap_or_default()
+        self.unlocalized.nick_names.as_deref().unwrap_or_default()
     }
 
     /// Get the titles.
     pub fn titles(&self) -> &[String] {
-        self.titles.as_deref().unwrap_or_default()
+        self.unlocalized.titles.as_deref().unwrap_or_default()
     }
 
     /// Get the organizational roles.
     pub fn roles(&self) -> &[String] {
-        self.roles.as_deref().unwrap_or_default()
+        self.unlocalized.roles.as_deref().unwrap_or_default()
     }
 
     /// Get the organization names.
     pub fn organization_names(&self) -> &[String] {
-        self.organization_names.as_deref().unwrap_or_default()
+        self.unlocalized
+            .organization_names
+            .as_deref()
+            .unwrap_or_default()
     }
 
     /// Get the first organization name.
@@ -307,7 +312,10 @@ impl Contact {
 
     /// Get the postal addresses.
     pub fn postal_addresses(&self) -> &[PostalAddress] {
-        self.postal_addresses.as_deref().unwrap_or_default()
+        self.unlocalized
+            .postal_addresses
+            .as_deref()
+            .unwrap_or_default()
     }
 
     /// Get the first postal address.
@@ -373,6 +381,31 @@ impl Contact {
     pub fn url(&self) -> Option<&str> {
         self.urls().first().map(|x| x.as_str())
     }
+}
+
+/// Represents parts of the contact that can be localized.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Localizable {
+    /// Full name of the contact.
+    pub full_name: Option<String>,
+
+    /// Structured parts of the name.
+    pub name_parts: Option<NameParts>,
+
+    /// Nick names.
+    pub nick_names: Option<Vec<String>>,
+
+    /// Titles.
+    pub titles: Option<Vec<String>>,
+
+    /// Organizational Roles
+    pub roles: Option<Vec<String>>,
+
+    /// Organization names.
+    pub organization_names: Option<Vec<String>>,
+
+    /// Postal addresses.
+    pub postal_addresses: Option<Vec<PostalAddress>>,
 }
 
 /// The language preference of the contact.

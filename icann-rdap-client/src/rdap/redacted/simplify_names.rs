@@ -16,7 +16,7 @@ pub(crate) fn simplify_registrant_name(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    contact.full_name = Some(REDACTED_NAME.to_string());
+                    contact = contact.set_full_name(REDACTED_NAME.to_string());
                     entity.vcard_array = Some(contact.to_vcard());
                     entity.object_common.remarks = add_remark(
                         REDACTED_NAME,
@@ -38,7 +38,7 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
             if entity.is_entity_role(&EntityRole::Technical.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    contact.full_name = Some(REDACTED_NAME.to_string());
+                    contact = contact.set_full_name(REDACTED_NAME.to_string());
                     entity.vcard_array = Some(contact.to_vcard());
                     entity.object_common.remarks = add_remark(
                         REDACTED_NAME,
