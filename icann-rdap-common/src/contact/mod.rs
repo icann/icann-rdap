@@ -84,7 +84,7 @@
 //! ```
 
 mod from_vcard;
-mod jscontact;
+pub(crate) mod jscontact;
 mod to_vcard;
 
 use std::{collections::BTreeMap, fmt::Display};
