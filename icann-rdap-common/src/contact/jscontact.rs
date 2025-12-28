@@ -521,11 +521,13 @@ fn links_to_jscontact(contact: &Contact) -> Option<Links> {
 #[cfg(test)]
 mod test {
 
+    use std::collections::HashMap;
+
     use indoc::indoc;
 
     use crate::contact::jscontact::{
         Address, Addresses, ContactUri, Email, Emails, Features, JsContactCard, KindValue, Links,
-        Name, Org, Organizations, Phone, Phones, Url,
+        Localization, Name, Org, Organizations, Phone, Phones, Url,
     };
 
     const DRAFT_EXAMPLE1: &str = indoc! {r#"
@@ -634,6 +636,64 @@ mod test {
         "#};
 
     fn test_jscontact_card() -> JsContactCard {
+        let mut localizations = HashMap::new();
+        localizations.insert(
+            "UA".to_string(),
+            Localization {
+                organizations: Some(Organizations {
+                    org: Some(Org {
+                        name: Some("Acme Ltd in UA".to_string()),
+                    }),
+                }),
+                name: Some(Name {
+                    full: Some("Bob Smurd in UA".to_string()),
+                    components: Some(vec![
+                        KindValue {
+                            kind: "surname".to_string(),
+                            value: "UA Smurd".to_string(),
+                        },
+                        KindValue {
+                            kind: "given".to_string(),
+                            value: "UA Bob".to_string(),
+                        },
+                    ]),
+                }),
+                addresses: Some(Addresses {
+                    addr: Some(Address {
+                        name: Some(Name {
+                            full: Some("123 Glendale Booolvard".to_string()),
+                            components: Some(vec![
+                                KindValue {
+                                    kind: "locality".to_string(),
+                                    value: "Kyiv".to_string(),
+                                },
+                                KindValue {
+                                    kind: "region".to_string(),
+                                    value: "Kyivland".to_string(),
+                                },
+                            ]),
+                        }),
+                        country_code: Some("UA".to_string()),
+                    }),
+                    address_one: Some(Address {
+                        name: Some(Name {
+                            full: Some("333 Bing Strasse".to_string()),
+                            components: Some(vec![
+                                KindValue {
+                                    kind: "locality".to_string(),
+                                    value: "Some Town".to_string(),
+                                },
+                                KindValue {
+                                    kind: "region".to_string(),
+                                    value: "Some Region".to_string(),
+                                },
+                            ]),
+                        }),
+                        country_code: Some("UA".to_string()),
+                    }),
+                }),
+            },
+        );
         JsContactCard {
             card_type: "Card".to_string(),
             version: "2.0".to_string(),
@@ -721,14 +781,26 @@ mod test {
                     uri: "https://example.org".to_owned(),
                 }),
             }),
-            localizations: None,
+            localizations: Some(localizations),
         }
     }
 
     #[test]
-    fn test_deserialize_example_from_draft() {
+    fn test_deserialize_draft1() {
         // GIVEN
         let expected = DRAFT_EXAMPLE1;
+
+        // WHEN
+        let actual = serde_json::from_str::<JsContactCard>(expected);
+
+        // THEN
+        actual.unwrap();
+    }
+
+    #[test]
+    fn test_deserialize_draft2() {
+        // GIVEN
+        let expected = DRAFT_EXAMPLE2;
 
         // WHEN
         let actual = serde_json::from_str::<JsContactCard>(expected);
@@ -774,6 +846,21 @@ mod test {
         // WHEN
         let de_ser = serde_json::from_str::<JsContactCard>(DRAFT_EXAMPLE2).expect("valid json");
         let ser = serde_json::to_string_pretty(&de_ser).expect("serialize json");
+        let actual = serde_json::from_str::<JsContactCard>(&ser).expect("valid json");
+        dbg!(&actual);
+
+        // THEN
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_roundtrip_builder_example() {
+        // GIVEN
+        let expected = test_jscontact_card();
+        dbg!(&expected);
+
+        // WHEN
+        let ser = serde_json::to_string_pretty(&expected).expect("serialize json");
         let actual = serde_json::from_str::<JsContactCard>(&ser).expect("valid json");
         dbg!(&actual);
 
