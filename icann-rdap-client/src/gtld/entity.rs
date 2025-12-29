@@ -140,15 +140,13 @@ fn append_abuse_contact_info(entity: &Entity, formatted_data: &mut String) {
                 if role.as_str() == "abuse" {
                     if let Some(contact) = entity.contact() {
                         // Emails
-                        if let Some(emails) = &contact.emails {
-                            for email in emails {
-                                let abuse_contact_email = &email.email;
-                                if !abuse_contact_email.is_empty() {
-                                    formatted_data.push_str(&format!(
-                                        "Registrar Abuse Contact Email: {}\n",
-                                        abuse_contact_email
-                                    ));
-                                }
+                        for email in contact.emails() {
+                            let abuse_contact_email = &email.email;
+                            if !abuse_contact_email.is_empty() {
+                                formatted_data.push_str(&format!(
+                                    "Registrar Abuse Contact Email: {}\n",
+                                    abuse_contact_email
+                                ));
                             }
                         }
                         // Phones

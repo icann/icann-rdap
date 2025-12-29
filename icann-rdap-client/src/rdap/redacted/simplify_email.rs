@@ -21,11 +21,13 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
             if entity.is_entity_role(&role.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut emails) = contact.emails {
+                    let emails = contact.emails().to_vec();
+                    if !emails.is_empty() {
+                        let mut emails = emails;
                         for email in emails.iter_mut() {
                             email.email = REDACTED_EMAIL.to_string();
                         }
-                        contact.emails = Some(emails);
+                        contact = contact.set_emails(emails);
                         entity.object_common.remarks = add_remark(
                             REDACTED_EMAIL,
                             REDACTED_EMAIL_DESC,
@@ -99,7 +101,7 @@ mod tests {
 
         // Check that contact emails were updated with redacted emails
         if let Some(contact) = registrant.contact() {
-            let emails = contact.emails.as_ref().unwrap();
+            let emails = contact.emails();
             assert_eq!(emails.len(), 2);
 
             // Both emails should be redacted
@@ -447,7 +449,7 @@ mod tests {
 
         // Check that contact emails were updated with redacted emails
         if let Some(contact) = tech.contact() {
-            let emails = contact.emails.as_ref().unwrap();
+            let emails = contact.emails();
             assert_eq!(emails.len(), 1);
 
             // Email should be redacted

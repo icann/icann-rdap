@@ -116,7 +116,7 @@ pub struct Contact {
     pub kind: Option<String>,
 
     /// Email addresses.
-    pub emails: Option<Vec<Email>>,
+    pub(crate) emails: Option<Vec<Email>>,
 
     /// Phone numbers.
     pub(crate) phones: Option<Vec<Phone>>,
