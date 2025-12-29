@@ -119,7 +119,7 @@ pub struct Contact {
     pub emails: Option<Vec<Email>>,
 
     /// Phone numbers.
-    pub phones: Option<Vec<Phone>>,
+    pub(crate) phones: Option<Vec<Phone>>,
 
     /// Contact URIs.
     pub(crate) contact_uris: Option<Vec<String>>,
