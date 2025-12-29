@@ -1,10 +1,12 @@
 //! RFC 9083 Error
+use std::collections::HashSet;
+
 use {
     crate::prelude::Extension,
     serde::{Deserialize, Serialize},
 };
 
-use crate::media_types::RDAP_MEDIA_TYPE;
+use crate::{media_types::RDAP_MEDIA_TYPE, prelude::ContentExtensions};
 
 use super::{
     types::{Link, Notice, NoticeOrRemark},
@@ -129,6 +131,14 @@ impl CommonFields for Rfc9083Error {
 impl ToResponse for Rfc9083Error {
     fn to_response(self) -> super::RdapResponse {
         super::RdapResponse::ErrorResponse(Box::new(self))
+    }
+}
+
+impl ContentExtensions for Rfc9083Error {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts
     }
 }
 

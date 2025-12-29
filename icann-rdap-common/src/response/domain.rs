@@ -1,4 +1,8 @@
 //! RDAP Domain Object Class
+use std::collections::HashSet;
+
+use crate::prelude::ContentExtensions;
+
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
     buildstructor::Builder,
@@ -795,6 +799,15 @@ impl CommonFields for Domain {
 impl ObjectCommonFields for Domain {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
+    }
+}
+
+impl ContentExtensions for Domain {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.extend(self.object_common().content_extensions());
+        exts
     }
 }
 

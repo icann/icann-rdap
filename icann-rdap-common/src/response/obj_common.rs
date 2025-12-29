@@ -1,4 +1,8 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::ContentExtensions;
 
 use super::{
     redacted::Redacted, to_opt_vectorstringish, Entity, Event, Events, Link, Links, Port43, Remark,
@@ -257,6 +261,20 @@ pub trait ObjectCommonFields {
     /// See [ObjectCommon::get_entity_by_role].
     fn get_entity_by_role(&self, role: &str) -> Option<&Entity> {
         self.object_common().entity_by_role(role)
+    }
+}
+
+impl ContentExtensions for ObjectCommon {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        self.remarks
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .for_each(|remark| {
+                exts.extend(remark.content_extensions());
+            });
+        exts
     }
 }
 

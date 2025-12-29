@@ -1,4 +1,8 @@
 //! RDAP Autonomous System Number.
+use std::collections::HashSet;
+
+use crate::prelude::ContentExtensions;
+
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
     serde::{Deserialize, Serialize},
@@ -246,6 +250,15 @@ impl CommonFields for Autnum {
 impl ObjectCommonFields for Autnum {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
+    }
+}
+
+impl ContentExtensions for Autnum {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.extend(self.object_common().content_extensions());
+        exts
     }
 }
 

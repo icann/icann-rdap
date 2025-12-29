@@ -1,5 +1,5 @@
 //! RDAP structures for parsing and creating RDAP responses.
-use std::any::TypeId;
+use std::{any::TypeId, collections::HashSet};
 
 use {
     cidr,
@@ -418,6 +418,32 @@ pub fn to_opt_vec<T>(vec: Vec<T>) -> Option<Vec<T>> {
 /// Returns `Vec<T>` if `is_some()` else an empty vector.
 pub fn opt_to_vec<T>(opt: Option<Vec<T>>) -> Vec<T> {
     opt.unwrap_or_default()
+}
+
+/// Retrieve the RDAP extensions making up the content of a response.
+pub trait ContentExtensions {
+    /// Returns a [HashSet] of [ExtensionId].
+    ///
+    /// The returned value should contain all the extension IDs used
+    /// in the instance of the object.
+    fn content_extensions(&self) -> HashSet<ExtensionId>;
+}
+
+impl ContentExtensions for RdapResponse {
+    fn content_extensions(&self) -> HashSet<ExtensionId> {
+        match &self {
+            Self::Entity(e) => e.content_extensions(),
+            Self::Domain(d) => d.content_extensions(),
+            Self::Nameserver(n) => n.content_extensions(),
+            Self::Autnum(a) => a.content_extensions(),
+            Self::Network(n) => n.content_extensions(),
+            Self::DomainSearchResults(r) => r.content_extensions(),
+            Self::EntitySearchResults(r) => r.content_extensions(),
+            Self::NameserverSearchResults(r) => r.content_extensions(),
+            Self::ErrorResponse(e) => e.content_extensions(),
+            Self::Help(h) => h.content_extensions(),
+        }
+    }
 }
 
 #[cfg(test)]

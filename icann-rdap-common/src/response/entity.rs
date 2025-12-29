@@ -1,5 +1,7 @@
 //! Entity object class.
-use crate::contact::jscontact::JsContactCard;
+use std::collections::HashSet;
+
+use crate::{contact::jscontact::JsContactCard, prelude::ContentExtensions};
 
 use {
     crate::{
@@ -424,6 +426,18 @@ impl CommonFields for Entity {
 impl ObjectCommonFields for Entity {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
+    }
+}
+
+impl ContentExtensions for Entity {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.extend(self.object_common().content_extensions());
+        if self.jscontact_card.is_some() {
+            exts.insert(super::ExtensionId::JsContact);
+        }
+        exts
     }
 }
 

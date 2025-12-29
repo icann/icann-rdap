@@ -1,4 +1,8 @@
 //! RDAP Nameserver object class.
+use std::collections::HashSet;
+
+use crate::prelude::ContentExtensions;
+
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
     std::{net::IpAddr, str::FromStr},
@@ -323,6 +327,15 @@ impl CommonFields for Nameserver {
 impl ObjectCommonFields for Nameserver {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
+    }
+}
+
+impl ContentExtensions for Nameserver {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.extend(self.object_common().content_extensions());
+        exts
     }
 }
 

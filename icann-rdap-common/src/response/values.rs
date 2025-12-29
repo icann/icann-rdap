@@ -37,7 +37,7 @@ use {
 ///
 /// let s = ExtensionId::Cidr0.as_ref();
 /// ```
-#[derive(Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr)]
+#[derive(Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr, Hash)]
 pub enum ExtensionId {
     #[strum(serialize = "rdap_level_0")]
     RdapLevel0,
@@ -81,6 +81,8 @@ pub enum ExtensionId {
     RegType,
     #[strum(serialize = "reverse_search")]
     ReverseSearch,
+    #[strum(serialize = "simpleRedaction")]
+    SimpleRedaction,
     #[strum(serialize = "sorting")]
     Sorting,
     #[strum(serialize = "subsetting")]
