@@ -1,5 +1,7 @@
 use std::{net::IpAddr, str::FromStr};
 
+use icann_rdap_common::prelude::normalize_extensions;
+
 use {
     axum::{
         extract::{Path, State},
@@ -33,6 +35,7 @@ pub(crate) async fn network_by_netid(
             if state.get_bootstrap() {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
+                let network = normalize_extensions(network);
                 Ok(network.response())
             }
         } else {
@@ -49,6 +52,7 @@ pub(crate) async fn network_by_netid(
             if state.get_bootstrap() {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
+                let network = normalize_extensions(network);
                 Ok(network.response())
             }
         }

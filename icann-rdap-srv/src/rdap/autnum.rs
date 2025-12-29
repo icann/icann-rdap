@@ -2,6 +2,7 @@ use axum::{
     extract::{Path, State},
     response::Response,
 };
+use icann_rdap_common::prelude::normalize_extensions;
 
 use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
 
@@ -19,6 +20,7 @@ pub(crate) async fn autnum_by_num(
     Ok(if state.get_bootstrap() {
         autnum.to_autnum_bootstrap(as_num).response()
     } else {
+        let autnum = normalize_extensions(autnum);
         autnum.response()
     })
 }

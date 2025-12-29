@@ -446,6 +446,97 @@ impl ContentExtensions for RdapResponse {
     }
 }
 
+/// Normalizes the extensions in an [RdapResponse].
+pub fn normalize_extensions(rdap: RdapResponse) -> RdapResponse {
+    let extensions = rdap.content_extensions();
+    let rdap_conformance = extensions
+        .iter()
+        .map(|e| e.to_extension())
+        .collect::<Vec<Extension>>();
+
+    match rdap {
+        RdapResponse::Entity(e) => Entity {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..e.common
+            },
+            ..*e
+        }
+        .to_response(),
+        RdapResponse::Domain(d) => Domain {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..d.common
+            },
+            ..*d
+        }
+        .to_response(),
+        RdapResponse::Nameserver(n) => Nameserver {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..n.common
+            },
+            ..*n
+        }
+        .to_response(),
+        RdapResponse::Autnum(a) => Autnum {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..a.common
+            },
+            ..*a
+        }
+        .to_response(),
+        RdapResponse::Network(n) => Network {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..n.common
+            },
+            ..*n
+        }
+        .to_response(),
+        RdapResponse::DomainSearchResults(r) => DomainSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::EntitySearchResults(r) => EntitySearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::NameserverSearchResults(r) => NameserverSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::ErrorResponse(e) => Rfc9083Error {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..e.common
+            },
+            ..*e
+        }
+        .to_response(),
+        RdapResponse::Help(h) => Help {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..h.common
+            },
+        }
+        .to_response(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::Value;

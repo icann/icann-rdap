@@ -1,4 +1,4 @@
-use icann_rdap_common::rdns::reverse_dns_to_ip;
+use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ip};
 
 use {
     axum::{
@@ -56,5 +56,6 @@ pub(crate) async fn domain_by_name(
         }
     }
 
+    let domain = normalize_extensions(domain);
     Ok(domain.response())
 }

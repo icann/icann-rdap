@@ -274,6 +274,9 @@ impl ContentExtensions for ObjectCommon {
             .for_each(|remark| {
                 exts.extend(remark.content_extensions());
             });
+        if self.redacted.is_some() {
+            exts.insert(super::ExtensionId::Redacted);
+        }
         exts
     }
 }

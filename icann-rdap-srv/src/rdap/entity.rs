@@ -1,3 +1,5 @@
+use icann_rdap_common::prelude::normalize_extensions;
+
 use {
     axum::{
         extract::{Path, State},
@@ -32,5 +34,6 @@ pub(crate) async fn entity_by_handle(
         }
     }
 
+    let entity = normalize_extensions(entity);
     Ok(entity.response())
 }

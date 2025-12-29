@@ -970,6 +970,7 @@ async fn test_domain_with_redaction_env() {
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
     let expected_json = json!({
+        "rdapConformance":["redacted"],
         "objectClassName": "domain",
         "redacted": [{
             "name": {"type": "Domain ID"},
@@ -1013,6 +1014,7 @@ async fn test_domain_with_redaction_flags() {
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
     let expected_json = json!({
+        "rdapConformance":["redacted"],
         "objectClassName": "domain",
         "redacted": [{
             "name": {"type": "Domain ID"},
@@ -1054,6 +1056,7 @@ async fn test_domain_with_simple_redaction_flags() {
     // THEN output type is the urls
     let assert = test_jig.cmd.assert();
     let expected_json = json!({
+        "rdapConformance":["redacted"],
         "objectClassName": "domain",
         "handle": "////REDACTED_ID////",
         "remarks": [{

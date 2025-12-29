@@ -1,3 +1,5 @@
+use icann_rdap_common::prelude::normalize_extensions;
+
 use {
     axum::{
         extract::{Path, State},
@@ -42,5 +44,6 @@ pub(crate) async fn nameserver_by_name(
         }
     }
 
+    let nameserver = normalize_extensions(nameserver);
     Ok(nameserver.response())
 }
