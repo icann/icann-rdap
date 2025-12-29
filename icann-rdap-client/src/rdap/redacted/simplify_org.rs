@@ -17,13 +17,13 @@ pub(crate) fn simplify_registrant_org(
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     // First redact the main organization name
-                    contact = contact.set_organization_names(vec![REDACTED_ORG.to_string()]);
+                    contact = contact.with_organization_names(vec![REDACTED_ORG.to_string()]);
 
                     // Now redact organization names in all localizations using mutable iterator
                     for (_lang, localizable) in contact.localizations_iter_mut() {
                         *localizable = localizable
                             .clone()
-                            .set_organization_names(vec![REDACTED_ORG.to_string()]);
+                            .with_organization_names(vec![REDACTED_ORG.to_string()]);
                     }
 
                     entity.set_contact_if_vcard(&contact);
@@ -261,13 +261,13 @@ mod tests {
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
             .organization_names(vec!["Organisation Française".to_string()])
             .build();
-        contact = contact.set_localization("fr".to_string(), fr_localization);
+        contact = contact.with_localization("fr".to_string(), fr_localization);
 
         // Add a Spanish localization with different organization name
         let es_localization = icann_rdap_common::contact::Localizable::builder()
             .organization_names(vec!["Organización Española".to_string()])
             .build();
-        contact = contact.set_localization("es".to_string(), es_localization);
+        contact = contact.with_localization("es".to_string(), es_localization);
 
         let entity = Entity::builder()
             .handle("test-registrant")

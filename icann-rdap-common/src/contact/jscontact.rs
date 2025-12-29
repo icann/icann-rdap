@@ -232,7 +232,7 @@ impl Contact {
         if let Some(localizations) = &jscontact.localizations {
             for (tag, local) in localizations {
                 contact =
-                    contact.set_localization(tag.to_owned(), Localizable::from_jscontact(local));
+                    contact.with_localization(tag.to_owned(), Localizable::from_jscontact(local));
             }
         }
         contact

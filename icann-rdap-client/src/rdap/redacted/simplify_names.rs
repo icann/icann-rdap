@@ -17,11 +17,13 @@ pub(crate) fn simplify_registrant_name(
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     // First redact the main full name
-                    contact = contact.set_full_name(REDACTED_NAME.to_string());
+                    contact = contact.with_full_name(REDACTED_NAME.to_string());
 
                     // Now redact full names in all localizations using mutable iterator
                     for (_lang, localizable) in contact.localizations_iter_mut() {
-                        *localizable = localizable.clone().set_full_name(REDACTED_NAME.to_string());
+                        *localizable = localizable
+                            .clone()
+                            .with_full_name(REDACTED_NAME.to_string());
                     }
 
                     entity.set_contact_if_vcard(&contact);
@@ -47,11 +49,13 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     // First redact main full name
-                    contact = contact.set_full_name(REDACTED_NAME.to_string());
+                    contact = contact.with_full_name(REDACTED_NAME.to_string());
 
                     // Now redact full names in all localizations using mutable iterator
                     for (_lang, localizable) in contact.localizations_iter_mut() {
-                        *localizable = localizable.clone().set_full_name(REDACTED_NAME.to_string());
+                        *localizable = localizable
+                            .clone()
+                            .with_full_name(REDACTED_NAME.to_string());
                     }
 
                     entity.set_contact_if_vcard(&contact);
@@ -758,13 +762,13 @@ mod tests {
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
             .full_name("Jean Dupont")
             .build();
-        contact = contact.set_localization("fr".to_string(), fr_localization);
+        contact = contact.with_localization("fr".to_string(), fr_localization);
 
         // Add a Spanish localization with different full name
         let es_localization = icann_rdap_common::contact::Localizable::builder()
             .full_name("Juan Pérez")
             .build();
-        contact = contact.set_localization("es".to_string(), es_localization);
+        contact = contact.with_localization("es".to_string(), es_localization);
 
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
@@ -829,13 +833,13 @@ mod tests {
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
             .full_name("Jean Technique")
             .build();
-        contact = contact.set_localization("fr".to_string(), fr_localization);
+        contact = contact.with_localization("fr".to_string(), fr_localization);
 
         // Add a Spanish localization with different full name
         let es_localization = icann_rdap_common::contact::Localizable::builder()
             .full_name("Juan Técnico")
             .build();
-        contact = contact.set_localization("es".to_string(), es_localization);
+        contact = contact.with_localization("es".to_string(), es_localization);
 
         let tech_entity = Entity::builder()
             .handle("tech_456")

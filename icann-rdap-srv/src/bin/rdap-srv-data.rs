@@ -856,9 +856,9 @@ async fn make_entity(
                 .unwrap_or_default(),
         )
         .build();
-    contact = contact.set_email_addresses(&args.email);
-    contact = contact.add_voice_phones(&args.voice);
-    contact = contact.add_fax_phones(&args.fax);
+    contact = contact.with_email_addresses(&args.email);
+    contact = contact.with_voice_phone_numbers(&args.voice);
+    contact = contact.with_fax_phone_numbers(&args.fax);
     let postal_address = PostalAddress::builder()
         .street_parts(args.street.clone())
         .and_locality(args.locality)
@@ -868,7 +868,7 @@ async fn make_entity(
         .and_country_code(args.country_code)
         .and_postal_code(args.postal_code)
         .build();
-    contact = contact.set_postal_address(postal_address);
+    contact = contact.with_postal_address(postal_address);
     let entity = Entity::response_obj()
         .contact(contact)
         .notices(args.object_args.notice.clone().to_notices())

@@ -27,7 +27,7 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
                         for email in emails.iter_mut() {
                             email.email = REDACTED_EMAIL.to_string();
                         }
-                        contact = contact.set_emails(emails);
+                        contact = contact.with_emails(emails);
                         entity.object_common.remarks = add_remark(
                             REDACTED_EMAIL,
                             REDACTED_EMAIL_DESC,

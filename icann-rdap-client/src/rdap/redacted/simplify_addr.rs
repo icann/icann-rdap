@@ -28,14 +28,14 @@ pub(crate) fn simplify_registrant_street(
                             addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
                             all_addrs.push(addr.clone());
                         }
-                        contact = contact.set_postal_addresses(all_addrs);
+                        contact = contact.with_postal_addresses(all_addrs);
                         for (_lang, localizable) in contact.localizations_iter_mut() {
                             let mut all_addrs = vec![];
                             for addr in localizable.postal_addresses().to_vec().iter_mut() {
                                 addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
                                 all_addrs.push(addr.clone());
                             }
-                            *localizable = localizable.clone().set_postal_addresses(all_addrs);
+                            *localizable = localizable.clone().with_postal_addresses(all_addrs);
                         }
                         entity.object_common.remarks = add_remark(
                             REDACTED_STREET,
@@ -69,14 +69,14 @@ pub(crate) fn simplify_registrant_city(
                             addr.locality = Some(REDACTED_CITY.to_string());
                             all_addrs.push(addr.clone());
                         }
-                        contact = contact.set_postal_addresses(all_addrs);
+                        contact = contact.with_postal_addresses(all_addrs);
                         for (_lang, localizable) in contact.localizations_iter_mut() {
                             let mut all_addrs = vec![];
                             for addr in localizable.postal_addresses().to_vec().iter_mut() {
                                 addr.locality = Some(REDACTED_CITY.to_string());
                                 all_addrs.push(addr.clone());
                             }
-                            *localizable = localizable.clone().set_postal_addresses(all_addrs);
+                            *localizable = localizable.clone().with_postal_addresses(all_addrs);
                         }
                         entity.object_common.remarks = add_remark(
                             REDACTED_CITY,
@@ -110,7 +110,7 @@ pub(crate) fn simplify_registrant_postal_code(
                             addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
                             all_addrs.push(addr.clone());
                         }
-                        contact = contact.set_postal_addresses(all_addrs);
+                        contact = contact.with_postal_addresses(all_addrs);
 
                         for (_lang, localizable) in contact.localizations_iter_mut() {
                             let mut all_addrs = vec![];
@@ -118,7 +118,7 @@ pub(crate) fn simplify_registrant_postal_code(
                                 addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
                                 all_addrs.push(addr.clone());
                             }
-                            *localizable = localizable.clone().set_postal_addresses(all_addrs);
+                            *localizable = localizable.clone().with_postal_addresses(all_addrs);
                         }
 
                         entity.object_common.remarks = add_remark(

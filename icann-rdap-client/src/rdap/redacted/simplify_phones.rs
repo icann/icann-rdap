@@ -78,7 +78,7 @@ fn simplify_phone(
                                 );
                             }
                         }
-                        contact = contact.set_phones(phones);
+                        contact = contact.with_phones(phones);
                     }
                     entity.set_contact_if_vcard(&contact);
                     entity.set_contact_if_jscontact(&contact);
@@ -130,7 +130,7 @@ fn simplify_phone_ext(
                                 );
                             }
                         }
-                        contact = contact.set_phones(phones);
+                        contact = contact.with_phones(phones);
                     }
                     entity.set_contact_if_vcard(&contact);
                     entity.set_contact_if_jscontact(&contact);

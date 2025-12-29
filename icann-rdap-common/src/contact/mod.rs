@@ -190,13 +190,13 @@ impl Contact {
     }
 
     /// Set a localization.
-    pub fn set_localization(mut self, lang: String, localization: Localizable) -> Self {
+    pub fn with_localization(mut self, lang: String, localization: Localizable) -> Self {
         self.localizations.insert(lang, localization);
         self
     }
 
     /// Set the set of emails.
-    pub fn set_email_addresses(mut self, emails: &[impl ToString]) -> Self {
+    pub fn with_email_addresses(mut self, emails: &[impl ToString]) -> Self {
         let emails: Vec<Email> = emails
             .iter()
             .map(|e| Email::builder().email(e.to_string()).build())
@@ -206,13 +206,13 @@ impl Contact {
     }
 
     /// Set the emails.
-    pub fn set_emails(mut self, emails: Vec<Email>) -> Self {
+    pub fn with_emails(mut self, emails: Vec<Email>) -> Self {
         self.emails = Some(emails);
         self
     }
 
     /// Add a voice phone to the set of phones.
-    pub fn add_voice_phones(mut self, phones: &[impl ToString]) -> Self {
+    pub fn with_voice_phone_numbers(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
             .map(|p| {
@@ -231,7 +231,7 @@ impl Contact {
     }
 
     /// Add a facsimile phone to the set of phones.
-    pub fn add_fax_phones(mut self, phones: &[impl ToString]) -> Self {
+    pub fn with_fax_phone_numbers(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
             .map(|p| {
@@ -250,67 +250,67 @@ impl Contact {
     }
 
     /// Set the phones.
-    pub fn set_phones(mut self, phones: Vec<Phone>) -> Self {
+    pub fn with_phones(mut self, phones: Vec<Phone>) -> Self {
         self.phones = Some(phones);
         self
     }
 
     /// Set the set of postal addresses to only be the passed in postal address.
-    pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
+    pub fn with_postal_address(mut self, postal_address: PostalAddress) -> Self {
         self.unlocalized.postal_addresses = Some(vec![postal_address]);
         self
     }
 
     /// Set the complete set of postal addresses.
-    pub fn set_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
+    pub fn with_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
         self.unlocalized.postal_addresses = Some(postal_addresses);
         self
     }
 
     /// Set the full name.
-    pub fn set_full_name(mut self, full_name: String) -> Self {
+    pub fn with_full_name(mut self, full_name: String) -> Self {
         self.unlocalized.full_name = Some(full_name);
         self
     }
 
     /// Set the name parts.
-    pub fn set_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
+    pub fn with_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
         self.unlocalized.name_parts = name_parts;
         self
     }
 
     /// Set the nick names.
-    pub fn set_nick_names(mut self, nick_names: Vec<String>) -> Self {
+    pub fn with_nick_names(mut self, nick_names: Vec<String>) -> Self {
         self.unlocalized.nick_names = (!nick_names.is_empty()).then_some(nick_names);
         self
     }
 
     /// Set the titles.
-    pub fn set_titles(mut self, titles: Vec<String>) -> Self {
+    pub fn with_titles(mut self, titles: Vec<String>) -> Self {
         self.unlocalized.titles = (!titles.is_empty()).then_some(titles);
         self
     }
 
     /// Set the organizational roles.
-    pub fn set_roles(mut self, roles: Vec<String>) -> Self {
+    pub fn with_roles(mut self, roles: Vec<String>) -> Self {
         self.unlocalized.roles = (!roles.is_empty()).then_some(roles);
         self
     }
 
     /// Set the organization names.
-    pub fn set_organization_names(mut self, organization_names: Vec<String>) -> Self {
+    pub fn with_organization_names(mut self, organization_names: Vec<String>) -> Self {
         self.unlocalized.organization_names = Some(organization_names);
         self
     }
 
     /// Set the kind.
-    pub fn set_kind(mut self, kind: String) -> Self {
+    pub fn with_kind(mut self, kind: String) -> Self {
         self.kind = Some(kind);
         self
     }
 
     /// Set the langs.
-    pub fn set_langs(mut self, langs: Vec<Lang>) -> Self {
+    pub fn with_langs(mut self, langs: Vec<Lang>) -> Self {
         self.langs = (!langs.is_empty()).then_some(langs);
         self
     }
@@ -555,49 +555,49 @@ impl Localizable {
     }
 
     /// Set the set of postal addresses to only be the passed in postal address.
-    pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
+    pub fn with_postal_address(mut self, postal_address: PostalAddress) -> Self {
         self.postal_addresses = Some(vec![postal_address]);
         self
     }
 
     /// Set the complete set of postal addresses.
-    pub fn set_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
+    pub fn with_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
         self.postal_addresses = Some(postal_addresses);
         self
     }
 
     /// Set the full name.
-    pub fn set_full_name(mut self, full_name: String) -> Self {
+    pub fn with_full_name(mut self, full_name: String) -> Self {
         self.full_name = Some(full_name);
         self
     }
 
     /// Set the organization names.
-    pub fn set_organization_names(mut self, organization_names: Vec<String>) -> Self {
+    pub fn with_organization_names(mut self, organization_names: Vec<String>) -> Self {
         self.organization_names = Some(organization_names);
         self
     }
 
     /// Set the name parts.
-    pub fn set_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
+    pub fn with_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
         self.name_parts = name_parts;
         self
     }
 
     /// Set the nick names.
-    pub fn set_nick_names(mut self, nick_names: Vec<String>) -> Self {
+    pub fn with_nick_names(mut self, nick_names: Vec<String>) -> Self {
         self.nick_names = (!nick_names.is_empty()).then_some(nick_names);
         self
     }
 
     /// Set the titles.
-    pub fn set_titles(mut self, titles: Vec<String>) -> Self {
+    pub fn with_titles(mut self, titles: Vec<String>) -> Self {
         self.titles = (!titles.is_empty()).then_some(titles);
         self
     }
 
     /// Set the organizational roles.
-    pub fn set_roles(mut self, roles: Vec<String>) -> Self {
+    pub fn with_roles(mut self, roles: Vec<String>) -> Self {
         self.roles = (!roles.is_empty()).then_some(roles);
         self
     }
