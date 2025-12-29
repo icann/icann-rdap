@@ -40,7 +40,7 @@ impl ToGtldWhois for RdapResponse {
     }
 }
 
-impl ToGtldWhois for PostalAddress {
+impl ToGtldWhois for &PostalAddress {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let label = &params.label;
 
@@ -50,7 +50,10 @@ impl ToGtldWhois for PostalAddress {
             .map(|parts| parts.join(" "))
             .unwrap_or_default();
         let city = self.locality.as_deref().unwrap_or("");
-        let state = self.region_name.as_deref().unwrap_or("");
+        let state = self
+            .region_name
+            .as_deref()
+            .unwrap_or(self.region_code().unwrap_or_default());
         let postal_code = self.postal_code.as_deref().unwrap_or("");
         let country = self.country_code.as_deref().unwrap_or("");
 

@@ -1,9 +1,6 @@
 use {
     super::{GtldParams, RoleInfo, ToGtldWhois},
-    icann_rdap_common::{
-        contact::{Contact, PostalAddress},
-        response::Entity,
-    },
+    icann_rdap_common::{contact::Contact, response::Entity},
 };
 
 impl ToGtldWhois for Option<Vec<Entity>> {
@@ -28,8 +25,8 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                     };
                     params.label = label.to_string();
 
-                    if let Some(vcard_array) = &entity.vcard_array {
-                        let role_info = extract_role_info(vcard_array, params);
+                    if let Some(contact) = &entity.contact() {
+                        let role_info = extract_role_info(contact, params);
                         // Now use role_info to append to formatted_data
                         if !role_info.name.is_empty() {
                             if ["registrar", "reseller", "sponsor", "proxy"]
@@ -90,76 +87,14 @@ impl ToGtldWhois for Option<Vec<Entity>> {
     }
 }
 
-fn format_address_with_label(
-    params: &mut GtldParams,
-    address_components: &[serde_json::Value],
-) -> String {
-    // TODO once from_vcard is fixed to handle the way addressing is done, replace this with the normal builder.
-    let postal_address = PostalAddress::builder()
-        .street_parts(
-            address_components
-                .get(2)
-                .and_then(|v| v.as_str())
-                .map_or_else(Vec::new, |s| vec![s.to_string()]),
-        )
-        .locality(
-            address_components
-                .get(3)
-                .and_then(|v| v.as_str())
-                .map_or_else(String::new, String::from),
-        )
-        .region_name(
-            address_components
-                .get(4)
-                .and_then(|v| v.as_str())
-                .map_or_else(String::new, String::from),
-        )
-        .country_name(
-            address_components
-                .get(6)
-                .and_then(|v| v.as_str())
-                .map_or_else(String::new, String::from),
-        )
-        .country_code(
-            address_components
-                .get(6)
-                .and_then(|v| v.as_str())
-                .map_or_else(String::new, String::from),
-        )
-        .postal_code(
-            address_components
-                .get(5)
-                .and_then(|v| v.as_str())
-                .map_or_else(String::new, String::from),
-        )
-        .build();
-
-    postal_address.to_gtld_whois(params).to_string()
-}
-
-fn extract_role_info(vcard_array: &[serde_json::Value], params: &mut GtldParams) -> RoleInfo {
-    let contact = match Contact::from_vcard(vcard_array) {
-        Some(contact) => contact,
-        None => return RoleInfo::default(),
+fn extract_role_info(contact: &Contact, params: &mut GtldParams) -> RoleInfo {
+    let adr = if let Some(pa) = contact.postal_address() {
+        pa.to_gtld_whois(params).to_string()
+    } else {
+        String::default()
     };
-    let mut adr = String::new();
     let name = contact.full_name().unwrap_or_default();
     let org = contact.organization_name().unwrap_or_default();
-
-    // TODO this is a workout to get the address out of the contact. Replace this when from_vcard is fixed
-    for vcard in vcard_array.iter() {
-        if let Some(properties) = vcard.as_array() {
-            for property in properties {
-                if let Some(property) = property.as_array() {
-                    if let "adr" = property[0].as_str().unwrap_or("") {
-                        if let Some(address_components) = property[3].as_array() {
-                            adr = format_address_with_label(params, address_components);
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     let email = contact
         .email()
