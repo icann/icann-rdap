@@ -110,7 +110,7 @@ pub struct Entity {
     pub vcard_array: Option<Vec<Value>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub jscontact_card: Option<JsContactCard>,
+    pub(crate) jscontact_card: Option<JsContactCard>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub roles: Option<VectorStringish>,

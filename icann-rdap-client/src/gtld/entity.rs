@@ -146,30 +146,28 @@ fn append_abuse_contact_info(entity: &Entity, formatted_data: &mut String) {
         for entity in entities {
             for role in entity.roles() {
                 if role.as_str() == "abuse" {
-                    if let Some(vcard_array) = &entity.vcard_array {
-                        if let Some(contact) = Contact::from_vcard(vcard_array) {
-                            // Emails
-                            if let Some(emails) = &contact.emails {
-                                for email in emails {
-                                    let abuse_contact_email = &email.email;
-                                    if !abuse_contact_email.is_empty() {
-                                        formatted_data.push_str(&format!(
-                                            "Registrar Abuse Contact Email: {}\n",
-                                            abuse_contact_email
-                                        ));
-                                    }
+                    if let Some(contact) = entity.contact() {
+                        // Emails
+                        if let Some(emails) = &contact.emails {
+                            for email in emails {
+                                let abuse_contact_email = &email.email;
+                                if !abuse_contact_email.is_empty() {
+                                    formatted_data.push_str(&format!(
+                                        "Registrar Abuse Contact Email: {}\n",
+                                        abuse_contact_email
+                                    ));
                                 }
                             }
-                            // Phones
-                            if let Some(phones) = &contact.phones {
-                                for phone in phones {
-                                    let abuse_contact_phone = &phone.phone;
-                                    if !abuse_contact_phone.is_empty() {
-                                        formatted_data.push_str(&format!(
-                                            "Registrar Abuse Contact Phone: {}\n",
-                                            abuse_contact_phone
-                                        ));
-                                    }
+                        }
+                        // Phones
+                        if let Some(phones) = &contact.phones {
+                            for phone in phones {
+                                let abuse_contact_phone = &phone.phone;
+                                if !abuse_contact_phone.is_empty() {
+                                    formatted_data.push_str(&format!(
+                                        "Registrar Abuse Contact Phone: {}\n",
+                                        abuse_contact_phone
+                                    ));
                                 }
                             }
                         }
