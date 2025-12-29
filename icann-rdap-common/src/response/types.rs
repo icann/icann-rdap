@@ -1070,7 +1070,7 @@ mod tests {
             .build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
@@ -1095,7 +1095,7 @@ mod tests {
         let mut oc = ObjectCommon::domain().build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
@@ -1126,7 +1126,7 @@ mod tests {
             .build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")

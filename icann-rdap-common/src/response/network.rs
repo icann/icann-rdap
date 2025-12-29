@@ -402,13 +402,13 @@ impl ToResponse for Network {
 
 impl GetSelfLink for Network {
     fn self_link(&self) -> Option<&Link> {
-        self.object_common.get_self_link()
+        self.object_common.self_link()
     }
 }
 
 impl SelfLink for Network {
     fn with_self_link(mut self, link: Link) -> Self {
-        self.object_common = self.object_common.set_self_link(link);
+        self.object_common = self.object_common.with_self_link(link);
         self
     }
 }

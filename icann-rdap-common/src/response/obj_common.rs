@@ -167,7 +167,7 @@ impl ObjectCommon {
     /// This will remove all other self links and place the provided link
     /// into the Links. This method will also set the "rel" attribute
     /// to "self" on the provided link.
-    pub fn set_self_link(mut self, mut link: Link) -> Self {
+    pub fn with_self_link(mut self, mut link: Link) -> Self {
         link.rel = Some("self".to_string());
         if let Some(links) = self.links {
             let mut new_links = links
@@ -183,7 +183,7 @@ impl ObjectCommon {
     }
 
     /// Get the link with a `rel` of "self".
-    pub fn get_self_link(&self) -> Option<&Link> {
+    pub fn self_link(&self) -> Option<&Link> {
         if let Some(links) = &self.links {
             links.iter().find(|link| link.is_relation("self"))
         } else {
@@ -194,7 +194,7 @@ impl ObjectCommon {
     /// Gets the first entity by the given role.
     ///
     /// Use [crate::response::EntityRole] to get registered role names.
-    pub fn get_entity_by_role(&self, role: &str) -> Option<&Entity> {
+    pub fn entity_by_role(&self, role: &str) -> Option<&Entity> {
         self.entities
             .as_deref()
             .unwrap_or_default()
@@ -256,7 +256,7 @@ pub trait ObjectCommonFields {
     ///
     /// See [ObjectCommon::get_entity_by_role].
     fn get_entity_by_role(&self, role: &str) -> Option<&Entity> {
-        self.object_common().get_entity_by_role(role)
+        self.object_common().entity_by_role(role)
     }
 }
 
@@ -283,7 +283,7 @@ mod tests {
             .build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("registrar");
+        let result = obj_common.entity_by_role("registrar");
 
         // THEN
         assert!(result.is_some());
@@ -301,7 +301,7 @@ mod tests {
             .build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("abuse");
+        let result = obj_common.entity_by_role("abuse");
 
         // THEN
         assert!(result.is_none());
@@ -313,7 +313,7 @@ mod tests {
         let obj_common = ObjectCommon::entity().build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("registrant");
+        let result = obj_common.entity_by_role("registrant");
 
         // THEN
         assert!(result.is_none());
@@ -325,7 +325,7 @@ mod tests {
         let obj_common = ObjectCommon::entity().and_entities(Some(vec![])).build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("registrant");
+        let result = obj_common.entity_by_role("registrant");
 
         // THEN
         assert!(result.is_none());
@@ -343,7 +343,7 @@ mod tests {
             .build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("registrar");
+        let result = obj_common.entity_by_role("registrar");
 
         // THEN
         assert!(result.is_some());
@@ -361,7 +361,7 @@ mod tests {
             .build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("registrar");
+        let result = obj_common.entity_by_role("registrar");
 
         // THEN
         assert!(result.is_some());
@@ -379,8 +379,8 @@ mod tests {
             .build();
 
         // WHEN
-        let result_lower = obj_common.get_entity_by_role("registrar");
-        let result_upper = obj_common.get_entity_by_role("Registrar");
+        let result_lower = obj_common.entity_by_role("registrar");
+        let result_upper = obj_common.entity_by_role("Registrar");
 
         // THEN
         assert!(result_lower.is_some());
@@ -401,7 +401,7 @@ mod tests {
             .build();
 
         // WHEN
-        let result = obj_common.get_entity_by_role("registrant");
+        let result = obj_common.entity_by_role("registrant");
 
         // THEN
         assert!(result.is_some());
