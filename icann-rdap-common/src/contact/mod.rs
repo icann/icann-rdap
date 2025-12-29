@@ -110,7 +110,7 @@ use crate::prelude::to_opt_vec;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
-    pub langs: Option<Vec<Lang>>,
+    pub(crate) langs: Option<Vec<Lang>>,
 
     /// The kind such as individual, company, etc...
     pub(crate) kind: Option<String>,
@@ -282,6 +282,12 @@ impl Contact {
     /// Set the kind.
     pub fn set_kind(mut self, kind: String) -> Self {
         self.kind = Some(kind);
+        self
+    }
+
+    /// Set the langs.
+    pub fn set_langs(mut self, langs: Vec<Lang>) -> Self {
+        self.langs = (!langs.is_empty()).then_some(langs);
         self
     }
 
