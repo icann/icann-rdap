@@ -44,8 +44,8 @@ pub(crate) fn simplify_registrant_street(
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first registrant
                 }
             }
@@ -85,8 +85,8 @@ pub(crate) fn simplify_registrant_city(
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first registrant
                 }
             }
@@ -128,8 +128,8 @@ pub(crate) fn simplify_registrant_postal_code(
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first registrant
                 }
             }

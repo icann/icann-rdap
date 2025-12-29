@@ -26,8 +26,8 @@ pub(crate) fn simplify_registrant_name(
                             .with_full_name(REDACTED_NAME.to_string());
                     }
 
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     entity.object_common.remarks = add_remark(
                         REDACTED_NAME,
                         REDACTED_NAME_DESC,
@@ -58,8 +58,8 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
                             .with_full_name(REDACTED_NAME.to_string());
                     }
 
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     entity.object_common.remarks = add_remark(
                         REDACTED_NAME,
                         REDACTED_NAME_DESC,

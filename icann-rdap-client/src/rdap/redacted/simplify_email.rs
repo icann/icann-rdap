@@ -35,8 +35,8 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first entity
                 }
             }

@@ -80,8 +80,8 @@ fn simplify_phone(
                         }
                         contact = contact.with_phones(phones);
                     }
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first entity with role
                 }
             }
@@ -132,8 +132,8 @@ fn simplify_phone_ext(
                         }
                         contact = contact.with_phones(phones);
                     }
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first entity with role
                 }
             }

@@ -26,8 +26,8 @@ pub(crate) fn simplify_registrant_org(
                             .with_organization_names(vec![REDACTED_ORG.to_string()]);
                     }
 
-                    entity.set_contact_if_vcard(&contact);
-                    entity.set_contact_if_jscontact(&contact);
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     entity.object_common.remarks = add_remark(
                         REDACTED_ORG,
                         REDACTED_ORG_DESC,

@@ -348,29 +348,29 @@ impl Entity {
     }
 
     /// Set the contact as a vcard.
-    pub fn set_contact_as_vcard(&mut self, contact: &Contact) -> &mut Self {
+    pub fn with_contact_as_vcard(&mut self, contact: &Contact) -> &mut Self {
         self.vcard_array = Some(contact.to_vcard());
         self
     }
 
     /// Set the contact as a vcard if it already has a vcard representation.
-    pub fn set_contact_if_vcard(&mut self, contact: &Contact) -> &mut Self {
+    pub fn with_contact_if_vcard(&mut self, contact: &Contact) -> &mut Self {
         if self.is_contact_as_vcard() {
-            self.set_contact_as_vcard(contact);
+            self.with_contact_as_vcard(contact);
         };
         self
     }
 
     /// Set the contact as a jscontact.
-    pub fn set_contact_as_jscontact(&mut self, contact: &Contact) -> &mut Self {
+    pub fn with_contact_as_jscontact(&mut self, contact: &Contact) -> &mut Self {
         self.jscontact_card = Some(contact.to_jscontact());
         self
     }
 
     /// Set the contact as a jscontact if it already has a jscontact representation.
-    pub fn set_contact_if_jscontact(&mut self, contact: &Contact) -> &mut Self {
+    pub fn with_contact_if_jscontact(&mut self, contact: &Contact) -> &mut Self {
         if self.is_contact_as_jscontact() {
-            self.set_contact_as_jscontact(contact);
+            self.with_contact_as_jscontact(contact);
         };
         self
     }
