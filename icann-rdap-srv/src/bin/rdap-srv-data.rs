@@ -856,7 +856,7 @@ async fn make_entity(
                 .unwrap_or_default(),
         )
         .build();
-    contact = contact.set_emails(&args.email);
+    contact = contact.set_email_addresses(&args.email);
     contact = contact.add_voice_phones(&args.voice);
     contact = contact.add_fax_phones(&args.fax);
     let postal_address = PostalAddress::builder()

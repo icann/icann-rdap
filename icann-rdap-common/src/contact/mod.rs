@@ -196,12 +196,18 @@ impl Contact {
     }
 
     /// Set the set of emails.
-    pub fn set_emails(mut self, emails: &[impl ToString]) -> Self {
+    pub fn set_email_addresses(mut self, emails: &[impl ToString]) -> Self {
         let emails: Vec<Email> = emails
             .iter()
             .map(|e| Email::builder().email(e.to_string()).build())
             .collect();
         self.emails = (!emails.is_empty()).then_some(emails);
+        self
+    }
+
+    /// Set the emails.
+    pub fn set_emails(mut self, emails: Vec<Email>) -> Self {
+        self.emails = Some(emails);
         self
     }
 
