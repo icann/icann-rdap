@@ -62,7 +62,6 @@ mod tests {
     use icann_rdap_common::prelude::Remark;
     use icann_rdap_common::prelude::{Contact, Entity};
     use icann_rdap_common::response::ObjectCommonFields;
-    use serde_json::Value;
 
     use super::*;
 
@@ -99,28 +98,12 @@ mod tests {
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
 
-        // Check that vcard_array was updated with redacted name
-        let vcard_array = registrant.vcard_array.as_ref().unwrap();
-
-        // Find the FN (full name) property in the vCard properties array
-        // The vCard structure is: ["vcard", [properties...]]
-        let empty_vec: Vec<Value> = vec![];
-        let vcard_properties: &[Value] = vcard_array
-            .get(1)
-            .and_then(|v| v.as_array())
-            .map_or(&empty_vec, |v| v);
-
-        let fn_property = vcard_properties.iter().find(|prop| {
-            if let Some(arr) = prop.as_array() {
-                arr.len() >= 4 && arr[0].as_str() == Some("fn")
-            } else {
-                false
-            }
-        });
-
-        let fn_prop = fn_property.expect("vCard should have FN property after redaction");
-        let fn_value = fn_prop.as_array().unwrap()[3].as_str().unwrap();
-        assert_eq!(fn_value, REDACTED_NAME);
+        // Check that contact full name was updated with redacted name
+        if let Some(contact) = registrant.contact() {
+            assert_eq!(contact.full_name(), Some(REDACTED_NAME));
+        } else {
+            panic!("Expected contact to be present");
+        }
 
         // AND a remark should be added
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
@@ -155,7 +138,7 @@ mod tests {
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_none());
+        assert!(registrant.contact().is_none());
         assert!(registrant.object_common.remarks.is_none());
     }
 
@@ -191,7 +174,7 @@ mod tests {
         // First entity (registrant) should have redacted name
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -199,7 +182,7 @@ mod tests {
 
         // Second entity (tech) should be unchanged
         assert_eq!(entities[1].handle(), Some("tech_456"));
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
 
@@ -234,12 +217,12 @@ mod tests {
 
         // First entity (tech) should be unchanged
         assert_eq!(entities[0].handle(), Some("tech_456"));
-        assert!(entities[0].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
 
         // Second entity (registrant) should have redacted name
         let registrant = &entities[1];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -275,8 +258,8 @@ mod tests {
         assert_eq!(entities[1].handle(), Some("admin_789"));
 
         // AND no vcard_arrays or remarks should be added
-        assert!(entities[0].vcard_array.is_none());
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[0].object_common.remarks.is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
@@ -329,7 +312,7 @@ mod tests {
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -372,7 +355,7 @@ mod tests {
 
         let entity = &entities[0];
         assert_eq!(entity.handle(), Some("multi_role_123"));
-        assert!(entity.vcard_array.is_some());
+        assert!(entity.contact().is_some());
 
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -405,32 +388,14 @@ mod tests {
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
-        // Check that vcard_array was updated with redacted name
-        let vcard_array = registrant.vcard_array.as_ref().unwrap();
-
-        // Find the FN (full name) property in the vCard properties array
-        // The vCard structure is: ["vcard", [properties...]]
-        let empty_vec: Vec<Value> = vec![];
-        let vcard_properties: &[Value] = vcard_array
-            .get(1)
-            .and_then(|v| v.as_array())
-            .map_or(&empty_vec, |v| v);
-
-        let fn_property = vcard_properties
-            .iter()
-            .find(|prop| {
-                if let Some(arr) = prop.as_array() {
-                    arr.len() >= 4 && arr[0].as_str() == Some("fn")
-                } else {
-                    false
-                }
-            })
-            .expect("vCard should have FN property after redaction");
-
-        let fn_value = fn_property.as_array().unwrap()[3].as_str().unwrap();
-        assert_eq!(fn_value, REDACTED_NAME);
+        // Check that contact full name was updated with redacted name
+        if let Some(contact) = registrant.contact() {
+            assert_eq!(contact.full_name(), Some(REDACTED_NAME));
+        } else {
+            panic!("Expected contact to be present");
+        }
 
         // AND a remark should be added
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
@@ -465,28 +430,12 @@ mod tests {
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
 
-        // Check that vcard_array was updated with redacted name
-        let vcard_array = tech.vcard_array.as_ref().unwrap();
-
-        // Find the FN (full name) property in the vCard properties array
-        // The vCard structure is: ["vcard", [properties...]]
-        let empty_vec: Vec<Value> = vec![];
-        let vcard_properties: &[Value] = vcard_array
-            .get(1)
-            .and_then(|v| v.as_array())
-            .map_or(&empty_vec, |v| v);
-
-        let fn_property = vcard_properties.iter().find(|prop| {
-            if let Some(arr) = prop.as_array() {
-                arr.len() >= 4 && arr[0].as_str() == Some("fn")
-            } else {
-                false
-            }
-        });
-
-        let fn_prop = fn_property.expect("vCard should have FN property after redaction");
-        let fn_value = fn_prop.as_array().unwrap()[3].as_str().unwrap();
-        assert_eq!(fn_value, REDACTED_NAME);
+        // Check that contact full name was updated with redacted name
+        if let Some(contact) = tech.contact() {
+            assert_eq!(contact.full_name(), Some(REDACTED_NAME));
+        } else {
+            panic!("Expected contact to be present");
+        }
 
         // AND a remark should be added
         let remarks = tech.object_common.remarks.as_ref().unwrap();
@@ -521,7 +470,7 @@ mod tests {
 
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_none());
+        assert!(tech.contact().is_none());
         assert!(tech.object_common.remarks.is_none());
     }
 
@@ -557,7 +506,7 @@ mod tests {
         // First entity (tech) should have redacted name
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -565,7 +514,7 @@ mod tests {
 
         // Second entity (registrant) should be unchanged
         assert_eq!(entities[1].handle(), Some("registrant_123"));
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
 
@@ -600,12 +549,12 @@ mod tests {
 
         // First entity (registrant) should be unchanged
         assert_eq!(entities[0].handle(), Some("registrant_123"));
-        assert!(entities[0].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
 
         // Second entity (tech) should have redacted name
         let tech = &entities[1];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -641,8 +590,8 @@ mod tests {
         assert_eq!(entities[1].handle(), Some("admin_789"));
 
         // AND no vcard_arrays or remarks should be added
-        assert!(entities[0].vcard_array.is_none());
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[0].object_common.remarks.is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
@@ -695,7 +644,7 @@ mod tests {
 
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -738,7 +687,7 @@ mod tests {
 
         let entity = &entities[0];
         assert_eq!(entity.handle(), Some("multi_role_123"));
-        assert!(entity.vcard_array.is_some());
+        assert!(entity.contact().is_some());
 
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -771,32 +720,14 @@ mod tests {
 
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
-        // Check that vcard_array was updated with redacted name
-        let vcard_array = tech.vcard_array.as_ref().unwrap();
-
-        // Find the FN (full name) property in the vCard properties array
-        // The vCard structure is: ["vcard", [properties...]]
-        let empty_vec: Vec<Value> = vec![];
-        let vcard_properties: &[Value] = vcard_array
-            .get(1)
-            .and_then(|v| v.as_array())
-            .map_or(&empty_vec, |v| v);
-
-        let fn_property = vcard_properties
-            .iter()
-            .find(|prop| {
-                if let Some(arr) = prop.as_array() {
-                    arr.len() >= 4 && arr[0].as_str() == Some("fn")
-                } else {
-                    false
-                }
-            })
-            .expect("vCard should have FN property after redaction");
-
-        let fn_value = fn_property.as_array().unwrap()[3].as_str().unwrap();
-        assert_eq!(fn_value, REDACTED_NAME);
+        // Check that contact full name was updated with redacted name
+        if let Some(contact) = tech.contact() {
+            assert_eq!(contact.full_name(), Some(REDACTED_NAME));
+        } else {
+            panic!("Expected contact to be present");
+        }
 
         // AND a remark should be added
         let remarks = tech.object_common.remarks.as_ref().unwrap();

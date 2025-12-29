@@ -36,7 +36,8 @@ pub(crate) fn simplify_registrant_street(
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.set_contact_if_vcard(&contact);
+                    entity.set_contact_if_jscontact(&contact);
                     break; // Only modify first registrant
                 }
             }
@@ -68,7 +69,8 @@ pub(crate) fn simplify_registrant_city(
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.set_contact_if_vcard(&contact);
+                    entity.set_contact_if_jscontact(&contact);
                     break; // Only modify first registrant
                 }
             }
@@ -100,7 +102,8 @@ pub(crate) fn simplify_registrant_postal_code(
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.set_contact_if_vcard(&contact);
+                    entity.set_contact_if_jscontact(&contact);
                     break; // Only modify first registrant
                 }
             }
@@ -153,8 +156,7 @@ mod tests {
         let entity = &entities[0];
         assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
 
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 1);
             let address = &addresses[0];
@@ -219,8 +221,7 @@ mod tests {
 
         // First entity (registrant) should be redacted
         let registrant_entity = &entities[0];
-        if let Some(vcard) = &registrant_entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = registrant_entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(
                 addresses[0].street_parts,
@@ -230,8 +231,7 @@ mod tests {
 
         // Second entity (admin) should remain unchanged
         let admin_entity = &entities[1];
-        if let Some(vcard) = &admin_entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = admin_entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(
                 addresses[0].street_parts,
@@ -298,8 +298,7 @@ mod tests {
         let entity = &entities[0];
         assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
 
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 1);
             let address = &addresses[0];
@@ -345,8 +344,7 @@ mod tests {
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
         let entity = &entities[0];
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(addresses[0].locality, Some(REDACTED_CITY.to_string()));
         }
@@ -389,8 +387,7 @@ mod tests {
         let entity = &entities[0];
         assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
 
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 1);
             let address = &addresses[0];
@@ -437,8 +434,7 @@ mod tests {
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
         let entity = &entities[0];
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(
                 addresses[0].postal_code,
@@ -490,8 +486,7 @@ mod tests {
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
         let entity = &entities[0];
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(addresses[0].locality, Some("Admin City".to_string()));
         }
@@ -519,7 +514,7 @@ mod tests {
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
         let entity = &entities[0];
-        assert!(entity.vcard_array.is_none());
+        assert!(entity.contact().is_none());
         assert!(entity.object_common.remarks.is_none());
     }
 
@@ -559,8 +554,7 @@ mod tests {
         // Then
         let entities = result.object_common.entities.as_ref().unwrap();
         let entity = &entities[0];
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             let addresses = contact.postal_addresses();
             assert_eq!(addresses.len(), 2);
             assert_eq!(

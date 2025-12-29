@@ -17,7 +17,8 @@ pub(crate) fn simplify_registrant_org(
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     contact = contact.set_organization_names(vec![REDACTED_ORG.to_string()]);
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.set_contact_if_vcard(&contact);
+                    entity.set_contact_if_jscontact(&contact);
                     entity.object_common.remarks = add_remark(
                         REDACTED_ORG,
                         REDACTED_ORG_DESC,
@@ -70,8 +71,7 @@ mod tests {
         let entity = &entities[0];
         assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
 
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             assert_eq!(contact.organization_names(), &[REDACTED_ORG.to_string()]);
         }
 
@@ -122,15 +122,13 @@ mod tests {
 
         // First entity (registrant) should be redacted
         let registrant_entity = &entities[0];
-        if let Some(vcard) = &registrant_entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = registrant_entity.contact() {
             assert_eq!(contact.organization_names(), &[REDACTED_ORG.to_string()]);
         }
 
         // Second entity (admin) should remain unchanged
         let admin_entity = &entities[1];
-        if let Some(vcard) = &admin_entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = admin_entity.contact() {
             assert_eq!(contact.organization_names(), &["Admin Org".to_string()]);
         }
     }
@@ -171,8 +169,7 @@ mod tests {
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
         let entity = &entities[0];
-        if let Some(vcard) = &entity.vcard_array {
-            let contact = Contact::from_vcard(vcard).unwrap();
+        if let Some(contact) = entity.contact() {
             assert_eq!(contact.organization_names(), &["Admin Org".to_string()]);
         }
         assert!(entity.object_common.remarks.is_none());
@@ -198,7 +195,7 @@ mod tests {
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
         let entity = &entities[0];
-        assert!(entity.vcard_array.is_none());
+        assert!(entity.contact().is_none());
         assert!(entity.object_common.remarks.is_none());
     }
 
