@@ -450,6 +450,11 @@ impl Contact {
         self.localizations.iter()
     }
 
+    /// Get a mutable iterator over the localizations.
+    pub fn localizations_iter_mut(&mut self) -> impl Iterator<Item = (&String, &mut Localizable)> {
+        self.localizations.iter_mut()
+    }
+
     /// Are there no localizations.
     pub fn localizations_is_empty(&self) -> bool {
         self.localizations.is_empty()

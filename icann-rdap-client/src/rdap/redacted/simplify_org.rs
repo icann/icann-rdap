@@ -16,7 +16,16 @@ pub(crate) fn simplify_registrant_org(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
+                    // First redact the main organization name
                     contact = contact.set_organization_names(vec![REDACTED_ORG.to_string()]);
+
+                    // Now redact organization names in all localizations using mutable iterator
+                    for (_lang, localizable) in contact.localizations_iter_mut() {
+                        *localizable = localizable
+                            .clone()
+                            .set_organization_names(vec![REDACTED_ORG.to_string()]);
+                    }
+
                     entity.set_contact_if_vcard(&contact);
                     entity.set_contact_if_jscontact(&contact);
                     entity.object_common.remarks = add_remark(
@@ -240,5 +249,66 @@ mod tests {
             remarks[1].description.as_ref().unwrap().vec()[0],
             REDACTED_ORG_DESC
         );
+    }
+
+    #[test]
+    fn given_registrant_with_localizations_when_simplify_registrant_org_then_redacts_localized_org_names(
+    ) {
+        // Given
+        let mut contact = Contact::builder().organization_name("Original Org").build();
+
+        // Add a French localization with different organization name
+        let fr_localization = icann_rdap_common::contact::Localizable::builder()
+            .organization_names(vec!["Organisation Française".to_string()])
+            .build();
+        contact = contact.set_localization("fr".to_string(), fr_localization);
+
+        // Add a Spanish localization with different organization name
+        let es_localization = icann_rdap_common::contact::Localizable::builder()
+            .organization_names(vec!["Organización Española".to_string()])
+            .build();
+        contact = contact.set_localization("es".to_string(), es_localization);
+
+        let entity = Entity::builder()
+            .handle("test-registrant")
+            .role("registrant")
+            .contact(contact.clone())
+            .jscontact(true)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        // When
+        let result = simplify_registrant_org(Box::new(domain), &get_test_redacted());
+
+        // Then
+        let entities = result.object_common.entities.as_ref().unwrap();
+        let entity = &entities[0];
+        if let Some(contact) = entity.contact() {
+            // Main organization name should be redacted
+            assert_eq!(contact.organization_names(), &[REDACTED_ORG.to_string()]);
+
+            // French localization should be redacted
+            if let Some(fr_local) = contact.localization("fr") {
+                assert_eq!(fr_local.organization_names(), &[REDACTED_ORG.to_string()]);
+            } else {
+                panic!("French localization should exist");
+            }
+
+            // Spanish localization should be redacted
+            if let Some(es_local) = contact.localization("es") {
+                assert_eq!(es_local.organization_names(), &[REDACTED_ORG.to_string()]);
+            } else {
+                panic!("Spanish localization should exist");
+            }
+        }
+
+        assert!(entity.object_common.remarks.is_some());
+        let remarks = entity.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_ORG));
     }
 }
