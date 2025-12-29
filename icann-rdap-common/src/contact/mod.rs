@@ -273,6 +273,30 @@ impl Contact {
         self
     }
 
+    /// Set the name parts.
+    pub fn set_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
+        self.unlocalized.name_parts = name_parts;
+        self
+    }
+
+    /// Set the nick names.
+    pub fn set_nick_names(mut self, nick_names: Vec<String>) -> Self {
+        self.unlocalized.nick_names = (!nick_names.is_empty()).then_some(nick_names);
+        self
+    }
+
+    /// Set the titles.
+    pub fn set_titles(mut self, titles: Vec<String>) -> Self {
+        self.unlocalized.titles = (!titles.is_empty()).then_some(titles);
+        self
+    }
+
+    /// Set the organizational roles.
+    pub fn set_roles(mut self, roles: Vec<String>) -> Self {
+        self.unlocalized.roles = (!roles.is_empty()).then_some(roles);
+        self
+    }
+
     /// Set the organization names.
     pub fn set_organization_names(mut self, organization_names: Vec<String>) -> Self {
         self.unlocalized.organization_names = Some(organization_names);
@@ -436,25 +460,25 @@ impl Contact {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Localizable {
     /// Full name of the contact.
-    pub full_name: Option<String>,
+    pub(crate) full_name: Option<String>,
 
     /// Structured parts of the name.
-    pub name_parts: Option<NameParts>,
+    pub(crate) name_parts: Option<NameParts>,
 
     /// Nick names.
-    pub nick_names: Option<Vec<String>>,
+    pub(crate) nick_names: Option<Vec<String>>,
 
     /// Titles.
-    pub titles: Option<Vec<String>>,
+    pub(crate) titles: Option<Vec<String>>,
 
     /// Organizational Roles
-    pub roles: Option<Vec<String>>,
+    pub(crate) roles: Option<Vec<String>>,
 
     /// Organization names.
-    pub organization_names: Option<Vec<String>>,
+    pub(crate) organization_names: Option<Vec<String>>,
 
     /// Postal addresses.
-    pub postal_addresses: Option<Vec<PostalAddress>>,
+    pub(crate) postal_addresses: Option<Vec<PostalAddress>>,
 }
 
 #[buildstructor::buildstructor]
@@ -523,6 +547,54 @@ impl Localizable {
     /// Get the first postal address.
     pub fn postal_address(&self) -> Option<&PostalAddress> {
         self.postal_addresses().first()
+    }
+
+    /// Set the set of postal addresses to only be the passed in postal address.
+    pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
+        self.postal_addresses = Some(vec![postal_address]);
+        self
+    }
+
+    /// Set the complete set of postal addresses.
+    pub fn set_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
+        self.postal_addresses = Some(postal_addresses);
+        self
+    }
+
+    /// Set the full name.
+    pub fn set_full_name(mut self, full_name: String) -> Self {
+        self.full_name = Some(full_name);
+        self
+    }
+
+    /// Set the organization names.
+    pub fn set_organization_names(mut self, organization_names: Vec<String>) -> Self {
+        self.organization_names = Some(organization_names);
+        self
+    }
+
+    /// Set the name parts.
+    pub fn set_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
+        self.name_parts = name_parts;
+        self
+    }
+
+    /// Set the nick names.
+    pub fn set_nick_names(mut self, nick_names: Vec<String>) -> Self {
+        self.nick_names = (!nick_names.is_empty()).then_some(nick_names);
+        self
+    }
+
+    /// Set the titles.
+    pub fn set_titles(mut self, titles: Vec<String>) -> Self {
+        self.titles = (!titles.is_empty()).then_some(titles);
+        self
+    }
+
+    /// Set the organizational roles.
+    pub fn set_roles(mut self, roles: Vec<String>) -> Self {
+        self.roles = (!roles.is_empty()).then_some(roles);
+        self
     }
 }
 
