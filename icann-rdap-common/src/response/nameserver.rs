@@ -292,13 +292,13 @@ impl ToResponse for Nameserver {
 }
 
 impl GetSelfLink for Nameserver {
-    fn get_self_link(&self) -> Option<&Link> {
+    fn self_link(&self) -> Option<&Link> {
         self.object_common.get_self_link()
     }
 }
 
 impl SelfLink for Nameserver {
-    fn set_self_link(mut self, link: Link) -> Self {
+    fn with_self_link(mut self, link: Link) -> Self {
         self.object_common = self.object_common.set_self_link(link);
         self
     }

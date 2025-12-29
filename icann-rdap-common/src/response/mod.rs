@@ -300,7 +300,7 @@ impl RdapResponse {
 }
 
 impl GetSelfLink for RdapResponse {
-    fn get_self_link(&self) -> Option<&Link> {
+    fn self_link(&self) -> Option<&Link> {
         self.get_links()
             .and_then(|links| links.iter().find(|link| link.is_relation("self")))
     }
@@ -316,13 +316,13 @@ pub trait ToResponse {
 pub trait GetSelfLink {
     /// Get's the first self link.
     /// See [crate::response::ObjectCommon::get_self_link()].
-    fn get_self_link(&self) -> Option<&Link>;
+    fn self_link(&self) -> Option<&Link>;
 }
 
 /// Train for setting a link with a `rel` of "self".
 pub trait SelfLink: GetSelfLink {
     /// See [crate::response::ObjectCommon::get_self_link()].
-    fn set_self_link(self, link: Link) -> Self;
+    fn with_self_link(self, link: Link) -> Self;
 }
 
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {

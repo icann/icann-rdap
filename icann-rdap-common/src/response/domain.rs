@@ -764,13 +764,13 @@ impl ToResponse for Domain {
 }
 
 impl GetSelfLink for Domain {
-    fn get_self_link(&self) -> Option<&Link> {
+    fn self_link(&self) -> Option<&Link> {
         self.object_common.get_self_link()
     }
 }
 
 impl SelfLink for Domain {
-    fn set_self_link(mut self, link: Link) -> Self {
+    fn with_self_link(mut self, link: Link) -> Self {
         self.object_common = self.object_common.set_self_link(link);
         self
     }
@@ -1117,7 +1117,7 @@ mod tests {
             .build();
 
         // WHEN
-        domain = domain.set_self_link(
+        domain = domain.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
