@@ -873,6 +873,23 @@ impl PostalAddress {
     pub fn postal_code(&self) -> Option<&str> {
         self.postal_code.as_deref()
     }
+
+    /// Set the postal code.
+    pub fn with_postal_code(mut self, postal_code: String) -> Self {
+        self.postal_code = Some(postal_code);
+        self
+    }
+
+    /// Set the locality.
+    pub fn with_locality(mut self, locality: String) -> Self {
+        self.locality = Some(locality);
+        self
+    }
+
+    pub fn with_street_parts(mut self, street_parts: Vec<String>) -> Self {
+        self.street_parts = Some(street_parts);
+        self
+    }
 }
 
 /// Represents an email address.
