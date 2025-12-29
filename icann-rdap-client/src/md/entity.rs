@@ -44,14 +44,24 @@ impl ToMd for Entity {
         }
 
         if let Some(contact) = self.contact() {
+            let local_fns = contact
+                .localizations_iter()
+                .filter_map(|(_t, l)| l.full_name().map(|s| s.to_owned()))
+                .collect::<Vec<String>>();
+            let local_ons = contact
+                .localizations_iter()
+                .filter_map(|(_t, l)| l.organization_name().map(|s| s.to_owned()))
+                .collect::<Vec<String>>();
             table = table
                 .header_ref(&"Contact")
                 .and_nv_ref_maybe(&"Kind", &contact.kind())
                 .and_nv_ref_maybe(&"Full Name", &contact.full_name())
+                .nv_ul(&"Full Names", local_fns)
                 .nv_ul(&"Titles", contact.titles().to_vec())
                 .nv_ul(&"Org Roles", contact.roles().to_vec())
                 .nv_ul(&"Nicknames", contact.nick_names().to_vec());
             table = table.nv_ul(&"Organization Names", contact.organization_names().to_vec());
+            table = table.nv_ul(&"Organization Names", local_ons);
             table = table.nv_ul(&"Languages", contact.langs().to_vec());
             table = table.nv_ul(&"Phones", contact.phones().to_vec());
             table = table.nv_ul(&"Emails", contact.emails().to_vec());
@@ -59,6 +69,13 @@ impl ToMd for Entity {
                 .nv_ul(&"Web Contact", contact.contact_uris().to_vec())
                 .nv_ul(&"URLs", contact.urls().to_vec());
             table = contact.postal_addresses().add_to_mptable(table, params);
+            let local_pas = contact
+                .localizations_iter()
+                .filter_map(|(_t, l)| l.postal_address())
+                .collect::<Vec<&PostalAddress>>();
+            for pa in local_pas {
+                table = pa.add_to_mptable(table, params);
+            }
             table = contact.name_parts().add_to_mptable(table, params)
         }
 
