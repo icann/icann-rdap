@@ -296,6 +296,14 @@ struct EntityArgs {
     /// Postal code (e.g. zip code).
     #[arg(long)]
     postal_code: Option<String>,
+
+    /// Do not represent the entity with vCard.
+    #[arg(long)]
+    no_vcard: bool,
+
+    /// Represent the entity with JSContact.
+    #[arg(long)]
+    jscontact: bool,
 }
 
 #[derive(Debug, Args)]
@@ -845,16 +853,16 @@ async fn make_entity(
     };
     let mut contact = Contact::builder()
         .full_name(full_name)
-        .organization_names(
-            (!args.org_name.is_empty())
-                .then_some(args.org_name)
-                .unwrap_or_default(),
-        )
-        .titles(
-            (!args.title.is_empty())
-                .then_some(args.title)
-                .unwrap_or_default(),
-        )
+        .organization_names(if !args.org_name.is_empty() {
+            args.org_name
+        } else {
+            Default::default()
+        })
+        .titles(if !args.title.is_empty() {
+            args.title
+        } else {
+            Default::default()
+        })
         .build();
     contact = contact.with_email_addresses(&args.email);
     contact = contact.with_voice_phone_numbers(&args.voice);
@@ -871,6 +879,8 @@ async fn make_entity(
     contact = contact.with_postal_address(postal_address);
     let entity = Entity::response_obj()
         .contact(contact)
+        .no_vacard(args.no_vcard)
+        .jscontact(args.jscontact)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
         .entities(entities(store, &args.object_args).await?)
