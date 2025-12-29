@@ -113,7 +113,7 @@ pub struct Contact {
     pub langs: Option<Vec<Lang>>,
 
     /// The kind such as individual, company, etc...
-    pub kind: Option<String>,
+    pub(crate) kind: Option<String>,
 
     /// Email addresses.
     pub(crate) emails: Option<Vec<Email>>,
@@ -276,6 +276,12 @@ impl Contact {
     /// Set the organization names.
     pub fn set_organization_names(mut self, organization_names: Vec<String>) -> Self {
         self.unlocalized.organization_names = Some(organization_names);
+        self
+    }
+
+    /// Set the kind.
+    pub fn set_kind(mut self, kind: String) -> Self {
+        self.kind = Some(kind);
         self
     }
 
