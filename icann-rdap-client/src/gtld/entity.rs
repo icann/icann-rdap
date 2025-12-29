@@ -101,34 +101,26 @@ fn extract_role_info(contact: &Contact, params: &mut GtldParams) -> RoleInfo {
         .map(|email| email.email.clone())
         .unwrap_or_default();
     let phone = contact
-        .phones
-        .as_ref()
-        .and_then(|phones| {
-            phones
-                .iter()
-                .find(|phone| {
-                    phone
-                        .features
-                        .as_ref()
-                        .is_none_or(|features| !features.contains(&"fax".to_string()))
-                })
-                .map(|phone| phone.phone.clone())
+        .phones()
+        .iter()
+        .find(|phone| {
+            phone
+                .features
+                .as_ref()
+                .is_none_or(|features| !features.contains(&"fax".to_string()))
         })
+        .map(|phone| phone.phone.clone())
         .unwrap_or_default();
     let fax = contact
-        .phones
-        .as_ref()
-        .and_then(|phones| {
-            phones
-                .iter()
-                .find(|phone| {
-                    phone
-                        .features
-                        .as_ref()
-                        .is_some_and(|features| features.contains(&"fax".to_string()))
-                })
-                .map(|phone| phone.phone.clone())
+        .phones()
+        .iter()
+        .find(|phone| {
+            phone
+                .features
+                .as_ref()
+                .is_some_and(|features| features.contains(&"fax".to_string()))
         })
+        .map(|phone| phone.phone.clone())
         .unwrap_or_default();
 
     RoleInfo {
@@ -160,15 +152,13 @@ fn append_abuse_contact_info(entity: &Entity, formatted_data: &mut String) {
                             }
                         }
                         // Phones
-                        if let Some(phones) = &contact.phones {
-                            for phone in phones {
-                                let abuse_contact_phone = &phone.phone;
-                                if !abuse_contact_phone.is_empty() {
-                                    formatted_data.push_str(&format!(
-                                        "Registrar Abuse Contact Phone: {}\n",
-                                        abuse_contact_phone
-                                    ));
-                                }
+                        for phone in contact.phones() {
+                            let abuse_contact_phone = &phone.phone;
+                            if !abuse_contact_phone.is_empty() {
+                                formatted_data.push_str(&format!(
+                                    "Registrar Abuse Contact Phone: {}\n",
+                                    abuse_contact_phone
+                                ));
                             }
                         }
                     }

@@ -122,16 +122,16 @@ pub struct Contact {
     pub phones: Option<Vec<Phone>>,
 
     /// Contact URIs.
-    pub contact_uris: Option<Vec<String>>,
+    pub(crate) contact_uris: Option<Vec<String>>,
 
     /// URLs
-    pub urls: Option<Vec<String>>,
+    pub(crate) urls: Option<Vec<String>>,
 
     /// The unlocalalized parts.
-    unlocalized: Localizable,
+    pub(crate) unlocalized: Localizable,
 
     /// Localizations
-    localizations: BTreeMap<String, Localizable>,
+    pub(crate) localizations: BTreeMap<String, Localizable>,
 }
 
 #[buildstructor::buildstructor]
@@ -240,6 +240,12 @@ impl Contact {
         } else {
             self.phones = (!phones.is_empty()).then_some(phones);
         }
+        self
+    }
+
+    /// Set the phones.
+    pub fn set_phones(mut self, phones: Vec<Phone>) -> Self {
+        self.phones = Some(phones);
         self
     }
 
