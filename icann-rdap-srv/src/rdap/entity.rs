@@ -1,4 +1,6 @@
+use http::HeaderMap;
 use icann_rdap_common::prelude::normalize_extensions;
+use tracing::debug;
 
 use {
     axum::{
@@ -8,7 +10,11 @@ use {
     icann_rdap_common::response::RdapResponse,
 };
 
-use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
+use crate::{
+    error::RdapServerError,
+    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil},
+    server::DynServiceState,
+};
 
 use super::ToBootStrap;
 
@@ -17,8 +23,12 @@ use super::ToBootStrap;
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn entity_by_handle(
     Path(handle): Path<String>,
+    headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
     let storage = state.get_storage().await?;
     let entity = storage.get_entity_by_handle(&handle).await?;
 
@@ -34,6 +44,7 @@ pub(crate) async fn entity_by_handle(
         }
     }
 
+    let entity = jscontact_conversion(entity, state.get_jscontact_conversion(), &exts_list);
     let entity = normalize_extensions(entity);
     Ok(entity.response())
 }

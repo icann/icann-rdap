@@ -63,6 +63,8 @@ pub enum RdapServerError {
     Bootstrap(String),
     #[error(transparent)]
     RdapClientError(#[from] RdapClientError),
+    #[error(transparent)]
+    ParsingError(#[from] strum::ParseError),
 }
 
 impl IntoResponse for RdapServerError {

@@ -1,4 +1,6 @@
+use http::HeaderMap;
 use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ip};
+use tracing::debug;
 
 use {
     axum::{
@@ -8,7 +10,11 @@ use {
     icann_rdap_common::response::RdapResponse,
 };
 
-use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
+use crate::{
+    error::RdapServerError,
+    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil},
+    server::DynServiceState,
+};
 
 use super::ToBootStrap;
 
@@ -18,8 +24,12 @@ use super::ToBootStrap;
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn domain_by_name(
     Path(domain_name): Path<String>,
+    headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
     // canonicalize the domain name by removing a trailing ".", trimming any whitespace,
     // and lower casing any ASCII characters.
     // Addresses issues #13 and #16.
@@ -56,6 +66,7 @@ pub(crate) async fn domain_by_name(
         }
     }
 
+    let domain = jscontact_conversion(domain, state.get_jscontact_conversion(), &exts_list);
     let domain = normalize_extensions(domain);
     Ok(domain.response())
 }

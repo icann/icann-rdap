@@ -1,4 +1,6 @@
+use http::HeaderMap;
 use icann_rdap_common::prelude::normalize_extensions;
+use tracing::debug;
 
 use {
     axum::{
@@ -8,7 +10,11 @@ use {
     icann_rdap_common::response::RdapResponse,
 };
 
-use crate::{error::RdapServerError, rdap::response::ResponseUtil, server::DynServiceState};
+use crate::{
+    error::RdapServerError,
+    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil},
+    server::DynServiceState,
+};
 
 use super::{response::BAD_REQUEST, ToBootStrap};
 
@@ -17,8 +23,12 @@ use super::{response::BAD_REQUEST, ToBootStrap};
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn nameserver_by_name(
     Path(ns_name): Path<String>,
+    headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
     let count = ns_name.chars().filter(|c| *c == '.').count();
     // if the nameserver name does not have at least 2 'dot' characters, return bad request.
     if count < 2 {
@@ -44,6 +54,7 @@ pub(crate) async fn nameserver_by_name(
         }
     }
 
+    let nameserver = jscontact_conversion(nameserver, state.get_jscontact_conversion(), &exts_list);
     let nameserver = normalize_extensions(nameserver);
     Ok(nameserver.response())
 }

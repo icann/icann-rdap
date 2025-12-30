@@ -63,11 +63,13 @@ impl JsContactConvert for RdapResponse {
 impl JsContactConvert for Entity {
     fn to_jscontact(self) -> Self {
         let new_jscontact = if self.jscontact_card.is_none() {
-            self.jscontact_card
-        } else if let Some(ref vcard_array) = self.vcard_array {
-            Contact::from_vcard(vcard_array).map(|contact| contact.to_jscontact())
+            if let Some(ref vcard_array) = self.vcard_array {
+                Contact::from_vcard(vcard_array).map(|contact| contact.to_jscontact())
+            } else {
+                self.jscontact_card
+            }
         } else {
-            None
+            self.jscontact_card
         };
         Self {
             jscontact_card: new_jscontact,

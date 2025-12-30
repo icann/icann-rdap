@@ -1,5 +1,6 @@
 use std::{net::IpAddr, str::FromStr};
 
+use http::HeaderMap;
 use icann_rdap_common::prelude::normalize_extensions;
 
 use {
@@ -14,6 +15,7 @@ use {
 use crate::{
     error::RdapServerError,
     rdap::{
+        jscontact_conversion, parse_extensions,
         response::{ResponseUtil, BAD_REQUEST},
         ToBootStrap,
     },
@@ -25,8 +27,12 @@ use crate::{
 #[tracing::instrument(level = "debug")]
 pub(crate) async fn network_by_netid(
     Path(netid): Path<String>,
+    headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
     if netid.contains('/') {
         debug!("getting network by cidr {netid}");
         if let Ok(cidr) = IpInet::from_str(&netid) {
@@ -35,6 +41,8 @@ pub(crate) async fn network_by_netid(
             if state.get_bootstrap() {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
+                let network =
+                    jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
                 let network = normalize_extensions(network);
                 Ok(network.response())
             }
@@ -52,6 +60,8 @@ pub(crate) async fn network_by_netid(
             if state.get_bootstrap() {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
+                let network =
+                    jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
                 let network = normalize_extensions(network);
                 Ok(network.response())
             }
