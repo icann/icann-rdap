@@ -44,6 +44,7 @@ pub(crate) mod domain;
 pub(crate) mod entity;
 pub(crate) mod error;
 pub(crate) mod help;
+pub mod jscontact;
 pub(crate) mod lenient;
 pub(crate) mod nameserver;
 pub(crate) mod network;
@@ -51,7 +52,7 @@ pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
 pub(crate) mod search;
 pub(crate) mod types;
-pub(crate) mod values;
+pub(crate) mod values; // JSContact is not a mainstream extension, yet.
 
 /// An error caused be processing an RDAP response.
 ///
