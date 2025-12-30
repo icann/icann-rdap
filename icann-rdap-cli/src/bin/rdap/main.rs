@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use enumflags2::BitFlags;
 use icann_rdap_cli::args::target::{params_from_args, LinkTargetArgs};
+use icann_rdap_client::http::default_exts_list;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -292,6 +295,10 @@ struct Cli {
     /// requests have been sent using an HTTP 429 status code.
     #[arg(long, required = false, env = "RDAP_MAX_RETRIES", default_value = "1")]
     max_retries: u16,
+
+    /// Do not send an exts_list media type parameter.
+    #[arg(long, required = false, env = "RDAP_NO_EXTS_LIST")]
+    no_exts_list: bool,
 
     /// Reset.
     ///
@@ -599,6 +606,11 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         link_params,
     };
 
+    let exts_list = if cli.no_exts_list {
+        HashSet::default()
+    } else {
+        default_exts_list()
+    };
     let client_config = ClientConfig::builder()
         .user_agent_suffix("CLI")
         .https_only(!cli.allow_http)
@@ -608,6 +620,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         .max_retry_secs(cli.max_retry_secs)
         .def_retry_secs(cli.def_retry_secs)
         .max_retries(cli.max_retries)
+        .exts_list(exts_list)
         .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {

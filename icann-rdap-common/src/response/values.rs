@@ -37,7 +37,9 @@ use {
 ///
 /// let s = ExtensionId::Cidr0.as_ref();
 /// ```
-#[derive(Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr, Hash)]
+#[derive(
+    Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr, Hash, Clone,
+)]
 pub enum ExtensionId {
     #[strum(serialize = "rdap_level_0")]
     RdapLevel0,
@@ -47,6 +49,8 @@ pub enum ExtensionId {
     ArtRecord,
     #[strum(serialize = "cidr0")]
     Cidr0,
+    #[strum(serialize = "exts")]
+    Exts,
     #[strum(serialize = "farv1")]
     Farv1,
     #[strum(serialize = "fred")]
