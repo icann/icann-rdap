@@ -1,6 +1,7 @@
 //! Function to execute tests.
 
 use std::{
+    collections::HashSet,
     net::{Ipv4Addr, Ipv6Addr},
     str::FromStr,
 };
@@ -184,18 +185,6 @@ pub async fn execute_http_tests<BS: BootstrapStore>(
         }
     }
 
-    // // if the URL to test is a referral
-    // if http_options.chase_referral {
-    //     let client = create_client(&http_options.client_config)?;
-    //     info!("Fetching referral from {query_url}");
-    //     let response_data = rdap_url_request(&query_url, &client).await?;
-    //     query_url = get_related_links(&response_data.rdap)
-    //         .first()
-    //         .ok_or(TestExecutionError::NoReferralToChase)?
-    //         .to_string();
-    //     info!("Referral is {query_url}");
-    // }
-
     let parsed_url = Url::parse(&query_url)?;
     let port = parsed_url.port().unwrap_or_else(|| {
         if parsed_url.scheme().eq("https") {
@@ -268,8 +257,12 @@ where
         // test run without origin
         let mut test_run = new_run_fn(vec![], addr, port);
         if !should_skip {
+            // the non-featured run needs to turn off the exts_list by passing in an empty set.
+            let client_config = ClientConfig::from_config(&http_options.client_config)
+                .exts_list(HashSet::default())
+                .build();
             let client = create_client_with_addr(
-                &http_options.client_config,
+                &client_config,
                 host,
                 test_run.socket_addr.expect("socket"),
             )?;
@@ -287,9 +280,28 @@ where
         if !should_skip && !http_options.skip_origin {
             let client_config = ClientConfig::from_config(&http_options.client_config)
                 .origin(HeaderValue::from_str(&http_options.origin_value)?)
+                .exts_list(HashSet::default())
                 .build();
             let client = create_client_with_addr(
                 &client_config,
+                host,
+                test_run.socket_addr.expect("socket"),
+            )?;
+            info!(
+                "Sending request to {}",
+                test_run.socket_addr.expect("socket")
+            );
+            let rdap_response = rdap_url_request(query_url, &client).await;
+            test_run = test_run.end(rdap_response, options);
+        }
+        http_results.add_test_run(test_run);
+
+        // test run with exts_list
+        let mut test_run = new_run_fn(vec![RunFeature::ExtsList], addr, port);
+        if !should_skip {
+            // exts_list is the default in the client config
+            let client = create_client_with_addr(
+                &http_options.client_config,
                 host,
                 test_run.socket_addr.expect("socket"),
             )?;
