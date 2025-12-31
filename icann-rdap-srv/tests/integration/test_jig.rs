@@ -144,4 +144,25 @@ impl SrvTestJig {
         });
         Self { mem, rdap_base }
     }
+
+    pub async fn new_jscontact_conversion(jscontact_conversion: JsContactConversion) -> Self {
+        let mem = Mem::default();
+        let app_state = AppState {
+            storage: mem.clone(),
+            bootstrap: false,
+            jscontact_conversion,
+        };
+        let _ = tracing_subscriber::fmt().with_test_writer().try_init();
+        let listener = Listener::listen(&ListenConfig::default())
+            .await
+            .expect("listening on interface");
+        let rdap_base = listener.rdap_base();
+        tokio::spawn(async move {
+            listener
+                .start_with_state(app_state)
+                .await
+                .expect("starting server");
+        });
+        Self { mem, rdap_base }
+    }
 }
