@@ -12,7 +12,7 @@ pub trait JsContactConvert {
     /// Converts an object to JSContact if it has vCard and no JSContact.
     fn to_jscontact(self) -> Self;
 
-    /// Calls [to_jscontact] and the removes vCard.
+    /// Calls [JsContactConvert::to_jscontact] and the removes vCard.
     fn only_jscontact(self) -> Self;
 }
 
@@ -251,12 +251,8 @@ mod tests {
     #[test]
     fn test_entity_to_jscontact_with_vcard() {
         // GIVEN: An entity with vCard data but no JSContact
-        let contact = Contact::builder()
-            .full_name("John Doe")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("test-entity")
-            .build();
+        let contact = Contact::builder().full_name("John Doe").build();
+        let mut entity = Entity::builder().handle("test-entity").build();
         entity.with_contact_as_vcard(&contact);
 
         // WHEN: Converting to JSContact
@@ -271,12 +267,8 @@ mod tests {
     #[test]
     fn test_entity_only_jscontact_with_vcard() {
         // GIVEN: An entity with vCard data but no JSContact
-        let contact = Contact::builder()
-            .full_name("John Doe")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("test-entity")
-            .build();
+        let contact = Contact::builder().full_name("John Doe").build();
+        let mut entity = Entity::builder().handle("test-entity").build();
         entity.with_contact_as_vcard(&contact);
 
         // WHEN: Converting to JSContact only
@@ -295,12 +287,8 @@ mod tests {
             .full_name("Jane Smith")
             .build()
             .to_jscontact();
-        let contact = Contact::builder()
-            .full_name("Jane Smith")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("test-entity")
-            .build();
+        let contact = Contact::builder().full_name("Jane Smith").build();
+        let mut entity = Entity::builder().handle("test-entity").build();
         entity.with_contact_as_jscontact(&contact);
         entity.with_contact_as_vcard(&contact);
 
@@ -315,9 +303,7 @@ mod tests {
     #[test]
     fn test_entity_to_jscontact_without_contact_data() {
         // GIVEN: An entity with no contact data
-        let entity = Entity::builder()
-            .handle("test-entity")
-            .build();
+        let entity = Entity::builder().handle("test-entity").build();
 
         // WHEN: Converting to JSContact
         let result = entity.to_jscontact();
@@ -331,12 +317,8 @@ mod tests {
     #[test]
     fn test_rdap_response_entity_to_jscontact() {
         // GIVEN: An RDAP response containing an entity with vCard
-        let contact = Contact::builder()
-            .full_name("Bob Johnson")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("test-entity")
-            .build();
+        let contact = Contact::builder().full_name("Bob Johnson").build();
+        let mut entity = Entity::builder().handle("test-entity").build();
         entity.with_contact_as_vcard(&contact);
         let rdap_response = RdapResponse::Entity(Box::new(entity));
 
@@ -356,12 +338,8 @@ mod tests {
     #[test]
     fn test_rdap_response_domain_to_jscontact() {
         // GIVEN: A domain with entities containing vCard data
-        let contact = Contact::builder()
-            .full_name("Domain Owner")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("registrant")
-            .build();
+        let contact = Contact::builder().full_name("Domain Owner").build();
+        let mut entity = Entity::builder().handle("registrant").build();
         entity.with_contact_as_vcard(&contact);
         let domain = Domain::response_obj()
             .handle("example.com")
@@ -391,20 +369,12 @@ mod tests {
     #[test]
     fn test_vec_entity_to_jscontact() {
         // GIVEN: A vector of entities with vCard data
-        let contact1 = Contact::builder()
-            .full_name("Entity One")
-            .build();
-        let mut entity1 = Entity::builder()
-            .handle("entity1")
-            .build();
+        let contact1 = Contact::builder().full_name("Entity One").build();
+        let mut entity1 = Entity::builder().handle("entity1").build();
         entity1.with_contact_as_vcard(&contact1);
 
-        let contact2 = Contact::builder()
-            .full_name("Entity Two")
-            .build();
-        let mut entity2 = Entity::builder()
-            .handle("entity2")
-            .build();
+        let contact2 = Contact::builder().full_name("Entity Two").build();
+        let mut entity2 = Entity::builder().handle("entity2").build();
         entity2.with_contact_as_vcard(&contact2);
 
         let entities = vec![entity1, entity2];
@@ -423,12 +393,8 @@ mod tests {
     #[test]
     fn test_domain_search_results_to_jscontact() {
         // GIVEN: Domain search results with entities having vCard data
-        let contact = Contact::builder()
-            .full_name("Admin Contact")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("admin")
-            .build();
+        let contact = Contact::builder().full_name("Admin Contact").build();
+        let mut entity = Entity::builder().handle("admin").build();
         entity.with_contact_as_vcard(&contact);
         let domain = Domain::response_obj()
             .handle("test.com")
@@ -454,12 +420,8 @@ mod tests {
     #[test]
     fn test_network_to_jscontact_preserves_other_fields() {
         // GIVEN: A network with entities and other data
-        let contact = Contact::builder()
-            .full_name("Network Admin")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("network-admin")
-            .build();
+        let contact = Contact::builder().full_name("Network Admin").build();
+        let mut entity = Entity::builder().handle("network-admin").build();
         entity.with_contact_as_vcard(&contact);
         let network = Network::builder()
             .cidr("192.0.2.0/24")
@@ -483,12 +445,8 @@ mod tests {
     #[test]
     fn test_autnum_to_jscontact() {
         // GIVEN: An autnum with entities containing vCard data
-        let contact = Contact::builder()
-            .full_name("Autnum Contact")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("autnum-contact")
-            .build();
+        let contact = Contact::builder().full_name("Autnum Contact").build();
+        let mut entity = Entity::builder().handle("autnum-contact").build();
         entity.with_contact_as_vcard(&contact);
         let autnum = Autnum::builder()
             .autnum_range(65536..65537)
@@ -510,12 +468,8 @@ mod tests {
     #[test]
     fn test_nameserver_to_jscontact() {
         // GIVEN: A nameserver with entities containing vCard data
-        let contact = Contact::builder()
-            .full_name("Nameserver Contact")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("ns-contact")
-            .build();
+        let contact = Contact::builder().full_name("Nameserver Contact").build();
+        let mut entity = Entity::builder().handle("ns-contact").build();
         entity.with_contact_as_vcard(&contact);
         let nameserver = Nameserver::response_obj()
             .handle("ns1.example.com")
@@ -538,12 +492,8 @@ mod tests {
     #[test]
     fn test_entity_search_results_to_jscontact() {
         // GIVEN: Entity search results with vCard data
-        let contact = Contact::builder()
-            .full_name("Search Result Entity")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("search-entity")
-            .build();
+        let contact = Contact::builder().full_name("Search Result Entity").build();
+        let mut entity = Entity::builder().handle("search-entity").build();
         entity.with_contact_as_vcard(&contact);
         let search_results = EntitySearchResults::response_obj()
             .results(vec![entity])
@@ -561,12 +511,8 @@ mod tests {
     #[test]
     fn test_nameserver_search_results_to_jscontact() {
         // GIVEN: Nameserver search results with entities containing vCard data
-        let contact = Contact::builder()
-            .full_name("NS Search Contact")
-            .build();
-        let mut entity = Entity::builder()
-            .handle("ns-search-contact")
-            .build();
+        let contact = Contact::builder().full_name("NS Search Contact").build();
+        let mut entity = Entity::builder().handle("ns-search-contact").build();
         entity.with_contact_as_vcard(&contact);
         let nameserver = Nameserver::response_obj()
             .handle("ns2.example.com")

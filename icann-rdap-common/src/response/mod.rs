@@ -316,13 +316,13 @@ pub trait ToResponse {
 /// Trait for getting a link with a `rel` of "self".
 pub trait GetSelfLink {
     /// Get's the first self link.
-    /// See [crate::response::ObjectCommon::get_self_link()].
+    /// See [crate::response::ObjectCommon::self_link()].
     fn self_link(&self) -> Option<&Link>;
 }
 
 /// Train for setting a link with a `rel` of "self".
 pub trait SelfLink: GetSelfLink {
-    /// See [crate::response::ObjectCommon::get_self_link()].
+    /// See [crate::response::ObjectCommon::self_link()].
     fn with_self_link(self, link: Link) -> Self;
 }
 

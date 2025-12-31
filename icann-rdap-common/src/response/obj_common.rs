@@ -258,8 +258,8 @@ pub trait ObjectCommonFields {
 
     /// Gets the first entity by the given role.
     ///
-    /// See [ObjectCommon::get_entity_by_role].
-    fn get_entity_by_role(&self, role: &str) -> Option<&Entity> {
+    /// See [ObjectCommon::entity_by_role].
+    fn entity_by_role(&self, role: &str) -> Option<&Entity> {
         self.object_common().entity_by_role(role)
     }
 }
