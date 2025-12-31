@@ -1,3 +1,5 @@
+use strum_macros::EnumString;
+
 use {
     buildstructor::Builder,
     envmnt::{get_or, get_parse_or},
@@ -20,6 +22,7 @@ pub const AUTO_RELOAD: &str = "RDAP_SRV_AUTO_RELOAD";
 pub const BOOTSTRAP: &str = "RDAP_SRV_BOOTSTRAP";
 pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
 pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
+pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
     let var_list = [
@@ -33,6 +36,7 @@ pub fn debug_config_vars() {
         BOOTSTRAP,
         UPDATE_ON_BOOTSTRAP,
         DOMAIN_SEARCH_BY_NAME_ENABLE,
+        JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
         .iter()
@@ -94,6 +98,20 @@ impl StorageType {
     }
 }
 
+/// Determines how conversion of contact to JSContact.
+#[derive(Debug, Display, Clone, EnumString, Copy)]
+#[strum(serialize_all = "lowercase")]
+pub enum JsContactConversion {
+    /// Do no JSContact conversions.
+    None,
+
+    /// Convert vCard to JSContact.
+    Also,
+
+    /// Convert vCard to JSContact and remove vCard.
+    Only,
+}
+
 /// RDAP service configuration.
 #[derive(Debug, Builder, Clone)]
 pub struct ServiceConfig {
@@ -102,6 +120,7 @@ pub struct ServiceConfig {
     pub auto_reload: bool,
     pub bootstrap: bool,
     pub update_on_bootstrap: bool,
+    pub jscontact_conversion: JsContactConversion,
 }
 
 #[buildstructor::buildstructor]
@@ -122,6 +141,7 @@ impl ServiceConfig {
             auto_reload: false,
             bootstrap: false,
             update_on_bootstrap: false,
+            jscontact_conversion: JsContactConversion::None,
         })
     }
 }

@@ -1,4 +1,4 @@
-use icann_rdap_common::prelude::{CommonFields, Entity, ObjectCommonFields};
+use icann_rdap_common::prelude::{CommonFields, Entity, ObjectCommonFields, PostalAddress};
 
 use crate::rpsl::{AttrName, RpslParams, ToRpsl};
 
@@ -30,51 +30,30 @@ impl ToRpsl for Entity {
                 contact.full_name(),
                 "NO FULL NAME",
             );
+            let local_fns = contact
+                .localizations_iter()
+                .filter_map(|(_t, l)| l.full_name().map(|s| s.to_owned()))
+                .collect::<Vec<String>>();
+            for full_name in local_fns {
+                rpsl = push_manditory_attribute(rpsl, AttrName::FullName, &full_name);
+            }
+            let local_ons = contact
+                .localizations_iter()
+                .filter_map(|(_t, l)| l.organization_name().map(|s| s.to_owned()))
+                .collect::<Vec<String>>();
+            rpsl = push_optional_attribute(rpsl, AttrName::OrgName, contact.organization_name());
+            for on in local_ons {
+                rpsl = push_manditory_attribute(rpsl, AttrName::OrgName, &on);
+            }
             for pa in contact.postal_addresses() {
-                if let Some(full_address) = pa.full_address() {
-                    for line in full_address.lines() {
-                        rpsl = push_manditory_attribute(rpsl, AttrName::Address, line);
-                    }
-                }
-                for street_part in pa.street_parts() {
-                    rpsl = push_manditory_attribute(rpsl, AttrName::Address, street_part);
-                }
-
-                let mut adr = String::new();
-                adr.push_str(pa.locality().unwrap_or_default());
-                adr.push_str(
-                    &pa.region_name()
-                        .map(|s| format!(", {s}"))
-                        .unwrap_or(",".to_string()),
-                );
-                adr.push_str(
-                    &pa.region_code()
-                        .map(|s| format!(" ({s})"))
-                        .unwrap_or_default(),
-                );
-                adr.push_str(
-                    &pa.country_name()
-                        .map(|s| format!(", {s}"))
-                        .unwrap_or(",".to_string()),
-                );
-                adr.push_str(
-                    &pa.country_code()
-                        .map(|s| format!(" ({s})"))
-                        .unwrap_or_default(),
-                );
-                adr.push_str(
-                    &pa.postal_code()
-                        .map(|s| format!(" {s}"))
-                        .unwrap_or_default(),
-                );
-                if pa.locality().is_some()
-                    || pa.region_name().is_some()
-                    || pa.country_name().is_some()
-                    || pa.country_code().is_some()
-                    || pa.postal_code().is_some()
-                {
-                    rpsl = push_optional_attribute(rpsl, AttrName::Address, Some(&adr));
-                }
+                rpsl = push_postal_addres(rpsl, pa);
+            }
+            let local_pas = contact
+                .localizations_iter()
+                .filter_map(|(_t, l)| l.postal_address())
+                .collect::<Vec<&PostalAddress>>();
+            for pa in local_pas {
+                rpsl = push_postal_addres(rpsl, pa);
             }
             for email in contact.emails() {
                 rpsl = push_manditory_attribute(rpsl, AttrName::Email, email.email());
@@ -129,6 +108,54 @@ fn key(entity: &Entity) -> (AttrName, String) {
     };
     let value = entity_value(entity);
     (name, value)
+}
+
+fn push_postal_addres(mut rpsl: String, pa: &PostalAddress) -> String {
+    if let Some(full_address) = pa.full_address() {
+        for line in full_address.lines() {
+            rpsl = push_manditory_attribute(rpsl, AttrName::Address, line);
+        }
+    }
+    for street_part in pa.street_parts() {
+        rpsl = push_manditory_attribute(rpsl, AttrName::Address, street_part);
+    }
+
+    let mut adr = String::new();
+    adr.push_str(pa.locality().unwrap_or_default());
+    adr.push_str(
+        &pa.region_name()
+            .map(|s| format!(", {s}"))
+            .unwrap_or(",".to_string()),
+    );
+    adr.push_str(
+        &pa.region_code()
+            .map(|s| format!(" ({s})"))
+            .unwrap_or_default(),
+    );
+    adr.push_str(
+        &pa.country_name()
+            .map(|s| format!(", {s}"))
+            .unwrap_or(",".to_string()),
+    );
+    adr.push_str(
+        &pa.country_code()
+            .map(|s| format!(" ({s})"))
+            .unwrap_or_default(),
+    );
+    adr.push_str(
+        &pa.postal_code()
+            .map(|s| format!(" {s}"))
+            .unwrap_or_default(),
+    );
+    if pa.locality().is_some()
+        || pa.region_name().is_some()
+        || pa.country_name().is_some()
+        || pa.country_code().is_some()
+        || pa.postal_code().is_some()
+    {
+        rpsl = push_optional_attribute(rpsl, AttrName::Address, Some(&adr));
+    }
+    rpsl
 }
 
 #[cfg(test)]

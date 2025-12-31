@@ -137,6 +137,8 @@ pub enum AttrName {
     Nserver,
     #[strum(serialize = "organization")]
     Organization,
+    #[strum(serialize = "org-name")]
+    OrgName,
     #[strum(serialize = "other-c")]
     OtherC,
     #[strum(serialize = "other-event")]

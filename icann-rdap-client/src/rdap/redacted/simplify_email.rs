@@ -21,11 +21,13 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
             if entity.is_entity_role(&role.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut emails) = contact.emails {
+                    let emails = contact.emails().to_vec();
+                    if !emails.is_empty() {
+                        let mut emails = emails;
                         for email in emails.iter_mut() {
                             email.email = REDACTED_EMAIL.to_string();
                         }
-                        contact.emails = Some(emails);
+                        contact = contact.with_emails(emails);
                         entity.object_common.remarks = add_remark(
                             REDACTED_EMAIL,
                             REDACTED_EMAIL_DESC,
@@ -33,7 +35,8 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
                             entity.object_common.remarks.clone(),
                         );
                     }
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first entity
                 }
             }
@@ -48,7 +51,6 @@ mod tests {
     use icann_rdap_common::prelude::Remark;
     use icann_rdap_common::prelude::{Contact, Email, Entity};
     use icann_rdap_common::response::ObjectCommonFields;
-    use serde_json::Value;
 
     use super::*;
 
@@ -97,33 +99,17 @@ mod tests {
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
 
-        // Check that vcard_array was updated with redacted emails
-        let vcard_array = registrant.vcard_array.as_ref().unwrap();
+        // Check that contact emails were updated with redacted emails
+        if let Some(contact) = registrant.contact() {
+            let emails = contact.emails();
+            assert_eq!(emails.len(), 2);
 
-        // Find the EMAIL properties in the vCard properties array
-        let empty_vec: Vec<Value> = vec![];
-        let vcard_properties: &[Value] = vcard_array
-            .get(1)
-            .and_then(|v| v.as_array())
-            .map_or(&empty_vec, |v| v);
-
-        let email_properties: Vec<_> = vcard_properties
-            .iter()
-            .filter(|prop| {
-                if let Some(arr) = prop.as_array() {
-                    arr.len() >= 4 && arr[0].as_str() == Some("email")
-                } else {
-                    false
-                }
-            })
-            .collect();
-
-        assert_eq!(email_properties.len(), 2);
-
-        // Both emails should be redacted
-        for email_prop in email_properties {
-            let email_value = email_prop.as_array().unwrap()[3].as_str().unwrap();
-            assert_eq!(email_value, REDACTED_EMAIL);
+            // Both emails should be redacted
+            for email in emails {
+                assert_eq!(email.email, REDACTED_EMAIL);
+            }
+        } else {
+            panic!("Expected contact to be present");
         }
 
         // AND a remark should be added
@@ -162,7 +148,7 @@ mod tests {
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some()); // vcard_array should be created
+        assert!(registrant.contact().is_some()); // vcard_array should be created
         assert!(registrant.object_common.remarks.is_none()); // No remark since no emails to redact
     }
 
@@ -189,7 +175,7 @@ mod tests {
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_none());
+        assert!(registrant.contact().is_none());
         assert!(registrant.object_common.remarks.is_none());
     }
 
@@ -230,7 +216,7 @@ mod tests {
         // First entity (registrant) should have redacted emails
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -238,7 +224,7 @@ mod tests {
 
         // Second entity (tech) should be unchanged
         assert_eq!(entities[1].handle(), Some("tech_456"));
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
 
@@ -277,12 +263,12 @@ mod tests {
 
         // First entity (tech) should be unchanged
         assert_eq!(entities[0].handle(), Some("tech_456"));
-        assert!(entities[0].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
 
         // Second entity (registrant) should have redacted emails
         let registrant = &entities[1];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -318,8 +304,8 @@ mod tests {
         assert_eq!(entities[1].handle(), Some("admin_789"));
 
         // AND no vcard_arrays or remarks should be added
-        assert!(entities[0].vcard_array.is_none());
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[0].object_common.remarks.is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
@@ -376,7 +362,7 @@ mod tests {
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.vcard_array.is_some());
+        assert!(registrant.contact().is_some());
 
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -423,7 +409,7 @@ mod tests {
 
         let entity = &entities[0];
         assert_eq!(entity.handle(), Some("multi_role_123"));
-        assert!(entity.vcard_array.is_some());
+        assert!(entity.contact().is_some());
 
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -461,27 +447,16 @@ mod tests {
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
 
-        // Check that vcard_array was updated with redacted emails
-        let vcard_array = tech.vcard_array.as_ref().unwrap();
+        // Check that contact emails were updated with redacted emails
+        if let Some(contact) = tech.contact() {
+            let emails = contact.emails();
+            assert_eq!(emails.len(), 1);
 
-        // Find the EMAIL properties in the vCard properties array
-        let empty_vec: Vec<Value> = vec![];
-        let vcard_properties: &[Value] = vcard_array
-            .get(1)
-            .and_then(|v| v.as_array())
-            .map_or(&empty_vec, |v| v);
-
-        let email_property = vcard_properties.iter().find(|prop| {
-            if let Some(arr) = prop.as_array() {
-                arr.len() >= 4 && arr[0].as_str() == Some("email")
-            } else {
-                false
-            }
-        });
-
-        let email_prop = email_property.expect("vCard should have EMAIL property after redaction");
-        let email_value = email_prop.as_array().unwrap()[3].as_str().unwrap();
-        assert_eq!(email_value, REDACTED_EMAIL);
+            // Email should be redacted
+            assert_eq!(emails[0].email, REDACTED_EMAIL);
+        } else {
+            panic!("Expected contact to be present");
+        }
 
         // AND a remark should be added
         let remarks = tech.object_common.remarks.as_ref().unwrap();
@@ -516,7 +491,7 @@ mod tests {
 
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_none());
+        assert!(tech.contact().is_none());
         assert!(tech.object_common.remarks.is_none());
     }
 
@@ -556,7 +531,7 @@ mod tests {
         // First entity (tech) should have redacted emails
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -564,7 +539,7 @@ mod tests {
 
         // Second entity (registrant) should be unchanged
         assert_eq!(entities[1].handle(), Some("registrant_123"));
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
 
@@ -603,12 +578,12 @@ mod tests {
 
         // First entity (registrant) should be unchanged
         assert_eq!(entities[0].handle(), Some("registrant_123"));
-        assert!(entities[0].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
 
         // Second entity (tech) should have redacted emails
         let tech = &entities[1];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -644,8 +619,8 @@ mod tests {
         assert_eq!(entities[1].handle(), Some("admin_789"));
 
         // AND no vcard_arrays or remarks should be added
-        assert!(entities[0].vcard_array.is_none());
-        assert!(entities[1].vcard_array.is_none());
+        assert!(entities[0].contact().is_none());
+        assert!(entities[1].contact().is_none());
         assert!(entities[0].object_common.remarks.is_none());
         assert!(entities[1].object_common.remarks.is_none());
     }
@@ -702,7 +677,7 @@ mod tests {
 
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some());
+        assert!(tech.contact().is_some());
 
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -749,7 +724,7 @@ mod tests {
 
         let entity = &entities[0];
         assert_eq!(entity.handle(), Some("multi_role_123"));
-        assert!(entity.vcard_array.is_some());
+        assert!(entity.contact().is_some());
 
         let remarks = entity.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
@@ -782,7 +757,7 @@ mod tests {
 
         let tech = &entities[0];
         assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.vcard_array.is_some()); // vcard_array should be created
+        assert!(tech.contact().is_some()); // vcard_array should be created
         assert!(tech.object_common.remarks.is_none()); // No remark since no emails to redact
     }
 }

@@ -1,7 +1,9 @@
 //! Common data structures, etc...
-use std::ops::DerefMut;
+use std::{collections::HashSet, ops::DerefMut};
 
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::ContentExtensions;
 
 use super::lenient::{Stringish, VectorStringish};
 
@@ -298,6 +300,12 @@ impl std::ops::Deref for Notice {
     }
 }
 
+impl ContentExtensions for Notice {
+    fn content_extensions(&self) -> HashSet<super::ExtensionId> {
+        self.0.content_extensions()
+    }
+}
+
 /// An array of remarks.
 pub type Remarks = Vec<Remark>;
 
@@ -372,6 +380,12 @@ impl std::ops::Deref for Remark {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl ContentExtensions for Remark {
+    fn content_extensions(&self) -> HashSet<super::ExtensionId> {
+        self.0.content_extensions()
     }
 }
 
@@ -591,6 +605,16 @@ impl ToRemarks for Vec<NoticeOrRemark> {
     fn to_opt_remarks(self) -> Option<Vec<Remark>> {
         let remarks = self.to_remarks();
         (!remarks.is_empty()).then_some(remarks)
+    }
+}
+
+impl ContentExtensions for NoticeOrRemark {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        if self.simple_redaction_keys.is_some() {
+            HashSet::from([super::ExtensionId::SimpleRedaction])
+        } else {
+            HashSet::new()
+        }
     }
 }
 
@@ -1070,7 +1094,7 @@ mod tests {
             .build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
@@ -1095,7 +1119,7 @@ mod tests {
         let mut oc = ObjectCommon::domain().build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
@@ -1126,7 +1150,7 @@ mod tests {
             .build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")

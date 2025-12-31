@@ -2,6 +2,9 @@
 
 #![allow(mismatched_lifetime_syntaxes)] // TODO see if this can be removed with a buildstructor upgrade
 
+use std::collections::HashSet;
+
+use icann_rdap_common::prelude::ExtensionId;
 pub use reqwest::{header::HeaderValue, Client as ReqwestClient, Error as ReqwestError};
 use {
     icann_rdap_common::httpdata::HttpData,
@@ -40,14 +43,40 @@ impl Default for RequestOptions {
     }
 }
 
+/// Default set of extension IDs.
+///
+/// This is the default set of extension ids used in the RDAP
+/// media type "exts_list" parameter.
+pub fn default_exts_list() -> HashSet<ExtensionId> {
+    let mut exts_list = HashSet::new();
+    exts_list.insert(ExtensionId::Cidr0);
+    exts_list.insert(ExtensionId::Exts);
+    exts_list.insert(ExtensionId::JsContact);
+    exts_list.insert(ExtensionId::SimpleRedaction);
+    exts_list.insert(ExtensionId::Redacted);
+    exts_list
+}
+
 /// Configures the HTTP client.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct ClientConfig {
     /// Config for the Reqwest client.
     client_config: ReqwestClientConfig,
 
     /// Request options.
     request_options: RequestOptions,
+}
+
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self {
+            client_config: ReqwestClientConfig {
+                exts_list: default_exts_list(),
+                ..Default::default()
+            },
+            request_options: Default::default(),
+        }
+    }
 }
 
 #[buildstructor::buildstructor]
@@ -65,6 +94,7 @@ impl ClientConfig {
         max_retry_secs: Option<u32>,
         def_retry_secs: Option<u32>,
         max_retries: Option<u16>,
+        exts_list: Option<HashSet<ExtensionId>>,
     ) -> Self {
         let default_cc = ReqwestClientConfig::default();
         let default_ro = RequestOptions::default();
@@ -80,6 +110,7 @@ impl ClientConfig {
                 host,
                 origin,
                 timeout_secs: timeout_secs.unwrap_or(default_cc.timeout_secs),
+                exts_list: exts_list.unwrap_or(default_exts_list()),
             },
             request_options: RequestOptions {
                 max_retry_secs: max_retry_secs.unwrap_or(default_ro.max_retry_secs),
@@ -103,6 +134,7 @@ impl ClientConfig {
         max_retry_secs: Option<u32>,
         def_retry_secs: Option<u32>,
         max_retries: Option<u16>,
+        exts_list: Option<HashSet<ExtensionId>>,
     ) -> Self {
         Self {
             client_config: ReqwestClientConfig {
@@ -117,6 +149,7 @@ impl ClientConfig {
                 host: host.map_or(self.client_config.host.clone(), Some),
                 origin: origin.map_or(self.client_config.origin.clone(), Some),
                 timeout_secs: timeout_secs.unwrap_or(self.client_config.timeout_secs),
+                exts_list: exts_list.unwrap_or(self.client_config.exts_list.clone()),
             },
             request_options: RequestOptions {
                 max_retry_secs: max_retry_secs.unwrap_or(self.request_options.max_retry_secs),

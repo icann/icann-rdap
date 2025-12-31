@@ -1,4 +1,8 @@
 //! Server Help Response.
+use std::collections::HashSet;
+
+use crate::prelude::{ContentExtensions, ExtensionId};
+
 use {
     crate::prelude::{Extension, Notice},
     serde::{Deserialize, Serialize},
@@ -47,5 +51,17 @@ impl CommonFields for Help {
 impl ToResponse for Help {
     fn to_response(self) -> super::RdapResponse {
         super::RdapResponse::Help(Box::new(self))
+    }
+}
+
+impl ContentExtensions for Help {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.insert(ExtensionId::Cidr0);
+        exts.insert(ExtensionId::JsContact);
+        exts.insert(ExtensionId::Redacted);
+        exts.insert(ExtensionId::SimpleRedaction);
+        exts
     }
 }

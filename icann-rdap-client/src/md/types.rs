@@ -27,7 +27,7 @@ impl ToMd for RdapConformance {
         md.push_str(
             &format!(
                 "{} Conformance Claims",
-                params.req_data.source_host.to_title_case()
+                params.http_data.host().to_title_case()
             )
             .to_header(5, params.options),
         );
@@ -182,11 +182,7 @@ impl ToMd for Common {
         if not_empty {
             md.push('\n');
             md.push_str(HR);
-            let header_text = format!(
-                "Response from {} at {}",
-                params.req_data.source_type,
-                params.req_data.source_host.to_title_case()
-            );
+            let header_text = format!("Response from {}", params.http_data.host().to_title_case());
             md.push_str(&header_text.to_header(params.heading_level, params.options));
         };
         if let Some(rdap_conformance) = &self.rdap_conformance {

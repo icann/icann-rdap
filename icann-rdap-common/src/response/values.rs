@@ -37,7 +37,9 @@ use {
 ///
 /// let s = ExtensionId::Cidr0.as_ref();
 /// ```
-#[derive(Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr)]
+#[derive(
+    Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr, Hash, Clone,
+)]
 pub enum ExtensionId {
     #[strum(serialize = "rdap_level_0")]
     RdapLevel0,
@@ -47,12 +49,12 @@ pub enum ExtensionId {
     ArtRecord,
     #[strum(serialize = "cidr0")]
     Cidr0,
+    #[strum(serialize = "exts")]
+    Exts,
     #[strum(serialize = "farv1")]
     Farv1,
     #[strum(serialize = "fred")]
     Fred,
-    #[strum(serialize = "extErr")]
-    ExtendedError, // TODO register this extension
     #[strum(serialize = "icann_rdap_response_profile_0")]
     IcannRdapResponseProfile0,
     #[strum(serialize = "icann_rdap_response_profile_1")]
@@ -61,6 +63,8 @@ pub enum ExtensionId {
     IcannRdapTechnicalImplementationGuide0,
     #[strum(serialize = "icann_rdap_technical_implementation_guide_1")]
     IcannRdapTechnicalImplementationGuide1,
+    #[strum(serialize = "jscontact")]
+    JsContact,
     #[strum(serialize = "nro_rdap_profile_0")]
     NroRdapProfile0,
     #[strum(serialize = "nro_rdap_profile_asn_flat_0")]
@@ -81,6 +85,8 @@ pub enum ExtensionId {
     RegType,
     #[strum(serialize = "reverse_search")]
     ReverseSearch,
+    #[strum(serialize = "simpleRedaction")]
+    SimpleRedaction,
     #[strum(serialize = "sorting")]
     Sorting,
     #[strum(serialize = "subsetting")]

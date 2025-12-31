@@ -84,9 +84,10 @@
 //! ```
 
 mod from_vcard;
+pub(crate) mod jscontact;
 mod to_vcard;
 
-use std::fmt::Display;
+use std::{collections::BTreeMap, fmt::Display};
 
 use buildstructor::Builder;
 
@@ -109,43 +110,28 @@ use crate::prelude::to_opt_vec;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Contact {
     /// Preferred languages.
-    pub langs: Option<Vec<Lang>>,
+    pub(crate) langs: Option<Vec<Lang>>,
 
     /// The kind such as individual, company, etc...
-    pub kind: Option<String>,
-
-    /// Full name of the contact.
-    pub full_name: Option<String>,
-
-    /// Structured parts of the name.
-    pub name_parts: Option<NameParts>,
-
-    /// Nick names.
-    pub nick_names: Option<Vec<String>>,
-
-    /// Titles.
-    pub titles: Option<Vec<String>>,
-
-    /// Organizational Roles
-    pub roles: Option<Vec<String>>,
-
-    /// Organization names.
-    pub organization_names: Option<Vec<String>>,
-
-    /// Postal addresses.
-    pub postal_addresses: Option<Vec<PostalAddress>>,
+    pub(crate) kind: Option<String>,
 
     /// Email addresses.
-    pub emails: Option<Vec<Email>>,
+    pub(crate) emails: Option<Vec<Email>>,
 
     /// Phone numbers.
-    pub phones: Option<Vec<Phone>>,
+    pub(crate) phones: Option<Vec<Phone>>,
 
     /// Contact URIs.
-    pub contact_uris: Option<Vec<String>>,
+    pub(crate) contact_uris: Option<Vec<String>>,
 
     /// URLs
-    pub urls: Option<Vec<String>>,
+    pub(crate) urls: Option<Vec<String>>,
+
+    /// The unlocalalized parts.
+    pub(crate) unlocalized: Localizable,
+
+    /// Localizations
+    pub(crate) localizations: BTreeMap<String, Localizable>,
 }
 
 #[buildstructor::buildstructor]
@@ -169,17 +155,20 @@ impl Contact {
         Self {
             langs: to_opt_vec(langs),
             kind,
-            full_name,
-            name_parts,
-            nick_names: to_opt_vec(nick_names),
-            titles: to_opt_vec(titles),
-            roles: to_opt_vec(roles),
-            organization_names: to_opt_vec(organization_names),
-            postal_addresses: to_opt_vec(postal_addresses),
+            unlocalized: Localizable {
+                full_name,
+                name_parts,
+                nick_names: to_opt_vec(nick_names),
+                titles: to_opt_vec(titles),
+                roles: to_opt_vec(roles),
+                organization_names: to_opt_vec(organization_names),
+                postal_addresses: to_opt_vec(postal_addresses),
+            },
             emails: to_opt_vec(emails),
             phones: to_opt_vec(phones),
             contact_uris: to_opt_vec(contact_uris),
             urls: to_opt_vec(urls),
+            localizations: BTreeMap::new(),
         }
     }
 
@@ -187,21 +176,27 @@ impl Contact {
     pub fn is_non_empty(&self) -> bool {
         self.langs.is_some()
             || self.kind.is_some()
-            || self.full_name.is_some()
-            || self.name_parts.is_some()
-            || self.nick_names.is_some()
-            || self.titles.is_some()
-            || self.roles.is_some()
-            || self.organization_names.is_some()
-            || self.postal_addresses.is_some()
+            || self.unlocalized.full_name.is_some()
+            || self.unlocalized.name_parts.is_some()
+            || self.unlocalized.nick_names.is_some()
+            || self.unlocalized.titles.is_some()
+            || self.unlocalized.roles.is_some()
+            || self.unlocalized.organization_names.is_some()
+            || self.unlocalized.postal_addresses.is_some()
             || self.emails.is_some()
             || self.phones.is_some()
             || self.contact_uris.is_some()
             || self.urls.is_some()
     }
 
+    /// Set a localization.
+    pub fn with_localization(mut self, lang: String, localization: Localizable) -> Self {
+        self.localizations.insert(lang, localization);
+        self
+    }
+
     /// Set the set of emails.
-    pub fn set_emails(mut self, emails: &[impl ToString]) -> Self {
+    pub fn with_email_addresses(mut self, emails: &[impl ToString]) -> Self {
         let emails: Vec<Email> = emails
             .iter()
             .map(|e| Email::builder().email(e.to_string()).build())
@@ -210,8 +205,14 @@ impl Contact {
         self
     }
 
+    /// Set the emails.
+    pub fn with_emails(mut self, emails: Vec<Email>) -> Self {
+        self.emails = Some(emails);
+        self
+    }
+
     /// Add a voice phone to the set of phones.
-    pub fn add_voice_phones(mut self, phones: &[impl ToString]) -> Self {
+    pub fn with_voice_phone_numbers(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
             .map(|p| {
@@ -230,7 +231,7 @@ impl Contact {
     }
 
     /// Add a facsimile phone to the set of phones.
-    pub fn add_fax_phones(mut self, phones: &[impl ToString]) -> Self {
+    pub fn with_fax_phone_numbers(mut self, phones: &[impl ToString]) -> Self {
         let mut phones: Vec<Phone> = phones
             .iter()
             .map(|p| {
@@ -248,9 +249,69 @@ impl Contact {
         self
     }
 
+    /// Set the phones.
+    pub fn with_phones(mut self, phones: Vec<Phone>) -> Self {
+        self.phones = Some(phones);
+        self
+    }
+
     /// Set the set of postal addresses to only be the passed in postal address.
-    pub fn set_postal_address(mut self, postal_address: PostalAddress) -> Self {
-        self.postal_addresses = Some(vec![postal_address]);
+    pub fn with_postal_address(mut self, postal_address: PostalAddress) -> Self {
+        self.unlocalized.postal_addresses = Some(vec![postal_address]);
+        self
+    }
+
+    /// Set the complete set of postal addresses.
+    pub fn with_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
+        self.unlocalized.postal_addresses = Some(postal_addresses);
+        self
+    }
+
+    /// Set the full name.
+    pub fn with_full_name(mut self, full_name: String) -> Self {
+        self.unlocalized.full_name = Some(full_name);
+        self
+    }
+
+    /// Set the name parts.
+    pub fn with_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
+        self.unlocalized.name_parts = name_parts;
+        self
+    }
+
+    /// Set the nick names.
+    pub fn with_nick_names(mut self, nick_names: Vec<String>) -> Self {
+        self.unlocalized.nick_names = (!nick_names.is_empty()).then_some(nick_names);
+        self
+    }
+
+    /// Set the titles.
+    pub fn with_titles(mut self, titles: Vec<String>) -> Self {
+        self.unlocalized.titles = (!titles.is_empty()).then_some(titles);
+        self
+    }
+
+    /// Set the organizational roles.
+    pub fn with_roles(mut self, roles: Vec<String>) -> Self {
+        self.unlocalized.roles = (!roles.is_empty()).then_some(roles);
+        self
+    }
+
+    /// Set the organization names.
+    pub fn with_organization_names(mut self, organization_names: Vec<String>) -> Self {
+        self.unlocalized.organization_names = Some(organization_names);
+        self
+    }
+
+    /// Set the kind.
+    pub fn with_kind(mut self, kind: String) -> Self {
+        self.kind = Some(kind);
+        self
+    }
+
+    /// Set the langs.
+    pub fn with_langs(mut self, langs: Vec<Lang>) -> Self {
+        self.langs = (!langs.is_empty()).then_some(langs);
         self
     }
 
@@ -259,9 +320,193 @@ impl Contact {
         self.langs.as_deref().unwrap_or_default()
     }
 
+    /// Get the first language tag.
+    pub fn lang(&self) -> Option<&Lang> {
+        self.langs().first()
+    }
+
     /// Get the kind.
     pub fn kind(&self) -> Option<&str> {
         self.kind.as_deref()
+    }
+
+    /// Get the full name.
+    pub fn full_name(&self) -> Option<&str> {
+        self.unlocalized.full_name.as_deref()
+    }
+
+    /// Get the name parts.
+    pub fn name_parts(&self) -> Option<&NameParts> {
+        self.unlocalized.name_parts.as_ref()
+    }
+
+    /// Get the nick names.
+    pub fn nick_names(&self) -> &[String] {
+        self.unlocalized.nick_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the titles.
+    pub fn titles(&self) -> &[String] {
+        self.unlocalized.titles.as_deref().unwrap_or_default()
+    }
+
+    /// Get the organizational roles.
+    pub fn roles(&self) -> &[String] {
+        self.unlocalized.roles.as_deref().unwrap_or_default()
+    }
+
+    /// Get the organization names.
+    pub fn organization_names(&self) -> &[String] {
+        self.unlocalized
+            .organization_names
+            .as_deref()
+            .unwrap_or_default()
+    }
+
+    /// Get the first organization name.
+    pub fn organization_name(&self) -> Option<&str> {
+        self.organization_names().first().map(|x| x.as_str())
+    }
+
+    /// Get the postal addresses.
+    pub fn postal_addresses(&self) -> &[PostalAddress] {
+        self.unlocalized
+            .postal_addresses
+            .as_deref()
+            .unwrap_or_default()
+    }
+
+    /// Get the first postal address.
+    pub fn postal_address(&self) -> Option<&PostalAddress> {
+        self.postal_addresses().first()
+    }
+
+    /// Get the emails.
+    pub fn emails(&self) -> &[Email] {
+        self.emails.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first email.
+    pub fn email(&self) -> Option<&Email> {
+        self.emails().first()
+    }
+
+    /// Get the phones.
+    pub fn phones(&self) -> &[Phone] {
+        self.phones.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first phone.
+    pub fn phone(&self) -> Option<&Phone> {
+        self.phones().first()
+    }
+
+    /// Get the first phone with the voice feature.
+    pub fn voice_phone(&self) -> Option<&Phone> {
+        self.phones()
+            .iter()
+            .find(|phone| phone.features().contains(&"voice".to_string()))
+    }
+
+    /// Get the first phone with the fax feature.
+    pub fn fax_phone(&self) -> Option<&Phone> {
+        self.phones()
+            .iter()
+            .find(|phone| phone.features().contains(&"fax".to_string()))
+    }
+
+    /// Get the voice phone else get the first phone.
+    pub fn prefer_voice_phone(&self) -> Option<&Phone> {
+        self.voice_phone().or_else(|| self.phone())
+    }
+
+    /// Get the contact uris.
+    pub fn contact_uris(&self) -> &[String] {
+        self.contact_uris.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first contact uri.
+    pub fn contact_uri(&self) -> Option<&str> {
+        self.contact_uris().first().map(|x| x.as_str())
+    }
+
+    /// Get the URLs.
+    pub fn urls(&self) -> &[String] {
+        self.urls.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first URL.
+    pub fn url(&self) -> Option<&str> {
+        self.urls().first().map(|x| x.as_str())
+    }
+
+    /// Get a localization for a language tag.
+    pub fn localization(&self, lang: &str) -> Option<&Localizable> {
+        self.localizations.get(lang)
+    }
+
+    /// Get an iterator over the localizations.
+    pub fn localizations_iter(&self) -> impl Iterator<Item = (&String, &Localizable)> {
+        self.localizations.iter()
+    }
+
+    /// Get a mutable iterator over the localizations.
+    pub fn localizations_iter_mut(&mut self) -> impl Iterator<Item = (&String, &mut Localizable)> {
+        self.localizations.iter_mut()
+    }
+
+    /// Are there no localizations.
+    pub fn localizations_is_empty(&self) -> bool {
+        self.localizations.is_empty()
+    }
+}
+
+/// Represents parts of the contact that can be localized.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Localizable {
+    /// Full name of the contact.
+    pub(crate) full_name: Option<String>,
+
+    /// Structured parts of the name.
+    pub(crate) name_parts: Option<NameParts>,
+
+    /// Nick names.
+    pub(crate) nick_names: Option<Vec<String>>,
+
+    /// Titles.
+    pub(crate) titles: Option<Vec<String>>,
+
+    /// Organizational Roles
+    pub(crate) roles: Option<Vec<String>>,
+
+    /// Organization names.
+    pub(crate) organization_names: Option<Vec<String>>,
+
+    /// Postal addresses.
+    pub(crate) postal_addresses: Option<Vec<PostalAddress>>,
+}
+
+#[buildstructor::buildstructor]
+impl Localizable {
+    #[builder(visibility = "pub")]
+    fn new(
+        full_name: Option<String>,
+        name_parts: Option<NameParts>,
+        nick_names: Vec<String>,
+        titles: Vec<String>,
+        roles: Vec<String>,
+        organization_names: Vec<String>,
+        postal_addresses: Vec<PostalAddress>,
+    ) -> Self {
+        Self {
+            full_name,
+            name_parts,
+            nick_names: to_opt_vec(nick_names),
+            titles: to_opt_vec(titles),
+            roles: to_opt_vec(roles),
+            organization_names: to_opt_vec(organization_names),
+            postal_addresses: to_opt_vec(postal_addresses),
+        }
     }
 
     /// Get the full name.
@@ -289,9 +534,14 @@ impl Contact {
         self.roles.as_deref().unwrap_or_default()
     }
 
-    /// Get the organizational names.
-    pub fn organizational_names(&self) -> &[String] {
+    /// Get the organization names.
+    pub fn organization_names(&self) -> &[String] {
         self.organization_names.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first organization name.
+    pub fn organization_name(&self) -> Option<&str> {
+        self.organization_names().first().map(|x| x.as_str())
     }
 
     /// Get the postal addresses.
@@ -299,24 +549,57 @@ impl Contact {
         self.postal_addresses.as_deref().unwrap_or_default()
     }
 
-    /// Get the emails.
-    pub fn emails(&self) -> &[Email] {
-        self.emails.as_deref().unwrap_or_default()
+    /// Get the first postal address.
+    pub fn postal_address(&self) -> Option<&PostalAddress> {
+        self.postal_addresses().first()
     }
 
-    /// Get the phones.
-    pub fn phones(&self) -> &[Phone] {
-        self.phones.as_deref().unwrap_or_default()
+    /// Set the set of postal addresses to only be the passed in postal address.
+    pub fn with_postal_address(mut self, postal_address: PostalAddress) -> Self {
+        self.postal_addresses = Some(vec![postal_address]);
+        self
     }
 
-    /// Get the contact uris.
-    pub fn contact_uris(&self) -> &[String] {
-        self.contact_uris.as_deref().unwrap_or_default()
+    /// Set the complete set of postal addresses.
+    pub fn with_postal_addresses(mut self, postal_addresses: Vec<PostalAddress>) -> Self {
+        self.postal_addresses = Some(postal_addresses);
+        self
     }
 
-    /// Get the URLs.
-    pub fn urls(&self) -> &[String] {
-        self.urls.as_deref().unwrap_or_default()
+    /// Set the full name.
+    pub fn with_full_name(mut self, full_name: String) -> Self {
+        self.full_name = Some(full_name);
+        self
+    }
+
+    /// Set the organization names.
+    pub fn with_organization_names(mut self, organization_names: Vec<String>) -> Self {
+        self.organization_names = Some(organization_names);
+        self
+    }
+
+    /// Set the name parts.
+    pub fn with_name_parts(mut self, name_parts: Option<NameParts>) -> Self {
+        self.name_parts = name_parts;
+        self
+    }
+
+    /// Set the nick names.
+    pub fn with_nick_names(mut self, nick_names: Vec<String>) -> Self {
+        self.nick_names = (!nick_names.is_empty()).then_some(nick_names);
+        self
+    }
+
+    /// Set the titles.
+    pub fn with_titles(mut self, titles: Vec<String>) -> Self {
+        self.titles = (!titles.is_empty()).then_some(titles);
+        self
+    }
+
+    /// Set the organizational roles.
+    pub fn with_roles(mut self, roles: Vec<String>) -> Self {
+        self.roles = (!roles.is_empty()).then_some(roles);
+        self
     }
 }
 
@@ -355,7 +638,7 @@ impl Display for Lang {
 /// Name parts of a name.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NameParts {
-    /// Name prefixes.
+    /// Name prefixes such as titles or honorifics (e.g. "Mr., Mrs., Dr.").
     pub prefixes: Option<Vec<String>>,
 
     /// Surnames or last names.
@@ -367,8 +650,11 @@ pub struct NameParts {
     /// Given or first names.
     pub given_names: Option<Vec<String>>,
 
-    /// Name suffixes.
+    /// Name suffixes such as credentials and honorifics (e.g. "Esq.").
     pub suffixes: Option<Vec<String>>,
+
+    /// Generation markers (e.g. "Jr.", "III").
+    pub generations: Option<Vec<String>>,
 }
 
 #[buildstructor::buildstructor]
@@ -380,6 +666,7 @@ impl NameParts {
         middle_names: Vec<String>,
         given_names: Vec<String>,
         suffixes: Vec<String>,
+        generations: Vec<String>,
     ) -> Self {
         Self {
             prefixes: to_opt_vec(prefixes),
@@ -387,6 +674,7 @@ impl NameParts {
             middle_names: to_opt_vec(middle_names),
             given_names: to_opt_vec(given_names),
             suffixes: to_opt_vec(suffixes),
+            generations: to_opt_vec(generations),
         }
     }
 
@@ -395,9 +683,19 @@ impl NameParts {
         self.prefixes.as_deref().unwrap_or_default()
     }
 
+    /// Get the first prefix.
+    pub fn prefix(&self) -> Option<&str> {
+        self.prefixes().first().map(|x| x.as_str())
+    }
+
     /// Get the sur names.
     pub fn surnames(&self) -> &[String] {
         self.surnames.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first surname.
+    pub fn surname(&self) -> Option<&str> {
+        self.surnames().first().map(|x| x.as_str())
     }
 
     /// Get the middle names.
@@ -405,14 +703,39 @@ impl NameParts {
         self.middle_names.as_deref().unwrap_or_default()
     }
 
+    /// Get the first middle name.
+    pub fn middle_name(&self) -> Option<&str> {
+        self.middle_names().first().map(|x| x.as_str())
+    }
+
     /// Get the given names.
     pub fn given_names(&self) -> &[String] {
         self.given_names.as_deref().unwrap_or_default()
     }
 
+    /// Get the first given name.
+    pub fn given_name(&self) -> Option<&str> {
+        self.given_names().first().map(|x| x.as_str())
+    }
+
     /// Get the suffixes.
     pub fn suffixes(&self) -> &[String] {
         self.suffixes.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first suffix.
+    pub fn suffix(&self) -> Option<&str> {
+        self.suffixes().first().map(|x| x.as_str())
+    }
+
+    /// Get the generations.
+    pub fn generations(&self) -> &[String] {
+        self.generations.as_deref().unwrap_or_default()
+    }
+
+    /// Get the first generation.
+    pub fn generation(&self) -> Option<&str> {
+        self.generations().first().map(|x| x.as_str())
     }
 }
 
@@ -549,6 +872,23 @@ impl PostalAddress {
     /// Get the postal code.
     pub fn postal_code(&self) -> Option<&str> {
         self.postal_code.as_deref()
+    }
+
+    /// Set the postal code.
+    pub fn with_postal_code(mut self, postal_code: String) -> Self {
+        self.postal_code = Some(postal_code);
+        self
+    }
+
+    /// Set the locality.
+    pub fn with_locality(mut self, locality: String) -> Self {
+        self.locality = Some(locality);
+        self
+    }
+
+    pub fn with_street_parts(mut self, street_parts: Vec<String>) -> Self {
+        self.street_parts = Some(street_parts);
+        self
     }
 }
 

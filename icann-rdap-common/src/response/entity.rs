@@ -1,4 +1,8 @@
 //! Entity object class.
+use std::collections::HashSet;
+
+use crate::{contact::jscontact::JsContactCard, prelude::ContentExtensions};
+
 use {
     crate::{
         contact::Contact,
@@ -105,7 +109,10 @@ pub struct Entity {
 
     #[serde(rename = "vcardArray")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vcard_array: Option<Vec<Value>>,
+    pub(crate) vcard_array: Option<Vec<Value>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) jscontact_card: Option<JsContactCard>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub roles: Option<VectorStringish>,
@@ -166,6 +173,8 @@ impl Entity {
         entities: Vec<Entity>,
         as_event_actors: Vec<Event>,
         contact: Option<Contact>,
+        no_vacard: Option<bool>,
+        jscontact: Option<bool>,
         roles: Vec<String>,
         public_ids: Vec<PublicId>,
         networks: Vec<Network>,
@@ -184,7 +193,16 @@ impl Entity {
                 .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
-            vcard_array: contact.map(|c| c.to_vcard()),
+            vcard_array: if no_vacard.unwrap_or(false) {
+                None
+            } else {
+                contact.as_ref().map(|c| c.to_vcard())
+            },
+            jscontact_card: if jscontact.unwrap_or(false) {
+                contact.as_ref().map(|c| c.to_jscontact())
+            } else {
+                None
+            },
             roles: to_opt_vectorstringish(roles),
             public_ids: to_opt_vec(public_ids),
             as_event_actor: to_opt_vec(as_event_actors),
@@ -235,6 +253,8 @@ impl Entity {
         entities: Vec<Entity>,
         as_event_actors: Vec<Event>,
         contact: Option<Contact>,
+        no_vacard: Option<bool>,
+        jscontact: Option<bool>,
         roles: Vec<String>,
         public_ids: Vec<PublicId>,
         notices: Vec<Notice>,
@@ -256,6 +276,8 @@ impl Entity {
             .and_port_43(port_43)
             .as_event_actors(as_event_actors)
             .and_contact(contact)
+            .and_no_vacard(no_vacard)
+            .and_jscontact(jscontact)
             .roles(roles)
             .entities(entities)
             .public_ids(public_ids)
@@ -267,8 +289,15 @@ impl Entity {
         entity
     }
 
-    /// Get a [Contact] from the impentrable vCard.
+    /// Get a [Contact].
+    ///
+    /// If the contact is represented as a JSContact, that will be
+    /// preferred, else the contact will come from the impentrable vCard.
     pub fn contact(&self) -> Option<Contact> {
+        if let Some(jscontact) = &self.jscontact_card {
+            return Some(Contact::from_jscontact(jscontact));
+        }
+        //else
         let vcard = self.vcard_array.as_ref()?;
         Contact::from_vcard(vcard)
     }
@@ -319,6 +348,44 @@ impl Entity {
     pub fn is_entity_role(&self, role: &str) -> bool {
         self.roles().iter().any(|r| r.eq(role))
     }
+
+    /// Set the contact as a vcard.
+    pub fn with_contact_as_vcard(&mut self, contact: &Contact) -> &mut Self {
+        self.vcard_array = Some(contact.to_vcard());
+        self
+    }
+
+    /// Set the contact as a vcard if it already has a vcard representation.
+    pub fn with_contact_if_vcard(&mut self, contact: &Contact) -> &mut Self {
+        if self.is_contact_as_vcard() {
+            self.with_contact_as_vcard(contact);
+        };
+        self
+    }
+
+    /// Set the contact as a jscontact.
+    pub fn with_contact_as_jscontact(&mut self, contact: &Contact) -> &mut Self {
+        self.jscontact_card = Some(contact.to_jscontact());
+        self
+    }
+
+    /// Set the contact as a jscontact if it already has a jscontact representation.
+    pub fn with_contact_if_jscontact(&mut self, contact: &Contact) -> &mut Self {
+        if self.is_contact_as_jscontact() {
+            self.with_contact_as_jscontact(contact);
+        };
+        self
+    }
+
+    /// True if the contact is represented as a vcard.
+    pub fn is_contact_as_vcard(&self) -> bool {
+        self.vcard_array.is_some()
+    }
+
+    /// True if the contact is represented as a JSContact.
+    pub fn is_contact_as_jscontact(&self) -> bool {
+        self.jscontact_card.is_some()
+    }
 }
 
 impl ToResponse for Entity {
@@ -328,14 +395,14 @@ impl ToResponse for Entity {
 }
 
 impl GetSelfLink for Entity {
-    fn get_self_link(&self) -> Option<&Link> {
-        self.object_common.get_self_link()
+    fn self_link(&self) -> Option<&Link> {
+        self.object_common.self_link()
     }
 }
 
 impl SelfLink for Entity {
-    fn set_self_link(mut self, link: Link) -> Self {
-        self.object_common = self.object_common.set_self_link(link);
+    fn with_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.with_self_link(link);
         self
     }
 }
@@ -359,6 +426,18 @@ impl CommonFields for Entity {
 impl ObjectCommonFields for Entity {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
+    }
+}
+
+impl ContentExtensions for Entity {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.extend(self.object_common().content_extensions());
+        if self.jscontact_card.is_some() {
+            exts.insert(super::ExtensionId::JsContact);
+        }
+        exts
     }
 }
 

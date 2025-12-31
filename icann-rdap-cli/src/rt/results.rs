@@ -371,6 +371,7 @@ pub enum RunOutcome {
 #[strum(serialize_all = "snake_case")]
 pub enum RunFeature {
     OriginHeader,
+    ExtsList,
 }
 
 impl RunOutcome {

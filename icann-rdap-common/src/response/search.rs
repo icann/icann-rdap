@@ -1,4 +1,8 @@
 //! RDAP Search Results.
+use std::collections::HashSet;
+
+use crate::prelude::ContentExtensions;
+
 use {
     crate::prelude::{Common, Extension},
     serde::{Deserialize, Serialize},
@@ -45,6 +49,17 @@ impl ToResponse for DomainSearchResults {
     }
 }
 
+impl ContentExtensions for DomainSearchResults {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        self.results()
+            .iter()
+            .for_each(|d| exts.extend(d.content_extensions()));
+        exts.extend(self.common().content_extensions());
+        exts
+    }
+}
+
 /// Represents RDAP nameserver search results.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct NameserverSearchResults {
@@ -84,6 +99,17 @@ impl ToResponse for NameserverSearchResults {
     }
 }
 
+impl ContentExtensions for NameserverSearchResults {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        self.results()
+            .iter()
+            .for_each(|n| exts.extend(n.content_extensions()));
+        exts.extend(self.common().content_extensions());
+        exts
+    }
+}
+
 /// Represents RDAP entity search results.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]
 pub struct EntitySearchResults {
@@ -120,5 +146,16 @@ impl CommonFields for EntitySearchResults {
 impl ToResponse for EntitySearchResults {
     fn to_response(self) -> super::RdapResponse {
         super::RdapResponse::EntitySearchResults(Box::new(self))
+    }
+}
+
+impl ContentExtensions for EntitySearchResults {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        self.results()
+            .iter()
+            .for_each(|e| exts.extend(e.content_extensions()));
+        exts.extend(self.common().content_extensions());
+        exts
     }
 }

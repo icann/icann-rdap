@@ -3,9 +3,15 @@ use std::{
     str::FromStr,
 };
 
-use clap::Args;
-use icann_rdap_cli::rt::exec::{HttpTestOptions, StringTestOptions, TestType};
+use clap::{ArgGroup, Args, CommandFactory, FromArgMatches};
+use icann_rdap_cli::{
+    args::target::{params_from_args, LinkTargetArgs},
+    rt::exec::{HttpTestOptions, StringTestOptions, TestType},
+};
 use icann_rdap_common::check::{ALL_CHECK_CLASSES, ERROR_CHECK_CLASSES, WARNING_CHECK_CLASSES};
+use json_pretty_compact::PrettyCompactFormatter;
+use serde::Serialize;
+use serde_json::Serializer;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -44,6 +50,10 @@ impl CliStyles {
 
 #[derive(Parser, Debug)]
 #[command(author, version = VERSION, about, long_about, styles = CliStyles::cli_styles())]
+#[command(group(
+            ArgGroup::new("output")
+                .args(["output_type", "json"]),
+        ))]
 /// This program aids in the troubleshooting of issues with RDAP servers.
 struct Cli {
     #[command(flatten)]
@@ -67,6 +77,10 @@ struct Cli {
         default_value_t = OtypeArg::RenderedMarkdown,
     )]
     output_type: OtypeArg,
+
+    /// Shortcut for "-O pretty-compact-json"
+    #[arg(long, required = false, conflicts_with = "output_type")]
+    json: bool,
 
     /// Check type.
     ///
@@ -282,13 +296,8 @@ struct HttpArgGroup {
     )]
     follow_redirects: bool,
 
-    /// Chase a referral.
-    ///
-    /// Get a referral in the first response and use that for testing. This is useful
-    /// for testing registrars by using the normal bootstrapping process to get the
-    /// referral to the registrar from the registry.
-    #[arg(short = 'r', long, required = false)]
-    referral: bool,
+    #[clap(flatten)]
+    link_target_args: LinkTargetArgs,
 }
 
 #[derive(Args, Debug)]
@@ -318,11 +327,14 @@ enum OtypeArg {
     /// Results are rendered as Markdown in plain text.
     Markdown,
 
-    /// Results are output as RDAP JSON.
+    /// Results are output as JSON.
     Json,
 
-    /// Results are output as Pretty RDAP JSON.
+    /// Results are output as Pretty JSON.
     PrettyJson,
+
+    /// Results are output as Pretty Compact JSON.
+    PrettyCompactJson,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -424,7 +436,14 @@ pub async fn main() -> RdapTestError {
 pub async fn wrapped_main() -> Result<(), RdapTestError> {
     dirs::init()?;
     dotenv::from_path(dirs::config_path()).ok();
-    let cli = Cli::parse();
+
+    // remove the only_show_target from the help as it does not apply to this command
+    let mut cmd = Cli::command();
+    cmd = cmd.mut_arg("only_show_target", |arg| arg.hide(true));
+    let matches = cmd.get_matches();
+    let cli = Cli::from_arg_matches(&matches)
+        .map_err(|err| err.exit())
+        .unwrap();
 
     let level = LevelFilter::from(&cli.log_level);
     tracing_subscriber::fmt()
@@ -482,17 +501,19 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         .build();
 
     let test_type = if cli.http.query_value.is_some() {
-        TestType::Http(HttpTestOptions {
+        let query_type = QueryType::from_str(&cli.http.query_value.unwrap_or_default())?;
+        let link_params = params_from_args(&query_type, cli.http.link_target_args);
+        TestType::Http(Box::new(HttpTestOptions {
             skip_v4: cli.http.skip_v4,
             skip_v6: cli.http.skip_v6,
             skip_origin: cli.http.skip_origin,
             origin_value: cli.http.origin_value,
-            chase_referral: cli.http.referral,
             one_addr: cli.http.one_addr,
             dns_resolver: Some(cli.http.dns_resolver),
-            value: QueryType::from_str(&cli.http.query_value.unwrap_or_default())?,
+            link_params,
+            value: query_type,
             client_config,
-        })
+        }))
     } else {
         let mut json = String::new();
         if let Some(in_file) = cli.file.in_file {
@@ -500,7 +521,9 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         } else {
             std::io::stdin().read_to_string(&mut json)?;
         };
-        TestType::String(StringTestOptions { json })
+        TestType::String {
+            field1: StringTestOptions { json },
+        }
     };
 
     let options = TestOptions {
@@ -518,7 +541,12 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
 
     // output results
     let md_options = MdOptions::default();
-    match cli.output_type {
+    let output_type = if cli.json {
+        OtypeArg::PrettyCompactJson
+    } else {
+        cli.output_type
+    };
+    match output_type {
         OtypeArg::RenderedMarkdown => {
             let mut skin = MadSkin::default_dark();
             skin.set_headers_fg(Yellow);
@@ -545,6 +573,11 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
         }
         OtypeArg::PrettyJson => {
             println!("{}", serde_json::to_string_pretty(&test_results).unwrap());
+        }
+        OtypeArg::PrettyCompactJson => {
+            let formatter = PrettyCompactFormatter::new();
+            let mut serializer = Serializer::with_formatter(stdout(), formatter);
+            test_results.serialize(&mut serializer)?;
         }
     }
 

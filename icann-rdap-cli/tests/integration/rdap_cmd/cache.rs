@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use {
-    icann_rdap_client::rdap::RequestResponseOwned,
+    icann_rdap_client::rdap::RequestResponse,
     icann_rdap_common::response::{Domain, Entity, RdapResponse},
     icann_rdap_srv::storage::StoreOps,
 };
@@ -25,7 +25,7 @@ async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
 
     test_jig.cmd.arg("foo.example");
     let output = test_jig.cmd.output().expect("executing domain query");
-    let responses: Vec<RequestResponseOwned> =
+    let responses: Vec<RequestResponse> =
         serde_json::from_slice(&output.stdout).expect("parsing stdout");
     let rdap = &responses.first().expect("response is empty").res_data.rdap;
     println!("response type is {rdap}");
@@ -36,7 +36,7 @@ async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
 
     // THEN
     let output = test_jig.cmd.output().expect("executing domain query");
-    let responses: Vec<RequestResponseOwned> =
+    let responses: Vec<RequestResponse> =
         serde_json::from_slice(&output.stdout).expect("parsing stdout");
     let rdap = &responses.first().expect("response is empty").res_data.rdap;
     println!("response type is {rdap}");

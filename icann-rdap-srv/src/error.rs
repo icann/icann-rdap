@@ -63,11 +63,13 @@ pub enum RdapServerError {
     Bootstrap(String),
     #[error(transparent)]
     RdapClientError(#[from] RdapClientError),
+    #[error(transparent)]
+    ParsingError(#[from] strum::ParseError),
 }
 
 impl IntoResponse for RdapServerError {
     fn into_response(self) -> Response {
-        let response = Rfc9083Error::response()
+        let response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();

@@ -1,7 +1,7 @@
 use {
     assert_cmd::Command,
     icann_rdap_srv::{
-        config::ListenConfig,
+        config::{JsContactConversion, ListenConfig},
         server::{AppState, Listener},
         storage::{
             mem::{config::MemConfig, ops::Mem},
@@ -57,6 +57,7 @@ impl TestJig {
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,
+            jscontact_conversion: JsContactConversion::None,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -88,6 +89,7 @@ impl TestJig {
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,
+            jscontact_conversion: JsContactConversion::None,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())

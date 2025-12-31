@@ -1,5 +1,5 @@
 //! RDAP structures for parsing and creating RDAP responses.
-use std::any::TypeId;
+use std::{any::TypeId, collections::HashSet};
 
 use {
     cidr,
@@ -44,6 +44,7 @@ pub(crate) mod domain;
 pub(crate) mod entity;
 pub(crate) mod error;
 pub(crate) mod help;
+pub mod jscontact;
 pub(crate) mod lenient;
 pub(crate) mod nameserver;
 pub(crate) mod network;
@@ -51,7 +52,7 @@ pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
 pub(crate) mod search;
 pub(crate) mod types;
-pub(crate) mod values;
+pub(crate) mod values; // JSContact is not a mainstream extension, yet.
 
 /// An error caused be processing an RDAP response.
 ///
@@ -276,7 +277,7 @@ impl RdapResponse {
             Self::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
-            Self::ErrorResponse(e) => e.rdap_conformance.as_ref(),
+            Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
             Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
     }
@@ -300,7 +301,7 @@ impl RdapResponse {
 }
 
 impl GetSelfLink for RdapResponse {
-    fn get_self_link(&self) -> Option<&Link> {
+    fn self_link(&self) -> Option<&Link> {
         self.get_links()
             .and_then(|links| links.iter().find(|link| link.is_relation("self")))
     }
@@ -315,18 +316,31 @@ pub trait ToResponse {
 /// Trait for getting a link with a `rel` of "self".
 pub trait GetSelfLink {
     /// Get's the first self link.
-    /// See [crate::response::ObjectCommon::get_self_link()].
-    fn get_self_link(&self) -> Option<&Link>;
+    /// See [crate::response::ObjectCommon::self_link()].
+    fn self_link(&self) -> Option<&Link>;
 }
 
 /// Train for setting a link with a `rel` of "self".
 pub trait SelfLink: GetSelfLink {
-    /// See [crate::response::ObjectCommon::get_self_link()].
-    fn set_self_link(self, link: Link) -> Self;
+    /// See [crate::response::ObjectCommon::self_link()].
+    fn with_self_link(self, link: Link) -> Self;
 }
 
-/// Gets the `href` of a link with `rel` of "related" and `type` with the RDAP media type.
 pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
+    let related = &["related".to_string()];
+    get_relationship_links(related, rdap_response)
+}
+
+/// Gets the `href` of a link with `rel` of relationships.
+///
+/// This function will get the `href` from an RDAP object's links where the `rel`
+/// is a combination of the given relationships and the `type` is an RDAP media type.
+/// If no link with an RDAP media type is found, it will attempt to find a link that
+/// is formatted as a known RDAP URL.
+pub fn get_relationship_links<'b>(
+    relationships: &[String],
+    rdap_response: &'b RdapResponse,
+) -> Vec<&'b str> {
     let Some(links) = rdap_response.get_links() else {
         return vec![];
     };
@@ -335,7 +349,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
         .iter()
         .filter_map(|l| match (&l.href, &l.rel, &l.media_type) {
             (Some(href), Some(rel), Some(media_type))
-                if rel.eq_ignore_ascii_case("related")
+                if is_relationship(rel, relationships)
                     && media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE) =>
             {
                 Some(href.as_str())
@@ -351,7 +365,7 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             .filter(|l| {
                 if let Some(href) = l.href() {
                     if let Some(rel) = l.rel() {
-                        rel.eq_ignore_ascii_case("related") && has_rdap_path(href)
+                        is_relationship(rel, relationships) && has_rdap_path(href)
                     } else {
                         false
                     }
@@ -363,6 +377,18 @@ pub fn get_related_links(rdap_response: &RdapResponse) -> Vec<&str> {
             .collect::<Vec<&str>>();
     }
     urls
+}
+
+fn is_relationship(rel: &str, relationships: &[String]) -> bool {
+    let mut splits: usize = 0;
+    let num_found = rel
+        .split_whitespace()
+        .filter(|r| {
+            splits += 1;
+            relationships.iter().any(|s| r.eq_ignore_ascii_case(s))
+        })
+        .count();
+    splits == num_found && num_found == relationships.len()
 }
 
 /// Returns true if the URL contains an RDAP path as defined by RFC 9082.
@@ -395,11 +421,131 @@ pub fn opt_to_vec<T>(opt: Option<Vec<T>>) -> Vec<T> {
     opt.unwrap_or_default()
 }
 
+/// Retrieve the RDAP extensions making up the content of a response.
+pub trait ContentExtensions {
+    /// Returns a [HashSet] of [ExtensionId].
+    ///
+    /// The returned value should contain all the extension IDs used
+    /// in the instance of the object.
+    fn content_extensions(&self) -> HashSet<ExtensionId>;
+}
+
+impl ContentExtensions for RdapResponse {
+    fn content_extensions(&self) -> HashSet<ExtensionId> {
+        match &self {
+            Self::Entity(e) => e.content_extensions(),
+            Self::Domain(d) => d.content_extensions(),
+            Self::Nameserver(n) => n.content_extensions(),
+            Self::Autnum(a) => a.content_extensions(),
+            Self::Network(n) => n.content_extensions(),
+            Self::DomainSearchResults(r) => r.content_extensions(),
+            Self::EntitySearchResults(r) => r.content_extensions(),
+            Self::NameserverSearchResults(r) => r.content_extensions(),
+            Self::ErrorResponse(e) => e.content_extensions(),
+            Self::Help(h) => h.content_extensions(),
+        }
+    }
+}
+
+/// Normalizes the extensions in an [RdapResponse].
+pub fn normalize_extensions(rdap: RdapResponse) -> RdapResponse {
+    let extensions = rdap.content_extensions();
+    let rdap_conformance = extensions
+        .iter()
+        .map(|e| e.to_extension())
+        .collect::<Vec<Extension>>();
+
+    match rdap {
+        RdapResponse::Entity(e) => Entity {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..e.common
+            },
+            ..*e
+        }
+        .to_response(),
+        RdapResponse::Domain(d) => Domain {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..d.common
+            },
+            ..*d
+        }
+        .to_response(),
+        RdapResponse::Nameserver(n) => Nameserver {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..n.common
+            },
+            ..*n
+        }
+        .to_response(),
+        RdapResponse::Autnum(a) => Autnum {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..a.common
+            },
+            ..*a
+        }
+        .to_response(),
+        RdapResponse::Network(n) => Network {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..n.common
+            },
+            ..*n
+        }
+        .to_response(),
+        RdapResponse::DomainSearchResults(r) => DomainSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::EntitySearchResults(r) => EntitySearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::NameserverSearchResults(r) => NameserverSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::ErrorResponse(e) => Rfc9083Error {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..e.common
+            },
+            ..*e
+        }
+        .to_response(),
+        RdapResponse::Help(h) => Help {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..h.common
+            },
+        }
+        .to_response(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::Value;
 
-    use crate::{media_types::RDAP_MEDIA_TYPE, prelude::ExtensionId};
+    use crate::{
+        media_types::RDAP_MEDIA_TYPE,
+        prelude::{get_relationship_links, ExtensionId},
+    };
 
     use super::{get_related_links, Domain, Link, RdapResponse, ToResponse};
 
@@ -661,5 +807,98 @@ mod tests {
         // THEN
         assert!(!links.is_empty());
         assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_rdap_up_and_rdap_active_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up rdap-active")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links =
+            get_relationship_links(&["rdap-up".to_string(), "rdap-active".to_string()], &rdap);
+
+        // THEN
+        assert!(!links.is_empty());
+        assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_rdap_active_and_rdap_up_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up rdap-active")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links =
+            get_relationship_links(&["rdap-active".to_string(), "rdap-up".to_string()], &rdap);
+
+        // THEN
+        assert!(!links.is_empty());
+        assert_eq!(links.first().expect("empty links"), &link.href().unwrap());
+    }
+
+    #[test]
+    fn test_get_only_one_relationship_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up rdap-active")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links = get_relationship_links(&["rdap-up".to_string()], &rdap);
+
+        // THEN
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_get_too_many_relationship_link() {
+        // GIVEN
+        let link = Link::builder()
+            .rel("rdap-up")
+            .href("http://example.com")
+            .value("http://example.com")
+            .media_type(RDAP_MEDIA_TYPE)
+            .build();
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(link.clone())
+            .build()
+            .to_response();
+
+        // WHEN
+        let links =
+            get_relationship_links(&["rdap-active".to_string(), "rdap-up".to_string()], &rdap);
+
+        // THEN
+        assert!(links.is_empty());
     }
 }

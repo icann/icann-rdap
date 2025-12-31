@@ -2,12 +2,14 @@ use {
     envmnt::{get_or, get_parse_or, get_u16},
     icann_rdap_srv::{
         config::{
-            data_dir, debug_config_vars, ListenConfig, ServiceConfig, StorageType, AUTO_RELOAD,
-            BOOTSTRAP, LISTEN_ADDR, LISTEN_PORT, LOG, UPDATE_ON_BOOTSTRAP,
+            data_dir, debug_config_vars, JsContactConversion, ListenConfig, ServiceConfig,
+            StorageType, AUTO_RELOAD, BOOTSTRAP, JSCONTACT_CONVERSION, LISTEN_ADDR, LISTEN_PORT,
+            LOG, UPDATE_ON_BOOTSTRAP,
         },
         error::RdapServerError,
         server::Listener,
     },
+    std::str::FromStr,
     tracing_subscriber::{
         fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
     },
@@ -29,6 +31,8 @@ async fn main() -> Result<(), RdapServerError> {
     let auto_reload: bool = get_parse_or(AUTO_RELOAD, true)?;
     let bootstrap: bool = get_parse_or(BOOTSTRAP, false)?;
     let update_on_bootstrap: bool = get_parse_or(UPDATE_ON_BOOTSTRAP, false)?;
+    let jscontact_conversion =
+        JsContactConversion::from_str(&get_or(JSCONTACT_CONVERSION, "none"))?;
 
     let listener = Listener::listen(
         &ListenConfig::builder()
@@ -45,6 +49,7 @@ async fn main() -> Result<(), RdapServerError> {
                 .auto_reload(auto_reload)
                 .bootstrap(bootstrap)
                 .update_on_bootstrap(update_on_bootstrap)
+                .jscontact_conversion(jscontact_conversion)
                 .build(),
         )
         .await?;

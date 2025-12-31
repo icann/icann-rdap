@@ -64,7 +64,9 @@ fn simplify_phone(
             if entity.is_entity_role(&role.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut phones) = contact.phones {
+                    let phones = contact.phones().to_vec();
+                    if !phones.is_empty() {
+                        let mut phones = phones;
                         for phone in phones.iter_mut() {
                             if phone.features().contains(&feature.to_string()) {
                                 phone.phone = redaction_key.to_string();
@@ -76,9 +78,10 @@ fn simplify_phone(
                                 );
                             }
                         }
-                        contact.phones = Some(phones);
+                        contact = contact.with_phones(phones);
                     }
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first entity with role
                 }
             }
@@ -102,7 +105,9 @@ fn simplify_phone_ext(
             if entity.is_entity_role(&role.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if let Some(mut phones) = contact.phones {
+                    let phones = contact.phones().to_vec();
+                    if !phones.is_empty() {
+                        let mut phones = phones;
                         for phone in phones.iter_mut() {
                             if phone.features().contains(&feature.to_string()) {
                                 if phone.phone.contains(";ext=") {
@@ -125,9 +130,10 @@ fn simplify_phone_ext(
                                 );
                             }
                         }
-                        contact.phones = Some(phones);
+                        contact = contact.with_phones(phones);
                     }
-                    entity.vcard_array = Some(contact.to_vcard());
+                    entity.with_contact_if_vcard(&contact);
+                    entity.with_contact_if_jscontact(&contact);
                     break; // Only modify first entity with role
                 }
             }

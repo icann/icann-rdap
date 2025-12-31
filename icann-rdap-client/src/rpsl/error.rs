@@ -1,8 +1,8 @@
-use icann_rdap_common::prelude::Rfc9083Error;
+use icann_rdap_common::prelude::{CommonFields, Rfc9083Error};
 
 use crate::rpsl::{RpslParams, ToRpsl};
 
-use super::push_manditory_attribute;
+use super::{push_manditory_attribute, push_notices};
 
 impl ToRpsl for Rfc9083Error {
     fn to_rpsl(&self, _params: RpslParams) -> String {
@@ -15,12 +15,8 @@ impl ToRpsl for Rfc9083Error {
             &self.error_code().to_string(),
         );
 
-        if let Some(title) = self.title() {
-            rpsl.push_str(&format!("# {title}\n"));
-        }
-        for line in self.description() {
-            rpsl.push_str(&format!("# {line}\n"));
-        }
+        // notices are comments before the objects
+        rpsl = push_notices(rpsl, self.notices());
 
         //end
         rpsl.push('\n');

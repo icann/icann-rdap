@@ -1,4 +1,8 @@
+use std::{collections::HashSet, str::FromStr};
+
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::ContentExtensions;
 
 use super::{Extension, ExtensionId, Notice, Notices, RdapConformance};
 
@@ -54,5 +58,28 @@ pub trait CommonFields {
     /// In valid RDAP, this only appears on the top most object.
     fn notices(&self) -> &[Notice] {
         self.common().notices.as_deref().unwrap_or_default()
+    }
+}
+
+impl ContentExtensions for Common {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        self.notices
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .for_each(|remark| {
+                exts.extend(remark.content_extensions());
+            });
+        self.rdap_conformance
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .for_each(|e| {
+                if let Ok(ext_id) = ExtensionId::from_str(e) {
+                    exts.insert(ext_id);
+                }
+            });
+        exts
     }
 }

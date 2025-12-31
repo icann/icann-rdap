@@ -1,4 +1,8 @@
 //! RDAP IP Network.
+use std::collections::HashSet;
+
+use crate::prelude::ContentExtensions;
+
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
     std::str::FromStr,
@@ -401,14 +405,14 @@ impl ToResponse for Network {
 }
 
 impl GetSelfLink for Network {
-    fn get_self_link(&self) -> Option<&Link> {
-        self.object_common.get_self_link()
+    fn self_link(&self) -> Option<&Link> {
+        self.object_common.self_link()
     }
 }
 
 impl SelfLink for Network {
-    fn set_self_link(mut self, link: Link) -> Self {
-        self.object_common = self.object_common.set_self_link(link);
+    fn with_self_link(mut self, link: Link) -> Self {
+        self.object_common = self.object_common.with_self_link(link);
         self
     }
 }
@@ -432,6 +436,18 @@ impl CommonFields for Network {
 impl ObjectCommonFields for Network {
     fn object_common(&self) -> &ObjectCommon {
         &self.object_common
+    }
+}
+
+impl ContentExtensions for Network {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        let mut exts = HashSet::new();
+        exts.extend(self.common().content_extensions());
+        exts.extend(self.object_common().content_extensions());
+        if self.cidr0_cidrs.is_some() {
+            exts.insert(super::ExtensionId::Cidr0);
+        }
+        exts
     }
 }
 

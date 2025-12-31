@@ -72,7 +72,7 @@ pub(crate) async fn do_request(
             debug!("Saving query response to cache file {file_name}");
             let path = rdap_cache_path().join(file_name);
             fs::write(path, &cache_contents)?;
-            if let Some(self_link) = response.rdap.get_self_link() {
+            if let Some(self_link) = response.rdap.self_link() {
                 if let Some(self_link_href) = &self_link.href {
                     if query_url != *self_link_href {
                         let file_name = format!(

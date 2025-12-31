@@ -1,28 +1,26 @@
 use {
     icann_rdap_client::http::Client,
-    icann_rdap_common::response::get_related_links,
     tracing::{debug, info},
 };
 
 use {
     icann_rdap_client::{
         gtld::{GtldParams, ToGtldWhois},
-        md::{redacted::replace_redacted_items, MdOptions, MdParams, ToMd},
-        rdap::{
-            QueryType, RequestData, RequestResponse, RequestResponses, ResponseData, SourceType,
-        },
+        md::{MdOptions, MdParams, ToMd},
+        rdap::{QueryType, RequestData, RequestResponse, ResponseData},
     },
     termimad::{crossterm::style::Color::*, Alignment, MadSkin},
 };
 
 use chrono::DateTime;
 use enumflags2::{bitflags, BitFlags};
+use icann_rdap_cli::args::target::LinkParams;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     check::{
         process::do_check_processing, traverse_checks, ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES,
     },
-    prelude::{Event, RdapResponse},
+    prelude::{get_relationship_links, Event, RdapResponse},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
@@ -78,18 +76,6 @@ pub(crate) enum OutputType {
     EventJson,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum LinkTarget {
-    /// Standard data processing.
-    Standard,
-
-    /// Process data specifically from a registrar.
-    Registrar,
-
-    /// Process data specifically from a registry.
-    Registry,
-}
-
 /// Used for doing TLD Lookups.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum TldLookup {
@@ -131,224 +117,144 @@ pub(crate) enum RedactionFlag {
 pub(crate) struct ProcessingParams {
     pub bootstrap_type: BootstrapType,
     pub output_type: OutputType,
-    pub link_target: LinkTarget,
     pub tld_lookup: TldLookup,
     pub inr_backup_bootstrap: InrBackupBootstrap,
     pub no_cache: bool,
     pub max_cache_age: u32,
     pub redaction_flags: BitFlags<RedactionFlag>,
+    pub link_params: LinkParams,
 }
 
-pub(crate) async fn do_query<W: std::io::Write>(
+pub(crate) async fn exec_queries<W: std::io::Write>(
     query_type: &QueryType,
     processing_params: &ProcessingParams,
     client: &Client,
     write: &mut W,
 ) -> Result<(), RdapCliError> {
+    let mut transactions: Vec<RequestResponse> = Vec::new();
+    let base_url = determine_base_url(query_type, processing_params, client).await?;
+    debug!(
+        "Link targets: '{}'",
+        processing_params.link_params.link_targets.join(" ")
+    );
+    debug!(
+        "Link depth: min {} max {}",
+        processing_params.link_params.min_link_depth, processing_params.link_params.max_link_depth
+    );
+    debug!(
+        "Only show targets: {}",
+        processing_params.link_params.only_show_target
+    );
+
+    let mut query_type = query_type.to_owned();
+    for req_number in 1..=processing_params.link_params.max_link_depth {
+        debug!("Querying {}", query_type.query_url(&base_url)?);
+        debug!("Request Number: {}", req_number);
+        let response = request_and_process(&base_url, &query_type, processing_params, client).await;
+        match response {
+            Ok(response) => {
+                let is_target = if processing_params.link_params.only_show_target {
+                    req_number > 1
+                } else {
+                    true
+                };
+                let req_data = RequestData {
+                    req_number,
+                    req_target: is_target,
+                };
+
+                // Output immediately for streaming behavior
+                if is_target {
+                    output_immediately(processing_params, &req_data, &response, write)?;
+                }
+
+                if let Some(url) = get_relationship_links(
+                    &processing_params.link_params.link_targets,
+                    &response.rdap,
+                )
+                .first()
+                {
+                    info!(
+                        "Found next target with relationship(s) of '{}'.",
+                        processing_params.link_params.link_targets.join(" ")
+                    );
+                    query_type = QueryType::Url(url.to_string());
+                    transactions.push(RequestResponse {
+                        req_data,
+                        res_data: response,
+                    });
+                } else if req_number < processing_params.link_params.min_link_depth {
+                    return Err(RdapCliError::LinkTargetNotFound(
+                        processing_params.link_params.link_targets.join(" "),
+                    ));
+                } else {
+                    transactions.push(RequestResponse {
+                        req_data,
+                        res_data: response,
+                    });
+                    break;
+                }
+            }
+            Err(error) => {
+                if req_number == 1 {
+                    return Err(RdapCliError::NoRegistryFound);
+                } else {
+                    return Err(error);
+                }
+            }
+        }
+    }
+    final_output(processing_params, write, transactions)?;
+
+    Ok(())
+}
+
+async fn determine_base_url(
+    query_type: &QueryType,
+    processing_params: &ProcessingParams,
+    client: &Client,
+) -> Result<String, RdapCliError> {
     match query_type {
         QueryType::IpV4Addr(_)
         | QueryType::IpV6Addr(_)
         | QueryType::IpV4Cidr(_)
         | QueryType::IpV6Cidr(_)
+        | QueryType::ReverseDNs(_)
         | QueryType::AsNumber(_) => {
-            do_inr_query(query_type, processing_params, client, write).await
+            let mut base_url =
+                get_base_url(&processing_params.bootstrap_type, client, query_type).await;
+            if base_url.is_err()
+                && matches!(
+                    processing_params.inr_backup_bootstrap,
+                    InrBackupBootstrap::Arin
+                )
+            {
+                base_url = Ok("https://rdap.arin.net/registry".to_string());
+            };
+            base_url
         }
         QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
-            do_domain_query(query_type, processing_params, client, write).await
+            // special processing for TLD Lookups
+            if let QueryType::Domain(ref domain) = query_type {
+                if domain.is_tld() && matches!(processing_params.tld_lookup, TldLookup::Iana) {
+                    Ok("https://rdap.iana.org".to_string())
+                } else {
+                    get_base_url(&processing_params.bootstrap_type, client, query_type).await
+                }
+            } else {
+                get_base_url(&processing_params.bootstrap_type, client, query_type).await
+            }
         }
-        _ => do_basic_query(query_type, processing_params, None, client, write).await,
+        _ => get_base_url(&processing_params.bootstrap_type, client, query_type).await,
     }
 }
 
-async fn do_domain_query<W: std::io::Write>(
-    query_type: &QueryType,
+fn output_immediately<W: std::io::Write>(
     processing_params: &ProcessingParams,
-    client: &Client,
+    req_data: &RequestData,
+    response: &ResponseData,
     write: &mut W,
 ) -> Result<(), RdapCliError> {
-    let mut transactions = RequestResponses::new();
-
-    // special processing for TLD Lookups
-    let base_url = if let QueryType::Domain(ref domain) = query_type {
-        if domain.is_tld() && matches!(processing_params.tld_lookup, TldLookup::Iana) {
-            "https://rdap.iana.org".to_string()
-        } else {
-            get_base_url(&processing_params.bootstrap_type, client, query_type).await?
-        }
-    } else {
-        get_base_url(&processing_params.bootstrap_type, client, query_type).await?
-    };
-
-    let response = request_and_process(&base_url, query_type, processing_params, client).await;
-    let registrar_response;
-    match response {
-        Ok(response) => {
-            let user_wants_registrar =
-                matches!(processing_params.link_target, LinkTarget::Registrar);
-            let source_host = response.http_data.host.to_owned();
-            let req_data = RequestData {
-                req_number: 1,
-                req_target: !user_wants_registrar,
-                source_host: &source_host,
-                source_type: SourceType::DomainRegistry,
-            };
-            transactions = do_output(processing_params, &req_data, &response, write, transactions)?;
-            let regr_source_host;
-            let regr_req_data: RequestData;
-            if !matches!(processing_params.link_target, LinkTarget::Registry) {
-                if let Some(url) = get_related_links(&response.rdap).first() {
-                    info!("Querying domain name from registrar.");
-                    debug!("Registrar RDAP Url: {url}");
-                    let query_type = QueryType::Url(url.to_string());
-                    let registrar_response_result =
-                        request_and_process(&base_url, &query_type, processing_params, client)
-                            .await;
-                    match registrar_response_result {
-                        Ok(response_data) => {
-                            registrar_response = response_data;
-                            regr_source_host = registrar_response.http_data.host.to_owned();
-                            let user_wants_registy =
-                                matches!(processing_params.link_target, LinkTarget::Registry);
-                            regr_req_data = RequestData {
-                                req_number: 2,
-                                req_target: !user_wants_registy,
-                                source_host: &regr_source_host,
-                                source_type: SourceType::DomainRegistrar,
-                            };
-                            transactions = do_output(
-                                processing_params,
-                                &regr_req_data,
-                                &registrar_response,
-                                write,
-                                transactions,
-                            )?;
-                        }
-                        Err(error) => return Err(error),
-                    }
-                } else if matches!(processing_params.link_target, LinkTarget::Registrar) {
-                    return Err(RdapCliError::NoRegistrarFound);
-                }
-            }
-            do_final_output(processing_params, write, transactions)?;
-        }
-        Err(error) => {
-            if matches!(processing_params.link_target, LinkTarget::Registry) {
-                return Err(RdapCliError::NoRegistryFound);
-            } else {
-                return Err(error);
-            }
-        }
-    };
-    Ok(())
-}
-
-async fn do_inr_query<W: std::io::Write>(
-    query_type: &QueryType,
-    processing_params: &ProcessingParams,
-    client: &Client,
-    write: &mut W,
-) -> Result<(), RdapCliError> {
-    let mut transactions = RequestResponses::new();
-    let mut base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await;
-    if base_url.is_err()
-        && matches!(
-            processing_params.inr_backup_bootstrap,
-            InrBackupBootstrap::Arin
-        )
-    {
-        base_url = Ok("https://rdap.arin.net/registry".to_string());
-    };
-    let response = request_and_process(&base_url?, query_type, processing_params, client).await;
-    match response {
-        Ok(response) => {
-            let source_host = response.http_data.host.to_owned();
-            let req_data = RequestData {
-                req_number: 1,
-                req_target: true,
-                source_host: &source_host,
-                source_type: SourceType::RegionalInternetRegistry,
-            };
-            let replaced_rdap = replace_redacted_items(response.rdap.clone());
-            let replaced_data = ResponseData {
-                rdap: replaced_rdap,
-                // copy other fields from `response`
-                ..response.clone()
-            };
-            transactions = do_output(
-                processing_params,
-                &req_data,
-                &replaced_data,
-                write,
-                transactions,
-            )?;
-            do_final_output(processing_params, write, transactions)?;
-        }
-        Err(error) => return Err(error),
-    };
-    Ok(())
-}
-
-async fn do_basic_query<'a, W: std::io::Write>(
-    query_type: &QueryType,
-    processing_params: &ProcessingParams,
-    req_data: Option<&'a RequestData<'a>>,
-    client: &Client,
-    write: &mut W,
-) -> Result<(), RdapCliError> {
-    let mut transactions = RequestResponses::new();
-    let base_url = get_base_url(&processing_params.bootstrap_type, client, query_type).await?;
-    let response = request_and_process(&base_url, query_type, processing_params, client).await;
-    match response {
-        Ok(response) => {
-            let source_host = response.http_data.host.to_owned();
-            let req_data = if let Some(meta) = req_data {
-                RequestData {
-                    req_number: meta.req_number + 1,
-                    req_target: true,
-                    source_host: meta.source_host,
-                    source_type: SourceType::UncategorizedRegistry,
-                }
-            } else {
-                RequestData {
-                    req_number: 1,
-                    req_target: true,
-                    source_host: &source_host,
-                    source_type: SourceType::UncategorizedRegistry,
-                }
-            };
-            let replaced_rdap = replace_redacted_items(response.rdap.clone());
-            let replaced_data = ResponseData {
-                rdap: replaced_rdap,
-                // copy other fields from `response`
-                ..response.clone()
-            };
-            transactions = do_output(
-                processing_params,
-                &req_data,
-                &replaced_data,
-                write,
-                transactions,
-            )?;
-            do_final_output(processing_params, write, transactions)?;
-        }
-        Err(error) => return Err(error),
-    };
-    Ok(())
-}
-
-/// Sends output according to output.
-///
-/// This function is to allow output from a server shortly after it is
-/// received so users see progress. This may work with some output types
-/// and not others. Even after all iterations are made with this
-/// function, [do_final_output] should be called.
-fn do_output<'a, W: std::io::Write>(
-    processing_params: &ProcessingParams,
-    req_data: &'a RequestData,
-    response: &'a ResponseData,
-    write: &mut W,
-    mut transactions: RequestResponses<'a>,
-) -> Result<RequestResponses<'a>, RdapCliError> {
     if req_data.req_target {
         match processing_params.output_type {
             OutputType::RenderedMarkdown => {
@@ -471,47 +377,16 @@ fn do_output<'a, W: std::io::Write>(
                     }
                 }
             }
-            _ => {} // do nothing
+            _ => {} // do nothing for JSON types, handled in final output
         }
     }
-
-    let req_res = RequestResponse {
-        req_data,
-        res_data: response,
-    };
-    transactions.push(req_res);
-    Ok(transactions)
-}
-
-fn write_json<W: std::io::Write, T: Serialize>(
-    processing_params: &ProcessingParams,
-    write: &mut W,
-    data: &T,
-) -> Result<(), RdapCliError> {
-    match processing_params.output_type {
-        OutputType::PrettyJson => {
-            writeln!(write, "{}", serde_json::to_string_pretty(&data).unwrap())?;
-        }
-        OutputType::PrettyCompactJson => {
-            let formatter = PrettyCompactFormatter::new();
-            let mut serializer = Serializer::with_formatter(write, formatter);
-            data.serialize(&mut serializer)?;
-        }
-        _ => {
-            writeln!(write, "{}", serde_json::to_string(&data).unwrap())?;
-        }
-    };
     Ok(())
 }
 
-/// Finishes up output.
-///
-/// Some output types will have to do all their processing in this function
-/// instead of [do_output].
-fn do_final_output<W: std::io::Write>(
+fn final_output<W: std::io::Write>(
     processing_params: &ProcessingParams,
     write: &mut W,
-    transactions: RequestResponses<'_>,
+    transactions: Vec<RequestResponse>,
 ) -> Result<(), RdapCliError> {
     match processing_params.output_type {
         OutputType::Json | OutputType::PrettyJson | OutputType::PrettyCompactJson => {
@@ -519,7 +394,6 @@ fn do_final_output<W: std::io::Write>(
                 .iter()
                 .filter(|t| t.req_data.req_target)
                 .count();
-            // let pretty = matches!(processing_params.output_type, OutputType::PrettyJson);
             if output_count == 1 {
                 for req_res in &transactions {
                     if req_res.req_data.req_target {
@@ -530,6 +404,7 @@ fn do_final_output<W: std::io::Write>(
             } else {
                 let output_vec = transactions
                     .iter()
+                    .filter(|t| t.req_data.req_target)
                     .map(|t| &t.res_data.rdap)
                     .collect::<Vec<&RdapResponse>>();
                 write_json(processing_params, write, &output_vec)?;
@@ -538,7 +413,6 @@ fn do_final_output<W: std::io::Write>(
         OutputType::JsonExtra => {
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
         }
-        OutputType::GtldWhois => {}
         OutputType::StatusJson => {
             use icann_rdap_common::response::RdapResponse as RR;
             let mut statuses = vec![];
@@ -552,10 +426,9 @@ fn do_final_output<W: std::io::Write>(
                         RR::Network(n) => n.status(),
                         _ => &[],
                     };
-                    obj_status.iter().for_each(|s| statuses.push(s));
+                    obj_status.iter().for_each(|s| statuses.push(s.clone()));
                 }
             }
-            // Always print a JSON object with a status array, even if empty
             let obj = serde_json::json!({"status": statuses});
             writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
         }
@@ -580,15 +453,14 @@ fn do_final_output<W: std::io::Write>(
                                     .as_ref()
                                     .is_some_and(|ed| DateTime::parse_from_rfc3339(ed).is_ok())
                             })
-                            .for_each(|e| events.push(e))
+                            .for_each(|e| events.push(e.clone()))
                     });
                 }
             }
-            // Always print a JSON object with a status array, even if empty
             let obj = serde_json::json!({"events": events});
             writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
         }
-        _ => {} // do nothing
+        _ => {} // do nothing, already handled in immediate output
     };
 
     for tx in transactions {
@@ -617,5 +489,26 @@ fn do_final_output<W: std::io::Write>(
         }
     }
 
+    Ok(())
+}
+
+fn write_json<W: std::io::Write, T: Serialize>(
+    processing_params: &ProcessingParams,
+    write: &mut W,
+    data: &T,
+) -> Result<(), RdapCliError> {
+    match processing_params.output_type {
+        OutputType::PrettyJson => {
+            writeln!(write, "{}", serde_json::to_string_pretty(&data).unwrap())?;
+        }
+        OutputType::PrettyCompactJson => {
+            let formatter = PrettyCompactFormatter::new();
+            let mut serializer = Serializer::with_formatter(write, formatter);
+            data.serialize(&mut serializer)?;
+        }
+        _ => {
+            writeln!(write, "{}", serde_json::to_string(&data).unwrap())?;
+        }
+    };
     Ok(())
 }
