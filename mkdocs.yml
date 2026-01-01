@@ -1,0 +1,60 @@
+site_name: ICANN RDAP Users Manual
+site_url: https://icann.github.io/icann-rdap
+theme:
+  name: material
+  palette:
+    scheme: slate
+  features:
+    - search.share
+    - navigation.tracking
+  favicon: images/favicon.png
+  logo: images/icann-logo-tagline-white-en_680x152.webp
+plugins:
+  - search
+  - autorefs
+  - print-site:
+      add_to_navigation: true
+      print_page_title: 'Print Site'
+      print_page_basename: 'print_page'
+      add_print_site_banner: false
+      # Table of contents
+      add_table_of_contents: true
+      toc_title: 'Table of Contents'
+      toc_depth: 6
+      # Content-related
+      add_full_urls: false
+      enumerate_headings: true
+      enumerate_figures: true
+      add_cover_page: true
+      cover_page_template: ""
+      path_to_pdf: ""
+      include_css: true
+      enabled: true
+      exclude:
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+nav:
+  - 'index.md'
+  - Command Line Tools:
+    - Command Line Client:
+      - rdap-cli-tools/cli-client/index.md
+      - rdap-cli-tools/cli-client/installation.md
+      - rdap-cli-tools/cli-client/quick_start.md
+      - rdap-cli-tools/cli-client/usage.md
+    - Test Tool:
+      - rdap-cli-tools/test-tool/index.md
+      - rdap-cli-tools/test-tool/installation.md
+      - rdap-cli-tools/test-tool/quick_start.md
+      - rdap-cli-tools/test-tool/usage.md
+  - RDAP server:
+    - rdap-srv/index.md
+    - rdap-srv/installation.md
+    - rdap-srv/quick_start.md
+    - rdap-srv/usage.md
