@@ -12,28 +12,31 @@ Create directory in /tmp to hold server data files:
 
 Create the default server help:
 
-    ./target/release/rdap-srv-data srv-help --notice "this is a test server"
+    cargo run --bin rdap-srv-data -- srv-help --notice "this is a test server"
+
+_NOTE: `cargo run` makes sure that the code is compiled before running the executable.
+You may run `cargo run --release` and access all the executables in the `./target/release` directory._
 
 Create some data:
 
-    ./target/release/rdap-srv-data entity --handle foo1234 --email joe@example.com --full-name "Joe User"
+    cargo run --bin rdap-srv-data -- entity --handle foo1234 --email joe@example.com --full-name "Joe User"
     ./target/release/rdap-srv-data nameserver --ldh ns1.example.com --registrant foo1234
 
 Start the server:
 
-    ./target/release/rdap-srv
+    cargo run --bin rdap-srv
 
 Query the server with the client in another terminal:
 
-    ./target/release/rdap -T -B http://localhost:3000/rdap ns1.example.com
+    cargo run --bin rdap -- -T -B http://localhost:3000/rdap ns1.example.com
 
 While the server is running, do the following in a separate terminal to add some more data:
 
-    ./target/release/rdap-srv-data domain --ldh example.com --registrant foo1234 --ns ns1.example.com
-    ./target/release/rdap-srv-store --update
+    cargo run --bin rdap-srv-data -- domain --ldh example.com --registrant foo1234 --ns ns1.example.com
+    cargo run --bin rdap-srv-store -- --update
 
 Query the server for the new data:
 
-    ./target/release/rdap -T -B http://localhost:3000/rdap example.com
+    cargo run --bin rdap -- -T -B http://localhost:3000/rdap example.com
 
 For more information on the options available, use the `--help` option.

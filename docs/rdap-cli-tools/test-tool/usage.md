@@ -40,9 +40,65 @@ The following arguments may be used to control the behavior of tests:
 * `--origin-value` - Set the "origin" header value.
 * `--one-addr` - Only test one address.
 
-## Redirects and Referrals
+## Link Target Controls
 
-To test domain registrars and other RDAP serves that are found via referrals, use the `--referral` or `-r` argument.
+The following arguments may be used to control link following behavior during tests:
+
+* `--link-target` - Specifies a link target. More than one link target may be given.
+* `--only-show-target` - When specified, only link target results are shown.
+* `--min-link-depth` - Sets the minimum number of times to query for a link target.
+* `--max-link-depth` - Sets the maximum number of times to query for a link target.
+
+### Network Hierarchy Link Targets
+
+* `--up` - Set link target parameters for a parent network.
+* `--down` - Set link target parameters for child networks.
+* `--top` - Set link target parameters for least specific network.
+* `--bottom` - Set link target parameters for most specific network.
+
+### Domain-Specific Link Targets
+
+* `--registry` - Set link target parameters for a domain registry.
+* `--registrar` - Set link target parameters for a domain registrar.
+
+## Link Target Examples
+
+```bash
+# Test with registry link following
+rdap-test --registry https://rdap.nic.com/domain/example.com
+
+# Test with registrar link following
+rdap-test --registrar https://rdap.nic.com/domain/example.com
+
+# Test with network hierarchy following
+rdap-test --up https://rdap.arin.net/registry/ip/192.0.2.1
+rdap-test --down https://rdap.arin.net/registry/ip/192.0.2.1
+rdap-test --top https://rdap.arin.net/registry/ip/192.0.2.1
+rdap-test --bottom https://rdap.arin.net/registry/ip/192.0.2.1
+
+# Test with custom link depth
+rdap-test --link-target entity --max-link-depth 3 https://rdap.nic.com/domain/example.com
+
+# Test with multiple link targets
+rdap-test --link-target entity --link-target nameserver https://rdap.nic.com/domain/example.com
+
+# Only show link target results
+rdap-test --only-show-target --link-target entity https://rdap.nic.com/domain/example.com
+```
+
+### Domain Registry and Registrar Testing
+
+When testing domain-related RDAP servers, you can use link target controls:
+
+```bash
+# Test domain registry link following
+rdap-test --registry https://rdap.nic.com/domain/example.com
+
+# Test domain registrar link following  
+rdap-test --registrar https://rdap.nic.com/domain/example.com
+```
+
+These flags will test the RDAP server's ability to handle link following requests for domain registry and registrar relationships.
 
 By default, this command does not follow HTTP redirects unless the `--follow-redirects` argument is given.
 
@@ -83,6 +139,8 @@ is interactive, output will be in `rendered-markdown`. Otherwise, the output wil
 
 You can explicitly control this behavior using the `-O` command argument or the `RDAP_TEST_OUTPUT` environment variable
 (see below).
+
+Use the `--json` shortcut parameter to set the output type to pretty-compact-json.
 
 ## Directing Queries To A Specific Server
 

@@ -47,6 +47,11 @@ nav:
       - rdap-cli-tools/cli-client/index.md
       - rdap-cli-tools/cli-client/installation.md
       - rdap-cli-tools/cli-client/quick_start.md
+      - rdap-cli-tools/cli-client/domain_queries.md
+      - rdap-cli-tools/cli-client/ip_queries.md
+      - rdap-cli-tools/cli-client/autnum_queries.md
+      - rdap-cli-tools/cli-client/redaction_handling.md
+      - rdap-cli-tools/cli-client/output_formats.md
       - rdap-cli-tools/cli-client/usage.md
     - Test Tool:
       - rdap-cli-tools/test-tool/index.md
