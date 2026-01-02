@@ -30,6 +30,8 @@ This server explicityl supports the following extensions:
 Other extensions, such as object tagging, can be placed in the `rdapConformance` array of data
 used in this server.
 
+Additionally, this server can act as an RDAP bootstrap server.
+
 ## Running the Server
 
 The server is configured via environment variables. These variables can be configured in a shell

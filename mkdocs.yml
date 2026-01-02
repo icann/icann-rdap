@@ -64,3 +64,4 @@ nav:
     - rdap-srv/quick_start.md
     - rdap-srv/usage.md
     - rdap-srv/jscontact.md
+    - rdap-srv/bootstrap.md
