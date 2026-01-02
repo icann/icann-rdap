@@ -4,6 +4,7 @@ The `rdap` command is an easy-to-use, full-featured, command-line interface (CLI
 It supports RDAP bootstrapping, caching, different output formats, link following, and the following extensions:
 
 * Cidr0
+* Exts
 * JSContact
 * Redacted
 * SimpleRedaction

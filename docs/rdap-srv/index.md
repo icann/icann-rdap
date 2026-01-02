@@ -5,7 +5,7 @@ It can be used as a library or as a server started within its own process. It cu
 storage, though its storage layer is architected to accommodate a PostgreSQL backend if that is needed
 in the future.
 
-RDAP core support in this server is as follows:
+RDAP query support in this server is as follows:
 
 - [X] LDH Domain lookup (`/domain/ldh`)
 - [X] IDN U-Label lookup (`/domain/unicode`)
@@ -19,6 +19,16 @@ RDAP core support in this server is as follows:
 - [ ] Entity search
 - [X] Help (`/help`)
 
+This server explicityl supports the following extensions:
+
+- Cidr0
+- Exts
+- JSContact
+- Redacted
+- SimpleRedaction
+
+Other extensions, such as object tagging, can be placed in the `rdapConformance` array of data
+used in this server.
 
 ## Running the Server
 
