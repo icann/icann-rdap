@@ -380,18 +380,22 @@ impl SecureDns {
 pub struct DomainTtl0Data {
     /// The TTL value of the NS record.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "NS")]
     pub ns: Option<u32>,
 
     /// The TTL value of the DS record.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "DS")]
     pub ds: Option<u32>,
 
     /// The TTL value of the A record.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "A")]
     pub a: Option<u32>,
 
     /// The TTL value of the AAAA record.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "AAAA")]
     pub aaaa: Option<u32>,
 
     /// Remarks about the TTL.
@@ -419,22 +423,22 @@ impl DomainTtl0Data {
         }
     }
 
-    /// Getter for `a` ttl.
+    /// Getter for `A` ttl.
     pub fn a(&self) -> Option<u32> {
         self.a
     }
 
-    /// Getter for `aaaa` ttl.
+    /// Getter for `AAAA` ttl.
     pub fn aaaa(&self) -> Option<u32> {
         self.aaaa
     }
 
-    /// Getter for `ns` ttl.
+    /// Getter for `NS` ttl.
     pub fn ns(&self) -> Option<u32> {
         self.ns
     }
 
-    /// Getter for `ds` ttl.
+    /// Getter for `DS` ttl.
     pub fn ds(&self) -> Option<u32> {
         self.ds
     }
