@@ -87,6 +87,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -118,6 +119,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -149,6 +151,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -181,6 +184,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -212,6 +216,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -243,6 +248,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -276,6 +282,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -308,6 +315,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
@@ -336,6 +344,7 @@ mod tests {
             nameservers: None,
             public_ids: None,
             network: None,
+            ttl0_data: None,
         };
         let rdap = domain.to_response();
 
