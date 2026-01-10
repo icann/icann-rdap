@@ -7,23 +7,11 @@ to RDAP are a current work activity of the IETF's [REGEXT working group](https:/
 More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
 General information on RDAP can be found [here](https://rdap.rcode3.com/).
 
-About
------
+About, Usage, and Installation
+------------------------------
 
-This repository hosts 4 separate packages (i.e. Rust crates):
-
-* [icann-rdap-cli](icann-rdap-cli/README.md) is the Command Line Interface client and testing tool.
-* [icann-rdap-client](icann-rdap-client/README.md) is a Rust library handling making RDAP requests.
-* [icann-rdap-common](icann-rdap-common/README.md) is a Rust library of RDAP structures.
-* [icann-rdap-srv](icann-rdap-srv/README.md) is a simple, in-memory RDAP server. This package produces multiple executable binaries.
-
-![Example of rdap command](https://github.com/icann/icann-rdap/wiki/images/rdap_command.png)
-
-Installation and Usage
-----------------------
-
-See the [project wiki](https://github.com/icann/icann-rdap/wiki) for information on installation
-and usage of this software.
+Please see the [online user's manual](https://icann.github.io/icann-rdap/) for general information,
+installation, and usage of this software.
 
 License
 -------
