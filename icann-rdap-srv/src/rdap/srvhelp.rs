@@ -1,3 +1,5 @@
+use icann_rdap_common::prelude::normalize_extensions;
+
 use {
     axum::{extract::State, response::Response},
     axum_extra::typed_header::TypedHeader,
@@ -23,5 +25,6 @@ pub(crate) async fn srvhelp(
         srv_help = storage.get_srv_help(None).await?;
     }
 
+    let srv_help = normalize_extensions(srv_help);
     Ok(srv_help.response())
 }

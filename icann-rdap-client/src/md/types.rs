@@ -1,8 +1,5 @@
 use icann_rdap_common::{prelude::Remark, response::Stringish};
-use {
-    icann_rdap_common::prelude::ObjectCommon,
-    std::{any::TypeId, sync::LazyLock},
-};
+use {icann_rdap_common::prelude::ObjectCommon, std::sync::LazyLock};
 
 use {
     icann_rdap_common::{
@@ -16,18 +13,12 @@ use {
         ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_LENGTH, EXPIRES, HOST,
         STRICT_TRANSPORT_SECURITY,
     },
-    strum::EnumMessage,
-};
-
-use icann_rdap_common::check::{
-    CheckClass, CheckItem, CheckParams, Checks, GetChecks, CHECK_CLASS_LEN,
 };
 
 use super::{
-    checks_ul,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    FromMd, MdParams, ToMd, HR,
+    MdParams, ToMd, HR,
 };
 
 impl ToMd for RdapConformance {
@@ -36,7 +27,7 @@ impl ToMd for RdapConformance {
         md.push_str(
             &format!(
                 "{} Conformance Claims",
-                params.req_data.source_host.to_title_case()
+                params.http_data.host().to_title_case()
             )
             .to_header(5, params.options),
         );
@@ -48,19 +39,6 @@ impl ToMd for RdapConformance {
                     .to_words_title_case()
             ))
         });
-        self.get_checks(CheckParams::from_md_no_parent(params))
-            .items
-            .iter()
-            .filter(|item| params.check_types.contains(&item.check_class))
-            .for_each(|item| {
-                md.push_str(&format!(
-                    "* {}: {}\n",
-                    item.check_class.to_string().to_em(params.options),
-                    item.check
-                        .get_message()
-                        .expect("Check has no message. Coding error.")
-                ))
-            });
         md.push('\n');
         md
     }
@@ -114,8 +92,6 @@ impl ToMd for Link {
                 }
             }
         };
-        let checks = self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()));
-        md.push_str(&checks_ul(&checks, params));
         md.push('\n');
         md
     }
@@ -163,19 +139,6 @@ impl ToMd for NoticeOrRemark {
                 md.push_str(&format!("> {}\n\n", line.replace_md_chars()))
             }
         }
-        self.get_checks(CheckParams::from_md(params, TypeId::of::<Self>()))
-            .items
-            .iter()
-            .filter(|item| params.check_types.contains(&item.check_class))
-            .for_each(|item| {
-                md.push_str(&format!(
-                    "* {}: {}\n",
-                    &item.check_class.to_string().to_em(params.options),
-                    item.check
-                        .get_message()
-                        .expect("Check has no message. Coding error.")
-                ))
-            });
         if let Some(links) = &self.links {
             links
                 .iter()
@@ -219,11 +182,7 @@ impl ToMd for Common {
         if not_empty {
             md.push('\n');
             md.push_str(HR);
-            let header_text = format!(
-                "Response from {} at {}",
-                params.req_data.source_type,
-                params.req_data.source_host.to_title_case()
-            );
+            let header_text = format!("Response from {}", params.http_data.host().to_title_case());
             md.push_str(&header_text.to_header(params.heading_level, params.options));
         };
         if let Some(rdap_conformance) = &self.rdap_conformance {
@@ -262,7 +221,7 @@ pub static NAME_LEN: LazyLock<usize> = LazyLock::new(|| {
 });
 
 impl ToMd for HttpData {
-    fn to_md(&self, params: MdParams) -> String {
+    fn to_md(&self, _params: MdParams) -> String {
         let mut md = HR.to_string();
         md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, &self.host));
         if let Some(request_uri) = &self.request_uri {
@@ -296,19 +255,6 @@ impl ToMd for HttpData {
             ));
         }
         md.push_str(&format!(" * {RECEIVED:<NAME_LEN$}: {}\n", &self.received));
-        self.get_checks(CheckParams::from_md(params, TypeId::of::<NoticeOrRemark>()))
-            .items
-            .iter()
-            .filter(|item| params.check_types.contains(&item.check_class))
-            .for_each(|item| {
-                md.push_str(&format!(
-                    "* {}: {}\n",
-                    &item.check_class.to_string().to_em(params.options),
-                    item.check
-                        .get_message()
-                        .expect("Check has no message. Coding error.")
-                ))
-            });
         md
     }
 }
@@ -430,67 +376,5 @@ pub(crate) fn links_to_table(
             .and_nv_ref_maybe(&"Lang", &hreflang_s)
             .and_nv_ref_maybe(&"HTTP Ref", &link.href());
     }
-    table
-}
-
-pub(crate) fn checks_to_table(
-    checks: Vec<Checks>,
-    mut table: MultiPartTable,
-    params: MdParams,
-) -> MultiPartTable {
-    let mut filtered_checks: Vec<CheckItem> = checks
-        .into_iter()
-        .flat_map(|checks| checks.items)
-        .filter(|item| params.check_types.contains(&item.check_class))
-        .collect();
-
-    if !filtered_checks.is_empty() {
-        filtered_checks.sort();
-        filtered_checks.dedup();
-        table = table.header_ref(&"Checks");
-
-        // Informational
-        let class = CheckClass::Informational;
-        let ul: Vec<String> = filtered_checks
-            .iter()
-            .filter(|item| item.check_class == class)
-            .map(|item| item.check.get_message().unwrap_or_default().to_owned())
-            .collect();
-        table = table.nv_ul_ref(
-            &&class
-                .to_string()
-                .to_right_em(*CHECK_CLASS_LEN, params.options),
-            ul.iter().collect(),
-        );
-
-        // Specification Warning
-        let class = CheckClass::StdWarning;
-        let ul: Vec<String> = filtered_checks
-            .iter()
-            .filter(|item| item.check_class == class)
-            .map(|item| item.check.get_message().unwrap_or_default().to_owned())
-            .collect();
-        table = table.nv_ul_ref(
-            &class
-                .to_string()
-                .to_right_em(*CHECK_CLASS_LEN, params.options),
-            ul.iter().collect(),
-        );
-
-        // Specification Error
-        let class = CheckClass::StdError;
-        let ul: Vec<String> = filtered_checks
-            .iter()
-            .filter(|item| item.check_class == class)
-            .map(|item| item.check.get_message().unwrap_or_default().to_owned())
-            .collect();
-        table = table.nv_ul_ref(
-            &&class
-                .to_string()
-                .to_right_em(*CHECK_CLASS_LEN, params.options),
-            ul.iter().collect(),
-        );
-    }
-
     table
 }

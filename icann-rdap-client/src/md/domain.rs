@@ -1,28 +1,20 @@
-use std::any::TypeId;
-
 use icann_rdap_common::{
     dns_types::{DnsAlgorithmType, DnsDigestType},
     prelude::ObjectCommonFields,
     response::{Domain, SecureDns, Variant},
 };
 
-use icann_rdap_common::check::{CheckParams, GetChecks, GetSubChecks};
-
-use crate::rdap::registered_redactions::{self, text_or_registered_redaction};
-
 use super::{
-    redacted::REDACTED_TEXT,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    types::{checks_to_table, events_to_table, links_to_table, public_ids_to_table},
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    types::{events_to_table, links_to_table, public_ids_to_table},
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
 
         // header
         let header_text = self.get_header_text();
@@ -33,14 +25,11 @@ impl ToMd for Domain {
         );
 
         // multipart data
-        let mut table = MultiPartTable::new();
-
-        let domain_handle = text_or_registered_redaction(
-            params.root,
-            &registered_redactions::RedactedName::RegistryDomainId,
-            &self.object_common.handle,
-            REDACTED_TEXT,
-        );
+        let mut table = if params.highlight_simple_redactions {
+            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+        } else {
+            MultiPartTable::new()
+        };
 
         // summary
         table = table.summary(header_text);
@@ -53,7 +42,7 @@ impl ToMd for Domain {
             .header_ref(&"Identifiers")
             .and_nv_ref_maybe(&"LDH Name", &self.ldh_name)
             .and_nv_ref_maybe(&"Unicode Name", &self.unicode_name)
-            .and_nv_ref_maybe(&"Handle", &domain_handle);
+            .and_nv_ref_maybe(&"Handle", &self.handle());
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -72,22 +61,11 @@ impl ToMd for Domain {
         // remarks
         table = self.remarks().add_to_mptable(table, params);
 
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
-
         // render table
         md.push_str(&table.to_md(params));
 
         // entities
-        md.push_str(
-            &self
-                .object_common
-                .entities
-                .to_md(params.from_parent(typeid)),
-        );
+        md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // nameservers
         if let Some(nameservers) = &self.nameservers {
@@ -102,8 +80,10 @@ impl ToMd for Domain {
         }
 
         // redacted
-        if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+        if params.show_rfc9537_redactions {
+            if let Some(redacted) = &self.object_common.redacted {
+                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+            }
         }
 
         md.push('\n');
@@ -263,12 +243,15 @@ impl MdUtil for Domain {
 
 #[cfg(test)]
 mod tests {
-    use std::{any::TypeId, io::Write};
+    use std::io::Write;
 
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Domain, DsDatum, Event, Link, SecureDns, ToResponse, Variant, VariantName},
+        prelude::{
+            redacted::{Method, Name, Redacted},
+            Domain, DsDatum, Event, Link, SecureDns, ToResponse, Variant, VariantName,
+        },
     };
 
     use crate::{
@@ -292,17 +275,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -323,17 +304,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -362,17 +341,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -396,17 +373,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -432,17 +407,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -473,17 +446,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -522,17 +493,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -586,17 +555,15 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
@@ -652,23 +619,109 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Domain>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = domain.to_md(params);
 
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_ldh_and_secure_dns.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_and_redactions() {
+        // GIVEN domain
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .redacted(redactions)
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: true,
+            highlight_simple_redactions: false,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_redactions.md")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_domain_with_ldh_and_no_show_redactions() {
+        // GIVEN domain
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let domain = Domain::builder()
+            .ldh_name("foo.example.com")
+            .redacted(redactions)
+            .build();
+        let response = domain.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
+        };
+        let actual = domain.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_no_show_redactions.md")
+            .unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }

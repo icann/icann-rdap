@@ -1,8 +1,9 @@
 //! Common data structures, etc...
-use {
-    serde::{Deserialize, Serialize},
-    strum_macros::{AsRefStr, Display, EnumString},
-};
+use std::{collections::HashSet, ops::DerefMut};
+
+use serde::{Deserialize, Serialize};
+
+use crate::prelude::ContentExtensions;
 
 use super::lenient::{Stringish, VectorStringish};
 
@@ -27,96 +28,8 @@ impl std::ops::Deref for Extension {
 /// The RDAP conformance array.
 ///
 /// This is a vec of [Extension] specifically to be able to handle one or more
-/// unknown extension ids. Known extension identifiers are enumerated by [ExtensionId].
+/// unknown extension ids. Known extension identifiers are enumerated by [crate::prelude::ExtensionId].
 pub type RdapConformance = Vec<Extension>;
-
-/// Extension Identifiers
-///
-/// This enum uses [EnumString] and [AsRefStr] to allow serialization
-/// and deserialization of the variant to the matching name in the IANA registry.
-///
-/// To get the variant from a string:
-///
-/// ```rust
-/// use std::str::FromStr;
-/// use icann_rdap_common::prelude::*;
-///
-/// let cidr0 = ExtensionId::from_str("cidr0").unwrap();
-/// assert_eq!(cidr0, ExtensionId::Cidr0);
-/// println!("{}", cidr0.to_string());
-/// ```
-///
-/// To get the enum variants as a string:
-///
-/// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let s = ExtensionId::Cidr0.to_string();
-/// ```
-///
-/// To get the enum variants as a &str:
-///
-/// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// let s = ExtensionId::Cidr0.as_ref();
-/// ```
-#[derive(Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr)]
-pub enum ExtensionId {
-    #[strum(serialize = "rdap_level_0")]
-    RdapLevel0,
-    #[strum(serialize = "arin_originas0")]
-    ArinOriginAs0,
-    #[strum(serialize = "artRecord")]
-    ArtRecord,
-    #[strum(serialize = "cidr0")]
-    Cidr0,
-    #[strum(serialize = "farv1")]
-    Farv1,
-    #[strum(serialize = "fred")]
-    Fred,
-    #[strum(serialize = "extErr")]
-    ExtendedError, // TODO register this extension
-    #[strum(serialize = "icann_rdap_response_profile_0")]
-    IcannRdapResponseProfile0,
-    #[strum(serialize = "icann_rdap_response_profile_1")]
-    IcannRdapResponseProfile1,
-    #[strum(serialize = "icann_rdap_technical_implementation_guide_0")]
-    IcannRdapTechnicalImplementationGuide0,
-    #[strum(serialize = "icann_rdap_technical_implementation_guide_1")]
-    IcannRdapTechnicalImplementationGuide1,
-    #[strum(serialize = "nro_rdap_profile_0")]
-    NroRdapProfile0,
-    #[strum(serialize = "nro_rdap_profile_asn_flat_0")]
-    NroRdapProfileAsnFlat0,
-    #[strum(serialize = "nro_rdap_profile_asn_hierarchical_0")]
-    NroRdapProfileAsnHierarchical0,
-    #[strum(serialize = "paging")]
-    Paging,
-    #[strum(serialize = "platformNS")]
-    PlatformNs,
-    #[strum(serialize = "rdap_objectTag")]
-    RdapObjectTag,
-    #[strum(serialize = "redacted")]
-    Redacted,
-    #[strum(serialize = "redirect_with_content")]
-    RedirectWithContent,
-    #[strum(serialize = "regType")]
-    RegType,
-    #[strum(serialize = "reverse_search")]
-    ReverseSearch,
-    #[strum(serialize = "sorting")]
-    Sorting,
-    #[strum(serialize = "subsetting")]
-    Subsetting,
-}
-
-impl ExtensionId {
-    /// Gets an [Extension] from an Extension ID.
-    pub fn to_extension(&self) -> Extension {
-        Extension(self.to_string())
-    }
-}
 
 /// HrefLang, either a string or an array of strings.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -366,12 +279,14 @@ impl Notice {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         let nr = NoticeOrRemark::builder()
             .description(description)
             .and_title(title)
             .links(links)
             .and_nr_type(nr_type)
+            .and_simple_redaction_keys(simple_redaction_keys)
             .build();
         Self(nr)
     }
@@ -382,6 +297,12 @@ impl std::ops::Deref for Notice {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl ContentExtensions for Notice {
+    fn content_extensions(&self) -> HashSet<super::ExtensionId> {
+        self.0.content_extensions()
     }
 }
 
@@ -426,6 +347,12 @@ pub type Remarks = Vec<Remark>;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Remark(pub NoticeOrRemark);
 
+impl DerefMut for Remark {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 #[buildstructor::buildstructor]
 impl Remark {
     /// Builds an RDAP notice.
@@ -435,12 +362,14 @@ impl Remark {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         let nr = NoticeOrRemark::builder()
             .description(description)
             .and_title(title)
             .links(links)
             .and_nr_type(nr_type)
+            .and_simple_redaction_keys(simple_redaction_keys)
             .build();
         Self(nr)
     }
@@ -451,6 +380,12 @@ impl std::ops::Deref for Remark {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl ContentExtensions for Remark {
+    fn content_extensions(&self) -> HashSet<super::ExtensionId> {
+        self.0.content_extensions()
     }
 }
 
@@ -508,6 +443,11 @@ pub struct NoticeOrRemark {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nr_type: Option<String>,
+
+    /// Redaction key from the simple redaction extension.
+    #[serde(rename = "simpleRedaction_keys")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub simple_redaction_keys: Option<Vec<String>>,
 }
 
 #[buildstructor::buildstructor]
@@ -519,12 +459,14 @@ impl NoticeOrRemark {
         description: Vec<String>,
         links: Vec<Link>,
         nr_type: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         Self {
             title,
             description: Some(VectorStringish::from(description)),
             links: (!links.is_empty()).then_some(links),
             nr_type,
+            simple_redaction_keys,
         }
     }
 
@@ -536,6 +478,7 @@ impl NoticeOrRemark {
         description: Option<Vec<String>>,
         links: Option<Vec<Link>>,
         nr_type: Option<String>,
+        simple_redaction_keys: Option<Vec<String>>,
     ) -> Self {
         let d = description
             .is_some()
@@ -545,6 +488,7 @@ impl NoticeOrRemark {
             description: d,
             links,
             nr_type,
+            simple_redaction_keys,
         }
     }
 
@@ -591,6 +535,16 @@ impl NoticeOrRemark {
     /// These values are suppose to come from the IANA RDAP registry.
     pub fn nr_type(&self) -> Option<&str> {
         self.nr_type.as_deref()
+    }
+
+    /// Returns the simple redactions keys.
+    pub fn simple_redaction_keys(&self) -> &[String] {
+        self.simple_redaction_keys.as_deref().unwrap_or_default()
+    }
+
+    /// Returns true if a key is a simple redaction key for this notice or remark.
+    pub fn has_simple_redaction_key(&self, key: &str) -> bool {
+        self.simple_redaction_keys().iter().any(|k| k.eq(key))
     }
 }
 
@@ -651,6 +605,16 @@ impl ToRemarks for Vec<NoticeOrRemark> {
     fn to_opt_remarks(self) -> Option<Vec<Remark>> {
         let remarks = self.to_remarks();
         (!remarks.is_empty()).then_some(remarks)
+    }
+}
+
+impl ContentExtensions for NoticeOrRemark {
+    fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
+        if self.simple_redaction_keys.is_some() {
+            HashSet::from([super::ExtensionId::SimpleRedaction])
+        } else {
+            HashSet::new()
+        }
     }
 }
 
@@ -1130,7 +1094,7 @@ mod tests {
             .build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
@@ -1155,7 +1119,7 @@ mod tests {
         let mut oc = ObjectCommon::domain().build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")
@@ -1186,7 +1150,7 @@ mod tests {
             .build();
 
         // WHEN set self link
-        oc = oc.set_self_link(
+        oc = oc.with_self_link(
             Link::builder()
                 .href("http://foo.example")
                 .value("http://foo.example")

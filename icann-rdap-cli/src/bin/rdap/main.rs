@@ -1,3 +1,8 @@
+use std::collections::HashSet;
+
+use enumflags2::BitFlags;
+use icann_rdap_cli::args::target::{params_from_args, LinkTargetArgs};
+use icann_rdap_client::http::default_exts_list;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -6,8 +11,7 @@ use {
     error::RdapCliError,
     icann_rdap_cli::dirs,
     icann_rdap_client::http::{create_client, Client, ClientConfig},
-    icann_rdap_common::check::CheckClass,
-    query::{InrBackupBootstrap, ProcessType, ProcessingParams, TldLookup},
+    query::{InrBackupBootstrap, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
     tracing_subscriber::filter::LevelFilter,
@@ -22,7 +26,7 @@ use {
     tokio::{join, task::spawn_blocking},
 };
 
-use crate::query::do_query;
+use crate::query::{exec_queries, RedactionFlag};
 
 pub mod bootstrap;
 pub mod error;
@@ -55,6 +59,10 @@ impl CliStyles {
 #[command(group(
             ArgGroup::new("base_specify")
                 .args(["base", "base_url"]),
+        ))]
+#[command(group(
+            ArgGroup::new("output")
+                .args(["output_type", "json", "rpsl"]),
         ))]
 #[command(before_long_help(BEFORE_LONG_HELP))]
 #[command(after_long_help(AFTER_LONG_HELP))]
@@ -144,35 +152,28 @@ struct Cli {
     )]
     output_type: OtypeArg,
 
-    /// Check type.
-    ///
-    /// Specifies the type of checks to conduct on the RDAP
-    /// responses. These are RDAP specific checks and not
-    /// JSON validation which is done automatically. This
-    /// argument may be specified multiple times to include
-    /// multiple check types.
-    #[arg(short = 'C', long, required = false, value_enum)]
-    check_type: Vec<CheckTypeArg>,
+    /// Shortcut for "-O pretty-compact-json"
+    #[arg(long, required = false, conflicts_with = "output_type")]
+    json: bool,
 
-    /// Error if RDAP checks found.
-    ///
-    /// The program will log error messages for non-info
-    /// checks found in the RDAP response(s) and exit with a
-    /// non-zero status.
-    #[arg(long, env = "RDAP_ERROR_ON_CHECK")]
-    error_on_checks: bool,
+    /// Shortcut for "-O rpsl"
+    #[arg(long, required = false, conflicts_with = "output_type")]
+    rpsl: bool,
 
-    /// Process Type
+    #[clap(flatten)]
+    link_target_args: LinkTargetArgs,
+
+    /// Redaction flags.
     ///
-    /// Specifies a process for handling the data.
+    /// Control the processing and display of redactions.
     #[arg(
-        short = 'p',
         long,
         required = false,
-        env = "RDAP_PROCESS_TYPE",
+        env = "RDAP_REDACTION_FLAGS",
+        value_delimiter = ',',
         value_enum
     )]
-    process_type: Option<ProcTypeArg>,
+    redaction_flag: Vec<RedactionFlagArg>,
 
     /// Pager Usage.
     ///
@@ -295,6 +296,10 @@ struct Cli {
     #[arg(long, required = false, env = "RDAP_MAX_RETRIES", default_value = "1")]
     max_retries: u16,
 
+    /// Do not send an exts_list media type parameter.
+    #[arg(long, required = false, env = "RDAP_NO_EXTS_LIST")]
+    no_exts_list: bool,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -324,6 +329,9 @@ enum QtypeArg {
 
     /// A-Label Domain Lookup
     ALabel,
+
+    /// Reverse Domain Lookup
+    Rdns,
 
     /// Entity Lookup
     Entity,
@@ -403,30 +411,6 @@ enum OtypeArg {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum CheckTypeArg {
-    /// All checks.
-    All,
-
-    /// Informational items.
-    Info,
-
-    /// Specification Notes
-    SpecNote,
-
-    /// Checks for STD 95 warnings.
-    StdWarn,
-
-    /// Checks for STD 95 errors.
-    StdError,
-
-    /// Cidr0 errors.
-    Cidr0Error,
-
-    /// ICANN Profile errors.
-    IcannError,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum LogLevel {
     /// No logging.
     Off,
@@ -445,15 +429,6 @@ enum LogLevel {
 
     /// Log messages appropriate for software development.
     Trace,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum ProcTypeArg {
-    /// Only display the data from the domain registrar.
-    Registrar,
-
-    /// Only display the data from the domain registry.
-    Registry,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -486,6 +461,21 @@ enum InrBackupBootstrapArg {
     None,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum RedactionFlagArg {
+    /// Highlight Simple Redactions.
+    HighlightSimpleRedactions,
+
+    /// Show RFC 9537 redaction directives.
+    ShowRfc9537,
+
+    /// Do not turn RFC 9537 redactions into Simple Redactions.
+    DoNotSimplifyRfc9537,
+
+    /// Process RFC 9537 redactions.
+    DoRfc9537Redactions,
+}
+
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
@@ -504,9 +494,9 @@ pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
         let ec = e.exit_code();
         match ec {
-            202 => error!("Use -T or --allow-http to allow insecure HTTP connections."),
             // we use eprintln! becuase at the point where this is thrown, the tracing subscriber is not yet instantiated.
-            205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: -O rpsl.\n"),
+            205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
+            206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
             _ => eprintln!("\n{e}\n"),
         };
         return e;
@@ -535,27 +525,33 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         PagerType::Auto => std::io::stdout().is_terminal(),
     };
 
-    let output_type = match cli.output_type {
-        OtypeArg::Auto => {
-            if std::io::stdout().is_terminal() {
-                OutputType::RenderedMarkdown
-            } else {
-                OutputType::Json
+    let output_type = if cli.json {
+        OutputType::PrettyCompactJson
+    } else if cli.rpsl {
+        OutputType::Rpsl
+    } else {
+        match cli.output_type {
+            OtypeArg::Auto => {
+                if std::io::stdout().is_terminal() {
+                    OutputType::RenderedMarkdown
+                } else {
+                    OutputType::Json
+                }
             }
+            OtypeArg::RenderedMarkdown => OutputType::RenderedMarkdown,
+            OtypeArg::Markdown => OutputType::Markdown,
+            OtypeArg::Json => OutputType::Json,
+            OtypeArg::PrettyJson => OutputType::PrettyJson,
+            OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
+            OtypeArg::JsonExtra => OutputType::JsonExtra,
+            OtypeArg::GtldWhois => OutputType::GtldWhois,
+            OtypeArg::Rpsl => OutputType::Rpsl,
+            OtypeArg::Url => OutputType::Url,
+            OtypeArg::StatusText => OutputType::StatusText,
+            OtypeArg::StatusJson => OutputType::StatusJson,
+            OtypeArg::EventText => OutputType::EventText,
+            OtypeArg::EventJson => OutputType::EventJson,
         }
-        OtypeArg::RenderedMarkdown => OutputType::RenderedMarkdown,
-        OtypeArg::Markdown => OutputType::Markdown,
-        OtypeArg::Json => OutputType::Json,
-        OtypeArg::PrettyJson => OutputType::PrettyJson,
-        OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
-        OtypeArg::JsonExtra => OutputType::JsonExtra,
-        OtypeArg::GtldWhois => OutputType::GtldWhois,
-        OtypeArg::Rpsl => OutputType::Rpsl,
-        OtypeArg::Url => OutputType::Url,
-        OtypeArg::StatusText => OutputType::StatusText,
-        OtypeArg::StatusJson => OutputType::StatusJson,
-        OtypeArg::EventText => OutputType::EventText,
-        OtypeArg::EventJson => OutputType::EventJson,
     };
 
     // throw error if output type is inappropriate
@@ -563,45 +559,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         return Err(RdapCliError::GtldWhoisOutputNotImplemented);
     }
 
-    let process_type = match cli.process_type {
-        Some(p) => match p {
-            ProcTypeArg::Registrar => ProcessType::Registrar,
-            ProcTypeArg::Registry => ProcessType::Registry,
-        },
-        None => ProcessType::Standard,
-    };
-
-    let check_types = if cli.check_type.is_empty() {
-        vec![
-            CheckClass::Informational,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
-            CheckClass::Cidr0Error,
-            CheckClass::IcannError,
-        ]
-    } else if cli.check_type.contains(&CheckTypeArg::All) {
-        vec![
-            CheckClass::Informational,
-            CheckClass::SpecificationNote,
-            CheckClass::StdWarning,
-            CheckClass::StdError,
-            CheckClass::Cidr0Error,
-            CheckClass::IcannError,
-        ]
-    } else {
-        cli.check_type
-            .iter()
-            .map(|c| match c {
-                CheckTypeArg::Info => CheckClass::Informational,
-                CheckTypeArg::SpecNote => CheckClass::SpecificationNote,
-                CheckTypeArg::StdWarn => CheckClass::StdWarning,
-                CheckTypeArg::StdError => CheckClass::StdError,
-                CheckTypeArg::Cidr0Error => CheckClass::Cidr0Error,
-                CheckTypeArg::IcannError => CheckClass::IcannError,
-                CheckTypeArg::All => panic!("check type for all should have been handled."),
-            })
-            .collect::<Vec<CheckClass>>()
-    };
+    let link_params = params_from_args(&query_type, cli.link_target_args);
 
     let bootstrap_type = if let Some(ref tag) = cli.base {
         BootstrapType::Hint(tag.to_string())
@@ -621,18 +579,38 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         InrBackupBootstrapArg::None => InrBackupBootstrap::None,
     };
 
+    let mut redaction_flags: BitFlags<RedactionFlag> = BitFlags::EMPTY;
+    for flag in cli.redaction_flag {
+        match flag {
+            RedactionFlagArg::HighlightSimpleRedactions => {
+                redaction_flags |= RedactionFlag::HighlightSimpleRedactions
+            }
+            RedactionFlagArg::ShowRfc9537 => redaction_flags |= RedactionFlag::ShowRfc9537,
+            RedactionFlagArg::DoNotSimplifyRfc9537 => {
+                redaction_flags |= RedactionFlag::DoNotSimplifyRfc9537
+            }
+            RedactionFlagArg::DoRfc9537Redactions => {
+                redaction_flags |= RedactionFlag::DoRfc9537Redactions
+            }
+        }
+    }
+
     let processing_params = ProcessingParams {
         bootstrap_type,
         output_type,
-        check_types,
-        process_type,
         tld_lookup,
         inr_backup_bootstrap,
-        error_on_checks: cli.error_on_checks,
         no_cache: cli.no_cache,
         max_cache_age: cli.max_cache_age,
+        redaction_flags,
+        link_params,
     };
 
+    let exts_list = if cli.no_exts_list {
+        HashSet::default()
+    } else {
+        default_exts_list()
+    };
     let client_config = ClientConfig::builder()
         .user_agent_suffix("CLI")
         .https_only(!cli.allow_http)
@@ -642,6 +620,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         .max_retry_secs(cli.max_retry_secs)
         .def_retry_secs(cli.def_retry_secs)
         .max_retries(cli.max_retries)
+        .exts_list(exts_list)
         .build();
     let rdap_client = create_client(&client_config);
     if let Ok(client) = rdap_client {
@@ -712,7 +691,7 @@ async fn exec<W: std::io::Write>(
     } else {
         info!("query is {query_type}");
     }
-    let result = do_query(query_type, processing_params, client, &mut output).await;
+    let result = exec_queries(query_type, processing_params, client, &mut output).await;
     match result {
         Ok(_) => Ok(()),
         Err(error) => {
@@ -737,6 +716,7 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::Autnum => QueryType::autnum(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
+        QtypeArg::Rdns => QueryType::rdns_ipstr(&query_value)?,
         QtypeArg::Entity => QueryType::Entity(query_value),
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),

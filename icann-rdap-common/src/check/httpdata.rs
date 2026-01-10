@@ -1,9 +1,13 @@
-use crate::{httpdata::HttpData, media_types::RDAP_MEDIA_TYPE, response::types::ExtensionId};
+use crate::{httpdata::HttpData, media_types::RDAP_MEDIA_TYPE, prelude::ExtensionId};
 
 use super::{Check, Checks, GetChecks};
 
 impl GetChecks for HttpData {
-    fn get_checks(&self, params: crate::check::CheckParams) -> crate::check::Checks {
+    fn get_checks(
+        &self,
+        index: Option<usize>,
+        params: crate::check::CheckParams,
+    ) -> crate::check::Checks {
         let mut items = vec![];
 
         // RFC checks
@@ -25,7 +29,7 @@ impl GetChecks for HttpData {
             items.push(Check::ContentTypeIsAbsent.check_item());
         }
 
-        // checks for ICANN profile
+        // checks for Gtld profile
         if params
             .root
             .has_extension_id(ExtensionId::IcannRdapTechnicalImplementationGuide0)
@@ -51,6 +55,7 @@ impl GetChecks for HttpData {
 
         Checks {
             rdap_struct: super::RdapStructure::HttpData,
+            index,
             items,
             sub_checks: vec![],
         }
@@ -63,8 +68,8 @@ mod tests {
         check::{Check, CheckParams, GetChecks},
         httpdata::HttpData,
         media_types::{JSON_MEDIA_TYPE, RDAP_MEDIA_TYPE},
-        prelude::{Common, ObjectCommon, ToResponse},
-        response::{domain::Domain, types::ExtensionId},
+        prelude::{Common, ExtensionId, ObjectCommon, ToResponse},
+        response::domain::Domain,
     };
 
     #[test]
@@ -89,7 +94,7 @@ mod tests {
         let http_data = HttpData::example().content_type(JSON_MEDIA_TYPE).build();
 
         // WHEN checks are run
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is found
         assert!(checks
@@ -120,7 +125,7 @@ mod tests {
         let http_data = HttpData::example().content_type(RDAP_MEDIA_TYPE).build();
 
         // WHEN checks are run
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is not found
         assert!(!checks
@@ -152,7 +157,7 @@ mod tests {
         let http_data = HttpData::example().content_type(mt).build();
 
         // WHEN checks are run
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is not found
         assert!(!checks
@@ -183,7 +188,7 @@ mod tests {
         let http_data = HttpData::example().build();
 
         // WHEN checks are run
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN no media type check is found
         assert!(checks
@@ -214,7 +219,7 @@ mod tests {
         let http_data = HttpData::example().access_control_allow_origin("*").build();
 
         // WHEN running checks
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN no check is given
         assert!(!checks
@@ -247,7 +252,7 @@ mod tests {
             .build();
 
         // WHEN running checks
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN the check is found
         assert!(checks
@@ -278,7 +283,7 @@ mod tests {
         let http_data = HttpData::example().build();
 
         // WHEN running checks
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN check for missing cors is found
         dbg!(&checks);
@@ -310,7 +315,7 @@ mod tests {
         let http_data = HttpData::now().scheme("https").host("example.com").build();
 
         // WHEN running checks
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN then check for must use https is not present
         assert!(!checks.items.iter().any(|c| c.check == Check::MustUseHttps));
@@ -338,7 +343,7 @@ mod tests {
         let http_data = HttpData::now().scheme("http").host("example.com").build();
 
         // WHEN running checks
-        let checks = http_data.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN check for must use https is found
         assert!(checks.items.iter().any(|c| c.check == Check::MustUseHttps));

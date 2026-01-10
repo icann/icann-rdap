@@ -15,7 +15,7 @@ use {
 
 use crate::{
     bootstrap::init_bootstrap,
-    config::{ListenConfig, ServiceConfig, StorageType},
+    config::{JsContactConversion, ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
     storage::{
@@ -163,6 +163,9 @@ pub trait ServiceState: std::fmt::Debug {
     /// If returns true, this indicates the server has been configured to do
     /// bootstrapping.
     fn get_bootstrap(&self) -> bool;
+
+    /// Get the JsContactConversion configuration option.
+    fn get_jscontact_conversion(&self) -> JsContactConversion;
 }
 
 /// State that is passed to the HTTP service router and used by functions
@@ -171,6 +174,7 @@ pub trait ServiceState: std::fmt::Debug {
 pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
     pub bootstrap: bool,
+    pub jscontact_conversion: JsContactConversion,
 }
 
 impl AppState<Mem> {
@@ -184,6 +188,7 @@ impl AppState<Mem> {
         Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
+            jscontact_conversion: service_config.jscontact_conversion,
         })
     }
 }
@@ -205,6 +210,7 @@ impl AppState<Pg> {
         Ok(Self {
             storage,
             bootstrap: service_config.bootstrap,
+            jscontact_conversion: service_config.jscontact_conversion,
         })
     }
 }
@@ -224,6 +230,10 @@ impl ServiceState for AppState<Pg> {
     fn get_bootstrap(&self) -> bool {
         self.bootstrap
     }
+
+    fn get_jscontact_conversion(&self) -> JsContactConversion {
+        self.jscontact_conversion
+    }
 }
 
 #[async_trait]
@@ -234,5 +244,9 @@ impl ServiceState for AppState<Mem> {
 
     fn get_bootstrap(&self) -> bool {
         self.bootstrap
+    }
+
+    fn get_jscontact_conversion(&self) -> JsContactConversion {
+        self.jscontact_conversion
     }
 }

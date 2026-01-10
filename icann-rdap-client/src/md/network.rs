@@ -1,21 +1,13 @@
-use std::any::TypeId;
-
-use icann_rdap_common::{
-    check::{CheckParams, GetChecks, GetSubChecks},
-    prelude::ObjectCommonFields,
-    response::Network,
-};
+use icann_rdap_common::{prelude::ObjectCommonFields, response::Network};
 
 use super::{
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    types::checks_to_table,
-    FromMd, MdHeaderText, MdParams, MdUtil, ToMd,
+    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Network {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
         md.push_str(&self.common.to_md(params));
 
@@ -27,7 +19,11 @@ impl ToMd for Network {
         );
 
         // multipart data
-        let mut table = MultiPartTable::new();
+        let mut table = if params.highlight_simple_redactions {
+            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+        } else {
+            MultiPartTable::new()
+        };
 
         // summary
         table = table.summary(header_text);
@@ -51,26 +47,17 @@ impl ToMd for Network {
         // remarks
         table = self.remarks().add_to_mptable(table, params);
 
-        // checks
-        let check_params = CheckParams::from_md(params, typeid);
-        let mut checks = self.object_common.get_sub_checks(check_params);
-        checks.push(self.get_checks(check_params));
-        table = checks_to_table(checks, table, params);
-
         // render table
         md.push_str(&table.to_md(params));
 
         // entities
-        md.push_str(
-            &self
-                .object_common
-                .entities
-                .to_md(params.from_parent(typeid)),
-        );
+        md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if let Some(redacted) = &self.object_common.redacted {
-            md.push_str(&redacted.as_slice().to_md(params.from_parent(typeid)));
+        if params.show_rfc9537_redactions {
+            if let Some(redacted) = &self.object_common.redacted {
+                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
+            }
         }
 
         md.push('\n');
@@ -107,12 +94,15 @@ impl MdUtil for Network {
 
 #[cfg(test)]
 mod tests {
-    use std::{any::TypeId, io::Write};
+    use std::io::Write;
 
     use goldenfile::Mint;
     use icann_rdap_common::{
         httpdata::HttpData,
-        prelude::{Entity, Network, Remark, ToResponse},
+        prelude::{
+            redacted::{Method, Name, Redacted},
+            Network, Remark, ToResponse,
+        },
     };
 
     use crate::{
@@ -151,23 +141,113 @@ mod tests {
         let req_data = RequestData {
             req_number: 1,
             req_target: false,
-            source_host: "example",
-            source_type: crate::rdap::SourceType::DomainRegistry,
         };
         let params = MdParams {
             heading_level: 1,
             root: &response,
             http_data: &http_data,
-            parent_type: TypeId::of::<Entity>(),
-            check_types: &[],
             options: &MdOptions::default(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         };
         let actual = net.to_md(params);
 
         // THEN compare with golden file
         let mut mint = Mint::new(MINT_PATH);
         let mut expected = mint.new_goldenfile("with_handle_and_remarks.md").unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_network_with_handle_and_redactions() {
+        // GIVEN network
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let net = Network::builder()
+            .handle("123-ABC")
+            .cidr("199.1.0.0/16")
+            .redacted(redactions)
+            .build()
+            .unwrap();
+        let response = net.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: true,
+            highlight_simple_redactions: false,
+        };
+        let actual = net.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_redactions.md")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_md_network_with_handle_and_no_shwo_redactions() {
+        // GIVEN network
+        let redactions = vec![
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Name").build())
+                .method(Method::Removal)
+                .build(),
+            Redacted::builder()
+                .name(Name::builder().type_field("Tech Email").build())
+                .method(Method::Removal)
+                .build(),
+        ];
+        let net = Network::builder()
+            .handle("123-ABC")
+            .cidr("199.1.0.0/16")
+            .redacted(redactions)
+            .build()
+            .unwrap();
+        let response = net.clone().to_response();
+
+        // WHEN represented as markdown
+        let http_data = HttpData::example().build();
+        let req_data = RequestData {
+            req_number: 1,
+            req_target: false,
+        };
+        let params = MdParams {
+            heading_level: 1,
+            root: &response,
+            http_data: &http_data,
+            options: &MdOptions::default(),
+            req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
+        };
+        let actual = net.to_md(params);
+
+        // THEN compare with golden file
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("with_handle_and_no_show_redactions.md")
+            .unwrap();
         expected.write_all(actual.as_bytes()).unwrap();
     }
 }

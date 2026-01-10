@@ -413,12 +413,12 @@ pub async fn trigger_update(data_dir: &str) -> Result<(), RdapServerError> {
 }
 
 fn change_self_link<T: GetSelfLink + SelfLink>(mut object: T, segment: &str, id: &str) -> T {
-    if let Some(self_link) = object.get_self_link() {
+    if let Some(self_link) = object.self_link() {
         if let Some(self_href) = &self_link.href {
             if let Some(self_href_split) = self_href.rsplit_once(segment) {
                 let mut new_self_link = self_link.clone();
                 new_self_link.href = Some(format!("{}{segment}/{}", self_href_split.0, id));
-                object = object.set_self_link(new_self_link);
+                object = object.with_self_link(new_self_link);
             } else {
                 warn!("Unable to rewrite self link for {segment} {}", id);
             }
@@ -782,7 +782,7 @@ mod tests {
             actual.ldh_name.as_ref().expect("no ldhname on domain"),
             "bar.example"
         );
-        let self_link = actual.get_self_link().expect("self link messing");
+        let self_link = actual.self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/domain/bar.example"
@@ -816,7 +816,7 @@ mod tests {
                 .expect("no handle on entity"),
             &Stringish::from("bar")
         );
-        let self_link = actual.get_self_link().expect("self link messing");
+        let self_link = actual.self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/entity/bar"
@@ -847,7 +847,7 @@ mod tests {
             actual.ldh_name.as_ref().expect("no ldhname on nameserver"),
             "ns.bar.example"
         );
-        let self_link = actual.get_self_link().expect("self link messing");
+        let self_link = actual.self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/nameserver/ns.bar.example"
@@ -884,7 +884,7 @@ mod tests {
             *actual.end_autnum.as_ref().expect("no end on autnum"),
             Numberish::<u32>::from(999)
         );
-        let self_link = actual.get_self_link().expect("self link messing");
+        let self_link = actual.self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has href"),
             "http://reg.example/autnum/900"
@@ -934,7 +934,7 @@ mod tests {
         let v4cidr = cidr0.first().expect("cidr0 is empty");
         assert_eq!(v4cidr.prefix(), Some("11.0.0.0".to_string()));
         assert_eq!(v4cidr.length(), Some(24));
-        let self_link = actual.get_self_link().expect("self link messing");
+        let self_link = actual.self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/ip/11.0.0.0/24"
@@ -983,7 +983,7 @@ mod tests {
         let v4cidr = cidr0.first().expect("cidr0 is empty");
         assert_eq!(v4cidr.prefix(), Some("11.0.0.0".to_string()));
         assert_eq!(v4cidr.length(), Some(24));
-        let self_link = actual.get_self_link().expect("self link messing");
+        let self_link = actual.self_link().expect("self link messing");
         assert_eq!(
             self_link.href.as_ref().expect("link has no href"),
             "http://reg.example/ip/11.0.0.0/24"

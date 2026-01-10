@@ -1,5 +1,3 @@
-use std::any::TypeId;
-
 use icann_rdap_common::response::{
     DomainSearchResults, EntitySearchResults, NameserverSearchResults,
 };
@@ -8,13 +6,11 @@ use super::{MdHeaderText, MdParams, MdUtil, ToMd};
 
 impl ToMd for DomainSearchResults {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
         self.results.iter().for_each(|result| {
             md.push_str(&result.to_md(MdParams {
                 heading_level: params.heading_level + 1,
-                parent_type: typeid,
                 ..params
             }))
         });
@@ -25,13 +21,11 @@ impl ToMd for DomainSearchResults {
 
 impl ToMd for NameserverSearchResults {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
         self.results.iter().for_each(|result| {
             md.push_str(&result.to_md(MdParams {
                 heading_level: params.heading_level + 1,
-                parent_type: typeid,
                 ..params
             }))
         });
@@ -42,13 +36,11 @@ impl ToMd for NameserverSearchResults {
 
 impl ToMd for EntitySearchResults {
     fn to_md(&self, params: MdParams) -> String {
-        let typeid = TypeId::of::<Self>();
         let mut md = String::new();
-        md.push_str(&self.common.to_md(params.from_parent(typeid)));
+        md.push_str(&self.common.to_md(params.from_parent()));
         self.results.iter().for_each(|result| {
             md.push_str(&result.to_md(MdParams {
                 heading_level: params.heading_level + 1,
-                parent_type: typeid,
                 ..params
             }))
         });

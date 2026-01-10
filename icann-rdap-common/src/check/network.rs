@@ -4,52 +4,58 @@ use cidr::IpCidr;
 
 use crate::{prelude::Stringish, response::network::Network};
 
-use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks};
+use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks};
 
 impl GetChecks for Network {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
-        let sub_checks = if params.do_subchecks {
-            let mut sub_checks: Vec<Checks> = self
-                .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
+        let mut items = vec![];
+
+        let sub_checks = {
+            let mut sub_checks: Vec<Checks> = GetGroupChecks::get_group_checks(
+                &self.common,
+                params.from_parent(TypeId::of::<Self>()),
+            );
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
+                    .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
             if let Some(cidr0) = &self.cidr0_cidrs {
-                let check = match self
-                    .network_type
-                    .as_ref()
-                    .unwrap_or(&Stringish::from("v4"))
-                    .as_ref()
-                {
-                    "v6" | "V6" => (Check::Cidr0V6PrefixIsAbsent, Check::Cidr0V6LengthIsAbsent),
-                    _ => (Check::Cidr0V4PrefixIsAbsent, Check::Cidr0V4LengthIsAbsent),
-                };
-                cidr0.iter().for_each(|cidr| {
-                    if cidr.prefix().is_none() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Cidr0,
-                            items: vec![check.0.check_item()],
-                            sub_checks: vec![],
-                        })
+                if cidr0.is_empty() {
+                    items.push(Check::Cidr0ArrayIsEmpty.check_item());
+                } else {
+                    let check = match self
+                        .network_type
+                        .as_ref()
+                        .unwrap_or(&Stringish::from("v4"))
+                        .as_ref()
+                    {
+                        "v6" | "V6" => (Check::Cidr0V6PrefixIsAbsent, Check::Cidr0V6LengthIsAbsent),
+                        _ => (Check::Cidr0V4PrefixIsAbsent, Check::Cidr0V4LengthIsAbsent),
                     };
-                    if cidr.length().is_none() {
-                        sub_checks.push(Checks {
-                            rdap_struct: super::RdapStructure::Cidr0,
-                            items: vec![check.1.check_item()],
-                            sub_checks: vec![],
-                        })
-                    };
-                })
+                    cidr0.iter().enumerate().for_each(|(i, cidr)| {
+                        if cidr.prefix().is_none() {
+                            sub_checks.push(Checks {
+                                rdap_struct: super::RdapStructure::Cidr0,
+                                index: Some(i),
+                                items: vec![check.0.check_item()],
+                                sub_checks: vec![],
+                            })
+                        };
+                        if cidr.length().is_none() {
+                            sub_checks.push(Checks {
+                                rdap_struct: super::RdapStructure::Cidr0,
+                                index: Some(i),
+                                items: vec![check.1.check_item()],
+                                sub_checks: vec![],
+                            })
+                        };
+                    })
+                }
             }
-            sub_checks
-        } else {
-            vec![]
-        };
 
-        let mut items = vec![];
+            sub_checks
+        };
 
         if let Some(name) = &self.name {
             if name.is_whitespace_or_empty() {
@@ -182,6 +188,7 @@ impl GetChecks for Network {
 
         Checks {
             rdap_struct: super::RdapStructure::IpNetwork,
+            index,
             items,
             sub_checks,
         }
@@ -194,7 +201,8 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        prelude::{Cidr0CidrPrefix, Numberish, ToResponse},
+        check::contains_check,
+        prelude::{Cidr0CidrPrefix, Entity, Numberish, ToResponse},
         response::{
             network::{Cidr0Cidr, Network},
             RdapResponse,
@@ -214,7 +222,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -244,7 +252,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -264,7 +272,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -294,7 +302,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -314,7 +322,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -335,7 +343,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -356,7 +364,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -377,7 +385,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -400,7 +408,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -423,7 +431,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -448,7 +456,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -478,7 +486,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -507,7 +515,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -536,7 +544,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -558,7 +566,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -583,7 +591,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -608,7 +616,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -633,7 +641,7 @@ mod tests {
         let rdap = network.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -643,5 +651,41 @@ mod tests {
             .items
             .iter()
             .any(|c| c.check == Check::Cidr0V6LengthIsAbsent));
+    }
+
+    #[test]
+    fn test_cidr0_array_is_empty() {
+        // GIVEN
+        let mut network = Network::builder()
+            .cidr("10.0.0.0/8")
+            .build()
+            .expect("invalid ip cidr");
+        network.cidr0_cidrs = Some(vec![]);
+        let rdap = network.to_response();
+
+        // WHEN
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
+        dbg!(&checks);
+        assert!(contains_check(Check::Cidr0ArrayIsEmpty, &checks));
+    }
+
+    #[test]
+    fn test_net_with_entity_empty_handle() {
+        // GIVEN
+        let net = Network::builder()
+            .handle("foo")
+            .cidr("10.0.0.0/8")
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .unwrap()
+            .to_response();
+
+        // WHEN
+        let checks = net.get_checks(None, CheckParams::for_rdap(&net));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }

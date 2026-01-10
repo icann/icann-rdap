@@ -1,9 +1,6 @@
 //! Converts RDAP structures to gTLD Whois output.
 
-use {
-    icann_rdap_common::{contact::PostalAddress, response::RdapResponse},
-    std::any::TypeId,
-};
+use icann_rdap_common::{contact::PostalAddress, response::RdapResponse};
 
 pub mod domain;
 pub mod entity;
@@ -12,25 +9,16 @@ pub mod network;
 pub mod types;
 
 #[derive(Clone)]
-pub struct GtldParams<'a> {
-    pub root: &'a RdapResponse,
-    pub parent_type: TypeId,
+pub struct GtldParams {
     pub label: String,
 }
 
-impl GtldParams<'_> {
-    pub fn from_parent(&mut self, parent_type: TypeId) -> Self {
-        Self {
-            parent_type,
-            root: self.root,
-            label: self.label.clone(),
-        }
-    }
+impl GtldParams {}
 
-    pub fn next_level(&self) -> Self {
+impl GtldParams {
+    pub fn from_parent(&mut self) -> Self {
         Self {
             label: self.label.clone(),
-            ..*self
         }
     }
 }
@@ -52,7 +40,7 @@ impl ToGtldWhois for RdapResponse {
     }
 }
 
-impl ToGtldWhois for PostalAddress {
+impl ToGtldWhois for &PostalAddress {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let label = &params.label;
 
@@ -62,7 +50,10 @@ impl ToGtldWhois for PostalAddress {
             .map(|parts| parts.join(" "))
             .unwrap_or_default();
         let city = self.locality.as_deref().unwrap_or("");
-        let state = self.region_name.as_deref().unwrap_or("");
+        let state = self
+            .region_name
+            .as_deref()
+            .unwrap_or(self.region_code().unwrap_or_default());
         let postal_code = self.postal_code.as_deref().unwrap_or("");
         let country = self.country_code.as_deref().unwrap_or("");
 

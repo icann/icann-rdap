@@ -137,6 +137,8 @@ pub enum AttrName {
     Nserver,
     #[strum(serialize = "organization")]
     Organization,
+    #[strum(serialize = "org-name")]
+    OrgName,
     #[strum(serialize = "other-c")]
     OtherC,
     #[strum(serialize = "other-event")]
@@ -322,8 +324,8 @@ pub fn push_remarks(mut rpsl: String, remarks: &[Remark]) -> String {
         if let Some(title) = remark.title() {
             rpsl = push_manditory_attribute(rpsl, AttrName::Remarks, title);
         }
-        for line in remark.description() {
-            rpsl = push_manditory_attribute(rpsl, AttrName::Remarks, line);
+        for (idx, line) in remark.description().iter().enumerate() {
+            rpsl = push_manditory_attribute(rpsl, AttrName::Remarks, &format!("{idx}. {line}"));
         }
         for link in remark.links() {
             if let Some(href) = link.href() {

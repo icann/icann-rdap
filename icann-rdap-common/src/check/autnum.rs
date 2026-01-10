@@ -3,23 +3,24 @@ use std::any::TypeId;
 use crate::response::autnum::Autnum;
 
 use super::{
-    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetSubChecks, RdapStructure,
+    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
 };
 
 impl GetChecks for Autnum {
-    fn get_checks(&self, params: CheckParams) -> super::Checks {
-        let sub_checks = if params.do_subchecks {
-            let mut sub_checks: Vec<Checks> = self
-                .common
-                .get_sub_checks(params.from_parent(TypeId::of::<Self>()));
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
+        let sub_checks = {
+            let mut sub_checks: Vec<Checks> = vec![];
+            sub_checks.append(&mut GetGroupChecks::get_group_checks(
+                &self.common,
+                params.from_parent(TypeId::of::<Self>()),
+            ));
             sub_checks.append(
                 &mut self
                     .object_common
-                    .get_sub_checks(params.from_parent(TypeId::of::<Self>())),
+                    .get_group_checks(params.from_parent(TypeId::of::<Self>())),
             );
+
             sub_checks
-        } else {
-            vec![]
         };
 
         let mut items = vec![];
@@ -71,6 +72,7 @@ impl GetChecks for Autnum {
 
         Checks {
             rdap_struct: RdapStructure::Autnum,
+            index,
             items,
             sub_checks,
         }
@@ -97,7 +99,8 @@ mod tests {
 
     use rstest::rstest;
 
-    use crate::prelude::ToResponse;
+    use crate::check::contains_check;
+    use crate::prelude::{Entity, ToResponse};
 
     use crate::{
         check::{Check, CheckParams, GetChecks},
@@ -114,7 +117,7 @@ mod tests {
         let rdap = autnum.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -142,7 +145,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -159,7 +162,7 @@ mod tests {
         let rdap = autnum.to_response();
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         dbg!(&checks);
@@ -187,7 +190,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -214,7 +217,7 @@ mod tests {
         let rdap = serde_json::from_str::<RdapResponse>(json).expect("parsing JSON");
 
         // WHEN
-        let checks = rdap.get_checks(CheckParams::for_rdap(&rdap));
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
         assert!(checks
@@ -281,5 +284,21 @@ mod tests {
 
         // THEN
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_autnum_with_entity_empty_handle() {
+        // GIVEN
+        let autnum = Autnum::builder()
+            .autnum_range(701..703)
+            .entity(Entity::builder().handle("").build())
+            .build()
+            .to_response();
+
+        // WHEN
+        let checks = autnum.get_checks(None, CheckParams::for_rdap(&autnum));
+
+        // THEN
+        assert!(contains_check(Check::HandleIsEmpty, &checks));
     }
 }

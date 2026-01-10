@@ -6,11 +6,12 @@ use {
     crate::response::RdapResponse,
     serde::{Deserialize, Serialize},
     strum::{EnumMessage, IntoEnumIterator},
-    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr},
+    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr, VariantArray},
 };
 
 #[doc(inline)]
 pub use string::*;
+use strum::VariantArray;
 
 mod autnum;
 mod domain;
@@ -20,6 +21,7 @@ mod help;
 mod httpdata;
 mod nameserver;
 mod network;
+pub mod process;
 mod search;
 mod string;
 mod types;
@@ -45,6 +47,7 @@ pub static CHECK_CLASS_LEN: LazyLock<usize> = LazyLock::new(|| {
     Deserialize,
     Clone,
     Copy,
+    VariantArray,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
@@ -66,14 +69,14 @@ pub enum CheckClass {
     ///
     /// This class represents warnings that may cause some clients to be unable
     /// to conduct some operations.
-    #[strum(serialize = "StdWarn")]
-    StdWarning,
+    #[strum(serialize = "Std95Warn")]
+    Std95Warning,
 
     /// STD 95 Errors
     ///
     /// This class represetns errors in the RDAP with respect to STD 95.
-    #[strum(serialize = "StdErr")]
-    StdError,
+    #[strum(serialize = "Std95Err")]
+    Std95Error,
 
     /// Cidr0 Errors
     ///
@@ -81,12 +84,28 @@ pub enum CheckClass {
     #[strum(serialize = "Cidr0Err")]
     Cidr0Error,
 
-    /// ICANN Profile Errors
+    /// Gtld Profile Errors
     ///
     /// This class represents errors with respect to the gTLD RDAP profile.
-    #[strum(serialize = "IcannErr")]
-    IcannError,
+    #[strum(serialize = "GtldProfileErr")]
+    GtldProfileError,
 }
+
+/// All check classes
+pub static ALL_CHECK_CLASSES: &[CheckClass] = CheckClass::VARIANTS;
+/// All warning and error check clases.
+pub static WARNING_CHECK_CLASSES: &[CheckClass] = &[
+    CheckClass::Std95Warning,
+    CheckClass::Std95Error,
+    CheckClass::Cidr0Error,
+    CheckClass::GtldProfileError,
+];
+/// All error check classes.
+pub static ERROR_CHECK_CLASSES: &[CheckClass] = &[
+    CheckClass::Std95Error,
+    CheckClass::Cidr0Error,
+    CheckClass::GtldProfileError,
+];
 
 /// Represents the name of an RDAP structure for which a check appears.
 ///
@@ -103,24 +122,30 @@ pub enum RdapStructure {
     Cidr0,
     Domain,
     DomainSearchResults,
+    DsData,
+    Entities,
     Entity,
     EntitySearchResults,
+    Event,
     Events,
     Error,
     Help,
     Handle,
     HttpData,
     IpNetwork,
+    KeyData,
     Link,
     Links,
     Nameserver,
     NameserverSearchResults,
     NoticeOrRemark,
+    Notice,
     Notices,
     PublidIds,
     Port43,
     RdapConformance,
     Redacted,
+    Remark,
     Remarks,
     SecureDns,
     Status,
@@ -131,12 +156,26 @@ pub enum RdapStructure {
 /// Checks are found on object classes and structures defined in [RdapStructure].
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Checks {
+    /// The structure for which this check is relevant.
     pub rdap_struct: RdapStructure,
+    /// Index of the structure in an array.
+    pub index: Option<usize>,
+    /// The check items for this structure.
     pub items: Vec<CheckItem>,
+    /// Sub or child checks belonging to substructures.
     pub sub_checks: Vec<Checks>,
 }
 
 impl Checks {
+    pub fn for_item(rdap_struct: RdapStructure, check_item: CheckItem) -> Self {
+        Self {
+            rdap_struct,
+            index: None,
+            items: vec![check_item],
+            sub_checks: vec![],
+        }
+    }
+
     pub fn sub(&self, rdap_struct: RdapStructure) -> Option<&Self> {
         self.sub_checks
             .iter()
@@ -164,15 +203,29 @@ impl std::fmt::Display for CheckItem {
     }
 }
 
+// Represents a summary of a [CheckItem] when it is processed for the purposes of serialization.
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct CheckSummary {
+    pub code: usize,
+    pub structure: String,
+    pub message: String,
+    pub item: CheckItem,
+}
+
+impl CheckSummary {
+    pub fn summarize(&self) -> (String, String) {
+        (self.structure.clone(), self.item.to_string())
+    }
+}
+
 /// Trait for an item that can get checks.
 pub trait GetChecks {
-    fn get_checks(&self, params: CheckParams) -> Checks;
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks;
 }
 
 /// Parameters for finding checks.
 #[derive(Clone, Copy)]
 pub struct CheckParams<'a> {
-    pub do_subchecks: bool,
     pub root: &'a RdapResponse,
     pub parent_type: TypeId,
     pub allow_unreg_ext: bool,
@@ -181,7 +234,6 @@ pub struct CheckParams<'a> {
 impl CheckParams<'_> {
     pub fn from_parent(&self, parent_type: TypeId) -> Self {
         Self {
-            do_subchecks: self.do_subchecks,
             root: self.root,
             parent_type,
             allow_unreg_ext: self.allow_unreg_ext,
@@ -190,7 +242,6 @@ impl CheckParams<'_> {
 
     pub fn for_rdap(rdap: &RdapResponse) -> CheckParams<'_> {
         CheckParams {
-            do_subchecks: true,
             root: rdap,
             parent_type: rdap.get_type(),
             allow_unreg_ext: false,
@@ -199,25 +250,26 @@ impl CheckParams<'_> {
 }
 
 impl GetChecks for RdapResponse {
-    fn get_checks(&self, params: CheckParams) -> Checks {
+    fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
         match &self {
-            Self::Entity(e) => e.get_checks(params),
-            Self::Domain(d) => d.get_checks(params),
-            Self::Nameserver(n) => n.get_checks(params),
-            Self::Autnum(a) => a.get_checks(params),
-            Self::Network(n) => n.get_checks(params),
-            Self::DomainSearchResults(r) => r.get_checks(params),
-            Self::EntitySearchResults(r) => r.get_checks(params),
-            Self::NameserverSearchResults(r) => r.get_checks(params),
-            Self::ErrorResponse(e) => e.get_checks(params),
-            Self::Help(h) => h.get_checks(params),
+            Self::Entity(e) => e.get_checks(index, params),
+            Self::Domain(d) => d.get_checks(index, params),
+            Self::Nameserver(n) => n.get_checks(index, params),
+            Self::Autnum(a) => a.get_checks(index, params),
+            Self::Network(n) => n.get_checks(index, params),
+            Self::DomainSearchResults(r) => r.get_checks(index, params),
+            Self::EntitySearchResults(r) => r.get_checks(index, params),
+            Self::NameserverSearchResults(r) => r.get_checks(index, params),
+            Self::ErrorResponse(e) => e.get_checks(index, params),
+            Self::Help(h) => h.get_checks(index, params),
         }
     }
 }
 
-/// Trait to get checks for structures below that of the object class.
-pub trait GetSubChecks {
-    fn get_sub_checks(&self, params: CheckParams) -> Vec<Checks>;
+/// Trait to get checks for groups of data structures such as those
+/// related to [crate::response::Common] and [crate::response::ObjectCommon].
+pub trait GetGroupChecks {
+    fn get_group_checks(&self, params: CheckParams) -> Vec<Checks>;
 }
 
 /// Traverse the checks, and return true if one is found.
@@ -232,9 +284,12 @@ where
 {
     let mut found = false;
     let struct_tree = format!(
-        "{}/{}",
+        "{}/{}{}",
         parent_tree.unwrap_or_else(|| "[ROOT]".to_string()),
-        checks.rdap_struct
+        checks.rdap_struct,
+        checks
+            .index
+            .map_or_else(|| "".to_string(), |i| format!("/[{i}]")),
     );
     for item in &checks.items {
         if classes.contains(&item.check_class) {
@@ -248,6 +303,12 @@ where
         }
     }
     found
+}
+
+// Is a check found in any check or subcheck.
+pub fn contains_check(check: Check, checks: &Checks) -> bool {
+    checks.items.iter().any(|c| c.check == check)
+        || checks.sub_checks.iter().any(|c| contains_check(check, c))
 }
 
 /// Returns true if the check is in a check list
@@ -286,6 +347,8 @@ pub enum Check {
     RdapConformanceInvalidParent = 101,
     #[strum(message = "declared extension may not be registered.")]
     UnknownExtention = 102,
+    #[strum(message = "'rdapConformance' is empty.")]
+    RdapConformanceIsEmpty = 103,
 
     // Link 200 - 299
     #[strum(message = "'value' property not found in Link structure as required by RFC 9083")]
@@ -306,6 +369,8 @@ pub enum Check {
     LinkMissingHrefProperty = 207,
     #[strum(message = "ambiguous follow because the 'href' may not contain an RDAP URL")]
     LinkRelatedNotToRdap = 208,
+    #[strum(message = "links array is empty")]
+    LinksArrayIsEmpty = 209,
 
     // Domain Variant 300 - 399
     #[strum(message = "empty domain variant is ambiguous")]
@@ -318,12 +383,22 @@ pub enum Check {
     EventDateIsNotRfc3339 = 401,
     #[strum(message = "event action is absent")]
     EventActionIsAbsent = 402,
+    #[strum(message = "event action is unknown")]
+    EventActionIsUnknown = 403,
+    #[strum(message = "event array is empty")]
+    EventsArrayIsEmpty = 404,
 
     // Notice Or Remark 500 - 599
     #[strum(message = "RFC 9083 requires a description in a notice or remark")]
     NoticeOrRemarkDescriptionIsAbsent = 500,
     #[strum(message = "RFC 9083 requires a description to be an array of strings")]
     NoticeOrRemarkDescriptionIsString = 501,
+    #[strum(message = "type for notice/remark is unknown")]
+    NoticeOrRemarkUnknownType = 502,
+    #[strum(message = "notices array is empty")]
+    NoticesArrayIsEmpty = 503,
+    #[strum(message = "remarks array is empty")]
+    RemarksArrayIsEmpty = 504,
 
     // Handle 600 - 699
     #[strum(message = "handle appears to be empty or only whitespace")]
@@ -336,6 +411,8 @@ pub enum Check {
     // Status 700 - 799
     #[strum(message = "status appears to be empty or only whitespace")]
     StatusIsEmpty = 700,
+    #[strum(message = "status value not registered")]
+    StatusValueUnknown = 701,
 
     // Role 800 - 899
     #[strum(message = "role appears to be empty or only whitespace")]
@@ -460,8 +537,10 @@ pub enum Check {
     Cidr0V6PrefixIsAbsent = 1902,
     #[strum(message = "Cidr0 v6 length is absent")]
     Cidr0V6LengthIsAbsent = 1903,
+    #[strum(message = "Cidr0 array is empty.")]
+    Cidr0ArrayIsEmpty = 1904,
 
-    // ICANN Profile 2000 - 2099
+    // Gtld Profile 2000 - 2099
     #[strum(message = "RDAP Service Must use HTTPS.")]
     MustUseHttps = 2000,
     #[strum(message = "access-control-allow-origin is not asterisk")]
@@ -479,7 +558,7 @@ pub enum Check {
     #[strum(message = "Expected extension not found.")]
     ExpectedExtensionNotFound = 2104,
     #[strum(message = "IPv6 Support Required.")]
-    Ipv6SupportRequiredByIcann = 2105,
+    Ipv6SupportRequiredByGtldProfile = 2105,
 
     // Secure DNS 2200 - 2299
     #[strum(message = "delegationSigned is a string not a bool.")]
@@ -514,61 +593,74 @@ pub enum Check {
     DsDatumDigestTypeIsString = 2217,
     #[strum(message = "dsData digestType is out of range.")]
     DsDatumDigestTypeIsOutOfRange = 2218,
+    // empty arrays
+    #[strum(message = "keyData array is empty.")]
+    KeyDataArrayIsEmpty = 2219,
+    #[strum(message = "dsData array is empty.")]
+    DsDataArrayIsEmpty = 2220,
 
     // Network or Autnum Country 2300 - 2399
     #[strum(message = "country is not a string")]
     NetworkOrAutnumCountryIsNotString = 2300,
+
+    // Entities 2400 - 2499
+    #[strum(message = "entity array is empty")]
+    EntityArrayIsEmpty = 2400,
 }
 
 impl Check {
     pub fn check_item(self) -> CheckItem {
         let check_class = match self {
-            Self::RdapConformanceMissing | Self::RdapConformanceInvalidParent => {
-                CheckClass::StdError
-            }
-            Self::UnknownExtention => CheckClass::StdWarning,
+            Self::RdapConformanceMissing
+            | Self::RdapConformanceInvalidParent
+            | Self::RdapConformanceIsEmpty => CheckClass::Std95Error,
+            Self::UnknownExtention => CheckClass::Std95Warning,
 
-            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::StdError,
-            Self::LinkRelatedHasNoType
-            | Self::LinkRelatedIsNotRdap
-            | Self::LinkSelfHasNoType
-            | Self::LinkSelfIsNotRdap => CheckClass::StdWarning,
+            Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::Std95Error,
+            Self::LinkRelatedHasNoType | Self::LinkRelatedIsNotRdap => CheckClass::Std95Warning,
+            Self::LinkSelfHasNoType | Self::LinkSelfIsNotRdap => CheckClass::Std95Error,
             Self::LinkObjectClassHasNoSelf => CheckClass::SpecificationNote,
-            Self::LinkMissingHrefProperty => CheckClass::StdError,
-            Self::LinkRelatedNotToRdap => CheckClass::StdWarning,
+            Self::LinkMissingHrefProperty => CheckClass::Std95Error,
+            Self::LinkRelatedNotToRdap => CheckClass::Std95Warning,
+            Self::LinksArrayIsEmpty => CheckClass::Std95Warning,
 
-            Self::VariantEmptyDomain => CheckClass::StdWarning,
+            Self::VariantEmptyDomain => CheckClass::Std95Warning,
 
             Self::EventDateIsAbsent
             | Self::EventDateIsNotRfc3339
             | Self::EventActionIsAbsent
             | Self::NoticeOrRemarkDescriptionIsAbsent
-            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::StdError,
+            | Self::NoticeOrRemarkDescriptionIsString => CheckClass::Std95Error,
+            Self::EventActionIsUnknown => CheckClass::Std95Warning,
+            Self::EventsArrayIsEmpty => CheckClass::Std95Warning,
+            Self::NoticeOrRemarkUnknownType => CheckClass::Std95Warning,
+            Self::NoticesArrayIsEmpty | Self::RemarksArrayIsEmpty => CheckClass::Std95Warning,
 
-            Self::HandleIsEmpty => CheckClass::StdWarning,
-            Self::HandleIsNotString => CheckClass::StdError,
-            Self::ParentHandleIsNotString => CheckClass::StdError,
+            Self::HandleIsEmpty => CheckClass::Std95Warning,
+            Self::HandleIsNotString => CheckClass::Std95Error,
+            Self::ParentHandleIsNotString => CheckClass::Std95Error,
 
-            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::StdError,
-            Self::UnknownRole => CheckClass::StdWarning,
-            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::StdError,
+            Self::StatusIsEmpty | Self::RoleIsEmpty => CheckClass::Std95Error,
+            Self::StatusValueUnknown => CheckClass::Std95Warning,
+            Self::UnknownRole => CheckClass::Std95Warning,
+            Self::RoleIsString | Self::LdhNameInvalid => CheckClass::Std95Error,
             Self::LdhNameDocumentation => CheckClass::Informational,
-            Self::LdhNameDoesNotMatchUnicode => CheckClass::StdWarning,
+            Self::LdhNameDoesNotMatchUnicode => CheckClass::Std95Warning,
 
             Self::UnicodeNameInvalidDomain | Self::UnicodeNameInvalidUnicode => {
-                CheckClass::StdError
+                CheckClass::Std95Error
             }
 
-            Self::NetworkOrAutnumNameIsEmpty => CheckClass::StdWarning,
-            Self::NetworkOrAutnumNameIsNotString => CheckClass::StdError,
-            Self::NetworkOrAutnumTypeIsEmpty => CheckClass::StdWarning,
-            Self::NetworkOrAutnumTypeIsNotString => CheckClass::StdError,
-            Self::IpAddressMissing => CheckClass::StdWarning,
-            Self::IpAddressMalformed => CheckClass::StdError,
+            Self::NetworkOrAutnumNameIsEmpty => CheckClass::Std95Warning,
+            Self::NetworkOrAutnumNameIsNotString => CheckClass::Std95Error,
+            Self::NetworkOrAutnumTypeIsEmpty => CheckClass::Std95Warning,
+            Self::NetworkOrAutnumTypeIsNotString => CheckClass::Std95Error,
+            Self::IpAddressMissing => CheckClass::Std95Warning,
+            Self::IpAddressMalformed => CheckClass::Std95Error,
             Self::IpAddressEndBeforeStart | Self::IpAddressVersionMismatch => {
-                CheckClass::StdWarning
+                CheckClass::Std95Warning
             }
-            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::StdError,
+            Self::IpAddressMalformedVersion | Self::IpAddressListIsEmpty => CheckClass::Std95Error,
             Self::IpAddressThisNetwork
             | Self::IpAddressPrivateUse
             | Self::IpAddressSharedNat
@@ -577,39 +669,40 @@ impl Check {
             | Self::IpAddressUniqueLocal
             | Self::IpAddressDocumentationNet
             | Self::IpAddressReservedNet => CheckClass::Informational,
-            Self::IpAddressArrayIsString => CheckClass::StdError,
-            Self::IpVersionIsNotString => CheckClass::StdError,
+            Self::IpAddressArrayIsString => CheckClass::Std95Error,
+            Self::IpVersionIsNotString => CheckClass::Std95Error,
 
-            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::StdWarning,
+            Self::AutnumMissing | Self::AutnumEndBeforeStart => CheckClass::Std95Warning,
             Self::AutnumPrivateUse | Self::AutnumDocumentation | Self::AutnumReserved => {
                 CheckClass::Informational
             }
 
-            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::StdError,
+            Self::VcardArrayIsEmpty | Self::VcardHasNoFn => CheckClass::Std95Error,
             Self::VcardFnIsEmpty => CheckClass::SpecificationNote,
 
             Self::Port43IsEmpty | Self::PublicIdTypeIsAbsent | Self::PublicIdIdentifierIsAbsent => {
-                CheckClass::StdError
+                CheckClass::Std95Error
             }
-            Self::PublicIdTypeIsNotString => CheckClass::StdError,
-            Self::PublicIdIdentifierIsNotString => CheckClass::StdError,
+            Self::PublicIdTypeIsNotString => CheckClass::Std95Error,
+            Self::PublicIdIdentifierIsNotString => CheckClass::Std95Error,
 
             Self::CorsAllowOriginRecommended
             | Self::CorsAllowOriginStarRecommended
-            | Self::CorsAllowCredentialsNotRecommended => CheckClass::StdWarning,
-            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::StdError,
+            | Self::CorsAllowCredentialsNotRecommended => CheckClass::Std95Warning,
+            Self::ContentTypeIsAbsent | Self::ContentTypeIsNotRdap => CheckClass::Std95Error,
 
             Self::Cidr0V4PrefixIsAbsent
             | Self::Cidr0V4LengthIsAbsent
             | Self::Cidr0V6PrefixIsAbsent
             | Self::Cidr0V6LengthIsAbsent => CheckClass::Cidr0Error,
+            Self::Cidr0ArrayIsEmpty => CheckClass::Cidr0Error,
 
-            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::IcannError,
+            Self::MustUseHttps | Self::AllowOriginNotStar => CheckClass::GtldProfileError,
 
-            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::StdError,
+            Self::CnameWithoutARecords | Self::CnameWithoutAAAARecords => CheckClass::Std95Error,
             Self::NoARecords | Self::NoAAAARecords => CheckClass::SpecificationNote,
-            Self::ExpectedExtensionNotFound => CheckClass::StdError,
-            Self::Ipv6SupportRequiredByIcann => CheckClass::IcannError,
+            Self::ExpectedExtensionNotFound => CheckClass::Std95Error,
+            Self::Ipv6SupportRequiredByGtldProfile => CheckClass::GtldProfileError,
 
             Self::DelegationSignedIsString
             | Self::ZoneSignedIsString
@@ -625,9 +718,12 @@ impl Check {
             | Self::DsDatumKeyTagIsString
             | Self::DsDatumKeyTagIsOutOfRange
             | Self::DsDatumDigestTypeIsString
-            | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::StdError,
+            | Self::DsDatumDigestTypeIsOutOfRange => CheckClass::Std95Error,
+            Self::KeyDataArrayIsEmpty | Self::DsDataArrayIsEmpty => CheckClass::Std95Warning,
 
-            Self::NetworkOrAutnumCountryIsNotString => CheckClass::StdError,
+            Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
+
+            Self::EntityArrayIsEmpty => CheckClass::Std95Warning,
         };
         CheckItem {
             check_class,
@@ -637,17 +733,17 @@ impl Check {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use crate::check::RdapStructure;
 
-    use super::{traverse_checks, Check, CheckClass, CheckItem, Checks};
+    use super::{contains_check, traverse_checks, Check, CheckClass, CheckItem, Checks};
 
     #[test]
-    fn GIVEN_info_checks_WHEN_traversed_for_info_THEN_found() {
+    fn test_traverse_info_checks() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
                 check: Check::VariantEmptyDomain,
@@ -668,12 +764,13 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_specwarn_checks_WHEN_traversed_for_info_THEN_not_found() {
+    fn test_traverse_specwarn_checks_for_info() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![CheckItem {
-                check_class: CheckClass::StdWarning,
+                check_class: CheckClass::Std95Warning,
                 check: Check::VariantEmptyDomain,
             }],
             sub_checks: vec![],
@@ -692,13 +789,15 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_info_subchecks_WHEN_traversed_for_info_THEN_found() {
+    fn test_traverse_info_subchecks() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![],
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
+                index: None,
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
                     check: Check::VariantEmptyDomain,
@@ -720,15 +819,17 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_specwarn_subchecks_WHEN_traversed_for_info_THEN_not_found() {
+    fn test_traverse_specwarn_subchecks_for_info() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![],
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
+                index: None,
                 items: vec![CheckItem {
-                    check_class: CheckClass::StdWarning,
+                    check_class: CheckClass::Std95Warning,
                     check: Check::VariantEmptyDomain,
                 }],
                 sub_checks: vec![],
@@ -748,16 +849,18 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_checks_and_subchecks_WHEN_traversed_THEN_tree_structure_shows_tree() {
+    fn test_traverse_checks_and_subchecks() {
         // GIVEN
         let checks = Checks {
             rdap_struct: RdapStructure::Entity,
+            index: None,
             items: vec![CheckItem {
                 check_class: CheckClass::Informational,
                 check: Check::RdapConformanceInvalidParent,
             }],
             sub_checks: vec![Checks {
                 rdap_struct: RdapStructure::Autnum,
+                index: None,
                 items: vec![CheckItem {
                     check_class: CheckClass::Informational,
                     check: Check::VariantEmptyDomain,
@@ -780,5 +883,58 @@ mod tests {
         dbg!(&structs);
         assert!(structs.contains(&"[ROOT]/entity".to_string()));
         assert!(structs.contains(&"[ROOT]/entity/autnum".to_string()));
+    }
+
+    #[test]
+    fn test_contains_check_with_item() {
+        // GIVEN check structure
+        let checks = Checks::for_item(
+            RdapStructure::Autnum,
+            Check::RdapConformanceMissing.check_item(),
+        );
+
+        // WHEN
+        let found = contains_check(Check::RdapConformanceMissing, &checks);
+
+        // THEN
+        assert!(found);
+    }
+
+    #[test]
+    fn test_contains_check_with_subchecks() {
+        // GIVEN check structure
+        let sub_check = Checks::for_item(
+            RdapStructure::Entity,
+            Check::RdapConformanceInvalidParent.check_item(),
+        );
+        let checks = Checks {
+            rdap_struct: RdapStructure::Autnum,
+            index: None,
+            items: vec![],
+            sub_checks: vec![sub_check],
+        };
+
+        // WHEN
+        let found = contains_check(Check::RdapConformanceInvalidParent, &checks);
+
+        // THEN
+        assert!(found);
+    }
+
+    #[test]
+    fn test_not_contains_check_with_item() {
+        // GIVEN check structure
+        let checks = Checks {
+            rdap_struct: RdapStructure::Autnum,
+            index: None,
+            items: vec![],
+            sub_checks: vec![],
+        };
+
+        // WHEN
+        let found = contains_check(Check::RdapConformanceMissing, &checks);
+
+        // THEN
+        assert!(!found);
     }
 }

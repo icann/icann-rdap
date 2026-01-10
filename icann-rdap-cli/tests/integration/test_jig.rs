@@ -1,7 +1,7 @@
 use {
     assert_cmd::Command,
     icann_rdap_srv::{
-        config::ListenConfig,
+        config::{JsContactConversion, ListenConfig},
         server::{AppState, Listener},
         storage::{
             mem::{config::MemConfig, ops::Mem},
@@ -44,11 +44,52 @@ impl TestJig {
         Self::new_common_config(common_config, CommandType::RdapTest).await
     }
 
+    pub async fn new_rdap_test_no_http_env() -> Self {
+        let common_config = CommonConfig::default();
+        Self::new_common_config_no_http_env(common_config, CommandType::RdapTest).await
+    }
+
+    pub async fn new_common_config_no_http_env(
+        common_config: CommonConfig,
+        cmd_type: CommandType,
+    ) -> Self {
+        let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
+        let app_state = AppState {
+            storage: mem.clone(),
+            bootstrap: false,
+            jscontact_conversion: JsContactConversion::None,
+        };
+        let _ = tracing_subscriber::fmt().try_init();
+        let listener = Listener::listen(&ListenConfig::default())
+            .await
+            .expect("listening on interface");
+        let rdap_base = listener.rdap_base();
+        tokio::spawn(async move {
+            listener
+                .start_with_state(app_state)
+                .await
+                .expect("starting server");
+        });
+        let test_dir = TestDir::temp()
+            .create("cache", FileType::Dir)
+            .create("config", FileType::Dir);
+        let cmd = Command::new("sh"); //throw away
+        Self {
+            mem,
+            cmd,
+            cmd_type,
+            rdap_base,
+            test_dir,
+        }
+        .new_cmd_no_http_env()
+    }
+
     pub async fn new_common_config(common_config: CommonConfig, cmd_type: CommandType) -> Self {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
             bootstrap: false,
+            jscontact_conversion: JsContactConversion::None,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -99,6 +140,33 @@ impl TestJig {
                     .timeout(Duration::from_secs(2))
                     .env("RDAP_TEST_LOG", "debug")
                     .env("RDAP_TEST_ALLOW_HTTP", "true")
+                    .env("XDG_CACHE_HOME", self.test_dir.path("cache"))
+                    .env("XDG_CONFIG_HOME", self.test_dir.path("config"));
+                cmd
+            }
+        };
+        Self { cmd, ..self }
+    }
+
+    pub fn new_cmd_no_http_env(self) -> Self {
+        let cmd = match self.cmd_type {
+            CommandType::Rdap => {
+                let mut cmd = Command::cargo_bin("rdap").expect("cannot find rdap cmd");
+                cmd.env_clear()
+                    .timeout(Duration::from_secs(2))
+                    .env("RDAP_BASE_URL", self.rdap_base.clone())
+                    .env("RDAP_PAGING", "none")
+                    .env("RDAP_OUTPUT", "json-extra")
+                    .env("RDAP_LOG", "debug")
+                    .env("XDG_CACHE_HOME", self.test_dir.path("cache"))
+                    .env("XDG_CONFIG_HOME", self.test_dir.path("config"));
+                cmd
+            }
+            CommandType::RdapTest => {
+                let mut cmd = Command::cargo_bin("rdap-test").expect("cannot find rdap-test cmd");
+                cmd.env_clear()
+                    .timeout(Duration::from_secs(2))
+                    .env("RDAP_TEST_LOG", "debug")
                     .env("XDG_CACHE_HOME", self.test_dir.path("cache"))
                     .env("XDG_CONFIG_HOME", self.test_dir.path("config"));
                 cmd

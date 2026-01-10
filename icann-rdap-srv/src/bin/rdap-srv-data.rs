@@ -9,7 +9,7 @@ use {
         prelude::{RdapResponse, ToNotices, ToRemarks, ToResponse, VectorStringish},
         response::{
             Autnum, Domain, DsDatum, Entity, Event, Events, Help, Link, Links, Nameserver, Network,
-            NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
+            Notice, NoticeOrRemark, Rfc9083Error, SecureDns, ToChild,
         },
         VERSION,
     },
@@ -296,6 +296,14 @@ struct EntityArgs {
     /// Postal code (e.g. zip code).
     #[arg(long)]
     postal_code: Option<String>,
+
+    /// Do not represent the entity with vCard.
+    #[arg(long)]
+    no_vcard: bool,
+
+    /// Represent the entity with JSContact.
+    #[arg(long)]
+    jscontact: bool,
 }
 
 #[derive(Debug, Args)]
@@ -608,7 +616,20 @@ fn create_redirect_file(
     let file_name = create_file_name(self_href, "template");
     let mut path = PathBuf::from(data_dir);
     path.push(file_name);
-    let error = Rfc9083Error::redirect().url(url).build();
+    let error = Rfc9083Error::response_obj()
+        .error_code(307)
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .title("Temporary Redirect")
+                .links(vec![Link::builder()
+                    .href(url)
+                    .value(self_href)
+                    .media_type(RDAP_MEDIA_TYPE)
+                    .rel("related")
+                    .build()])
+                .build(),
+        ))
+        .build();
     let template = match id {
         RdapId::Entity(id) => Template::Entity {
             entity: EntityOrError::ErrorResponse(error),
@@ -832,20 +853,20 @@ async fn make_entity(
     };
     let mut contact = Contact::builder()
         .full_name(full_name)
-        .organization_names(
-            (!args.org_name.is_empty())
-                .then_some(args.org_name)
-                .unwrap_or_default(),
-        )
-        .titles(
-            (!args.title.is_empty())
-                .then_some(args.title)
-                .unwrap_or_default(),
-        )
+        .organization_names(if !args.org_name.is_empty() {
+            args.org_name
+        } else {
+            Default::default()
+        })
+        .titles(if !args.title.is_empty() {
+            args.title
+        } else {
+            Default::default()
+        })
         .build();
-    contact = contact.set_emails(&args.email);
-    contact = contact.add_voice_phones(&args.voice);
-    contact = contact.add_fax_phones(&args.fax);
+    contact = contact.with_email_addresses(&args.email);
+    contact = contact.with_voice_phone_numbers(&args.voice);
+    contact = contact.with_fax_phone_numbers(&args.fax);
     let postal_address = PostalAddress::builder()
         .street_parts(args.street.clone())
         .and_locality(args.locality)
@@ -855,9 +876,11 @@ async fn make_entity(
         .and_country_code(args.country_code)
         .and_postal_code(args.postal_code)
         .build();
-    contact = contact.set_postal_address(postal_address);
+    contact = contact.with_postal_address(postal_address);
     let entity = Entity::response_obj()
         .contact(contact)
+        .no_vacard(args.no_vcard)
+        .jscontact(args.jscontact)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
         .entities(entities(store, &args.object_args).await?)

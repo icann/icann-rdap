@@ -158,7 +158,6 @@ pub fn text_or_registered_redaction_for_role<T: ToString + Clone>(
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::{
         prelude::ToResponse,
@@ -171,7 +170,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn GIVEN_redaction_type_WHEN_search_for_type_THEN_true() {
+    fn test_redaction_registered_for_tech_email() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -198,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_type_WHEN_get_text_for_type_THEN_redacted_text_returned() {
+    fn test_test_or_registered_redaction_getting_redacted_text() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -230,7 +229,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_multiple_redaction_type_WHEN_search_for_one_of_the_types_THEN_true() {
+    fn test_is_redaction_registered_with_many() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -271,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_multiple_redaction_type_WHEN_search_for_multiple_that_some_exist_THEN_true() {
+    fn test_are_redactions_registered() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -315,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_multiple_redaction_type_WHEN_search_for_multiple_that_not_exist_THEN_false() {
+    fn test_are_redactions_registered_with_none_present() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -362,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_no_redactions_WHEN_search_for_type_THEN_false() {
+    fn test_is_redaction_registered_with_none_given() {
         // GIVEN
         let domain = Domain::builder().ldh_name("example.com").build();
         let rdap = domain.to_response();
@@ -375,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_redaction_type_WHEN_search_for_wrong_type_THEN_false() {
+    fn test_is_redaction_registered_for_wrong_type() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -402,7 +401,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_redaction_type_WHEN_search_for_type_on_entity_with_role_THEN_true() {
+    fn test_is_redaction_registered_for_role() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -439,8 +438,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_multipe_type_on_entity_with_roles_THEN_true(
-    ) {
+    fn test_are_redactions_registered_for_role() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -491,8 +489,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_not_exist_type_on_entity_with_roles_THEN_false(
-    ) {
+    fn test_are_redactions_registered_for_role_miss_role() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -543,8 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_multiple_redaction_WHEN_search_for_type_on_entity_with_other_rolesroles_THEN_false(
-    ) {
+    fn test_are_redactions_registered_for_role_miss_redaction() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")
@@ -595,8 +591,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_entity_and_redaction_type_WHEN_get_text_for_type_on_entity_with_role_THEN_redaction_text_returned(
-    ) {
+    fn test_text_or_registered_redaction_for_role() {
         // GIVEN
         let domain = Domain::builder()
             .ldh_name("example.com")

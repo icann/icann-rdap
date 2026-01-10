@@ -32,13 +32,13 @@ pub enum CheckTypeArg {
 
 pub fn to_check_classes(args: &CheckArgs) -> Vec<CheckClass> {
     if args.check_type.is_empty() {
-        vec![CheckClass::StdWarning, CheckClass::StdError]
+        vec![CheckClass::Std95Warning, CheckClass::Std95Error]
     } else {
         args.check_type
             .iter()
             .map(|c| match c {
-                CheckTypeArg::SpecWarn => CheckClass::StdWarning,
-                CheckTypeArg::SpecError => CheckClass::StdError,
+                CheckTypeArg::SpecWarn => CheckClass::Std95Warning,
+                CheckTypeArg::SpecError => CheckClass::Std95Error,
             })
             .collect::<Vec<CheckClass>>()
     }
@@ -46,12 +46,14 @@ pub fn to_check_classes(args: &CheckArgs) -> Vec<CheckClass> {
 
 /// Print errors and returns true if a check is found.
 pub fn check_rdap(rdap: RdapResponse, check_types: &[CheckClass]) -> bool {
-    let checks = rdap.get_checks(CheckParams {
-        do_subchecks: true,
-        root: &rdap,
-        parent_type: rdap.get_type(),
-        allow_unreg_ext: true,
-    });
+    let checks = rdap.get_checks(
+        None,
+        CheckParams {
+            root: &rdap,
+            parent_type: rdap.get_type(),
+            allow_unreg_ext: true,
+        },
+    );
     traverse_checks(
         &checks,
         check_types,

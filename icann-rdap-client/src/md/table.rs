@@ -1,5 +1,7 @@
 use std::cmp::max;
 
+use icann_rdap_common::prelude::Remark;
+
 use super::{string::StringUtil, MdHeaderText, MdOptions, MdParams, ToMd};
 
 pub(crate) trait ToMpTable {
@@ -17,6 +19,7 @@ pub(crate) trait ToMpTable {
 /// multiline row, so this creates multiple rows where the name is left blank.
 pub struct MultiPartTable {
     rows: Vec<Row>,
+    value_highlights: Vec<String>,
 }
 
 enum Row {
@@ -34,7 +37,24 @@ impl Default for MultiPartTable {
 
 impl MultiPartTable {
     pub fn new() -> Self {
-        Self { rows: vec![] }
+        Self {
+            rows: vec![],
+            value_highlights: vec![],
+        }
+    }
+
+    pub fn new_with_value_hightlights(value_highlights: Vec<String>) -> Self {
+        Self {
+            rows: vec![],
+            value_highlights,
+        }
+    }
+
+    pub fn new_with_value_hightlights_from_remarks(remarks: &[Remark]) -> Self {
+        Self {
+            rows: vec![],
+            value_highlights: get_value_highlights(remarks),
+        }
     }
 
     /// Add a header row.
@@ -241,8 +261,8 @@ impl MultiPartTable {
                         };
                         md.push_str(&format!(
                             "|{}|{}|\n",
-                            name.to_right(col_type_width, options),
-                            value
+                            &name.to_right(col_type_width, options),
+                            highlight_value(value, &self.value_highlights, options)
                         ));
                         false
                     }
@@ -279,15 +299,35 @@ impl ToMd for MultiPartTable {
     }
 }
 
+fn highlight_value(value: &str, values_to_highlight: &[String], options: &MdOptions) -> String {
+    let mut value = value.to_string();
+    for hl in values_to_highlight {
+        value = value.replace(hl, &hl.to_em(options));
+    }
+    value
+}
+
+pub(crate) fn get_value_highlights(remarks: &[Remark]) -> Vec<String> {
+    let mut highlights = vec![];
+    for remark in remarks {
+        if let Some(keys) = &remark.simple_redaction_keys {
+            for key in keys {
+                highlights.push(key.clone());
+            }
+            if let Some(title) = &remark.title {
+                highlights.push(title.clone())
+            }
+        }
+    }
+    highlights
+}
+
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::{httpdata::HttpData, prelude::ToResponse, response::Rfc9083Error};
 
-    use crate::{
-        md::ToMd,
-        rdap::rr::{RequestData, SourceType},
-    };
+    use crate::{md::ToMd, rdap::rr::RequestData};
 
     use super::MultiPartTable;
 
@@ -300,10 +340,8 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -311,10 +349,10 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(actual, "|:-:|\n|__foo__|\n|\n\n")
@@ -331,10 +369,8 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -342,10 +378,10 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
@@ -363,10 +399,8 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -374,10 +408,10 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(
@@ -397,10 +431,8 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -408,10 +440,10 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
@@ -429,10 +461,8 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -440,10 +470,10 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(
@@ -467,10 +497,8 @@ mod tests {
         let req_data = RequestData {
             req_number: 0,
             req_target: true,
-            source_host: "",
-            source_type: SourceType::UncategorizedRegistry,
         };
-        let rdap_response = Rfc9083Error::response()
+        let rdap_response = Rfc9083Error::response_obj()
             .error_code(500)
             .build()
             .to_response();
@@ -478,10 +506,10 @@ mod tests {
             heading_level: 0,
             root: &rdap_response,
             http_data: &HttpData::example().build(),
-            parent_type: std::any::TypeId::of::<crate::md::MdParams>(),
-            check_types: &[],
             options: &crate::md::MdOptions::plain_text(),
             req_data: &req_data,
+            show_rfc9537_redactions: false,
+            highlight_simple_redactions: false,
         });
 
         assert_eq!(

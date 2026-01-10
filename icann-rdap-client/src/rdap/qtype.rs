@@ -5,6 +5,8 @@ use std::{
     sync::LazyLock,
 };
 
+use icann_rdap_common::rdns::{ip_to_reverse_dns, reverse_dns_to_ip};
+
 use {
     cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr},
     icann_rdap_common::{check::StringCheck, dns_types::DomainName},
@@ -16,7 +18,7 @@ use {
 use crate::RdapClientError;
 
 /// Defines the various types of RDAP lookups and searches.
-#[derive(Display, Debug)]
+#[derive(Display, Debug, Clone)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]
     IpV4Addr(Ipv4Addr),
@@ -38,6 +40,9 @@ pub enum QueryType {
 
     #[strum(serialize = "A-Label Domain Lookup")]
     ALabel(DomainName),
+
+    #[strum(serialize = "Reverse DNS Domain Lookup")]
+    ReverseDNs(IpAddr),
 
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
@@ -103,6 +108,10 @@ impl QueryType {
                 "{base_url}/domain/{}",
                 PctString::encode(value.trim_leading_dot().chars(), URIReserved)
             )),
+            Self::ReverseDNs(value) => Ok(format!(
+                "{base_url}/domain/{}",
+                PctString::encode(ip_to_reverse_dns(value).chars(), URIReserved)
+            )),
             Self::ALabel(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(value.to_ascii().chars(), URIReserved),
@@ -137,6 +146,17 @@ impl QueryType {
 
     pub fn alabel(alabel: &str) -> Result<Self, RdapClientError> {
         Ok(Self::ALabel(DomainName::from_str(alabel)?))
+    }
+
+    pub fn rdns(domain_name: &str) -> Result<Self, RdapClientError> {
+        let value = reverse_dns_to_ip(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDNs(value))
+    }
+
+    pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
+        let value =
+            IpAddr::from_str(ip_address).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDNs(value))
     }
 
     pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
@@ -241,6 +261,8 @@ impl FromStr for QueryType {
         if is_domain_name(s) {
             return if is_nameserver(s) {
                 Self::ns(s)
+            } else if let Some(ip) = reverse_dns_to_ip(s) {
+                Ok(Self::ReverseDNs(ip))
             } else {
                 Self::domain(s)
             };
