@@ -20,7 +20,7 @@ You may run `cargo run --release` and access all the executables in the `./targe
 Create some data:
 
     cargo run --bin rdap-srv-data -- entity --handle foo1234 --email joe@example.com --full-name "Joe User"
-    ./target/release/rdap-srv-data nameserver --ldh ns1.example.com --registrant foo1234
+    cargo run --bin rdap-srv-data -- nameserver --ldh ns1.example.com --registrant foo1234
 
 Start the server:
 
