@@ -18,6 +18,7 @@ pub mod help;
 pub mod nameserver;
 pub mod network;
 pub mod search;
+pub mod ttl;
 
 pub(crate) const _LINE_LENGTH: usize = 78;
 
@@ -171,6 +172,8 @@ pub enum AttrName {
     TechC,
     #[strum(serialize = "transfer")]
     Transfer,
+    #[strum(serialize = "dns-ttl")]
+    Ttl,
     #[strum(serialize = "type")]
     Type,
     #[strum(serialize = "unlocked")]

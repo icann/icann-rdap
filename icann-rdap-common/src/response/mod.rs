@@ -44,15 +44,16 @@ pub(crate) mod domain;
 pub(crate) mod entity;
 pub(crate) mod error;
 pub(crate) mod help;
-pub mod jscontact;
+pub mod jscontact; // JSContact is not a maintstream extension, yet.
 pub(crate) mod lenient;
 pub(crate) mod nameserver;
 pub(crate) mod network;
 pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
 pub(crate) mod search;
+pub mod ttl; // ttl0 extension
 pub(crate) mod types;
-pub(crate) mod values; // JSContact is not a mainstream extension, yet.
+pub(crate) mod values;
 
 /// An error caused be processing an RDAP response.
 ///

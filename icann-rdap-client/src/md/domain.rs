@@ -61,6 +61,11 @@ impl ToMd for Domain {
         // remarks
         table = self.remarks().add_to_mptable(table, params);
 
+        // ttl0
+        if let Some(ttl0) = &self.ttl0_data {
+            table = ttl0.add_to_mptable(table, params);
+        }
+
         // render table
         md.push_str(&table.to_md(params));
 

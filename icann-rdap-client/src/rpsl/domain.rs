@@ -1,6 +1,6 @@
 use icann_rdap_common::prelude::{CommonFields, Domain, Nameserver, ObjectCommonFields};
 
-use crate::rpsl::{AttrName, RpslParams, ToRpsl};
+use crate::rpsl::{ttl::push_ttl0, AttrName, RpslParams, ToRpsl};
 
 use super::{
     push_entities, push_manditory_attribute, push_notices, push_obj_common,
@@ -72,6 +72,11 @@ impl ToRpsl for Domain {
                 );
                 rpsl = push_optional_attribute(rpsl, AttrName::KeyData, Some(&str));
             }
+        }
+
+        // push ttl0
+        if let Some(ttl) = &self.ttl0_data {
+            rpsl = push_ttl0(rpsl, ttl);
         }
 
         // push things common to object classes
