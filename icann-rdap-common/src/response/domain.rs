@@ -1,7 +1,7 @@
 //! RDAP Domain Object Class
 use std::collections::HashSet;
 
-use crate::prelude::ContentExtensions;
+use crate::prelude::{ttl::Ttl0Data, ContentExtensions};
 
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
@@ -500,6 +500,9 @@ pub struct Domain {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network: Option<Network>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ttl0_data: Option<Ttl0Data>,
 }
 
 #[buildstructor::buildstructor]
@@ -533,6 +536,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
+        ttl0_data: Option<Ttl0Data>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
@@ -554,6 +558,7 @@ impl Domain {
             nameservers: to_opt_vec(nameservers),
             public_ids: to_opt_vec(public_ids),
             network,
+            ttl0_data,
         }
     }
 
@@ -589,6 +594,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
+        ttl0_data: Option<Ttl0Data>,
         extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
@@ -611,6 +617,7 @@ impl Domain {
             .and_secure_dns(secure_dns)
             .variants(variants)
             .and_network(network)
+            .and_ttl0_data(ttl0_data)
             .and_redacted(redacted)
             .build();
         domain.common = common;
@@ -645,6 +652,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
+        ttl0_data: Option<Ttl0Data>,
     ) -> Self {
         Self {
             common: Common::builder().build(),
@@ -664,6 +672,7 @@ impl Domain {
             nameservers: to_opt_vec(nameservers),
             public_ids: to_opt_vec(public_ids),
             network,
+            ttl0_data,
         }
     }
 
@@ -699,6 +708,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
+        ttl0_data: Option<Ttl0Data>,
         extensions: Vec<Extension>,
     ) -> Self {
         let common = Common::level0()
@@ -720,6 +730,7 @@ impl Domain {
             .and_secure_dns(secure_dns)
             .variants(variants)
             .and_network(network)
+            .and_ttl0_data(ttl0_data)
             .build();
         idn.common = common;
         idn
@@ -758,6 +769,11 @@ impl Domain {
     /// Getter for network.
     pub fn network(&self) -> Option<&Network> {
         self.network.as_ref()
+    }
+
+    /// Getter for the ttl0 data.
+    pub fn ttl0_data(&self) -> Option<&Ttl0Data> {
+        self.ttl0_data.as_ref()
     }
 }
 
