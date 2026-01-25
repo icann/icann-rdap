@@ -1,7 +1,7 @@
 //! RDAP Domain Object Class
 use std::collections::HashSet;
 
-use crate::prelude::{ContentExtensions, Remarks};
+use crate::prelude::{ttl::Ttl0Data, ContentExtensions};
 
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
@@ -356,99 +356,6 @@ impl SecureDns {
     }
 }
 
-/// Represents the TTL values of a domain with the "ttl0" extension.
-///
-/// The following shows how to use the builders to
-/// create ttls.
-///
-/// ```rust
-/// use icann_rdap_common::prelude::*;
-///
-/// // Builds TTls.
-/// let ttls = DomainTtl0Data::builder()
-///     .a(18640)
-///     .build();
-///
-/// // Builds `domain` with ttls.
-/// let domain = Domain::builder()
-///     .ldh_name("example.com")
-///     .handle("EXAMPLE-DOMAIN")
-///     .ttl0_data(ttls)
-///     .build();
-/// ```
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct DomainTtl0Data {
-    /// The TTL value of the NS record.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "NS")]
-    pub ns: Option<u32>,
-
-    /// The TTL value of the DS record.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "DS")]
-    pub ds: Option<u32>,
-
-    /// The TTL value of the A record.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "A")]
-    pub a: Option<u32>,
-
-    /// The TTL value of the AAAA record.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "AAAA")]
-    pub aaaa: Option<u32>,
-
-    /// Remarks about the TTL.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remarks: Option<Remarks>,
-}
-
-#[buildstructor::buildstructor]
-impl DomainTtl0Data {
-    /// Builder for `ttl0_data`.
-    #[builder(visibility = "pub")]
-    fn new(
-        ns: Option<u32>,
-        ds: Option<u32>,
-        a: Option<u32>,
-        aaaa: Option<u32>,
-        remarks: Vec<Remark>,
-    ) -> Self {
-        Self {
-            ns,
-            ds,
-            a,
-            aaaa,
-            remarks: to_opt_vec(remarks),
-        }
-    }
-
-    /// Getter for `A` ttl.
-    pub fn a(&self) -> Option<u32> {
-        self.a
-    }
-
-    /// Getter for `AAAA` ttl.
-    pub fn aaaa(&self) -> Option<u32> {
-        self.aaaa
-    }
-
-    /// Getter for `NS` ttl.
-    pub fn ns(&self) -> Option<u32> {
-        self.ns
-    }
-
-    /// Getter for `DS` ttl.
-    pub fn ds(&self) -> Option<u32> {
-        self.ds
-    }
-
-    /// Getter for remarks.
-    pub fn remarks(&self) -> &[Remark] {
-        self.remarks.as_deref().unwrap_or_default()
-    }
-}
-
 /// Represents an RDAP [domain](https://rdap.rcode3.com/protocol/object_classes.html#domain) response.
 ///
 /// Using the builder is recommended to construct this structure as it
@@ -595,7 +502,7 @@ pub struct Domain {
     pub network: Option<Network>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ttl0_data: Option<DomainTtl0Data>,
+    pub ttl0_data: Option<Ttl0Data>,
 }
 
 #[buildstructor::buildstructor]
@@ -629,7 +536,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
-        ttl0_data: Option<DomainTtl0Data>,
+        ttl0_data: Option<Ttl0Data>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
         Self {
@@ -687,7 +594,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
-        ttl0_data: Option<DomainTtl0Data>,
+        ttl0_data: Option<Ttl0Data>,
         extensions: Vec<Extension>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Self {
@@ -745,7 +652,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
-        ttl0_data: Option<DomainTtl0Data>,
+        ttl0_data: Option<Ttl0Data>,
     ) -> Self {
         Self {
             common: Common::builder().build(),
@@ -801,7 +708,7 @@ impl Domain {
         secure_dns: Option<SecureDns>,
         variants: Vec<Variant>,
         network: Option<Network>,
-        ttl0_data: Option<DomainTtl0Data>,
+        ttl0_data: Option<Ttl0Data>,
         extensions: Vec<Extension>,
     ) -> Self {
         let common = Common::level0()
@@ -865,7 +772,7 @@ impl Domain {
     }
 
     /// Getter for the ttl0 data.
-    pub fn ttl0_data(&self) -> Option<&DomainTtl0Data> {
+    pub fn ttl0_data(&self) -> Option<&Ttl0Data> {
         self.ttl0_data.as_ref()
     }
 }

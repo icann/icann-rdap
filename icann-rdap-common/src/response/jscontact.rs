@@ -1,4 +1,7 @@
 //! Useful JSContact Functions
+//!
+//! The [JsContactConvert] trait implements methods to convert RDAP objects
+//! to JSContact.
 
 use crate::{
     contact::Contact,

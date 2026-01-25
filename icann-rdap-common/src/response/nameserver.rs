@@ -1,7 +1,7 @@
 //! RDAP Nameserver object class.
 use std::collections::HashSet;
 
-use crate::prelude::ContentExtensions;
+use crate::prelude::{ttl::Ttl0Data, ContentExtensions};
 
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
@@ -155,6 +155,9 @@ pub struct Nameserver {
     #[serde(rename = "ipAddresses")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ip_addresses: Option<IpAddresses>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ttl0_data: Option<Ttl0Data>,
 }
 
 #[buildstructor::buildstructor]
@@ -185,6 +188,7 @@ impl Nameserver {
         statuses: Vec<String>,
         port_43: Option<Port43>,
         entities: Vec<Entity>,
+        ttl0_data: Option<Ttl0Data>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let ip_addresses = if !addresses.is_empty() {
@@ -207,6 +211,7 @@ impl Nameserver {
             ldh_name: Some(ldh_name.into()),
             unicode_name: None,
             ip_addresses,
+            ttl0_data,
         })
     }
 
@@ -239,6 +244,7 @@ impl Nameserver {
         entities: Vec<Entity>,
         notices: Vec<Notice>,
         extensions: Vec<Extension>,
+        ttl0_data: Option<Ttl0Data>,
         redacted: Option<Vec<crate::response::redacted::Redacted>>,
     ) -> Result<Self, RdapResponseError> {
         let common = Common::level0()
@@ -255,6 +261,7 @@ impl Nameserver {
             .statuses(statuses)
             .and_port_43(port_43)
             .entities(entities)
+            .and_ttl0_data(ttl0_data)
             .and_redacted(redacted)
             .build()?;
         nameserver.common = common;
@@ -270,6 +277,7 @@ impl Nameserver {
             ldh_name,
             unicode_name: None,
             ip_addresses,
+            ttl0_data: None,
         }
     }
 
@@ -286,6 +294,11 @@ impl Nameserver {
     /// Get the IP addresses.
     pub fn ip_addresses(&self) -> Option<&IpAddresses> {
         self.ip_addresses.as_ref()
+    }
+
+    /// Getter for the ttl0 data.
+    pub fn ttl0_data(&self) -> Option<&Ttl0Data> {
+        self.ttl0_data.as_ref()
     }
 }
 
