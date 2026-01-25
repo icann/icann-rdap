@@ -1,0 +1,7 @@
+nserver:        foo.example.com
+dns-ttl:        a 300
+dns-ttl:        mx 500
+dns-ttl:        txt 2000
+nic-hdl:        NO HANDLE
+source:         example.com
+
