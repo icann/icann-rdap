@@ -190,7 +190,7 @@ impl TryFrom<Value> for RdapResponse {
                 ));
             }
         }
-        // else if it is a entity search result
+        // else if it is an entity search result
         if let Some(result) = response.get("entitySearchResults") {
             if result.is_array() {
                 return Ok(serde_json::from_value::<EntitySearchResults>(value)?.to_response());
