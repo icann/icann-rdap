@@ -417,7 +417,7 @@ where
             f,
             "{}",
             self.as_u64()
-                .map_or("RANGE_ERRROR".to_string(), |u| u.to_string())
+                .map_or("RANGE_ERROR".to_string(), |u| u.to_string())
         )
     }
 }
@@ -896,6 +896,6 @@ mod tests {
             inner: NumberishInner::String("abc".to_string()),
             phatom: PhantomData::<u32>,
         };
-        assert_eq!(format!("{}", n), "RANGE_ERRROR");
+        assert_eq!(format!("{}", n), "RANGE_ERROR");
     }
 }

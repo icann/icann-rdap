@@ -34,7 +34,7 @@ impl IanaRegistryType {
         let url = self.url();
         url.rsplit('/')
             .next()
-            .expect("unexpected errror: cannot get filename from url")
+            .expect("unexpected error: cannot get filename from url")
     }
 }
 
