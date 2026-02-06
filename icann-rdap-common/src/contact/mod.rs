@@ -127,7 +127,7 @@ pub struct Contact {
     /// URLs
     pub(crate) urls: Option<Vec<String>>,
 
-    /// The unlocalalized parts.
+    /// The unlocalized parts.
     pub(crate) unlocalized: Localizable,
 
     /// Localizations
