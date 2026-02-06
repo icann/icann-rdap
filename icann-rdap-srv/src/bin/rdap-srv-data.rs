@@ -949,7 +949,7 @@ async fn make_domain(
         ldh_arg.to_owned()
     } else if let Some(idn_arg) = args.idn.as_ref() {
         idna::domain_to_ascii(idn_arg)
-            .map_err(|_| RdapServerError::InvalidArg("Invalid IDN U-Lable".to_string()))?
+            .map_err(|_| RdapServerError::InvalidArg("Invalid IDN U-Label".to_string()))?
     } else {
         panic!("neither ldh or idn specified. this should have been caught in arg parsing.")
     }
