@@ -5,7 +5,7 @@ This repository contains open source code written by the Internet Corporation fo
 for use with the Registry Data Access Protocol (RDAP). RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
 Read about [ICANN's role in RDAP](https://www.icann.org/rdap).
-General information on RDAP can be found [here](https://rdap.rcode3.com/).
+See [general information on RDAP](https://rdap.rcode3.com/).
 
 About, Usage, and Installation
 ------------------------------
