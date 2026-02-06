@@ -49,7 +49,7 @@ pub type Links = Vec<Link>;
 /// but those are fields required by RFC 9083.
 ///
 /// To create an RFC valid structure, use the builder
-/// which will not allow omision of required fields.
+/// which will not allow omission of required fields.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -132,7 +132,7 @@ impl Link {
     /// Builds an RDAP link.
     ///
     /// To create an RFC valid structure, use the builder
-    /// which will not allow omision of required fields.
+    /// which will not allow omission of required fields.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
