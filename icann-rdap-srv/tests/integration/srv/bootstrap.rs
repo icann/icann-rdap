@@ -206,7 +206,7 @@ async fn test_bootstrap_with_no_less_specific_ip() {
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
-    response.expect("this should be 404"); // SHOLD PANIC
+    response.expect("this should be 404"); // SHOULD PANIC
 }
 
 #[tokio::test]
@@ -275,7 +275,7 @@ async fn test_bootstrap_with_no_less_specific_autnum() {
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
-    response.expect("this should be 404"); // SHOLD PANIC
+    response.expect("this should be 404"); // SHOULD PANIC
 }
 
 #[tokio::test]
@@ -374,5 +374,5 @@ async fn test_bootstrap_with_no_specific_tag() {
     let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
 
     // THEN
-    response.expect("this should be 404"); // SHOLD PANIC
+    response.expect("this should be 404"); // SHOULD PANIC
 }
