@@ -43,14 +43,14 @@ impl MultiPartTable {
         }
     }
 
-    pub fn new_with_value_hightlights(value_highlights: Vec<String>) -> Self {
+    pub fn new_with_value_highlights(value_highlights: Vec<String>) -> Self {
         Self {
             rows: vec![],
             value_highlights,
         }
     }
 
-    pub fn new_with_value_hightlights_from_remarks(remarks: &[Remark]) -> Self {
+    pub fn new_with_value_highlights_from_remarks(remarks: &[Remark]) -> Self {
         Self {
             rows: vec![],
             value_highlights: get_value_highlights(remarks),

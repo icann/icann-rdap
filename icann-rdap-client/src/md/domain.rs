@@ -26,7 +26,7 @@ impl ToMd for Domain {
 
         // multipart data
         let mut table = if params.highlight_simple_redactions {
-            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+            MultiPartTable::new_with_value_highlights_from_remarks(self.remarks())
         } else {
             MultiPartTable::new()
         };
