@@ -46,14 +46,14 @@ impl ToRpsl for Entity {
                 rpsl = push_manditory_attribute(rpsl, AttrName::OrgName, &on);
             }
             for pa in contact.postal_addresses() {
-                rpsl = push_postal_addres(rpsl, pa);
+                rpsl = push_postal_address(rpsl, pa);
             }
             let local_pas = contact
                 .localizations_iter()
                 .filter_map(|(_t, l)| l.postal_address())
                 .collect::<Vec<&PostalAddress>>();
             for pa in local_pas {
-                rpsl = push_postal_addres(rpsl, pa);
+                rpsl = push_postal_address(rpsl, pa);
             }
             for email in contact.emails() {
                 rpsl = push_manditory_attribute(rpsl, AttrName::Email, email.email());
@@ -110,7 +110,7 @@ fn key(entity: &Entity) -> (AttrName, String) {
     (name, value)
 }
 
-fn push_postal_addres(mut rpsl: String, pa: &PostalAddress) -> String {
+fn push_postal_address(mut rpsl: String, pa: &PostalAddress) -> String {
     if let Some(full_address) = pa.full_address() {
         for line in full_address.lines() {
             rpsl = push_manditory_attribute(rpsl, AttrName::Address, line);
