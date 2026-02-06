@@ -9,7 +9,7 @@ use {
 use crate::test_jig::TestJig;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn GIVEN_domain_with_entity_WHEN_retreived_from_cache_THEN_is_domain() {
+async fn GIVEN_domain_with_entity_WHEN_retrieved_from_cache_THEN_is_domain() {
     // GIVEN
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
