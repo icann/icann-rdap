@@ -361,7 +361,7 @@ async fn test_domain_referral_with_status_output_text() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -442,7 +442,7 @@ async fn test_domain_referral_with_status_output_json() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -486,7 +486,7 @@ async fn test_domain_with_referral_for_only_registry_with_status_output_json() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -535,7 +535,7 @@ async fn test_domain_with_referral_for_only_registrar_with_status_output_json() 
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -604,7 +604,7 @@ async fn test_domain_referral_with_url_output() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -642,7 +642,7 @@ async fn test_domain_referral_with_url_output_for_registry() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -684,7 +684,7 @@ async fn test_domain_referral_with_url_output_for_registrar() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -726,7 +726,7 @@ async fn test_domain_referral_with_json_output() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -764,7 +764,7 @@ async fn test_domain_referral_with_json_output_for_registrar() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -807,7 +807,7 @@ async fn test_domain_referral_with_pretty_json_output() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
@@ -845,7 +845,7 @@ async fn test_domain_referral_with_pretty_json_output_for_registrar() {
             .link(
                 Link::builder()
                     .rel("related")
-                    // note that in real life this would be a foo.example referrign to a foo.example
+                    // note that in real life this would be a foo.example referring to a foo.example
                     // in another server. However, to get this to work with one server, we
                     // refer foo.example to bar.example.
                     .href(format!("{}/domain/bar.example", test_jig.rdap_base))
