@@ -552,7 +552,7 @@ impl NoticeOrRemark {
 pub trait ToNotices {
     /// Convert to a collection of notices.
     fn to_notices(self) -> Vec<Notice>;
-    /// Convert to a collection if some, otherwise none.
+    /// Convert to a collection if some; otherwise, none.
     fn to_opt_notices(self) -> Option<Vec<Notice>>;
 }
 
@@ -582,7 +582,7 @@ impl ToNotices for Vec<NoticeOrRemark> {
 pub trait ToRemarks {
     /// Convert to a collection of remarks.
     fn to_remarks(self) -> Vec<Remark>;
-    /// Convert to a collection if some, otherwise none.
+    /// Convert to a collection if some; otherwise, none.
     fn to_opt_remarks(self) -> Option<Vec<Remark>>;
 }
 

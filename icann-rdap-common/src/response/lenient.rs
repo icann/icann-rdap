@@ -149,7 +149,7 @@ impl StringListCheck for VectorStringish {
     }
 }
 
-/// Returns `Some(VectorStringish)` if the vector is not empty, otherwise `None`.
+/// Returns `Some(VectorStringish)` if the vector is not empty; otherwise, `None`.
 pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
     (!vec.is_empty()).then_some(VectorStringish::from(vec))
 }

@@ -149,17 +149,17 @@ impl DsDatum {
         self.events.as_deref().unwrap_or_default()
     }
 
-    /// Returns a u32 if it was given, otherwise None.
+    /// Returns a u32 if it was given; otherwise, None.
     pub fn key_tag(&self) -> Option<u32> {
         self.key_tag.as_ref().and_then(|n| n.as_u32())
     }
 
-    /// Returns a u8 if it was given, otherwise None.
+    /// Returns a u8 if it was given; otherwise, None.
     pub fn algorithm(&self) -> Option<u8> {
         self.algorithm.as_ref().and_then(|n| n.as_u8())
     }
 
-    /// Returns a u8 if it was given, otherwise None.
+    /// Returns a u8 if it was given; otherwise, None.
     pub fn digest_type(&self) -> Option<u8> {
         self.digest_type.as_ref().and_then(|n| n.as_u8())
     }
@@ -225,17 +225,17 @@ impl KeyDatum {
         self.events.as_deref().unwrap_or_default()
     }
 
-    /// Returns a u16 if it was given, otherwise None.
+    /// Returns a u16 if it was given; otherwise, None.
     pub fn flags(&self) -> Option<u16> {
         self.flags.as_ref().and_then(|n| n.as_u16())
     }
 
-    /// Returns a u8 if it was given, otherwise None.
+    /// Returns a u8 if it was given; otherwise, None.
     pub fn protocol(&self) -> Option<u8> {
         self.protocol.as_ref().and_then(|n| n.as_u8())
     }
 
-    /// Returns a u8 if it was given, otherwise None.
+    /// Returns a u8 if it was given; otherwise, None.
     pub fn algorithm(&self) -> Option<u8> {
         self.algorithm.as_ref().and_then(|n| n.as_u8())
     }
@@ -340,17 +340,17 @@ impl SecureDns {
         self.key_data.as_deref().unwrap_or_default()
     }
 
-    /// Returns true if a truish value was given, otherwise false.
+    /// Returns true if a truish value was given; otherwise, false.
     pub fn zone_signed(&self) -> Option<bool> {
         self.zone_signed.as_ref().map(|b| b.into_bool())
     }
 
-    /// Returns true if a truish value was given, otherwise false.
+    /// Returns true if a truish value was given; otherwise, false.
     pub fn delegation_signed(&self) -> Option<bool> {
         self.delegation_signed.as_ref().map(|b| b.into_bool())
     }
 
-    /// Returns max_sig_life as a u64 if it was given, otherwise None.
+    /// Returns max_sig_life as a u64 if it was given; otherwise, None.
     pub fn max_sig_life(&self) -> Option<u64> {
         self.max_sig_life.as_ref().and_then(|n| n.as_u64())
     }

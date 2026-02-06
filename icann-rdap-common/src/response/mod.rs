@@ -411,7 +411,7 @@ pub trait ToChild {
     fn to_child(self) -> Self;
 }
 
-/// Returns `Some(Vec<T>)` if the vector is not empty, otherwise `None`.
+/// Returns `Some(Vec<T>)` if the vector is not empty; otherwise, `None`.
 pub fn to_opt_vec<T>(vec: Vec<T>) -> Option<Vec<T>> {
     (!vec.is_empty()).then_some(vec)
 }
