@@ -111,7 +111,7 @@ pub enum TestExecutionError {
     Client(#[from] reqwest::Error),
     #[error(transparent)]
     InvalidHeader(#[from] reqwest::header::InvalidHeaderValue),
-    #[error("Unsupporte Query Type")]
+    #[error("Unsupported Query Type")]
     UnsupportedQueryType,
     #[error("No referral to chase")]
     NoReferralToChase,
