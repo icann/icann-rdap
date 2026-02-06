@@ -249,7 +249,7 @@ impl KeyDatum {
 /// Represents the DNSSEC information of a domain.
 ///
 /// The following shows how to use the builders to
-/// create a domain with secure DNS informaiton.
+/// create a domain with secure DNS information.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
