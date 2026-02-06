@@ -19,7 +19,7 @@ pub mod md;
 pub mod rdap;
 pub mod rpsl;
 
-/// Basics necesasry for a simple clients.
+/// Basics necessary for a simple clients.
 pub mod prelude {
     #[doc(inline)]
     pub use crate::http::create_client;
