@@ -557,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn test_big_network_deserializion() {
+    fn test_big_network_deserialization() {
         // GIVEN a big network
         let expected = r#"
         {
