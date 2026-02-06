@@ -74,7 +74,7 @@ pub trait TxHandle: Send {
         error: &Rfc9083Error,
     ) -> Result<(), RdapServerError>;
 
-    /// Add an entitty to storage.
+    /// Add an entity to storage.
     async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError>;
 
     /// Add an error as an entity to storage. This is useful for specifying redirects.
