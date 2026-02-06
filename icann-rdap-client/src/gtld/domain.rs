@@ -28,7 +28,7 @@ impl ToGtldWhois for Domain {
         );
         gtld.push_str(&domain_info);
 
-        // Enitities: registrar and abuse/tech/admin/registrant info
+        // Entities: registrar and abuse/tech/admin/registrant info
         let formatted_data = self.object_common.entities.to_gtld_whois(params);
         gtld.push_str(&formatted_data);
 
