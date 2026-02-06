@@ -173,7 +173,7 @@ impl Entity {
         entities: Vec<Entity>,
         as_event_actors: Vec<Event>,
         contact: Option<Contact>,
-        no_vacard: Option<bool>,
+        no_vcard: Option<bool>,
         jscontact: Option<bool>,
         roles: Vec<String>,
         public_ids: Vec<PublicId>,
@@ -193,7 +193,7 @@ impl Entity {
                 .and_entities(to_opt_vec(entities))
                 .and_redacted(redacted)
                 .build(),
-            vcard_array: if no_vacard.unwrap_or(false) {
+            vcard_array: if no_vcard.unwrap_or(false) {
                 None
             } else {
                 contact.as_ref().map(|c| c.to_vcard())
@@ -253,7 +253,7 @@ impl Entity {
         entities: Vec<Entity>,
         as_event_actors: Vec<Event>,
         contact: Option<Contact>,
-        no_vacard: Option<bool>,
+        no_vcard: Option<bool>,
         jscontact: Option<bool>,
         roles: Vec<String>,
         public_ids: Vec<PublicId>,
@@ -276,7 +276,7 @@ impl Entity {
             .and_port_43(port_43)
             .as_event_actors(as_event_actors)
             .and_contact(contact)
-            .and_no_vacard(no_vacard)
+            .and_no_vcard(no_vcard)
             .and_jscontact(jscontact)
             .roles(roles)
             .entities(entities)

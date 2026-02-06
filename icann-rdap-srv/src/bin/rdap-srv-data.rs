@@ -879,7 +879,7 @@ async fn make_entity(
     contact = contact.with_postal_address(postal_address);
     let entity = Entity::response_obj()
         .contact(contact)
-        .no_vacard(args.no_vcard)
+        .no_vcard(args.no_vcard)
         .jscontact(args.jscontact)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
