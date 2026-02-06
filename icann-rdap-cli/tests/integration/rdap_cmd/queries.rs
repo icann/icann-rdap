@@ -835,7 +835,7 @@ async fn test_domain_referral_with_pretty_json_output() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn test_domain_referral_with_pretyy_json_output_for_registrar() {
+async fn test_domain_referral_with_pretty_json_output_for_registrar() {
     // GIVEN domain that refers to another domain (e.g. registry -> registrar)
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
