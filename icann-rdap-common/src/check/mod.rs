@@ -430,7 +430,7 @@ pub enum Check {
     #[strum(message = "Unicode name does not match LDH")]
     LdhNameDoesNotMatchUnicode = 902,
 
-    // Unicode Nmae 1000 - 1099
+    // Unicode Name 1000 - 1099
     #[strum(message = "unicodeName does not appear to be a domain name")]
     UnicodeNameInvalidDomain = 1000,
     #[strum(message = "unicodeName does not appear to be valid Unicode")]
