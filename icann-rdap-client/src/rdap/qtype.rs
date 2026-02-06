@@ -190,7 +190,7 @@ impl QueryType {
         if let IpCidr::V4(v4) = value {
             Ok(Self::IpV4Cidr(v4))
         } else {
-            Err(RdapClientError::AmbiquousQueryType)
+            Err(RdapClientError::AmbiguousQueryType)
         }
     }
 
@@ -203,7 +203,7 @@ impl QueryType {
         if let IpCidr::V6(v6) = value {
             Ok(Self::IpV6Cidr(v6))
         } else {
-            Err(RdapClientError::AmbiquousQueryType)
+            Err(RdapClientError::AmbiguousQueryType)
         }
     }
 
@@ -274,7 +274,7 @@ impl FromStr for QueryType {
         }
 
         // The query type cannot be deteremined.
-        Err(RdapClientError::AmbiquousQueryType)
+        Err(RdapClientError::AmbiguousQueryType)
     }
 }
 

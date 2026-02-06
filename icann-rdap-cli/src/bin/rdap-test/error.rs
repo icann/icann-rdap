@@ -84,7 +84,7 @@ impl Termination for RdapTestError {
 
                 // User Errors
                 RdapClientError::InvalidQueryValue => 202,
-                RdapClientError::AmbiquousQueryType => 203,
+                RdapClientError::AmbiguousQueryType => 203,
                 RdapClientError::DomainNameError(_) => 204,
 
                 // Internal Errors

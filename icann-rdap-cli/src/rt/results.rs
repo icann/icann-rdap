@@ -441,7 +441,7 @@ impl TestRun {
         } else {
             self.outcome = match rdap_response.err().unwrap() {
                 RdapClientError::InvalidQueryValue
-                | RdapClientError::AmbiquousQueryType
+                | RdapClientError::AmbiguousQueryType
                 | RdapClientError::Poison
                 | RdapClientError::DomainNameError(_)
                 | RdapClientError::BootstrapUnavailable

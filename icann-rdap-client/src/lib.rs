@@ -45,8 +45,8 @@ pub enum RdapClientError {
     #[error("Query value is not valid.")]
     InvalidQueryValue,
 
-    #[error("Ambiquous query type.")]
-    AmbiquousQueryType,
+    #[error("Ambiguous query type.")]
+    AmbiguousQueryType,
 
     #[error(transparent)]
     Response(#[from] RdapResponseError),
