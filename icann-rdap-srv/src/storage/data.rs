@@ -169,7 +169,7 @@ pub enum NetworkIdType {
 ///     ]
 /// }
 /// ```
-/// In this example, 2 domains will be created for "foo.example" and "bar.exaple" using
+/// In this example, 2 domains will be created for "foo.example" and "bar.example" using
 /// the template.
 pub async fn load_data(
     config: &ServiceConfig,

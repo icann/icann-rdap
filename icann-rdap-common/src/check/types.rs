@@ -699,7 +699,7 @@ mod tests {
     fn test_nameserver_with_self_link_and_remark() {
         // GIVEN
         let rdap = Nameserver::builder()
-            .ldh_name("exapmle.com")
+            .ldh_name("example.com")
             .remark(Remark(
                 NoticeOrRemark::builder()
                     .description_entry("a notice")
