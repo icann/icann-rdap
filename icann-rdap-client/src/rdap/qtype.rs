@@ -273,7 +273,7 @@ impl FromStr for QueryType {
             return Ok(Self::Entity(s.to_owned()));
         }
 
-        // The query type cannot be deteremined.
+        // The query type cannot be determined.
         Err(RdapClientError::AmbiguousQueryType)
     }
 }
