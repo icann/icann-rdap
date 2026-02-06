@@ -5,7 +5,7 @@ This is a client library for the Registration Data Access Protocol (RDAP) writte
 by the Internet Corporation for Assigned Names and Numbers [(ICANN)](https://www.icann.org). 
 RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
-More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
+Read about [ICANN's role in RDAP](https://www.icann.org/rdap).
 General information on RDAP can be found [here](https://rdap.rcode3.com/).
 
 Installation
