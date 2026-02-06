@@ -120,7 +120,7 @@ impl GetChecks for Network {
                         }
                     }
                     let this_network =
-                        IpCidr::from_str("0.0.0.0/8").expect("incorrect this netowrk cidr");
+                        IpCidr::from_str("0.0.0.0/8").expect("incorrect this network cidr");
                     if this_network.contains(&start_addr) && this_network.contains(&end_addr) {
                         items.push(Check::IpAddressThisNetwork.check_item())
                     }

@@ -647,7 +647,7 @@ fn create_redirect_file(
             autnum: AutnumOrError::ErrorResponse(error),
             ids: vec![id.clone()],
         },
-        RdapId::Netowrk(id) => Template::Network {
+        RdapId::Network(id) => Template::Network {
             network: NetworkOrError::ErrorResponse(error),
             ids: vec![id.clone()],
         },
@@ -705,7 +705,7 @@ fn create_template_file(
                 ids: vec![id.clone()],
             }
         }
-        RdapId::Netowrk(id) => {
+        RdapId::Network(id) => {
             let RdapResponse::Network(network) = rdap else {
                 panic!("non network created with network id")
             };
@@ -727,7 +727,7 @@ enum RdapId {
     Domain(DomainId),
     Nameserver(NameserverId),
     Autnum(AutnumId),
-    Netowrk(NetworkId),
+    Network(NetworkId),
     Help,
 }
 
@@ -1075,12 +1075,12 @@ async fn make_network(
         .links(links(&self_href).unwrap_or_default())
         .and_handle(args.handle);
     let network = network.build()?;
-    let id = RdapId::Netowrk(NetworkId {
+    let id = RdapId::Network(NetworkId {
         network_id: icann_rdap_srv::storage::data::NetworkIdType::Range {
             start_address: network
                 .start_address
                 .clone()
-                .expect("netowrk created without start address"),
+                .expect("network created without start address"),
             end_address: network
                 .end_address
                 .clone()
