@@ -346,7 +346,7 @@ pub enum Check {
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
     RdapConformanceInvalidParent = 101,
     #[strum(message = "declared extension may not be registered.")]
-    UnknownExtention = 102,
+    UnknownExtension = 102,
     #[strum(message = "'rdapConformance' is empty.")]
     RdapConformanceIsEmpty = 103,
 
@@ -614,7 +614,7 @@ impl Check {
             Self::RdapConformanceMissing
             | Self::RdapConformanceInvalidParent
             | Self::RdapConformanceIsEmpty => CheckClass::Std95Error,
-            Self::UnknownExtention => CheckClass::Std95Warning,
+            Self::UnknownExtension => CheckClass::Std95Warning,
 
             Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::Std95Error,
             Self::LinkRelatedHasNoType | Self::LinkRelatedIsNotRdap => CheckClass::Std95Warning,

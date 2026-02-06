@@ -38,7 +38,7 @@ impl GetChecks for RdapConformance {
             if !params.allow_unreg_ext {
                 let id = ExtensionId::from_str(ext);
                 if id.is_err() {
-                    items.push(Check::UnknownExtention.check_item())
+                    items.push(Check::UnknownExtension.check_item())
                 }
             }
         }
