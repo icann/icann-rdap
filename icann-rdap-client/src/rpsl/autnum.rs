@@ -3,7 +3,7 @@ use icann_rdap_common::prelude::{Autnum, CommonFields, ObjectCommonFields};
 use crate::rpsl::{RpslParams, ToRpsl};
 
 use super::{
-    push_entities, push_manditory_attribute, push_notices, push_obj_common,
+    push_entities, push_mandatory_attribute, push_notices, push_obj_common,
     push_optional_attribute, AttrName, KeyRef,
 };
 
@@ -16,7 +16,7 @@ impl ToRpsl for Autnum {
 
         // key
         let (key_name, key_value) = self.key_ref(params);
-        rpsl = push_manditory_attribute(rpsl, key_name, &key_value);
+        rpsl = push_mandatory_attribute(rpsl, key_name, &key_value);
 
         // range
         let range = format!(

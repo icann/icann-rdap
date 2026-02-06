@@ -192,32 +192,32 @@ pub trait KeyRef {
     fn key_ref(&self, params: RpslParams) -> (AttrName, String);
 }
 
-/// Takes the string to push a rpsl attribute with an optional value that is manditory.
+/// Takes the string to push a rpsl attribute with an optional value that is mandatory.
 ///
 /// Returns that string back, so ownership is temporary.
-pub fn and_push_manditory_attribute(
+pub fn and_push_mandatory_attribute(
     mut rpsl: String,
     name: AttrName,
     value: Option<&str>,
     default: &str,
 ) -> String {
     let attr_val = value.unwrap_or(default);
-    rpsl = push_manditory_attribute(rpsl, name, attr_val);
+    rpsl = push_mandatory_attribute(rpsl, name, attr_val);
     rpsl
 }
 
 /// Takes the string to push an rpsl attribute only if a value is provided.
 pub fn push_optional_attribute(mut rpsl: String, name: AttrName, value: Option<&str>) -> String {
     if let Some(str) = value {
-        rpsl = push_manditory_attribute(rpsl, name, str);
+        rpsl = push_mandatory_attribute(rpsl, name, str);
     }
     rpsl
 }
 
-/// Takes the string to push a rpsl attribute that is manditory.
+/// Takes the string to push a rpsl attribute that is mandatory.
 ///
 /// Returns that string back, so ownership is temporary.
-pub fn push_manditory_attribute(mut rpsl: String, name: AttrName, value: &str) -> String {
+pub fn push_mandatory_attribute(mut rpsl: String, name: AttrName, value: &str) -> String {
     let attr_name = format!("{name}:");
     let value = if value.is_empty() {
         "EMPTY VALUE"
@@ -256,7 +256,7 @@ pub fn push_obj_common<T: ObjectCommonFields>(
 }
 
 pub fn push_source(mut rpsl: String, params: RpslParams) -> String {
-    rpsl = push_manditory_attribute(rpsl, AttrName::Source, params.http_data.host());
+    rpsl = push_mandatory_attribute(rpsl, AttrName::Source, params.http_data.host());
     rpsl
 }
 
@@ -271,7 +271,7 @@ pub fn push_entity_refs(mut rpsl: String, entities: &[Entity]) -> String {
     for entity in entities {
         let key_value = entity_value(entity);
         if entity.roles().is_empty() {
-            rpsl = push_manditory_attribute(rpsl, AttrName::OtherC, &key_value);
+            rpsl = push_mandatory_attribute(rpsl, AttrName::OtherC, &key_value);
         } else {
             for role in entity.roles() {
                 let key_name = match role.to_ascii_lowercase().as_ref() {
@@ -285,7 +285,7 @@ pub fn push_entity_refs(mut rpsl: String, entities: &[Entity]) -> String {
                     "technical" => AttrName::TechC,
                     _ => AttrName::OtherC,
                 };
-                rpsl = push_manditory_attribute(rpsl, key_name, &key_value);
+                rpsl = push_mandatory_attribute(rpsl, key_name, &key_value);
             }
         }
     }
@@ -322,14 +322,14 @@ pub fn push_notices(mut rpsl: String, notices: &[Notice]) -> String {
 pub fn push_remarks(mut rpsl: String, remarks: &[Remark]) -> String {
     for remark in remarks {
         if let Some(title) = remark.title() {
-            rpsl = push_manditory_attribute(rpsl, AttrName::Remarks, title);
+            rpsl = push_mandatory_attribute(rpsl, AttrName::Remarks, title);
         }
         for (idx, line) in remark.description().iter().enumerate() {
-            rpsl = push_manditory_attribute(rpsl, AttrName::Remarks, &format!("{idx}. {line}"));
+            rpsl = push_mandatory_attribute(rpsl, AttrName::Remarks, &format!("{idx}. {line}"));
         }
         for link in remark.links() {
             if let Some(href) = link.href() {
-                rpsl = push_manditory_attribute(rpsl, AttrName::Remarks, href);
+                rpsl = push_mandatory_attribute(rpsl, AttrName::Remarks, href);
             }
         }
     }
@@ -358,9 +358,9 @@ pub fn push_events(mut rpsl: String, events: &[Event]) -> String {
                         "unlocked" => AttrName::Unlocked,
                         _ => AttrName::OtherEvent,
                     };
-                    rpsl = push_manditory_attribute(rpsl, att_name, &date_str);
+                    rpsl = push_mandatory_attribute(rpsl, att_name, &date_str);
                 } else {
-                    rpsl = push_manditory_attribute(rpsl, AttrName::OtherEvent, &date_str);
+                    rpsl = push_mandatory_attribute(rpsl, AttrName::OtherEvent, &date_str);
                 }
             }
         }
@@ -370,13 +370,13 @@ pub fn push_events(mut rpsl: String, events: &[Event]) -> String {
 
 pub fn push_status(mut rpsl: String, status: &[String]) -> String {
     for stati in status {
-        rpsl = push_manditory_attribute(rpsl, AttrName::Status, stati);
+        rpsl = push_mandatory_attribute(rpsl, AttrName::Status, stati);
     }
     rpsl
 }
 
 pub fn push_handle(mut rpsl: String, handle: Option<&str>) -> String {
-    rpsl = and_push_manditory_attribute(rpsl, AttrName::NicHdl, handle, "NO HANDLE");
+    rpsl = and_push_mandatory_attribute(rpsl, AttrName::NicHdl, handle, "NO HANDLE");
     rpsl
 }
 
@@ -388,7 +388,7 @@ pub fn push_public_ids(mut rpsl: String, public_ids: &[PublicId]) -> String {
         let Some(identifier) = id.identifier() else {
             continue;
         };
-        rpsl = push_manditory_attribute(
+        rpsl = push_mandatory_attribute(
             rpsl,
             AttrName::PublicId,
             &format!("{identifier} ({id_type})"),

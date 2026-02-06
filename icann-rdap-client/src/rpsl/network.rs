@@ -3,7 +3,7 @@ use icann_rdap_common::prelude::{CommonFields, Network, ObjectCommonFields};
 use crate::rpsl::{RpslParams, ToRpsl};
 
 use super::{
-    push_entities, push_manditory_attribute, push_notices, push_obj_common,
+    push_entities, push_mandatory_attribute, push_notices, push_obj_common,
     push_optional_attribute, AttrName, KeyRef,
 };
 
@@ -16,14 +16,14 @@ impl ToRpsl for Network {
 
         // key
         let (key_name, key_value) = self.key_ref(params);
-        rpsl = push_manditory_attribute(rpsl, key_name, &key_value);
+        rpsl = push_mandatory_attribute(rpsl, key_name, &key_value);
 
         // type
         rpsl = push_optional_attribute(rpsl, AttrName::Type, self.network_type());
 
         // cidr0
         for cidr in self.cidr0_cidrs() {
-            rpsl = push_manditory_attribute(rpsl, AttrName::Cidr, &cidr.to_string());
+            rpsl = push_mandatory_attribute(rpsl, AttrName::Cidr, &cidr.to_string());
         }
 
         // name
