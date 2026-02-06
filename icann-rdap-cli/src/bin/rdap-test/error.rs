@@ -66,7 +66,7 @@ impl Termination for RdapTestError {
             // User Errors
             Self::UnknownOutputType => 200,
 
-            // RDAP Client Errrors
+            // RDAP Client Errors
             Self::RdapClient(e) => match e {
                 // I/O Errors
                 RdapClientError::Client(_) => 42,

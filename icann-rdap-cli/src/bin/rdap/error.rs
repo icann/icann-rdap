@@ -65,7 +65,7 @@ impl RdapCliError {
             Self::ErrorOnChecks => 201,
             Self::GtldWhoisOutputNotImplemented => 205,
 
-            // RDAP Client Errrors
+            // RDAP Client Errors
             Self::RdapClient(e) => match e {
                 // I/O Errors
                 RdapClientError::Client(ce) => {
