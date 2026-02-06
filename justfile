@@ -39,7 +39,7 @@ smoke_domain_query:
 smoke_rdap_help:
     cargo run --bin rdap -- --help
 
-[doc('Run an IP conformace check smoke test.')]
+[doc('Run an IP conformance check smoke test.')]
 smoke_ip_check:
     cargo run --bin rdap-test -- 199.4.138.53
 

@@ -840,7 +840,7 @@ mod tests {
 
     #[test]
     fn test_rdap_conformance_serialize() {
-        // GIVEN rdap conformaance
+        // GIVEN rdap conformance
         let rdap_conformance: RdapConformance =
             vec![Extension("foo".to_string()), Extension("bar".to_string())];
 
