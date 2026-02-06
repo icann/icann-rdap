@@ -144,7 +144,7 @@ pub enum RdapResponse {
 
     // Help
     Help(Box<Help>),
-    // These are all boxed to keep the variant size alligned.
+    // These are all boxed to keep the variant size aligned.
     // While not completely necessary for all these variants today,
     // this will prevent an API change in the future when new items
     // are added to each variant when supporting future RDAP extensions.
