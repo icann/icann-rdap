@@ -54,7 +54,7 @@ const_format = "0.2"
 # cross-platform application directories
 directories = "5.0"
 
-# loads environment variables from the a file
+# loads environment variables from a file
 dotenv = "0.15.0"
 
 # environment variable utilities

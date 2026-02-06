@@ -330,7 +330,7 @@ impl Entity {
         self.networks.as_deref().unwrap_or_default()
     }
 
-    /// True if an entity is an a role.
+    /// True if an entity is a role.
     ///
     /// Registered roles can be found in [crate::response::EntityRole]. This method
     /// purposefully allows using unregistered roles as well.
