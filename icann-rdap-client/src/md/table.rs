@@ -8,7 +8,7 @@ pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
 }
 
-/// A datastructue to hold various row types for a markdown table.
+/// A datastructure to hold various row types for a markdown table.
 ///
 /// This datastructure has the following types of rows:
 /// * header - just the left most column which is centered and bolded text
