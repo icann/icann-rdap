@@ -74,7 +74,7 @@ impl<T: ToString> StringCheck for T {
 /// ```
 pub trait StringListCheck {
     /// Tests if a list of strings is empty, or if any of the
-    /// elemeents of the list are empty or whitespace.
+    /// elements of the list are empty or whitespace.
     fn is_empty_or_any_empty_or_whitespace(&self) -> bool;
 
     /// Tests if a list of strings are LDH strings. See [CharCheck::is_ldh].
