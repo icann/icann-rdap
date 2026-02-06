@@ -87,7 +87,7 @@ impl MultiPartTable {
         self
     }
 
-    /// Add a name/value row without processing whitespace or markdown charaters.
+    /// Add a name/value row without processing whitespace or markdown characters.
     pub fn nv_raw(mut self, name: &impl ToString, value: impl ToString) -> Self {
         self.rows
             .push(Row::NameValue((name.to_string(), value.to_string())));
