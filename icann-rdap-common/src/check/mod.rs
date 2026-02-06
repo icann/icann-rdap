@@ -93,7 +93,7 @@ pub enum CheckClass {
 
 /// All check classes
 pub static ALL_CHECK_CLASSES: &[CheckClass] = CheckClass::VARIANTS;
-/// All warning and error check clases.
+/// All warning and error check classes.
 pub static WARNING_CHECK_CLASSES: &[CheckClass] = &[
     CheckClass::Std95Warning,
     CheckClass::Std95Error,
