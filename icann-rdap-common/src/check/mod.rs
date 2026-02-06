@@ -506,7 +506,7 @@ pub enum Check {
     #[strum(message = "port43 appears to be empty or only whitespace")]
     Port43IsEmpty = 1600,
 
-    // Public Id 1700 - 1799
+    // Public ID 1700 - 1799
     #[strum(message = "publicId type is absent")]
     PublicIdTypeIsAbsent = 1700,
     #[strum(message = "publicId identifier is absent")]
