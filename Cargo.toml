@@ -106,7 +106,7 @@ pct-str = "1.2"
 # ip address trie
 prefix-trie = "0.2.4"
 
-# regular expresions
+# regular expressions
 regex = "1.10"
 
 # http client library
