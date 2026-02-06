@@ -235,7 +235,7 @@ fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
         format!("{RDAP_MEDIA_TYPE};exts_list=\"{exts_list_param}\", {JSON_MEDIA_TYPE}")
     };
     // We are unwrapping this value because this should never happen as the construction of
-    // the header value is under our control. Unwrapping will cause a fail fast whereas propogating
+    // the header value is under our control. Unwrapping will cause a fail fast whereas propagating
     // the result up the stack may get it swallowed.
     let accept_value = HeaderValue::from_str(&accept_media_types).unwrap();
     default_headers.insert(header::ACCEPT, accept_value);
