@@ -222,7 +222,7 @@ impl<'a> GetCountryCode<'a> for &'a Vec<Value> {
 
 const CONTEXTS: [&str; 6] = ["home", "work", "office", "private", "mobile", "cell"];
 
-/// Get the vCard "type" paremeter as a JSContact context.
+/// Get the vCard "type" parameter as a JSContact context.
 trait GetContexts<'a> {
     fn get_contexts(self) -> Option<Vec<String>>;
 }
