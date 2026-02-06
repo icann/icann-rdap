@@ -14,7 +14,7 @@ pub trait StringCheck {
     /// Tests if the string contains only letters, digits, or hyphens and is not empty.
     fn is_ldh_string(&self) -> bool;
 
-    /// Tests if a string is an LDH doamin name. This is not to be confused with [StringCheck::is_ldh_string],
+    /// Tests if a string is an LDH domain name. This is not to be confused with [StringCheck::is_ldh_string],
     /// which checks individual domain labels.
     fn is_ldh_domain_name(&self) -> bool;
 
