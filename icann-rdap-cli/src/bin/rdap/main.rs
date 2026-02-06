@@ -79,7 +79,7 @@ struct Cli {
     /// Type of the query when using a query value.
     ///
     /// Without this option, the query type will be inferred based on the query value.
-    /// To supress the infererence and explicitly specifty the query type, use this
+    /// To supress the inference and explicitly specifty the query type, use this
     /// option.
     #[arg(
         short = 't',
