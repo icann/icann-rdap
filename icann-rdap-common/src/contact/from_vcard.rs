@@ -747,7 +747,7 @@ mod tests {
             .expect("no contexts")
             .contains(&"home".to_string()));
         assert_eq!(
-            addr.full_address.as_ref().expect("full address not foudn"),
+            addr.full_address.as_ref().expect("full address not found"),
             "123 Maple Ave\nSuite 90001\nVancouver\nBC\n1239\n"
         );
 
