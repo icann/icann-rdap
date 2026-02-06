@@ -144,7 +144,7 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
         .expect("creating notice/remark argument regex");
     let Some(cap) = re.captures(arg) else {
         return Err(RdapServerError::ArgParse(
-            "Unable to parse Notice/Remark argumnet.".to_string(),
+            "Unable to parse Notice/Remark argument.".to_string(),
         ));
     };
     let Some(description) = cap.name("t") else {
