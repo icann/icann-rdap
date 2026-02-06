@@ -77,7 +77,7 @@ pub trait StringListCheck {
     /// elemeents of the list are empty or whitespace.
     fn is_empty_or_any_empty_or_whitespace(&self) -> bool;
 
-    /// Tests if a list of strings ard LDH strings. See [CharCheck::is_ldh].
+    /// Tests if a list of strings are LDH strings. See [CharCheck::is_ldh].
     fn is_ldh_string_list(&self) -> bool;
 }
 
