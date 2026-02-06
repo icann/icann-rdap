@@ -494,7 +494,7 @@ pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
         let ec = e.exit_code();
         match ec {
-            // we use eprintln! becuase at the point where this is thrown, the tracing subscriber is not yet instantiated.
+            // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
             205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
             206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
             _ => eprintln!("\n{e}\n"),
