@@ -16,7 +16,7 @@ keywords = ["whois", "rdap"]
 
 [workspace.dependencies]
 
-# for suffix string searchs
+# for suffix string searches
 ab-radix-trie = "0.2.1"
 
 # easy error handling
