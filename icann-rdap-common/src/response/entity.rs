@@ -292,7 +292,7 @@ impl Entity {
     /// Get a [Contact].
     ///
     /// If the contact is represented as a JSContact, that will be
-    /// preferred, else the contact will come from the impentrable vCard.
+    /// preferred, else the contact will come from the impenetrable vCard.
     pub fn contact(&self) -> Option<Contact> {
         if let Some(jscontact) = &self.jscontact_card {
             return Some(Contact::from_jscontact(jscontact));
