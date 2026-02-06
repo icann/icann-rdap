@@ -100,7 +100,7 @@ impl GetChecks for Link {
             } else if RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type) &&
                 // because some registries do not model nameservers directly,
                 // they can be embedded in other objects but aren't first class
-                // objects themself (see RIR example in RFC 9083). Therefore,
+                // objects themselves (see RIR example in RFC 9083). Therefore,
                 // it only matters that a nameserver has no self link if it is
                 // the top most object (i.e. a first class object).
                 params.root.get_type() != TypeId::of::<Nameserver>()
@@ -274,7 +274,7 @@ impl GetGroupChecks for ObjectCommon {
             && params.parent_type != TypeId::of::<Nameserver>()
         // because some registries do not model nameservers directly,
         // they can be embedded in other objects but aren't first class
-        // objects themself (see RIR example in RFC 9083). Therefore,
+        // objects themselves (see RIR example in RFC 9083). Therefore,
         // it only matters that a nameserver has no self link if it is
         // the top most object (i.e. a first class object).
         {
