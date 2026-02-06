@@ -590,7 +590,7 @@ mod tests {
     }
 
     #[test]
-    fn test_resopnse_is_domain() {
+    fn test_response_is_domain() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/domain_afnic_fr.json")).unwrap();

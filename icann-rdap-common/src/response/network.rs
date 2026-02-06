@@ -271,7 +271,7 @@ impl Network {
         })
     }
 
-    /// Builds an IP network object for a resopnse.
+    /// Builds an IP network object for a response.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
