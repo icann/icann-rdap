@@ -74,7 +74,7 @@ pub enum CheckClass {
 
     /// STD 95 Errors
     ///
-    /// This class represetns errors in the RDAP with respect to STD 95.
+    /// This class represents errors in the RDAP with respect to STD 95.
     #[strum(serialize = "Std95Err")]
     Std95Error,
 
