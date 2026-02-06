@@ -196,7 +196,7 @@ impl GetChecks for PublicIds {
             }
         });
         Checks {
-            rdap_struct: super::RdapStructure::PublidIds,
+            rdap_struct: super::RdapStructure::PublicIds,
             index,
             items,
             sub_checks: vec![],
@@ -893,7 +893,7 @@ mod tests {
 
         // THEN
         checks
-            .sub(crate::check::RdapStructure::PublidIds)
+            .sub(crate::check::RdapStructure::PublicIds)
             .expect("Public Ids not found")
             .items
             .iter()
@@ -923,7 +923,7 @@ mod tests {
 
         // THEN
         assert!(checks
-            .sub(crate::check::RdapStructure::PublidIds)
+            .sub(crate::check::RdapStructure::PublicIds)
             .expect("public ids not found")
             .items
             .iter()
@@ -953,7 +953,7 @@ mod tests {
 
         // THEN
         assert!(checks
-            .sub(crate::check::RdapStructure::PublidIds)
+            .sub(crate::check::RdapStructure::PublicIds)
             .expect("Public Ids not found")
             .items
             .iter()
@@ -974,7 +974,7 @@ mod tests {
 
         // THEN
         checks
-            .sub(crate::check::RdapStructure::PublidIds)
+            .sub(crate::check::RdapStructure::PublicIds)
             .expect("Public Ids not found")
             .items
             .iter()

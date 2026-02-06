@@ -141,7 +141,7 @@ pub enum RdapStructure {
     NoticeOrRemark,
     Notice,
     Notices,
-    PublidIds,
+    PublicIds,
     Port43,
     RdapConformance,
     Redacted,
