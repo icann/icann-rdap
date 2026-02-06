@@ -627,7 +627,7 @@ pub type Events = Vec<Event>;
 /// this structure allows those to be optional to be able to parse responses from
 /// servers that do not strictly obey the RFC.
 ///
-/// Use of the builder to contruct an RFC valid structure is recommended.
+/// Use of the builder to construct an RFC valid structure is recommended.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -690,7 +690,7 @@ pub struct Event {
 impl Event {
     /// Builds an Event.
     ///
-    /// Use of the builder to contruct an RFC valid structure is recommended.
+    /// Use of the builder to construct an RFC valid structure is recommended.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -765,7 +765,7 @@ pub type PublicIds = Vec<PublicId>;
 /// this structure allows those to be optional to be able to parse responses from
 /// servers that do not strictly obey the RFC.
 ///
-/// Use of the builder to contruct an RFC valid structure is recommended.
+/// Use of the builder to construct an RFC valid structure is recommended.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
