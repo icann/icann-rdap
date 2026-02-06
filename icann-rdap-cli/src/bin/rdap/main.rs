@@ -109,7 +109,7 @@ struct Cli {
     /// An RDAP base URL for a specific RDAP server.
     ///
     /// Use this option to explicitly give an RDAP base URL when issuing queries.
-    /// If not specified, the base URL will come from the RDAP boostrap process
+    /// If not specified, the base URL will come from the RDAP bootstrap process
     /// outlined in RFC 9224.
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,

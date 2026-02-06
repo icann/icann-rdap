@@ -27,7 +27,7 @@ pub enum RdapCliError {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Iana(#[from] IanaResponseError),
-    #[error("Invalid IANA bootsrap file")]
+    #[error("Invalid IANA bootstrap file")]
     InvalidBootstrap,
     #[error("Bootstrap not found")]
     BootstrapNotFound,
