@@ -1013,7 +1013,7 @@ mod tests {
     fn test_notice_with_unknown_type() {
         // GIVEN
         let notice = Notice::builder()
-            .nr_type("unknwon_type")
+            .nr_type("unknown_type")
             .description_entry("stuff")
             .build();
         let rdap = Domain::response_obj()
