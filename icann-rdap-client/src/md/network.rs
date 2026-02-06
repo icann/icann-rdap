@@ -206,7 +206,7 @@ mod tests {
     }
 
     #[test]
-    fn test_md_network_with_handle_and_no_shwo_redactions() {
+    fn test_md_network_with_handle_and_no_show_redactions() {
         // GIVEN network
         let redactions = vec![
             Redacted::builder()
