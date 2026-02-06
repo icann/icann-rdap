@@ -30,7 +30,7 @@ use {
 /// This program moves RDAP files into storage. Files are checked for validity
 /// before moving them.
 struct Cli {
-    /// Directory containg RDAP JSON files.
+    /// Directory containing RDAP JSON files.
     #[arg()]
     directory: Option<String>,
 
