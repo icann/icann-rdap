@@ -199,7 +199,8 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
                 if req_number == 1 {
                     return Err(RdapCliError::NoRegistryFound);
                 } else {
-                    return Err(error);
+                    warn!("{error}");
+                    break;
                 }
             }
         }
