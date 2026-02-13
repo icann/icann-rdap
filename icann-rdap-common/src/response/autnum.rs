@@ -134,7 +134,7 @@ impl Autnum {
         }
     }
 
-    /// Builds an autnum object as a resopnse.
+    /// Builds an autnum object as a response.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;

@@ -31,7 +31,7 @@ async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -61,7 +61,7 @@ async fn GIVEN_server_with_idn_WHEN_query_domain_THEN_status_code_200() {
     let query = QueryType::domain("café.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -118,7 +118,7 @@ async fn GIVEN_server_with_domain_and_search_enabled_WHEN_query_domain_THEN_stat
     let query = QueryType::DomainNameSearch("foo.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);

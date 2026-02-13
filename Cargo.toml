@@ -16,7 +16,7 @@ keywords = ["whois", "rdap"]
 
 [workspace.dependencies]
 
-# for suffix string searchs
+# for suffix string searches
 ab-radix-trie = "0.2.1"
 
 # easy error handling
@@ -54,7 +54,7 @@ const_format = "0.2"
 # cross-platform application directories
 directories = "5.0"
 
-# loads environment variables from the a file
+# loads environment variables from a file
 dotenv = "0.15.0"
 
 # environment variable utilities
@@ -106,7 +106,7 @@ pct-str = "1.2"
 # ip address trie
 prefix-trie = "0.2.4"
 
-# regular expresions
+# regular expressions
 regex = "1.10"
 
 # http client library

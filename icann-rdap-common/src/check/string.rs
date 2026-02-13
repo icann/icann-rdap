@@ -14,7 +14,7 @@ pub trait StringCheck {
     /// Tests if the string contains only letters, digits, or hyphens and is not empty.
     fn is_ldh_string(&self) -> bool;
 
-    /// Tests if a string is an LDH doamin name. This is not to be confused with [StringCheck::is_ldh_string],
+    /// Tests if a string is an LDH domain name. This is not to be confused with [StringCheck::is_ldh_string],
     /// which checks individual domain labels.
     fn is_ldh_domain_name(&self) -> bool;
 
@@ -74,10 +74,10 @@ impl<T: ToString> StringCheck for T {
 /// ```
 pub trait StringListCheck {
     /// Tests if a list of strings is empty, or if any of the
-    /// elemeents of the list are empty or whitespace.
+    /// elements of the list are empty or whitespace.
     fn is_empty_or_any_empty_or_whitespace(&self) -> bool;
 
-    /// Tests if a list of strings ard LDH strings. See [CharCheck::is_ldh].
+    /// Tests if a list of strings are LDH strings. See [CharCheck::is_ldh].
     fn is_ldh_string_list(&self) -> bool;
 }
 

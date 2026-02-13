@@ -14,7 +14,7 @@ pub struct RequestData {
     ///
     /// In many RDAP scenarios, an RDAP server must be queried to get
     /// a referral to the target server containing the information being sought
-    /// by the user. This data can be used when determing thing such
+    /// by the user. This data can be used when determining thing such
     /// as what data to output, etc...
     pub req_target: bool,
 }

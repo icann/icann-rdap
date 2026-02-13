@@ -26,7 +26,7 @@ pub enum CheckTypeArg {
     /// Checks for specification warnings.
     SpecWarn,
 
-    /// Checks for specficiation errors.
+    /// Checks for specification errors.
     SpecError,
 }
 

@@ -38,7 +38,7 @@ impl Common {
     }
 }
 
-/// Convience methods for fields in  [Common].
+/// Convenience methods for fields in  [Common].
 pub trait CommonFields {
     /// Getter for [Common].
     fn common(&self) -> &Common;

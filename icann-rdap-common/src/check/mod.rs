@@ -74,7 +74,7 @@ pub enum CheckClass {
 
     /// STD 95 Errors
     ///
-    /// This class represetns errors in the RDAP with respect to STD 95.
+    /// This class represents errors in the RDAP with respect to STD 95.
     #[strum(serialize = "Std95Err")]
     Std95Error,
 
@@ -93,7 +93,7 @@ pub enum CheckClass {
 
 /// All check classes
 pub static ALL_CHECK_CLASSES: &[CheckClass] = CheckClass::VARIANTS;
-/// All warning and error check clases.
+/// All warning and error check classes.
 pub static WARNING_CHECK_CLASSES: &[CheckClass] = &[
     CheckClass::Std95Warning,
     CheckClass::Std95Error,
@@ -141,7 +141,7 @@ pub enum RdapStructure {
     NoticeOrRemark,
     Notice,
     Notices,
-    PublidIds,
+    PublicIds,
     Port43,
     RdapConformance,
     Redacted,
@@ -346,7 +346,7 @@ pub enum Check {
     #[strum(message = "'rdapConformance' can only appear at the top of response.")]
     RdapConformanceInvalidParent = 101,
     #[strum(message = "declared extension may not be registered.")]
-    UnknownExtention = 102,
+    UnknownExtension = 102,
     #[strum(message = "'rdapConformance' is empty.")]
     RdapConformanceIsEmpty = 103,
 
@@ -430,7 +430,7 @@ pub enum Check {
     #[strum(message = "Unicode name does not match LDH")]
     LdhNameDoesNotMatchUnicode = 902,
 
-    // Unicode Nmae 1000 - 1099
+    // Unicode Name 1000 - 1099
     #[strum(message = "unicodeName does not appear to be a domain name")]
     UnicodeNameInvalidDomain = 1000,
     #[strum(message = "unicodeName does not appear to be valid Unicode")]
@@ -506,7 +506,7 @@ pub enum Check {
     #[strum(message = "port43 appears to be empty or only whitespace")]
     Port43IsEmpty = 1600,
 
-    // Public Id 1700 - 1799
+    // Public ID 1700 - 1799
     #[strum(message = "publicId type is absent")]
     PublicIdTypeIsAbsent = 1700,
     #[strum(message = "publicId identifier is absent")]
@@ -614,7 +614,7 @@ impl Check {
             Self::RdapConformanceMissing
             | Self::RdapConformanceInvalidParent
             | Self::RdapConformanceIsEmpty => CheckClass::Std95Error,
-            Self::UnknownExtention => CheckClass::Std95Warning,
+            Self::UnknownExtension => CheckClass::Std95Warning,
 
             Self::LinkMissingValueProperty | Self::LinkMissingRelProperty => CheckClass::Std95Error,
             Self::LinkRelatedHasNoType | Self::LinkRelatedIsNotRdap => CheckClass::Std95Warning,

@@ -149,7 +149,7 @@ impl StringListCheck for VectorStringish {
     }
 }
 
-/// Returns `Some(VectorStringish)` if the vector is not empty, otherwise `None`.
+/// Returns `Some(VectorStringish)` if the vector is not empty; otherwise, `None`.
 pub fn to_opt_vectorstringish(vec: Vec<String>) -> Option<VectorStringish> {
     (!vec.is_empty()).then_some(VectorStringish::from(vec))
 }
@@ -393,7 +393,7 @@ enum NumberishInner {
 #[serde(transparent)]
 pub struct Numberish<T> {
     inner: NumberishInner,
-    phatom: PhantomData<T>,
+    phantom: PhantomData<T>,
 }
 
 impl<T> From<T> for Numberish<T>
@@ -403,7 +403,7 @@ where
     fn from(value: T) -> Self {
         Self {
             inner: NumberishInner::Number(Number::from(value)),
-            phatom: PhantomData,
+            phantom: PhantomData,
         }
     }
 }
@@ -417,7 +417,7 @@ where
             f,
             "{}",
             self.as_u64()
-                .map_or("RANGE_ERRROR".to_string(), |u| u.to_string())
+                .map_or("RANGE_ERROR".to_string(), |u| u.to_string())
         )
     }
 }
@@ -826,7 +826,7 @@ mod tests {
         // GIVEN a Numberish from a string that does not represent a u64
         let n = Numberish {
             inner: NumberishInner::String("abc".to_string()),
-            phatom: PhantomData::<u64>,
+            phantom: PhantomData::<u64>,
         };
 
         // WHEN as_u64 is called
@@ -857,7 +857,7 @@ mod tests {
         // GIVEN a valid number string
         let n = Numberish {
             inner: NumberishInner::String("123".to_string()),
-            phatom: PhantomData::<u64>,
+            phantom: PhantomData::<u64>,
         };
 
         // THEN smaller type conversions work
@@ -868,7 +868,7 @@ mod tests {
         // GIVEN a number string too large
         let n = Numberish {
             inner: NumberishInner::String((u32::MAX as u64 + 1).to_string()),
-            phatom: PhantomData::<u64>,
+            phantom: PhantomData::<u64>,
         };
 
         // THEN smaller type conversions fail
@@ -885,7 +885,7 @@ mod tests {
     fn test_numberish_display_string_valid() {
         let n = Numberish {
             inner: NumberishInner::String("123".to_string()),
-            phatom: PhantomData::<u32>,
+            phantom: PhantomData::<u32>,
         };
         assert_eq!(format!("{}", n), "123");
     }
@@ -894,8 +894,8 @@ mod tests {
     fn test_numberish_display_string_invalid() {
         let n = Numberish {
             inner: NumberishInner::String("abc".to_string()),
-            phatom: PhantomData::<u32>,
+            phantom: PhantomData::<u32>,
         };
-        assert_eq!(format!("{}", n), "RANGE_ERRROR");
+        assert_eq!(format!("{}", n), "RANGE_ERROR");
     }
 }

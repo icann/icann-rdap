@@ -44,7 +44,7 @@ async fn ipv4_reverse_domain_200() {
     let query = QueryType::rdns("4.3.2.1.in-addr.arpa").expect("invalid reverse DNS");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -82,7 +82,7 @@ async fn ipv6_reverse_domain_200() {
     let query = QueryType::rdns_ipstr("2001:db8::567:89ab").expect("invalid reverse DNS");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -122,7 +122,7 @@ async fn ipv4_bootstrap_redirect() {
     let query = QueryType::rdns_ipstr("192.0.2.100").expect("invalid IP");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -167,7 +167,7 @@ async fn ipv6_bootstrap_redirect() {
     let query = QueryType::rdns_ipstr("2001:db8::567:89ab").expect("invalid IP");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     let rdns = ip_to_reverse_dns(&IpAddr::from_str("2001:db8::567:89ab").expect("valid ipv6"));

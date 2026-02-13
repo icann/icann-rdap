@@ -109,7 +109,7 @@ struct Cli {
     ///
     /// Expect the RDAP response to contain a specific extension ID.
     /// If a response does not contain the expected RDAP extension ID,
-    /// it will be added as an failed check. This parameter may also
+    /// it will be added as a failed check. This parameter may also
     /// take the form of "foo1|foo2" to be mean either expect "foo1" or
     /// "foo2".
     ///

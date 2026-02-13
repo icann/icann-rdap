@@ -28,7 +28,7 @@ async fn new_and_init_mem(data_dir: String) -> Mem {
         .common_config(CommonConfig::default())
         .build();
     let mem = Mem::new(mem_config.clone());
-    mem.init().await.expect("initialzing memeory");
+    mem.init().await.expect("initializing memory");
     load_data(
         &ServiceConfig::non_server()
             .data_dir(data_dir)

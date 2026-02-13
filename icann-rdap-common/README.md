@@ -5,8 +5,8 @@ This is a common component library for the Registration Data Access Protocol (RD
 by the Internet Corporation for Assigned Names and Numbers [(ICANN)](https://www.icann.org). 
 RDAP is standard of the [IETF](https://ietf.org/), and extensions
 to RDAP are a current work activity of the IETF's [REGEXT working group](https://datatracker.ietf.org/wg/regext/documents/).
-More information on ICANN's role in RDAP can be found [here](https://www.icann.org/rdap).
-General information on RDAP can be found [here](https://rdap.rcode3.com/).
+Read about [ICANN's role in RDAP](https://www.icann.org/rdap).
+See [general information on RDAP](https://rdap.rcode3.com/).
 
 
 Installation
@@ -69,7 +69,7 @@ let domain = Domain::response_obj()
   .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
   .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
   .notice(Notice::builder()
-    .title("Inaccuracy resport")
+    .title("Inaccuracy report")
     .description_entry("Things may be wrong. But it isn't our fault.")
     .description_entry("Read the policy for more information.")
     .build()
@@ -92,7 +92,7 @@ let ns = Nameserver::response_obj()
   .entity(holder.clone())
   .extension(ExtensionId::IcannRdapResponseProfile1.as_ref())
   .extension(ExtensionId::IcannRdapTechnicalImplementationGuide1.as_ref())
-  .notice(Notice::builder().title("Inaccuracy resport").build())
+  .notice(Notice::builder().title("Inaccuracy report").build())
   .build()
   .unwrap();
 

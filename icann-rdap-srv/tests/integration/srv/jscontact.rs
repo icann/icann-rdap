@@ -42,7 +42,7 @@ async fn test_no_jscontact_conversion() {
     let query = QueryType::Entity("foo1234".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -85,7 +85,7 @@ async fn test_jscontact_also_conversion() {
     let query = QueryType::Entity("foo1234".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -128,7 +128,7 @@ async fn test_jscontact_only_conversion() {
     let query = QueryType::Entity("foo1234".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);

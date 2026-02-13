@@ -79,7 +79,7 @@ struct Cli {
     /// Type of the query when using a query value.
     ///
     /// Without this option, the query type will be inferred based on the query value.
-    /// To supress the infererence and explicitly specifty the query type, use this
+    /// To suppress the inference and explicitly specify the query type, use this
     /// option.
     #[arg(
         short = 't',
@@ -109,7 +109,7 @@ struct Cli {
     /// An RDAP base URL for a specific RDAP server.
     ///
     /// Use this option to explicitly give an RDAP base URL when issuing queries.
-    /// If not specified, the base URL will come from the RDAP boostrap process
+    /// If not specified, the base URL will come from the RDAP bootstrap process
     /// outlined in RFC 9224.
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
@@ -494,7 +494,7 @@ pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
         let ec = e.exit_code();
         match ec {
-            // we use eprintln! becuase at the point where this is thrown, the tracing subscriber is not yet instantiated.
+            // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
             205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
             206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
             _ => eprintln!("\n{e}\n"),

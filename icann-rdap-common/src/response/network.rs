@@ -271,7 +271,7 @@ impl Network {
         })
     }
 
-    /// Builds an IP network object for a resopnse.
+    /// Builds an IP network object for a response.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -557,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn test_big_network_deserializion() {
+    fn test_big_network_deserialization() {
         // GIVEN a big network
         let expected = r#"
         {

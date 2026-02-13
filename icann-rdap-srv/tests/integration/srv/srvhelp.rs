@@ -37,7 +37,7 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
     let query = QueryType::Help;
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
@@ -70,7 +70,7 @@ async fn GIVEN_server_with_host_help_WHEN_query_help_THEN_status_code_200() {
     let query = QueryType::Help;
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);

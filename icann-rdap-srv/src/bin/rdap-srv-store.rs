@@ -30,7 +30,7 @@ use {
 /// This program moves RDAP files into storage. Files are checked for validity
 /// before moving them.
 struct Cli {
-    /// Directory containg RDAP JSON files.
+    /// Directory containing RDAP JSON files.
     #[arg()]
     directory: Option<String>,
 
@@ -209,7 +209,7 @@ fn verify_rdap_template(
             }
             Template::Nameserver { nameserver, ids } => {
                 for id in ids {
-                    debug!("verifying dding nameserver from template for {id:?}");
+                    debug!("verifying adding nameserver from template for {id:?}");
                     match &nameserver {
                         NameserverOrError::NameserverObject(nameserver) => {
                             let mut nameserver = nameserver.clone();

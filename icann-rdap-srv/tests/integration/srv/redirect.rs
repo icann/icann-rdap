@@ -50,7 +50,7 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 307);
@@ -100,7 +100,7 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
     let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 307);
@@ -149,7 +149,7 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
     let query = QueryType::Entity("foo".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 307);
@@ -199,7 +199,7 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
     let query = QueryType::autnum("700").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 307);
@@ -248,7 +248,7 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
     let query = QueryType::ipv4("10.0.0.1").expect("invalid IP address");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 307);
@@ -300,7 +300,7 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
     let query = QueryType::ipv4("10.0.0.1").expect("invalid IP address");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 307);

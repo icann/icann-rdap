@@ -20,7 +20,7 @@ impl ToMd for Network {
 
         // multipart data
         let mut table = if params.highlight_simple_redactions {
-            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+            MultiPartTable::new_with_value_highlights_from_remarks(self.remarks())
         } else {
             MultiPartTable::new()
         };
@@ -206,7 +206,7 @@ mod tests {
     }
 
     #[test]
-    fn test_md_network_with_handle_and_no_shwo_redactions() {
+    fn test_md_network_with_handle_and_no_show_redactions() {
         // GIVEN network
         let redactions = vec![
             Redacted::builder()

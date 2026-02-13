@@ -670,7 +670,7 @@ async fn GIVEN_default_help_in_mem_WHEN_lookup_help_with_no_host_THEN_get_defaul
     tx.commit().await.expect("tx commit");
 
     // WHEN
-    let actual = mem.get_srv_help(None).await.expect("getting srv helf");
+    let actual = mem.get_srv_help(None).await.expect("getting srv help");
 
     // THEN
     let RdapResponse::Help(srvhelp) = actual else {
@@ -718,7 +718,7 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
     let actual = mem
         .get_srv_help(Some("bar.example.com"))
         .await
-        .expect("getting srv helf");
+        .expect("getting srv help");
 
     // THEN
     let RdapResponse::Help(srvhelp) = actual else {

@@ -145,7 +145,7 @@ pub enum RdapResponse {
 
     // Help
     Help(Box<Help>),
-    // These are all boxed to keep the variant size alligned.
+    // These are all boxed to keep the variant size aligned.
     // While not completely necessary for all these variants today,
     // this will prevent an API change in the future when new items
     // are added to each variant when supporting future RDAP extensions.
@@ -191,7 +191,7 @@ impl TryFrom<Value> for RdapResponse {
                 ));
             }
         }
-        // else if it is a entity search result
+        // else if it is an entity search result
         if let Some(result) = response.get("entitySearchResults") {
             if result.is_array() {
                 return Ok(serde_json::from_value::<EntitySearchResults>(value)?.to_response());
@@ -412,7 +412,7 @@ pub trait ToChild {
     fn to_child(self) -> Self;
 }
 
-/// Returns `Some(Vec<T>)` if the vector is not empty, otherwise `None`.
+/// Returns `Some(Vec<T>)` if the vector is not empty; otherwise, `None`.
 pub fn to_opt_vec<T>(vec: Vec<T>) -> Option<Vec<T>> {
     (!vec.is_empty()).then_some(vec)
 }
@@ -591,7 +591,7 @@ mod tests {
     }
 
     #[test]
-    fn test_resopnse_is_domain() {
+    fn test_response_is_domain() {
         // GIVEN
         let expected: Value =
             serde_json::from_str(include_str!("test_files/domain_afnic_fr.json")).unwrap();

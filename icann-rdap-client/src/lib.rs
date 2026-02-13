@@ -19,7 +19,7 @@ pub mod md;
 pub mod rdap;
 pub mod rpsl;
 
-/// Basics necesasry for a simple clients.
+/// Basics necessary for a simple clients.
 pub mod prelude {
     #[doc(inline)]
     pub use crate::http::create_client;
@@ -45,8 +45,8 @@ pub enum RdapClientError {
     #[error("Query value is not valid.")]
     InvalidQueryValue,
 
-    #[error("Ambiquous query type.")]
-    AmbiquousQueryType,
+    #[error("Ambiguous query type.")]
+    AmbiguousQueryType,
 
     #[error(transparent)]
     Response(#[from] RdapResponseError),

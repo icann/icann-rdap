@@ -290,10 +290,10 @@ impl ToMpTable for ObjectCommon {
 }
 
 pub(crate) fn public_ids_to_table(
-    publid_ids: &[PublicId],
+    public_ids: &[PublicId],
     mut table: MultiPartTable,
 ) -> MultiPartTable {
-    for pid in publid_ids {
+    for pid in public_ids {
         table = table.nv_ref(
             pid.id_type
                 .as_ref()
