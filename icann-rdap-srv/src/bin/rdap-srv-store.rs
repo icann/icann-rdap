@@ -209,7 +209,7 @@ fn verify_rdap_template(
             }
             Template::Nameserver { nameserver, ids } => {
                 for id in ids {
-                    debug!("verifying adding nameserver from template for {id:?}");
+                    debug!("verifying nameserver from template for {id:?}");
                     match &nameserver {
                         NameserverOrError::NameserverObject(nameserver) => {
                             let mut nameserver = nameserver.clone();
