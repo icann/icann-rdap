@@ -1,6 +1,8 @@
 //! Creates a Reqwest client.
 
-#![allow(mismatched_lifetime_syntaxes)] // TODO see if this can be removed with a buildstructor upgrade
+// TODO see if this can be removed with a buildstructor upgrade
+// see https://github.com/BrynCooke/buildstructor/issues/200
+#![allow(mismatched_lifetime_syntaxes)]
 
 use std::collections::HashSet;
 
