@@ -63,7 +63,7 @@ async fn main() -> Result<(), RdapServerError> {
 
     let check_types = to_check_classes(&cli.check_args);
 
-    let data_dir = data_dir();
+    let data_dir = data_dir()?;
 
     if let Some(directory) = cli.directory {
         if directory == data_dir {

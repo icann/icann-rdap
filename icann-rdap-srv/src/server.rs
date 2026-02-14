@@ -97,9 +97,6 @@ impl Listener {
         let app = app_router::<T>(app_state);
 
         tracing::debug!("listening on {}", self.local_addr);
-        // axum::Server::from_tcp(self.tcp_listener)?
-        //     .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        //     .await?;
         axum::serve(
             self.tcp_listener,
             app.into_make_service_with_connect_info::<SocketAddr>(),

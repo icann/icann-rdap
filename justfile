@@ -53,27 +53,27 @@ smoke_rdap_test_help:
 
 [doc('Create a help response in the server.')]
 srv_data_help:
-    cargo run --bin rdap-srv-data -- srv-help --notice "this is a test server"
+    cargo run --bin rdap-srv-data -- --log-level debug srv-help --notice "this is a test server"
 
 [doc('Create an entity in the server.')]
 srv_data_entity:
-    cargo run --bin rdap-srv-data -- entity --handle foo1234 --email joe@example.com --full-name "Joe User"
+    cargo run --bin rdap-srv-data -- --log-level debug entity --handle foo1234 --email joe@example.com --full-name "Joe User"
 
 [doc('Create a domain in the server.')]
 srv_data_domain:
-    cargo run --bin rdap-srv-data -- domain --ldh example.com --registrant foo1234 --ns ns1.example.com
+    cargo run --bin rdap-srv-data -- --log-level debug domain --ldh example.com --registrant foo1234 --ns ns1.example.com
 
 [doc('Create a nameserver in the server.')]
 srv_data_nameserver:
-    cargo run --bin rdap-srv-data -- nameserver --ldh ns1.example.com --registrant foo1234
+    cargo run --bin rdap-srv-data -- --log-level debug nameserver --ldh ns1.example.com --registrant foo1234
 
 [doc('Start the server')]
 srv_start:
-    cargo run --bin rdap-srv
+    cargo run --bin rdap-srv -- --log-level debug 
 
 [doc('Update the data in the server.')]
 srv_update:
-    cargo run --bin rdap-srv-store -- --update
+    cargo run --bin rdap-srv-store -- --log-level debug  --update
 
 [doc('Lookup the nameserver in localhost.')]
 srv_lookup_nameserver:

@@ -9,7 +9,7 @@ use {
         error::RdapServerError,
         server::Listener,
     },
-    std::str::FromStr,
+    std::{path::Path, str::FromStr},
     tracing_subscriber::{
         fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
     },
@@ -24,6 +24,15 @@ async fn main() -> Result<(), RdapServerError> {
         .init();
 
     debug_config_vars();
+
+    let data_dir = data_dir()?;
+    let data_path = Path::new(&data_dir);
+    if !data_path.is_dir() {
+        return Err(RdapServerError::InvalidArg(format!(
+            "Data directory {} does not exist or is not a directory.",
+            data_path.display()
+        )));
+    }
 
     let listen_addr = get_or(LISTEN_ADDR, "127.0.0.1");
     let listen_port = get_u16(LISTEN_PORT, 3000);
@@ -45,7 +54,7 @@ async fn main() -> Result<(), RdapServerError> {
         .start_server(
             &ServiceConfig::builder()
                 .storage_type(storage_type)
-                .data_dir(data_dir())
+                .data_dir(data_dir)
                 .auto_reload(auto_reload)
                 .bootstrap(bootstrap)
                 .update_on_bootstrap(update_on_bootstrap)
