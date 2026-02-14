@@ -4,7 +4,6 @@ use {
     icann_rdap_client::{iana::IanaResponseError, RdapClientError},
     minus::MinusError,
     thiserror::Error,
-    tracing::error,
 };
 
 #[derive(Debug, Error)]

@@ -1,4 +1,4 @@
-use clap::{arg, ArgGroup, Parser};
+use clap::{ArgGroup, Parser};
 use icann_rdap_client::rdap::QueryType;
 
 #[derive(Parser, Debug)]
