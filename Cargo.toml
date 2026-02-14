@@ -142,7 +142,7 @@ termimad = "0.34"
 thiserror = "1.0"
 
 # tokio async runtime
-tokio = { version = "1.35", features = [ "full" ] }
+tokio = { version = "1.49", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.4", features = ["timeout", "util"] }
