@@ -114,7 +114,7 @@ prefix-trie = "0.2.4"
 regex = "1.10"
 
 # http client library
-reqwest = {version = "0.12", features = ["json", "stream", "native-tls-vendored"]}
+reqwest = {version = "0.13", features = ["json", "stream", "native-tls-vendored"]}
 
 # serialization / deserialization library
 serde = { version = "1.0", features = [ "derive" ] }
