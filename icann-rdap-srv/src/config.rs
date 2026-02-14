@@ -52,6 +52,8 @@ pub fn data_dir() -> Result<String, std::io::Error> {
     Ok(path.display().to_string())
 }
 
+pub const DEFAULT_DATA_RDAP_BASE_URL: &str = "http://localhost:3000/rdap";
+
 /// RDAP server listening configuration.
 #[derive(Debug, Builder, Default)]
 pub struct ListenConfig {

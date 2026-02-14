@@ -14,7 +14,7 @@ use {
         VERSION,
     },
     icann_rdap_srv::{
-        config::{debug_config_vars, ServiceConfig, LOG},
+        config::{data_dir, debug_config_vars, ServiceConfig, DEFAULT_DATA_RDAP_BASE_URL, LOG},
         error::RdapServerError,
         storage::{
             data::{
@@ -44,7 +44,7 @@ struct Cli {
     check_args: CheckArgs,
 
     /// Specifies the directory where data will be written.
-    #[arg(long, env = "RDAP_SRV_DATA_DIR")]
+    #[arg(long, env = "RDAP_SRV_DATA_DIR", default_value_t = data_dir().expect("data directory does not exist"))]
     data_dir: String,
 
     /// Output data as a redirect.
@@ -68,7 +68,7 @@ struct Cli {
 #[derive(Debug, Args)]
 struct ObjectArgs {
     /// Base URL of the server where the object is to be served.
-    #[arg(short = 'B', long, env = "RDAP_BASE_URL")]
+    #[arg(short = 'B', long, env = "RDAP_BASE_URL", default_value = DEFAULT_DATA_RDAP_BASE_URL)]
     base_url: String,
 
     /// Status of the object (e.g. "active").
