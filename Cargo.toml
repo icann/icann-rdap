@@ -132,7 +132,7 @@ strum = "0.27"
 strum_macros = "0.27"
 
 # terminal markdown generator
-termimad = "0.31"
+termimad = "0.34"
 
 # error macros
 thiserror = "1.0"
