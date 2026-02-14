@@ -126,22 +126,15 @@ impl ToMpTable for &[PostalAddress] {
 
 impl ToMpTable for PostalAddress {
     fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
-        if self.contexts.is_some() && self.preference.is_some() {
+        if let (Some(contexts), Some(preference)) = (&self.contexts, &self.preference) {
             table = table.nv(
                 &"Address",
-                format!(
-                    "{} (pref: {})",
-                    self.contexts.as_ref().unwrap().join(" "),
-                    self.preference.unwrap()
-                ),
+                format!("{} (pref: {})", contexts.join(" "), preference),
             );
-        } else if self.contexts.is_some() {
-            table = table.nv(&"Address", self.contexts.as_ref().unwrap().join(" "));
-        } else if self.preference.is_some() {
-            table = table.nv(
-                &"Address",
-                format!("preference: {}", self.preference.unwrap()),
-            );
+        } else if let Some(contexts) = &self.contexts {
+            table = table.nv(&"Address", contexts.join(" "));
+        } else if let Some(preference) = &self.preference {
+            table = table.nv(&"Address", format!("preference: {}", preference));
         } else {
             table = table.nv(&"Address", "");
         }
@@ -151,29 +144,15 @@ impl ToMpTable for PostalAddress {
         if let Some(locality) = &self.locality {
             table = table.nv_ref(&"Locality", locality);
         }
-        if self.region_name.is_some() && self.region_code.is_some() {
-            table = table.nv(
-                &"Region",
-                format!(
-                    "{} ({})",
-                    self.region_name.as_ref().unwrap(),
-                    self.region_code.as_ref().unwrap()
-                ),
-            );
+        if let (Some(region_name), Some(region_code)) = (&self.region_name, &self.region_code) {
+            table = table.nv(&"Region", format!("{} ({})", region_name, region_code));
         } else if let Some(region_name) = &self.region_name {
             table = table.nv_ref(&"Region", region_name);
         } else if let Some(region_code) = &self.region_code {
             table = table.nv_ref(&"Region", region_code);
         }
-        if self.country_name.is_some() && self.country_code.is_some() {
-            table = table.nv(
-                &"Country",
-                format!(
-                    "{} ({})",
-                    self.country_name.as_ref().unwrap(),
-                    self.country_code.as_ref().unwrap()
-                ),
-            );
+        if let (Some(country_name), Some(country_code)) = (&self.country_name, &self.country_code) {
+            table = table.nv(&"Country", format!("{} ({})", country_name, country_code));
         } else if let Some(country_name) = &self.country_name {
             table = table.nv_ref(&"Country", country_name);
         } else if let Some(country_code) = &self.country_code {

@@ -51,6 +51,10 @@ chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], defau
 # compile time constants formatting
 const_format = "0.2"
 
+# subdependency used by minus and termimad
+# this can be removed once minus and termimad are updated
+crossbeam-channel = "0.5.15"
+
 # cross-platform application directories
 directories = "5.0"
 
@@ -110,7 +114,7 @@ prefix-trie = "0.2.4"
 regex = "1.10"
 
 # http client library
-reqwest = {version = "0.12", features = ["json", "stream", "native-tls-vendored"]}
+reqwest = {version = "0.13", features = ["json", "stream", "native-tls-vendored"]}
 
 # serialization / deserialization library
 serde = { version = "1.0", features = [ "derive" ] }
@@ -132,13 +136,13 @@ strum = "0.27"
 strum_macros = "0.27"
 
 # terminal markdown generator
-termimad = "0.31"
+termimad = "0.34"
 
 # error macros
 thiserror = "1.0"
 
 # tokio async runtime
-tokio = { version = "1.35", features = [ "full" ] }
+tokio = { version = "1.49", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.4", features = ["timeout", "util"] }
