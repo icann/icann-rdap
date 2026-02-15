@@ -146,10 +146,13 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
         processing_params.link_params.only_show_target
     );
 
+    let mut received_non_200 = false;
+
     let mut query_type = query_type.to_owned();
     for req_number in 1..=processing_params.link_params.max_link_depth {
         debug!("Querying {}", query_type.query_url(&base_url)?);
         debug!("Request Number: {}", req_number);
+
         let response =
             request_and_process(&base_url, &query_type, processing_params, client).await?;
         let is_target = if processing_params.link_params.only_show_target {
@@ -161,6 +164,10 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
             req_number,
             req_target: is_target,
         };
+
+        if response.http_data.status_code() != 200 {
+            received_non_200 = true;
+        }
 
         // Output immediately for streaming behavior
         if is_target {
@@ -193,6 +200,10 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
         }
     }
     final_output(processing_params, write, transactions)?;
+
+    if received_non_200 {
+        return Err(RdapCliError::ResponseWasNot200Ok);
+    }
 
     Ok(())
 }

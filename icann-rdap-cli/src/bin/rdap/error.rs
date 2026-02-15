@@ -32,6 +32,8 @@ pub enum RdapCliError {
     LinkTargetNotFound(String),
     #[error("gTLD Whois output for this query is not implemented")]
     GtldWhoisOutputNotImplemented,
+    #[error("Received Non-200(OK) Response")]
+    ResponseWasNot200Ok,
 }
 
 impl RdapCliError {
@@ -53,6 +55,8 @@ impl RdapCliError {
             Self::InvalidBootstrap => 102,
             Self::BootstrapNotFound => 103,
             Self::LinkTargetNotFound(_) => 104,
+            // 105 unused
+            Self::ResponseWasNot200Ok => 106,
 
             // User Errors
             Self::UnknownOutputType => 200,
