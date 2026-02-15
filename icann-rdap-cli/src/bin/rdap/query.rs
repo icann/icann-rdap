@@ -150,58 +150,46 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
     for req_number in 1..=processing_params.link_params.max_link_depth {
         debug!("Querying {}", query_type.query_url(&base_url)?);
         debug!("Request Number: {}", req_number);
-        let response = request_and_process(&base_url, &query_type, processing_params, client).await;
-        match response {
-            Ok(response) => {
-                let is_target = if processing_params.link_params.only_show_target {
-                    req_number > 1
-                } else {
-                    true
-                };
-                let req_data = RequestData {
-                    req_number,
-                    req_target: is_target,
-                };
+        let response =
+            request_and_process(&base_url, &query_type, processing_params, client).await?;
+        let is_target = if processing_params.link_params.only_show_target {
+            req_number > 1
+        } else {
+            true
+        };
+        let req_data = RequestData {
+            req_number,
+            req_target: is_target,
+        };
 
-                // Output immediately for streaming behavior
-                if is_target {
-                    output_immediately(processing_params, &req_data, &response, write)?;
-                }
+        // Output immediately for streaming behavior
+        if is_target {
+            output_immediately(processing_params, &req_data, &response, write)?;
+        }
 
-                if let Some(url) = get_relationship_links(
-                    &processing_params.link_params.link_targets,
-                    &response.rdap,
-                )
+        if let Some(url) =
+            get_relationship_links(&processing_params.link_params.link_targets, &response.rdap)
                 .first()
-                {
-                    info!(
-                        "Found next target with relationship(s) of '{}'.",
-                        processing_params.link_params.link_targets.join(" ")
-                    );
-                    query_type = QueryType::Url(url.to_string());
-                    transactions.push(RequestResponse {
-                        req_data,
-                        res_data: response,
-                    });
-                } else if req_number < processing_params.link_params.min_link_depth {
-                    return Err(RdapCliError::LinkTargetNotFound(
-                        processing_params.link_params.link_targets.join(" "),
-                    ));
-                } else {
-                    transactions.push(RequestResponse {
-                        req_data,
-                        res_data: response,
-                    });
-                    break;
-                }
-            }
-            Err(error) => {
-                if req_number == 1 {
-                    return Err(RdapCliError::NoRegistryFound);
-                } else {
-                    return Err(error);
-                }
-            }
+        {
+            info!(
+                "Found next target with relationship(s) of '{}'.",
+                processing_params.link_params.link_targets.join(" ")
+            );
+            query_type = QueryType::Url(url.to_string());
+            transactions.push(RequestResponse {
+                req_data,
+                res_data: response,
+            });
+        } else if req_number < processing_params.link_params.min_link_depth {
+            return Err(RdapCliError::LinkTargetNotFound(
+                processing_params.link_params.link_targets.join(" "),
+            ));
+        } else {
+            transactions.push(RequestResponse {
+                req_data,
+                res_data: response,
+            });
+            break;
         }
     }
     final_output(processing_params, write, transactions)?;
