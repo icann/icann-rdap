@@ -102,6 +102,10 @@ pub enum AttrName {
     EnumExp,
     #[strum(serialize = "error-code")]
     ErrorCode,
+    #[strum(serialize = "error-desc")]
+    ErrorDescription,
+    #[strum(serialize = "error-title")]
+    ErrorTitle,
     #[strum(serialize = "expiration")]
     Expiration,
     #[strum(serialize = "fax-no")]

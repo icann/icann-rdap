@@ -271,7 +271,7 @@ pub(crate) async fn wrapped_request(
     }
 
     // throw an error if not 200 OK
-    let response = response.error_for_status()?;
+    //let response = response.error_for_status()?;
 
     // get the response
     let content_type = response

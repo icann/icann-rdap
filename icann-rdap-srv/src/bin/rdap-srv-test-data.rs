@@ -1,5 +1,7 @@
 use std::{fs, path::PathBuf};
 
+use icann_rdap_srv::config::{data_dir, DEFAULT_DATA_RDAP_BASE_URL};
+
 use {
     clap::Parser,
     icann_rdap_common::{
@@ -32,11 +34,11 @@ use {
 /// This program creates test RDAP data templates.
 struct Cli {
     /// Specifies the directory where data will be written.
-    #[arg(long, env = "RDAP_SRV_DATA_DIR")]
+    #[arg(long, env = "RDAP_SRV_DATA_DIR", default_value_t = data_dir().expect("data directory does not exist"))]
     data_dir: String,
 
     /// Base URL of the server where the object is to be served.
-    #[arg(short = 'B', long, env = "RDAP_BASE_URL")]
+    #[arg(short = 'B', long, env = "RDAP_BASE_URL", default_value = DEFAULT_DATA_RDAP_BASE_URL)]
     base_url: String,
 
     /// Number of test entities to create.

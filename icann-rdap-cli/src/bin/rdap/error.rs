@@ -20,8 +20,6 @@ pub enum RdapCliError {
     Minus(#[from] MinusError),
     #[error("Unknown output type")]
     UnknownOutputType,
-    #[error("RDAP response failed checks. DISUSED")]
-    ErrorOnChecks,
     #[error(transparent)]
     Json(#[from] serde_json::Error),
     #[error(transparent)]
@@ -32,10 +30,10 @@ pub enum RdapCliError {
     BootstrapNotFound,
     #[error("Link target '{0}' not found.")]
     LinkTargetNotFound(String),
-    #[error("No registry found")]
-    NoRegistryFound,
     #[error("gTLD Whois output for this query is not implemented")]
     GtldWhoisOutputNotImplemented,
+    #[error("Received Non-200(OK) Response")]
+    ResponseWasNot200Ok,
 }
 
 impl RdapCliError {
@@ -57,11 +55,12 @@ impl RdapCliError {
             Self::InvalidBootstrap => 102,
             Self::BootstrapNotFound => 103,
             Self::LinkTargetNotFound(_) => 104,
-            Self::NoRegistryFound => 105,
+            // 105 unused
+            Self::ResponseWasNot200Ok => 106,
 
             // User Errors
             Self::UnknownOutputType => 200,
-            Self::ErrorOnChecks => 201,
+            // 201 unused
             Self::GtldWhoisOutputNotImplemented => 205,
 
             // RDAP Client Errors
