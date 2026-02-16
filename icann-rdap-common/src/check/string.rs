@@ -21,7 +21,7 @@ pub trait StringCheck {
     /// Tests if a string is a Unicode domain name.
     fn is_unicode_domain_name(&self) -> bool;
 
-    /// Tests if a string is begins with a period and only has one label.
+    /// Tests if a string begins with a period and only has one label.
     fn is_tld(&self) -> bool;
 }
 
@@ -123,7 +123,6 @@ impl CharCheck for char {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use rstest::rstest;
 
@@ -136,10 +135,7 @@ mod tests {
     #[case("", true)]
     #[case(" ", true)]
     #[case("foo bar", false)]
-    fn GIVEN_string_WHEN_is_whitespace_or_empty_THEN_correct_result(
-        #[case] test_string: &str,
-        #[case] expected: bool,
-    ) {
+    fn test_is_whitespace_or_empty(#[case] test_string: &str, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -157,7 +153,7 @@ mod tests {
     #[case(&["foo","bar baz"], false)]
     #[case(&[""], true)]
     #[case(&[" "], true)]
-    fn GIVEN_string_list_WHEN_is_whitespace_or_empty_THEN_correct_result(
+    fn test_is_whitespace_or_any_empty_or_whitespace(
         #[case] test_list: &[&str],
         #[case] expected: bool,
     ) {
@@ -183,7 +179,7 @@ mod tests {
     #[case('-', true)]
     #[case('_', false)]
     #[case('.', false)]
-    fn GIVEN_char_WHEN_is_ldh_THEN_correct_result(#[case] test_char: char, #[case] expected: bool) {
+    fn test_is_ldh(#[case] test_char: char, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -198,10 +194,7 @@ mod tests {
     #[case("", false)]
     #[case("foo-bar", true)]
     #[case("foo bar", false)]
-    fn GIVEN_string_WHEN_is_ldh_string_THEN_correct_result(
-        #[case] test_string: &str,
-        #[case] expected: bool,
-    ) {
+    fn test_is_ldh_string(#[case] test_string: &str, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -219,10 +212,7 @@ mod tests {
     #[case(".", false)]
     #[case(".foo.bar", false)]
     #[case(".foo", true)]
-    fn GIVEN_string_WHEN_is_tld_THEN_correct_result(
-        #[case] test_string: &str,
-        #[case] expected: bool,
-    ) {
+    fn test_is_tld(#[case] test_string: &str, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -240,10 +230,7 @@ mod tests {
     #[case(&["foo","bar baz"], false)]
     #[case(&[""], false)]
     #[case(&[" "], false)]
-    fn GIVEN_string_list_WHEN_is_ldh_string_list_THEN_correct_result(
-        #[case] test_list: &[&str],
-        #[case] expected: bool,
-    ) {
+    fn test_is_ldh_string_list(#[case] test_list: &[&str], #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -259,10 +246,7 @@ mod tests {
     #[case(".", true)]
     #[case("foo.bar", true)]
     #[case("foo.bar.", true)]
-    fn GIVEN_string_WHEN_is_ldh_domain_name_THEN_correct_result(
-        #[case] test_string: &str,
-        #[case] expected: bool,
-    ) {
+    fn test_is_ldh_domain_name(#[case] test_string: &str, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
@@ -280,10 +264,7 @@ mod tests {
     #[case("foo.bar.", true)]
     #[case("fo_o.bar.", false)]
     #[case("fo o.bar.", false)]
-    fn GIVEN_string_WHEN_is_unicode_domain_name_THEN_correct_result(
-        #[case] test_string: &str,
-        #[case] expected: bool,
-    ) {
+    fn test_is_unicode_domain_name(#[case] test_string: &str, #[case] expected: bool) {
         // GIVEN in parameters
 
         // WHEN
