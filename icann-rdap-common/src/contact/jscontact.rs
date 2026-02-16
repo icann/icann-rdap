@@ -54,11 +54,13 @@ pub struct Localization {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Organizations {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub org: Option<Org>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Org {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
 
@@ -359,9 +361,9 @@ fn jscontact_to_org_names(organizations: &Option<Organizations>) -> Vec<String> 
 }
 
 fn org_to_jscontact(organization_name: Option<&str>) -> Option<Organizations> {
-    Some(Organizations {
+    organization_name.map(|org_name| Organizations {
         org: Some(Org {
-            name: organization_name.map(|s| s.to_owned()),
+            name: Some(org_name.to_owned()),
         }),
     })
 }
