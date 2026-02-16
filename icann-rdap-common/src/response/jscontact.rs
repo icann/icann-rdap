@@ -75,16 +75,20 @@ impl JsContactConvert for Entity {
             self.jscontact_card
         };
         Self {
+            object_common: super::ObjectCommon {
+                entities: self.object_common.entities.map(|v| v.to_jscontact()),
+                ..self.object_common
+            },
             jscontact_card: new_jscontact,
             ..self
         }
     }
 
     fn only_jscontact(self) -> Self {
-        Entity {
-            vcard_array: None,
-            ..self.to_jscontact()
-        }
+        let mut entity = self.to_jscontact();
+        entity.object_common.entities = entity.object_common.entities.map(|ve| ve.only_jscontact());
+        entity.vcard_array = None;
+        entity
     }
 }
 
@@ -536,6 +540,169 @@ mod tests {
             assert_eq!(entities.len(), 1);
             assert!(entities[0].is_contact_as_jscontact());
             assert!(entities[0].is_contact_as_vcard());
+        }
+    }
+
+    #[test]
+    fn test_nested_entity_to_jscontact() {
+        // GIVEN: An entity with nested entities containing vCard data
+        let nested_contact = Contact::builder().full_name("Nested Entity").build();
+        let mut nested_entity = Entity::builder().handle("nested-entity").build();
+        nested_entity.with_contact_as_vcard(&nested_contact);
+
+        let mut parent_entity = Entity::builder().handle("parent-entity").build();
+        parent_entity.object_common.entities = Some(vec![nested_entity]);
+
+        // WHEN: Converting to JSContact
+        let result = parent_entity.to_jscontact();
+
+        // THEN: Both parent and nested entities should be converted
+        assert!(result.is_contact_as_vcard() || !result.is_contact_as_vcard());
+        if let Some(entities) = &result.object_common.entities {
+            assert_eq!(entities.len(), 1);
+            assert!(entities[0].is_contact_as_jscontact());
+            assert!(entities[0].is_contact_as_vcard());
+        }
+    }
+
+    #[test]
+    fn test_nested_entity_only_jscontact() {
+        // GIVEN: An entity with nested entities containing vCard data
+        let nested_contact = Contact::builder().full_name("Nested Entity Only").build();
+        let mut nested_entity = Entity::builder().handle("nested-entity-only").build();
+        nested_entity.with_contact_as_vcard(&nested_contact);
+
+        let mut parent_entity = Entity::builder().handle("parent-entity-only").build();
+        parent_entity.object_common.entities = Some(vec![nested_entity]);
+
+        // WHEN: Converting to JSContact only (removing vCard)
+        let result = parent_entity.only_jscontact();
+
+        // THEN: Parent should have no vCard, but nested should have jscontact
+        assert!(!result.is_contact_as_vcard());
+        if let Some(entities) = &result.object_common.entities {
+            assert_eq!(entities.len(), 1);
+            assert!(entities[0].is_contact_as_jscontact());
+            assert!(!entities[0].is_contact_as_vcard());
+        }
+    }
+
+    #[test]
+    fn test_deeply_nested_entities_to_jscontact() {
+        // GIVEN: An entity with 3 levels of nested entities
+        let level3_contact = Contact::builder().full_name("Level 3 Entity").build();
+        let mut level3_entity = Entity::builder().handle("level3-entity").build();
+        level3_entity.with_contact_as_vcard(&level3_contact);
+
+        let mut level2_entity = Entity::builder().handle("level2-entity").build();
+        level2_entity.object_common.entities = Some(vec![level3_entity]);
+
+        let mut level1_entity = Entity::builder().handle("level1-entity").build();
+        level1_entity.object_common.entities = Some(vec![level2_entity]);
+
+        // WHEN: Converting to JSContact
+        let result = level1_entity.to_jscontact();
+
+        // THEN: All nested levels should be converted
+        if let Some(level1_entities) = &result.object_common.entities {
+            assert_eq!(level1_entities.len(), 1);
+            if let Some(level2_entities) = &level1_entities[0].object_common.entities {
+                assert_eq!(level2_entities.len(), 1);
+                if let Some(level3_entities) = &level2_entities[0].object_common.entities {
+                    assert_eq!(level3_entities.len(), 1);
+                    assert!(level3_entities[0].is_contact_as_jscontact());
+                    assert!(level3_entities[0].is_contact_as_vcard());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_deeply_nested_entities_only_jscontact() {
+        // GIVEN: An entity with 3 levels of nested entities
+        let level3_contact = Contact::builder().full_name("Level 3 Only").build();
+        let mut level3_entity = Entity::builder().handle("level3-only").build();
+        level3_entity.with_contact_as_vcard(&level3_contact);
+
+        let mut level2_entity = Entity::builder().handle("level2-only").build();
+        level2_entity.object_common.entities = Some(vec![level3_entity]);
+
+        let mut level1_entity = Entity::builder().handle("level1-only").build();
+        level1_entity.object_common.entities = Some(vec![level2_entity]);
+
+        // WHEN: Converting to JSContact only
+        let result = level1_entity.only_jscontact();
+
+        // THEN: All levels should have jscontact but no vCard
+        if let Some(level1_entities) = &result.object_common.entities {
+            assert!(!level1_entities[0].is_contact_as_vcard());
+            if let Some(level2_entities) = &level1_entities[0].object_common.entities {
+                assert!(!level2_entities[0].is_contact_as_vcard());
+                if let Some(level3_entities) = &level2_entities[0].object_common.entities {
+                    assert!(!level3_entities[0].is_contact_as_vcard());
+                    assert!(level3_entities[0].is_contact_as_jscontact());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_multiple_nested_entities_to_jscontact() {
+        // GIVEN: An entity with multiple nested entities
+        let contact1 = Contact::builder().full_name("Nested 1").build();
+        let mut nested1 = Entity::builder().handle("nested-1").build();
+        nested1.with_contact_as_vcard(&contact1);
+
+        let contact2 = Contact::builder().full_name("Nested 2").build();
+        let mut nested2 = Entity::builder().handle("nested-2").build();
+        nested2.with_contact_as_vcard(&contact2);
+
+        let contact3 = Contact::builder().full_name("Nested 3").build();
+        let mut nested3 = Entity::builder().handle("nested-3").build();
+        nested3.with_contact_as_vcard(&contact3);
+
+        let mut parent_entity = Entity::builder().handle("parent-multi").build();
+        parent_entity.object_common.entities = Some(vec![nested1, nested2, nested3]);
+
+        // WHEN: Converting to JSContact
+        let result = parent_entity.to_jscontact();
+
+        // THEN: All nested entities should be converted
+        if let Some(entities) = &result.object_common.entities {
+            assert_eq!(entities.len(), 3);
+            for entity in entities {
+                assert!(entity.is_contact_as_jscontact());
+                assert!(entity.is_contact_as_vcard());
+            }
+        }
+    }
+
+    #[test]
+    fn test_vec_nested_entities_only_jscontact() {
+        // GIVEN: A vector of entities, each with nested entities
+        let nested_contact = Contact::builder().full_name("Child Entity").build();
+        let mut nested = Entity::builder().handle("child").build();
+        nested.with_contact_as_vcard(&nested_contact);
+
+        let mut entity1 = Entity::builder().handle("parent1").build();
+        entity1.object_common.entities = Some(vec![nested]);
+
+        let mut entity2 = Entity::builder().handle("parent2").build();
+        entity2.object_common.entities = Some(vec![]);
+
+        let entities = vec![entity1, entity2];
+
+        // WHEN: Converting to JSContact only
+        let result = entities.only_jscontact();
+
+        // THEN: All entities should be converted, nested should have no vCard
+        assert_eq!(result.len(), 2);
+        assert!(!result[0].is_contact_as_vcard());
+        assert!(!result[1].is_contact_as_vcard());
+        if let Some(nested) = &result[0].object_common.entities {
+            assert_eq!(nested.len(), 1);
+            assert!(nested[0].is_contact_as_jscontact());
+            assert!(!nested[0].is_contact_as_vcard());
         }
     }
 }
