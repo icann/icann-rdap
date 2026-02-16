@@ -261,6 +261,7 @@ mod tests {
     #[case("", false)]
     #[case(".", true)]
     #[case("foo.bar", true)]
+    #[case("foè.bar", true)]
     #[case("foo.bar.", true)]
     #[case("fo_o.bar.", false)]
     #[case("fo o.bar.", false)]
