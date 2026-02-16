@@ -369,6 +369,10 @@ fn org_to_jscontact(organization_name: Option<&str>) -> Option<Organizations> {
 }
 
 fn name_to_jscontact(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Option<Name> {
+    if full_name.is_none() && name_parts.is_none() {
+        return None;
+    }
+    // else
     Some(Name {
         full: full_name.map(|s| s.to_owned()),
         components: name_parts.map(|np| {
