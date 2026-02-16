@@ -483,10 +483,14 @@ fn postal_address_to_jscontact(addr: &PostalAddress) -> Address {
 }
 
 fn phones_to_jscontact(voice: Option<&super::Phone>, fax: Option<&super::Phone>) -> Option<Phones> {
-    Some(Phones {
-        voice: voice.map(phone_to_jscontact),
-        fax: fax.map(phone_to_jscontact),
-    })
+    if voice.is_some() || fax.is_some() {
+        Some(Phones {
+            voice: voice.map(phone_to_jscontact),
+            fax: fax.map(phone_to_jscontact),
+        })
+    } else {
+        None
+    }
 }
 
 fn phone_to_jscontact(phone: &super::Phone) -> Phone {
