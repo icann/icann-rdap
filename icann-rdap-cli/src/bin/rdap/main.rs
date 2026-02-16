@@ -161,6 +161,10 @@ struct Cli {
     #[arg(long, required = false, conflicts_with = "output_type")]
     rpsl: bool,
 
+    /// Convert vCard (jCard) to JSContact
+    #[arg(long, required = false)]
+    to_jscontact: bool,
+
     #[clap(flatten)]
     link_target_args: LinkTargetArgs,
 
@@ -605,6 +609,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         max_cache_age: cli.max_cache_age,
         redaction_flags,
         link_params,
+        to_jscontact: cli.to_jscontact,
     };
 
     let exts_list = if cli.no_exts_list {

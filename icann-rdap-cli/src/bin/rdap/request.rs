@@ -6,7 +6,10 @@ use std::{
 use icann_rdap_client::{
     md::redacted::replace_redacted_items, rdap::redacted::simplify_redactions, RdapClientError,
 };
-use icann_rdap_common::prelude::{RdapResponse, Rfc9083Error};
+use icann_rdap_common::{
+    prelude::{RdapResponse, Rfc9083Error},
+    response::jscontact::JsContactConvert,
+};
 
 use {
     icann_rdap_client::{
@@ -145,6 +148,7 @@ pub(crate) async fn request_and_process(
 ) -> Result<ResponseData, RdapCliError> {
     let response = do_request(base_url, query_type, processing_params, client).await?;
     let processed_rdap = process_redactions(response.rdap, &processing_params.redaction_flags);
+    let processed_rdap = process_jscontact(processed_rdap, processing_params.to_jscontact);
 
     Ok(ResponseData {
         rdap: processed_rdap,
@@ -154,7 +158,7 @@ pub(crate) async fn request_and_process(
 }
 
 fn process_redactions(
-    rdap: icann_rdap_common::prelude::RdapResponse,
+    rdap: RdapResponse,
     redaction_flags: &enumflags2::BitFlags<RedactionFlag>,
 ) -> RdapResponse {
     let processed_rdap = if redaction_flags.contains(RedactionFlag::DoRfc9537Redactions) {
@@ -167,5 +171,13 @@ fn process_redactions(
         simplify_redactions(processed_rdap, false)
     } else {
         processed_rdap
+    }
+}
+
+fn process_jscontact(rdap: RdapResponse, to_jscontact: bool) -> RdapResponse {
+    if to_jscontact {
+        rdap.to_jscontact()
+    } else {
+        rdap
     }
 }
