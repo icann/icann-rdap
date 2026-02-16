@@ -73,6 +73,7 @@ For example, `-b arin` will direct the client to find the ARIN server in the RDA
 An explicit base URL can be specified using the `-B` command or the `RDAP_BASE_URL` environment variable.
 
 Two additional arguments are provided to assist with bootstrapping:
+
 * `--tld-lookup` - Specifies where to send queries for TLDs such as ".com". This defaults to IANA.
 * `--inr-backup-bootstrap` - Specifies where to send queries for IP addresses and ASNs should normal bootstrapping not yield an answer. This defaults to ARIN.
 
@@ -108,25 +109,6 @@ can be used to modify this behavior:
 * `--def-retry-secs` or `RDAP_DEF_RETRY_SECS`: Default number of seconds to wait before a retry if no `retry-after` value is provided by the server.
 
 The `--timeout-secs` argument determines the total time the client will wait for an answer.
-
-## Conformance Checks
-
-Some specification conformance checks are done by this client. Each conformance check is assigned a number. These numerical values
-may be found [here](https://docs.rs/icann-rdap-common/0.0.20/icann_rdap_common/check/enum.Check.html). Additionally, each check is
-classified into one of the following classes:
-
-* Informational
-* Specification Note
-* Standards Warning
-* Standards Error
-* Cidr0 Extension Error
-* ICANN Extension Error
-
-The `--error-on-checks` argument will cause the client to exit with a non-zero exit code (see above) if one of these errors
-is detected. This may be useful for certain scripting purposes.
-
-The `--check-type` argument may be used to specify which types of checks will be evaluating when the `--error-on-checks` argument
-causes a non-zero exit code.
 
 ## Configuration
 
