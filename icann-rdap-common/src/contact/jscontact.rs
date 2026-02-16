@@ -369,12 +369,13 @@ fn org_to_jscontact(organization_name: Option<&str>) -> Option<Organizations> {
 }
 
 fn name_to_jscontact(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Option<Name> {
-    if full_name.is_none() && name_parts.is_none() {
+    let has_full_name = full_name.map(|s| !s.is_empty()).unwrap_or(false);
+    if !has_full_name && name_parts.is_none() {
         return None;
     }
     // else
     Some(Name {
-        full: full_name.map(|s| s.to_owned()),
+        full: full_name.filter(|s| !s.is_empty()).map(|s| s.to_owned()),
         components: name_parts.map(|np| {
             let mut components = vec![];
             if let Some(prefix) = np.prefix() {
@@ -957,6 +958,40 @@ mod test {
 
         // THEN
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_empty_full_name() {
+        // GIVEN
+        let full_name = Some("");
+        let name_parts: Option<&NameParts> = None;
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_empty_full_name_and_name_parts() {
+        // GIVEN
+        let full_name = Some("");
+        let name_parts = Some(
+            NameParts::builder()
+                .given_name("John")
+                .surname("Doe")
+                .build(),
+        );
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts.as_ref());
+
+        // THEN
+        assert!(result.is_some());
+        let name = result.unwrap();
+        assert!(name.full.is_none());
+        assert!(name.components.is_some());
     }
 
     #[test]
