@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use enumflags2::BitFlags;
 use icann_rdap_cli::args::target::{params_from_args, LinkTargetArgs};
 use icann_rdap_client::http::default_exts_list;
+use icann_rdap_common::check::StringCheck;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -564,7 +565,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     let bootstrap_type = if let Some(ref tag) = cli.base {
         BootstrapType::Hint(tag.to_string())
     } else if let Some(ref base_url) = cli.base_url {
-        BootstrapType::Url(base_url.to_string())
+        BootstrapType::Url(hostname_to_baseurl(base_url))
     } else {
         BootstrapType::Rfc9224
     };
@@ -731,13 +732,37 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
     Ok(q)
 }
 
+/// If something is a hostname, then convert it to base URL
+fn hostname_to_baseurl(s: &str) -> String {
+    if s.is_ldh_hostname() {
+        format!("https://{s}")
+    } else {
+        s.to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::Cli;
+    use rstest::rstest;
+
+    use crate::{hostname_to_baseurl, Cli};
 
     #[test]
     fn cli_debug_assert_test() {
         use clap::CommandFactory;
         Cli::command().debug_assert()
+    }
+
+    #[rstest]
+    #[case("foo.bar", "https://foo.bar")]
+    #[case("https://foo.bar", "https://foo.bar")]
+    fn test_hostname_to_baseurl(#[case] test_string: &str, #[case] expected: &str) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = hostname_to_baseurl(test_string);
+
+        // THEN
+        assert_eq!(&actual, expected);
     }
 }
