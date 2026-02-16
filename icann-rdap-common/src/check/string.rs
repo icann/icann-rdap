@@ -23,6 +23,9 @@ pub trait StringCheck {
 
     /// Tests if a string begins with a period and only has one label.
     fn is_tld(&self) -> bool;
+
+    /// Tests if a string is an ldh host name (i.e., at least to labels)
+    fn is_ldh_hostname(&self) -> bool;
 }
 
 impl<T: ToString> StringCheck for T {
@@ -60,6 +63,21 @@ impl<T: ToString> StringCheck for T {
                 s.chars()
                     .all(|c| !c.is_ascii_punctuation() && !c.is_whitespace())
             })
+    }
+
+    fn is_ldh_hostname(&self) -> bool {
+        let s = self.to_string();
+        let count = s.split_terminator('.').try_fold(0, |acc, s| {
+            if s.is_ldh_string() {
+                Ok(acc + 1)
+            } else {
+                Err(acc)
+            }
+        });
+        match count {
+            Ok(count) => count > 1,
+            Err(_) => false,
+        }
     }
 }
 
@@ -270,6 +288,28 @@ mod tests {
 
         // WHEN
         let actual = test_string.is_unicode_domain_name();
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("foo", false)]
+    #[case("", false)]
+    #[case(".", false)]
+    #[case("foo.bar", true)]
+    #[case("foè.bar", false)]
+    #[case("foo.bar.", true)]
+    #[case("fo_o.bar.", false)]
+    #[case("fo o.bar.", false)]
+    #[case("bar.foo.bar", true)]
+    #[case("https://foo.bar", false)]
+    #[case("http://foo.bar", false)]
+    fn test_is_ldh_hostname(#[case] test_string: &str, #[case] expected: bool) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = test_string.is_ldh_hostname();
 
         // THEN
         assert_eq!(actual, expected);
