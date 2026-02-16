@@ -75,16 +75,21 @@ impl JsContactConvert for Entity {
             self.jscontact_card
         };
         Self {
+            object_common: super::ObjectCommon {
+                entities: self.object_common.entities.map(|v| v.to_jscontact()),
+                ..self.object_common
+            },
             jscontact_card: new_jscontact,
             ..self
         }
     }
 
     fn only_jscontact(self) -> Self {
-        Entity {
-            vcard_array: None,
-            ..self.to_jscontact()
-        }
+        let mut entity = self.to_jscontact();
+        entity.object_common.entities = entity.object_common.entities.map(|ve| ve.to_jscontact());
+        entity.vcard_array = None;
+        entity.object_common.entities = entity.object_common.entities.map(|ve| ve.only_jscontact());
+        entity
     }
 }
 
