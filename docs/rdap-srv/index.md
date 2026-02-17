@@ -19,13 +19,14 @@ RDAP query support in this server is as follows:
 - [ ] Entity search
 - [X] Help (`/help`)
 
-This server explicityl supports the following extensions:
+This server explicitly supports the following extensions:
 
 - Cidr0
 - Exts
 - JSContact
 - Redacted
 - SimpleRedaction
+- Ttl0
 
 Other extensions, such as object tagging, can be placed in the `rdapConformance` array of data
 used in this server.

@@ -23,13 +23,18 @@ Here's a summary of the `rdap` command exit codes, based on [`error.rs`](https:/
 | 102 | Invalid bootstrap file | RDAP Error |
 | 103 | Bootstrap not found | RDAP Error |
 | 104 | No registrar found | RDAP Error |
-| 105 | No registry found | RDAP Error |
+| 105 | Unused | Unused |
+| 106 | Response was not 200 OK | RDAP Error |
 | 200 | Unknown output type | User Error |
-| 201 | Error on checks | User Error |
+| 201 | Unused | Unused |
 | 202 | Invalid query value (within `RdapClient`) | User Error |
 | 203 | Ambiguous query type (within `RdapClient`) | User Error |
 | 204 | Domain name error (within `RdapClient`) | User Error |
 | 250 | Poison error (internal to rdap client) | Internal Error |
+
+## Help
+
+Use `--help` to see all the command line parameters and their values.
 
 ## Paging Output
 
@@ -58,6 +63,15 @@ is interactive, output will be in `rendered-markdown`. Otherwise, the output wil
 You can explicitly control this behavior using the `-O` command argument or the `RDAP_OUTPUT` environment variable
 (see below).
 
+The `--json` parameter is equivalent to `-O pretty-compact-json`.
+
+The `--rpsl` parameter is equivalent to `-O rpsl`.
+
+## JSContact
+
+The `--to-jscontact` parameter will automatically convert vCard/jCard to JSContact. This may be useful
+when processing the output in JSON format.
+
 ## Directing Queries To A Specific Server
 
 By default, the client will use the RDAP bootstrap files provided by IANA to determine the authoritative server
@@ -71,6 +85,7 @@ An object tag can be specified with the `-b` command argument or the `RDAP_BASE`
 For example, `-b arin` will direct the client to find the ARIN server in the RDAP object tag registry.
 
 An explicit base URL can be specified using the `-B` command or the `RDAP_BASE_URL` environment variable.
+If this is given as a hostname instead of a URL, it will be converted to `https://hostname`.
 
 Two additional arguments are provided to assist with bootstrapping:
 

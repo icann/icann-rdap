@@ -8,6 +8,7 @@ It supports RDAP bootstrapping, caching, different output formats, link followin
 * JSContact
 * Redacted
 * SimpleRedaction
+* Ttl0
 
 <figure markdown="span">
   <img src="../../images/rdap_cmd_example_com_md.png"/>
