@@ -47,23 +47,38 @@ impl BootstrapStore for FileCacheBootstrapStore {
         Ok(())
     }
 
-    fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+    fn get_dns_urls(
+        &self,
+        ldh: &str,
+    ) -> Result<Option<Vec<String>>, icann_rdap_client::RdapClientError> {
         self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapDns, ldh)
     }
 
-    fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+    fn get_asn_urls(
+        &self,
+        asn: &str,
+    ) -> Result<Option<Vec<String>>, icann_rdap_client::RdapClientError> {
         self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapAsn, asn)
     }
 
-    fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+    fn get_ipv4_urls(
+        &self,
+        ipv4: &str,
+    ) -> Result<Option<Vec<String>>, icann_rdap_client::RdapClientError> {
         self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapIpv4, ipv4)
     }
 
-    fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+    fn get_ipv6_urls(
+        &self,
+        ipv6: &str,
+    ) -> Result<Option<Vec<String>>, icann_rdap_client::RdapClientError> {
         self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapIpv6, ipv6)
     }
 
-    fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+    fn get_tag_urls(
+        &self,
+        tag: &str,
+    ) -> Result<Option<Vec<String>>, icann_rdap_client::RdapClientError> {
         self.get_bootstrap_urls(&IanaRegistryType::RdapObjectTags, tag)
     }
 }
@@ -73,7 +88,7 @@ impl FileCacheBootstrapStore {
         &self,
         reg_type: &IanaRegistryType,
         key: &str,
-    ) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+    ) -> Result<Option<Vec<String>>, icann_rdap_client::RdapClientError> {
         let file_name = reg_type.file_name();
 
         // Check in configured bootstrap override
@@ -89,9 +104,13 @@ impl FileCacheBootstrapStore {
                     IanaRegistryType::RdapBootstrapIpv6 => iana.get_ipv6_bootstrap_urls(key),
                     IanaRegistryType::RdapObjectTags => iana.get_tag_bootstrap_urls(key),
                 };
-                if let Ok(urls) = urls {
-                    debug!("Bootstrap URLs found in configured bootstrap override.");
-                    return Ok(urls);
+                match urls {
+                    Ok(Some(urls)) => {
+                        debug!("Bootstrap URLs found in configured bootstrap override.");
+                        return Ok(Some(urls));
+                    }
+                    Ok(None) => {}
+                    Err(e) => return Err(e.into()),
                 }
             }
         }
@@ -107,7 +126,7 @@ impl FileCacheBootstrapStore {
             IanaRegistryType::RdapBootstrapIpv6 => iana.get_ipv6_bootstrap_urls(key),
             IanaRegistryType::RdapObjectTags => iana.get_tag_bootstrap_urls(key),
         };
-        urls.map_err(Into::into)
+        Ok(urls?)
     }
 }
 
@@ -154,13 +173,13 @@ mod test {
         },
         icann_rdap_common::{
             httpdata::HttpData,
-            iana::{IanaRegistry, IanaRegistryType},
+            iana::{BootstrapRegistry, IanaRegistry, IanaRegistryType},
         },
         serial_test::serial,
         test_dir::{DirBuilder, FileType, TestDir},
     };
 
-    use crate::dirs::{self, config_dir, fcbs::FileCacheBootstrapStore};
+    use crate::dirs::{self, bootstrap_cache_path, config_dir, fcbs::FileCacheBootstrapStore};
 
     fn test_dir() -> TestDir {
         let test_dir = TestDir::temp()
@@ -740,5 +759,185 @@ mod test {
 
         // THEN
         assert_eq!(actual, "https://config.example.com/rdap/")
+    }
+
+    #[test]
+    fn test_iana_registry_propagates_invalid_asn_input_error() {
+        // GIVEN - valid ASN bootstrap
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "ASN bootstrap",
+                "services": [
+                  [
+                    ["64496-64496"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana: IanaRegistry =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse bootstrap");
+
+        // WHEN - query with invalid (non-numeric) ASN input
+        let result = iana.get_asn_bootstrap_urls("notanumber");
+
+        // THEN - should return error for invalid input
+        assert!(
+            result.is_err(),
+            "Expected error for invalid ASN input but got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_propagates_invalid_asn_via_store() {
+        // GIVEN - valid ASN bootstrap in store
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "ASN bootstrap",
+                "services": [
+                  [
+                    ["64496-64496"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana = serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapAsn,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put iana registry");
+
+        // WHEN - query with invalid ASN (non-numeric)
+        let result = bs.get_asn_urls("notanumber");
+
+        // THEN - should propagate the error
+        assert!(
+            result.is_err(),
+            "Expected error for invalid ASN but got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_config_override_propagates_errors() {
+        // GIVEN - config override with valid bootstrap but query returns None
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        // Valid bootstrap but doesn't have "example.org"
+        let config_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Config bootstrap",
+                "services": [
+                  [
+                    ["com"],
+                    [
+                      "https://config.example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let bootstrap_config_path = config_dir().join("dns.json");
+        std::fs::write(&bootstrap_config_path, config_bootstrap).expect("write config bootstrap");
+
+        // Also put a cache version that has a different TLD
+        let cache_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Cache bootstrap",
+                "services": [
+                  [
+                    ["net"],
+                    [
+                      "https://cache.example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(cache_bootstrap).expect("cannot parse bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapDns,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put iana registry");
+
+        // WHEN - query for a TLD that doesn't exist in either config or cache
+        let result = bs
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"));
+
+        // THEN - should return Ok(None) for not found, not an error
+        assert!(result.is_ok(), "Expected Ok but got: {:?}", result);
+        assert!(result.unwrap().is_none(), "Expected None but got Some");
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_propagates_invalid_json_error() {
+        // GIVEN - invalid JSON in config override
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        // Write invalid (malformed) JSON
+        let invalid_json = r#"{ "version": "1.0", invalid json }"#;
+        let bootstrap_config_path = config_dir().join("dns.json");
+        std::fs::write(&bootstrap_config_path, invalid_json).expect("write invalid json");
+
+        // WHEN
+        let result = bs
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"));
+
+        // THEN - should propagate the JSON parse error
+        assert!(
+            result.is_err(),
+            "Expected error for invalid JSON but got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_propagates_invalid_json_in_cache_error() {
+        // GIVEN - invalid JSON in cache file
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        // Write invalid (malformed) JSON to cache directly
+        let invalid_json = r#"{ "version": "1.0", bad json }"#;
+        let cache_path = bootstrap_cache_path().join("dns.json");
+        std::fs::write(&cache_path, invalid_json).expect("write invalid json to cache");
+
+        // WHEN
+        let result = bs
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"));
+
+        // THEN - should propagate the JSON parse error
+        assert!(
+            result.is_err(),
+            "Expected error for invalid JSON in cache but got: {:?}",
+            result
+        );
     }
 }

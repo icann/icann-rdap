@@ -37,7 +37,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_domain_query_urls(
         &self,
         query_type: &QueryType,
-    ) -> Result<Vec<String>, RdapClientError> {
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
         let domain_name = match query_type {
             QueryType::Domain(domain) => domain.to_ascii(),
             QueryType::Nameserver(ns) => ns.to_ascii(),
@@ -52,7 +52,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_autnum_query_urls(
         &self,
         query_type: &QueryType,
-    ) -> Result<Vec<String>, RdapClientError> {
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
         let QueryType::AsNumber(asn) = query_type else {
             panic!("invalid query type")
         };
@@ -62,7 +62,10 @@ pub trait BootstrapStore: Send + Sync {
     /// Get the urls for an IPv4 query type.
     ///
     /// The default method should be good enough for most trait implementations.
-    fn get_ipv4_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
+    fn get_ipv4_query_urls(
+        &self,
+        query_type: &QueryType,
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV4Addr(addr) => format!("{addr}/32"),
             QueryType::IpV4Cidr(cidr) => cidr.to_string(),
@@ -74,7 +77,10 @@ pub trait BootstrapStore: Send + Sync {
     /// Get the urls for an IPv6 query type.
     ///
     /// The default method should be good enough for most trait implementations.
-    fn get_ipv6_query_urls(&self, query_type: &QueryType) -> Result<Vec<String>, RdapClientError> {
+    fn get_ipv6_query_urls(
+        &self,
+        query_type: &QueryType,
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
         let ip = match query_type {
             QueryType::IpV6Addr(addr) => format!("{addr}/128"),
             QueryType::IpV6Cidr(cidr) => cidr.to_string(),
@@ -89,7 +95,7 @@ pub trait BootstrapStore: Send + Sync {
     fn get_entity_handle_query_urls(
         &self,
         query_type: &QueryType,
-    ) -> Result<Vec<String>, RdapClientError> {
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
         let QueryType::Entity(handle) = query_type else {
             panic!("non entity handle for bootstrap")
         };
@@ -102,39 +108,44 @@ pub trait BootstrapStore: Send + Sync {
     /// Get the urls for an object tag query type.
     ///
     /// The default method should be good enough for most trait implementations.
-    fn get_tag_query_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError> {
+    fn get_tag_query_urls(&self, tag: &str) -> Result<Option<Vec<String>>, RdapClientError> {
         self.get_tag_urls(tag)
     }
 
     /// Get the URLs associated with the IANA RDAP DNS bootstrap.
     ///
+    /// Returns [None] if no URLs were found for the given key.
     /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_dns_bootstrap_urls] method.
-    fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, RdapClientError>;
+    fn get_dns_urls(&self, ldh: &str) -> Result<Option<Vec<String>>, RdapClientError>;
 
     /// Get the URLs associated with the IANA RDAP ASN bootstrap.
     ///
+    /// Returns [None] if no URLs were found for the given key.
     /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_asn_bootstrap_urls] method.
-    fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, RdapClientError>;
+    fn get_asn_urls(&self, asn: &str) -> Result<Option<Vec<String>>, RdapClientError>;
 
     /// Get the URLs associated with the IANA RDAP IPv4 bootstrap.
     ///
+    /// Returns [None] if no URLs were found for the given key.
     /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_ipv4_bootstrap_urls] method.
-    fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, RdapClientError>;
+    fn get_ipv4_urls(&self, ipv4: &str) -> Result<Option<Vec<String>>, RdapClientError>;
 
     /// Get the URLs associated with the IANA RDAP IPv6 bootstrap.
     ///
+    /// Returns [None] if no URLs were found for the given key.
     /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_ipv6_bootstrap_urls] method.
-    fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, RdapClientError>;
+    fn get_ipv6_urls(&self, ipv6: &str) -> Result<Option<Vec<String>>, RdapClientError>;
 
     /// Get the URLs associated with the IANA RDAP Object Tags bootstrap.
     ///
+    /// Returns [None] if no URLs were found for the given key.
     /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_tag_bootstrap_urls] method.
-    fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError>;
+    fn get_tag_urls(&self, tag: &str) -> Result<Option<Vec<String>>, RdapClientError>;
 }
 
 /// A trait to find the preferred URL from a bootstrap service.
@@ -145,6 +156,15 @@ pub trait PreferredUrl {
 impl PreferredUrl for Vec<String> {
     fn preferred_url(self) -> Result<String, RdapClientError> {
         Ok(get_preferred_url(self)?)
+    }
+}
+
+impl PreferredUrl for Option<Vec<String>> {
+    fn preferred_url(self) -> Result<String, RdapClientError> {
+        match self {
+            Some(vec) => Ok(get_preferred_url(vec)?),
+            None => Err(RdapClientError::BootstrapUnavailable),
+        }
     }
 }
 
@@ -226,7 +246,7 @@ impl BootstrapStore for MemoryBootstrapStore {
         Ok(())
     }
 
-    fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, RdapClientError> {
+    fn get_dns_urls(&self, ldh: &str) -> Result<Option<Vec<String>>, RdapClientError> {
         if let Some((iana, _http_data)) = self.dns.read()?.as_ref() {
             Ok(iana.get_dns_bootstrap_urls(ldh)?)
         } else {
@@ -234,7 +254,7 @@ impl BootstrapStore for MemoryBootstrapStore {
         }
     }
 
-    fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, RdapClientError> {
+    fn get_asn_urls(&self, asn: &str) -> Result<Option<Vec<String>>, RdapClientError> {
         if let Some((iana, _http_data)) = self.autnum.read()?.as_ref() {
             Ok(iana.get_asn_bootstrap_urls(asn)?)
         } else {
@@ -242,7 +262,7 @@ impl BootstrapStore for MemoryBootstrapStore {
         }
     }
 
-    fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, RdapClientError> {
+    fn get_ipv4_urls(&self, ipv4: &str) -> Result<Option<Vec<String>>, RdapClientError> {
         if let Some((iana, _http_data)) = self.ipv4.read()?.as_ref() {
             Ok(iana.get_ipv4_bootstrap_urls(ipv4)?)
         } else {
@@ -250,7 +270,7 @@ impl BootstrapStore for MemoryBootstrapStore {
         }
     }
 
-    fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, RdapClientError> {
+    fn get_ipv6_urls(&self, ipv6: &str) -> Result<Option<Vec<String>>, RdapClientError> {
         if let Some((iana, _http_data)) = self.ipv6.read()?.as_ref() {
             Ok(iana.get_ipv6_bootstrap_urls(ipv6)?)
         } else {
@@ -258,7 +278,7 @@ impl BootstrapStore for MemoryBootstrapStore {
         }
     }
 
-    fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, RdapClientError> {
+    fn get_tag_urls(&self, tag: &str) -> Result<Option<Vec<String>>, RdapClientError> {
         if let Some((iana, _http_data)) = self.tag.read()?.as_ref() {
             Ok(iana.get_tag_bootstrap_urls(tag)?)
         } else {
