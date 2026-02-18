@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use crate::dirs::config_path;
+use crate::dirs::config_dir;
 
 use {
     icann_rdap_client::iana::{BootstrapStore, RegistryHasNotExpired},
@@ -49,9 +49,10 @@ impl BootstrapStore for FileCacheBootstrapStore {
         let file_name = IanaRegistryType::RdapBootstrapDns.file_name();
 
         // check in configured bootstrap override
-        let config_path = config_path().join(file_name);
-        if config_path.exists() {
-            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+        let config_bootstrap_path = config_dir().join(file_name);
+        if config_bootstrap_path.exists() {
+            let (iana, _http_data) =
+                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
             if let Ok(urls) = iana.get_dns_bootstrap_urls(ldh) {
                 debug!("Bootstrap URLs found in configured bootstrap override.");
                 return Ok(urls);
@@ -68,9 +69,10 @@ impl BootstrapStore for FileCacheBootstrapStore {
         let file_name = IanaRegistryType::RdapBootstrapAsn.file_name();
 
         // check in configured bootstrap override
-        let config_path = config_path().join(file_name);
-        if config_path.exists() {
-            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+        let config_bootstrap_path = config_dir().join(file_name);
+        if config_bootstrap_path.exists() {
+            let (iana, _http_data) =
+                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
             if let Ok(urls) = iana.get_asn_bootstrap_urls(asn) {
                 debug!("Bootstrap URLs found in configured bootstrap override.");
                 return Ok(urls);
@@ -88,9 +90,10 @@ impl BootstrapStore for FileCacheBootstrapStore {
         let file_name = IanaRegistryType::RdapBootstrapIpv4.file_name();
 
         // check in configured bootstrap override
-        let config_path = config_path().join(file_name);
-        if config_path.exists() {
-            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+        let config_bootstrap_path = config_dir().join(file_name);
+        if config_bootstrap_path.exists() {
+            let (iana, _http_data) =
+                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
             if let Ok(urls) = iana.get_ipv4_bootstrap_urls(ipv4) {
                 debug!("Bootstrap URLs found in configured bootstrap override.");
                 return Ok(urls);
@@ -108,9 +111,10 @@ impl BootstrapStore for FileCacheBootstrapStore {
         let file_name = IanaRegistryType::RdapBootstrapIpv6.file_name();
 
         // check in configured bootstrap override
-        let config_path = config_path().join(file_name);
-        if config_path.exists() {
-            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+        let config_bootstrap_path = config_dir().join(file_name);
+        if config_bootstrap_path.exists() {
+            let (iana, _http_data) =
+                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
             if let Ok(urls) = iana.get_ipv6_bootstrap_urls(ipv6) {
                 debug!("Bootstrap URLs found in configured bootstrap override.");
                 return Ok(urls);
@@ -128,9 +132,10 @@ impl BootstrapStore for FileCacheBootstrapStore {
         let file_name = IanaRegistryType::RdapObjectTags.file_name();
 
         // check in configured bootstrap override
-        let config_path = config_path().join(file_name);
-        if config_path.exists() {
-            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+        let config_bootstrap_path = config_dir().join(file_name);
+        if config_bootstrap_path.exists() {
+            let (iana, _http_data) =
+                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
             if let Ok(urls) = iana.get_tag_bootstrap_urls(tag) {
                 debug!("Bootstrap URLs found in configured bootstrap override.");
                 return Ok(urls);
@@ -179,7 +184,7 @@ mod test {
         test_dir::{DirBuilder, FileType, TestDir},
     };
 
-    use crate::dirs::{self, fcbs::FileCacheBootstrapStore};
+    use crate::dirs::{self, config_path, fcbs::FileCacheBootstrapStore};
 
     fn test_dir() -> TestDir {
         let test_dir = TestDir::temp()
@@ -456,6 +461,338 @@ mod test {
             .expect("preferred url");
 
         // THEN
-        assert_eq!(actual, "https://example.com/rdap/");
+        assert_eq!(actual, "https://example.com/rdap/")
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_dns_config_override() {
+        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        let cache_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Cache bootstrap",
+                "services": [
+                  [
+                    ["org"],
+                    [
+                      "https://cache.example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana = serde_json::from_str::<IanaRegistry>(cache_bootstrap)
+            .expect("cannot parse cache bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapDns,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put cache iana registry");
+
+        let config_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Config override bootstrap",
+                "services": [
+                  [
+                    ["org"],
+                    [
+                      "https://config.example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let cp = config_path();
+        let config_dir = cp.parent().unwrap();
+        let bootstrap_config_path = config_dir.join("dns.json");
+        let cache_contents = HttpData::example()
+            .build()
+            .to_lines(config_bootstrap)
+            .unwrap();
+        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+
+        // WHEN
+        let actual = bs
+            .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://config.example.org/")
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_asn_config_override() {
+        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        let cache_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Cache bootstrap",
+                "services": [
+                  [
+                    ["64496-64496"],
+                    [
+                      "https://cache.example.com/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana = serde_json::from_str::<IanaRegistry>(cache_bootstrap)
+            .expect("cannot parse cache bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapAsn,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put cache iana registry");
+
+        let config_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Config override bootstrap",
+                "services": [
+                  [
+                    ["64496-64496"],
+                    [
+                      "https://config.example.com/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let cp = config_path();
+        let config_dir = cp.parent().unwrap();
+        let bootstrap_config_path = config_dir.join("asn.json");
+        let cache_contents = HttpData::example()
+            .build()
+            .to_lines(config_bootstrap)
+            .unwrap();
+        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+
+        // WHEN
+        let actual = bs
+            .get_autnum_query_urls(&QueryType::autnum("as64496").expect("invalid autnum"))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://config.example.com/")
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_ipv4_config_override() {
+        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        let cache_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Cache bootstrap",
+                "services": [
+                  [
+                    ["198.51.100.0/24"],
+                    [
+                      "https://cache.example.com/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana = serde_json::from_str::<IanaRegistry>(cache_bootstrap)
+            .expect("cannot parse cache bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapIpv4,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put cache iana registry");
+
+        let config_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Config override bootstrap",
+                "services": [
+                  [
+                    ["198.51.100.0/24"],
+                    [
+                      "https://config.example.com/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let cp = config_path();
+        let config_dir = cp.parent().unwrap();
+        let bootstrap_config_path = config_dir.join("ipv4.json");
+        let cache_contents = HttpData::example()
+            .build()
+            .to_lines(config_bootstrap)
+            .unwrap();
+        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+
+        // WHEN
+        let actual = bs
+            .get_ipv4_query_urls(&QueryType::ipv4("198.51.100.1").expect("invalid IP address"))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://config.example.com/")
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_ipv6_config_override() {
+        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        let cache_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Cache bootstrap",
+                "services": [
+                  [
+                    ["2001:db8::/32"],
+                    [
+                      "https://cache.example.com/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana = serde_json::from_str::<IanaRegistry>(cache_bootstrap)
+            .expect("cannot parse cache bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapIpv6,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put cache iana registry");
+
+        let config_bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Config override bootstrap",
+                "services": [
+                  [
+                    ["2001:db8::/32"],
+                    [
+                      "https://config.example.com/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let cp = config_path();
+        let config_dir = cp.parent().unwrap();
+        let bootstrap_config_path = config_dir.join("ipv6.json");
+        let cache_contents = HttpData::example()
+            .build()
+            .to_lines(config_bootstrap)
+            .unwrap();
+        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+
+        // WHEN
+        let actual = bs
+            .get_ipv6_query_urls(&QueryType::ipv6("2001:db8::1").expect("invalid IP address"))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://config.example.com/")
+    }
+
+    #[test]
+    #[serial]
+    fn test_fcbootstrap_tag_config_override() {
+        // GIVEN
+        let _test_dir = test_dir();
+        let bs = FileCacheBootstrapStore;
+
+        let cache_bootstrap = r#"
+            {
+              "version": "1.0",
+              "publication": "YYYY-MM-DDTHH:MM:SSZ",
+              "description": "Cache bootstrap",
+              "services": [
+                [
+                  ["contact@example.com"],
+                  ["YYYY"],
+                  [
+                    "https://cache.example.com/rdap/"
+                  ]
+                ]
+              ]
+             }
+        "#;
+        let iana = serde_json::from_str::<IanaRegistry>(cache_bootstrap)
+            .expect("cannot parse cache bootstrap");
+        bs.put_bootstrap_registry(
+            &IanaRegistryType::RdapObjectTags,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put cache iana registry");
+
+        let config_bootstrap = r#"
+            {
+              "version": "1.0",
+              "publication": "YYYY-MM-DDTHH:MM:SSZ",
+              "description": "Config override bootstrap",
+              "services": [
+                [
+                  ["contact@example.com"],
+                  ["YYYY"],
+                  [
+                    "https://config.example.com/rdap/"
+                  ]
+                ]
+              ]
+             }
+        "#;
+        let cp = config_path();
+        let config_dir = cp.parent().unwrap();
+        let bootstrap_config_path = config_dir.join("object-tags.json");
+        let cache_contents = HttpData::example()
+            .build()
+            .to_lines(config_bootstrap)
+            .unwrap();
+        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+
+        // WHEN
+        let actual = bs
+            .get_entity_handle_query_urls(&QueryType::Entity("foo-YYYY".to_string()))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://config.example.com/rdap/")
     }
 }
