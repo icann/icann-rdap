@@ -184,7 +184,7 @@ mod test {
         test_dir::{DirBuilder, FileType, TestDir},
     };
 
-    use crate::dirs::{self, config_path, fcbs::FileCacheBootstrapStore};
+    use crate::dirs::{self, config_dir, fcbs::FileCacheBootstrapStore};
 
     fn test_dir() -> TestDir {
         let test_dir = TestDir::temp()
@@ -510,9 +510,7 @@ mod test {
                 ]
             }
         "#;
-        let cp = config_path();
-        let config_dir = cp.parent().unwrap();
-        let bootstrap_config_path = config_dir.join("dns.json");
+        let bootstrap_config_path = config_dir().join("dns.json");
         let cache_contents = HttpData::example()
             .build()
             .to_lines(config_bootstrap)
@@ -576,9 +574,7 @@ mod test {
                 ]
             }
         "#;
-        let cp = config_path();
-        let config_dir = cp.parent().unwrap();
-        let bootstrap_config_path = config_dir.join("asn.json");
+        let bootstrap_config_path = config_dir().join("asn.json");
         let cache_contents = HttpData::example()
             .build()
             .to_lines(config_bootstrap)
@@ -642,9 +638,7 @@ mod test {
                 ]
             }
         "#;
-        let cp = config_path();
-        let config_dir = cp.parent().unwrap();
-        let bootstrap_config_path = config_dir.join("ipv4.json");
+        let bootstrap_config_path = config_dir().join("ipv4.json");
         let cache_contents = HttpData::example()
             .build()
             .to_lines(config_bootstrap)
@@ -708,9 +702,7 @@ mod test {
                 ]
             }
         "#;
-        let cp = config_path();
-        let config_dir = cp.parent().unwrap();
-        let bootstrap_config_path = config_dir.join("ipv6.json");
+        let bootstrap_config_path = config_dir().join("ipv6.json");
         let cache_contents = HttpData::example()
             .build()
             .to_lines(config_bootstrap)
@@ -776,9 +768,7 @@ mod test {
               ]
              }
         "#;
-        let cp = config_path();
-        let config_dir = cp.parent().unwrap();
-        let bootstrap_config_path = config_dir.join("object-tags.json");
+        let bootstrap_config_path = config_dir().join("object-tags.json");
         let cache_contents = HttpData::example()
             .build()
             .to_lines(config_bootstrap)
