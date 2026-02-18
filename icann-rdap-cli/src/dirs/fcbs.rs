@@ -4,6 +4,8 @@ use std::{
     path::PathBuf,
 };
 
+use crate::dirs::config_path;
+
 use {
     icann_rdap_client::iana::{BootstrapStore, RegistryHasNotExpired},
     icann_rdap_common::{
@@ -24,7 +26,7 @@ impl BootstrapStore for FileCacheBootstrapStore {
     ) -> Result<bool, icann_rdap_client::RdapClientError> {
         let path = bootstrap_cache_path().join(reg_type.file_name());
         if path.exists() {
-            let fc_reg = fetch_file_cache_bootstrap(path, |s| debug!("Checking for {s}"))?;
+            let fc_reg = fetch_bootstrap_file(path, |s| debug!("Checking for {s}"))?;
             return Ok(Some(fc_reg).registry_has_not_expired());
         }
         Ok(false)
@@ -36,45 +38,114 @@ impl BootstrapStore for FileCacheBootstrapStore {
         registry: IanaRegistry,
         http_data: HttpData,
     ) -> Result<(), icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(reg_type.file_name());
+        let bootstrap_cache_path = bootstrap_cache_path().join(reg_type.file_name());
         let data = serde_json::to_string_pretty(&registry)?;
         let cache_contents = http_data.to_lines(&data)?;
-        fs::write(path, cache_contents)?;
+        fs::write(bootstrap_cache_path, cache_contents)?;
         Ok(())
     }
 
     fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapDns.file_name());
-        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        let file_name = IanaRegistryType::RdapBootstrapDns.file_name();
+
+        // check in configured bootstrap override
+        let config_path = config_path().join(file_name);
+        if config_path.exists() {
+            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+            if let Ok(urls) = iana.get_dns_bootstrap_urls(ldh) {
+                debug!("Bootstrap URLs found in configured bootstrap override.");
+                return Ok(urls);
+            }
+        }
+
+        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
+        let (iana, _http_data) =
+            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
         Ok(iana.get_dns_bootstrap_urls(ldh)?)
     }
 
     fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapAsn.file_name());
-        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        let file_name = IanaRegistryType::RdapBootstrapAsn.file_name();
+
+        // check in configured bootstrap override
+        let config_path = config_path().join(file_name);
+        if config_path.exists() {
+            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+            if let Ok(urls) = iana.get_asn_bootstrap_urls(asn) {
+                debug!("Bootstrap URLs found in configured bootstrap override.");
+                return Ok(urls);
+            }
+        }
+
+        // check in bootstrap cache
+        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
+        let (iana, _http_data) =
+            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
         Ok(iana.get_asn_bootstrap_urls(asn)?)
     }
 
     fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapIpv4.file_name());
-        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        let file_name = IanaRegistryType::RdapBootstrapIpv4.file_name();
+
+        // check in configured bootstrap override
+        let config_path = config_path().join(file_name);
+        if config_path.exists() {
+            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+            if let Ok(urls) = iana.get_ipv4_bootstrap_urls(ipv4) {
+                debug!("Bootstrap URLs found in configured bootstrap override.");
+                return Ok(urls);
+            }
+        }
+
+        // check in bootstrap cache
+        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
+        let (iana, _http_data) =
+            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
         Ok(iana.get_ipv4_bootstrap_urls(ipv4)?)
     }
 
     fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(IanaRegistryType::RdapBootstrapIpv6.file_name());
-        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        let file_name = IanaRegistryType::RdapBootstrapIpv6.file_name();
+
+        // check in configured bootstrap override
+        let config_path = config_path().join(file_name);
+        if config_path.exists() {
+            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+            if let Ok(urls) = iana.get_ipv6_bootstrap_urls(ipv6) {
+                debug!("Bootstrap URLs found in configured bootstrap override.");
+                return Ok(urls);
+            }
+        }
+
+        // check in bootstrap cache
+        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
+        let (iana, _http_data) =
+            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
         Ok(iana.get_ipv6_bootstrap_urls(ipv6)?)
     }
 
     fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(IanaRegistryType::RdapObjectTags.file_name());
-        let (iana, _http_data) = fetch_file_cache_bootstrap(path, |s| debug!("Reading {s}"))?;
+        let file_name = IanaRegistryType::RdapObjectTags.file_name();
+
+        // check in configured bootstrap override
+        let config_path = config_path().join(file_name);
+        if config_path.exists() {
+            let (iana, _http_data) = fetch_bootstrap_file(config_path, |s| debug!("Reading {s}"))?;
+            if let Ok(urls) = iana.get_tag_bootstrap_urls(tag) {
+                debug!("Bootstrap URLs found in configured bootstrap override.");
+                return Ok(urls);
+            }
+        }
+
+        // check in bootstrap cache
+        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
+        let (iana, _http_data) =
+            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
         Ok(iana.get_tag_bootstrap_urls(tag)?)
     }
 }
 
-pub fn fetch_file_cache_bootstrap<F>(
+pub fn fetch_bootstrap_file<F>(
     path: PathBuf,
     callback: F,
 ) -> Result<(IanaRegistry, HttpData), std::io::Error>
@@ -94,7 +165,6 @@ where
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod test {
     use {
         icann_rdap_client::{
@@ -115,15 +185,17 @@ mod test {
         let test_dir = TestDir::temp()
             .create("cache", FileType::Dir)
             .create("config", FileType::Dir);
-        std::env::set_var("XDG_CACHE_HOME", test_dir.path("cache"));
-        std::env::set_var("XDG_CONFIG_HOME", test_dir.path("config"));
+        unsafe {
+            std::env::set_var("XDG_CACHE_HOME", test_dir.path("cache"));
+            std::env::set_var("XDG_CONFIG_HOME", test_dir.path("config"));
+        };
         dirs::init().expect("unable to init directories");
         test_dir
     }
 
     #[test]
     #[serial]
-    fn GIVEN_fcbootstrap_with_dns_WHEN_get_domain_query_url_THEN_correct_url() {
+    fn test_fcbootstrap_with_dns() {
         // GIVEN
         let _test_dir = test_dir();
         let bs = FileCacheBootstrapStore;
@@ -170,7 +242,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn GIVEN_fcbootstrap_with_autnum_WHEN_get_autnum_query_url_THEN_correct_url() {
+    fn test_fcbootstrap_with_autnum() {
         // GIVEN
         let _test_dir = test_dir();
         let bs = FileCacheBootstrapStore;
@@ -224,7 +296,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn GIVEN_fcbootstrap_with_ipv4_THEN_get_ipv4_query_urls_THEN_correct_url() {
+    fn test_fcbootstrap_with_ipv4() {
         // GIVEN
         let _test_dir = test_dir();
         let bs = FileCacheBootstrapStore;
@@ -278,7 +350,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn GIVEN_fcbootstrap_with_ipv6_THEN_get_ipv6_query_urls_THEN_correct_url() {
+    fn test_fcbootstrap_with_ipv6() {
         // GIVEN
         let _test_dir = test_dir();
         let bs = FileCacheBootstrapStore;
@@ -332,7 +404,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn GIVEN_fcbootstrap_with_tag_THEN_get_entity_handle_query_urls_THEN_correct_url() {
+    fn test_fcbootstrap_with_tag() {
         // GIVEN
         let _test_dir = test_dir();
         let bs = FileCacheBootstrapStore;
