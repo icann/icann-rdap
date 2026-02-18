@@ -97,7 +97,6 @@ impl FileCacheBootstrapStore {
             let iana = read_bootstrap_config_file(config_bootstrap_path, |s| debug!("Reading {s}"));
             match iana {
                 Ok(iana) => {
-                    eprintln!("getting urls from config");
                     let urls = match reg_type {
                         IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
                         IanaRegistryType::RdapBootstrapAsn => iana.get_asn_bootstrap_urls(key),
