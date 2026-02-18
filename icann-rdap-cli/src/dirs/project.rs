@@ -50,6 +50,11 @@ pub fn config_path() -> PathBuf {
     }
 }
 
+/// Returns a [PathBuf] to the configuration directory.
+pub fn config_dir() -> PathBuf {
+    config_path().parent().unwrap().to_path_buf()
+}
+
 /// Returns a [PathBuf] to the cache directory for RDAP responses.
 pub fn rdap_cache_path() -> PathBuf {
     PROJECT_DIRS.cache_dir().join(RDAP_CACHE_NAME)

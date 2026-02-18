@@ -56,11 +56,26 @@ pub struct RdapBootstrapRegistry {
 }
 
 pub trait BootstrapRegistry {
-    fn get_dns_bootstrap_urls(&self, ldh: &str) -> Result<Vec<String>, BootstrapRegistryError>;
-    fn get_asn_bootstrap_urls(&self, asn: &str) -> Result<Vec<String>, BootstrapRegistryError>;
-    fn get_ipv4_bootstrap_urls(&self, ipv4: &str) -> Result<Vec<String>, BootstrapRegistryError>;
-    fn get_ipv6_bootstrap_urls(&self, ipv6: &str) -> Result<Vec<String>, BootstrapRegistryError>;
-    fn get_tag_bootstrap_urls(&self, tag: &str) -> Result<Vec<String>, BootstrapRegistryError>;
+    fn get_dns_bootstrap_urls(
+        &self,
+        ldh: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError>;
+    fn get_asn_bootstrap_urls(
+        &self,
+        asn: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError>;
+    fn get_ipv4_bootstrap_urls(
+        &self,
+        ipv4: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError>;
+    fn get_ipv6_bootstrap_urls(
+        &self,
+        ipv6: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError>;
+    fn get_tag_bootstrap_urls(
+        &self,
+        tag: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError>;
 }
 
 /// Errors from processing IANA RDAP bootstrap registries.
@@ -72,15 +87,16 @@ pub enum BootstrapRegistryError {
     EmptyUrlSet,
     #[error("Invalid Bootstrap Input")]
     InvalidBootstrapInput,
-    #[error("No Bootstrap URLs Found")]
-    NoBootstrapUrls,
     #[error("Invalid Bootstrap Service")]
     InvalidBootstrapService,
 }
 
 impl BootstrapRegistry for IanaRegistry {
     /// Get the URLs from the IANA domain bootstrap registry.
-    fn get_dns_bootstrap_urls(&self, ldh: &str) -> Result<Vec<String>, BootstrapRegistryError> {
+    fn get_dns_bootstrap_urls(
+        &self,
+        ldh: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError> {
         let mut longest_match: Option<(usize, Vec<String>)> = None;
         let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
@@ -98,12 +114,14 @@ impl BootstrapRegistry for IanaRegistry {
                 }
             }
         }
-        let longest = longest_match.ok_or(BootstrapRegistryError::NoBootstrapUrls)?;
-        Ok(longest.1)
+        Ok(longest_match.map(|m| m.1))
     }
 
     /// Get the URLS from the IANA autnum bootstrap registry.
-    fn get_asn_bootstrap_urls(&self, asn: &str) -> Result<Vec<String>, BootstrapRegistryError> {
+    fn get_asn_bootstrap_urls(
+        &self,
+        asn: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError> {
         let autnum = asn
             .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
             .parse::<u32>()
@@ -127,15 +145,18 @@ impl BootstrapRegistry for IanaRegistry {
                     .map_err(|_| BootstrapRegistryError::InvalidBootstrapService)?;
                 if start_as <= autnum && end_as >= autnum {
                     let urls = service.last().ok_or(BootstrapRegistryError::EmptyUrlSet)?;
-                    return Ok(urls.to_owned());
+                    return Ok(Some(urls.to_owned()));
                 }
             }
         }
-        Err(BootstrapRegistryError::NoBootstrapUrls)
+        Ok(None)
     }
 
     /// Get the URLs from the IANA IPv4 bootstrap registry.
-    fn get_ipv4_bootstrap_urls(&self, ipv4: &str) -> Result<Vec<String>, BootstrapRegistryError> {
+    fn get_ipv4_bootstrap_urls(
+        &self,
+        ipv4: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError> {
         let mut pm: PrefixMap<Ipv4Net, Vec<String>> = PrefixMap::new();
         let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
@@ -151,18 +172,19 @@ impl BootstrapRegistry for IanaRegistry {
                 );
             }
         }
-        let net = pm
-            .get_lpm(
-                &ipv4
-                    .parse::<Ipv4Net>()
-                    .map_err(|_| BootstrapRegistryError::InvalidBootstrapInput)?,
-            )
-            .ok_or(BootstrapRegistryError::NoBootstrapUrls)?;
-        Ok(net.1.to_owned())
+        let net = pm.get_lpm(
+            &ipv4
+                .parse::<Ipv4Net>()
+                .map_err(|_| BootstrapRegistryError::InvalidBootstrapInput)?,
+        );
+        Ok(net.map(|n| n.1.to_owned()))
     }
 
     /// Get the URLs from the IANA IPv6 bootstrap registry.
-    fn get_ipv6_bootstrap_urls(&self, ipv6: &str) -> Result<Vec<String>, BootstrapRegistryError> {
+    fn get_ipv6_bootstrap_urls(
+        &self,
+        ipv6: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError> {
         let mut pm: PrefixMap<Ipv6Net, Vec<String>> = PrefixMap::new();
         let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
@@ -178,18 +200,19 @@ impl BootstrapRegistry for IanaRegistry {
                 );
             }
         }
-        let net = pm
-            .get_lpm(
-                &ipv6
-                    .parse::<Ipv6Net>()
-                    .map_err(|_| BootstrapRegistryError::InvalidBootstrapInput)?,
-            )
-            .ok_or(BootstrapRegistryError::NoBootstrapUrls)?;
-        Ok(net.1.to_owned())
+        let net = pm.get_lpm(
+            &ipv6
+                .parse::<Ipv6Net>()
+                .map_err(|_| BootstrapRegistryError::InvalidBootstrapInput)?,
+        );
+        Ok(net.map(|n| n.1.to_owned()))
     }
 
     /// Get the URLs from the IANA object tag bootstrap registry.
-    fn get_tag_bootstrap_urls(&self, tag: &str) -> Result<Vec<String>, BootstrapRegistryError> {
+    fn get_tag_bootstrap_urls(
+        &self,
+        tag: &str,
+    ) -> Result<Option<Vec<String>>, BootstrapRegistryError> {
         let Self::RdapBootstrapRegistry(bootstrap) = self;
         for service in &bootstrap.services {
             let object_tag = service
@@ -199,10 +222,10 @@ impl BootstrapRegistry for IanaRegistry {
                 .ok_or(BootstrapRegistryError::EmptyService)?;
             if object_tag.eq_ignore_ascii_case(tag) {
                 let urls = service.last().ok_or(BootstrapRegistryError::EmptyUrlSet)?;
-                return Ok(urls.to_owned());
+                return Ok(Some(urls.to_owned()));
             }
         }
-        Err(BootstrapRegistryError::NoBootstrapUrls)
+        Ok(None)
     }
 }
 
@@ -345,7 +368,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://example.org/"
         );
     }
@@ -382,7 +409,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://registry.co.uk/"
         );
     }
@@ -419,7 +450,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://example.org/"
         );
     }
@@ -463,7 +498,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://example.org/"
         );
     }
@@ -516,7 +555,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             bootstrap_url
         );
     }
@@ -560,7 +603,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://rir1.example.com/myrdap/"
         );
     }
@@ -604,7 +651,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://example.org/"
         );
     }
@@ -648,7 +699,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://rir2.example.com/myrdap/"
         );
     }
@@ -692,7 +747,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://example.org/"
         );
     }
@@ -739,7 +798,11 @@ mod tests {
 
         // THEN
         assert_eq!(
-            actual.expect("no vec").first().expect("vec is empty"),
+            actual
+                .expect("no vec")
+                .expect("no urls")
+                .first()
+                .expect("vec is empty"),
             "https://example.com/rdap/"
         );
     }
