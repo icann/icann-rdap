@@ -24,9 +24,11 @@ impl BootstrapStore for FileCacheBootstrapStore {
         &self,
         reg_type: &IanaRegistryType,
     ) -> Result<bool, icann_rdap_client::RdapClientError> {
-        let path = bootstrap_cache_path().join(reg_type.file_name());
+        let file_name = reg_type.file_name();
+        let path = bootstrap_cache_path().join(file_name);
         if path.exists() {
-            let fc_reg = read_bootstrap_cache_file(path, |s| debug!("Checking for {s}"))?;
+            debug!("Looking for {file_name} bootstrap information.");
+            let fc_reg = read_bootstrap_cache_file(path, |_| {})?;
             return Ok(Some(fc_reg).registry_has_not_expired());
         }
         Ok(false)
