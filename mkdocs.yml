@@ -51,11 +51,14 @@ nav:
     - rdap-cli-tools/cli-client/autnum_queries.md
     - rdap-cli-tools/cli-client/redaction_handling.md
     - rdap-cli-tools/cli-client/output_formats.md
+    - rdap-cli-tools/cli-client/link_targets.md
+    - rdap-cli-tools/cli-client/scripting.md
     - rdap-cli-tools/cli-client/usage.md
   - Test Tool:
     - rdap-cli-tools/test-tool/index.md
     - rdap-cli-tools/test-tool/installation.md
     - rdap-cli-tools/test-tool/quick_start.md
+    - rdap-cli-tools/test-tool/link_targets.md
     - rdap-cli-tools/test-tool/usage.md
   - RDAP server:
     - rdap-srv/index.md

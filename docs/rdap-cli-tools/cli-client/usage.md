@@ -72,6 +72,23 @@ The `--rpsl` parameter is equivalent to `-O rpsl`.
 The `--to-jscontact` parameter will automatically convert vCard/jCard to JSContact. This may be useful
 when processing the output in JSON format.
 
+## Redaction Flags
+
+The client supports several flags for controlling the processing and display of redactions in RDAP responses.
+These flags can be specified using the `--redaction-flag` command argument or the `RDAP_REDACTION_FLAGS` environment variable.
+Multiple flags can be combined using commas.
+
+Available flags:
+
+| Flag | Description |
+|---|---|
+| `highlight-simple-redactions` | Highlights simple redactions in the output. |
+| `show-rfc9537` | Shows RFC 9537 redaction directives in the output. |
+| `do-not-simplify-rfc9537` | Does not turn RFC 9537 redactions into simple redactions. |
+| `do-rfc9537-redactions` | Processes RFC 9537 redactions. |
+
+For example, `--redaction-flag highlight-simple-redactions,show-rfc9537` or `RDAP_REDACTION_FLAGS=highlight-simple-redactions,show-rfc9537`.
+
 ## Directing Queries To A Specific Server
 
 By default, the client will use the RDAP bootstrap files provided by IANA to determine the authoritative server
