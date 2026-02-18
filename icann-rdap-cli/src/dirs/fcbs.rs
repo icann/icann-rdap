@@ -26,7 +26,7 @@ impl BootstrapStore for FileCacheBootstrapStore {
     ) -> Result<bool, icann_rdap_client::RdapClientError> {
         let path = bootstrap_cache_path().join(reg_type.file_name());
         if path.exists() {
-            let fc_reg = fetch_bootstrap_file(path, |s| debug!("Checking for {s}"))?;
+            let fc_reg = read_bootstrap_file(path, |s| debug!("Checking for {s}"))?;
             return Ok(Some(fc_reg).registry_has_not_expired());
         }
         Ok(false)
@@ -46,111 +46,70 @@ impl BootstrapStore for FileCacheBootstrapStore {
     }
 
     fn get_dns_urls(&self, ldh: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let file_name = IanaRegistryType::RdapBootstrapDns.file_name();
-
-        // check in configured bootstrap override
-        let config_bootstrap_path = config_dir().join(file_name);
-        if config_bootstrap_path.exists() {
-            let (iana, _http_data) =
-                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
-            if let Ok(urls) = iana.get_dns_bootstrap_urls(ldh) {
-                debug!("Bootstrap URLs found in configured bootstrap override.");
-                return Ok(urls);
-            }
-        }
-
-        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
-        let (iana, _http_data) =
-            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
-        Ok(iana.get_dns_bootstrap_urls(ldh)?)
+        self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapDns, ldh)
     }
 
     fn get_asn_urls(&self, asn: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let file_name = IanaRegistryType::RdapBootstrapAsn.file_name();
-
-        // check in configured bootstrap override
-        let config_bootstrap_path = config_dir().join(file_name);
-        if config_bootstrap_path.exists() {
-            let (iana, _http_data) =
-                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
-            if let Ok(urls) = iana.get_asn_bootstrap_urls(asn) {
-                debug!("Bootstrap URLs found in configured bootstrap override.");
-                return Ok(urls);
-            }
-        }
-
-        // check in bootstrap cache
-        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
-        let (iana, _http_data) =
-            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
-        Ok(iana.get_asn_bootstrap_urls(asn)?)
+        self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapAsn, asn)
     }
 
     fn get_ipv4_urls(&self, ipv4: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let file_name = IanaRegistryType::RdapBootstrapIpv4.file_name();
-
-        // check in configured bootstrap override
-        let config_bootstrap_path = config_dir().join(file_name);
-        if config_bootstrap_path.exists() {
-            let (iana, _http_data) =
-                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
-            if let Ok(urls) = iana.get_ipv4_bootstrap_urls(ipv4) {
-                debug!("Bootstrap URLs found in configured bootstrap override.");
-                return Ok(urls);
-            }
-        }
-
-        // check in bootstrap cache
-        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
-        let (iana, _http_data) =
-            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
-        Ok(iana.get_ipv4_bootstrap_urls(ipv4)?)
+        self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapIpv4, ipv4)
     }
 
     fn get_ipv6_urls(&self, ipv6: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let file_name = IanaRegistryType::RdapBootstrapIpv6.file_name();
-
-        // check in configured bootstrap override
-        let config_bootstrap_path = config_dir().join(file_name);
-        if config_bootstrap_path.exists() {
-            let (iana, _http_data) =
-                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
-            if let Ok(urls) = iana.get_ipv6_bootstrap_urls(ipv6) {
-                debug!("Bootstrap URLs found in configured bootstrap override.");
-                return Ok(urls);
-            }
-        }
-
-        // check in bootstrap cache
-        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
-        let (iana, _http_data) =
-            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
-        Ok(iana.get_ipv6_bootstrap_urls(ipv6)?)
+        self.get_bootstrap_urls(&IanaRegistryType::RdapBootstrapIpv6, ipv6)
     }
 
     fn get_tag_urls(&self, tag: &str) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
-        let file_name = IanaRegistryType::RdapObjectTags.file_name();
-
-        // check in configured bootstrap override
-        let config_bootstrap_path = config_dir().join(file_name);
-        if config_bootstrap_path.exists() {
-            let (iana, _http_data) =
-                fetch_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))?;
-            if let Ok(urls) = iana.get_tag_bootstrap_urls(tag) {
-                debug!("Bootstrap URLs found in configured bootstrap override.");
-                return Ok(urls);
-            }
-        }
-
-        // check in bootstrap cache
-        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
-        let (iana, _http_data) =
-            fetch_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
-        Ok(iana.get_tag_bootstrap_urls(tag)?)
+        self.get_bootstrap_urls(&IanaRegistryType::RdapObjectTags, tag)
     }
 }
 
-pub fn fetch_bootstrap_file<F>(
+impl FileCacheBootstrapStore {
+    fn get_bootstrap_urls(
+        &self,
+        reg_type: &IanaRegistryType,
+        key: &str,
+    ) -> Result<Vec<String>, icann_rdap_client::RdapClientError> {
+        let file_name = reg_type.file_name();
+
+        // Check in configured bootstrap override
+        let config_bootstrap_path = config_dir().join(file_name);
+        if config_bootstrap_path.exists() {
+            if let Ok((iana, _)) =
+                read_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))
+            {
+                let urls = match reg_type {
+                    IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
+                    IanaRegistryType::RdapBootstrapAsn => iana.get_asn_bootstrap_urls(key),
+                    IanaRegistryType::RdapBootstrapIpv4 => iana.get_ipv4_bootstrap_urls(key),
+                    IanaRegistryType::RdapBootstrapIpv6 => iana.get_ipv6_bootstrap_urls(key),
+                    IanaRegistryType::RdapObjectTags => iana.get_tag_bootstrap_urls(key),
+                };
+                if let Ok(urls) = urls {
+                    debug!("Bootstrap URLs found in configured bootstrap override.");
+                    return Ok(urls);
+                }
+            }
+        }
+
+        // Fall back to bootstrap cache
+        let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
+        let (iana, _http_data) =
+            read_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
+        let urls = match reg_type {
+            IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
+            IanaRegistryType::RdapBootstrapAsn => iana.get_asn_bootstrap_urls(key),
+            IanaRegistryType::RdapBootstrapIpv4 => iana.get_ipv4_bootstrap_urls(key),
+            IanaRegistryType::RdapBootstrapIpv6 => iana.get_ipv6_bootstrap_urls(key),
+            IanaRegistryType::RdapObjectTags => iana.get_tag_bootstrap_urls(key),
+        };
+        urls.map_err(Into::into)
+    }
+}
+
+pub fn read_bootstrap_file<F>(
     path: PathBuf,
     callback: F,
 ) -> Result<(IanaRegistry, HttpData), std::io::Error>
