@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Read},
     path::PathBuf,
 };
 
@@ -26,7 +26,7 @@ impl BootstrapStore for FileCacheBootstrapStore {
     ) -> Result<bool, icann_rdap_client::RdapClientError> {
         let path = bootstrap_cache_path().join(reg_type.file_name());
         if path.exists() {
-            let fc_reg = read_bootstrap_file(path, |s| debug!("Checking for {s}"))?;
+            let fc_reg = read_bootstrap_cache_file(path, |s| debug!("Checking for {s}"))?;
             return Ok(Some(fc_reg).registry_has_not_expired());
         }
         Ok(false)
@@ -77,8 +77,8 @@ impl FileCacheBootstrapStore {
         // Check in configured bootstrap override
         let config_bootstrap_path = config_dir().join(file_name);
         if config_bootstrap_path.exists() {
-            if let Ok((iana, _)) =
-                read_bootstrap_file(config_bootstrap_path, |s| debug!("Reading {s}"))
+            if let Ok(iana) =
+                read_bootstrap_config_file(config_bootstrap_path, |s| debug!("Reading {s}"))
             {
                 let urls = match reg_type {
                     IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
@@ -97,7 +97,7 @@ impl FileCacheBootstrapStore {
         // Fall back to bootstrap cache
         let bootstrap_cache_path = bootstrap_cache_path().join(file_name);
         let (iana, _http_data) =
-            read_bootstrap_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
+            read_bootstrap_cache_file(bootstrap_cache_path, |s| debug!("Reading {s}"))?;
         let urls = match reg_type {
             IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
             IanaRegistryType::RdapBootstrapAsn => iana.get_asn_bootstrap_urls(key),
@@ -109,7 +109,7 @@ impl FileCacheBootstrapStore {
     }
 }
 
-pub fn read_bootstrap_file<F>(
+pub fn read_bootstrap_cache_file<F>(
     path: PathBuf,
     callback: F,
 ) -> Result<(IanaRegistry, HttpData), std::io::Error>
@@ -126,6 +126,21 @@ where
     callback(path.display().to_string());
     let iana: IanaRegistry = serde_json::from_str(&cache_data.1.join(""))?;
     Ok((iana, cache_data.0))
+}
+
+pub fn read_bootstrap_config_file<F>(
+    path: PathBuf,
+    callback: F,
+) -> Result<IanaRegistry, std::io::Error>
+where
+    F: FnOnce(String),
+{
+    let mut input = File::open(&path)?;
+    let mut content = String::new();
+    input.read_to_string(&mut content)?;
+    callback(path.display().to_string());
+    let iana: IanaRegistry = serde_json::from_str(&content)?;
+    Ok(iana)
 }
 
 #[cfg(test)]
@@ -470,11 +485,7 @@ mod test {
             }
         "#;
         let bootstrap_config_path = config_dir().join("dns.json");
-        let cache_contents = HttpData::example()
-            .build()
-            .to_lines(config_bootstrap)
-            .unwrap();
-        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+        std::fs::write(&bootstrap_config_path, config_bootstrap).expect("write config bootstrap");
 
         // WHEN
         let actual = bs
@@ -534,11 +545,7 @@ mod test {
             }
         "#;
         let bootstrap_config_path = config_dir().join("asn.json");
-        let cache_contents = HttpData::example()
-            .build()
-            .to_lines(config_bootstrap)
-            .unwrap();
-        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+        std::fs::write(&bootstrap_config_path, config_bootstrap).expect("write config bootstrap");
 
         // WHEN
         let actual = bs
@@ -598,11 +605,7 @@ mod test {
             }
         "#;
         let bootstrap_config_path = config_dir().join("ipv4.json");
-        let cache_contents = HttpData::example()
-            .build()
-            .to_lines(config_bootstrap)
-            .unwrap();
-        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+        std::fs::write(&bootstrap_config_path, config_bootstrap).expect("write config bootstrap");
 
         // WHEN
         let actual = bs
@@ -662,11 +665,7 @@ mod test {
             }
         "#;
         let bootstrap_config_path = config_dir().join("ipv6.json");
-        let cache_contents = HttpData::example()
-            .build()
-            .to_lines(config_bootstrap)
-            .unwrap();
-        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+        std::fs::write(&bootstrap_config_path, config_bootstrap).expect("write config bootstrap");
 
         // WHEN
         let actual = bs
@@ -728,11 +727,7 @@ mod test {
              }
         "#;
         let bootstrap_config_path = config_dir().join("object-tags.json");
-        let cache_contents = HttpData::example()
-            .build()
-            .to_lines(config_bootstrap)
-            .unwrap();
-        std::fs::write(&bootstrap_config_path, cache_contents).expect("write config bootstrap");
+        std::fs::write(&bootstrap_config_path, config_bootstrap).expect("write config bootstrap");
 
         // WHEN
         let actual = bs
