@@ -20,7 +20,7 @@ impl ToMd for Network {
 
         // multipart data
         let mut table = if params.highlight_simple_redactions {
-            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+            MultiPartTable::new_with_value_highlights_from_remarks(self.remarks())
         } else {
             MultiPartTable::new()
         };
@@ -67,11 +67,13 @@ impl ToMd for Network {
 
 impl MdUtil for Network {
     fn get_header_text(&self) -> MdHeaderText {
-        let header_text = if self.start_address.is_some() && self.end_address.is_some() {
+        let header_text = if let (Some(start_address), Some(end_address)) =
+            (&self.start_address, &self.end_address)
+        {
             format!(
                 "IP Network {} - {}",
-                &self.start_address.as_ref().unwrap().replace_md_chars(),
-                &self.end_address.as_ref().unwrap().replace_md_chars()
+                start_address.replace_md_chars(),
+                end_address.replace_md_chars()
             )
         } else if let Some(start_address) = &self.start_address {
             format!("IP Network {}", start_address.replace_md_chars())
@@ -206,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn test_md_network_with_handle_and_no_shwo_redactions() {
+    fn test_md_network_with_handle_and_no_show_redactions() {
         // GIVEN network
         let redactions = vec![
             Redacted::builder()

@@ -4,9 +4,12 @@ use std::{
 };
 
 use icann_rdap_client::{
-    md::redacted::replace_redacted_items, rdap::redacted::simplify_redactions,
+    md::redacted::replace_redacted_items, rdap::redacted::simplify_redactions, RdapClientError,
 };
-use icann_rdap_common::prelude::RdapResponse;
+use icann_rdap_common::{
+    prelude::{RdapResponse, Rfc9083Error},
+    response::jscontact::JsContactConvert,
+};
 
 use {
     icann_rdap_client::{
@@ -59,42 +62,81 @@ pub(crate) async fn do_request(
             }
         }
     }
-    let response = rdap_url_request(&query_url, client).await?;
-    if !processing_params.no_cache {
-        if response.http_data.should_cache() {
-            let data = serde_json::to_string_pretty(&response)?;
-            let cache_contents = response.http_data.to_lines(&data)?;
-            let query_url = query_type.query_url(base_url)?;
-            let file_name = format!(
-                "{}.cache",
-                PctString::encode(query_url.chars(), URIReserved)
-            );
-            debug!("Saving query response to cache file {file_name}");
-            let path = rdap_cache_path().join(file_name);
-            fs::write(path, &cache_contents)?;
-            if let Some(self_link) = response.rdap.self_link() {
-                if let Some(self_link_href) = &self_link.href {
-                    if query_url != *self_link_href {
-                        let file_name = format!(
-                            "{}.cache",
-                            PctString::encode(self_link_href.chars(), URIReserved)
-                        );
-                        debug!("Saving object with self link to cache file {file_name}");
-                        let path = rdap_cache_path().join(file_name);
-                        fs::write(path, &cache_contents)?;
+    let response = rdap_url_request(&query_url, client).await;
+    match response {
+        Ok(response) => {
+            if !processing_params.no_cache {
+                if response.http_data.should_cache() {
+                    let data = serde_json::to_string_pretty(&response)?;
+                    let cache_contents = response.http_data.to_lines(&data)?;
+                    let query_url = query_type.query_url(base_url)?;
+                    let file_name = format!(
+                        "{}.cache",
+                        PctString::encode(query_url.chars(), URIReserved)
+                    );
+                    debug!("Saving query response to cache file {file_name}");
+                    let path = rdap_cache_path().join(file_name);
+                    fs::write(path, &cache_contents)?;
+                    if let Some(self_link) = response.rdap.self_link() {
+                        if let Some(self_link_href) = &self_link.href {
+                            if query_url != *self_link_href {
+                                let file_name = format!(
+                                    "{}.cache",
+                                    PctString::encode(self_link_href.chars(), URIReserved)
+                                );
+                                debug!("Saving object with self link to cache file {file_name}");
+                                let path = rdap_cache_path().join(file_name);
+                                fs::write(path, &cache_contents)?;
+                            }
+                        }
                     }
+                } else {
+                    debug!("Not caching data according to server policy.");
+                    debug!("Expires header: {:?}", &response.http_data.expires);
+                    debug!(
+                        "Cache-control header: {:?}",
+                        &response.http_data.cache_control
+                    );
                 }
             }
-        } else {
-            debug!("Not caching data according to server policy.");
-            debug!("Expires header: {:?}", &response.http_data.expires);
-            debug!(
-                "Cache-control header: {:?}",
-                &response.http_data.cache_control
-            );
+            Ok(response)
+        }
+        Err(response) => {
+            if let RdapClientError::ParsingError(pe) = response {
+                if pe.text.is_empty() && pe.http_data.status_code() != 200 {
+                    let title = match pe.http_data.status_code() {
+                        404 => "NOT FOUND".to_string(),
+                        429 => "RATE LIMITED FOR TOO MANY QUERIES".to_string(),
+                        500..599 => "SERVER ERROR".to_string(),
+                        _ => pe.http_data.status_code().to_string(),
+                    };
+                    let rfc9083error = Rfc9083Error::response_obj()
+                        .error_code(pe.http_data.status_code())
+                        .title(title)
+                        .description_entry(format!(
+                            "Error received for query {}.",
+                            pe.http_data.request_uri().unwrap_or("UNKNOWN")
+                        ))
+                        .description_entry("Empty response text. JSON synthesized by client.")
+                        .build();
+                    let rdap = RdapResponse::ErrorResponse(Box::new(rfc9083error));
+                    let rdap_type = rdap.to_string();
+                    let response_data = ResponseData {
+                        rdap,
+                        rdap_type,
+                        http_data: pe.http_data,
+                    };
+                    Ok(response_data)
+                } else {
+                    Err(RdapCliError::RdapClient(
+                        icann_rdap_client::RdapClientError::ParsingError(pe),
+                    ))
+                }
+            } else {
+                Err(RdapCliError::RdapClient(response))
+            }
         }
     }
-    Ok(response)
 }
 
 /// This function issues request and does processing on the responses.
@@ -106,6 +148,7 @@ pub(crate) async fn request_and_process(
 ) -> Result<ResponseData, RdapCliError> {
     let response = do_request(base_url, query_type, processing_params, client).await?;
     let processed_rdap = process_redactions(response.rdap, &processing_params.redaction_flags);
+    let processed_rdap = process_jscontact(processed_rdap, processing_params.to_jscontact);
 
     Ok(ResponseData {
         rdap: processed_rdap,
@@ -115,7 +158,7 @@ pub(crate) async fn request_and_process(
 }
 
 fn process_redactions(
-    rdap: icann_rdap_common::prelude::RdapResponse,
+    rdap: RdapResponse,
     redaction_flags: &enumflags2::BitFlags<RedactionFlag>,
 ) -> RdapResponse {
     let processed_rdap = if redaction_flags.contains(RedactionFlag::DoRfc9537Redactions) {
@@ -128,5 +171,13 @@ fn process_redactions(
         simplify_redactions(processed_rdap, false)
     } else {
         processed_rdap
+    }
+}
+
+fn process_jscontact(rdap: RdapResponse, to_jscontact: bool) -> RdapResponse {
+    if to_jscontact {
+        rdap.to_jscontact()
+    } else {
+        rdap
     }
 }

@@ -67,7 +67,13 @@ impl Rfc9083Error {
     ///   .build();
     /// ```
     #[builder(entry = "response_obj", visibility = "pub")]
-    fn new_response_obj(error_code: u16, notices: Vec<Notice>, extensions: Vec<Extension>) -> Self {
+    fn new_response_obj(
+        error_code: u16,
+        notices: Vec<Notice>,
+        title: Option<String>,
+        description: Vec<String>,
+        extensions: Vec<Extension>,
+    ) -> Self {
         let notices = (!notices.is_empty()).then_some(notices);
         Self {
             common: Common::level0()
@@ -75,8 +81,8 @@ impl Rfc9083Error {
                 .and_notices(notices)
                 .build(),
             error_code,
-            title: None,
-            description: None,
+            title,
+            description: Some(description),
         }
     }
 

@@ -174,4 +174,8 @@ impl TestJig {
         };
         Self { cmd, ..self }
     }
+
+    pub fn config_dir(&self) -> String {
+        self.test_dir.path("config").to_string_lossy().to_string()
+    }
 }

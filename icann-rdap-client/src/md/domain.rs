@@ -26,7 +26,7 @@ impl ToMd for Domain {
 
         // multipart data
         let mut table = if params.highlight_simple_redactions {
-            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+            MultiPartTable::new_with_value_highlights_from_remarks(self.remarks())
         } else {
             MultiPartTable::new()
         };
@@ -60,6 +60,11 @@ impl ToMd for Domain {
 
         // remarks
         table = self.remarks().add_to_mptable(table, params);
+
+        // ttl0
+        if let Some(ttl0) = &self.ttl0_data {
+            table = ttl0.add_to_mptable(table, params);
+        }
 
         // render table
         md.push_str(&table.to_md(params));

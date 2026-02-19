@@ -10,13 +10,14 @@ An RDAP Command Line Interface client.
 
 [dependencies]
 
-icann-rdap-client = { version = "0.0.26", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.26", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.27", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.27", path = "../icann-rdap-common" }
 
 anyhow.workspace = true
 clap.workspace = true
 chrono.workspace = true
 const_format.workspace = true
+crossbeam-channel.workspace = true
 directories.workspace = true
 dotenv.workspace = true
 enumflags2.workspace = true

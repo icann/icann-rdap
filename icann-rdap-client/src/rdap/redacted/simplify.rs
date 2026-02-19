@@ -47,7 +47,7 @@ pub fn simplify_redactions(rdap: RdapResponse, only_pre_path: bool) -> RdapRespo
             autnum.to_response()
         }
         RdapResponse::Network(network) => {
-            // no registered redactons on networks
+            // no registered redactions on networks
             network.to_response()
         }
         _ => {

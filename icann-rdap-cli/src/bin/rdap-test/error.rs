@@ -30,7 +30,7 @@ pub enum RdapTestError {
     Json(#[from] serde_json::Error),
     #[error(transparent)]
     Iana(#[from] IanaResponseError),
-    #[error("Invalid IANA bootsrap file")]
+    #[error("Invalid IANA bootstrap file")]
     InvalidBootstrap,
     #[error("Bootstrap not found")]
     BootstrapNotFound,
@@ -66,7 +66,7 @@ impl Termination for RdapTestError {
             // User Errors
             Self::UnknownOutputType => 200,
 
-            // RDAP Client Errrors
+            // RDAP Client Errors
             Self::RdapClient(e) => match e {
                 // I/O Errors
                 RdapClientError::Client(_) => 42,
@@ -84,7 +84,7 @@ impl Termination for RdapTestError {
 
                 // User Errors
                 RdapClientError::InvalidQueryValue => 202,
-                RdapClientError::AmbiquousQueryType => 203,
+                RdapClientError::AmbiguousQueryType => 203,
                 RdapClientError::DomainNameError(_) => 204,
 
                 // Internal Errors

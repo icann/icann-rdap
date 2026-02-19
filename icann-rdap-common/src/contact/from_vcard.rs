@@ -222,7 +222,7 @@ impl<'a> GetCountryCode<'a> for &'a Vec<Value> {
 
 const CONTEXTS: [&str; 6] = ["home", "work", "office", "private", "mobile", "cell"];
 
-/// Get the vCard "type" paremeter as a JSContact context.
+/// Get the vCard "type" parameter as a JSContact context.
 trait GetContexts<'a> {
     fn get_contexts(self) -> Option<Vec<String>>;
 }
@@ -747,7 +747,7 @@ mod tests {
             .expect("no contexts")
             .contains(&"home".to_string()));
         assert_eq!(
-            addr.full_address.as_ref().expect("full address not foudn"),
+            addr.full_address.as_ref().expect("full address not found"),
             "123 Maple Ave\nSuite 90001\nVancouver\nBC\n1239\n"
         );
 

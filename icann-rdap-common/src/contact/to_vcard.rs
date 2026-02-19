@@ -294,7 +294,7 @@ mod tests {
         assert_eq!(contact.emails, actual.emails);
         assert_eq!(contact.contact_uris, actual.contact_uris);
         assert_eq!(contact.urls, actual.urls);
-        //   but just in case we forgot soemthing
+        //   but just in case we forgot something
         assert_eq!(contact, actual);
     }
 }

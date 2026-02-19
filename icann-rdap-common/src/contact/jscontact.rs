@@ -54,11 +54,13 @@ pub struct Localization {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Organizations {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub org: Option<Org>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Org {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
 
@@ -359,16 +361,21 @@ fn jscontact_to_org_names(organizations: &Option<Organizations>) -> Vec<String> 
 }
 
 fn org_to_jscontact(organization_name: Option<&str>) -> Option<Organizations> {
-    Some(Organizations {
+    organization_name.map(|org_name| Organizations {
         org: Some(Org {
-            name: organization_name.map(|s| s.to_owned()),
+            name: Some(org_name.to_owned()),
         }),
     })
 }
 
 fn name_to_jscontact(full_name: Option<&str>, name_parts: Option<&NameParts>) -> Option<Name> {
+    let has_full_name = full_name.map(|s| !s.is_empty()).unwrap_or(false);
+    if !has_full_name && name_parts.is_none() {
+        return None;
+    }
+    // else
     Some(Name {
-        full: full_name.map(|s| s.to_owned()),
+        full: full_name.filter(|s| !s.is_empty()).map(|s| s.to_owned()),
         components: name_parts.map(|np| {
             let mut components = vec![];
             if let Some(prefix) = np.prefix() {
@@ -481,10 +488,14 @@ fn postal_address_to_jscontact(addr: &PostalAddress) -> Address {
 }
 
 fn phones_to_jscontact(voice: Option<&super::Phone>, fax: Option<&super::Phone>) -> Option<Phones> {
-    Some(Phones {
-        voice: voice.map(phone_to_jscontact),
-        fax: fax.map(phone_to_jscontact),
-    })
+    if voice.is_some() || fax.is_some() {
+        Some(Phones {
+            voice: voice.map(phone_to_jscontact),
+            fax: fax.map(phone_to_jscontact),
+        })
+    } else {
+        None
+    }
 }
 
 fn phone_to_jscontact(phone: &super::Phone) -> Phone {
@@ -528,6 +539,14 @@ mod test {
     use crate::contact::jscontact::{
         Address, Addresses, ContactUri, Email, Emails, Features, JsContactCard, KindValue, Links,
         Localization, Name, Org, Organizations, Phone, Phones, Url,
+    };
+    use crate::contact::{
+        Contact, Email as ContactEmail, NameParts, Phone as ContactPhone, PostalAddress,
+    };
+
+    use super::{
+        addresses_to_jscontact, emails_to_jscontact, links_to_jscontact, name_to_jscontact,
+        org_to_jscontact, phones_to_jscontact,
     };
 
     const DRAFT_EXAMPLE1: &str = indoc! {r#"
@@ -866,5 +885,263 @@ mod test {
 
         // THEN
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_org_to_jscontact_wth_some_org_name() {
+        // GIVEN
+        let org_name = Some("Acme Corp");
+
+        // WHEN
+        let result = org_to_jscontact(org_name);
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().org.unwrap().name.unwrap(), "Acme Corp");
+    }
+
+    #[test]
+    fn test_org_to_jscontact_with_no_org_name() {
+        // GIVEN
+        let org_name: Option<&str> = None;
+
+        // WHEN
+        let result = org_to_jscontact(org_name);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_full_name() {
+        // GIVEN
+        let full_name = Some("John Doe");
+        let name_parts: Option<&NameParts> = None;
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts);
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().full, Some("John Doe".to_string()));
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_name_parts() {
+        // GIVEN
+        let full_name: Option<&str> = None;
+        let name_parts = Some(
+            NameParts::builder()
+                .given_name("John")
+                .surname("Doe")
+                .build(),
+        );
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts.as_ref());
+
+        // THEN
+        assert!(result.is_some());
+        let name = result.unwrap();
+        assert!(name.full.is_none());
+        assert!(name.components.is_some());
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_nothing() {
+        // GIVEN
+        let full_name: Option<&str> = None;
+        let name_parts: Option<&NameParts> = None;
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_empty_full_name() {
+        // GIVEN
+        let full_name = Some("");
+        let name_parts: Option<&NameParts> = None;
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_name_to_jscontact_with_empty_full_name_and_name_parts() {
+        // GIVEN
+        let full_name = Some("");
+        let name_parts = Some(
+            NameParts::builder()
+                .given_name("John")
+                .surname("Doe")
+                .build(),
+        );
+
+        // WHEN
+        let result = name_to_jscontact(full_name, name_parts.as_ref());
+
+        // THEN
+        assert!(result.is_some());
+        let name = result.unwrap();
+        assert!(name.full.is_none());
+        assert!(name.components.is_some());
+    }
+
+    #[test]
+    fn test_emails_to_jscontact() {
+        // GIVEN
+        let emails = vec![ContactEmail::builder().email("test@example.com").build()];
+
+        // WHEN
+        let result = emails_to_jscontact(&emails);
+
+        // THEN
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().email.address, "test@example.com");
+    }
+
+    #[test]
+    fn test_emails_to_jscontact_with_no_emails() {
+        // GIVEN
+        let emails: Vec<ContactEmail> = vec![];
+
+        // WHEN
+        let result = emails_to_jscontact(&emails);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_addresses_to_jscontact() {
+        // GIVEN
+        let addresses = vec![PostalAddress::builder().full_address("123 Main St").build()];
+
+        // WHEN
+        let result = addresses_to_jscontact(&addresses);
+
+        // THEN
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_addresses_to_jscontact_with_empty_addresses() {
+        // GIVEN
+        let addresses: Vec<PostalAddress> = vec![];
+
+        // WHEN
+        let result = addresses_to_jscontact(&addresses);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_phones_to_jscontact_with_voice() {
+        // GIVEN
+        let voice = Some(
+            ContactPhone::builder()
+                .phone("+1-555-1234")
+                .feature("voice".to_string())
+                .build(),
+        );
+        let fax: Option<&ContactPhone> = None;
+
+        // WHEN
+        let result = phones_to_jscontact(voice.as_ref(), fax);
+
+        // THEN
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_phones_to_jscontact_with_fax() {
+        // GIVEN
+        let voice: Option<&ContactPhone> = None;
+        let fax = Some(
+            ContactPhone::builder()
+                .phone("+1-555-5678")
+                .feature("fax".to_string())
+                .build(),
+        );
+
+        // WHEN
+        let result = phones_to_jscontact(voice, fax.as_ref());
+
+        // THEN
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_phones_to_jscontact_with_no_phones() {
+        // GIVEN
+        let voice: Option<&ContactPhone> = None;
+        let fax: Option<&ContactPhone> = None;
+
+        // WHEN
+        let result = phones_to_jscontact(voice, fax);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_links_to_jscontact_with_url_and_contact() {
+        // GIVEN
+        let contact = Contact::builder()
+            .url("https://example.com")
+            .contact_uri("mailto:contact@example.com")
+            .build();
+
+        // WHEN
+        let result = links_to_jscontact(&contact);
+
+        // THEN
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_links_to_jscontact_with_only_url() {
+        // GIVEN
+        let contact = Contact::builder().url("https://example.com").build();
+
+        // WHEN
+        let result = links_to_jscontact(&contact);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_links_to_jscontact_with_only_contact_uri() {
+        // GIVEN
+        let contact = Contact::builder()
+            .contact_uri("mailto:contact@example.com")
+            .build();
+
+        // WHEN
+        let result = links_to_jscontact(&contact);
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_links_to_jscontact_with_nothing() {
+        // GIVEN
+        let contact = Contact::builder().build();
+
+        // WHEN
+        let result = links_to_jscontact(&contact);
+
+        // THEN
+        assert!(result.is_none());
     }
 }

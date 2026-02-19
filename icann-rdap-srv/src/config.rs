@@ -1,3 +1,5 @@
+use std::path::{self};
+
 use strum_macros::EnumString;
 
 use {
@@ -44,9 +46,13 @@ pub fn debug_config_vars() {
         .for_each(|(k, v)| debug!("environment variable {k} = {v}"));
 }
 
-pub fn data_dir() -> String {
-    get_or(DATA_DIR, "/tmp/rdap-srv/data")
+pub fn data_dir() -> Result<String, std::io::Error> {
+    let path_name = get_or(DATA_DIR, "srv/data");
+    let path = path::absolute(path_name)?;
+    Ok(path.display().to_string())
 }
+
+pub const DEFAULT_DATA_RDAP_BASE_URL: &str = "http://localhost:3000/rdap";
 
 /// RDAP server listening configuration.
 #[derive(Debug, Builder, Default)]

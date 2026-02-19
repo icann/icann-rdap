@@ -169,7 +169,7 @@ pub enum NetworkIdType {
 ///     ]
 /// }
 /// ```
-/// In this example, 2 domains will be created for "foo.example" and "bar.exaple" using
+/// In this example, 2 domains will be created for "foo.example" and "bar.example" using
 /// the template.
 pub async fn load_data(
     config: &ServiceConfig,
@@ -378,8 +378,8 @@ pub(crate) async fn reload_data(
     loop {
         sleep(Duration::from_millis(1000)).await;
         let update_meta = tokio::fs::metadata(&update_path).await;
-        if update_meta.is_ok() {
-            let modified = update_meta.unwrap().modified()?;
+        if let Ok(update_meta) = update_meta {
+            let modified = update_meta.modified()?;
             if modified > last_time {
                 last_time = modified;
                 info!("Data being updated.");
@@ -387,8 +387,8 @@ pub(crate) async fn reload_data(
             }
         };
         let reload_meta = tokio::fs::metadata(&reload_path).await;
-        if reload_meta.is_ok() {
-            let modified = reload_meta.unwrap().modified()?;
+        if let Ok(reload_meta) = reload_meta {
+            let modified = reload_meta.modified()?;
             if modified > last_time {
                 last_time = modified;
                 info!("Data being reloaded.");

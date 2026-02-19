@@ -123,6 +123,7 @@ pub(crate) struct ProcessingParams {
     pub max_cache_age: u32,
     pub redaction_flags: BitFlags<RedactionFlag>,
     pub link_params: LinkParams,
+    pub to_jscontact: bool,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -146,65 +147,64 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
         processing_params.link_params.only_show_target
     );
 
+    let mut received_non_200 = false;
+
     let mut query_type = query_type.to_owned();
     for req_number in 1..=processing_params.link_params.max_link_depth {
         debug!("Querying {}", query_type.query_url(&base_url)?);
         debug!("Request Number: {}", req_number);
-        let response = request_and_process(&base_url, &query_type, processing_params, client).await;
-        match response {
-            Ok(response) => {
-                let is_target = if processing_params.link_params.only_show_target {
-                    req_number > 1
-                } else {
-                    true
-                };
-                let req_data = RequestData {
-                    req_number,
-                    req_target: is_target,
-                };
 
-                // Output immediately for streaming behavior
-                if is_target {
-                    output_immediately(processing_params, &req_data, &response, write)?;
-                }
+        let response =
+            request_and_process(&base_url, &query_type, processing_params, client).await?;
+        let is_target = if processing_params.link_params.only_show_target {
+            req_number > 1
+        } else {
+            true
+        };
+        let req_data = RequestData {
+            req_number,
+            req_target: is_target,
+        };
 
-                if let Some(url) = get_relationship_links(
-                    &processing_params.link_params.link_targets,
-                    &response.rdap,
-                )
+        if response.http_data.status_code() != 200 {
+            received_non_200 = true;
+        }
+
+        // Output immediately for streaming behavior
+        if is_target {
+            output_immediately(processing_params, &req_data, &response, write)?;
+        }
+
+        if let Some(url) =
+            get_relationship_links(&processing_params.link_params.link_targets, &response.rdap)
                 .first()
-                {
-                    info!(
-                        "Found next target with relationship(s) of '{}'.",
-                        processing_params.link_params.link_targets.join(" ")
-                    );
-                    query_type = QueryType::Url(url.to_string());
-                    transactions.push(RequestResponse {
-                        req_data,
-                        res_data: response,
-                    });
-                } else if req_number < processing_params.link_params.min_link_depth {
-                    return Err(RdapCliError::LinkTargetNotFound(
-                        processing_params.link_params.link_targets.join(" "),
-                    ));
-                } else {
-                    transactions.push(RequestResponse {
-                        req_data,
-                        res_data: response,
-                    });
-                    break;
-                }
-            }
-            Err(error) => {
-                if req_number == 1 {
-                    return Err(RdapCliError::NoRegistryFound);
-                } else {
-                    return Err(error);
-                }
-            }
+        {
+            info!(
+                "Found next target with relationship(s) of '{}'.",
+                processing_params.link_params.link_targets.join(" ")
+            );
+            query_type = QueryType::Url(url.to_string());
+            transactions.push(RequestResponse {
+                req_data,
+                res_data: response,
+            });
+        } else if req_number < processing_params.link_params.min_link_depth {
+            return Err(RdapCliError::LinkTargetNotFound(
+                processing_params.link_params.link_targets.join(" "),
+            ));
+        } else {
+            transactions.push(RequestResponse {
+                req_data,
+                res_data: response,
+            });
+            break;
         }
     }
     final_output(processing_params, write, transactions)?;
+
+    if received_non_200 {
+        return Err(RdapCliError::ResponseWasNot200Ok);
+    }
 
     Ok(())
 }

@@ -18,6 +18,7 @@ pub mod redacted;
 pub mod search;
 pub mod string;
 pub mod table;
+pub mod ttl;
 pub mod types;
 
 pub(crate) const _CODE_INDENT: &str = "    ";

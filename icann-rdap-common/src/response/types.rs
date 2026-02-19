@@ -49,7 +49,7 @@ pub type Links = Vec<Link>;
 /// but those are fields required by RFC 9083.
 ///
 /// To create an RFC valid structure, use the builder
-/// which will not allow omision of required fields.
+/// which will not allow omission of required fields.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -132,7 +132,7 @@ impl Link {
     /// Builds an RDAP link.
     ///
     /// To create an RFC valid structure, use the builder
-    /// which will not allow omision of required fields.
+    /// which will not allow omission of required fields.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -552,7 +552,7 @@ impl NoticeOrRemark {
 pub trait ToNotices {
     /// Convert to a collection of notices.
     fn to_notices(self) -> Vec<Notice>;
-    /// Convert to a collection if some, otherwise none.
+    /// Convert to a collection if some; otherwise, none.
     fn to_opt_notices(self) -> Option<Vec<Notice>>;
 }
 
@@ -582,7 +582,7 @@ impl ToNotices for Vec<NoticeOrRemark> {
 pub trait ToRemarks {
     /// Convert to a collection of remarks.
     fn to_remarks(self) -> Vec<Remark>;
-    /// Convert to a collection if some, otherwise none.
+    /// Convert to a collection if some; otherwise, none.
     fn to_opt_remarks(self) -> Option<Vec<Remark>>;
 }
 
@@ -627,7 +627,7 @@ pub type Events = Vec<Event>;
 /// this structure allows those to be optional to be able to parse responses from
 /// servers that do not strictly obey the RFC.
 ///
-/// Use of the builder to contruct an RFC valid structure is recommended.
+/// Use of the builder to construct an RFC valid structure is recommended.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -690,7 +690,7 @@ pub struct Event {
 impl Event {
     /// Builds an Event.
     ///
-    /// Use of the builder to contruct an RFC valid structure is recommended.
+    /// Use of the builder to construct an RFC valid structure is recommended.
     ///
     /// ```rust
     /// use icann_rdap_common::prelude::*;
@@ -765,7 +765,7 @@ pub type PublicIds = Vec<PublicId>;
 /// this structure allows those to be optional to be able to parse responses from
 /// servers that do not strictly obey the RFC.
 ///
-/// Use of the builder to contruct an RFC valid structure is recommended.
+/// Use of the builder to construct an RFC valid structure is recommended.
 ///
 /// ```rust
 /// use icann_rdap_common::prelude::*;
@@ -787,12 +787,12 @@ pub type PublicIds = Vec<PublicId>;
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicId {
-    /// This are manditory per RFC 9083.
+    /// This are mandatory per RFC 9083.
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id_type: Option<Stringish>,
 
-    /// This are manditory per RFC 9083.
+    /// This are mandatory per RFC 9083.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier: Option<Stringish>,
 }
@@ -840,7 +840,7 @@ mod tests {
 
     #[test]
     fn test_rdap_conformance_serialize() {
-        // GIVEN rdap conformaance
+        // GIVEN rdap conformance
         let rdap_conformance: RdapConformance =
             vec![Extension("foo".to_string()), Extension("bar".to_string())];
 

@@ -127,7 +127,7 @@ pub struct Contact {
     /// URLs
     pub(crate) urls: Option<Vec<String>>,
 
-    /// The unlocalalized parts.
+    /// The unlocalized parts.
     pub(crate) unlocalized: Localizable,
 
     /// Localizations
@@ -761,7 +761,7 @@ pub struct PostalAddress {
     /// values of the postal address.   
     pub full_address: Option<String>,
 
-    /// Invidual street lines.
+    /// Individual street lines.
     pub street_parts: Option<Vec<String>>,
 
     /// City name, county name, etc...

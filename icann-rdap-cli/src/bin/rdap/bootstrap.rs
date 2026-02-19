@@ -55,47 +55,51 @@ pub(crate) async fn get_base_url(
                 debug!("Fetching IANA RDAP Object Tag Registry")
             })
             .await?;
-            if let Ok(urls) = store.get_tag_urls(hint) {
-                Ok(urls.preferred_url()?)
-            } else {
-                fetch_bootstrap(
-                    &IanaRegistryType::RdapBootstrapDns,
-                    client,
-                    &store,
-                    |_reg| debug!("Fetching IANA RDAP DNS Registry"),
-                )
-                .await?;
-                if let Ok(urls) = store.get_dns_urls(hint) {
-                    Ok(urls.preferred_url()?)
-                } else {
+            match store.get_tag_urls(hint)? {
+                Some(urls) => Ok(urls.preferred_url()?),
+                None => {
                     fetch_bootstrap(
-                        &IanaRegistryType::RdapBootstrapIpv4,
+                        &IanaRegistryType::RdapBootstrapDns,
                         client,
                         &store,
-                        |_reg| debug!("Fetching IANA RDAP IPv4 Registry"),
+                        |_reg| debug!("Fetching IANA RDAP DNS Registry"),
                     )
                     .await?;
-                    if let Ok(urls) = store.get_ipv4_urls(hint) {
-                        Ok(urls.preferred_url()?)
-                    } else {
-                        fetch_bootstrap(
-                            &IanaRegistryType::RdapBootstrapIpv6,
-                            client,
-                            &store,
-                            |_reg| debug!("Fetching IANA RDAP IPv6 Registry"),
-                        )
-                        .await?;
-                        if let Ok(urls) = store.get_ipv6_urls(hint) {
-                            Ok(urls.preferred_url()?)
-                        } else {
+                    match store.get_dns_urls(hint)? {
+                        Some(urls) => Ok(urls.preferred_url()?),
+                        None => {
                             fetch_bootstrap(
-                                &IanaRegistryType::RdapBootstrapAsn,
+                                &IanaRegistryType::RdapBootstrapIpv4,
                                 client,
                                 &store,
-                                |_reg| debug!("Fetching IANA RDAP ASN Registry"),
+                                |_reg| debug!("Fetching IANA RDAP IPv4 Registry"),
                             )
                             .await?;
-                            Ok(store.get_asn_urls(hint)?.preferred_url()?)
+                            match store.get_ipv4_urls(hint)? {
+                                Some(urls) => Ok(urls.preferred_url()?),
+                                None => {
+                                    fetch_bootstrap(
+                                        &IanaRegistryType::RdapBootstrapIpv6,
+                                        client,
+                                        &store,
+                                        |_reg| debug!("Fetching IANA RDAP IPv6 Registry"),
+                                    )
+                                    .await?;
+                                    match store.get_ipv6_urls(hint)? {
+                                        Some(urls) => Ok(urls.preferred_url()?),
+                                        None => {
+                                            fetch_bootstrap(
+                                                &IanaRegistryType::RdapBootstrapAsn,
+                                                client,
+                                                &store,
+                                                |_reg| debug!("Fetching IANA RDAP ASN Registry"),
+                                            )
+                                            .await?;
+                                            Ok(store.get_asn_urls(hint)?.preferred_url()?)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

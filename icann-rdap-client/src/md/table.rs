@@ -8,7 +8,7 @@ pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
 }
 
-/// A datastructue to hold various row types for a markdown table.
+/// A datastructure to hold various row types for a markdown table.
 ///
 /// This datastructure has the following types of rows:
 /// * header - just the left most column which is centered and bolded text
@@ -43,14 +43,14 @@ impl MultiPartTable {
         }
     }
 
-    pub fn new_with_value_hightlights(value_highlights: Vec<String>) -> Self {
+    pub fn new_with_value_highlights(value_highlights: Vec<String>) -> Self {
         Self {
             rows: vec![],
             value_highlights,
         }
     }
 
-    pub fn new_with_value_hightlights_from_remarks(remarks: &[Remark]) -> Self {
+    pub fn new_with_value_highlights_from_remarks(remarks: &[Remark]) -> Self {
         Self {
             rows: vec![],
             value_highlights: get_value_highlights(remarks),
@@ -87,7 +87,7 @@ impl MultiPartTable {
         self
     }
 
-    /// Add a name/value row without processing whitespace or markdown charaters.
+    /// Add a name/value row without processing whitespace or markdown characters.
     pub fn nv_raw(mut self, name: &impl ToString, value: impl ToString) -> Self {
         self.rows
             .push(Row::NameValue((name.to_string(), value.to_string())));

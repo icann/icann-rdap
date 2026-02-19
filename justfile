@@ -39,7 +39,7 @@ smoke_domain_query:
 smoke_rdap_help:
     cargo run --bin rdap -- --help
 
-[doc('Run an IP conformace check smoke test.')]
+[doc('Run an IP conformance check smoke test.')]
 smoke_ip_check:
     cargo run --bin rdap-test -- 199.4.138.53
 
@@ -50,3 +50,39 @@ smoke_domain_check:
 [doc('Look at the rdap-test help.')]
 smoke_rdap_test_help:
     cargo run --bin rdap-test -- --help
+
+[doc('Create a help response in the server.')]
+srv_data_help:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- srv-help --notice "this is a test server"
+
+[doc('Create an entity in the server.')]
+srv_data_entity:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- entity --handle foo1234 --email joe@example.com --full-name "Joe User"
+
+[doc('Create a domain in the server.')]
+srv_data_domain:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- domain --ldh example.com --registrant foo1234 --ns ns1.example.com
+
+[doc('Create a nameserver in the server.')]
+srv_data_nameserver:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- nameserver --ldh ns1.example.com --registrant foo1234
+
+[doc('Start the server')]
+srv_start:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv 
+
+[doc('Update the data in the server.')]
+srv_update:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv-store -- --update
+
+[doc('Lookup the nameserver in localhost.')]
+srv_lookup_nameserver:
+    cargo run --bin rdap -- -T -B http://localhost:3000/rdap ns1.example.com
+
+[doc('Lookup the domain in localhost.')]
+srv_lookup_domain:
+    cargo run --bin rdap -- -T -B http://localhost:3000/rdap example.com
+
+[doc('Lookup the entity in localhost.')]
+srv_lookup_entity:
+    cargo run --bin rdap -- -T -B http://localhost:3000/rdap foo1234

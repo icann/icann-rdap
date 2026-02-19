@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use enumflags2::BitFlags;
 use icann_rdap_cli::args::target::{params_from_args, LinkTargetArgs};
 use icann_rdap_client::http::default_exts_list;
+use icann_rdap_common::check::StringCheck;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
@@ -79,7 +80,7 @@ struct Cli {
     /// Type of the query when using a query value.
     ///
     /// Without this option, the query type will be inferred based on the query value.
-    /// To supress the infererence and explicitly specifty the query type, use this
+    /// To suppress the inference and explicitly specify the query type, use this
     /// option.
     #[arg(
         short = 't',
@@ -109,7 +110,7 @@ struct Cli {
     /// An RDAP base URL for a specific RDAP server.
     ///
     /// Use this option to explicitly give an RDAP base URL when issuing queries.
-    /// If not specified, the base URL will come from the RDAP boostrap process
+    /// If not specified, the base URL will come from the RDAP bootstrap process
     /// outlined in RFC 9224.
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
@@ -159,6 +160,10 @@ struct Cli {
     /// Shortcut for "-O rpsl"
     #[arg(long, required = false, conflicts_with = "output_type")]
     rpsl: bool,
+
+    /// Convert vCard (jCard) to JSContact
+    #[arg(long, required = false)]
+    to_jscontact: bool,
 
     #[clap(flatten)]
     link_target_args: LinkTargetArgs,
@@ -494,7 +499,7 @@ pub async fn main() -> RdapCliError {
     if let Err(e) = wrapped_main().await {
         let ec = e.exit_code();
         match ec {
-            // we use eprintln! becuase at the point where this is thrown, the tracing subscriber is not yet instantiated.
+            // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
             205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
             206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
             _ => eprintln!("\n{e}\n"),
@@ -564,7 +569,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     let bootstrap_type = if let Some(ref tag) = cli.base {
         BootstrapType::Hint(tag.to_string())
     } else if let Some(ref base_url) = cli.base_url {
-        BootstrapType::Url(base_url.to_string())
+        BootstrapType::Url(hostname_to_baseurl(base_url))
     } else {
         BootstrapType::Rfc9224
     };
@@ -604,6 +609,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         max_cache_age: cli.max_cache_age,
         redaction_flags,
         link_params,
+        to_jscontact: cli.to_jscontact,
     };
 
     let exts_list = if cli.no_exts_list {
@@ -731,13 +737,37 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
     Ok(q)
 }
 
+/// If something is a hostname, then convert it to base URL
+fn hostname_to_baseurl(s: &str) -> String {
+    if s.is_ldh_hostname() {
+        format!("https://{s}")
+    } else {
+        s.to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::Cli;
+    use rstest::rstest;
+
+    use crate::{hostname_to_baseurl, Cli};
 
     #[test]
     fn cli_debug_assert_test() {
         use clap::CommandFactory;
         Cli::command().debug_assert()
+    }
+
+    #[rstest]
+    #[case("foo.bar", "https://foo.bar")]
+    #[case("https://foo.bar", "https://foo.bar")]
+    fn test_hostname_to_baseurl(#[case] test_string: &str, #[case] expected: &str) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = hostname_to_baseurl(test_string);
+
+        // THEN
+        assert_eq!(&actual, expected);
     }
 }

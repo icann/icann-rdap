@@ -21,7 +21,7 @@ impl ToMd for Autnum {
 
         // multipart data
         let mut table = if params.highlight_simple_redactions {
-            MultiPartTable::new_with_value_hightlights_from_remarks(self.remarks())
+            MultiPartTable::new_with_value_highlights_from_remarks(self.remarks())
         } else {
             MultiPartTable::new()
         };
@@ -71,11 +71,13 @@ impl ToMd for Autnum {
 
 impl MdUtil for Autnum {
     fn get_header_text(&self) -> MdHeaderText {
-        let header_text = if self.start_autnum.is_some() && self.end_autnum.is_some() {
+        let header_text = if let (Some(start_autnum), Some(end_autnum)) =
+            (&self.start_autnum, &self.end_autnum)
+        {
             format!(
                 "Autonomous Systems {} - {}",
-                &self.start_autnum.as_ref().unwrap().replace_md_chars(),
-                &self.end_autnum.as_ref().unwrap().replace_md_chars()
+                start_autnum.replace_md_chars(),
+                &end_autnum.replace_md_chars()
             )
         } else if let Some(start_autnum) = &self.start_autnum {
             format!("Autonomous System {}", start_autnum.replace_md_chars())

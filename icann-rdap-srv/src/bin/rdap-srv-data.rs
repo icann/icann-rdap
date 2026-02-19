@@ -14,7 +14,7 @@ use {
         VERSION,
     },
     icann_rdap_srv::{
-        config::{debug_config_vars, ServiceConfig, LOG},
+        config::{data_dir, debug_config_vars, ServiceConfig, DEFAULT_DATA_RDAP_BASE_URL, LOG},
         error::RdapServerError,
         storage::{
             data::{
@@ -44,7 +44,7 @@ struct Cli {
     check_args: CheckArgs,
 
     /// Specifies the directory where data will be written.
-    #[arg(long, env = "RDAP_SRV_DATA_DIR")]
+    #[arg(long, env = "RDAP_SRV_DATA_DIR", default_value_t = data_dir().expect("data directory does not exist"))]
     data_dir: String,
 
     /// Output data as a redirect.
@@ -68,7 +68,7 @@ struct Cli {
 #[derive(Debug, Args)]
 struct ObjectArgs {
     /// Base URL of the server where the object is to be served.
-    #[arg(short = 'B', long, env = "RDAP_BASE_URL")]
+    #[arg(short = 'B', long, env = "RDAP_BASE_URL", default_value = DEFAULT_DATA_RDAP_BASE_URL)]
     base_url: String,
 
     /// Status of the object (e.g. "active").
@@ -144,7 +144,7 @@ fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> 
         .expect("creating notice/remark argument regex");
     let Some(cap) = re.captures(arg) else {
         return Err(RdapServerError::ArgParse(
-            "Unable to parse Notice/Remark argumnet.".to_string(),
+            "Unable to parse Notice/Remark argument.".to_string(),
         ));
     };
     let Some(description) = cap.name("t") else {
@@ -647,7 +647,7 @@ fn create_redirect_file(
             autnum: AutnumOrError::ErrorResponse(error),
             ids: vec![id.clone()],
         },
-        RdapId::Netowrk(id) => Template::Network {
+        RdapId::Network(id) => Template::Network {
             network: NetworkOrError::ErrorResponse(error),
             ids: vec![id.clone()],
         },
@@ -705,7 +705,7 @@ fn create_template_file(
                 ids: vec![id.clone()],
             }
         }
-        RdapId::Netowrk(id) => {
+        RdapId::Network(id) => {
             let RdapResponse::Network(network) = rdap else {
                 panic!("non network created with network id")
             };
@@ -727,7 +727,7 @@ enum RdapId {
     Domain(DomainId),
     Nameserver(NameserverId),
     Autnum(AutnumId),
-    Netowrk(NetworkId),
+    Network(NetworkId),
     Help,
 }
 
@@ -879,7 +879,7 @@ async fn make_entity(
     contact = contact.with_postal_address(postal_address);
     let entity = Entity::response_obj()
         .contact(contact)
-        .no_vacard(args.no_vcard)
+        .no_vcard(args.no_vcard)
         .jscontact(args.jscontact)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
@@ -949,7 +949,7 @@ async fn make_domain(
         ldh_arg.to_owned()
     } else if let Some(idn_arg) = args.idn.as_ref() {
         idna::domain_to_ascii(idn_arg)
-            .map_err(|_| RdapServerError::InvalidArg("Invalid IDN U-Lable".to_string()))?
+            .map_err(|_| RdapServerError::InvalidArg("Invalid IDN U-Label".to_string()))?
     } else {
         panic!("neither ldh or idn specified. this should have been caught in arg parsing.")
     }
@@ -1075,12 +1075,12 @@ async fn make_network(
         .links(links(&self_href).unwrap_or_default())
         .and_handle(args.handle);
     let network = network.build()?;
-    let id = RdapId::Netowrk(NetworkId {
+    let id = RdapId::Network(NetworkId {
         network_id: icann_rdap_srv::storage::data::NetworkIdType::Range {
             start_address: network
                 .start_address
                 .clone()
-                .expect("netowrk created without start address"),
+                .expect("network created without start address"),
             end_address: network
                 .end_address
                 .clone()

@@ -1,9 +1,9 @@
 use icann_rdap_common::prelude::{CommonFields, Domain, Nameserver, ObjectCommonFields};
 
-use crate::rpsl::{AttrName, RpslParams, ToRpsl};
+use crate::rpsl::{ttl::push_ttl0, AttrName, RpslParams, ToRpsl};
 
 use super::{
-    push_entities, push_manditory_attribute, push_notices, push_obj_common,
+    push_entities, push_mandatory_attribute, push_notices, push_obj_common,
     push_optional_attribute, push_public_ids, KeyRef,
 };
 
@@ -16,7 +16,7 @@ impl ToRpsl for Domain {
 
         // key
         let (key_name, key_value) = self.key_ref(params);
-        rpsl = push_manditory_attribute(rpsl, key_name, &key_value);
+        rpsl = push_mandatory_attribute(rpsl, key_name, &key_value);
 
         // name servers are embedded only for domains.
         rpsl.push_str(&nameservers(self.nameservers(), params));
@@ -74,6 +74,11 @@ impl ToRpsl for Domain {
             }
         }
 
+        // push ttl0
+        if let Some(ttl) = &self.ttl0_data {
+            rpsl = push_ttl0(rpsl, ttl);
+        }
+
         // push things common to object classes
         rpsl = push_obj_common(rpsl, params, self);
 
@@ -111,21 +116,21 @@ fn nameservers(nameservers: &[Nameserver], params: RpslParams) -> String {
         let (_name, value) = ns.key_ref(params);
         if let Some(ip) = ns.ip_addresses() {
             for v4 in ip.v4s() {
-                rpsl = push_manditory_attribute(
+                rpsl = push_mandatory_attribute(
                     rpsl,
                     AttrName::Nserver,
                     &format!("{value} ({v4}/32)"),
                 );
             }
             for v6 in ip.v6s() {
-                rpsl = push_manditory_attribute(
+                rpsl = push_mandatory_attribute(
                     rpsl,
                     AttrName::Nserver,
                     &format!("{value} ({v6}/128)"),
                 );
             }
         } else {
-            rpsl = push_manditory_attribute(rpsl, AttrName::Nserver, &value);
+            rpsl = push_mandatory_attribute(rpsl, AttrName::Nserver, &value);
         }
     }
     rpsl

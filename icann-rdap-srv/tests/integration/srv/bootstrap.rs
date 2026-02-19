@@ -34,7 +34,7 @@ async fn test_bootstrap_with_less_specific_domain() {
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -49,7 +49,6 @@ async fn test_bootstrap_with_less_specific_domain() {
 }
 
 #[tokio::test]
-#[should_panic]
 async fn test_bootstrap_with_no_less_specific_domain() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
@@ -69,10 +68,12 @@ async fn test_bootstrap_with_no_less_specific_domain() {
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::domain("foo.example").expect("invalid domain name");
-    let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("http response");
 
     // THEN
-    response.expect("this should be a 404"); // SHOULD PANIC
+    assert_eq!(response.http_data.status_code(), 404);
 }
 
 #[tokio::test]
@@ -97,7 +98,7 @@ async fn test_bootstrap_with_less_specific_ns() {
     let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -112,7 +113,6 @@ async fn test_bootstrap_with_less_specific_ns() {
 }
 
 #[tokio::test]
-#[should_panic]
 async fn test_bootstrap_with_no_less_specific_ns() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
@@ -132,10 +132,12 @@ async fn test_bootstrap_with_no_less_specific_ns() {
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::ns("ns.foo.example").expect("invalid nameserver");
-    let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("http response");
 
     // THEN
-    response.expect("this should be a 404"); // SHOULD PANIC
+    assert_eq!(response.http_data.status_code(), 404);
 }
 
 #[tokio::test]
@@ -164,7 +166,7 @@ async fn test_bootstrap_with_less_specific_ip() {
     let query = QueryType::ipv4cidr("10.0.0.0/24").expect("invalid CIDR");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -179,7 +181,6 @@ async fn test_bootstrap_with_less_specific_ip() {
 }
 
 #[tokio::test]
-#[should_panic]
 async fn test_bootstrap_with_no_less_specific_ip() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
@@ -203,10 +204,12 @@ async fn test_bootstrap_with_no_less_specific_ip() {
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::ipv4cidr("11.0.0.0/24").expect("invalid CIDR");
-    let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("http response");
 
     // THEN
-    response.expect("this should be 404"); // SHOLD PANIC
+    assert_eq!(response.http_data.status_code(), 404);
 }
 
 #[tokio::test]
@@ -234,7 +237,7 @@ async fn test_bootstrap_with_less_specific_autnum() {
     let query = QueryType::autnum("AS710").expect("invalid autnum");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -249,7 +252,6 @@ async fn test_bootstrap_with_less_specific_autnum() {
 }
 
 #[tokio::test]
-#[should_panic]
 async fn test_bootstrap_with_no_less_specific_autnum() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
@@ -272,10 +274,12 @@ async fn test_bootstrap_with_no_less_specific_autnum() {
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::autnum("AS1000").expect("invalid autnum");
-    let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("http response");
 
     // THEN
-    response.expect("this should be 404"); // SHOLD PANIC
+    assert_eq!(response.http_data.status_code(), 404);
 }
 
 #[tokio::test]
@@ -300,7 +304,7 @@ async fn test_bootstrap_with_specific_tag() {
     let query = QueryType::Entity("foo-ARIN".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -336,7 +340,7 @@ async fn test_bootstrap_with_specific_tag_lowercase() {
     let query = QueryType::Entity("foo-arin".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert!(response.rdap.is_redirect());
@@ -351,7 +355,6 @@ async fn test_bootstrap_with_specific_tag_lowercase() {
 }
 
 #[tokio::test]
-#[should_panic]
 async fn test_bootstrap_with_no_specific_tag() {
     // GIVEN
     let test_srv = SrvTestJig::new_bootstrap().await;
@@ -371,8 +374,10 @@ async fn test_bootstrap_with_no_specific_tag() {
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::Entity("foo-arin".to_string());
-    let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("http response");
 
     // THEN
-    response.expect("this should be 404"); // SHOLD PANIC
+    assert_eq!(response.http_data.status_code(), 404);
 }

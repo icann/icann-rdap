@@ -1,10 +1,7 @@
-#![allow(non_snake_case)]
-
 use {
     icann_rdap_client::{
         http::{create_client, ClientConfig},
         rdap::{rdap_request, QueryType},
-        RdapClientError,
     },
     icann_rdap_common::response::Domain,
     icann_rdap_srv::storage::{CommonConfig, StoreOps},
@@ -13,7 +10,7 @@ use {
 use crate::test_jig::SrvTestJig;
 
 #[tokio::test]
-async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
+async fn test_server_domain_query() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -31,14 +28,14 @@ async fn GIVEN_server_with_domain_WHEN_query_domain_THEN_status_code_200() {
     let query = QueryType::domain("foo.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
 }
 
 #[tokio::test]
-async fn GIVEN_server_with_idn_WHEN_query_domain_THEN_status_code_200() {
+async fn test_server_idn_query() {
     // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -61,14 +58,14 @@ async fn GIVEN_server_with_idn_WHEN_query_domain_THEN_status_code_200() {
     let query = QueryType::domain("café.example").expect("invalid domain name");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
 }
 
 #[tokio::test]
-async fn GIVEN_server_with_domain_and_search_disabled_WHEN_query_domain_THEN_status_code_501() {
+async fn test_server_search_disabled_for_query_domain() {
     // GIVEN
     let common_config = CommonConfig::builder()
         .domain_search_by_name_enable(false)
@@ -87,17 +84,16 @@ async fn GIVEN_server_with_domain_and_search_disabled_WHEN_query_domain_THEN_sta
         .build();
     let client = create_client(&client_config).expect("creating client");
     let query = QueryType::DomainNameSearch("foo.*".to_string());
-    let response = rdap_request(&test_srv.rdap_base, &query, &client).await;
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("valid response");
 
     // THEN
-    let RdapClientError::Client(error) = response.expect_err("not an error response") else {
-        panic!("the error was not an HTTP error")
-    };
-    assert_eq!(error.status().expect("no status code"), 501);
+    assert_eq!(response.http_data.status_code(), 501);
 }
 
 #[tokio::test]
-async fn GIVEN_server_with_domain_and_search_enabled_WHEN_query_domain_THEN_status_code_200() {
+async fn test_server_search_enabled_for_query_domain() {
     // GIVEN
     let common_config = CommonConfig::builder()
         .domain_search_by_name_enable(true)
@@ -118,7 +114,7 @@ async fn GIVEN_server_with_domain_and_search_enabled_WHEN_query_domain_THEN_stat
     let query = QueryType::DomainNameSearch("foo.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
-        .expect("quering server");
+        .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
