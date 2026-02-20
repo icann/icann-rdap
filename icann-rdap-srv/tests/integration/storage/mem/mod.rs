@@ -144,6 +144,7 @@ async fn GIVEN_domain_in_mem_but_search_not_enabled_WHEN_search_domain_by_name_T
             CommonConfig::builder()
                 .domain_search_by_name_enable(false)
                 .nameserver_search_by_name_enable(true)
+                .nameserver_search_by_ip_enable(true)
                 .build(),
         )
         .build();

@@ -1,4 +1,6 @@
 #![allow(clippy::diverging_sub_expression)]
+use std::net::IpAddr;
+
 use {
     async_trait::async_trait,
     icann_rdap_common::response::RdapResponse,
@@ -79,6 +81,9 @@ impl StoreOps for Pg {
         &self,
         _name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
+    async fn search_nameservers_by_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
 }

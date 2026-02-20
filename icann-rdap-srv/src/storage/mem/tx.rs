@@ -31,6 +31,7 @@ pub struct MemTx {
     idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
     nameservers_by_name: SearchLabels<Arc<RdapResponse>>,
+    nameservers_by_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
     entities: HashMap<String, Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
@@ -41,6 +42,10 @@ impl MemTx {
         let mut domains_by_name = SearchLabels::builder().build();
         let nameservers = Arc::clone(&mem.nameservers).read_owned().await.clone();
         let mut nameservers_by_name = SearchLabels::builder().build();
+        let nameservers_by_ip = Arc::clone(&mem.nameservers_by_ip)
+            .read_owned()
+            .await
+            .clone();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
@@ -66,6 +71,7 @@ impl MemTx {
             idns: Arc::clone(&mem.idns).read_owned().await.clone(),
             nameservers,
             nameservers_by_name,
+            nameservers_by_ip,
             entities: Arc::clone(&mem.entities).read_owned().await.clone(),
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
@@ -82,6 +88,7 @@ impl MemTx {
             idns: HashMap::new(),
             nameservers: HashMap::new(),
             nameservers_by_name: SearchLabels::builder().build(),
+            nameservers_by_ip: HashMap::new(),
             entities: HashMap::new(),
             srvhelps: HashMap::new(),
         }
@@ -167,7 +174,28 @@ impl TxHandle for MemTx {
             .nameserver_search_by_name_enable
         {
             self.nameservers_by_name
-                .insert(ldh_name, nameserver_response);
+                .insert(ldh_name, nameserver_response.clone());
+        }
+
+        if self.mem.config.common_config.nameserver_search_by_ip_enable {
+            if let Some(ip_addresses) = nameserver.ip_addresses() {
+                for ip_str in ip_addresses.v4s() {
+                    if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                        self.nameservers_by_ip
+                            .entry(ip)
+                            .or_default()
+                            .push(nameserver_response.clone());
+                    }
+                }
+                for ip_str in ip_addresses.v6s() {
+                    if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                        self.nameservers_by_ip
+                            .entry(ip)
+                            .or_default()
+                            .push(nameserver_response.clone());
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -339,6 +367,10 @@ impl TxHandle for MemTx {
         // nameservers by name
         let mut nameservers_by_name_g = self.mem.nameservers_by_name.write().await;
         std::mem::swap(&mut self.nameservers_by_name, &mut nameservers_by_name_g);
+
+        // nameservers by ip
+        let mut nameservers_by_ip_g = self.mem.nameservers_by_ip.write().await;
+        std::mem::swap(&mut self.nameservers_by_ip, &mut nameservers_by_ip_g);
 
         // entities
         let mut entities_g = self.mem.entities.write().await;

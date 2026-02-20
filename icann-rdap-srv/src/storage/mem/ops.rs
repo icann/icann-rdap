@@ -32,6 +32,7 @@ pub struct Mem {
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) nameservers_by_ip: Arc<RwLock<HashMap<IpAddr, Vec<Arc<RdapResponse>>>>>,
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
@@ -48,6 +49,7 @@ impl Mem {
             idns: <_>::default(),
             nameservers: <_>::default(),
             nameservers_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
+            nameservers_by_ip: <_>::default(),
             entities: <_>::default(),
             srvhelps: <_>::default(),
             config,
@@ -222,6 +224,31 @@ impl StoreOps for Mem {
                 _ => None,
             })
             .collect::<Vec<Nameserver>>();
+        let response = NameserverSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_nameservers_by_ip(&self, ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.nameserver_search_by_ip_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        //else
+        let nameservers_by_ip = self.nameservers_by_ip.read().await;
+        let results: Vec<Nameserver> = nameservers_by_ip
+            .get(&ip)
+            .map(|vec| {
+                vec.iter()
+                    .map(|r| Arc::<RdapResponse>::unwrap_or_clone(r.clone()))
+                    .filter_map(|n| match n {
+                        RdapResponse::Nameserver(ns) => Some(*ns),
+                        _ => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         let response = NameserverSearchResults::response_obj()
             .results(results)
             .build()

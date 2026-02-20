@@ -70,6 +70,7 @@ async fn test_server_search_disabled_for_query_domain() {
     let common_config = CommonConfig::builder()
         .domain_search_by_name_enable(false)
         .nameserver_search_by_name_enable(true)
+        .nameserver_search_by_ip_enable(true)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -99,6 +100,7 @@ async fn test_server_search_enabled_for_query_domain() {
     let common_config = CommonConfig::builder()
         .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(true)
+        .nameserver_search_by_ip_enable(true)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");

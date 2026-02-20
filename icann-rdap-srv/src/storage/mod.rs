@@ -61,6 +61,12 @@ pub trait StoreOps: Send + Sync {
     /// Search for nameservers by name.
     async fn search_nameservers_by_name(&self, name: &str)
         -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for nameservers by IP address.
+    async fn search_nameservers_by_ip(
+        &self,
+        ip: std::net::IpAddr,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -136,6 +142,7 @@ pub trait TxHandle: Send {
 pub struct CommonConfig {
     pub domain_search_by_name_enable: bool,
     pub nameserver_search_by_name_enable: bool,
+    pub nameserver_search_by_ip_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -143,6 +150,7 @@ impl Default for CommonConfig {
         Self {
             domain_search_by_name_enable: true,
             nameserver_search_by_name_enable: true,
+            nameserver_search_by_ip_enable: false,
         }
     }
 }
