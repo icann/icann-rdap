@@ -17,6 +17,7 @@ async fn test_server_nameserver_ip_search_enabled() {
         .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(true)
         .nameserver_search_by_ip_enable(true)
+        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -54,6 +55,7 @@ async fn test_server_nameserver_ip_search_disabled() {
         .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(true)
         .nameserver_search_by_ip_enable(false)
+        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -140,6 +142,7 @@ async fn test_server_search_disabled_for_query_nameserver() {
         .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(false)
         .nameserver_search_by_ip_enable(true)
+        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -175,6 +178,7 @@ async fn test_server_search_enabled_for_query_nameserver() {
         .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(true)
         .nameserver_search_by_ip_enable(true)
+        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");

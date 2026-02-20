@@ -29,6 +29,7 @@ pub struct Mem {
     pub(crate) ip6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) domains_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) domains_by_ns_ip: Arc<RwLock<HashMap<IpAddr, Vec<Arc<RdapResponse>>>>>,
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
@@ -46,6 +47,7 @@ impl Mem {
             ip6: <_>::default(),
             domains: <_>::default(),
             domains_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
+            domains_by_ns_ip: <_>::default(),
             idns: <_>::default(),
             nameservers: <_>::default(),
             nameservers_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
@@ -250,6 +252,30 @@ impl StoreOps for Mem {
             })
             .unwrap_or_default();
         let response = NameserverSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_domains_by_ns_ip(&self, ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_search_by_ns_ip_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let domains_by_ns_ip = self.domains_by_ns_ip.read().await;
+        let results: Vec<Domain> = domains_by_ns_ip
+            .get(&ip)
+            .map(|vec| {
+                vec.iter()
+                    .map(|r| Arc::<RdapResponse>::unwrap_or_clone(r.clone()))
+                    .filter_map(|d| match d {
+                        RdapResponse::Domain(dom) => Some(*dom),
+                        _ => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let response = DomainSearchResults::response_obj()
             .results(results)
             .build()
             .to_response();

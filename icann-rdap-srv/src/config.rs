@@ -26,6 +26,7 @@ pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
 pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
 pub const NAMESERVER_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_BY_NAME";
 pub const NAMESERVER_SEARCH_BY_IP_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_BY_IP";
+pub const DOMAIN_SEARCH_BY_NS_IP_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -42,6 +43,7 @@ pub fn debug_config_vars() {
         DOMAIN_SEARCH_BY_NAME_ENABLE,
         NAMESERVER_SEARCH_BY_NAME_ENABLE,
         NAMESERVER_SEARCH_BY_IP_ENABLE,
+        DOMAIN_SEARCH_BY_NS_IP_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -86,10 +88,12 @@ impl StorageType {
         let domain_search_by_name = get_parse_or(DOMAIN_SEARCH_BY_NAME_ENABLE, false)?;
         let nameserver_search_by_name = get_parse_or(NAMESERVER_SEARCH_BY_NAME_ENABLE, false)?;
         let nameserver_search_by_ip = get_parse_or(NAMESERVER_SEARCH_BY_IP_ENABLE, false)?;
+        let domain_search_by_ns_ip = get_parse_or(DOMAIN_SEARCH_BY_NS_IP_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .nameserver_search_by_name_enable(nameserver_search_by_name)
             .nameserver_search_by_ip_enable(nameserver_search_by_ip)
+            .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {

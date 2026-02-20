@@ -28,6 +28,7 @@ pub struct MemTx {
     ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     domains: HashMap<String, Arc<RdapResponse>>,
     domains_by_name: SearchLabels<Arc<RdapResponse>>,
+    domains_by_ns_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
     idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
     nameservers_by_name: SearchLabels<Arc<RdapResponse>>,
@@ -40,6 +41,7 @@ impl MemTx {
     pub async fn new(mem: &Mem) -> Self {
         let domains = Arc::clone(&mem.domains).read_owned().await.clone();
         let mut domains_by_name = SearchLabels::builder().build();
+        let domains_by_ns_ip = Arc::clone(&mem.domains_by_ns_ip).read_owned().await.clone();
         let nameservers = Arc::clone(&mem.nameservers).read_owned().await.clone();
         let mut nameservers_by_name = SearchLabels::builder().build();
         let nameservers_by_ip = Arc::clone(&mem.nameservers_by_ip)
@@ -68,6 +70,7 @@ impl MemTx {
             ip6: Arc::clone(&mem.ip6).read_owned().await.clone(),
             domains,
             domains_by_name,
+            domains_by_ns_ip,
             idns: Arc::clone(&mem.idns).read_owned().await.clone(),
             nameservers,
             nameservers_by_name,
@@ -85,6 +88,7 @@ impl MemTx {
             ip6: PrefixMap::new(),
             domains: HashMap::new(),
             domains_by_name: SearchLabels::builder().build(),
+            domains_by_ns_ip: HashMap::new(),
             idns: HashMap::new(),
             nameservers: HashMap::new(),
             nameservers_by_name: SearchLabels::builder().build(),
@@ -140,7 +144,33 @@ impl TxHandle for MemTx {
         };
 
         if self.mem.config.common_config.domain_search_by_name_enable {
-            self.domains_by_name.insert(ldh_name, domain_response);
+            self.domains_by_name
+                .insert(ldh_name, domain_response.clone());
+        }
+
+        if self.mem.config.common_config.domain_search_by_ns_ip_enable {
+            if let Some(nameservers) = domain.nameservers.as_ref() {
+                for nameserver in nameservers {
+                    if let Some(ip_addresses) = nameserver.ip_addresses() {
+                        for ip_str in ip_addresses.v4s() {
+                            if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                                self.domains_by_ns_ip
+                                    .entry(ip)
+                                    .or_default()
+                                    .push(domain_response.clone());
+                            }
+                        }
+                        for ip_str in ip_addresses.v6s() {
+                            if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                                self.domains_by_ns_ip
+                                    .entry(ip)
+                                    .or_default()
+                                    .push(domain_response.clone());
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -355,6 +385,10 @@ impl TxHandle for MemTx {
         //domains by name
         let mut domains_by_name_g = self.mem.domains_by_name.write().await;
         std::mem::swap(&mut self.domains_by_name, &mut domains_by_name_g);
+
+        //domains by nameserver ip
+        let mut domains_by_ns_ip_g = self.mem.domains_by_ns_ip.write().await;
+        std::mem::swap(&mut self.domains_by_ns_ip, &mut domains_by_ns_ip_g);
 
         //idns
         let mut idns_g = self.mem.idns.write().await;

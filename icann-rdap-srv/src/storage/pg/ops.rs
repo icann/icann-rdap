@@ -86,4 +86,7 @@ impl StoreOps for Pg {
     async fn search_nameservers_by_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn search_domains_by_ns_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
 }
