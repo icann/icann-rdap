@@ -1,6 +1,5 @@
 use {
     async_trait::async_trait,
-    buildstructor::Builder,
     icann_rdap_common::response::{
         Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error,
     },
@@ -144,7 +143,7 @@ pub trait TxHandle: Send {
 }
 
 /// Common configuration for storage back ends.
-#[derive(Debug, Clone, Copy, Builder)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct CommonConfig {
     pub domain_search_by_name_enable: bool,
     pub nameserver_search_by_name_enable: bool,
@@ -152,13 +151,20 @@ pub struct CommonConfig {
     pub domain_search_by_ns_ip_enable: bool,
 }
 
-impl Default for CommonConfig {
-    fn default() -> Self {
+#[buildstructor::buildstructor]
+impl CommonConfig {
+    #[builder]
+    pub fn new(
+        domain_search_by_name_enable: Option<bool>,
+        domain_search_by_ns_ip_enable: Option<bool>,
+        nameserver_search_by_name_enable: Option<bool>,
+        nameserver_search_by_ip_enable: Option<bool>,
+    ) -> Self {
         Self {
-            domain_search_by_name_enable: true,
-            nameserver_search_by_name_enable: true,
-            nameserver_search_by_ip_enable: false,
-            domain_search_by_ns_ip_enable: false,
+            domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
+            domain_search_by_ns_ip_enable: domain_search_by_ns_ip_enable.unwrap_or_default(),
+            nameserver_search_by_name_enable: nameserver_search_by_name_enable.unwrap_or_default(),
+            nameserver_search_by_ip_enable: nameserver_search_by_ip_enable.unwrap_or_default(),
         }
     }
 }

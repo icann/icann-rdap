@@ -108,7 +108,12 @@ async fn test_server_nameserver_invalid_ip_bad_request() {
 #[tokio::test]
 async fn test_server_nameserver_query() {
     // GIVEN
-    let test_srv = SrvTestJig::new().await;
+    let test_srv = SrvTestJig::new_common_config(
+        CommonConfig::builder()
+            .nameserver_search_by_name_enable(true)
+            .build(),
+    )
+    .await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_nameserver(
         &Nameserver::builder()
