@@ -86,3 +86,7 @@ srv_lookup_domain:
 [doc('Lookup the entity in localhost.')]
 srv_lookup_entity:
     cargo run --bin rdap -- -T -B http://localhost:3000/rdap foo1234
+
+[doc('Lookup the non-existent domain in localhost.')]
+srv_lookup_nxdomain:
+    cargo run --bin rdap -- -T -B http://localhost:3000/rdap nx.invalid
