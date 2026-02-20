@@ -69,7 +69,10 @@ srv_data_nameserver:
 
 [doc('Start the server')]
 srv_start:
-    RDAP_SRV_LOG=debug cargo run --bin rdap-srv 
+    RDAP_SRV_DOMAIN_SEARCH_BY_NAME=true \
+    RDAP_SRV_NAMESERVER_SEARCH_BY_NAME=true \
+    RDAP_SRV_LOG=debug \
+    cargo run --bin rdap-srv 
 
 [doc('Update the data in the server.')]
 srv_update:
