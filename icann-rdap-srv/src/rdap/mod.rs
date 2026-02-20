@@ -11,6 +11,7 @@ pub mod domains;
 pub mod entity;
 pub mod ip;
 pub mod nameserver;
+pub mod nameservers;
 pub mod response;
 pub mod router;
 pub mod srvhelp;

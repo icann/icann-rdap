@@ -30,6 +30,7 @@ pub struct MemTx {
     domains_by_name: SearchLabels<Arc<RdapResponse>>,
     idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
+    nameservers_by_name: SearchLabels<Arc<RdapResponse>>,
     entities: HashMap<String, Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
@@ -38,11 +39,20 @@ impl MemTx {
     pub async fn new(mem: &Mem) -> Self {
         let domains = Arc::clone(&mem.domains).read_owned().await.clone();
         let mut domains_by_name = SearchLabels::builder().build();
+        let nameservers = Arc::clone(&mem.nameservers).read_owned().await.clone();
+        let mut nameservers_by_name = SearchLabels::builder().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
             for (name, value) in domains.iter() {
                 domains_by_name.insert(name, value.clone());
+            }
+        }
+
+        // only do load up nameserver search labels if search by nameserver names is supported
+        if mem.config.common_config.nameserver_search_by_name_enable {
+            for (name, value) in nameservers.iter() {
+                nameservers_by_name.insert(name, value.clone());
             }
         }
 
@@ -54,7 +64,8 @@ impl MemTx {
             domains,
             domains_by_name,
             idns: Arc::clone(&mem.idns).read_owned().await.clone(),
-            nameservers: Arc::clone(&mem.nameservers).read_owned().await.clone(),
+            nameservers,
+            nameservers_by_name,
             entities: Arc::clone(&mem.entities).read_owned().await.clone(),
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
@@ -70,6 +81,7 @@ impl MemTx {
             domains_by_name: SearchLabels::builder().build(),
             idns: HashMap::new(),
             nameservers: HashMap::new(),
+            nameservers_by_name: SearchLabels::builder().build(),
             entities: HashMap::new(),
             srvhelps: HashMap::new(),
         }
@@ -144,10 +156,20 @@ impl TxHandle for MemTx {
             .ldh_name
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
-        self.nameservers.insert(
-            ldh_name.to_owned(),
-            Arc::new(nameserver.clone().to_response()),
-        );
+        let nameserver_response = Arc::new(nameserver.clone().to_response());
+        self.nameservers
+            .insert(ldh_name.to_owned(), nameserver_response.clone());
+
+        if self
+            .mem
+            .config
+            .common_config
+            .nameserver_search_by_name_enable
+        {
+            self.nameservers_by_name
+                .insert(ldh_name, nameserver_response);
+        }
+
         Ok(())
     }
 
@@ -313,6 +335,10 @@ impl TxHandle for MemTx {
         // nameservers
         let mut nameservers_g = self.mem.nameservers.write().await;
         std::mem::swap(&mut self.nameservers, &mut nameservers_g);
+
+        // nameservers by name
+        let mut nameservers_by_name_g = self.mem.nameservers_by_name.write().await;
+        std::mem::swap(&mut self.nameservers_by_name, &mut nameservers_by_name_g);
 
         // entities
         let mut entities_g = self.mem.entities.write().await;

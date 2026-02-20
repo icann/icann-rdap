@@ -308,7 +308,7 @@ async fn test_idn_query_a_label() {
 #[tokio::test(flavor = "multi_thread")]
 async fn test_domain_search() {
     // GIVEN domain
-    let mut test_jig = TestJig::new_rdap_with_dn_search().await;
+    let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     tx.add_domain(&Domain::builder().ldh_name("foo.example").build())
         .await

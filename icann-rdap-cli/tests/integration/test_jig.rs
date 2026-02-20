@@ -32,9 +32,10 @@ impl TestJig {
         Self::new_common_config(common_config, CommandType::Rdap).await
     }
 
-    pub async fn new_rdap_with_dn_search() -> Self {
+    pub async fn new_rdap_with_search() -> Self {
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(true)
+            .nameserver_search_by_name_enable(true)
             .build();
         Self::new_common_config(common_config, CommandType::Rdap).await
     }

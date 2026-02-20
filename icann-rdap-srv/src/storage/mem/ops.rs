@@ -5,7 +5,9 @@ use {
     btree_range_map::RangeMap,
     icann_rdap_common::{
         prelude::ToResponse,
-        response::{Domain, DomainSearchResults, RdapResponse},
+        response::{
+            Domain, DomainSearchResults, Nameserver, NameserverSearchResults, RdapResponse,
+        },
     },
     ipnet::{IpNet, Ipv4Net, Ipv6Net},
     prefix_trie::PrefixMap,
@@ -29,6 +31,7 @@ pub struct Mem {
     pub(crate) domains_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
+    pub(crate) nameservers_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
@@ -44,6 +47,7 @@ impl Mem {
             domains_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
             idns: <_>::default(),
             nameservers: <_>::default(),
+            nameservers_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
             entities: <_>::default(),
             srvhelps: <_>::default(),
             config,
@@ -193,6 +197,32 @@ impl StoreOps for Mem {
             })
             .collect::<Vec<Domain>>();
         let response = DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_nameservers_by_name(
+        &self,
+        name: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.nameserver_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        //else
+        let nameservers_by_name = self.nameservers_by_name.read().await;
+        let results = nameservers_by_name
+            .search(name)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|n| match n {
+                RdapResponse::Nameserver(ns) => Some(*ns),
+                _ => None,
+            })
+            .collect::<Vec<Nameserver>>();
+        let response = NameserverSearchResults::response_obj()
             .results(results)
             .build()
             .to_response();
