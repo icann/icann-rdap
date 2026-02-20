@@ -51,11 +51,8 @@ async fn test_server_nameserver_ip_search_enabled() {
 #[tokio::test]
 async fn test_server_nameserver_ip_search_disabled() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .domain_search_by_name_enable(true)
-        .nameserver_search_by_name_enable(true)
+let common_config = CommonConfig::builder()
         .nameserver_search_by_ip_enable(false)
-        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
