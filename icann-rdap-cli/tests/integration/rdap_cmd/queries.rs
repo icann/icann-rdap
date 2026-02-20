@@ -324,6 +324,29 @@ async fn test_domain_search() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_nameserver_search() {
+    // GIVEN nameserver
+    let mut test_jig = TestJig::new_rdap_with_search().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_nameserver(
+        &Nameserver::builder()
+            .ldh_name("ns.foo.example")
+            .build()
+            .unwrap(),
+    )
+    .await
+    .expect("add nameserver in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN search for the nameserver
+    test_jig.cmd.arg("-t").arg("ns-name").arg("ns.foo.*");
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_domain_with_status_output_text() {
     // GIVEN domain with status
     let mut test_jig = TestJig::new_rdap().await;
