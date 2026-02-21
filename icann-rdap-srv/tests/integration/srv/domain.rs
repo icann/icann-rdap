@@ -3,7 +3,10 @@ use {
         http::{create_client, ClientConfig},
         rdap::{rdap_request, QueryType},
     },
-    icann_rdap_common::response::{Domain, Nameserver},
+    icann_rdap_common::{
+        prelude::RdapResponse,
+        response::{Domain, Nameserver},
+    },
     icann_rdap_srv::storage::{CommonConfig, StoreOps},
 };
 
@@ -300,6 +303,10 @@ async fn test_server_search_enabled_for_query_domain_by_ns_ldh_name() {
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::DomainSearchResults(results) = response.rdap else {
+        panic!("not domain search results")
+    };
+    assert_eq!(results.results().len(), 1);
 }
 
 #[tokio::test]
@@ -334,4 +341,8 @@ async fn test_server_search_domain_by_ns_ldh_name_not_found() {
 
     // THEN - returns 200 with empty results (RFC 9082)
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::DomainSearchResults(results) = response.rdap else {
+        panic!("not domain search results")
+    };
+    assert_eq!(results.results().len(), 0);
 }

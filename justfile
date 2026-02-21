@@ -71,6 +71,7 @@ srv_data_nameserver:
 srv_start:
     RDAP_SRV_DOMAIN_SEARCH_BY_NAME=true \
     RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP=true \
+    RDAP_SRV_DOMAIN_SEARCH_BY_NS_LDH_NAME=true \
     RDAP_SRV_NAMESERVER_SEARCH_BY_NAME=true \
     RDAP_SRV_NAMESERVER_SEARCH_BY_IP=true \
     RDAP_SRV_LOG=debug \
@@ -107,3 +108,7 @@ srv_search_nameserver_ip:
 [doc('Search for domains by nameserver IP in localhost.')]
 srv_search_domain_ns_ip:
     cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -t domain-ns-ip 10.0.2.1
+
+[doc('Search for domains by nameserver name in localhost.')]
+srv_search_domain_ns_ldh:
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -t domain-ns-name "ns1.*.com"
