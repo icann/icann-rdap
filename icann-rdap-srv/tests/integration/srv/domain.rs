@@ -72,9 +72,6 @@ async fn test_server_search_disabled_for_query_domain() {
     // GIVEN
     let common_config = CommonConfig::builder()
         .domain_search_by_name_enable(false)
-        .nameserver_search_by_name_enable(true)
-        .nameserver_search_by_ip_enable(true)
-        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -103,9 +100,6 @@ async fn test_server_search_enabled_for_query_domain() {
     // GIVEN
     let common_config = CommonConfig::builder()
         .domain_search_by_name_enable(true)
-        .nameserver_search_by_name_enable(true)
-        .nameserver_search_by_ip_enable(true)
-        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -127,15 +121,16 @@ async fn test_server_search_enabled_for_query_domain() {
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::DomainSearchResults(results) = response.rdap else {
+        panic!("not domain search results")
+    };
+    assert_eq!(results.results().len(), 1);
 }
 
 #[tokio::test]
 async fn test_server_search_disabled_for_query_domain_by_ns_ip() {
     // GIVEN
     let common_config = CommonConfig::builder()
-        .domain_search_by_name_enable(true)
-        .nameserver_search_by_name_enable(true)
-        .nameserver_search_by_ip_enable(true)
         .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
@@ -199,6 +194,10 @@ async fn test_server_search_enabled_for_query_domain_by_ns_ip() {
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::DomainSearchResults(results) = response.rdap else {
+        panic!("not domain search results")
+    };
+    assert_eq!(results.results().len(), 1);
 }
 
 #[tokio::test]
@@ -240,8 +239,6 @@ async fn test_server_search_domain_by_ns_ip_not_found() {
 async fn test_server_search_disabled_for_query_domain_by_ns_ldh_name() {
     // GIVEN
     let common_config = CommonConfig::builder()
-        .domain_search_by_name_enable(true)
-        .nameserver_search_by_name_enable(true)
         .domain_search_by_ns_ldh_name_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
@@ -276,7 +273,6 @@ async fn test_server_search_enabled_for_query_domain_by_ns_ldh_name() {
     // GIVEN
     let common_config = CommonConfig::builder()
         .domain_search_by_ns_ldh_name_enable(true)
-        .nameserver_search_by_name_enable(true)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -314,7 +310,6 @@ async fn test_server_search_domain_by_ns_ldh_name_not_found() {
     // GIVEN
     let common_config = CommonConfig::builder()
         .domain_search_by_ns_ldh_name_enable(true)
-        .nameserver_search_by_name_enable(true)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");

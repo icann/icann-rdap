@@ -3,7 +3,7 @@ use {
         http::{create_client, ClientConfig},
         rdap::{rdap_request, QueryType},
     },
-    icann_rdap_common::response::Nameserver,
+    icann_rdap_common::{prelude::RdapResponse, response::Nameserver},
     icann_rdap_srv::storage::{CommonConfig, StoreOps},
     std::net::{IpAddr, Ipv4Addr},
 };
@@ -14,10 +14,7 @@ use crate::test_jig::SrvTestJig;
 async fn test_server_nameserver_ip_search_enabled() {
     // GIVEN
     let common_config = CommonConfig::builder()
-        .domain_search_by_name_enable(true)
-        .nameserver_search_by_name_enable(true)
         .nameserver_search_by_ip_enable(true)
-        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -46,6 +43,10 @@ async fn test_server_nameserver_ip_search_enabled() {
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::NameserverSearchResults(results) = response.rdap else {
+        panic!("not nameserver search results")
+    };
+    assert_eq!(results.results().len(), 1);
 }
 
 #[tokio::test]
@@ -128,23 +129,24 @@ async fn test_server_nameserver_query() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::NameserverNameSearch("ns.foo.example".to_string());
+    let query = QueryType::NameserverNameSearch("ns.foo.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("querying server");
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::NameserverSearchResults(results) = response.rdap else {
+        panic!("not nameserver search results")
+    };
+    assert_eq!(results.results().len(), 1);
 }
 
 #[tokio::test]
 async fn test_server_search_disabled_for_query_nameserver() {
     // GIVEN
     let common_config = CommonConfig::builder()
-        .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(false)
-        .nameserver_search_by_ip_enable(true)
-        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -177,10 +179,7 @@ async fn test_server_search_disabled_for_query_nameserver() {
 async fn test_server_search_enabled_for_query_nameserver() {
     // GIVEN
     let common_config = CommonConfig::builder()
-        .domain_search_by_name_enable(true)
         .nameserver_search_by_name_enable(true)
-        .nameserver_search_by_ip_enable(true)
-        .domain_search_by_ns_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
@@ -207,4 +206,8 @@ async fn test_server_search_enabled_for_query_nameserver() {
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+    let RdapResponse::NameserverSearchResults(results) = response.rdap else {
+        panic!("not nameserver search results")
+    };
+    assert_eq!(results.results().len(), 1);
 }
