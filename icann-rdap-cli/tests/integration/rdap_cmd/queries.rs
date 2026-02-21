@@ -416,11 +416,7 @@ async fn test_domain_search_by_nameserver_ldh_name() {
     tx.commit().await.expect("tx commit");
 
     // WHEN search for domains by nameserver ldhName
-    test_jig
-        .cmd
-        .arg("-t")
-        .arg("domain-ns-name")
-        .arg("ns.foo.example");
+    test_jig.cmd.arg("-t").arg("domain-ns-name").arg("ns.foo.*");
 
     // THEN success
     let assert = test_jig.cmd.assert();

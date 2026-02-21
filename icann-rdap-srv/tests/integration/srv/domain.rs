@@ -262,7 +262,7 @@ async fn test_server_search_disabled_for_query_domain_by_ns_ldh_name() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::DomainNsNameSearch("ns1.example".to_string());
+    let query = QueryType::DomainNsNameSearch("ns1.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("valid response");
@@ -296,7 +296,7 @@ async fn test_server_search_enabled_for_query_domain_by_ns_ldh_name() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::DomainNsNameSearch("ns1.example".to_string());
+    let query = QueryType::DomainNsNameSearch("ns1.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("querying server");
@@ -334,7 +334,7 @@ async fn test_server_search_domain_by_ns_ldh_name_not_found() {
         .follow_redirects(false)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::DomainNsNameSearch("ns99.example".to_string());
+    let query = QueryType::DomainNsNameSearch("ns99.*".to_string());
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("querying server");
