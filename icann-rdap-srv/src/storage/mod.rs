@@ -72,6 +72,12 @@ pub trait StoreOps: Send + Sync {
         &self,
         ip: std::net::IpAddr,
     ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for domains by nameserver ldhName.
+    async fn search_domains_by_ns_ldh_name(
+        &self,
+        name: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -149,6 +155,7 @@ pub struct CommonConfig {
     pub nameserver_search_by_name_enable: bool,
     pub nameserver_search_by_ip_enable: bool,
     pub domain_search_by_ns_ip_enable: bool,
+    pub domain_search_by_ns_ldh_name_enable: bool,
 }
 
 #[buildstructor::buildstructor]
@@ -157,12 +164,15 @@ impl CommonConfig {
     pub fn new(
         domain_search_by_name_enable: Option<bool>,
         domain_search_by_ns_ip_enable: Option<bool>,
+        domain_search_by_ns_ldh_name_enable: Option<bool>,
         nameserver_search_by_name_enable: Option<bool>,
         nameserver_search_by_ip_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
             domain_search_by_ns_ip_enable: domain_search_by_ns_ip_enable.unwrap_or_default(),
+            domain_search_by_ns_ldh_name_enable: domain_search_by_ns_ldh_name_enable
+                .unwrap_or_default(),
             nameserver_search_by_name_enable: nameserver_search_by_name_enable.unwrap_or_default(),
             nameserver_search_by_ip_enable: nameserver_search_by_ip_enable.unwrap_or_default(),
         }

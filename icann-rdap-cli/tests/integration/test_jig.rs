@@ -36,6 +36,7 @@ impl TestJig {
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(true)
             .domain_search_by_ns_ip_enable(true)
+            .domain_search_by_ns_ldh_name_enable(true)
             .nameserver_search_by_name_enable(true)
             .nameserver_search_by_ip_enable(true)
             .build();

@@ -22,7 +22,7 @@ pub(crate) struct DomainsParams {
     name: Option<String>,
 
     #[serde(rename = "nsLdhName")]
-    _ns_ldh_name: Option<String>,
+    ns_ldh_name: Option<String>,
 
     #[serde(rename = "nsIp")]
     ns_ip: Option<String>,
@@ -41,6 +41,15 @@ pub(crate) async fn domains(
 
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_name(&name).await?;
+        let results = jscontact_conversion(results, state.get_jscontact_conversion(), &exts_list);
+        let results = normalize_extensions(results);
+        results.response()
+    } else if let Some(ns_ldh_name) = params.ns_ldh_name {
+        let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+        debug!("exts_list = \'{}\'", exts_list.join(" "));
+
+        let storage = state.get_storage().await?;
+        let results = storage.search_domains_by_ns_ldh_name(&ns_ldh_name).await?;
         let results = jscontact_conversion(results, state.get_jscontact_conversion(), &exts_list);
         let results = normalize_extensions(results);
         results.response()

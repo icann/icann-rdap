@@ -51,7 +51,7 @@ async fn test_server_nameserver_ip_search_enabled() {
 #[tokio::test]
 async fn test_server_nameserver_ip_search_disabled() {
     // GIVEN
-let common_config = CommonConfig::builder()
+    let common_config = CommonConfig::builder()
         .nameserver_search_by_ip_enable(false)
         .build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;

@@ -30,6 +30,7 @@ pub struct Mem {
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) domains_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) domains_by_ns_ip: Arc<RwLock<HashMap<IpAddr, Vec<Arc<RdapResponse>>>>>,
+    pub(crate) domains_by_ns_ldh_name: Arc<RwLock<HashMap<String, Vec<Arc<RdapResponse>>>>>,
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
@@ -48,6 +49,7 @@ impl Mem {
             domains: <_>::default(),
             domains_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
             domains_by_ns_ip: <_>::default(),
+            domains_by_ns_ldh_name: <_>::default(),
             idns: <_>::default(),
             nameservers: <_>::default(),
             nameservers_by_name: Arc::new(RwLock::new(SearchLabels::builder().build())),
@@ -265,6 +267,37 @@ impl StoreOps for Mem {
         let domains_by_ns_ip = self.domains_by_ns_ip.read().await;
         let results: Vec<Domain> = domains_by_ns_ip
             .get(&ip)
+            .map(|vec| {
+                vec.iter()
+                    .map(|r| Arc::<RdapResponse>::unwrap_or_clone(r.clone()))
+                    .filter_map(|d| match d {
+                        RdapResponse::Domain(dom) => Some(*dom),
+                        _ => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let response = DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_domains_by_ns_ldh_name(
+        &self,
+        name: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self
+            .config
+            .common_config
+            .domain_search_by_ns_ldh_name_enable
+        {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let domains_by_ns_ldh_name = self.domains_by_ns_ldh_name.read().await;
+        let results: Vec<Domain> = domains_by_ns_ldh_name
+            .get(name)
             .map(|vec| {
                 vec.iter()
                     .map(|r| Arc::<RdapResponse>::unwrap_or_clone(r.clone()))
