@@ -13,6 +13,7 @@ pub struct SearchLabels<T: Clone> {
 
 #[buildstructor::buildstructor]
 impl<T: Clone> SearchLabels<T> {
+    /// Creates a builder appropriate for domain names.
     #[builder(entry = "dns_labels")]
     pub(crate) fn new_dns_labels() -> Self {
         Self {
@@ -21,11 +22,21 @@ impl<T: Clone> SearchLabels<T> {
         }
     }
 
-    #[builder(entry = "entity_labels")]
-    pub(crate) fn new_entity_labels() -> Self {
+    /// Creates a builder appropriate for handles.
+    #[builder(entry = "handle_labels")]
+    pub(crate) fn new_handle_labels() -> Self {
         Self {
             label_suffixes: HashMap::new(),
             separaters: vec!['.', '-', '_'],
+        }
+    }
+
+    /// Creates a builder appropriate for natural names.
+    #[builder(entry = "name_labels")]
+    pub(crate) fn new_name_labels() -> Self {
+        Self {
+            label_suffixes: HashMap::new(),
+            separaters: vec![' ', '-'],
         }
     }
 
@@ -380,9 +391,9 @@ mod tests {
     }
 
     #[test]
-    fn test_entity_labels_search() {
+    fn test_handle_labels_search() {
         // GIVEN
-        let mut labels = SearchLabels::entity_labels().build();
+        let mut labels = SearchLabels::handle_labels().build();
         labels.insert("Hostmaster-ARIN", "Hostmaster-ARIN".to_owned());
         labels.insert("Hostmaster-RIPE", "Hostmaster-RIPE".to_owned());
 
@@ -394,5 +405,21 @@ mod tests {
         assert_eq!(actual.len(), 2);
         assert!(actual.contains(&"Hostmaster-ARIN".to_string()));
         assert!(actual.contains(&"Hostmaster-RIPE".to_string()));
+    }
+
+    #[test]
+    fn test_name_labels_search() {
+        // GIVEN
+        let mut labels = SearchLabels::name_labels().build();
+        labels.insert("Alice Person", "Alice Person".to_owned());
+        labels.insert("Bob Person", "Bob Person".to_owned());
+
+        // WHEN
+        let actual = labels.search("Bob *").expect("search is invalid");
+
+        // THEN
+        dbg!(&actual);
+        assert_eq!(actual.len(), 1);
+        assert!(actual.contains(&"Bob Person".to_string()));
     }
 }
