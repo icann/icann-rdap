@@ -101,4 +101,10 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn search_entities_by_full_name(
+        &self,
+        _full_name: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
 }

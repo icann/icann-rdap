@@ -38,6 +38,7 @@ pub struct Mem {
     pub(crate) nameservers_by_ip: Arc<RwLock<HashMap<IpAddr, Vec<Arc<RdapResponse>>>>>,
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) entities_by_handle: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) entities_by_full_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
 }
@@ -58,6 +59,7 @@ impl Mem {
             nameservers_by_ip: <_>::default(),
             entities: <_>::default(),
             entities_by_handle: Arc::new(RwLock::new(SearchLabels::handle_labels().build())),
+            entities_by_full_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
             srvhelps: <_>::default(),
             config,
         }
@@ -326,6 +328,31 @@ impl StoreOps for Mem {
         let entities_by_handle = self.entities_by_handle.read().await;
         let results = entities_by_handle
             .search(handle)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|e| match e {
+                RdapResponse::Entity(ent) => Some(*ent),
+                _ => None,
+            })
+            .collect::<Vec<Entity>>();
+        let response = EntitySearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_entities_by_full_name(
+        &self,
+        full_name: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.entity_search_by_full_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let entities_by_full_name = self.entities_by_full_name.read().await;
+        let results = entities_by_full_name
+            .search(full_name)
             .unwrap_or_default()
             .into_iter()
             .map(Arc::<RdapResponse>::unwrap_or_clone)

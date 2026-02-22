@@ -84,6 +84,12 @@ pub trait StoreOps: Send + Sync {
         &self,
         handle: &str,
     ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for entities by full name.
+    async fn search_entities_by_full_name(
+        &self,
+        full_name: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -163,6 +169,7 @@ pub struct CommonConfig {
     pub domain_search_by_ns_ip_enable: bool,
     pub domain_search_by_ns_ldh_name_enable: bool,
     pub entity_search_by_handle_enable: bool,
+    pub entity_search_by_full_name_enable: bool,
 }
 
 #[buildstructor::buildstructor]
@@ -175,6 +182,7 @@ impl CommonConfig {
         nameserver_search_by_name_enable: Option<bool>,
         nameserver_search_by_ip_enable: Option<bool>,
         entity_search_by_handle_enable: Option<bool>,
+        entity_search_by_full_name_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -184,6 +192,8 @@ impl CommonConfig {
             nameserver_search_by_name_enable: nameserver_search_by_name_enable.unwrap_or_default(),
             nameserver_search_by_ip_enable: nameserver_search_by_ip_enable.unwrap_or_default(),
             entity_search_by_handle_enable: entity_search_by_handle_enable.unwrap_or_default(),
+            entity_search_by_full_name_enable: entity_search_by_full_name_enable
+                .unwrap_or_default(),
         }
     }
 }

@@ -36,6 +36,7 @@ pub struct MemTx {
     nameservers_by_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
     entities: HashMap<String, Arc<RdapResponse>>,
     entities_by_handle: SearchLabels<Arc<RdapResponse>>,
+    entities_by_full_name: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
@@ -90,6 +91,19 @@ impl MemTx {
             }
         }
 
+        let mut entities_by_full_name = SearchLabels::name_labels().build();
+        if mem.config.common_config.entity_search_by_full_name_enable {
+            for (_handle, value) in entities.iter() {
+                if let RdapResponse::Entity(entity) = value.as_ref() {
+                    if let Some(contact) = entity.contact() {
+                        if let Some(full_name) = contact.full_name() {
+                            entities_by_full_name.insert(full_name, value.clone());
+                        }
+                    }
+                }
+            }
+        }
+
         Self {
             mem: mem.clone(),
             autnums: Arc::clone(&mem.autnums).read_owned().await.clone(),
@@ -105,6 +119,7 @@ impl MemTx {
             nameservers_by_ip,
             entities,
             entities_by_handle,
+            entities_by_full_name,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -125,6 +140,7 @@ impl MemTx {
             nameservers_by_ip: HashMap::new(),
             entities: HashMap::new(),
             entities_by_handle: SearchLabels::handle_labels().build(),
+            entities_by_full_name: SearchLabels::name_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -142,7 +158,21 @@ impl TxHandle for MemTx {
         self.entities
             .insert(handle.to_owned().to_string(), entity_response.clone());
         if self.mem.config.common_config.entity_search_by_handle_enable {
-            self.entities_by_handle.insert(handle, entity_response);
+            self.entities_by_handle
+                .insert(handle, entity_response.clone());
+        }
+        if self
+            .mem
+            .config
+            .common_config
+            .entity_search_by_full_name_enable
+        {
+            if let Some(contact) = entity.contact() {
+                if let Some(full_name) = contact.full_name() {
+                    self.entities_by_full_name
+                        .insert(full_name, entity_response.clone());
+                }
+            }
         }
         Ok(())
     }
@@ -469,6 +499,13 @@ impl TxHandle for MemTx {
         // entities by handle
         let mut entities_by_handle_g = self.mem.entities_by_handle.write().await;
         std::mem::swap(&mut self.entities_by_handle, &mut entities_by_handle_g);
+
+        // entities by full name
+        let mut entities_by_full_name_g = self.mem.entities_by_full_name.write().await;
+        std::mem::swap(
+            &mut self.entities_by_full_name,
+            &mut entities_by_full_name_g,
+        );
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;
