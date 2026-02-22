@@ -1,5 +1,6 @@
 mod bootstrap;
 mod domain;
+mod entity;
 mod jscontact;
 mod nameserver;
 mod redirect;

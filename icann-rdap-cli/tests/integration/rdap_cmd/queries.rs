@@ -371,6 +371,28 @@ async fn test_nameserver_ip_search() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_entity_handle_search() {
+    // GIVEN entity
+    let mut test_jig = TestJig::new_rdap_with_search().await;
+    let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
+    tx.add_entity(&Entity::builder().handle("Hostmaster-ARIN").build())
+        .await
+        .expect("add entity in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN search for the entity by handle
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("entity-handle")
+        .arg("Hostmaster-*");
+
+    // THEN success
+    let assert = test_jig.cmd.assert();
+    assert.success();
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_domain_search_by_nameserver_ip() {
     // GIVEN domain with nameserver IP address
     let mut test_jig = TestJig::new_rdap_with_search().await;
