@@ -35,6 +35,7 @@ pub struct MemTx {
     nameservers_by_name: SearchLabels<Arc<RdapResponse>>,
     nameservers_by_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
     entities: HashMap<String, Arc<RdapResponse>>,
+    entities_by_handle: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
@@ -50,6 +51,8 @@ impl MemTx {
             .read_owned()
             .await
             .clone();
+        let entities = Arc::clone(&mem.entities).read_owned().await.clone();
+        let mut entities_by_handle = SearchLabels::handle_labels().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
@@ -80,6 +83,13 @@ impl MemTx {
             }
         }
 
+        // only load up entity search by handle if supported
+        if mem.config.common_config.entity_search_by_handle_enable {
+            for (handle, value) in entities.iter() {
+                entities_by_handle.insert(handle, value.clone());
+            }
+        }
+
         Self {
             mem: mem.clone(),
             autnums: Arc::clone(&mem.autnums).read_owned().await.clone(),
@@ -93,7 +103,8 @@ impl MemTx {
             nameservers,
             nameservers_by_name,
             nameservers_by_ip,
-            entities: Arc::clone(&mem.entities).read_owned().await.clone(),
+            entities,
+            entities_by_handle,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -113,6 +124,7 @@ impl MemTx {
             nameservers_by_name: SearchLabels::dns_labels().build(),
             nameservers_by_ip: HashMap::new(),
             entities: HashMap::new(),
+            entities_by_handle: SearchLabels::handle_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -126,10 +138,12 @@ impl TxHandle for MemTx {
             .handle
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
-        self.entities.insert(
-            handle.to_owned().to_string(),
-            Arc::new(entity.clone().to_response()),
-        );
+        let entity_response = Arc::new(entity.clone().to_response());
+        self.entities
+            .insert(handle.to_owned().to_string(), entity_response.clone());
+        if self.mem.config.common_config.entity_search_by_handle_enable {
+            self.entities_by_handle.insert(handle, entity_response);
+        }
         Ok(())
     }
 
@@ -451,6 +465,10 @@ impl TxHandle for MemTx {
         // entities
         let mut entities_g = self.mem.entities.write().await;
         std::mem::swap(&mut self.entities, &mut entities_g);
+
+        // entities by handle
+        let mut entities_by_handle_g = self.mem.entities_by_handle.write().await;
+        std::mem::swap(&mut self.entities_by_handle, &mut entities_by_handle_g);
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;

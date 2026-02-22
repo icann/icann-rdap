@@ -95,4 +95,10 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn search_entities_by_handle(
+        &self,
+        _handle: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
 }

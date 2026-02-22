@@ -8,6 +8,7 @@ use crate::config::JsContactConversion;
 pub mod autnum;
 pub mod domain;
 pub mod domains;
+pub mod entities;
 pub mod entity;
 pub mod ip;
 pub mod nameserver;
