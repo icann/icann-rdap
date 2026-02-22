@@ -41,11 +41,11 @@ pub struct MemTx {
 impl MemTx {
     pub async fn new(mem: &Mem) -> Self {
         let domains = Arc::clone(&mem.domains).read_owned().await.clone();
-        let mut domains_by_name = SearchLabels::builder().build();
+        let mut domains_by_name = SearchLabels::dns_labels().build();
         let domains_by_ns_ip = Arc::clone(&mem.domains_by_ns_ip).read_owned().await.clone();
-        let mut domains_by_ns_ldh_name = SearchLabels::builder().build();
+        let mut domains_by_ns_ldh_name = SearchLabels::dns_labels().build();
         let nameservers = Arc::clone(&mem.nameservers).read_owned().await.clone();
-        let mut nameservers_by_name = SearchLabels::builder().build();
+        let mut nameservers_by_name = SearchLabels::dns_labels().build();
         let nameservers_by_ip = Arc::clone(&mem.nameservers_by_ip)
             .read_owned()
             .await
@@ -105,12 +105,12 @@ impl MemTx {
             ip4: PrefixMap::new(),
             ip6: PrefixMap::new(),
             domains: HashMap::new(),
-            domains_by_name: SearchLabels::builder().build(),
+            domains_by_name: SearchLabels::dns_labels().build(),
             domains_by_ns_ip: HashMap::new(),
-            domains_by_ns_ldh_name: SearchLabels::builder().build(),
+            domains_by_ns_ldh_name: SearchLabels::dns_labels().build(),
             idns: HashMap::new(),
             nameservers: HashMap::new(),
-            nameservers_by_name: SearchLabels::builder().build(),
+            nameservers_by_name: SearchLabels::dns_labels().build(),
             nameservers_by_ip: HashMap::new(),
             entities: HashMap::new(),
             srvhelps: HashMap::new(),
