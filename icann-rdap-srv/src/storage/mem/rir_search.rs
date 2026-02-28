@@ -207,13 +207,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_rdap_top_empty() {
+        // GIVEN
         let mem = Mem::default();
+
+        // WHEN
         let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
+
+        // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
     async fn test_rdap_top_ipv6() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["2001:db8::/32", "2001:db8:1::/48", "2001:db8:1::/64"];
@@ -224,8 +230,10 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_top(&("2001:db8:1::1/128".parse().unwrap())).await;
 
+        // THEN
         let actual = result.unwrap();
         let RdapResponse::Network(ref actual) = *actual else {
             panic!("not a network")
@@ -237,6 +245,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rdap_top_unordered() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["10.1.0.0/24", "10.1.0.0/16", "10.0.0.0/8"];
@@ -247,8 +256,10 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
+        // THEN
         let actual = result.unwrap();
         let RdapResponse::Network(ref actual) = *actual else {
             panic!("not a network")
@@ -260,6 +271,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rdap_top_multiple_hierarchies() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["10.0.0.0/8", "10.1.0.0/16", "192.0.0.0/8", "192.168.0.0/16"];
@@ -270,8 +282,10 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
+        // THEN
         let actual = result.unwrap();
         let RdapResponse::Network(ref actual) = *actual else {
             panic!("not a network")
@@ -282,6 +296,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rdap_top_outside_range() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["10.0.0.0/8"];
@@ -292,13 +307,16 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_top(&("192.168.1.1/32".parse().unwrap())).await;
 
+        // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
     async fn test_rdap_up_root_network() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["10.0.0.0/8"];
@@ -309,13 +327,16 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_up(&("10.0.0.0/8".parse().unwrap())).await;
 
+        // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
     async fn test_rdap_up_ipv6() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["2001:db8::/32", "2001:db8:1::/48", "2001:db8:1::/64"];
@@ -326,8 +347,10 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_up(&("2001:db8:1::/64".parse().unwrap())).await;
 
+        // THEN
         let actual = result.unwrap();
         let RdapResponse::Network(ref actual) = *actual else {
             panic!("not a network")
@@ -339,6 +362,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rdap_up_multiple_levels() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["10.0.0.0/8", "10.1.0.0/16", "10.1.2.0/24", "10.1.2.128/25"];
@@ -349,8 +373,10 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_up(&("10.1.2.128/25".parse().unwrap())).await;
 
+        // THEN
         let actual = result.unwrap();
         let RdapResponse::Network(ref actual) = *actual else {
             panic!("not a network")
@@ -362,6 +388,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rdap_up_outside_range() {
+        // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
         let cidrs = ["10.0.0.0/8"];
@@ -372,8 +399,78 @@ mod tests {
         }
         tx.commit().await.expect("tx commit");
 
+        // WHEN
         let result = mem.rdap_up(&("192.168.1.1/32".parse().unwrap())).await;
 
+        // THEN
         assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_rdap_down_empty() {
+        // GIVEN
+        let mem = Mem::default();
+
+        // WHEN
+        let result = mem.rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
+
+        // THEN
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_rdap_down_outside_range() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_network(
+            &Network::builder()
+                .cidr("10.0.0.0/8")
+                .build()
+                .expect("cidr parsing"),
+        )
+        .await
+        .expect("add network in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_down(&("192.168.1.0/24".parse().unwrap())).await;
+
+        // THEN
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_rdap_bottom_empty() {
+        // GIVEN
+        let mem = Mem::default();
+
+        // WHEN
+        let result = mem.rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
+
+        // THEN
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_rdap_bottom_single_network_no_descendants() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_network(
+            &Network::builder()
+                .cidr("10.0.0.0/8")
+                .build()
+                .expect("cidr parsing"),
+        )
+        .await
+        .expect("add network in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
+
+        // THEN
+        assert!(result.is_empty());
     }
 }
