@@ -1,6 +1,5 @@
 use {
     async_trait::async_trait,
-    buildstructor::Builder,
     icann_rdap_common::response::{
         Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error,
     },
@@ -57,6 +56,40 @@ pub trait StoreOps: Send + Sync {
 
     /// Search for domains by name.
     async fn search_domains_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for nameservers by name.
+    async fn search_nameservers_by_name(&self, name: &str)
+        -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for nameservers by IP address.
+    async fn search_nameservers_by_ip(
+        &self,
+        ip: std::net::IpAddr,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for domains by nameserver IP address.
+    async fn search_domains_by_ns_ip(
+        &self,
+        ip: std::net::IpAddr,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for domains by nameserver ldhName.
+    async fn search_domains_by_ns_ldh_name(
+        &self,
+        name: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for entities by handle.
+    async fn search_entities_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for entities by full name.
+    async fn search_entities_by_full_name(
+        &self,
+        full_name: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -128,15 +161,39 @@ pub trait TxHandle: Send {
 }
 
 /// Common configuration for storage back ends.
-#[derive(Debug, Clone, Copy, Builder)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct CommonConfig {
     pub domain_search_by_name_enable: bool,
+    pub nameserver_search_by_name_enable: bool,
+    pub nameserver_search_by_ip_enable: bool,
+    pub domain_search_by_ns_ip_enable: bool,
+    pub domain_search_by_ns_ldh_name_enable: bool,
+    pub entity_search_by_handle_enable: bool,
+    pub entity_search_by_full_name_enable: bool,
 }
 
-impl Default for CommonConfig {
-    fn default() -> Self {
+#[buildstructor::buildstructor]
+impl CommonConfig {
+    #[builder]
+    pub fn new(
+        domain_search_by_name_enable: Option<bool>,
+        domain_search_by_ns_ip_enable: Option<bool>,
+        domain_search_by_ns_ldh_name_enable: Option<bool>,
+        nameserver_search_by_name_enable: Option<bool>,
+        nameserver_search_by_ip_enable: Option<bool>,
+        entity_search_by_handle_enable: Option<bool>,
+        entity_search_by_full_name_enable: Option<bool>,
+    ) -> Self {
         Self {
-            domain_search_by_name_enable: true,
+            domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
+            domain_search_by_ns_ip_enable: domain_search_by_ns_ip_enable.unwrap_or_default(),
+            domain_search_by_ns_ldh_name_enable: domain_search_by_ns_ldh_name_enable
+                .unwrap_or_default(),
+            nameserver_search_by_name_enable: nameserver_search_by_name_enable.unwrap_or_default(),
+            nameserver_search_by_ip_enable: nameserver_search_by_ip_enable.unwrap_or_default(),
+            entity_search_by_handle_enable: entity_search_by_handle_enable.unwrap_or_default(),
+            entity_search_by_full_name_enable: entity_search_by_full_name_enable
+                .unwrap_or_default(),
         }
     }
 }
