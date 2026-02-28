@@ -58,7 +58,7 @@ fn get_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
         }
 
         if let Some(p) = prev {
-            if p.contains(&prefix) {
+            if p.contains(prefix) {
                 continue;
             }
             if let Some(v) = prev_value.take() {
