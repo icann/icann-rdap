@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use icann_rdap_common::prelude::RdapResponse;
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
-use prefix_trie::{AsView, Prefix, PrefixMap};
+use prefix_trie::{Prefix, PrefixMap};
 
 use crate::storage::mem::ops::Mem;
 
@@ -26,26 +26,19 @@ fn get_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(map: &PrefixMap<P, T>, que
     let mut immediate_children = Vec::new();
     let mut current_cover: Option<P> = None;
 
-    // view_at limits our iteration only to prefixes covered by the query
-    let view = map.view_at(*query);
-
-    for trie in view.iter() {
-        if trie.prefix() == query {
+    for (prefix, value) in map.children(query) {
+        if *prefix == *query {
             continue; // Skip the exact match of the query itself
         }
 
         if let Some(cover) = current_cover {
-            if cover.contains(trie.prefix()) {
-                // This node is a descendant of our current immediate child, skip it
+            if cover.contains(prefix) {
                 continue;
             }
         }
 
-        // It is not covered by the previous immediate child, so it's a new one
-        if let Some(value) = trie.value() {
-            immediate_children.push(value.clone());
-        }
-        current_cover = Some(*trie.prefix());
+        immediate_children.push(value.clone());
+        current_cover = Some(*prefix);
     }
 
     immediate_children
@@ -57,32 +50,27 @@ fn get_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
 ) -> Vec<T> {
     let mut bottom_objects = Vec::new();
     let mut prev: Option<P> = None;
-    let mut prev_value: Option<&T> = None;
+    let mut prev_value: Option<T> = None;
 
-    let view = map.view_at(*query);
-
-    for trie in view.iter() {
-        if trie.prefix() == query {
-            continue; // Skip the exact match
+    for (prefix, value) in map.children(query) {
+        if *prefix == *query {
+            continue;
         }
 
         if let Some(p) = prev {
-            // If the previous prefix does not cover the current one,
-            // it has no children in the registry. It is a leaf!
-            if !p.contains(trie.prefix()) {
-                if let Some(value) = trie.value() {
-                    bottom_objects.push(value.clone());
-                }
+            if p.contains(&prefix) {
+                continue;
+            }
+            if let Some(v) = prev_value.take() {
+                bottom_objects.push(v);
             }
         }
-        prev = Some(*trie.prefix());
-        prev_value = trie.value();
+        prev = Some(*prefix);
+        prev_value = Some(value.clone());
     }
 
-    // The very last node in the traversal has no subsequent nodes to check,
-    // meaning it is always a bottom object.
     if let Some(value) = prev_value {
-        bottom_objects.push(value.clone());
+        bottom_objects.push(value);
     }
 
     bottom_objects
@@ -419,7 +407,145 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_down_outside_range() {
+    async fn test_rdap_down_no_children() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_network(
+            &Network::builder()
+                .cidr("10.0.0.0/24")
+                .build()
+                .expect("cidr parsing"),
+        )
+        .await
+        .expect("add network in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_down(&("10.0.0.0/24".parse().unwrap())).await;
+
+        // THEN
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_rdap_down_single_level() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["10.0.0.0/8", "10.1.0.0/16", "10.1.1.0/24", "10.1.1.128/25"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
+        let RdapResponse::Network(ref net) = *result[0] else {
+            panic!("not a network")
+        };
+        let cidr = net.cidr0_cidrs().first().expect("empty cidrs");
+        assert_eq!(cidr.prefix().expect("prefix"), "10.1.0.0");
+        assert_eq!(cidr.length().expect("length"), 16);
+    }
+
+    #[tokio::test]
+    async fn test_rdap_down_ipv6() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["2001:db8::/32", "2001:db8:1::/48", "2001:db8:2::/48"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_down(&("2001:db8::/32".parse().unwrap())).await;
+
+        // THEN
+        assert_eq!(result.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_rdap_down_query_exact_match() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["10.0.0.0/16", "10.0.1.0/24", "10.0.2.0/24"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_down(&("10.0.0.0/16".parse().unwrap())).await;
+
+        // THEN
+        assert_eq!(result.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_rdap_down_multiple_hierarchies() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["10.0.0.0/8", "10.1.0.0/16", "192.0.0.0/8", "192.168.0.0/16"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
+        let RdapResponse::Network(ref net) = *result[0] else {
+            panic!("not a network")
+        };
+        let cidr = net.cidr0_cidrs().first().expect("empty cidrs");
+        assert_eq!(cidr.prefix().expect("prefix"), "10.1.0.0");
+    }
+
+    #[tokio::test]
+    async fn test_rdap_bottom_nested_leaves() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["10.0.0.0/8", "10.1.0.0/16", "10.1.2.0/24", "10.1.2.128/25"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
+        let RdapResponse::Network(ref net) = *result[0] else {
+            panic!("not a network")
+        };
+        let cidr = net.cidr0_cidrs().first().expect("empty cidrs");
+        assert_eq!(cidr.prefix().expect("prefix"), "10.1.0.0");
+    }
+
+    #[tokio::test]
+    async fn test_rdap_bottom_outside_range() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -434,19 +560,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_down(&("192.168.1.0/24".parse().unwrap())).await;
-
-        // THEN
-        assert!(result.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_rdap_bottom_empty() {
-        // GIVEN
-        let mem = Mem::default();
-
-        // WHEN
-        let result = mem.rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.rdap_bottom(&("192.168.1.0/24".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_empty());
