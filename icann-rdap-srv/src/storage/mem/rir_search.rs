@@ -1,137 +1,207 @@
-use ipnet::Ipv4Net;
-use prefix_trie::{AsView, PrefixMap};
+use std::sync::Arc;
 
-pub fn get_rdap_down<T>(map: &PrefixMap<Ipv4Net, T>, query: &Ipv4Net) -> Vec<Ipv4Net> {
+use icann_rdap_common::prelude::RdapResponse;
+use ipnet::{IpNet, Ipv4Net, Ipv6Net};
+use prefix_trie::{AsView, Prefix, PrefixMap};
+
+use crate::storage::mem::ops::Mem;
+
+pub trait RdapPrefix: Prefix + Copy {
+    fn contains_prefix(&self, other: &Self) -> bool;
+}
+
+impl RdapPrefix for Ipv4Net {
+    fn contains_prefix(&self, other: &Self) -> bool {
+        self.contains(other)
+    }
+}
+
+impl RdapPrefix for Ipv6Net {
+    fn contains_prefix(&self, other: &Self) -> bool {
+        self.contains(other)
+    }
+}
+
+fn get_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(map: &PrefixMap<P, T>, query: &P) -> Vec<T> {
     let mut immediate_children = Vec::new();
-    let mut current_cover: Option<Ipv4Net> = None;
+    let mut current_cover: Option<P> = None;
 
     // view_at limits our iteration only to prefixes covered by the query
     let view = map.view_at(*query);
 
-    for tree in view.iter() {
-        if tree.prefix() == query {
+    for trie in view.iter() {
+        if trie.prefix() == query {
             continue; // Skip the exact match of the query itself
         }
 
         if let Some(cover) = current_cover {
-            if cover.contains(tree.prefix()) {
+            if cover.contains(trie.prefix()) {
                 // This node is a descendant of our current immediate child, skip it
                 continue;
             }
         }
 
         // It is not covered by the previous immediate child, so it's a new one
-        immediate_children.push(*tree.prefix());
-        current_cover = Some(*tree.prefix());
+        if let Some(value) = trie.value() {
+            immediate_children.push(value.clone());
+        }
+        current_cover = Some(*trie.prefix());
     }
 
     immediate_children
 }
 
-pub fn get_rdap_bottom<T>(map: &PrefixMap<Ipv4Net, T>, query: &Ipv4Net) -> Vec<Ipv4Net> {
+fn get_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
+    map: &PrefixMap<P, T>,
+    query: &P,
+) -> Vec<T> {
     let mut bottom_objects = Vec::new();
-    let mut prev: Option<Ipv4Net> = None;
+    let mut prev: Option<P> = None;
+    let mut prev_value: Option<&T> = None;
 
     let view = map.view_at(*query);
 
-    for tree in view.iter() {
-        if tree.prefix() == query {
+    for trie in view.iter() {
+        if trie.prefix() == query {
             continue; // Skip the exact match
         }
 
         if let Some(p) = prev {
             // If the previous prefix does not cover the current one,
             // it has no children in the registry. It is a leaf!
-            if !p.contains(tree.prefix()) {
-                bottom_objects.push(p);
+            if !p.contains(trie.prefix()) {
+                if let Some(value) = trie.value() {
+                    bottom_objects.push(value.clone());
+                }
             }
         }
-        prev = Some(*tree.prefix());
+        prev = Some(*trie.prefix());
+        prev_value = trie.value();
     }
 
     // The very last node in the traversal has no subsequent nodes to check,
     // meaning it is always a bottom object.
-    if let Some(p) = prev {
-        bottom_objects.push(p);
+    if let Some(value) = prev_value {
+        bottom_objects.push(value.clone());
     }
 
     bottom_objects
 }
 
+impl Mem {
+    async fn rdap_top(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
+        match query {
+            IpNet::V4(v4_query) => {
+                let ip4s = self.ip4.read().await;
+                ip4s.get_spm(v4_query).map(|r| r.1.clone())
+            }
+            IpNet::V6(v6_query) => {
+                let ip6s = self.ip6.read().await;
+                ip6s.get_spm(v6_query).map(|r| r.1.clone())
+            }
+        }
+    }
+
+    async fn rdap_up(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
+        if let Some(supernet) = query.supernet() {
+            match supernet {
+                IpNet::V4(v4_supernet) => {
+                    let ip4s = self.ip4.read().await;
+                    ip4s.get_lpm(&v4_supernet).map(|r| r.1.clone())
+                }
+                IpNet::V6(v6_supernet) => {
+                    let ip6s = self.ip6.read().await;
+                    ip6s.get_lpm(&v6_supernet).map(|r| r.1.clone())
+                }
+            }
+        } else {
+            None
+        }
+    }
+
+    async fn rdap_down(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
+        match query {
+            IpNet::V4(v4_query) => {
+                let ip4s = self.ip4.read().await;
+                get_rdap_down(&ip4s, v4_query)
+            }
+            IpNet::V6(v6_query) => {
+                let ip6s = self.ip6.read().await;
+                get_rdap_down(&(*ip6s), v6_query)
+            }
+        }
+    }
+
+    async fn rdap_bottom(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
+        match query {
+            IpNet::V4(v4_query) => {
+                let ip4s = self.ip4.read().await;
+                get_rdap_bottom(&(*ip4s), v4_query)
+            }
+            IpNet::V6(v6_query) => {
+                let ip6s = self.ip6.read().await;
+                get_rdap_bottom(&(*ip6s), v6_query)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
-    use ipnet::Ipv4Net;
-    use prefix_trie::PrefixMap;
+    use icann_rdap_common::prelude::{Network, RdapResponse};
 
-    #[test]
-    fn test_get_spm_with_ordered_insertion() {
+    use crate::storage::{mem::ops::Mem, StoreOps};
+
+    #[tokio::test]
+    async fn test_rdap_top_with_ordered_insertion() {
         // GIVEN
-        let mut ip4_map: PrefixMap<Ipv4Net, String> = PrefixMap::new();
-        ip4_map.insert("10.1.0.0/8".parse().unwrap(), "10.1.0.0/8".to_string());
-        ip4_map.insert("10.1.0.0/16".parse().unwrap(), "10.1.0.0/16".to_string());
-        ip4_map.insert("10.1.0.0/24".parse().unwrap(), "10.1.0.0/24".to_string());
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["10.1.0.0/8", "10.1.0.0/16", "10.1.0.0/24"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = ip4_map.get_spm(&("10.1.0.1/32".parse().unwrap()));
+        let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
         // THEN
-        let (_net, value) = result.unwrap();
-        assert_eq!(value, "10.1.0.0/8");
+        let actual = result.unwrap();
+        let RdapResponse::Network(ref actual) = *actual else {
+            panic!("not a network")
+        };
+        let actual = actual.cidr0_cidrs().first().expect("empty cidrs");
+        assert_eq!(actual.prefix().expect("prefix"), "10.0.0.0");
+        assert_eq!(actual.length().expect("length"), 8);
     }
 
-    #[test]
-    fn test_get_lpm_crawl_up() {
+    #[tokio::test]
+    async fn test_test_rdap_up() {
         // GIVEN
-        let mut ip4_map: PrefixMap<Ipv4Net, String> = PrefixMap::new();
-        ip4_map.insert("10.1.0.0/8".parse().unwrap(), "10.1.0.0/8".to_string());
-        ip4_map.insert("10.1.0.0/16".parse().unwrap(), "10.1.0.0/16".to_string());
-        ip4_map.insert("10.1.0.0/24".parse().unwrap(), "10.1.0.0/24".to_string());
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let cidrs = ["10.1.0.0/8", "10.1.0.0/16", "10.1.0.0/24"];
+        for cidr in cidrs {
+            tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+                .await
+                .expect("add network in tx");
+        }
+        tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = ip4_map.get_lpm(&("10.1.0.1/32".parse().unwrap()));
+        let result = mem.rdap_up(&("10.1.0.1/24".parse().unwrap())).await;
 
         // THEN
-        let (net, value) = result.unwrap();
-        assert_eq!(value, "10.1.0.0/24");
-
-        // WHEN
-        let result = ip4_map.get_lpm(&net.supernet().unwrap());
-
-        // THEN
-        let (net, value) = result.unwrap();
-        assert_eq!(value, "10.1.0.0/16");
-
-        // WHEN
-        let result = ip4_map.get_lpm(&net.supernet().unwrap());
-
-        // THEN
-        let (_, value) = result.unwrap();
-        assert_eq!(value, "10.1.0.0/8");
-    }
-
-    #[test]
-    fn test_get_children() {
-        // GIVEN
-        let mut ip4_map: PrefixMap<Ipv4Net, String> = PrefixMap::new();
-        ip4_map.insert("10.0.0.0/8".parse().unwrap(), "10.0.0.0/8".to_string());
-        ip4_map.insert("10.1.0.0/8".parse().unwrap(), "10.1.0.0/8".to_string());
-        ip4_map.insert("10.1.0.0/12".parse().unwrap(), "10.1.0.0/12".to_string());
-        ip4_map.insert("10.1.0.0/16".parse().unwrap(), "10.1.0.0/16".to_string());
-        ip4_map.insert("10.2.0.0/16".parse().unwrap(), "10.2.0.0/16".to_string());
-        ip4_map.insert("10.1.0.0/24".parse().unwrap(), "10.1.0.0/24".to_string());
-
-        // WHEN
-        let parent: Ipv4Net = "10.1.0.1/8".parse().unwrap();
-        let children = ip4_map
-            .children(&parent)
-            .filter(|(p, _)| p.prefix_len() > parent.prefix_len())
-            .collect::<Vec<_>>();
-
-        // THEN
-        children.iter().for_each(|n| {
-            dbg!(n);
-        });
-        assert_eq!(children.len(), 4);
+        let actual = result.unwrap();
+        let RdapResponse::Network(ref actual) = *actual else {
+            panic!("not a network")
+        };
+        let actual = actual.cidr0_cidrs().first().expect("empty cidrs");
+        assert_eq!(actual.prefix().expect("prefix"), "10.1.0.0");
+        assert_eq!(actual.length().expect("length"), 16);
     }
 }
