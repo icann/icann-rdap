@@ -22,7 +22,10 @@ impl RdapPrefix for Ipv6Net {
     }
 }
 
-fn get_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(map: &PrefixMap<P, T>, query: &P) -> Vec<T> {
+fn get_ip_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
+    map: &PrefixMap<P, T>,
+    query: &P,
+) -> Vec<T> {
     let mut immediate_children = Vec::new();
     let mut current_cover: Option<P> = None;
 
@@ -44,7 +47,7 @@ fn get_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(map: &PrefixMap<P, T>, que
     immediate_children
 }
 
-fn get_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
+fn get_ip_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
     map: &PrefixMap<P, T>,
     query: &P,
 ) -> Vec<T> {
@@ -77,7 +80,7 @@ fn get_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
 }
 
 impl Mem {
-    async fn rdap_top(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
+    async fn ip_rdap_top(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
         match query {
             IpNet::V4(v4_query) => {
                 let ip4s = self.ip4.read().await;
@@ -90,7 +93,7 @@ impl Mem {
         }
     }
 
-    async fn rdap_up(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
+    async fn ip_rdap_up(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
         if let Some(supernet) = query.supernet() {
             match supernet {
                 IpNet::V4(v4_supernet) => {
@@ -107,28 +110,28 @@ impl Mem {
         }
     }
 
-    async fn rdap_down(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
+    async fn ip_rdap_down(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
         match query {
             IpNet::V4(v4_query) => {
                 let ip4s = self.ip4.read().await;
-                get_rdap_down(&ip4s, v4_query)
+                get_ip_rdap_down(&ip4s, v4_query)
             }
             IpNet::V6(v6_query) => {
                 let ip6s = self.ip6.read().await;
-                get_rdap_down(&(*ip6s), v6_query)
+                get_ip_rdap_down(&(*ip6s), v6_query)
             }
         }
     }
 
-    async fn rdap_bottom(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
+    async fn ip_rdap_bottom(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
         match query {
             IpNet::V4(v4_query) => {
                 let ip4s = self.ip4.read().await;
-                get_rdap_bottom(&(*ip4s), v4_query)
+                get_ip_rdap_bottom(&(*ip4s), v4_query)
             }
             IpNet::V6(v6_query) => {
                 let ip6s = self.ip6.read().await;
-                get_rdap_bottom(&(*ip6s), v6_query)
+                get_ip_rdap_bottom(&(*ip6s), v6_query)
             }
         }
     }
@@ -142,7 +145,7 @@ mod tests {
     use crate::storage::{mem::ops::Mem, StoreOps};
 
     #[tokio::test]
-    async fn test_rdap_top_with_ordered_insertion() {
+    async fn test_ip_rdap_top_with_ordered_insertion() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -155,7 +158,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
         // THEN
         let actual = result.unwrap();
@@ -168,7 +171,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_up() {
+    async fn test_ip_rdap_up() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -181,7 +184,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_up(&("10.1.0.1/24".parse().unwrap())).await;
+        let result = mem.ip_rdap_up(&("10.1.0.1/24".parse().unwrap())).await;
 
         // THEN
         let actual = result.unwrap();
@@ -194,19 +197,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_top_empty() {
+    async fn test_ip_rdap_top_empty() {
         // GIVEN
         let mem = Mem::default();
 
         // WHEN
-        let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
-    async fn test_rdap_top_ipv6() {
+    async fn test_ip_rdap_top_ipv6() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -219,7 +222,9 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_top(&("2001:db8:1::1/128".parse().unwrap())).await;
+        let result = mem
+            .ip_rdap_top(&("2001:db8:1::1/128".parse().unwrap()))
+            .await;
 
         // THEN
         let actual = result.unwrap();
@@ -232,7 +237,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_top_unordered() {
+    async fn test_ip_rdap_top_unordered() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -245,7 +250,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
         // THEN
         let actual = result.unwrap();
@@ -258,7 +263,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_top_multiple_hierarchies() {
+    async fn test_ip_rdap_top_multiple_hierarchies() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -271,7 +276,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_top(&("10.1.0.1/32".parse().unwrap())).await;
 
         // THEN
         let actual = result.unwrap();
@@ -283,7 +288,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_top_outside_range() {
+    async fn test_ip_rdap_top_outside_range() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -296,14 +301,14 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_top(&("192.168.1.1/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_top(&("192.168.1.1/32".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
-    async fn test_rdap_up_root_network() {
+    async fn test_ip_rdap_up_root_network() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -316,14 +321,14 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_up(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.ip_rdap_up(&("10.0.0.0/8".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
-    async fn test_rdap_up_ipv6() {
+    async fn test_ip_rdap_up_ipv6() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -336,7 +341,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_up(&("2001:db8:1::/64".parse().unwrap())).await;
+        let result = mem.ip_rdap_up(&("2001:db8:1::/64".parse().unwrap())).await;
 
         // THEN
         let actual = result.unwrap();
@@ -349,7 +354,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_up_multiple_levels() {
+    async fn test_ip_rdap_up_multiple_levels() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -362,7 +367,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_up(&("10.1.2.128/25".parse().unwrap())).await;
+        let result = mem.ip_rdap_up(&("10.1.2.128/25".parse().unwrap())).await;
 
         // THEN
         let actual = result.unwrap();
@@ -375,7 +380,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_up_outside_range() {
+    async fn test_ip_rdap_up_outside_range() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -388,26 +393,26 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_up(&("192.168.1.1/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_up(&("192.168.1.1/32".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_none());
     }
 
     #[tokio::test]
-    async fn test_rdap_down_empty() {
+    async fn test_ip_rdap_down_empty() {
         // GIVEN
         let mem = Mem::default();
 
         // WHEN
-        let result = mem.rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.ip_rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_empty());
     }
 
     #[tokio::test]
-    async fn test_rdap_down_no_children() {
+    async fn test_ip_rdap_down_no_children() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -422,14 +427,14 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_down(&("10.0.0.0/24".parse().unwrap())).await;
+        let result = mem.ip_rdap_down(&("10.0.0.0/24".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_empty());
     }
 
     #[tokio::test]
-    async fn test_rdap_down_single_level() {
+    async fn test_ip_rdap_down_single_level() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -442,7 +447,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.ip_rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
 
         // THEN
         assert_eq!(result.len(), 1);
@@ -455,7 +460,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_down_ipv6() {
+    async fn test_ip_rdap_down_ipv6() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -468,14 +473,14 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_down(&("2001:db8::/32".parse().unwrap())).await;
+        let result = mem.ip_rdap_down(&("2001:db8::/32".parse().unwrap())).await;
 
         // THEN
         assert_eq!(result.len(), 2);
     }
 
     #[tokio::test]
-    async fn test_rdap_down_query_exact_match() {
+    async fn test_ip_rdap_down_query_exact_match() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -488,14 +493,14 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_down(&("10.0.0.0/16".parse().unwrap())).await;
+        let result = mem.ip_rdap_down(&("10.0.0.0/16".parse().unwrap())).await;
 
         // THEN
         assert_eq!(result.len(), 2);
     }
 
     #[tokio::test]
-    async fn test_rdap_down_multiple_hierarchies() {
+    async fn test_ip_rdap_down_multiple_hierarchies() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -508,7 +513,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.ip_rdap_down(&("10.0.0.0/8".parse().unwrap())).await;
 
         // THEN
         assert_eq!(result.len(), 1);
@@ -520,7 +525,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_bottom_nested_leaves() {
+    async fn test_ip_rdap_bottom_nested_leaves() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -533,7 +538,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.ip_rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
 
         // THEN
         assert_eq!(result.len(), 1);
@@ -545,7 +550,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_rdap_bottom_outside_range() {
+    async fn test_ip_rdap_bottom_outside_range() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -560,14 +565,16 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_bottom(&("192.168.1.0/24".parse().unwrap())).await;
+        let result = mem
+            .ip_rdap_bottom(&("192.168.1.0/24".parse().unwrap()))
+            .await;
 
         // THEN
         assert!(result.is_empty());
     }
 
     #[tokio::test]
-    async fn test_rdap_bottom_single_network_no_descendants() {
+    async fn test_ip_rdap_bottom_single_network_no_descendants() {
         // GIVEN
         let mem = Mem::default();
         let mut tx = mem.new_tx().await.expect("new transaction");
@@ -582,7 +589,7 @@ mod tests {
         tx.commit().await.expect("tx commit");
 
         // WHEN
-        let result = mem.rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
+        let result = mem.ip_rdap_bottom(&("10.0.0.0/8".parse().unwrap())).await;
 
         // THEN
         assert!(result.is_empty());
