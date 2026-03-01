@@ -1,3 +1,4 @@
+use std::ops::Range;
 use std::sync::Arc;
 
 use icann_rdap_common::prelude::RdapResponse;
@@ -20,6 +21,13 @@ impl RdapPrefix for Ipv6Net {
     fn contains_prefix(&self, other: &Self) -> bool {
         self.contains(other)
     }
+}
+
+// Define an enum that holds either a single u32 or a Range<u32>
+#[derive(Debug, Clone, PartialEq)]
+pub enum U32OrRange {
+    Single(u32),
+    Range(Range<u32>),
 }
 
 fn get_ip_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
@@ -134,6 +142,61 @@ impl Mem {
                 get_ip_rdap_bottom(&(*ip6s), v6_query)
             }
         }
+    }
+
+    async fn autnum_rdap_up(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
+        let autnums = self.autnums.read().await;
+        match query {
+            U32OrRange::Single(autnum) => autnums.get(*autnum).cloned(),
+            U32OrRange::Range(range) => {
+                if let (Some(start), Some(end)) = (autnums.get(range.start), autnums.get(range.end))
+                {
+                    if start == end {
+                        Some(start.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    async fn autnum_rdap_top(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
+        self.autnum_rdap_up(query).await
+    }
+
+    async fn autnum_rdap_down(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
+        let mut children = Vec::new();
+        let (start, end) = match query {
+            U32OrRange::Single(autnum) => (*autnum, *autnum),
+            U32OrRange::Range(range) => (range.start, range.end),
+        };
+        let mut covered: Option<u32> = Some(start);
+
+        let autnums = self.autnums.read().await;
+
+        while let Some(autnum) = covered {
+            if let Some(result) = autnums.get(autnum) {
+                let result = result.clone();
+                if let RdapResponse::Autnum(ref autnum_result) = *result {
+                    covered = autnum_result.end_autnum().map(|u| u + 1);
+                    children.push(result)
+                }
+            }
+            if let Some(end_covered) = covered {
+                if end_covered > end {
+                    break;
+                }
+            }
+        }
+
+        children
+    }
+
+    async fn autnum_rdap_bottom(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
+        self.autnum_rdap_down(query).await
     }
 }
 

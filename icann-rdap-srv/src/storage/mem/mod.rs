@@ -3,5 +3,5 @@
 pub mod config;
 mod label_search;
 pub mod ops;
-pub mod rir_search;
+mod rir_search;
 pub mod tx;
