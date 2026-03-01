@@ -33,9 +33,6 @@ axum-macros = "0.4"
 # client IP address extractor
 axum-client-ip = "0.5"
 
-# b-tree with ranges
-btree-range-map = "0.7.2"
-
 # macros for the builder pattern
 buildstructor = "0.6"
 
@@ -109,6 +106,9 @@ pct-str = "1.2"
 
 # ip address trie
 prefix-trie = "0.8.1"
+
+# flexible range map
+rangemap = "1.7.1"
 
 # regular expressions
 regex = "1.10"

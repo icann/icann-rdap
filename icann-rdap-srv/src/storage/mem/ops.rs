@@ -1,8 +1,9 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
+use rangemap::RangeInclusiveMap;
+
 use {
     async_trait::async_trait,
-    btree_range_map::RangeMap,
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
@@ -25,7 +26,7 @@ use super::{config::MemConfig, label_search::SearchLabels, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
-    pub(crate) autnums: Arc<RwLock<RangeMap<u32, Arc<RdapResponse>>>>,
+    pub(crate) autnums: Arc<RwLock<RangeInclusiveMap<u32, Arc<RdapResponse>>>>,
     pub(crate) ip4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
     pub(crate) ip6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
@@ -128,7 +129,7 @@ impl StoreOps for Mem {
 
     async fn get_autnum_by_num(&self, num: u32) -> Result<RdapResponse, RdapServerError> {
         let autnums = self.autnums.read().await;
-        let result = autnums.get(num);
+        let result = autnums.get(&num);
         match result {
             Some(autnum) => Ok(RdapResponse::clone(autnum)),
             None => Ok(NOT_FOUND.clone()),

@@ -1,8 +1,9 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
+use rangemap::RangeInclusiveMap;
+
 use {
     async_trait::async_trait,
-    btree_range_map::RangeMap,
     icann_rdap_common::{
         prelude::ToResponse,
         response::{Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error},
@@ -23,7 +24,7 @@ use super::{label_search::SearchLabels, ops::Mem};
 
 pub struct MemTx {
     mem: Mem,
-    autnums: RangeMap<u32, Arc<RdapResponse>>,
+    autnums: RangeInclusiveMap<u32, Arc<RdapResponse>>,
     ip4: PrefixMap<Ipv4Net, Arc<RdapResponse>>,
     ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     domains: HashMap<String, Arc<RdapResponse>>,
@@ -127,7 +128,7 @@ impl MemTx {
     pub fn new_truncate(mem: &Mem) -> Self {
         Self {
             mem: mem.clone(),
-            autnums: RangeMap::new(),
+            autnums: RangeInclusiveMap::new(),
             ip4: PrefixMap::new(),
             ip6: PrefixMap::new(),
             domains: HashMap::new(),

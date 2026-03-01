@@ -147,9 +147,10 @@ impl Mem {
     async fn autnum_rdap_up(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
         let autnums = self.autnums.read().await;
         match query {
-            U32OrRange::Single(autnum) => autnums.get(*autnum).cloned(),
+            U32OrRange::Single(autnum) => autnums.get(autnum).cloned(),
             U32OrRange::Range(range) => {
-                if let (Some(start), Some(end)) = (autnums.get(range.start), autnums.get(range.end))
+                if let (Some(start), Some(end)) =
+                    (autnums.get(&range.start), autnums.get(&range.end))
                 {
                     if start == end {
                         Some(start.clone())
@@ -168,29 +169,16 @@ impl Mem {
     }
 
     async fn autnum_rdap_down(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
-        let mut children = Vec::new();
         let (start, end) = match query {
             U32OrRange::Single(autnum) => (*autnum, *autnum),
             U32OrRange::Range(range) => (range.start, range.end),
         };
-        let mut covered: Option<u32> = Some(start);
 
         let autnums = self.autnums.read().await;
-
-        while let Some(autnum) = covered {
-            if let Some(result) = autnums.get(autnum) {
-                let result = result.clone();
-                if let RdapResponse::Autnum(ref autnum_result) = *result {
-                    covered = autnum_result.end_autnum().map(|u| u + 1);
-                    children.push(result)
-                }
-            }
-            if let Some(end_covered) = covered {
-                if end_covered > end {
-                    break;
-                }
-            }
-        }
+        let children = autnums
+            .overlapping(start..=end)
+            .map(|(_r, a)| a.clone())
+            .collect();
 
         children
     }
@@ -203,7 +191,8 @@ impl Mem {
 #[cfg(test)]
 mod tests {
 
-    use icann_rdap_common::prelude::{Network, RdapResponse};
+    use super::U32OrRange;
+    use icann_rdap_common::prelude::{Autnum, Network, RdapResponse};
 
     use crate::storage::{mem::ops::Mem, StoreOps};
 
@@ -656,5 +645,304 @@ mod tests {
 
         // THEN
         assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_up_empty() {
+        // GIVEN
+        let mem = Mem::default();
+
+        // WHEN
+        let result = mem.autnum_rdap_up(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_up_single_exact_match() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_up(&U32OrRange::Single(705)).await;
+
+        // THEN
+        let actual = result.unwrap();
+        let RdapResponse::Autnum(ref autnum) = *actual else {
+            panic!("not an autnum")
+        };
+        assert_eq!(autnum.start_autnum(), Some(700));
+        assert_eq!(autnum.end_autnum(), Some(710));
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_up_range_exact_match() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_up(&U32OrRange::Range(700..710)).await;
+
+        // THEN
+        assert!(result.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_up_range_too_large() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_up(&U32OrRange::Range(700..719)).await;
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_up_range_same_start_end() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_up(&U32OrRange::Range(700..700)).await;
+
+        // THEN
+        let actual = result.unwrap();
+        let RdapResponse::Autnum(ref autnum) = *actual else {
+            panic!("not an autnum")
+        };
+        assert_eq!(autnum.start_autnum(), Some(700));
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_up_non_existent() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_up(&U32OrRange::Single(800)).await;
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_top_empty() {
+        // GIVEN
+        let mem = Mem::default();
+
+        // WHEN
+        let result = mem.autnum_rdap_top(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_top_single() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_top(&U32OrRange::Single(705)).await;
+
+        // THEN
+        assert!(result.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_empty() {
+        // GIVEN
+        let mem = Mem::default();
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_no_children() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Single(705)).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_two_children() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..709).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(710..719).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_multiple_children() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..709).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(710..719).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(720..729).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_range_end_greater() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..709).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(710..719).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Range(700..720)).await;
+
+        // THEN
+        assert_eq!(result.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_range_start_lesser() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..709).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(710..719).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Range(699..719)).await;
+
+        // THEN
+        assert_eq!(result.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_down_exact_range() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..709).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(710..719).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_down(&U32OrRange::Range(700..719)).await;
+
+        // THEN
+        assert_eq!(result.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_bottom_empty() {
+        // GIVEN
+        let mem = Mem::default();
+
+        // WHEN
+        let result = mem.autnum_rdap_bottom(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_autnum_rdap_bottom_with_children() {
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        tx.add_autnum(&Autnum::builder().autnum_range(700..709).build())
+            .await
+            .expect("add autnum in tx");
+        tx.add_autnum(&Autnum::builder().autnum_range(710..719).build())
+            .await
+            .expect("add autnum in tx");
+        tx.commit().await.expect("tx commit");
+
+        // WHEN
+        let result = mem.autnum_rdap_bottom(&U32OrRange::Single(700)).await;
+
+        // THEN
+        assert_eq!(result.len(), 1);
     }
 }
