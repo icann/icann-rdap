@@ -62,6 +62,7 @@ impl ContentExtensions for Help {
         exts.insert(ExtensionId::JsContact);
         exts.insert(ExtensionId::Redacted);
         exts.insert(ExtensionId::SimpleRedaction);
+        exts.insert(ExtensionId::Ttl0);
         exts
     }
 }

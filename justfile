@@ -83,6 +83,10 @@ srv_start:
 srv_update:
     RDAP_SRV_LOG=debug cargo run --bin rdap-srv-store -- --update
 
+[doc('Get server help in localhost.')]
+srv_lookup_help:
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -S
+
 [doc('Lookup the nameserver in localhost.')]
 srv_lookup_nameserver:
     cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap ns1.example.com

@@ -91,6 +91,8 @@ pub enum ExtensionId {
     Sorting,
     #[strum(serialize = "subsetting")]
     Subsetting,
+    #[strum(serialize = "ttl0")]
+    Ttl0,
 }
 
 impl ExtensionId {

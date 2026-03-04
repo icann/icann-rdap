@@ -225,6 +225,12 @@ struct Cli {
     )]
     max_cache_age: u32,
 
+    /// Self link caching.
+    ///
+    /// Cache objects with a self link, if caching is enabled.
+    #[arg(long, required = false, env = "RDAP_CACHE_SELF_LINKS")]
+    self_link_caching: bool,
+
     /// Allow HTTP connections.
     ///
     /// When given, allows connections to RDAP servers using HTTP.
@@ -610,6 +616,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         redaction_flags,
         link_params,
         to_jscontact: cli.to_jscontact,
+        self_link_caching: cli.self_link_caching,
     };
 
     let exts_list = if cli.no_exts_list {

@@ -54,6 +54,7 @@ pub fn default_exts_list() -> HashSet<ExtensionId> {
     exts_list.insert(ExtensionId::JsContact);
     exts_list.insert(ExtensionId::SimpleRedaction);
     exts_list.insert(ExtensionId::Redacted);
+    exts_list.insert(ExtensionId::Ttl0);
     exts_list
 }
 
