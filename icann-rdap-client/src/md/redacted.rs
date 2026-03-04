@@ -1,10 +1,8 @@
-use std::str::FromStr;
+use jsonpath_lib::replace_with;
+use jsonpath_rust::JsonPath;
 
 use {
     icann_rdap_common::response::redacted::Redacted,
-    jsonpath::replace_with,
-    jsonpath_lib as jsonpath,
-    jsonpath_rust::{JsonPathFinder, JsonPathInst},
     serde_json::{json, Value},
 };
 
@@ -118,55 +116,43 @@ fn convert_redactions<'a>(
             continue;
         }
 
-        match JsonPathInst::from_str(&post_path) {
-            Ok(json_path) => {
-                let finder =
-                    JsonPathFinder::new(Box::new(rdap_json_response.clone()), Box::new(json_path));
-                let matches = finder.find_as_path();
-                if let Value::Array(paths) = matches {
-                    if paths.is_empty() {
-                        continue; // we don't need to do anything, we can skip to the next item
-                    } else {
-                        for path_value in paths {
-                            if let Value::String(found_path) = path_value {
-                                let no_value = Value::String("NO_VALUE".to_string());
-                                let json_pointer = convert_to_json_pointer_path(&found_path);
-                                let value_at_path = rdap_json_response
-                                    .pointer(&json_pointer)
-                                    .unwrap_or(&no_value);
-                                if value_at_path.is_string() {
-                                    // grab the value at the end point of the JSON path
-                                    let end_of_path_value =
-                                        match rdap_json_response.pointer(&json_pointer) {
-                                            Some(value) => value.clone(),
-                                            None => {
-                                                continue;
-                                            }
-                                        };
-                                    let replaced_json = replace_with(
-                                        rdap_json_response.clone(),
-                                        &found_path,
-                                        &mut |x| {
-                                            // STRING ONLY! This is the only spot where we are ACTUALLY replacing or updating something
-                                            if x.is_string() {
-                                                match x.as_str() {
-                                                    Some("") => Some(json!("*REDACTED*")),
-                                                    Some(s) => Some(json!(format!("*{}*", s))),
-                                                    _ => Some(json!("*REDACTED*")),
-                                                }
-                                            } else {
-                                                Some(end_of_path_value.clone()) // it isn't a string, put it back in there
-                                            }
-                                        },
-                                    );
-                                    match replaced_json {
-                                        Ok(new_json) => *rdap_json_response = new_json,
-                                        _ => {
-                                            // why did we fail to modify the JSON?
-                                        }
-                                    };
+        match rdap_json_response.clone().query_with_path(&post_path) {
+            Ok(mut paths) => {
+                for path_ref in paths.iter_mut() {
+                    if let Value::String(_found_val) = path_ref.clone().val() {
+                        let no_value = Value::String("NO_VALUE".to_string());
+                        let found_path = path_ref.clone().path();
+                        let json_pointer = convert_to_json_pointer_path(&found_path);
+                        let value_at_path = rdap_json_response
+                            .pointer(&json_pointer)
+                            .unwrap_or(&no_value);
+                        if value_at_path.is_string() {
+                            // grab the value at the end point of the JSON path
+                            let end_of_path_value = match rdap_json_response.pointer(&json_pointer)
+                            {
+                                Some(value) => value.clone(),
+                                None => {
+                                    continue;
                                 }
-                            }
+                            };
+                            let replaced_json =
+                                replace_with(rdap_json_response.clone(), &found_path, &mut |x| {
+                                    // STRING ONLY! This is the only spot where we are ACTUALLY replacing or updating something
+                                    if x.is_string() {
+                                        match x.as_str() {
+                                            Some("") => Some(json!("[[REDACTED]]")),
+                                            _ => Some(json!("[[REDACTED]]")),
+                                        }
+                                    } else {
+                                        Some(end_of_path_value.clone()) // it isn't a string, put it back in there
+                                    }
+                                });
+                            match replaced_json {
+                                Ok(new_json) => *rdap_json_response = new_json,
+                                _ => {
+                                    // why did we fail to modify the JSON?
+                                }
+                            };
                         }
                     }
                 }
@@ -201,14 +187,22 @@ fn get_string_from_map(map: &serde_json::Map<String, Value>, key: &str) -> Strin
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
+    use std::path::PathBuf;
+
+    use goldenfile::Mint;
     use {
         serde_json::Value,
-        std::{error::Error, fs::File, io::Read},
+        std::{
+            error::Error,
+            fs::File,
+            io::{Read, Write},
+        },
     };
 
-    fn process_redacted_file(file_path: &str) -> Result<String, Box<dyn Error>> {
+    static MINT_PATH: &str = "src/test_files/md/redacted";
+
+    fn process_redacted_file(file_path: &PathBuf) -> Result<String, Box<dyn Error>> {
         let mut file = File::open(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -229,32 +223,48 @@ mod tests {
 
     #[test]
     fn test_process_empty_value() {
-        let expected_output =
-            std::fs::read_to_string("src/test_files/example-1_empty_value-expected.json").unwrap();
-        let output = process_redacted_file("src/test_files/example-1_empty_value.json").unwrap();
-        assert_eq!(output, expected_output);
+        // GIVEN
+        let response_file = PathBuf::from(MINT_PATH).join("example-1_empty_value.json");
+
+        // WHEN
+        let actual = process_redacted_file(&response_file).unwrap();
+
+        // THEN
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("example-1_empty_value-expected.json")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 
     #[test]
     fn test_process_partial_value() {
-        let expected_output =
-            std::fs::read_to_string("src/test_files/example-2_partial_value-expected.json")
-                .unwrap();
-        let output = process_redacted_file("src/test_files/example-2_partial_value.json").unwrap();
-        assert_eq!(output, expected_output);
+        // GIVEN
+        let response_file = PathBuf::from(MINT_PATH).join("example-2_partial_value.json");
+
+        // WHEN
+        let actual = process_redacted_file(&response_file).unwrap();
+
+        // THEN
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint
+            .new_goldenfile("example-2_partial_value-expected.json")
+            .unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 
     #[test]
     fn test_process_dont_replace_number() {
-        let expected_output = std::fs::read_to_string(
-            "src/test_files/example-3-dont_replace_redaction_of_a_number.json",
-        )
-        .unwrap();
-        // we don't need an expected for this one, it should remain unchanged
-        let output = process_redacted_file(
-            "src/test_files/example-3-dont_replace_redaction_of_a_number.json",
-        )
-        .unwrap();
-        assert_eq!(output, expected_output);
+        // GIVEN
+        let fname = "example-3-dont_replace_redaction_of_a_number.json";
+        let response_file = PathBuf::from(MINT_PATH).join(fname);
+
+        // WHEN
+        let actual = process_redacted_file(&response_file).unwrap();
+
+        // THEN
+        let mut mint = Mint::new(MINT_PATH);
+        let mut expected = mint.new_goldenfile(fname).unwrap();
+        expected.write_all(actual.as_bytes()).unwrap();
     }
 }
