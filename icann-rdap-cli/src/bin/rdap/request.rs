@@ -10,6 +10,7 @@ use icann_rdap_common::{
     prelude::{RdapResponse, Rfc9083Error},
     response::jscontact::JsContactConvert,
 };
+use url::Url;
 
 use {
     icann_rdap_client::{
@@ -77,16 +78,22 @@ pub(crate) async fn do_request(
                     debug!("Saving query response to cache file {file_name}");
                     let path = rdap_cache_path().join(file_name);
                     fs::write(path, &cache_contents)?;
-                    if let Some(self_link) = response.rdap.self_link() {
-                        if let Some(self_link_href) = &self_link.href {
-                            if query_url != *self_link_href {
-                                let file_name = format!(
-                                    "{}.cache",
-                                    PctString::encode(self_link_href.chars(), URIReserved)
-                                );
-                                debug!("Saving object with self link to cache file {file_name}");
-                                let path = rdap_cache_path().join(file_name);
-                                fs::write(path, &cache_contents)?;
+                    if processing_params.self_link_caching {
+                        if let Some(self_link) = response.rdap.self_link() {
+                            if let Some(self_link_href) = &self_link.href {
+                                if query_url != *self_link_href
+                                    && is_same_origin(&query_url, self_link_href)
+                                {
+                                    let file_name = format!(
+                                        "{}.cache",
+                                        PctString::encode(self_link_href.chars(), URIReserved)
+                                    );
+                                    debug!(
+                                        "Saving object with self link to cache file {file_name}"
+                                    );
+                                    let path = rdap_cache_path().join(file_name);
+                                    fs::write(path, &cache_contents)?;
+                                }
                             }
                         }
                     }
@@ -155,6 +162,16 @@ pub(crate) async fn request_and_process(
         // copy other fields from `response`
         ..response
     })
+}
+
+fn is_same_origin(url1: &str, url2: &str) -> bool {
+    let u1 = Url::parse(url1);
+    let u2 = Url::parse(url2);
+    if let (Ok(url1), Ok(url2)) = (u1, u2) {
+        url1.origin() == url2.origin()
+    } else {
+        false
+    }
 }
 
 fn process_redactions(

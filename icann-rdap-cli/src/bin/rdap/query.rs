@@ -124,6 +124,7 @@ pub(crate) struct ProcessingParams {
     pub redaction_flags: BitFlags<RedactionFlag>,
     pub link_params: LinkParams,
     pub to_jscontact: bool,
+    pub self_link_caching: bool,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
