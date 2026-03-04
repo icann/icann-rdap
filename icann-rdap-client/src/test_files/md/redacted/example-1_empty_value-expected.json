@@ -4,7 +4,7 @@
     "redacted"
   ],
   "objectClassName": "domain",
-  "ldhName": "example-3.net",
+  "ldhName": "example-1.net",
   "secureDNS": {
     "delegationSigned": false
   },
@@ -159,19 +159,19 @@
             "fn",
             {},
             "text",
-            "*REDACTED*"
+            "[[REDACTED]]"
           ],
           [
             "adr",
             {},
             "text",
             [
-              "*REDACTED*",
-              "*REDACTED*",
-              "*REDACTED*",
-              "*REDACTED*",
+              "",
+              "",
+              "",
+              "",
               "QC",
-              "*REDACTED*",
+              "",
               "Canada"
             ]
           ]
@@ -197,7 +197,7 @@
             "fn",
             {},
             "text",
-            "*REDACTED*"
+            ""
           ],
           [
             "org",
@@ -250,50 +250,7 @@
       },
       "postPath": "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='fn')][3]",
       "pathLang": "jsonpath",
-      "method": "partialValue",
-      "reason": {
-        "description": "Server policy"
-      }
-    },
-    {
-      "name": {
-        "description": "Registrant Street"
-      },
-      "postPath": "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='adr')][3][:3]",
-      "pathLang": "jsonpath",
-      "method": "partialValue",
-      "reason": {
-        "description": "Server policy"
-      }
-    },
-    {
-      "name": {
-        "description": "Registrant City"
-      },
-      "postPath": "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='adr')][3][3]",
-      "pathLang": "jsonpath",
-      "method": "partialValue",
-      "reason": {
-        "description": "Server policy"
-      }
-    },
-    {
-      "name": {
-        "description": "Registrant Postal Code"
-      },
-      "postPath": "$.entities[?(@.roles[0]=='registrant')].vcardArray[1][?(@[0]=='adr')][3][5]",
-      "pathLang": "jsonpath",
-      "method": "partialValue",
-      "reason": {
-        "description": "Server policy"
-      }
-    },
-    {
-      "name": {
-        "description": "Technical Name"
-      },
-      "postPath": "$.entities[?(@.roles[0]=='technical')].vcardArray[1][?(@[0]=='fn')][3]",
-      "method": "partialValue",
+      "method": "emptyValue",
       "reason": {
         "description": "Server policy"
       }

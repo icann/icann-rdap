@@ -89,7 +89,7 @@ http = "1.0"
 hyper = { version = "1.0", features = ["full"] }
 
 # JSONPath
-jsonpath-rust = "=0.5.0"
+jsonpath-rust = "1.0.4"
 jsonpath_lib = "0.3.0"
 
 # JSON Pretty Compact
