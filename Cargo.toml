@@ -105,7 +105,7 @@ ipnet = { version = "2.9", features = ["json"] }
 minus = {version = "5.5", features = ["dynamic_output", "search"] }
 
 # percent encoding
-pct-str = "1.2"
+pct-str = "3.0"
 
 # ip address trie
 prefix-trie = "0.2.4"

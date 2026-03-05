@@ -18,7 +18,7 @@ use {
         rdap::{rdap_url_request, QueryType, ResponseData},
     },
     icann_rdap_common::{httpdata::HttpData, response::GetSelfLink},
-    pct_str::{PctString, URIReserved},
+    pct_str::{PctString, UriReserved},
     tracing::{debug, info},
 };
 
@@ -42,7 +42,7 @@ pub(crate) async fn do_request(
     if !processing_params.no_cache {
         let file_name = format!(
             "{}.cache",
-            PctString::encode(query_url.chars(), URIReserved)
+            PctString::encode(query_url.chars(), UriReserved::Path)
         );
         let path = rdap_cache_path().join(&file_name);
         if path.exists() {
@@ -73,7 +73,7 @@ pub(crate) async fn do_request(
                     let query_url = query_type.query_url(base_url)?;
                     let file_name = format!(
                         "{}.cache",
-                        PctString::encode(query_url.chars(), URIReserved)
+                        PctString::encode(query_url.chars(), UriReserved::Any)
                     );
                     debug!("Saving query response to cache file {file_name}");
                     let path = rdap_cache_path().join(file_name);
@@ -86,7 +86,10 @@ pub(crate) async fn do_request(
                                 {
                                     let file_name = format!(
                                         "{}.cache",
-                                        PctString::encode(self_link_href.chars(), URIReserved)
+                                        PctString::encode(
+                                            self_link_href.chars(),
+                                            UriReserved::Path
+                                        )
                                     );
                                     debug!(
                                         "Saving object with self link to cache file {file_name}"
