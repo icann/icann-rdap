@@ -518,7 +518,7 @@ pub async fn main() -> RdapCliError {
 
 pub async fn wrapped_main() -> Result<(), RdapCliError> {
     dirs::init()?;
-    dotenv::from_path(dirs::config_path()).ok();
+    dotenvy::from_path(dirs::config_path()).ok();
     let cli = Cli::parse();
 
     if cli.reset {
