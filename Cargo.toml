@@ -59,7 +59,7 @@ crossbeam-channel = "0.5.15"
 directories = "5.0"
 
 # loads environment variables from a file
-dotenv = "0.15.0"
+dotenvy = "0.15"
 
 # environment variable utilities
 envmnt = "0.10.4"

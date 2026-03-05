@@ -435,7 +435,7 @@ pub async fn main() -> RdapTestError {
 
 pub async fn wrapped_main() -> Result<(), RdapTestError> {
     dirs::init()?;
-    dotenv::from_path(dirs::config_path()).ok();
+    dotenvy::from_path(dirs::config_path()).ok();
 
     // remove the only_show_target from the help as it does not apply to this command
     let mut cmd = Cli::command();

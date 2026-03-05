@@ -67,7 +67,7 @@ struct Cli {
 }
 
 fn main() -> Result<(), RdapServerError> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     let cli = Cli::parse();
     tracing_subscriber::registry()
         .with(fmt::layer())

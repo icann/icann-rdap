@@ -490,7 +490,7 @@ fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), RdapServerError> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     let cli = Cli::parse();
     tracing_subscriber::registry()
         .with(fmt::layer())
