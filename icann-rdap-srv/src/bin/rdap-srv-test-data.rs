@@ -22,7 +22,7 @@ use {
         },
     },
     ipnet::{Ipv4Subnets, Ipv6Subnets},
-    pct_str::{PctString, URIReserved},
+    pct_str::{PctString, UriReserved},
     tracing::info,
     tracing_subscriber::{
         fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
@@ -436,7 +436,7 @@ fn save_template(
     };
     let file_name = format!(
         "{}_test_data_{}{type_suffix}.template",
-        PctString::encode(file_name.chars(), URIReserved),
+        PctString::encode(file_name.chars(), UriReserved::Any),
         template
     );
     let mut path = PathBuf::from(data_dir);

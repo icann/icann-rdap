@@ -10,7 +10,7 @@ use icann_rdap_common::rdns::{ip_to_reverse_dns, reverse_dns_to_ip};
 use {
     cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr},
     icann_rdap_common::{check::StringCheck, dns_types::DomainName},
-    pct_str::{PctString, URIReserved},
+    pct_str::{PctString, UriReserved},
     regex::Regex,
     strum_macros::Display,
 };
@@ -84,45 +84,51 @@ impl QueryType {
         match self {
             Self::IpV4Addr(value) => Ok(format!(
                 "{base_url}/ip/{}",
-                PctString::encode(value.to_string().chars(), URIReserved)
+                PctString::encode(value.to_string().chars(), UriReserved::Path)
             )),
             Self::IpV6Addr(value) => Ok(format!(
                 "{base_url}/ip/{}",
-                PctString::encode(value.to_string().chars(), URIReserved)
+                PctString::encode(value.to_string().chars(), UriReserved::Path)
             )),
             Self::IpV4Cidr(value) => Ok(format!(
                 "{base_url}/ip/{}/{}",
-                PctString::encode(value.first_address().to_string().chars(), URIReserved),
-                PctString::encode(value.network_length().to_string().chars(), URIReserved)
+                PctString::encode(value.first_address().to_string().chars(), UriReserved::Path),
+                PctString::encode(
+                    value.network_length().to_string().chars(),
+                    UriReserved::Path
+                )
             )),
             Self::IpV6Cidr(value) => Ok(format!(
                 "{base_url}/ip/{}/{}",
-                PctString::encode(value.first_address().to_string().chars(), URIReserved),
-                PctString::encode(value.network_length().to_string().chars(), URIReserved)
+                PctString::encode(value.first_address().to_string().chars(), UriReserved::Path),
+                PctString::encode(
+                    value.network_length().to_string().chars(),
+                    UriReserved::Path
+                )
             )),
             Self::AsNumber(value) => Ok(format!(
                 "{base_url}/autnum/{}",
-                PctString::encode(value.to_string().chars(), URIReserved)
+                PctString::encode(value.to_string().chars(), UriReserved::Path)
             )),
             Self::Domain(value) => Ok(format!(
                 "{base_url}/domain/{}",
-                PctString::encode(value.trim_leading_dot().chars(), URIReserved)
+                PctString::encode(value.trim_leading_dot().chars(), UriReserved::Path)
             )),
             Self::ReverseDNs(value) => Ok(format!(
                 "{base_url}/domain/{}",
-                PctString::encode(ip_to_reverse_dns(value).chars(), URIReserved)
+                PctString::encode(ip_to_reverse_dns(value).chars(), UriReserved::Path)
             )),
             Self::ALabel(value) => Ok(format!(
                 "{base_url}/domain/{}",
-                PctString::encode(value.to_ascii().chars(), URIReserved),
+                PctString::encode(value.to_ascii().chars(), UriReserved::Path),
             )),
             Self::Entity(value) => Ok(format!(
                 "{base_url}/entity/{}",
-                PctString::encode(value.chars(), URIReserved)
+                PctString::encode(value.chars(), UriReserved::Path)
             )),
             Self::Nameserver(value) => Ok(format!(
                 "{base_url}/nameserver/{}",
-                PctString::encode(value.to_ascii().chars(), URIReserved)
+                PctString::encode(value.to_ascii().chars(), UriReserved::Path)
             )),
             Self::EntityNameSearch(value) => search_query(value, "entities?fn", base_url),
             Self::EntityHandleSearch(value) => search_query(value, "entities?handle", base_url),
@@ -221,7 +227,7 @@ impl QueryType {
 fn search_query(value: &str, path_query: &str, base_url: &str) -> Result<String, RdapClientError> {
     Ok(format!(
         "{base_url}/{path_query}={}",
-        PctString::encode(value.chars(), URIReserved)
+        PctString::encode(value.chars(), UriReserved::Any)
     ))
 }
 

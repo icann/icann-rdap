@@ -27,7 +27,7 @@ use {
         },
         util::bin::check::{check_rdap, to_check_classes, CheckArgs},
     },
-    pct_str::{PctString, URIReserved},
+    pct_str::{PctString, UriReserved},
     regex::Regex,
     std::{fs, path::PathBuf, str::FromStr},
     tracing::{error, info},
@@ -575,7 +575,7 @@ fn create_file_name(self_href: &str, extension: &str) -> String {
         .replace(['.', '/', ':'], "_");
     format!(
         "{}.{extension}",
-        PctString::encode(file_name.chars(), URIReserved)
+        PctString::encode(file_name.chars(), UriReserved::Any)
     )
 }
 
