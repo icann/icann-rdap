@@ -17,7 +17,7 @@ use {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), RdapServerError> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     tracing_subscriber::registry()
         .with(fmt::layer())
         .with(EnvFilter::from_env(LOG))

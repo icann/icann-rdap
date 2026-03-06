@@ -100,7 +100,14 @@ async fn GIVEN_domain_in_mem_WHEN_lookup_domain_by_unicode_THEN_domain_returned(
 #[tokio::test]
 async fn GIVEN_domain_in_mem_WHEN_search_domain_by_name_THEN_domain_returned() {
     // GIVEN
-    let mem = Mem::default();
+    let mem_config = MemConfig::builder()
+        .common_config(
+            CommonConfig::builder()
+                .domain_search_by_name_enable(true)
+                .build(),
+        )
+        .build();
+    let mem = Mem::new(mem_config);
     let mut tx = mem.new_tx().await.expect("new transaction");
     tx.add_domain(
         &Domain::idn()

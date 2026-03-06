@@ -27,7 +27,7 @@ use {
         },
         util::bin::check::{check_rdap, to_check_classes, CheckArgs},
     },
-    pct_str::{PctString, URIReserved},
+    pct_str::{PctString, UriReserved},
     regex::Regex,
     std::{fs, path::PathBuf, str::FromStr},
     tracing::{error, info},
@@ -490,7 +490,7 @@ fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), RdapServerError> {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     let cli = Cli::parse();
     tracing_subscriber::registry()
         .with(fmt::layer())
@@ -575,7 +575,7 @@ fn create_file_name(self_href: &str, extension: &str) -> String {
         .replace(['.', '/', ':'], "_");
     format!(
         "{}.{extension}",
-        PctString::encode(file_name.chars(), URIReserved)
+        PctString::encode(file_name.chars(), UriReserved::Any)
     )
 }
 

@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.27"
+version = "0.0.28"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -59,7 +59,7 @@ crossbeam-channel = "0.5.15"
 directories = "5.0"
 
 # loads environment variables from a file
-dotenv = "0.15.0"
+dotenvy = "0.15"
 
 # environment variable utilities
 envmnt = "0.10.4"
@@ -89,7 +89,7 @@ http = "1.0"
 hyper = { version = "1.0", features = ["full"] }
 
 # JSONPath
-jsonpath-rust = "=0.5.0"
+jsonpath-rust = "1.0.4"
 jsonpath_lib = "0.3.0"
 
 # JSON Pretty Compact
@@ -105,7 +105,7 @@ ipnet = { version = "2.9", features = ["json"] }
 minus = {version = "5.5", features = ["dynamic_output", "search"] }
 
 # percent encoding
-pct-str = "1.2"
+pct-str = "3.0"
 
 # ip address trie
 prefix-trie = "0.2.4"

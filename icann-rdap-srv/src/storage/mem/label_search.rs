@@ -1,22 +1,50 @@
 use std::collections::HashMap;
 
-use {ab_radix_trie::Trie, buildstructor::Builder};
+use ab_radix_trie::Trie;
 
 use crate::error::RdapServerError;
 
-/// A structure for searching DNS labels as specified in RFC 9082.
+/// A structure for searching strings as labels, such as DNS labels in domain names as specified in RFC 9082.
 /// For RDAP, type T is likely RdapResponse or Arc<RdapResponse>.
-#[derive(Builder)]
 pub struct SearchLabels<T: Clone> {
     label_suffixes: HashMap<String, Trie<T>>,
+    separaters: Vec<char>,
 }
 
+#[buildstructor::buildstructor]
 impl<T: Clone> SearchLabels<T> {
+    /// Creates a builder appropriate for domain names.
+    #[builder(entry = "dns_labels")]
+    pub(crate) fn new_dns_labels() -> Self {
+        Self {
+            label_suffixes: HashMap::new(),
+            separaters: vec!['.'],
+        }
+    }
+
+    /// Creates a builder appropriate for handles.
+    #[builder(entry = "handle_labels")]
+    pub(crate) fn new_handle_labels() -> Self {
+        Self {
+            label_suffixes: HashMap::new(),
+            separaters: vec!['.', '-', '_'],
+        }
+    }
+
+    /// Creates a builder appropriate for natural names.
+    #[builder(entry = "name_labels")]
+    pub(crate) fn new_name_labels() -> Self {
+        Self {
+            label_suffixes: HashMap::new(),
+            separaters: vec![' ', '-'],
+        }
+    }
+
     /// Insert a value based on a domain name.
     pub(crate) fn insert(&mut self, text: &str, value: T) {
         // char_indices gets the UTF8 indices as well as the character
         for (i, char) in text.char_indices() {
-            if char == '.' && i != 0 {
+            if self.separaters.contains(&char) && i != 0 {
                 let prefix = &text[..i];
                 // find the next UTF8 character index
                 let mut next_i = i + 1;
@@ -89,7 +117,6 @@ impl<T: Clone> SearchLabels<T> {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
 
     use ab_radix_trie::{Entry, Trie};
@@ -97,9 +124,9 @@ mod tests {
     use super::SearchLabels;
 
     #[test]
-    fn GIVEN_domain_names_WHEN_inserting_THEN_search_labels_is_correct() {
+    fn test_inserting_domain_names() {
         // GIVEN
-        let mut search = SearchLabels::builder().build();
+        let mut search = SearchLabels::dns_labels().build();
 
         // WHEN
         search.insert("foo.example.com", "foo.example.com".to_owned());
@@ -204,9 +231,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_search_string_with_two_asterisks_WHEN_search_THEN_error() {
+    fn test_search_string_with_two_asterisks() {
         // GIVEN
-        let labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::dns_labels().build();
         let search = "foo.*.*";
 
         // WHEN
@@ -217,9 +244,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_search_string_with_asterisk_suffix_WHEN_search_THEN_error() {
+    fn test_search_string_with_asterisk_suffix() {
         // GIVEN
-        let labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::dns_labels().build();
         let search = "foo.*example.net";
 
         // WHEN
@@ -230,9 +257,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_search_string_with_no_asterisk_WHEN_search_THEN_error() {
+    fn test_search_string_with_no_asterisk() {
         // GIVEN
-        let labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::dns_labels().build();
         let search = "foo.example.net";
 
         // WHEN
@@ -243,9 +270,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_empty_search_string_WHEN_search_THEN_error() {
+    fn test_empty_search_string() {
         // GIVEN
-        let labels: SearchLabels<String> = SearchLabels::builder().build();
+        let labels: SearchLabels<String> = SearchLabels::dns_labels().build();
         let search = "";
 
         // WHEN
@@ -256,9 +283,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_root_search_WHEN_search_THEN_correct_values_found() {
+    fn test_root_search() {
         // GIVEN
-        let mut labels = SearchLabels::builder().build();
+        let mut labels = SearchLabels::dns_labels().build();
         labels.insert("foo.example.com", "foo.example.com".to_owned());
         labels.insert("bar.example.com", "bar.example.com".to_owned());
         labels.insert("foo.example.net", "foo.example.net".to_owned());
@@ -275,9 +302,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_root_search_WHEN_search_with_prefix_THEN_correct_values_found() {
+    fn test_root_search_with_prefix() {
         // GIVEN
-        let mut labels = SearchLabels::builder().build();
+        let mut labels = SearchLabels::dns_labels().build();
         labels.insert("foo.example.com", "foo.example.com".to_owned());
         labels.insert("bar.example.com", "bar.example.com".to_owned());
         labels.insert("foo.example.net", "foo.example.net".to_owned());
@@ -293,9 +320,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_labels_WHEN_sld_search_with_prefix_THEN_correct_values_found() {
+    fn test_labels_sld_search_with_prefix() {
         // GIVEN
-        let mut labels = SearchLabels::builder().build();
+        let mut labels = SearchLabels::dns_labels().build();
         labels.insert("foo.example.com", "foo.example.com".to_owned());
         labels.insert("bar.example.com", "bar.example.com".to_owned());
         labels.insert("foo.example.net", "foo.example.net".to_owned());
@@ -311,9 +338,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_labels_WHEN_3ld_search_with_prefix_THEN_correct_values_found() {
+    fn test_labels_3ld_search_with_prefix() {
         // GIVEN
-        let mut labels = SearchLabels::builder().build();
+        let mut labels = SearchLabels::dns_labels().build();
         labels.insert("foo.example.com", "foo.example.com".to_owned());
         labels.insert("bar.example.com", "bar.example.com".to_owned());
         labels.insert("foo.example.net", "foo.example.net".to_owned());
@@ -329,9 +356,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_labels_WHEN_sld_search_THEN_correct_values_found() {
+    fn test_labels_sld_search() {
         // GIVEN
-        let mut labels = SearchLabels::builder().build();
+        let mut labels = SearchLabels::dns_labels().build();
         labels.insert("foo.example.com", "foo.example.com".to_owned());
         labels.insert("bar.example.com", "bar.example.com".to_owned());
         labels.insert("foo.example.net", "foo.example.net".to_owned());
@@ -347,9 +374,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_labels_WHEN_3ld_search_THEN_error() {
+    fn test_labels_3ld_search() {
         // GIVEN
-        let mut labels = SearchLabels::builder().build();
+        let mut labels = SearchLabels::dns_labels().build();
         labels.insert("foo.example.com", "foo.example.com".to_owned());
         labels.insert("bar.example.com", "bar.example.com".to_owned());
         labels.insert("foo.example.net", "foo.example.net".to_owned());
@@ -361,5 +388,38 @@ mod tests {
         // THEN
         dbg!(&actual);
         assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_handle_labels_search() {
+        // GIVEN
+        let mut labels = SearchLabels::handle_labels().build();
+        labels.insert("Hostmaster-ARIN", "Hostmaster-ARIN".to_owned());
+        labels.insert("Hostmaster-RIPE", "Hostmaster-RIPE".to_owned());
+
+        // WHEN
+        let actual = labels.search("Hostmaster-*").expect("search is invalid");
+
+        // THEN
+        dbg!(&actual);
+        assert_eq!(actual.len(), 2);
+        assert!(actual.contains(&"Hostmaster-ARIN".to_string()));
+        assert!(actual.contains(&"Hostmaster-RIPE".to_string()));
+    }
+
+    #[test]
+    fn test_name_labels_search() {
+        // GIVEN
+        let mut labels = SearchLabels::name_labels().build();
+        labels.insert("Alice Person", "Alice Person".to_owned());
+        labels.insert("Bob Person", "Bob Person".to_owned());
+
+        // WHEN
+        let actual = labels.search("Bob *").expect("search is invalid");
+
+        // THEN
+        dbg!(&actual);
+        assert_eq!(actual.len(), 1);
+        assert!(actual.contains(&"Bob Person".to_string()));
     }
 }

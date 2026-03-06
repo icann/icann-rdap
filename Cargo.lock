@@ -883,12 +883,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
-
-[[package]]
 name = "dotenvy"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1589,7 +1583,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.27"
+version = "0.0.28"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1599,7 +1593,7 @@ dependencies = [
  "const_format",
  "crossbeam-channel",
  "directories",
- "dotenv",
+ "dotenvy",
  "enumflags2",
  "hickory-client",
  "icann-rdap-client",
@@ -1628,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.27"
+version = "0.0.28"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1655,7 +1649,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.27"
+version = "0.0.28"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1675,7 +1669,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.27"
+version = "0.0.28"
 dependencies = [
  "ab-radix-trie",
  "assert_cmd",
@@ -1689,7 +1683,7 @@ dependencies = [
  "chrono",
  "cidr",
  "clap",
- "dotenv",
+ "dotenvy",
  "envmnt",
  "headers",
  "http",
@@ -1982,17 +1976,15 @@ dependencies = [
 
 [[package]]
 name = "jsonpath-rust"
-version = "0.5.0"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0268078319393f8430e850ee9d4706aeced256d34cf104d216bb496777137162"
+checksum = "633a7320c4bb672863a3782e89b9094ad70285e097ff6832cddd0ec615beadfa"
 dependencies = [
- "lazy_static",
- "once_cell",
  "pest",
  "pest_derive",
  "regex",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -2423,9 +2415,9 @@ dependencies = [
 
 [[package]]
 name = "pct-str"
-version = "1.2.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77d207ec8d182c2fef45f028b9b9507770df19e89b3e14827ccd95d4a23f6003"
+checksum = "756dc82399e1ef9b37bd698266e4b7fed5f3d3cccb09fbc6b602086c9077e4ad"
 dependencies = [
  "utf8-decode",
 ]
@@ -3003,7 +2995,7 @@ dependencies = [
  "security-framework 3.6.0",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4146,9 +4138,9 @@ checksum = "c8232dd3cdaed5356e0f716d285e4b40b932ac434100fe9b7e0e8e935b9e6246"
 
 [[package]]
 name = "utf8-decode"
-version = "1.0.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca61eb27fa339aa08826a29f03e87b99b4d8f0fc2255306fd266bb1b6a9de498"
+checksum = "7932c10aa1600e9ddee027024aa9c0d397a103478253bf3fd6cea6dd03161b8a"
 
 [[package]]
 name = "utf8_iter"

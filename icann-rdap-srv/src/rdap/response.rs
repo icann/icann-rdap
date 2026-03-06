@@ -17,18 +17,26 @@ use {
 pub static NOT_FOUND: LazyLock<RdapResponse> = LazyLock::new(|| {
     Rfc9083Error::response_obj()
         .error_code(404)
+        .title("Resource Not Found")
+        .description_entry("The queried resource was not found.")
         .build()
         .to_response()
 });
 pub static NOT_IMPLEMENTED: LazyLock<RdapResponse> = LazyLock::new(|| {
     Rfc9083Error::response_obj()
         .error_code(501)
+        .title("Feature Not Implemented")
+        .description_entry(
+            "The feature being requested is not implemented or deployed by this server.",
+        )
         .build()
         .to_response()
 });
 pub static BAD_REQUEST: LazyLock<RdapResponse> = LazyLock::new(|| {
     Rfc9083Error::response_obj()
         .error_code(400)
+        .title("Bad Request")
+        .description_entry("The request is malformed and cannot be processed.")
         .build()
         .to_response()
 });

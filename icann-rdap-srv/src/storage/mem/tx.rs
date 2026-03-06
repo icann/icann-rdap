@@ -28,21 +28,79 @@ pub struct MemTx {
     ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     domains: HashMap<String, Arc<RdapResponse>>,
     domains_by_name: SearchLabels<Arc<RdapResponse>>,
+    domains_by_ns_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
+    domains_by_ns_ldh_name: SearchLabels<Arc<RdapResponse>>,
     idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
+    nameservers_by_name: SearchLabels<Arc<RdapResponse>>,
+    nameservers_by_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
     entities: HashMap<String, Arc<RdapResponse>>,
+    entities_by_handle: SearchLabels<Arc<RdapResponse>>,
+    entities_by_full_name: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
 impl MemTx {
     pub async fn new(mem: &Mem) -> Self {
         let domains = Arc::clone(&mem.domains).read_owned().await.clone();
-        let mut domains_by_name = SearchLabels::builder().build();
+        let mut domains_by_name = SearchLabels::dns_labels().build();
+        let domains_by_ns_ip = Arc::clone(&mem.domains_by_ns_ip).read_owned().await.clone();
+        let mut domains_by_ns_ldh_name = SearchLabels::dns_labels().build();
+        let nameservers = Arc::clone(&mem.nameservers).read_owned().await.clone();
+        let mut nameservers_by_name = SearchLabels::dns_labels().build();
+        let nameservers_by_ip = Arc::clone(&mem.nameservers_by_ip)
+            .read_owned()
+            .await
+            .clone();
+        let entities = Arc::clone(&mem.entities).read_owned().await.clone();
+        let mut entities_by_handle = SearchLabels::handle_labels().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
             for (name, value) in domains.iter() {
                 domains_by_name.insert(name, value.clone());
+            }
+        }
+
+        // only do load up nameserver search labels if search by nameserver names is supported
+        if mem.config.common_config.nameserver_search_by_name_enable {
+            for (name, value) in nameservers.iter() {
+                nameservers_by_name.insert(name, value.clone());
+            }
+        }
+
+        // only load up domain search by ns ldh name if supported
+        if mem.config.common_config.domain_search_by_ns_ldh_name_enable {
+            for (_name, value) in domains.iter() {
+                if let RdapResponse::Domain(domain) = value.as_ref() {
+                    if let Some(nameservers) = domain.nameservers.as_ref() {
+                        for ns in nameservers {
+                            if let Some(ns_ldh_name) = ns.ldh_name.as_ref() {
+                                domains_by_ns_ldh_name.insert(ns_ldh_name, value.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // only load up entity search by handle if supported
+        if mem.config.common_config.entity_search_by_handle_enable {
+            for (handle, value) in entities.iter() {
+                entities_by_handle.insert(handle, value.clone());
+            }
+        }
+
+        let mut entities_by_full_name = SearchLabels::name_labels().build();
+        if mem.config.common_config.entity_search_by_full_name_enable {
+            for (_handle, value) in entities.iter() {
+                if let RdapResponse::Entity(entity) = value.as_ref() {
+                    if let Some(contact) = entity.contact() {
+                        if let Some(full_name) = contact.full_name() {
+                            entities_by_full_name.insert(full_name, value.clone());
+                        }
+                    }
+                }
             }
         }
 
@@ -53,9 +111,15 @@ impl MemTx {
             ip6: Arc::clone(&mem.ip6).read_owned().await.clone(),
             domains,
             domains_by_name,
+            domains_by_ns_ip,
+            domains_by_ns_ldh_name,
             idns: Arc::clone(&mem.idns).read_owned().await.clone(),
-            nameservers: Arc::clone(&mem.nameservers).read_owned().await.clone(),
-            entities: Arc::clone(&mem.entities).read_owned().await.clone(),
+            nameservers,
+            nameservers_by_name,
+            nameservers_by_ip,
+            entities,
+            entities_by_handle,
+            entities_by_full_name,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -67,10 +131,16 @@ impl MemTx {
             ip4: PrefixMap::new(),
             ip6: PrefixMap::new(),
             domains: HashMap::new(),
-            domains_by_name: SearchLabels::builder().build(),
+            domains_by_name: SearchLabels::dns_labels().build(),
+            domains_by_ns_ip: HashMap::new(),
+            domains_by_ns_ldh_name: SearchLabels::dns_labels().build(),
             idns: HashMap::new(),
             nameservers: HashMap::new(),
+            nameservers_by_name: SearchLabels::dns_labels().build(),
+            nameservers_by_ip: HashMap::new(),
             entities: HashMap::new(),
+            entities_by_handle: SearchLabels::handle_labels().build(),
+            entities_by_full_name: SearchLabels::name_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -84,10 +154,26 @@ impl TxHandle for MemTx {
             .handle
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("handle".to_string()))?;
-        self.entities.insert(
-            handle.to_owned().to_string(),
-            Arc::new(entity.clone().to_response()),
-        );
+        let entity_response = Arc::new(entity.clone().to_response());
+        self.entities
+            .insert(handle.to_owned().to_string(), entity_response.clone());
+        if self.mem.config.common_config.entity_search_by_handle_enable {
+            self.entities_by_handle
+                .insert(handle, entity_response.clone());
+        }
+        if self
+            .mem
+            .config
+            .common_config
+            .entity_search_by_full_name_enable
+        {
+            if let Some(contact) = entity.contact() {
+                if let Some(full_name) = contact.full_name() {
+                    self.entities_by_full_name
+                        .insert(full_name, entity_response.clone());
+                }
+            }
+        }
         Ok(())
     }
 
@@ -121,7 +207,49 @@ impl TxHandle for MemTx {
         };
 
         if self.mem.config.common_config.domain_search_by_name_enable {
-            self.domains_by_name.insert(ldh_name, domain_response);
+            self.domains_by_name
+                .insert(ldh_name, domain_response.clone());
+        }
+
+        if self.mem.config.common_config.domain_search_by_ns_ip_enable {
+            if let Some(nameservers) = domain.nameservers.as_ref() {
+                for nameserver in nameservers {
+                    if let Some(ip_addresses) = nameserver.ip_addresses() {
+                        for ip_str in ip_addresses.v4s() {
+                            if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                                self.domains_by_ns_ip
+                                    .entry(ip)
+                                    .or_default()
+                                    .push(domain_response.clone());
+                            }
+                        }
+                        for ip_str in ip_addresses.v6s() {
+                            if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                                self.domains_by_ns_ip
+                                    .entry(ip)
+                                    .or_default()
+                                    .push(domain_response.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if self
+            .mem
+            .config
+            .common_config
+            .domain_search_by_ns_ldh_name_enable
+        {
+            if let Some(nameservers) = domain.nameservers.as_ref() {
+                for nameserver in nameservers {
+                    if let Some(ldh_name) = nameserver.ldh_name.as_ref() {
+                        self.domains_by_ns_ldh_name
+                            .insert(ldh_name, domain_response.clone());
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -144,10 +272,41 @@ impl TxHandle for MemTx {
             .ldh_name
             .as_ref()
             .ok_or_else(|| RdapServerError::EmptyIndexData("ldhName".to_string()))?;
-        self.nameservers.insert(
-            ldh_name.to_owned(),
-            Arc::new(nameserver.clone().to_response()),
-        );
+        let nameserver_response = Arc::new(nameserver.clone().to_response());
+        self.nameservers
+            .insert(ldh_name.to_owned(), nameserver_response.clone());
+
+        if self
+            .mem
+            .config
+            .common_config
+            .nameserver_search_by_name_enable
+        {
+            self.nameservers_by_name
+                .insert(ldh_name, nameserver_response.clone());
+        }
+
+        if self.mem.config.common_config.nameserver_search_by_ip_enable {
+            if let Some(ip_addresses) = nameserver.ip_addresses() {
+                for ip_str in ip_addresses.v4s() {
+                    if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                        self.nameservers_by_ip
+                            .entry(ip)
+                            .or_default()
+                            .push(nameserver_response.clone());
+                    }
+                }
+                for ip_str in ip_addresses.v6s() {
+                    if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                        self.nameservers_by_ip
+                            .entry(ip)
+                            .or_default()
+                            .push(nameserver_response.clone());
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -306,6 +465,17 @@ impl TxHandle for MemTx {
         let mut domains_by_name_g = self.mem.domains_by_name.write().await;
         std::mem::swap(&mut self.domains_by_name, &mut domains_by_name_g);
 
+        //domains by nameserver ip
+        let mut domains_by_ns_ip_g = self.mem.domains_by_ns_ip.write().await;
+        std::mem::swap(&mut self.domains_by_ns_ip, &mut domains_by_ns_ip_g);
+
+        //domains by nameserver ldhName
+        let mut domains_by_ns_ldh_name_g = self.mem.domains_by_ns_ldh_name.write().await;
+        std::mem::swap(
+            &mut self.domains_by_ns_ldh_name,
+            &mut domains_by_ns_ldh_name_g,
+        );
+
         //idns
         let mut idns_g = self.mem.idns.write().await;
         std::mem::swap(&mut self.idns, &mut idns_g);
@@ -314,9 +484,28 @@ impl TxHandle for MemTx {
         let mut nameservers_g = self.mem.nameservers.write().await;
         std::mem::swap(&mut self.nameservers, &mut nameservers_g);
 
+        // nameservers by name
+        let mut nameservers_by_name_g = self.mem.nameservers_by_name.write().await;
+        std::mem::swap(&mut self.nameservers_by_name, &mut nameservers_by_name_g);
+
+        // nameservers by ip
+        let mut nameservers_by_ip_g = self.mem.nameservers_by_ip.write().await;
+        std::mem::swap(&mut self.nameservers_by_ip, &mut nameservers_by_ip_g);
+
         // entities
         let mut entities_g = self.mem.entities.write().await;
         std::mem::swap(&mut self.entities, &mut entities_g);
+
+        // entities by handle
+        let mut entities_by_handle_g = self.mem.entities_by_handle.write().await;
+        std::mem::swap(&mut self.entities_by_handle, &mut entities_by_handle_g);
+
+        // entities by full name
+        let mut entities_by_full_name_g = self.mem.entities_by_full_name.write().await;
+        std::mem::swap(
+            &mut self.entities_by_full_name,
+            &mut entities_by_full_name_g,
+        );
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;
