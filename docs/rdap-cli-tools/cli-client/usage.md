@@ -111,7 +111,11 @@ Two additional arguments are provided to assist with bootstrapping:
 
 ## Caching
 
-By default, the client will cache data based on the request URL and "self" links provided in the RDAP results.
+By default, the client will cache data based on the request URL.
+
+It can also cache an object by its "self" link if the object has the same origin as the request URI. This behavior
+is turned off by default, but may be enabled using the `--self-link-caching` command parameter or the `RDAP_CACHE_SELF_LINKS`
+environmental variable.
 
 This can be turned off with the `-N` command parameter or by setting the `RDAP_NO_CACHE` environment variable to "true".
 

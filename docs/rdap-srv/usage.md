@@ -72,6 +72,19 @@ The following command creates a redirect for an IP network:
 
     rdap-srv-data --redirect http://other.example/ip/11.0.0.0/16 network --cidr 11.0.0.0/16
 
+## Searches
+
+Searches are not enabled by default. Each one must be explicitly enabled with an environment variable:
+
+    RDAP_SRV_DOMAIN_SEARCH_BY_NAME
+    RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP
+    RDAP_SRV_DOMAIN_SEARCH_BY_NS_LDH_NAME
+    RDAP_SRV_NAMESERVER_SEARCH_BY_NAME
+    RDAP_SRV_NAMESERVER_SEARCH_BY_IP
+    RDAP_SRV_ENTITY_SEARCH_BY_HANDLE
+    RDAP_SRV_ENTITY_SEARCH_BY_FULL_NAME    
+
+
 ## Use Your Data
 
 As mentioned above, the `rdap-srv-store` command can be used to signal a reload or update
