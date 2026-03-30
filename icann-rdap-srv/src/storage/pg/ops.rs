@@ -107,4 +107,13 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn search_ip_rdap_up_by_ipaddr(
+        &self,
+        _ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_ip_rdap_up_by_cidr(&self, _cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
 }

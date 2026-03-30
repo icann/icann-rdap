@@ -11,6 +11,7 @@ pub mod domains;
 pub mod entities;
 pub mod entity;
 pub mod ip;
+pub mod ips;
 pub mod nameserver;
 pub mod nameservers;
 pub mod response;

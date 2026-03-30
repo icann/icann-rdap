@@ -30,6 +30,7 @@ pub const NAMESERVER_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_B
 pub const NAMESERVER_SEARCH_BY_IP_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_BY_IP";
 pub const ENTITY_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_ENTITY_SEARCH_BY_HANDLE";
 pub const ENTITY_SEARCH_BY_FULL_NAME_ENABLE: &str = "RDAP_SRV_ENTITY_SEARCH_BY_FULL_NAME";
+pub const IP_RDAP_UP_ENABLE: &str = "RDAP_SRV_IP_RDAP_UP";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -50,6 +51,7 @@ pub fn debug_config_vars() {
         NAMESERVER_SEARCH_BY_IP_ENABLE,
         ENTITY_SEARCH_BY_HANDLE_ENABLE,
         ENTITY_SEARCH_BY_FULL_NAME_ENABLE,
+        IP_RDAP_UP_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -99,6 +101,7 @@ impl StorageType {
         let nameserver_search_by_ip = get_parse_or(NAMESERVER_SEARCH_BY_IP_ENABLE, false)?;
         let entity_search_by_handle = get_parse_or(ENTITY_SEARCH_BY_HANDLE_ENABLE, false)?;
         let entity_search_by_full_name = get_parse_or(ENTITY_SEARCH_BY_FULL_NAME_ENABLE, false)?;
+        let ip_rdap_up = get_parse_or(IP_RDAP_UP_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -107,6 +110,7 @@ impl StorageType {
             .nameserver_search_by_ip_enable(nameserver_search_by_ip)
             .entity_search_by_handle_enable(entity_search_by_handle)
             .entity_search_by_full_name_enable(entity_search_by_full_name)
+            .ip_rdap_up_enable(ip_rdap_up)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {

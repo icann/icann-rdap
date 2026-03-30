@@ -2,8 +2,8 @@ use axum::{routing::get, Router};
 
 use super::{
     autnum::autnum_by_num, domain::domain_by_name, domains::domains, entities::entities,
-    entity::entity_by_handle, ip::network_by_netid, nameserver::nameserver_by_name,
-    nameservers::nameservers, srvhelp::srvhelp,
+    entity::entity_by_handle, ip::network_by_netid, ips::ip_rdap_up,
+    nameserver::nameserver_by_name, nameservers::nameservers, srvhelp::srvhelp,
 };
 
 pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
@@ -17,4 +17,5 @@ pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
         .route("/nameservers", get(nameservers))
         .route("/entities", get(entities))
         .route("/help", get(srvhelp))
+        .route("/ips/rirSearch1/rdap-up/*ipAddress", get(ip_rdap_up))
 }
