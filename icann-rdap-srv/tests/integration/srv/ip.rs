@@ -4,20 +4,27 @@ use {
         rdap::{rdap_request, QueryType},
     },
     icann_rdap_common::{prelude::RdapResponse, response::Network},
-    icann_rdap_srv::storage::StoreOps,
+    icann_rdap_srv::storage::{CommonConfig, StoreOps},
 };
 
 use crate::test_jig::SrvTestJig;
 
 #[tokio::test]
 async fn test_server_ipv4_lookup() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::builder().cidr("192.0.2.0/24").build().expect("cidr parsing"))
-        .await
-        .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
+    // WHEN
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
@@ -28,6 +35,7 @@ async fn test_server_ipv4_lookup() {
         .await
         .expect("querying server");
 
+    // THEN
     assert_eq!(response.http_data.status_code, 200);
     let RdapResponse::Network(_) = response.rdap else {
         panic!("not network")
@@ -36,13 +44,20 @@ async fn test_server_ipv4_lookup() {
 
 #[tokio::test]
 async fn test_server_ipv6_lookup() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::builder().cidr("2001:db8::/32").build().expect("cidr parsing"))
-        .await
-        .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("2001:db8::/32")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
+    // WHEN
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
@@ -53,6 +68,7 @@ async fn test_server_ipv6_lookup() {
         .await
         .expect("querying server");
 
+    // THEN
     assert_eq!(response.http_data.status_code, 200);
     let RdapResponse::Network(_) = response.rdap else {
         panic!("not network")
@@ -61,13 +77,20 @@ async fn test_server_ipv6_lookup() {
 
 #[tokio::test]
 async fn test_server_ipv4_cidr_lookup() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::builder().cidr("192.0.2.0/24").build().expect("cidr parsing"))
-        .await
-        .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
+    // WHEN
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
@@ -78,6 +101,7 @@ async fn test_server_ipv4_cidr_lookup() {
         .await
         .expect("querying server");
 
+    // THEN
     assert_eq!(response.http_data.status_code, 200);
     let RdapResponse::Network(_) = response.rdap else {
         panic!("not network")
@@ -86,13 +110,20 @@ async fn test_server_ipv4_cidr_lookup() {
 
 #[tokio::test]
 async fn test_server_ipv6_cidr_lookup() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::builder().cidr("2001:db8::/32").build().expect("cidr parsing"))
-        .await
-        .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("2001:db8::/32")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
+    // WHEN
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
@@ -103,6 +134,7 @@ async fn test_server_ipv6_cidr_lookup() {
         .await
         .expect("querying server");
 
+    // THEN
     assert_eq!(response.http_data.status_code, 200);
     let RdapResponse::Network(_) = response.rdap else {
         panic!("not network")
@@ -111,13 +143,20 @@ async fn test_server_ipv6_cidr_lookup() {
 
 #[tokio::test]
 async fn test_server_ipv4_lookup_not_found() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::builder().cidr("192.0.2.0/24").build().expect("cidr parsing"))
-        .await
-        .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
+    // WHEN
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
@@ -128,18 +167,26 @@ async fn test_server_ipv4_lookup_not_found() {
         .await
         .expect("querying server");
 
+    // THEN
     assert_eq!(response.http_data.status_code, 404);
 }
 
 #[tokio::test]
 async fn test_server_ipv6_lookup_not_found() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
-    tx.add_network(&Network::builder().cidr("2001:db8::/32").build().expect("cidr parsing"))
-        .await
-        .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("2001:db8::/32")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
     tx.commit().await.expect("tx commit");
 
+    // WHEN
     let client_config = ClientConfig::builder()
         .https_only(false)
         .follow_redirects(false)
@@ -150,13 +197,16 @@ async fn test_server_ipv6_lookup_not_found() {
         .await
         .expect("querying server");
 
+    // THEN
     assert_eq!(response.http_data.status_code, 404);
 }
 
 #[tokio::test]
 async fn test_server_ipv4_cidr_prefix_too_long() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
 
+    // WHEN
     let client = reqwest::Client::new();
     let url = format!("{}/ip/192.0.2.0/33", test_srv.rdap_base);
     let response = client
@@ -166,13 +216,16 @@ async fn test_server_ipv4_cidr_prefix_too_long() {
         .await
         .expect("request");
 
+    // THEN
     assert_eq!(response.status().as_u16(), 400);
 }
 
 #[tokio::test]
 async fn test_server_ipv6_cidr_prefix_too_long() {
+    // GIVEN
     let test_srv = SrvTestJig::new().await;
 
+    // WHEN
     let client = reqwest::Client::new();
     let url = format!("{}/ip/2001:db8::/129", test_srv.rdap_base);
     let response = client
@@ -182,5 +235,193 @@ async fn test_server_ipv6_cidr_prefix_too_long() {
         .await
         .expect("request");
 
+    // THEN
     assert_eq!(response.status().as_u16(), 400);
+}
+
+#[tokio::test]
+async fn test_server_rdap_up_ipv4() {
+    // GIVEN
+    let common_config = CommonConfig::builder().ip_rdap_up_enable(true).build();
+    let test_srv = SrvTestJig::new_common_config(common_config).await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    for cidr in ["10.1.0.0/16", "10.1.0.0/24"] {
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
+    }
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client = reqwest::Client::new();
+    let url = format!("{}/ips/rirSearch1/rdap-up/10.1.0.1", test_srv.rdap_base);
+    let response = client
+        .get(&url)
+        .header("accept", "application/rdap+json")
+        .send()
+        .await
+        .expect("request");
+
+    // THEN
+    assert_eq!(response.status().as_u16(), 200);
+    let body: serde_json::Value = response.json().await.expect("json");
+    let cidr0_cidrs = body["cidr0_cidrs"].as_array().expect("cidr0_cidrs");
+    let cidr = cidr0_cidrs.first().expect("cidr");
+    assert_eq!(cidr["v4prefix"].as_str(), Some("10.1.0.0"));
+    assert_eq!(cidr["length"].as_u64(), Some(24));
+}
+
+#[tokio::test]
+async fn test_server_rdap_up_ipv6() {
+    // GIVEN
+    let common_config = CommonConfig::builder().ip_rdap_up_enable(true).build();
+    let test_srv = SrvTestJig::new_common_config(common_config).await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    for cidr in ["2001:db8:1::/48", "2001:db8:1::/64"] {
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
+    }
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client = reqwest::Client::new();
+    let url = format!(
+        "{}/ips/rirSearch1/rdap-up/2001:db8:1::1",
+        test_srv.rdap_base
+    );
+    let response = client
+        .get(&url)
+        .header("accept", "application/rdap+json")
+        .send()
+        .await
+        .expect("request");
+
+    // THEN
+    assert_eq!(response.status().as_u16(), 200);
+    let body: serde_json::Value = response.json().await.expect("json");
+    let cidr0_cidrs = body["cidr0_cidrs"].as_array().expect("cidr0_cidrs");
+    let cidr = cidr0_cidrs.first().expect("cidr");
+    assert_eq!(cidr["v6prefix"].as_str(), Some("2001:db8:1::"));
+    assert_eq!(cidr["length"].as_u64(), Some(64));
+}
+
+#[tokio::test]
+async fn test_server_rdap_up_disabled() {
+    // GIVEN
+    let test_srv = SrvTestJig::new().await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    for cidr in ["10.1.0.0/8", "10.1.0.0/16"] {
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
+    }
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client = reqwest::Client::new();
+    let url = format!("{}/ips/rirSearch1/rdap-up/10.1.0.1", test_srv.rdap_base);
+    let response = client
+        .get(&url)
+        .header("accept", "application/rdap+json")
+        .send()
+        .await
+        .expect("request");
+
+    // THEN
+    assert_eq!(response.status().as_u16(), 501);
+}
+
+#[tokio::test]
+async fn test_server_rdap_up_no_supernet() {
+    // GIVEN
+    let common_config = CommonConfig::builder().ip_rdap_up_enable(true).build();
+    let test_srv = SrvTestJig::new_common_config(common_config).await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_network(
+        &Network::builder()
+            .cidr("10.1.0.0/32")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client = reqwest::Client::new();
+    let url = format!("{}/ips/rirSearch1/rdap-up/10.1.0.1", test_srv.rdap_base);
+    let response = client
+        .get(&url)
+        .header("accept", "application/rdap+json")
+        .send()
+        .await
+        .expect("request");
+
+    // THEN
+    assert_eq!(response.status().as_u16(), 404);
+}
+
+#[tokio::test]
+async fn test_server_rdap_up_ipv4_at_boundary() {
+    // GIVEN
+    let common_config = CommonConfig::builder().ip_rdap_up_enable(true).build();
+    let test_srv = SrvTestJig::new_common_config(common_config).await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    for cidr in ["10.0.0.0/8", "10.1.0.0/16"] {
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
+    }
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client = reqwest::Client::new();
+    let url = format!("{}/ips/rirSearch1/rdap-up/10.1.0.0", test_srv.rdap_base);
+    let response = client
+        .get(&url)
+        .header("accept", "application/rdap+json")
+        .send()
+        .await
+        .expect("request");
+
+    // THEN
+    assert_eq!(response.status().as_u16(), 200);
+    let body: serde_json::Value = response.json().await.expect("json");
+    let cidr0_cidrs = body["cidr0_cidrs"].as_array().expect("cidr0_cidrs");
+    let cidr = cidr0_cidrs.first().expect("cidr");
+    assert_eq!(cidr["v4prefix"].as_str(), Some("10.1.0.0"));
+    assert_eq!(cidr["length"].as_u64(), Some(16));
+}
+
+#[tokio::test]
+async fn test_server_rdap_up_ipv6_at_boundary() {
+    // GIVEN
+    let common_config = CommonConfig::builder().ip_rdap_up_enable(true).build();
+    let test_srv = SrvTestJig::new_common_config(common_config).await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
+    }
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client = reqwest::Client::new();
+    let url = format!("{}/ips/rirSearch1/rdap-up/2001:db8:1::", test_srv.rdap_base);
+    let response = client
+        .get(&url)
+        .header("accept", "application/rdap+json")
+        .send()
+        .await
+        .expect("request");
+
+    // THEN
+    assert_eq!(response.status().as_u16(), 200);
+    let body: serde_json::Value = response.json().await.expect("json");
+    let cidr0_cidrs = body["cidr0_cidrs"].as_array().expect("cidr0_cidrs");
+    let cidr = cidr0_cidrs.first().expect("cidr");
+    assert_eq!(cidr["v6prefix"].as_str(), Some("2001:db8:1::"));
+    assert_eq!(cidr["length"].as_u64(), Some(48));
 }
