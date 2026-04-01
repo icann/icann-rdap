@@ -5,7 +5,10 @@ use axum::{
     response::Response,
 };
 use http::HeaderMap;
-use icann_rdap_common::prelude::normalize_extensions;
+use icann_rdap_common::{
+    prelude::{normalize_extensions, ExtensionId},
+    response::{ContentExtensions, ToResponse, RdapResponse, Common, Network, Extension},
+};
 use tracing::debug;
 
 use crate::{
@@ -17,6 +20,28 @@ use crate::{
     },
     server::DynServiceState,
 };
+
+fn normalize_ip_rdap_up_extensions(rdap: RdapResponse) -> RdapResponse {
+    if let RdapResponse::Network(n) = rdap {
+        let mut exts: std::collections::HashSet<ExtensionId> = n.content_extensions();
+        exts.insert(ExtensionId::Ips);
+        exts.insert(ExtensionId::RirSearch1);
+        let rdap_conformance = exts
+            .iter()
+            .map(|e: &ExtensionId| e.to_extension())
+            .collect::<Vec<Extension>>();
+        let network = Network {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..n.common
+            },
+            ..*n
+        };
+        network.to_response()
+    } else {
+        normalize_extensions(rdap)
+    }
+}
 
 #[axum_macros::debug_handler]
 #[tracing::instrument(level = "debug")]
@@ -42,7 +67,7 @@ pub(crate) async fn ip_rdap_up(
         } else {
             let network =
                 jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
-            let network = normalize_extensions(network);
+            let network = normalize_ip_rdap_up_extensions(network);
             Ok(network.response())
         }
     } else {
@@ -57,7 +82,7 @@ pub(crate) async fn ip_rdap_up(
         } else {
             let network =
                 jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
-            let network = normalize_extensions(network);
+            let network = normalize_ip_rdap_up_extensions(network);
             Ok(network.response())
         }
     }
