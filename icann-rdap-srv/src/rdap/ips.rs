@@ -6,8 +6,8 @@ use axum::{
 };
 use http::HeaderMap;
 use icann_rdap_common::{
-    prelude::{normalize_extensions, ExtensionId},
-    response::{ContentExtensions, ToResponse, RdapResponse, Common, Network, Extension},
+    prelude::{normalize_extensions, normalize_extensions_with, ExtensionId},
+    response::RdapResponse,
 };
 use tracing::debug;
 
@@ -21,23 +21,12 @@ use crate::{
     server::DynServiceState,
 };
 
-fn normalize_ip_rdap_up_extensions(rdap: RdapResponse) -> RdapResponse {
-    if let RdapResponse::Network(n) = rdap {
-        let mut exts: std::collections::HashSet<ExtensionId> = n.content_extensions();
-        exts.insert(ExtensionId::Ips);
-        exts.insert(ExtensionId::RirSearch1);
-        let rdap_conformance = exts
-            .iter()
-            .map(|e: &ExtensionId| e.to_extension())
-            .collect::<Vec<Extension>>();
-        let network = Network {
-            common: Common {
-                rdap_conformance: Some(rdap_conformance),
-                ..n.common
-            },
-            ..*n
-        };
-        network.to_response()
+fn add_rfc9910_extensions(rdap: RdapResponse) -> RdapResponse {
+    if matches!(rdap, RdapResponse::Network(_)) {
+        normalize_extensions_with(
+            rdap,
+            [ExtensionId::Ips, ExtensionId::RirSearch1],
+        )
     } else {
         normalize_extensions(rdap)
     }
@@ -67,7 +56,7 @@ pub(crate) async fn ip_rdap_up(
         } else {
             let network =
                 jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
-            let network = normalize_ip_rdap_up_extensions(network);
+            let network = add_rfc9910_extensions(network);
             Ok(network.response())
         }
     } else {
@@ -82,7 +71,7 @@ pub(crate) async fn ip_rdap_up(
         } else {
             let network =
                 jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
-            let network = normalize_ip_rdap_up_extensions(network);
+            let network = add_rfc9910_extensions(network);
             Ok(network.response())
         }
     }

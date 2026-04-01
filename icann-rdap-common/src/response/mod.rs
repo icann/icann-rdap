@@ -450,7 +450,16 @@ impl ContentExtensions for RdapResponse {
 
 /// Normalizes the extensions in an [RdapResponse].
 pub fn normalize_extensions(rdap: RdapResponse) -> RdapResponse {
-    let extensions = rdap.content_extensions();
+    normalize_extensions_with(rdap, [])
+}
+
+/// Normalizes the extensions in an [RdapResponse] with additional extensions.
+pub fn normalize_extensions_with(
+    rdap: RdapResponse,
+    extra_extensions: impl IntoIterator<Item = ExtensionId>,
+) -> RdapResponse {
+    let mut extensions: HashSet<ExtensionId> = rdap.content_extensions();
+    extensions.extend(extra_extensions);
     let rdap_conformance = extensions
         .iter()
         .map(|e| e.to_extension())
