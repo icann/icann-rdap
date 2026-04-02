@@ -15,7 +15,7 @@ use {
 
 use crate::{
     bootstrap::init_bootstrap,
-    config::{JsContactConversion, ListenConfig, ServiceConfig, StorageType},
+    config::{CommonConfig, JsContactConversion, ListenConfig, ServiceConfig, StorageType},
     error::RdapServerError,
     rdap::router::rdap_router,
     storage::{
@@ -163,6 +163,9 @@ pub trait ServiceState: std::fmt::Debug {
 
     /// Get the JsContactConversion configuration option.
     fn get_jscontact_conversion(&self) -> JsContactConversion;
+
+    /// Get the CommonConfig for search feature flags.
+    fn get_common_config(&self) -> CommonConfig;
 }
 
 /// State that is passed to the HTTP service router and used by functions
@@ -172,6 +175,7 @@ pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
     pub bootstrap: bool,
     pub jscontact_conversion: JsContactConversion,
+    pub common_config: CommonConfig,
 }
 
 impl AppState<Mem> {
@@ -179,6 +183,7 @@ impl AppState<Mem> {
         config: MemConfig,
         service_config: &ServiceConfig,
     ) -> Result<Self, RdapServerError> {
+        let common_config = config.common_config;
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
@@ -186,6 +191,7 @@ impl AppState<Mem> {
             storage,
             bootstrap: service_config.bootstrap,
             jscontact_conversion: service_config.jscontact_conversion,
+            common_config,
         })
     }
 }
@@ -201,6 +207,7 @@ impl AppState<Pg> {
         config: PgConfig,
         service_config: &ServiceConfig,
     ) -> Result<Self, RdapServerError> {
+        let common_config = config.common_config;
         let storage = Pg::new(config).await?;
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
@@ -208,6 +215,7 @@ impl AppState<Pg> {
             storage,
             bootstrap: service_config.bootstrap,
             jscontact_conversion: service_config.jscontact_conversion,
+            common_config,
         })
     }
 }
@@ -231,6 +239,10 @@ impl ServiceState for AppState<Pg> {
     fn get_jscontact_conversion(&self) -> JsContactConversion {
         self.jscontact_conversion
     }
+
+    fn get_common_config(&self) -> CommonConfig {
+        self.common_config
+    }
 }
 
 #[async_trait]
@@ -245,5 +257,9 @@ impl ServiceState for AppState<Mem> {
 
     fn get_jscontact_conversion(&self) -> JsContactConversion {
         self.jscontact_conversion
+    }
+
+    fn get_common_config(&self) -> CommonConfig {
+        self.common_config
     }
 }

@@ -1,12 +1,9 @@
 use {
     assert_cmd::Command,
     icann_rdap_srv::{
-        config::{JsContactConversion, ListenConfig},
+        config::{CommonConfig, JsContactConversion, ListenConfig},
         server::{AppState, Listener},
-        storage::{
-            mem::{config::MemConfig, ops::Mem},
-            CommonConfig,
-        },
+        storage::mem::{config::MemConfig, ops::Mem},
     },
     std::time::Duration,
     test_dir::{DirBuilder, TestDir},
@@ -87,6 +84,7 @@ impl SrvTestJig {
             storage: mem.clone(),
             bootstrap: false,
             jscontact_conversion: JsContactConversion::None,
+            common_config: CommonConfig::default(),
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -109,6 +107,7 @@ impl SrvTestJig {
             storage: mem.clone(),
             bootstrap: false,
             jscontact_conversion: JsContactConversion::None,
+            common_config,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -130,6 +129,7 @@ impl SrvTestJig {
             storage: mem.clone(),
             bootstrap: true,
             jscontact_conversion: JsContactConversion::None,
+            common_config: CommonConfig::default(),
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -151,6 +151,7 @@ impl SrvTestJig {
             storage: mem.clone(),
             bootstrap: false,
             jscontact_conversion,
+            common_config: CommonConfig::default(),
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())

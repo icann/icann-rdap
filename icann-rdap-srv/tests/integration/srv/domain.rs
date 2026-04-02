@@ -7,7 +7,7 @@ use {
         prelude::RdapResponse,
         response::{Domain, Nameserver},
     },
-    icann_rdap_srv::storage::{CommonConfig, StoreOps},
+    icann_rdap_srv::{config::CommonConfig, storage::StoreOps},
 };
 
 use crate::test_jig::SrvTestJig;

@@ -1,6 +1,6 @@
 use buildstructor::Builder;
 
-use crate::storage::CommonConfig;
+use crate::config::CommonConfig;
 
 #[derive(Debug, Builder, Clone)]
 pub struct PgConfig {

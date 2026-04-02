@@ -1,11 +1,10 @@
 use {
     assert_cmd::Command,
     icann_rdap_srv::{
-        config::{JsContactConversion, ListenConfig},
+        config::{CommonConfig, JsContactConversion, ListenConfig},
         server::{AppState, Listener},
         storage::{
             mem::{config::MemConfig, ops::Mem},
-            CommonConfig,
         },
     },
     std::time::Duration,
@@ -64,6 +63,7 @@ impl TestJig {
             storage: mem.clone(),
             bootstrap: false,
             jscontact_conversion: JsContactConversion::None,
+            common_config,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -96,6 +96,7 @@ impl TestJig {
             storage: mem.clone(),
             bootstrap: false,
             jscontact_conversion: JsContactConversion::None,
+            common_config,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())

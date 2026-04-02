@@ -8,9 +8,12 @@ use {
             ObjectCommon, RdapResponse,
         },
     },
-    icann_rdap_srv::storage::{
-        mem::{config::MemConfig, ops::Mem},
-        CommonConfig, StoreOps,
+    icann_rdap_srv::{
+        config::CommonConfig,
+        storage::{
+            mem::{config::MemConfig, ops::Mem},
+            StoreOps,
+        },
     },
     rstest::rstest,
 };

@@ -14,7 +14,7 @@ use {
         VERSION,
     },
     icann_rdap_srv::{
-        config::{data_dir, debug_config_vars, ServiceConfig, DEFAULT_DATA_RDAP_BASE_URL, LOG},
+        config::{data_dir, debug_config_vars, CommonConfig, ServiceConfig, DEFAULT_DATA_RDAP_BASE_URL, LOG},
         error::RdapServerError,
         storage::{
             data::{
@@ -23,7 +23,7 @@ use {
                 Template,
             },
             mem::{config::MemConfig, ops::Mem},
-            CommonConfig, StoreOps,
+            StoreOps,
         },
         util::bin::check::{check_rdap, to_check_classes, CheckArgs},
     },

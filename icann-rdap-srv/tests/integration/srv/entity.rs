@@ -4,7 +4,7 @@ use {
         rdap::{rdap_request, QueryType},
     },
     icann_rdap_common::{contact::Contact, prelude::RdapResponse, response::Entity},
-    icann_rdap_srv::storage::{CommonConfig, StoreOps},
+    icann_rdap_srv::{config::CommonConfig, storage::StoreOps},
 };
 
 use crate::test_jig::SrvTestJig;

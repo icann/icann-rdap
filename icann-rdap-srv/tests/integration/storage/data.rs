@@ -8,7 +8,7 @@ use {
         },
     },
     icann_rdap_srv::{
-        config::{ServiceConfig, StorageType},
+        config::{CommonConfig, ServiceConfig, StorageType},
         storage::{
             data::{
                 load_data, AutnumId, AutnumOrError::AutnumObject, DomainId, DomainOrError,
@@ -17,7 +17,7 @@ use {
                 NetworkOrError::NetworkObject, Template,
             },
             mem::{config::MemConfig, ops::Mem},
-            CommonConfig, StoreOps,
+            StoreOps,
         },
     },
     test_dir::{DirBuilder, TestDir},

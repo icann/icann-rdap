@@ -17,9 +17,10 @@ use {
 };
 
 use crate::{
+    config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{CommonConfig, StoreOps, TxHandle},
+    storage::{StoreOps, TxHandle},
 };
 
 use super::{config::MemConfig, label_search::SearchLabels, tx::MemTx};
