@@ -1,5 +1,5 @@
 use icann_rdap_common::response::{
-    DomainSearchResults, EntitySearchResults, NameserverSearchResults,
+    DomainSearchResults, EntitySearchResults, IpSearchResults, NameserverSearchResults,
 };
 
 use super::{MdHeaderText, MdParams, MdUtil, ToMd};
@@ -69,6 +69,29 @@ impl MdUtil for NameserverSearchResults {
     fn get_header_text(&self) -> MdHeaderText {
         MdHeaderText::builder()
             .header_text("Nameserver Search Results")
+            .build()
+    }
+}
+
+impl ToMd for IpSearchResults {
+    fn to_md(&self, params: MdParams) -> String {
+        let mut md = String::new();
+        md.push_str(&self.common.to_md(params.from_parent()));
+        self.results.iter().for_each(|result| {
+            md.push_str(&result.to_md(MdParams {
+                heading_level: params.heading_level + 1,
+                ..params
+            }))
+        });
+        md.push('\n');
+        md
+    }
+}
+
+impl MdUtil for IpSearchResults {
+    fn get_header_text(&self) -> MdHeaderText {
+        MdHeaderText::builder()
+            .header_text("IP Search Results")
             .build()
     }
 }

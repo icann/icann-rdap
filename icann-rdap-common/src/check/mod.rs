@@ -133,6 +133,7 @@ pub enum RdapStructure {
     Handle,
     HttpData,
     IpNetwork,
+    IpSearchResults,
     KeyData,
     Link,
     Links,
@@ -260,6 +261,7 @@ impl GetChecks for RdapResponse {
             Self::DomainSearchResults(r) => r.get_checks(index, params),
             Self::EntitySearchResults(r) => r.get_checks(index, params),
             Self::NameserverSearchResults(r) => r.get_checks(index, params),
+            Self::IpSearchResults(r) => r.get_checks(index, params),
             Self::ErrorResponse(e) => e.get_checks(index, params),
             Self::Help(h) => h.get_checks(index, params),
         }

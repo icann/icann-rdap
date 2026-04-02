@@ -32,6 +32,8 @@ pub use network::*;
 #[doc(inline)]
 pub use obj_common::*;
 #[doc(inline)]
+pub use rir_search::*;
+#[doc(inline)]
 pub use search::*;
 #[doc(inline)]
 pub use types::*;
@@ -50,6 +52,7 @@ pub(crate) mod nameserver;
 pub(crate) mod network;
 pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
+pub(crate) mod rir_search; // RFC 9910 RIR Search
 pub(crate) mod search;
 pub mod ttl; // ttl0 extension
 pub(crate) mod types;
@@ -139,6 +142,7 @@ pub enum RdapResponse {
     DomainSearchResults(Box<DomainSearchResults>),
     EntitySearchResults(Box<EntitySearchResults>),
     NameserverSearchResults(Box<NameserverSearchResults>),
+    IpSearchResults(Box<IpSearchResults>),
 
     // Error
     ErrorResponse(Box<Rfc9083Error>),
@@ -211,6 +215,16 @@ impl TryFrom<Value> for RdapResponse {
                 ));
             }
         }
+        // else if it is an IP search result
+        if let Some(result) = response.get("ipSearchResults") {
+            if result.is_array() {
+                return Ok(serde_json::from_value::<IpSearchResults>(value)?.to_response());
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'ipSearchResults' is not an array".to_string(),
+                ));
+            }
+        }
 
         // else if it has an errorCode
         if let Some(result) = response.get("errorCode") {
@@ -248,6 +262,7 @@ impl RdapResponse {
             Self::DomainSearchResults(_) => TypeId::of::<DomainSearchResults>(),
             Self::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
             Self::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
+            Self::IpSearchResults(_) => TypeId::of::<IpSearchResults>(),
             Self::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             Self::Help(_) => TypeId::of::<Help>(),
         }
@@ -263,6 +278,7 @@ impl RdapResponse {
             Self::DomainSearchResults(_)
             | Self::EntitySearchResults(_)
             | Self::NameserverSearchResults(_)
+            | Self::IpSearchResults(_)
             | Self::ErrorResponse(_)
             | Self::Help(_) => None,
         }
@@ -278,6 +294,7 @@ impl RdapResponse {
             Self::DomainSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::IpSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
             Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
@@ -442,6 +459,7 @@ impl ContentExtensions for RdapResponse {
             Self::DomainSearchResults(r) => r.content_extensions(),
             Self::EntitySearchResults(r) => r.content_extensions(),
             Self::NameserverSearchResults(r) => r.content_extensions(),
+            Self::IpSearchResults(r) => r.content_extensions(),
             Self::ErrorResponse(e) => e.content_extensions(),
             Self::Help(h) => h.content_extensions(),
         }
@@ -523,6 +541,14 @@ pub fn normalize_extensions_with(
         }
         .to_response(),
         RdapResponse::NameserverSearchResults(r) => NameserverSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::IpSearchResults(r) => IpSearchResults {
             common: Common {
                 rdap_conformance: Some(rdap_conformance),
                 ..r.common
@@ -689,6 +715,34 @@ mod tests {
 
         // THEN
         assert!(matches!(actual, RdapResponse::EntitySearchResults(_)));
+    }
+
+    #[test]
+    fn test_response_is_ip_search_results() {
+        // GIVEN
+        let expected = r#"
+        {
+            "rdapConformance": [
+                "rdap_level_0"
+            ],
+            "ipSearchResults": [
+                {
+                    "objectClassName": "ip network",
+                    "handle": "NET-10-0-0-0",
+                    "startAddress": "10.0.0.0",
+                    "endAddress": "10.0.0.255",
+                    "ipVersion": "v4"
+                }
+            ]
+        }
+        "#;
+
+        // WHEN
+        let actual =
+            RdapResponse::try_from(serde_json::from_str::<Value>(expected).unwrap()).unwrap();
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::IpSearchResults(_)));
     }
 
     #[test]
