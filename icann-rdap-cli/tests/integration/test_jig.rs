@@ -1,11 +1,9 @@
 use {
     assert_cmd::Command,
     icann_rdap_srv::{
-        config::{CommonConfig, JsContactConversion, ListenConfig},
+        config::{CommonConfig, ListenConfig},
         server::{AppState, Listener},
-        storage::{
-            mem::{config::MemConfig, ops::Mem},
-        },
+        storage::mem::{config::MemConfig, ops::Mem},
     },
     std::time::Duration,
     test_dir::{DirBuilder, FileType, TestDir},

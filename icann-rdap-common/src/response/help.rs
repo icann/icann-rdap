@@ -62,11 +62,6 @@ impl ContentExtensions for Help {
         exts.insert(ExtensionId::JsContact);
         exts.insert(ExtensionId::Redacted);
         exts.insert(ExtensionId::SimpleRedaction);
-        exts.insert(ExtensionId::RirSearch1);
-        exts.insert(ExtensionId::Ips);
-        exts.insert(ExtensionId::IpSearchResults);
-        exts.insert(ExtensionId::Autnums);
-        exts.insert(ExtensionId::AutnumSearchResults);
         exts
     }
 }

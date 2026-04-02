@@ -1,4 +1,4 @@
-use icann_rdap_common::prelude::normalize_extensions;
+use icann_rdap_common::prelude::{normalize_extensions, normalize_extensions_with, ExtensionId};
 
 use {
     axum::{extract::State, response::Response},
@@ -25,6 +25,14 @@ pub(crate) async fn srvhelp(
         srv_help = storage.get_srv_help(None).await?;
     }
 
-    let srv_help = normalize_extensions(srv_help);
+    let config = state.get_common_config();
+    let srv_help = if config.ip_rdap_up_enable {
+        normalize_extensions_with(
+            srv_help,
+            [ExtensionId::Ips, ExtensionId::RirSearch1, ExtensionId::IpSearchResults],
+        )
+    } else {
+        normalize_extensions(srv_help)
+    };
     Ok(srv_help.response())
 }
