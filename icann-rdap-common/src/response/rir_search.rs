@@ -52,6 +52,7 @@ impl ToResponse for IpSearchResults {
 impl ContentExtensions for IpSearchResults {
     fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
         let mut exts = HashSet::new();
+        exts.insert(super::ExtensionId::IpSearchResults);
         self.results()
             .iter()
             .for_each(|n| exts.extend(n.content_extensions()));
@@ -102,6 +103,7 @@ impl ToResponse for AutnumSearchResults {
 impl ContentExtensions for AutnumSearchResults {
     fn content_extensions(&self) -> std::collections::HashSet<super::ExtensionId> {
         let mut exts = HashSet::new();
+        exts.insert(super::ExtensionId::AutnumSearchResults);
         self.results()
             .iter()
             .for_each(|a| exts.extend(a.content_extensions()));
