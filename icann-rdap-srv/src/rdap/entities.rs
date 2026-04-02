@@ -35,7 +35,11 @@ pub(crate) async fn entities(
 
         let storage = state.get_storage().await?;
         let results = storage.search_entities_by_handle(&handle).await?;
-        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(full_name) = params.fn_ {
@@ -44,7 +48,11 @@ pub(crate) async fn entities(
 
         let storage = state.get_storage().await?;
         let results = storage.search_entities_by_full_name(&full_name).await?;
-        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
         let results = normalize_extensions(results);
         results.response()
     } else {

@@ -41,7 +41,11 @@ pub(crate) async fn domains(
 
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_name(&name).await?;
-        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(ns_ldh_name) = params.ns_ldh_name {
@@ -50,7 +54,11 @@ pub(crate) async fn domains(
 
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_ns_ldh_name(&ns_ldh_name).await?;
-        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(ip_str) = params.ns_ip {
@@ -64,7 +72,11 @@ pub(crate) async fn domains(
 
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_ns_ip(ip).await?;
-        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
         let results = normalize_extensions(results);
         results.response()
     } else {

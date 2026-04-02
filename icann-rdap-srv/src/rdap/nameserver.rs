@@ -54,7 +54,11 @@ pub(crate) async fn nameserver_by_name(
         }
     }
 
-    let nameserver = jscontact_conversion(nameserver, state.get_common_config().jscontact_conversion, &exts_list);
+    let nameserver = jscontact_conversion(
+        nameserver,
+        state.get_common_config().jscontact_conversion,
+        &exts_list,
+    );
     let nameserver = normalize_extensions(nameserver);
     Ok(nameserver.response())
 }

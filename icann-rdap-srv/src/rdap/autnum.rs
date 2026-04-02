@@ -30,7 +30,11 @@ pub(crate) async fn autnum_by_num(
     Ok(if state.get_common_config().bootstrap {
         autnum.to_autnum_bootstrap(as_num).response()
     } else {
-        let autnum = jscontact_conversion(autnum, state.get_common_config().jscontact_conversion, &exts_list);
+        let autnum = jscontact_conversion(
+            autnum,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
         let autnum = normalize_extensions(autnum);
         autnum.response()
     })

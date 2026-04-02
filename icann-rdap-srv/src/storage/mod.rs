@@ -168,5 +168,3 @@ pub trait TxHandle: Send {
     /// Rollback the transaction.
     async fn rollback(self: Box<Self>) -> Result<(), RdapServerError>;
 }
-
-

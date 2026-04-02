@@ -41,8 +41,11 @@ pub(crate) async fn network_by_netid(
             if state.get_common_config().bootstrap {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
-                let network =
-                    jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
+                let network = jscontact_conversion(
+                    network,
+                    state.get_common_config().jscontact_conversion,
+                    &exts_list,
+                );
                 let network = normalize_extensions(network);
                 Ok(network.response())
             }
@@ -60,8 +63,11 @@ pub(crate) async fn network_by_netid(
             if state.get_common_config().bootstrap {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
-                let network =
-                    jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
+                let network = jscontact_conversion(
+                    network,
+                    state.get_common_config().jscontact_conversion,
+                    &exts_list,
+                );
                 let network = normalize_extensions(network);
                 Ok(network.response())
             }

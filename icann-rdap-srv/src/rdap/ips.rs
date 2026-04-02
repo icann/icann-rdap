@@ -52,8 +52,11 @@ pub(crate) async fn ip_rdap_up(
         if state.get_common_config().bootstrap {
             Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
         } else {
-            let network =
-                jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
+            let network = jscontact_conversion(
+                network,
+                state.get_common_config().jscontact_conversion,
+                &exts_list,
+            );
             let network = add_rfc9910_extensions(network);
             Ok(network.response())
         }
@@ -67,8 +70,11 @@ pub(crate) async fn ip_rdap_up(
         if state.get_common_config().bootstrap {
             Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
         } else {
-            let network =
-                jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
+            let network = jscontact_conversion(
+                network,
+                state.get_common_config().jscontact_conversion,
+                &exts_list,
+            );
             let network = add_rfc9910_extensions(network);
             Ok(network.response())
         }

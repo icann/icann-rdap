@@ -29,7 +29,11 @@ pub(crate) async fn srvhelp(
     let srv_help = if config.ip_rdap_up_enable {
         normalize_extensions_with(
             srv_help,
-            [ExtensionId::Ips, ExtensionId::RirSearch1, ExtensionId::IpSearchResults],
+            [
+                ExtensionId::Ips,
+                ExtensionId::RirSearch1,
+                ExtensionId::IpSearchResults,
+            ],
         )
     } else {
         normalize_extensions(srv_help)
