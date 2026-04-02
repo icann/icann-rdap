@@ -82,8 +82,6 @@ impl SrvTestJig {
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion: JsContactConversion::None,
             common_config: CommonConfig::default(),
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
@@ -105,8 +103,6 @@ impl SrvTestJig {
         let mem = Mem::new(mem_config);
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion: JsContactConversion::None,
             common_config,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
@@ -124,12 +120,12 @@ impl SrvTestJig {
     }
 
     pub async fn new_bootstrap() -> Self {
+        let mut common_config = CommonConfig::default();
+        common_config.bootstrap = true;
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: true,
-            jscontact_conversion: JsContactConversion::None,
-            common_config: CommonConfig::default(),
+            common_config,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -146,12 +142,12 @@ impl SrvTestJig {
     }
 
     pub async fn new_jscontact_conversion(jscontact_conversion: JsContactConversion) -> Self {
+        let mut common_config = CommonConfig::default();
+        common_config.jscontact_conversion = jscontact_conversion;
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion,
-            common_config: CommonConfig::default(),
+            common_config,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())

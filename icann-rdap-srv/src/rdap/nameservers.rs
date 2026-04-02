@@ -37,7 +37,7 @@ pub(crate) async fn nameservers(
 
         let storage = state.get_storage().await?;
         let results = storage.search_nameservers_by_name(&name).await?;
-        let results = jscontact_conversion(results, state.get_jscontact_conversion(), &exts_list);
+        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(ip_str) = params.ip {
@@ -51,7 +51,7 @@ pub(crate) async fn nameservers(
 
         let storage = state.get_storage().await?;
         let results = storage.search_nameservers_by_ip(ip).await?;
-        let results = jscontact_conversion(results, state.get_jscontact_conversion(), &exts_list);
+        let results = jscontact_conversion(results, state.get_common_config().jscontact_conversion, &exts_list);
         let results = normalize_extensions(results);
         results.response()
     } else {

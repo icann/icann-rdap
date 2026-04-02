@@ -148,7 +148,7 @@ pub enum JsContactConversion {
 }
 
 /// Common configuration for storage back ends.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct CommonConfig {
     pub domain_search_by_name_enable: bool,
     pub nameserver_search_by_name_enable: bool,
@@ -158,6 +158,25 @@ pub struct CommonConfig {
     pub entity_search_by_handle_enable: bool,
     pub entity_search_by_full_name_enable: bool,
     pub ip_rdap_up_enable: bool,
+    pub jscontact_conversion: JsContactConversion,
+    pub bootstrap: bool,
+}
+
+impl Default for CommonConfig {
+    fn default() -> Self {
+        Self {
+            domain_search_by_name_enable: false,
+            nameserver_search_by_name_enable: false,
+            nameserver_search_by_ip_enable: false,
+            domain_search_by_ns_ip_enable: false,
+            domain_search_by_ns_ldh_name_enable: false,
+            entity_search_by_handle_enable: false,
+            entity_search_by_full_name_enable: false,
+            ip_rdap_up_enable: false,
+            jscontact_conversion: JsContactConversion::None,
+            bootstrap: false,
+        }
+    }
 }
 
 #[buildstructor::buildstructor]
@@ -172,6 +191,8 @@ impl CommonConfig {
         entity_search_by_handle_enable: Option<bool>,
         entity_search_by_full_name_enable: Option<bool>,
         ip_rdap_up_enable: Option<bool>,
+        jscontact_conversion: Option<JsContactConversion>,
+        bootstrap: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -184,6 +205,8 @@ impl CommonConfig {
             entity_search_by_full_name_enable: entity_search_by_full_name_enable
                 .unwrap_or_default(),
             ip_rdap_up_enable: ip_rdap_up_enable.unwrap_or_default(),
+            jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
+            bootstrap: bootstrap.unwrap_or(false),
         }
     }
 }

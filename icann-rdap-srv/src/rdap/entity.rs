@@ -32,7 +32,7 @@ pub(crate) async fn entity_by_handle(
     let storage = state.get_storage().await?;
     let entity = storage.get_entity_by_handle(&handle).await?;
 
-    if state.get_bootstrap() && !matches!(entity, RdapResponse::Entity(_)) && !entity.is_redirect()
+    if state.get_common_config().bootstrap && !matches!(entity, RdapResponse::Entity(_)) && !entity.is_redirect()
     {
         if let Some(tag) = handle.rsplit_once('-') {
             let found = storage
@@ -44,7 +44,7 @@ pub(crate) async fn entity_by_handle(
         }
     }
 
-    let entity = jscontact_conversion(entity, state.get_jscontact_conversion(), &exts_list);
+    let entity = jscontact_conversion(entity, state.get_common_config().jscontact_conversion, &exts_list);
     let entity = normalize_extensions(entity);
     Ok(entity.response())
 }

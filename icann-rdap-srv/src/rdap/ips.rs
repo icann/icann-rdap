@@ -49,11 +49,11 @@ pub(crate) async fn ip_rdap_up(
             return Ok(BAD_REQUEST.response());
         }
         let network = storage.search_ip_rdap_up_by_cidr(&ip_or_cidr).await?;
-        if state.get_bootstrap() {
+        if state.get_common_config().bootstrap {
             Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
         } else {
             let network =
-                jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
+                jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
             let network = add_rfc9910_extensions(network);
             Ok(network.response())
         }
@@ -64,11 +64,11 @@ pub(crate) async fn ip_rdap_up(
             return Ok(BAD_REQUEST.response());
         }
         let network = storage.search_ip_rdap_up_by_ipaddr(&ip_or_cidr).await?;
-        if state.get_bootstrap() {
+        if state.get_common_config().bootstrap {
             Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
         } else {
             let network =
-                jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
+                jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
             let network = add_rfc9910_extensions(network);
             Ok(network.response())
         }

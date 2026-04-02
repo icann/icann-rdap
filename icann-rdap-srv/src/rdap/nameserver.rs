@@ -37,7 +37,7 @@ pub(crate) async fn nameserver_by_name(
     let storage = state.get_storage().await?;
     let nameserver = storage.get_nameserver_by_ldh(&ns_name).await?;
 
-    if state.get_bootstrap()
+    if state.get_common_config().bootstrap
         && !matches!(nameserver, RdapResponse::Nameserver(_))
         && !nameserver.is_redirect()
     {
@@ -54,7 +54,7 @@ pub(crate) async fn nameserver_by_name(
         }
     }
 
-    let nameserver = jscontact_conversion(nameserver, state.get_jscontact_conversion(), &exts_list);
+    let nameserver = jscontact_conversion(nameserver, state.get_common_config().jscontact_conversion, &exts_list);
     let nameserver = normalize_extensions(nameserver);
     Ok(nameserver.response())
 }

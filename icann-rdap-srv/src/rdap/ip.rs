@@ -38,11 +38,11 @@ pub(crate) async fn network_by_netid(
         if let Ok(cidr) = IpInet::from_str(&netid) {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
-            if state.get_bootstrap() {
+            if state.get_common_config().bootstrap {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
                 let network =
-                    jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
+                    jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
                 let network = normalize_extensions(network);
                 Ok(network.response())
             }
@@ -57,11 +57,11 @@ pub(crate) async fn network_by_netid(
         } else {
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_ipaddr(&netid).await?;
-            if state.get_bootstrap() {
+            if state.get_common_config().bootstrap {
                 Ok(network.to_ip_bootstrap(&netid).response())
             } else {
                 let network =
-                    jscontact_conversion(network, state.get_jscontact_conversion(), &exts_list);
+                    jscontact_conversion(network, state.get_common_config().jscontact_conversion, &exts_list);
                 let network = normalize_extensions(network);
                 Ok(network.response())
             }

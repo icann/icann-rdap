@@ -61,8 +61,6 @@ impl TestJig {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion: JsContactConversion::None,
             common_config,
         };
         let _ = tracing_subscriber::fmt().try_init();
@@ -94,8 +92,6 @@ impl TestJig {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion: JsContactConversion::None,
             common_config,
         };
         let _ = tracing_subscriber::fmt().try_init();
