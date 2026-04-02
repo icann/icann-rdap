@@ -143,6 +143,7 @@ pub enum RdapResponse {
     EntitySearchResults(Box<EntitySearchResults>),
     NameserverSearchResults(Box<NameserverSearchResults>),
     IpSearchResults(Box<IpSearchResults>),
+    AutnumSearchResults(Box<AutnumSearchResults>),
 
     // Error
     ErrorResponse(Box<Rfc9083Error>),
@@ -225,6 +226,16 @@ impl TryFrom<Value> for RdapResponse {
                 ));
             }
         }
+        // else if it is an autnum search result
+        if let Some(result) = response.get("autnumSearchResults") {
+            if result.is_array() {
+                return Ok(serde_json::from_value::<AutnumSearchResults>(value)?.to_response());
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'autnumSearchResults' is not an array".to_string(),
+                ));
+            }
+        }
 
         // else if it has an errorCode
         if let Some(result) = response.get("errorCode") {
@@ -263,6 +274,7 @@ impl RdapResponse {
             Self::EntitySearchResults(_) => TypeId::of::<EntitySearchResults>(),
             Self::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
             Self::IpSearchResults(_) => TypeId::of::<IpSearchResults>(),
+            Self::AutnumSearchResults(_) => TypeId::of::<AutnumSearchResults>(),
             Self::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             Self::Help(_) => TypeId::of::<Help>(),
         }
@@ -279,6 +291,7 @@ impl RdapResponse {
             | Self::EntitySearchResults(_)
             | Self::NameserverSearchResults(_)
             | Self::IpSearchResults(_)
+            | Self::AutnumSearchResults(_)
             | Self::ErrorResponse(_)
             | Self::Help(_) => None,
         }
@@ -295,6 +308,7 @@ impl RdapResponse {
             Self::EntitySearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::IpSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::AutnumSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
             Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
@@ -460,6 +474,7 @@ impl ContentExtensions for RdapResponse {
             Self::EntitySearchResults(r) => r.content_extensions(),
             Self::NameserverSearchResults(r) => r.content_extensions(),
             Self::IpSearchResults(r) => r.content_extensions(),
+            Self::AutnumSearchResults(r) => r.content_extensions(),
             Self::ErrorResponse(e) => e.content_extensions(),
             Self::Help(h) => h.content_extensions(),
         }
@@ -549,6 +564,14 @@ pub fn normalize_extensions_with(
         }
         .to_response(),
         RdapResponse::IpSearchResults(r) => IpSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::AutnumSearchResults(r) => AutnumSearchResults {
             common: Common {
                 rdap_conformance: Some(rdap_conformance),
                 ..r.common
@@ -743,6 +766,35 @@ mod tests {
 
         // THEN
         assert!(matches!(actual, RdapResponse::IpSearchResults(_)));
+    }
+
+    #[test]
+    fn test_response_is_autnum_search_results() {
+        // GIVEN
+        let expected = r#"
+        {
+            "rdapConformance": [
+                "rdap_level_0"
+            ],
+            "autnumSearchResults": [
+                {
+                    "objectClassName": "autnum",
+                    "handle": "AS65000",
+                    "startAutnum": 65000,
+                    "endAutnum": 65000,
+                    "name": "TEST-AS",
+                    "status": "active"
+                }
+            ]
+        }
+        "#;
+
+        // WHEN
+        let actual =
+            RdapResponse::try_from(serde_json::from_str::<Value>(expected).unwrap()).unwrap();
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::AutnumSearchResults(_)));
     }
 
     #[test]
