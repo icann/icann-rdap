@@ -369,7 +369,10 @@ impl StoreOps for Mem {
         Ok(response)
     }
 
-    async fn search_ip_rdap_up_by_ipaddr(&self, ipaddr: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn search_ip_rdap_up_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
         if !self.config.common_config.ip_rdap_up_enable {
             return Ok(NOT_IMPLEMENTED.clone());
         }

@@ -92,7 +92,10 @@ pub trait StoreOps: Send + Sync {
     ) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for the supernet (rdap-up per RFC 9910) by IP address.
-    async fn search_ip_rdap_up_by_ipaddr(&self, ipaddr: &str) -> Result<RdapResponse, RdapServerError>;
+    async fn search_ip_rdap_up_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for the supernet (rdap-up per RFC 9910) by CIDR.
     async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
