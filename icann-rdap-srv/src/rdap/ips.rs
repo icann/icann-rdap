@@ -22,11 +22,9 @@ use crate::{
 };
 
 fn add_rfc9910_extensions(rdap: RdapResponse) -> RdapResponse {
-    if matches!(rdap, RdapResponse::Network(_)) {
-        normalize_extensions_with(
-            rdap,
-            [ExtensionId::Ips, ExtensionId::RirSearch1],
-        )
+    if matches!(rdap, RdapResponse::Network(_)) || matches!(rdap, RdapResponse::IpSearchResults(_))
+    {
+        normalize_extensions_with(rdap, [ExtensionId::Ips, ExtensionId::RirSearch1])
     } else {
         normalize_extensions(rdap)
     }
