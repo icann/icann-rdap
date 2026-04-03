@@ -176,3 +176,46 @@ pub(crate) async fn ip_rdap_down(
         Ok(results.response())
     }
 }
+
+#[axum_macros::debug_handler]
+#[tracing::instrument(level = "debug")]
+pub(crate) async fn ip_rdap_bottom(
+    Path(ip_or_cidr): Path<String>,
+    headers: HeaderMap,
+    state: State<DynServiceState>,
+) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
+    let storage = state.get_storage().await?;
+
+    if ip_or_cidr.contains('/') {
+        debug!("getting rdap-bottom for cidr {ip_or_cidr}");
+        let net: Result<IpNet, _> = ip_or_cidr.parse();
+        if net.is_err() {
+            return Ok(BAD_REQUEST.response());
+        }
+        let results = storage.search_ip_rdap_bottom_by_cidr(&ip_or_cidr).await?;
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
+        let results = add_rfc9910_extensions(results);
+        Ok(results.response())
+    } else {
+        debug!("getting rdap-bottom for ip address {ip_or_cidr}");
+        let ip: Result<IpAddr, _> = ip_or_cidr.parse();
+        if ip.is_err() {
+            return Ok(BAD_REQUEST.response());
+        }
+        let results = storage.search_ip_rdap_bottom_by_ipaddr(&ip_or_cidr).await?;
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
+        let results = add_rfc9910_extensions(results);
+        Ok(results.response())
+    }
+}

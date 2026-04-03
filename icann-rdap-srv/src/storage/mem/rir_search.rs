@@ -59,32 +59,31 @@ fn get_ip_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
     map: &PrefixMap<P, T>,
     query: &P,
 ) -> Vec<T> {
-    let mut bottom_objects = Vec::new();
-    let mut prev: Option<P> = None;
-    let mut prev_value: Option<T> = None;
+    let children: Vec<(P, T)> = map
+        .children(query)
+        .filter(|(p, _)| **p != *query)
+        .map(|(p, v)| (*p, v.clone()))
+        .collect();
 
-    for (prefix, value) in map.children(query) {
-        if *prefix == *query {
-            continue;
-        }
-
-        if let Some(p) = prev {
-            if p.contains(prefix) {
-                continue;
-            }
-            if let Some(v) = prev_value.take() {
-                bottom_objects.push(v);
-            }
-        }
-        prev = Some(*prefix);
-        prev_value = Some(value.clone());
+    if children.is_empty() {
+        return Vec::new();
     }
 
-    if let Some(value) = prev_value {
-        bottom_objects.push(value);
+    let mut leaves = Vec::new();
+    for (i, (prefix, _)) in children.iter().enumerate() {
+        let mut is_leaf = true;
+        for (j, (other, _)) in children.iter().enumerate() {
+            if i != j && prefix.contains(other) {
+                is_leaf = false;
+                break;
+            }
+        }
+        if is_leaf {
+            leaves.push(children[i].1.clone());
+        }
     }
 
-    bottom_objects
+    leaves
 }
 
 impl Mem {
@@ -143,7 +142,7 @@ impl Mem {
         }
     }
 
-    async fn ip_rdap_bottom(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
+    pub(crate) async fn ip_rdap_bottom(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
         match query {
             IpNet::V4(v4_query) => {
                 let ip4s = self.ip4.read().await;
@@ -610,7 +609,7 @@ mod tests {
             panic!("not a network")
         };
         let cidr = net.cidr0_cidrs().first().expect("empty cidrs");
-        assert_eq!(cidr.prefix().expect("prefix"), "10.1.0.0");
+        assert_eq!(cidr.prefix().expect("prefix"), "10.1.2.128");
     }
 
     #[tokio::test]

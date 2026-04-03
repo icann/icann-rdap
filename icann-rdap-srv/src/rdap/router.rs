@@ -7,7 +7,7 @@ use super::{
     entities::entities,
     entity::entity_by_handle,
     ip::network_by_netid,
-    ips::{ip_rdap_down, ip_rdap_top, ip_rdap_up},
+    ips::{ip_rdap_bottom, ip_rdap_down, ip_rdap_top, ip_rdap_up},
     nameserver::nameserver_by_name,
     nameservers::nameservers,
     srvhelp::srvhelp,
@@ -27,4 +27,8 @@ pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
         .route("/ips/rirSearch1/rdap-up/*ipAddress", get(ip_rdap_up))
         .route("/ips/rirSearch1/rdap-top/*ipAddress", get(ip_rdap_top))
         .route("/ips/rirSearch1/rdap-down/*ipAddress", get(ip_rdap_down))
+        .route(
+            "/ips/rirSearch1/rdap-bottom/*ipAddress",
+            get(ip_rdap_bottom),
+        )
 }

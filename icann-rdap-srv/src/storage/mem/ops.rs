@@ -474,4 +474,51 @@ impl StoreOps for Mem {
             .build()
             .to_response())
     }
+
+    async fn search_ip_rdap_bottom_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        let results = self.ip_rdap_bottom(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_ip_rdap_bottom_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        let results = self.ip_rdap_bottom(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
 }
