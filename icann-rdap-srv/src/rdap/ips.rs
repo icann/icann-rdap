@@ -46,8 +46,8 @@ pub(crate) async fn ip_rdap_up(
 
     if ip_or_cidr.contains('/') {
         debug!("getting rdap-up for cidr {ip_or_cidr}");
-        let ip: Result<IpAddr, _> = ip_or_cidr.parse();
-        if ip.is_err() {
+        let net: Result<IpNet, _> = ip_or_cidr.parse();
+        if net.is_err() {
             return Ok(BAD_REQUEST.response());
         }
         let network = storage.search_ip_rdap_up_by_cidr(&ip_or_cidr).await?;
