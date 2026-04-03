@@ -7,8 +7,8 @@ use {
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            Domain, DomainSearchResults, Entity, EntitySearchResults, Nameserver,
-            NameserverSearchResults, RdapResponse,
+            Domain, DomainSearchResults, Entity, EntitySearchResults, IpSearchResults,
+            Nameserver, NameserverSearchResults, Network, RdapResponse,
         },
     },
     ipnet::{IpNet, Ipv4Net, Ipv6Net},
@@ -426,5 +426,52 @@ impl StoreOps for Mem {
             Some(network) => Ok(Arc::unwrap_or_clone(network)),
             None => Ok(NOT_FOUND.clone()),
         }
+    }
+
+    async fn search_ip_rdap_down_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        let results = self.ip_rdap_down(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_ip_rdap_down_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        let results = self.ip_rdap_down(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
     }
 }

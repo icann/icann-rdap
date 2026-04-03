@@ -102,23 +102,35 @@ impl Mem {
     }
 
     pub(crate) async fn ip_rdap_up(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
-        if let Some(supernet) = query.supernet() {
-            match supernet {
-                IpNet::V4(v4_supernet) => {
-                    let ip4s = self.ip4.read().await;
-                    ip4s.get_lpm(&v4_supernet).map(|r| r.1.clone())
-                }
-                IpNet::V6(v6_supernet) => {
-                    let ip6s = self.ip6.read().await;
-                    ip6s.get_lpm(&v6_supernet).map(|r| r.1.clone())
+        match query {
+            IpNet::V4(v4_query) => {
+                let ip4s = self.ip4.read().await;
+                if let Some((network_net, _)) = ip4s.get_lpm(v4_query) {
+                    if let Some(supernet) = network_net.supernet() {
+                        ip4s.get_lpm(&supernet).map(|r| r.1.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
             }
-        } else {
-            None
+            IpNet::V6(v6_query) => {
+                let ip6s = self.ip6.read().await;
+                if let Some((network_net, _)) = ip6s.get_lpm(v6_query) {
+                    if let Some(supernet) = network_net.supernet() {
+                        ip6s.get_lpm(&supernet).map(|r| r.1.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
         }
     }
 
-    async fn ip_rdap_down(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
+    pub(crate) async fn ip_rdap_down(&self, query: &IpNet) -> Vec<Arc<RdapResponse>> {
         match query {
             IpNet::V4(v4_query) => {
                 let ip4s = self.ip4.read().await;

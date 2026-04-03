@@ -26,7 +26,7 @@ pub(crate) async fn srvhelp(
     }
 
     let config = state.get_common_config();
-    let srv_help = if config.ip_rdap_up_enable || config.ip_rdap_top_enable {
+    let srv_help = if config.ip_rdap_up_enable || config.ip_rdap_top_enable || config.ip_rdap_down_enable {
         normalize_extensions_with(
             srv_help,
             [
