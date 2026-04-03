@@ -382,25 +382,9 @@ impl StoreOps for Mem {
             IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
             IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
         };
-        if let Some(supernet) = net.supernet() {
-            match supernet {
-                IpNet::V4(v4_supernet) => {
-                    let ip4s = self.ip4.read().await;
-                    match ip4s.get_lpm(&v4_supernet) {
-                        Some(network) => Ok(RdapResponse::clone(network.1)),
-                        None => Ok(NOT_FOUND.clone()),
-                    }
-                }
-                IpNet::V6(v6_supernet) => {
-                    let ip6s = self.ip6.read().await;
-                    match ip6s.get_lpm(&v6_supernet) {
-                        Some(network) => Ok(RdapResponse::clone(network.1)),
-                        None => Ok(NOT_FOUND.clone()),
-                    }
-                }
-            }
-        } else {
-            Ok(NOT_FOUND.clone())
+        match self.ip_rdap_up(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 
@@ -409,25 +393,9 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let net = IpNet::from_str(cidr)?;
-        if let Some(supernet) = net.supernet() {
-            match supernet {
-                IpNet::V4(v4_supernet) => {
-                    let ip4s = self.ip4.read().await;
-                    match ip4s.get_lpm(&v4_supernet) {
-                        Some(network) => Ok(RdapResponse::clone(network.1)),
-                        None => Ok(NOT_FOUND.clone()),
-                    }
-                }
-                IpNet::V6(v6_supernet) => {
-                    let ip6s = self.ip6.read().await;
-                    match ip6s.get_lpm(&v6_supernet) {
-                        Some(network) => Ok(RdapResponse::clone(network.1)),
-                        None => Ok(NOT_FOUND.clone()),
-                    }
-                }
-            }
-        } else {
-            Ok(NOT_FOUND.clone())
+        match self.ip_rdap_up(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 
@@ -443,21 +411,9 @@ impl StoreOps for Mem {
             IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
             IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
         };
-        match net {
-            IpNet::V4(v4_net) => {
-                let ip4s = self.ip4.read().await;
-                match ip4s.get_spm(&v4_net) {
-                    Some(network) => Ok(RdapResponse::clone(network.1)),
-                    None => Ok(NOT_FOUND.clone()),
-                }
-            }
-            IpNet::V6(v6_net) => {
-                let ip6s = self.ip6.read().await;
-                match ip6s.get_spm(&v6_net) {
-                    Some(network) => Ok(RdapResponse::clone(network.1)),
-                    None => Ok(NOT_FOUND.clone()),
-                }
-            }
+        match self.ip_rdap_top(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 
@@ -466,21 +422,9 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let net = IpNet::from_str(cidr)?;
-        match net {
-            IpNet::V4(v4_net) => {
-                let ip4s = self.ip4.read().await;
-                match ip4s.get_spm(&v4_net) {
-                    Some(network) => Ok(RdapResponse::clone(network.1)),
-                    None => Ok(NOT_FOUND.clone()),
-                }
-            }
-            IpNet::V6(v6_net) => {
-                let ip6s = self.ip6.read().await;
-                match ip6s.get_spm(&v6_net) {
-                    Some(network) => Ok(RdapResponse::clone(network.1)),
-                    None => Ok(NOT_FOUND.clone()),
-                }
-            }
+        match self.ip_rdap_top(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
         }
     }
 }

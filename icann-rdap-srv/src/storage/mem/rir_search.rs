@@ -88,7 +88,7 @@ fn get_ip_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
 }
 
 impl Mem {
-    async fn ip_rdap_top(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
+    pub(crate) async fn ip_rdap_top(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
         match query {
             IpNet::V4(v4_query) => {
                 let ip4s = self.ip4.read().await;
@@ -101,7 +101,7 @@ impl Mem {
         }
     }
 
-    async fn ip_rdap_up(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
+    pub(crate) async fn ip_rdap_up(&self, query: &IpNet) -> Option<Arc<RdapResponse>> {
         if let Some(supernet) = query.supernet() {
             match supernet {
                 IpNet::V4(v4_supernet) => {
