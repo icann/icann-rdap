@@ -107,7 +107,8 @@ pub trait StoreOps: Send + Sync {
     ) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for the topmost containing network (rdap-top per RFC 9910) by CIDR.
-    async fn search_ip_rdap_top_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
+    async fn search_ip_rdap_top_by_cidr(&self, cidr: &str)
+        -> Result<RdapResponse, RdapServerError>;
 
     /// Search for immediate child networks (rdap-down per RFC 9910) by IP address.
     async fn search_ip_rdap_down_by_ipaddr(
@@ -116,7 +117,10 @@ pub trait StoreOps: Send + Sync {
     ) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for immediate child networks (rdap-down per RFC 9910) by CIDR.
-    async fn search_ip_rdap_down_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
+    async fn search_ip_rdap_down_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for leaf networks (rdap-bottom per RFC 9910) by IP address.
     async fn search_ip_rdap_bottom_by_ipaddr(
@@ -125,7 +129,10 @@ pub trait StoreOps: Send + Sync {
     ) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for leaf networks (rdap-bottom per RFC 9910) by CIDR.
-    async fn search_ip_rdap_bottom_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
+    async fn search_ip_rdap_bottom_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.

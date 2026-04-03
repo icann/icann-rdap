@@ -7,8 +7,8 @@ use {
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            Domain, DomainSearchResults, Entity, EntitySearchResults, IpSearchResults,
-            Nameserver, NameserverSearchResults, Network, RdapResponse,
+            Domain, DomainSearchResults, Entity, EntitySearchResults, IpSearchResults, Nameserver,
+            NameserverSearchResults, Network, RdapResponse,
         },
     },
     ipnet::{IpNet, Ipv4Net, Ipv6Net},
@@ -417,7 +417,10 @@ impl StoreOps for Mem {
         }
     }
 
-    async fn search_ip_rdap_top_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn search_ip_rdap_top_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
         if !self.config.common_config.ip_rdap_top_enable {
             return Ok(NOT_IMPLEMENTED.clone());
         }
@@ -455,7 +458,10 @@ impl StoreOps for Mem {
             .to_response())
     }
 
-    async fn search_ip_rdap_down_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn search_ip_rdap_down_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
         if !self.config.common_config.ip_rdap_down_enable {
             return Ok(NOT_IMPLEMENTED.clone());
         }
@@ -502,7 +508,10 @@ impl StoreOps for Mem {
             .to_response())
     }
 
-    async fn search_ip_rdap_bottom_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+    async fn search_ip_rdap_bottom_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
         if !self.config.common_config.ip_rdap_bottom_enable {
             return Ok(NOT_IMPLEMENTED.clone());
         }
