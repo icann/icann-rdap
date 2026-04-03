@@ -42,7 +42,7 @@ pub enum QueryType {
     ALabel(DomainName),
 
     #[strum(serialize = "Reverse DNS Domain Lookup")]
-    ReverseDNs(IpAddr),
+    ReverseDns(IpAddr),
 
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
@@ -108,7 +108,7 @@ impl QueryType {
                 "{base_url}/domain/{}",
                 PctString::encode(value.trim_leading_dot().chars(), URIReserved)
             )),
-            Self::ReverseDNs(value) => Ok(format!(
+            Self::ReverseDns(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(ip_to_reverse_dns(value).chars(), URIReserved)
             )),
@@ -150,13 +150,13 @@ impl QueryType {
 
     pub fn rdns(domain_name: &str) -> Result<Self, RdapClientError> {
         let value = reverse_dns_to_ip(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDNs(value))
+        Ok(Self::ReverseDns(value))
     }
 
     pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
         let value =
             IpAddr::from_str(ip_address).map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDNs(value))
+        Ok(Self::ReverseDns(value))
     }
 
     pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
@@ -262,7 +262,7 @@ impl FromStr for QueryType {
             return if is_nameserver(s) {
                 Self::ns(s)
             } else if let Some(ip) = reverse_dns_to_ip(s) {
-                Ok(Self::ReverseDNs(ip))
+                Ok(Self::ReverseDns(ip))
             } else {
                 Self::domain(s)
             };
