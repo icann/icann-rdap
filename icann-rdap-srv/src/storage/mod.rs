@@ -99,6 +99,15 @@ pub trait StoreOps: Send + Sync {
 
     /// Search for the supernet (rdap-up per RFC 9910) by CIDR.
     async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by IP address.
+    async fn search_ip_rdap_top_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by CIDR.
+    async fn search_ip_rdap_top_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.

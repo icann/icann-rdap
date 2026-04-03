@@ -31,6 +31,7 @@ pub const NAMESERVER_SEARCH_BY_IP_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_BY_
 pub const ENTITY_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_ENTITY_SEARCH_BY_HANDLE";
 pub const ENTITY_SEARCH_BY_FULL_NAME_ENABLE: &str = "RDAP_SRV_ENTITY_SEARCH_BY_FULL_NAME";
 pub const IP_RDAP_UP_ENABLE: &str = "RDAP_SRV_IP_RDAP_UP";
+pub const IP_RDAP_TOP_ENABLE: &str = "RDAP_SRV_IP_RDAP_TOP";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -52,6 +53,7 @@ pub fn debug_config_vars() {
         ENTITY_SEARCH_BY_HANDLE_ENABLE,
         ENTITY_SEARCH_BY_FULL_NAME_ENABLE,
         IP_RDAP_UP_ENABLE,
+        IP_RDAP_TOP_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -102,6 +104,7 @@ impl StorageType {
         let entity_search_by_handle = get_parse_or(ENTITY_SEARCH_BY_HANDLE_ENABLE, false)?;
         let entity_search_by_full_name = get_parse_or(ENTITY_SEARCH_BY_FULL_NAME_ENABLE, false)?;
         let ip_rdap_up = get_parse_or(IP_RDAP_UP_ENABLE, false)?;
+        let ip_rdap_top = get_parse_or(IP_RDAP_TOP_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -111,6 +114,7 @@ impl StorageType {
             .entity_search_by_handle_enable(entity_search_by_handle)
             .entity_search_by_full_name_enable(entity_search_by_full_name)
             .ip_rdap_up_enable(ip_rdap_up)
+            .ip_rdap_top_enable(ip_rdap_top)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
@@ -158,6 +162,7 @@ pub struct CommonConfig {
     pub entity_search_by_handle_enable: bool,
     pub entity_search_by_full_name_enable: bool,
     pub ip_rdap_up_enable: bool,
+    pub ip_rdap_top_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
 }
@@ -173,6 +178,7 @@ impl Default for CommonConfig {
             entity_search_by_handle_enable: false,
             entity_search_by_full_name_enable: false,
             ip_rdap_up_enable: false,
+            ip_rdap_top_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
         }
@@ -191,6 +197,7 @@ impl CommonConfig {
         entity_search_by_handle_enable: Option<bool>,
         entity_search_by_full_name_enable: Option<bool>,
         ip_rdap_up_enable: Option<bool>,
+        ip_rdap_top_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
     ) -> Self {
@@ -205,6 +212,7 @@ impl CommonConfig {
             entity_search_by_full_name_enable: entity_search_by_full_name_enable
                 .unwrap_or_default(),
             ip_rdap_up_enable: ip_rdap_up_enable.unwrap_or_default(),
+            ip_rdap_top_enable: ip_rdap_top_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
         }

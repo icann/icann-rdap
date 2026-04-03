@@ -1,5 +1,7 @@
 use std::net::IpAddr;
 
+use ipnet::IpNet;
+
 use axum::{
     extract::{Path, State},
     response::Response,
@@ -67,6 +69,57 @@ pub(crate) async fn ip_rdap_up(
             return Ok(BAD_REQUEST.response());
         }
         let network = storage.search_ip_rdap_up_by_ipaddr(&ip_or_cidr).await?;
+        if state.get_common_config().bootstrap {
+            Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
+        } else {
+            let network = jscontact_conversion(
+                network,
+                state.get_common_config().jscontact_conversion,
+                &exts_list,
+            );
+            let network = add_rfc9910_extensions(network);
+            Ok(network.response())
+        }
+    }
+}
+
+#[axum_macros::debug_handler]
+#[tracing::instrument(level = "debug")]
+pub(crate) async fn ip_rdap_top(
+    Path(ip_or_cidr): Path<String>,
+    headers: HeaderMap,
+    state: State<DynServiceState>,
+) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
+    let storage = state.get_storage().await?;
+
+    if ip_or_cidr.contains('/') {
+        debug!("getting rdap-top for cidr {ip_or_cidr}");
+        let net: Result<IpNet, _> = ip_or_cidr.parse();
+        if net.is_err() {
+            return Ok(BAD_REQUEST.response());
+        }
+        let network = storage.search_ip_rdap_top_by_cidr(&ip_or_cidr).await?;
+        if state.get_common_config().bootstrap {
+            Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
+        } else {
+            let network = jscontact_conversion(
+                network,
+                state.get_common_config().jscontact_conversion,
+                &exts_list,
+            );
+            let network = add_rfc9910_extensions(network);
+            Ok(network.response())
+        }
+    } else {
+        debug!("getting rdap-top for ip address {ip_or_cidr}");
+        let ip: Result<IpAddr, _> = ip_or_cidr.parse();
+        if ip.is_err() {
+            return Ok(BAD_REQUEST.response());
+        }
+        let network = storage.search_ip_rdap_top_by_ipaddr(&ip_or_cidr).await?;
         if state.get_common_config().bootstrap {
             Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
         } else {

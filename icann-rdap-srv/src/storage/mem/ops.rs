@@ -430,4 +430,57 @@ impl StoreOps for Mem {
             Ok(NOT_FOUND.clone())
         }
     }
+
+    async fn search_ip_rdap_top_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        match net {
+            IpNet::V4(v4_net) => {
+                let ip4s = self.ip4.read().await;
+                match ip4s.get_spm(&v4_net) {
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+            IpNet::V6(v6_net) => {
+                let ip6s = self.ip6.read().await;
+                match ip6s.get_spm(&v6_net) {
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+        }
+    }
+
+    async fn search_ip_rdap_top_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        match net {
+            IpNet::V4(v4_net) => {
+                let ip4s = self.ip4.read().await;
+                match ip4s.get_spm(&v4_net) {
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+            IpNet::V6(v6_net) => {
+                let ip6s = self.ip6.read().await;
+                match ip6s.get_spm(&v6_net) {
+                    Some(network) => Ok(RdapResponse::clone(network.1)),
+                    None => Ok(NOT_FOUND.clone()),
+                }
+            }
+        }
+    }
 }
