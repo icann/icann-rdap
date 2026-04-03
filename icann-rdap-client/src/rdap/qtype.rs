@@ -32,6 +32,18 @@ pub enum QueryType {
     #[strum(serialize = "IpV6 CIDR Lookup")]
     IpV6Cidr(Ipv6Cidr),
 
+    #[strum(serialize = "IpV4 Address Rdap-Up Lookup")]
+    IpV4AddrUp(Ipv4Addr),
+
+    #[strum(serialize = "IpV6 Address Rdap-Up Lookup")]
+    IpV6AddrUp(Ipv6Addr),
+
+    #[strum(serialize = "IpV4 CIDR Rdap-Up Lookup")]
+    IpV4CidrUp(Ipv4Cidr),
+
+    #[strum(serialize = "IpV6 CIDR Rdap-Up Lookup")]
+    IpV6CidrUp(Ipv6Cidr),
+
     #[strum(serialize = "Autonomous System Number Lookup")]
     AsNumber(u32),
 
@@ -97,6 +109,24 @@ impl QueryType {
             )),
             Self::IpV6Cidr(value) => Ok(format!(
                 "{base_url}/ip/{}/{}",
+                PctString::encode(value.first_address().to_string().chars(), URIReserved),
+                PctString::encode(value.network_length().to_string().chars(), URIReserved)
+            )),
+            Self::IpV4AddrUp(value) => Ok(format!(
+                "{base_url}/ips/rirSearch1/rdap-up/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
+            Self::IpV6AddrUp(value) => Ok(format!(
+                "{base_url}/ips/rirSearch1/rdap-up/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
+            Self::IpV4CidrUp(value) => Ok(format!(
+                "{base_url}/ips/rirSearch1/rdap-up/{}/{}",
+                PctString::encode(value.first_address().to_string().chars(), URIReserved),
+                PctString::encode(value.network_length().to_string().chars(), URIReserved)
+            )),
+            Self::IpV6CidrUp(value) => Ok(format!(
+                "{base_url}/ips/rirSearch1/rdap-up/{}/{}",
                 PctString::encode(value.first_address().to_string().chars(), URIReserved),
                 PctString::encode(value.network_length().to_string().chars(), URIReserved)
             )),
@@ -207,6 +237,42 @@ impl QueryType {
         }
     }
 
+    pub fn ipv4_up(ip: &str) -> Result<Self, RdapClientError> {
+        let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::IpV4AddrUp(value))
+    }
+
+    pub fn ipv6_up(ip: &str) -> Result<Self, RdapClientError> {
+        let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::IpV6AddrUp(value))
+    }
+
+    pub fn ipv4cidr_up(cidr: &str) -> Result<Self, RdapClientError> {
+        let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+            cidr,
+            cidr::parsers::parse_loose_ip,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        if let IpCidr::V4(v4) = value {
+            Ok(Self::IpV4CidrUp(v4))
+        } else {
+            Err(RdapClientError::AmbiguousQueryType)
+        }
+    }
+
+    pub fn ipv6cidr_up(cidr: &str) -> Result<Self, RdapClientError> {
+        let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+            cidr,
+            cidr::parsers::parse_loose_ip,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        if let IpCidr::V6(v6) = value {
+            Ok(Self::IpV6CidrUp(v6))
+        } else {
+            Err(RdapClientError::AmbiguousQueryType)
+        }
+    }
+
     pub fn domain_ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::DomainNsIpSearch(value))
@@ -232,6 +298,24 @@ impl FromStr for QueryType {
         // if it looks like a HTTP(S) url
         if s.starts_with("http://") || s.starts_with("https://") {
             return Ok(Self::Url(s.to_owned()));
+        }
+
+        // if it is an rdap-up query
+        if let Some(rest) = s.strip_prefix("up:") {
+            if let Ok(ip_addr) = IpAddr::from_str(rest) {
+                if ip_addr.is_ipv4() {
+                    return Self::ipv4_up(rest);
+                } else {
+                    return Self::ipv6_up(rest);
+                }
+            }
+            if let Ok(ip_cidr) = parse_cidr(rest) {
+                return Ok(match ip_cidr {
+                    IpCidr::V4(cidr) => Self::IpV4CidrUp(cidr),
+                    IpCidr::V6(cidr) => Self::IpV6CidrUp(cidr),
+                });
+            }
+            return Err(RdapClientError::InvalidQueryValue);
         }
 
         // if looks like an autnum
@@ -663,5 +747,77 @@ mod tests {
 
         // THEN
         assert_eq!(actual, "https://example.com/nameservers?ip=1.1.1.1")
+    }
+
+    #[test]
+    fn test_ipv4addr_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("up:199.1.1.1").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/ips/rirSearch1/rdap-up/199.1.1.1"
+        )
+    }
+
+    #[test]
+    fn test_ipv6addr_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("up:2000::1").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/ips/rirSearch1/rdap-up/2000%3A%3A1"
+        )
+    }
+
+    #[test]
+    fn test_ipv4cidr_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("up:199.1.1.1/16").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/ips/rirSearch1/rdap-up/199.1.0.0/16"
+        )
+    }
+
+    #[test]
+    fn test_ipv6cidr_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("up:2000::1/16").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/ips/rirSearch1/rdap-up/2000%3A%3A/16"
+        )
+    }
+
+    #[test]
+    fn test_up_prefix_invalid_input() {
+        // GIVEN
+        let s = "up:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
     }
 }
