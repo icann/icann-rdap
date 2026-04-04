@@ -338,6 +338,18 @@ enum QtypeArg {
     /// Ipv6 CIDR Rdap-Up Lookup
     V6CidrUp,
 
+    /// Ipv4 Address Rdap-Top Lookup
+    V4Top,
+
+    /// Ipv6 Address Rdap-Top Lookup
+    V6Top,
+
+    /// Ipv4 CIDR Rdap-Top Lookup
+    V4CidrTop,
+
+    /// Ipv6 CIDR Rdap-Top Lookup
+    V6CidrTop,
+
     /// Autonomous System Number Lookup
     Autnum,
 
@@ -735,6 +747,10 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::V6Up => QueryType::ipv6_up(&query_value)?,
         QtypeArg::V4CidrUp => QueryType::ipv4cidr_up(&query_value)?,
         QtypeArg::V6CidrUp => QueryType::ipv6cidr_up(&query_value)?,
+        QtypeArg::V4Top => QueryType::ipv4_top(&query_value)?,
+        QtypeArg::V6Top => QueryType::ipv6_top(&query_value)?,
+        QtypeArg::V4CidrTop => QueryType::ipv4cidr_top(&query_value)?,
+        QtypeArg::V6CidrTop => QueryType::ipv6cidr_top(&query_value)?,
         QtypeArg::Autnum => QueryType::autnum(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
