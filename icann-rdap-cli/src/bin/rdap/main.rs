@@ -326,54 +326,6 @@ enum QtypeArg {
     /// Ipv6 CIDR Lookup
     V6Cidr,
 
-    /// Ipv4 Address Rdap-Up Lookup
-    V4Up,
-
-    /// Ipv6 Address Rdap-Up Lookup
-    V6Up,
-
-    /// Ipv4 CIDR Rdap-Up Lookup
-    V4CidrUp,
-
-    /// Ipv6 CIDR Rdap-Up Lookup
-    V6CidrUp,
-
-    /// Ipv4 Address Rdap-Top Lookup
-    V4Top,
-
-    /// Ipv6 Address Rdap-Top Lookup
-    V6Top,
-
-    /// Ipv4 CIDR Rdap-Top Lookup
-    V4CidrTop,
-
-    /// Ipv6 CIDR Rdap-Top Lookup
-    V6CidrTop,
-
-    /// Ipv4 Address Rdap-Down Lookup
-    V4Down,
-
-    /// Ipv6 Address Rdap-Down Lookup
-    V6Down,
-
-    /// Ipv4 CIDR Rdap-Down Lookup
-    V4CidrDown,
-
-    /// Ipv6 CIDR Rdap-Down Lookup
-    V6CidrDown,
-
-    /// Ipv4 Address Rdap-Bottom Lookup
-    V4Bottom,
-
-    /// Ipv6 Address Rdap-Bottom Lookup
-    V6Bottom,
-
-    /// Ipv4 CIDR Rdap-Bottom Lookup
-    V4CidrBottom,
-
-    /// Ipv6 CIDR Rdap-Bottom Lookup
-    V6CidrBottom,
-
     /// Autonomous System Number Lookup
     Autnum,
 
@@ -415,6 +367,54 @@ enum QtypeArg {
 
     /// RDAP URL
     Url,
+
+    /// Ipv4 Address Rdap-Up Lookup
+    V4Up,
+
+    /// Ipv6 Address Rdap-Up Lookup
+    V6Up,
+
+    /// Ipv4 CIDR Rdap-Up Lookup
+    V4CidrUp,
+
+    /// Ipv6 CIDR Rdap-Up Lookup
+    V6CidrUp,
+
+    /// Ipv4 Address Rdap-Top Lookup
+    V4Top,
+
+    /// Ipv6 Address Rdap-Top Lookup
+    V6Top,
+
+    /// Ipv4 CIDR Rdap-Top Lookup
+    V4CidrTop,
+
+    /// Ipv6 CIDR Rdap-Top Lookup
+    V6CidrTop,
+
+    /// Ipv4 Address Rdap-Down Search
+    V4Down,
+
+    /// Ipv6 Address Rdap-Down Search
+    V6Down,
+
+    /// Ipv4 CIDR Rdap-Down Search
+    V4CidrDown,
+
+    /// Ipv6 CIDR Rdap-Down Search
+    V6CidrDown,
+
+    /// Ipv4 Address Rdap-Bottom Search
+    V4Bottom,
+
+    /// Ipv6 Address Rdap-Bottom Search
+    V6Bottom,
+
+    /// Ipv4 CIDR Rdap-Bottom Search
+    V4CidrBottom,
+
+    /// Ipv6 CIDR Rdap-Bottom Search
+    V6CidrBottom,
 }
 
 /// Represents the output type possibilities.
