@@ -51,6 +51,11 @@ smoke_domain_check:
 smoke_rdap_test_help:
     cargo run --bin rdap-test -- --help
 
+[doc('Create Server Data Directory.')]
+srv_data_setup:
+    mkdir -p srv/data \
+    && echo "RDAP_SRV_DATA_DIR=srv/data" >> .env
+
 [doc('Create a help response in the server.')]
 srv_data_help:
     RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- srv-help --notice "this is a test server"
@@ -67,6 +72,15 @@ srv_data_domain:
 srv_data_nameserver:
     RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- nameserver --ldh ns1.example.com --registrant foo1234-oid --v4 10.0.2.1 --v6 2001::1
 
+[doc('Create IP networks.')]
+srv_data_networks:
+    RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/8 --handle net4-1 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/16 --handle net4-2 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/24 --handle net4-3 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 2001:db8::/20 --handle net6-1 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 2001:db8::/32 --handle net6-2 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 2001:db8:1::/48 --handle net6-3 --registrant foo1234-oid
+
 [doc('Start the server')]
 srv_start:
     RDAP_SRV_DOMAIN_SEARCH_BY_NAME=true \
@@ -76,6 +90,10 @@ srv_start:
     RDAP_SRV_NAMESERVER_SEARCH_BY_IP=true \
     RDAP_SRV_ENTITY_SEARCH_BY_HANDLE=true \
     RDAP_SRV_ENTITY_SEARCH_BY_FULL_NAME=true \
+    RDAP_SRV_IP_RDAP_UP=true \
+    RDAP_SRV_IP_RDAP_TOP=true \
+    RDAP_SRV_IP_RDAP_DOWN=true \
+    RDAP_SRV_IP_RDAP_BOTTOM=true \
     RDAP_SRV_LOG=debug \
     cargo run --bin rdap-srv 
 
@@ -122,3 +140,11 @@ srv_search_entity_handle:
 [doc('Search for entityby by name in localhost.')]
 srv_search_entity_name:
     cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -t entity-name "Joe*"
+
+[doc('Lookup up IP address.')]
+srv_lookup_ip_up:
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -t v4-up 10.0.0.1
+
+[doc('Lookup up IP address (Alt).')]
+srv_lookup_ip_up-alt:
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap up:10.0.0.1
