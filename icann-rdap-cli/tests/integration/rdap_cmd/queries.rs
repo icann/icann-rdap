@@ -1221,14 +1221,9 @@ async fn test_network_ipv4_up_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.0.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1246,14 +1241,9 @@ async fn test_network_ipv6_up_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1271,14 +1261,9 @@ async fn test_network_ipv4_cidr_up_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.1.0.0/16", "10.1.0.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1296,19 +1281,18 @@ async fn test_network_ipv6_cidr_up_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rdap-up type - query the /48 to get its supernet (/32)
-    test_jig.cmd.arg("-t").arg("v6-cidr-up").arg("2001:db8:1::/48");
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("v6-cidr-up")
+        .arg("2001:db8:1::/48");
 
     // THEN success
     let assert = test_jig.cmd.assert();
@@ -1321,14 +1305,9 @@ async fn test_network_ipv4_top_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.0.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1346,14 +1325,9 @@ async fn test_network_ipv6_top_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1371,14 +1345,9 @@ async fn test_network_ipv4_cidr_top_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.0.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1396,19 +1365,18 @@ async fn test_network_ipv6_cidr_top_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rdap-top type - query the /48 to get itself (most specific)
-    test_jig.cmd.arg("-t").arg("v6-cidr-top").arg("2001:db8:1::/48");
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("v6-cidr-top")
+        .arg("2001:db8:1::/48");
 
     // THEN success
     let assert = test_jig.cmd.assert();
@@ -1421,14 +1389,9 @@ async fn test_network_ipv4_down_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.1.0/24", "10.1.2.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1446,14 +1409,9 @@ async fn test_network_ipv6_down_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48", "2001:db8:2::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1471,19 +1429,18 @@ async fn test_network_ipv4_cidr_down_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.1.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rdap-down type - query /16 to get immediate subnets (/24)
-    test_jig.cmd.arg("-t").arg("v4-cidr-down").arg("10.1.0.0/16");
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("v4-cidr-down")
+        .arg("10.1.0.0/16");
 
     // THEN success
     let assert = test_jig.cmd.assert();
@@ -1496,19 +1453,18 @@ async fn test_network_ipv6_cidr_down_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rdap-down type - query /32 to get immediate subnets (/48)
-    test_jig.cmd.arg("-t").arg("v6-cidr-down").arg("2001:db8::/32");
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("v6-cidr-down")
+        .arg("2001:db8::/32");
 
     // THEN success
     let assert = test_jig.cmd.assert();
@@ -1521,14 +1477,9 @@ async fn test_network_ipv4_bottom_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.0.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1546,14 +1497,9 @@ async fn test_network_ipv6_bottom_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
@@ -1571,19 +1517,18 @@ async fn test_network_ipv4_cidr_bottom_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["10.0.0.0/8", "10.1.0.0/16", "10.1.0.0/24"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rdap-bottom type - query /24 to get all supernets
-    test_jig.cmd.arg("-t").arg("v4-cidr-bottom").arg("10.1.0.0/24");
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("v4-cidr-bottom")
+        .arg("10.1.0.0/24");
 
     // THEN success
     let assert = test_jig.cmd.assert();
@@ -1596,19 +1541,18 @@ async fn test_network_ipv6_cidr_bottom_query() {
     let mut test_jig = TestJig::new_rdap_with_search().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
     for cidr in ["2001:db8::/32", "2001:db8:1::/48"] {
-        tx.add_network(
-            &Network::builder()
-                .cidr(cidr)
-                .build()
-                .expect("cidr parsing"),
-        )
-        .await
-        .expect("add network in tx");
+        tx.add_network(&Network::builder().cidr(cidr).build().expect("cidr parsing"))
+            .await
+            .expect("add network in tx");
     }
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rdap-bottom type - query /48 to get all supernets
-    test_jig.cmd.arg("-t").arg("v6-cidr-bottom").arg("2001:db8:1::/48");
+    test_jig
+        .cmd
+        .arg("-t")
+        .arg("v6-cidr-bottom")
+        .arg("2001:db8:1::/48");
 
     // THEN success
     let assert = test_jig.cmd.assert();
