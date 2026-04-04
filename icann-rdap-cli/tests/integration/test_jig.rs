@@ -40,6 +40,7 @@ impl TestJig {
             .entity_search_by_full_name_enable(true)
             .ip_rdap_up_enable(true)
             .ip_rdap_top_enable(true)
+            .ip_rdap_down_enable(true)
             .build();
         Self::new_common_config(common_config, CommandType::Rdap).await
     }
