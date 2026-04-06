@@ -76,7 +76,18 @@ srv_data_nameserver:
 srv_data_networks:
     RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/8 --handle net4-1 --registrant foo1234-oid \
     && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/16 --handle net4-2 --registrant foo1234-oid \
-    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/24 --handle net4-3 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.1.0.0/16 --handle net4-3 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.2.0.0/16 --handle net4-4 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/24 --handle net4-5 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.0.0/24 --handle net4-6 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.1.0/24 --handle net4-7 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.0.2.0/24 --handle net4-8 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.1.0.0/24 --handle net4-9 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.1.1.0/24 --handle net4-10 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.1.2.0/24 --handle net4-11 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.2.0.0/24 --handle net4-12 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.2.1.0/24 --handle net4-13 --registrant foo1234-oid \
+    && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 10.2.2.0/24 --handle net4-14 --registrant foo1234-oid \
     && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 2001:db8::/20 --handle net6-1 --registrant foo1234-oid \
     && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 2001:db8::/32 --handle net6-2 --registrant foo1234-oid \
     && RDAP_SRV_LOG=debug cargo run --bin rdap-srv-data -- network --cidr 2001:db8:1::/48 --handle net6-3 --registrant foo1234-oid
@@ -146,5 +157,13 @@ srv_lookup_ip_up:
     cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -t v4-up 10.0.0.1
 
 [doc('Lookup up IP address (Alt).')]
-srv_lookup_ip_up-alt:
+srv_lookup_ip_up_alt:
     cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap up:10.0.0.1
+
+[doc('Search down IP cidr.')]
+srv_search_ip_down:
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap -t v4-cidr-down 10.0.0.0/8
+
+[doc('Search down IP cidr (Alt).')]
+srv_search_ip_down_alt:
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap down:10.0.0.0/8
