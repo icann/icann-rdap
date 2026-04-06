@@ -1,3 +1,4 @@
+mod autnum;
 mod bootstrap;
 mod domain;
 mod entity;
