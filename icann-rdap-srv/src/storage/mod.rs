@@ -133,6 +133,19 @@ pub trait StoreOps: Send + Sync {
         &self,
         cidr: &str,
     ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) by AS number.
+    async fn search_autnum_rdap_up_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) by AS range.
+    async fn search_autnum_rdap_up_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.

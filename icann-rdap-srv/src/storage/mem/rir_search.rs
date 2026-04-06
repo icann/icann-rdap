@@ -155,7 +155,7 @@ impl Mem {
         }
     }
 
-    async fn autnum_rdap_up(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
+    pub(crate) async fn autnum_rdap_up(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
         let autnums = self.autnums.read().await;
         match query {
             U32OrRange::Single(autnum) => autnums.get(autnum).cloned(),

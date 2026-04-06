@@ -7,8 +7,8 @@ use {
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            Domain, DomainSearchResults, Entity, EntitySearchResults, IpSearchResults, Nameserver,
-            NameserverSearchResults, Network, RdapResponse,
+            AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
+            IpSearchResults, Nameserver, NameserverSearchResults, Network, RdapResponse,
         },
     },
     ipnet::{IpNet, Ipv4Net, Ipv6Net},
@@ -23,7 +23,7 @@ use crate::{
     storage::{StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, label_search::SearchLabels, tx::MemTx};
+use super::{config::MemConfig, label_search::SearchLabels, rir_search::U32OrRange, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
@@ -529,5 +529,52 @@ impl StoreOps for Mem {
             .results(results)
             .build()
             .to_response())
+    }
+
+    async fn search_autnum_rdap_up_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_up(&U32OrRange::Single(num)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_up_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_up(&U32OrRange::Range(start..end)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
     }
 }
