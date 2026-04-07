@@ -26,7 +26,10 @@ fn add_rfc9910_extensions(rdap: RdapResponse) -> RdapResponse {
         rdap,
         RdapResponse::Autnum(_) | RdapResponse::AutnumSearchResults(_)
     ) {
-        normalize_extensions_with(rdap, [ExtensionId::AutnumSearchResults, ExtensionId::RirSearch1])
+        normalize_extensions_with(
+            rdap,
+            [ExtensionId::AutnumSearchResults, ExtensionId::RirSearch1],
+        )
     } else {
         normalize_extensions(rdap)
     }
@@ -62,9 +65,7 @@ pub(crate) async fn autnum_rdap_up(
     };
 
     let results = if let Some(end) = end {
-        storage
-            .search_autnum_rdap_up_by_range(start, end)
-            .await?
+        storage.search_autnum_rdap_up_by_range(start, end).await?
     } else {
         storage.search_autnum_rdap_up_by_num(start).await?
     };
@@ -101,9 +102,7 @@ pub(crate) async fn autnum_rdap_top(
     };
 
     let results = if let Some(end) = end {
-        storage
-            .search_autnum_rdap_top_by_range(start, end)
-            .await?
+        storage.search_autnum_rdap_top_by_range(start, end).await?
     } else {
         storage.search_autnum_rdap_top_by_num(start).await?
     };
@@ -140,9 +139,7 @@ pub(crate) async fn autnum_rdap_down(
     };
 
     let results = if let Some(end) = end {
-        storage
-            .search_autnum_rdap_down_by_range(start, end)
-            .await?
+        storage.search_autnum_rdap_down_by_range(start, end).await?
     } else {
         storage.search_autnum_rdap_down_by_num(start).await?
     };
@@ -179,9 +176,7 @@ pub(crate) async fn autnum_rdap_bottom(
             .search_autnum_rdap_bottom_by_range(start, end)
             .await?
     } else {
-        storage
-            .search_autnum_rdap_bottom_by_num(start)
-            .await?
+        storage.search_autnum_rdap_bottom_by_num(start).await?
     };
 
     let results = jscontact_conversion(

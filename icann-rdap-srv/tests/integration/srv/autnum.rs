@@ -113,9 +113,7 @@ async fn test_server_autnum_lookup_at_range_end() {
 #[tokio::test]
 async fn test_server_autnum_rdap_up() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..720).build())
@@ -139,7 +137,9 @@ async fn test_server_autnum_rdap_up() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 1);
     let autnum = results.first().expect("autnum");
     assert_eq!(autnum["startAutnum"].as_i64(), Some(700));
@@ -176,9 +176,7 @@ async fn test_server_autnum_rdap_up_disabled() {
 #[tokio::test]
 async fn test_server_autnum_rdap_top() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_top_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_top_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..720).build())
@@ -202,7 +200,9 @@ async fn test_server_autnum_rdap_top() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 1);
     let autnum = results.first().expect("autnum");
     assert_eq!(autnum["startAutnum"].as_i64(), Some(700));
@@ -239,9 +239,7 @@ async fn test_server_autnum_rdap_top_disabled() {
 #[tokio::test]
 async fn test_server_autnum_rdap_top_range() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_top_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_top_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..720).build())
@@ -254,10 +252,7 @@ async fn test_server_autnum_rdap_top_range() {
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!(
-        "{}/autnums/rirSearch1/rdap-top/700-710",
-        test_srv.rdap_base
-    );
+    let url = format!("{}/autnums/rirSearch1/rdap-top/700-710", test_srv.rdap_base);
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")
@@ -268,7 +263,9 @@ async fn test_server_autnum_rdap_top_range() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 1);
     let autnum = results.first().expect("autnum");
     assert_eq!(autnum["startAutnum"].as_i64(), Some(700));
@@ -293,7 +290,10 @@ async fn test_server_autnum_rdap_down() {
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!("{}/autnums/rirSearch1/rdap-down/700-720", test_srv.rdap_base);
+    let url = format!(
+        "{}/autnums/rirSearch1/rdap-down/700-720",
+        test_srv.rdap_base
+    );
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")
@@ -304,7 +304,9 @@ async fn test_server_autnum_rdap_down() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 2);
 }
 
@@ -358,7 +360,9 @@ async fn test_server_autnum_rdap_down_no_children() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 0);
 }
 
@@ -394,7 +398,9 @@ async fn test_server_autnum_rdap_down_range() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 2);
 }
 
@@ -427,7 +433,9 @@ async fn test_server_autnum_rdap_bottom() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 1);
     let autnum = results.first().expect("autnum");
     assert_eq!(autnum["startAutnum"].as_i64(), Some(700));
@@ -484,7 +492,9 @@ async fn test_server_autnum_rdap_bottom_no_descendants() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 0);
 }
 
@@ -520,16 +530,16 @@ async fn test_server_autnum_rdap_bottom_range() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 0);
 }
 
 #[tokio::test]
 async fn test_server_autnum_rdap_up_no_supernet() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..720).build())
@@ -554,9 +564,7 @@ async fn test_server_autnum_rdap_up_no_supernet() {
 #[tokio::test]
 async fn test_server_autnum_rdap_up_empty() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
 
     // WHEN
@@ -576,9 +584,7 @@ async fn test_server_autnum_rdap_up_empty() {
 #[tokio::test]
 async fn test_server_autnum_rdap_up_range() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..720).build())
@@ -591,10 +597,7 @@ async fn test_server_autnum_rdap_up_range() {
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!(
-        "{}/autnums/rirSearch1/rdap-up/700-710",
-        test_srv.rdap_base
-    );
+    let url = format!("{}/autnums/rirSearch1/rdap-up/700-710", test_srv.rdap_base);
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")
@@ -605,7 +608,9 @@ async fn test_server_autnum_rdap_up_range() {
     // THEN
     assert_eq!(response.status().as_u16(), 200);
     let body: serde_json::Value = response.json().await.expect("json");
-    let results = body["autnumSearchResults"].as_array().expect("autnumSearchResults");
+    let results = body["autnumSearchResults"]
+        .as_array()
+        .expect("autnumSearchResults");
     assert_eq!(results.len(), 1);
     let autnum = results.first().expect("autnum");
     assert_eq!(autnum["startAutnum"].as_i64(), Some(700));
@@ -615,9 +620,7 @@ async fn test_server_autnum_rdap_up_range() {
 #[tokio::test]
 async fn test_server_autnum_rdap_up_range_not_exact() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     tx.add_autnum(&Autnum::builder().autnum_range(700..720).build())
@@ -630,10 +633,7 @@ async fn test_server_autnum_rdap_up_range_not_exact() {
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!(
-        "{}/autnums/rirSearch1/rdap-up/700-715",
-        test_srv.rdap_base
-    );
+    let url = format!("{}/autnums/rirSearch1/rdap-up/700-715", test_srv.rdap_base);
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")
@@ -648,9 +648,7 @@ async fn test_server_autnum_rdap_up_range_not_exact() {
 #[tokio::test]
 async fn test_server_autnum_rdap_up_invalid_asn() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
 
     // WHEN
@@ -673,17 +671,12 @@ async fn test_server_autnum_rdap_up_invalid_asn() {
 #[tokio::test]
 async fn test_server_autnum_rdap_up_invalid_range() {
     // GIVEN
-    let common_config = CommonConfig::builder()
-        .autnum_rdap_up_enable(true)
-        .build();
+    let common_config = CommonConfig::builder().autnum_rdap_up_enable(true).build();
     let test_srv = SrvTestJig::new_common_config(common_config).await;
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!(
-        "{}/autnums/rirSearch1/rdap-up/abc-def",
-        test_srv.rdap_base
-    );
+    let url = format!("{}/autnums/rirSearch1/rdap-up/abc-def", test_srv.rdap_base);
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")

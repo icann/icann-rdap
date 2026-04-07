@@ -609,10 +609,7 @@ impl StoreOps for Mem {
         if !self.config.common_config.autnum_rdap_top_enable {
             return Ok(NOT_IMPLEMENTED.clone());
         }
-        match self
-            .autnum_rdap_top(&U32OrRange::Range(start..end))
-            .await
-        {
+        match self.autnum_rdap_top(&U32OrRange::Range(start..end)).await {
             Some(autnum) => {
                 let autnum = Arc::unwrap_or_clone(autnum);
                 let autnum = match autnum {
@@ -658,9 +655,7 @@ impl StoreOps for Mem {
         if !self.config.common_config.autnum_rdap_down_enable {
             return Ok(NOT_IMPLEMENTED.clone());
         }
-        let results = self
-            .autnum_rdap_down(&U32OrRange::Range(start..end))
-            .await;
+        let results = self.autnum_rdap_down(&U32OrRange::Range(start..end)).await;
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
