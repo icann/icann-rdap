@@ -168,4 +168,43 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+    async fn search_autnum_rdap_top_by_num(
+        &self,
+        _num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_autnum_rdap_top_by_range(
+        &self,
+        _start: u32,
+        _end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_autnum_rdap_down_by_num(
+        &self,
+        _num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_autnum_rdap_down_by_range(
+        &self,
+        _start: u32,
+        _end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_autnum_rdap_bottom_by_num(
+        &self,
+        _num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_autnum_rdap_bottom_by_range(
+        &self,
+        _start: u32,
+        _end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
 }

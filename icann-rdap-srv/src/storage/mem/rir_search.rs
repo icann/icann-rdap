@@ -175,11 +175,11 @@ impl Mem {
         }
     }
 
-    async fn autnum_rdap_top(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
+    pub(crate) async fn autnum_rdap_top(&self, query: &U32OrRange) -> Option<Arc<RdapResponse>> {
         self.autnum_rdap_up(query).await
     }
 
-    async fn autnum_rdap_down(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
+    pub(crate) async fn autnum_rdap_down(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
         let (start, end) = match query {
             U32OrRange::Single(autnum) => (*autnum, *autnum),
             U32OrRange::Range(range) => (range.start, range.end),
@@ -194,7 +194,7 @@ impl Mem {
         children
     }
 
-    async fn autnum_rdap_bottom(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
+    pub(crate) async fn autnum_rdap_bottom(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
         self.autnum_rdap_down(query).await
     }
 }

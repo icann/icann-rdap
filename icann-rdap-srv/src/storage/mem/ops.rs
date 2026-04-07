@@ -7,7 +7,7 @@ use {
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
+            Autnum, AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
             IpSearchResults, Nameserver, NameserverSearchResults, Network, RdapResponse,
         },
     },
@@ -576,5 +576,149 @@ impl StoreOps for Mem {
             }
             None => Ok(NOT_FOUND.clone()),
         }
+    }
+
+    async fn search_autnum_rdap_top_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_top(&U32OrRange::Single(num)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_top_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self
+            .autnum_rdap_top(&U32OrRange::Range(start..end))
+            .await
+        {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_down_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.autnum_rdap_down(&U32OrRange::Single(num)).await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_down_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self
+            .autnum_rdap_down(&U32OrRange::Range(start..end))
+            .await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_bottom_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.autnum_rdap_bottom(&U32OrRange::Single(num)).await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_bottom_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self
+            .autnum_rdap_bottom(&U32OrRange::Range(start..end))
+            .await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
     }
 }

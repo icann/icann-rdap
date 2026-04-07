@@ -31,6 +31,9 @@ pub(crate) async fn srvhelp(
         || config.ip_rdap_down_enable
         || config.ip_rdap_bottom_enable
         || config.autnum_rdap_up_enable
+        || config.autnum_rdap_top_enable
+        || config.autnum_rdap_down_enable
+        || config.autnum_rdap_bottom_enable
     {
         normalize_extensions_with(
             srv_help,

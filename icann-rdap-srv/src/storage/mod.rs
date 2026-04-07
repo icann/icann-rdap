@@ -146,6 +146,45 @@ pub trait StoreOps: Send + Sync {
         start: u32,
         end: u32,
     ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by AS number.
+    async fn search_autnum_rdap_top_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by AS range.
+    async fn search_autnum_rdap_top_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child networks (rdap-down per RFC 9910) by AS number.
+    async fn search_autnum_rdap_down_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child networks (rdap-down per RFC 9910) by AS range.
+    async fn search_autnum_rdap_down_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf networks (rdap-bottom per RFC 9910) by AS number.
+    async fn search_autnum_rdap_bottom_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf networks (rdap-bottom per RFC 9910) by AS range.
+    async fn search_autnum_rdap_bottom_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.

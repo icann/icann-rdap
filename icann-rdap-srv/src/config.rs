@@ -35,6 +35,9 @@ pub const IP_RDAP_TOP_ENABLE: &str = "RDAP_SRV_IP_RDAP_TOP";
 pub const IP_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_IP_RDAP_DOWN";
 pub const IP_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_IP_RDAP_BOTTOM";
 pub const AUTNUM_RDAP_UP_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_UP";
+pub const AUTNUM_RDAP_TOP_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_TOP";
+pub const AUTNUM_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_DOWN";
+pub const AUTNUM_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_BOTTOM";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -60,6 +63,9 @@ pub fn debug_config_vars() {
         IP_RDAP_DOWN_ENABLE,
         IP_RDAP_BOTTOM_ENABLE,
         AUTNUM_RDAP_UP_ENABLE,
+        AUTNUM_RDAP_TOP_ENABLE,
+        AUTNUM_RDAP_DOWN_ENABLE,
+        AUTNUM_RDAP_BOTTOM_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -114,6 +120,9 @@ impl StorageType {
         let ip_rdap_down = get_parse_or(IP_RDAP_DOWN_ENABLE, false)?;
         let ip_rdap_bottom = get_parse_or(IP_RDAP_BOTTOM_ENABLE, false)?;
         let autnum_rdap_up = get_parse_or(AUTNUM_RDAP_UP_ENABLE, false)?;
+        let autnum_rdap_top = get_parse_or(AUTNUM_RDAP_TOP_ENABLE, false)?;
+        let autnum_rdap_down = get_parse_or(AUTNUM_RDAP_DOWN_ENABLE, false)?;
+        let autnum_rdap_bottom = get_parse_or(AUTNUM_RDAP_BOTTOM_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -127,6 +136,9 @@ impl StorageType {
             .ip_rdap_down_enable(ip_rdap_down)
             .ip_rdap_bottom_enable(ip_rdap_bottom)
             .autnum_rdap_up_enable(autnum_rdap_up)
+            .autnum_rdap_top_enable(autnum_rdap_top)
+            .autnum_rdap_down_enable(autnum_rdap_down)
+            .autnum_rdap_bottom_enable(autnum_rdap_bottom)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
@@ -178,6 +190,9 @@ pub struct CommonConfig {
     pub ip_rdap_down_enable: bool,
     pub ip_rdap_bottom_enable: bool,
     pub autnum_rdap_up_enable: bool,
+    pub autnum_rdap_top_enable: bool,
+    pub autnum_rdap_down_enable: bool,
+    pub autnum_rdap_bottom_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
 }
@@ -197,6 +212,9 @@ impl Default for CommonConfig {
             ip_rdap_down_enable: false,
             ip_rdap_bottom_enable: false,
             autnum_rdap_up_enable: false,
+            autnum_rdap_top_enable: false,
+            autnum_rdap_down_enable: false,
+            autnum_rdap_bottom_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
         }
@@ -219,6 +237,9 @@ impl CommonConfig {
         ip_rdap_down_enable: Option<bool>,
         ip_rdap_bottom_enable: Option<bool>,
         autnum_rdap_up_enable: Option<bool>,
+        autnum_rdap_top_enable: Option<bool>,
+        autnum_rdap_down_enable: Option<bool>,
+        autnum_rdap_bottom_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
     ) -> Self {
@@ -237,6 +258,9 @@ impl CommonConfig {
             ip_rdap_down_enable: ip_rdap_down_enable.unwrap_or_default(),
             ip_rdap_bottom_enable: ip_rdap_bottom_enable.unwrap_or_default(),
             autnum_rdap_up_enable: autnum_rdap_up_enable.unwrap_or_default(),
+            autnum_rdap_top_enable: autnum_rdap_top_enable.unwrap_or_default(),
+            autnum_rdap_down_enable: autnum_rdap_down_enable.unwrap_or_default(),
+            autnum_rdap_bottom_enable: autnum_rdap_bottom_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
         }
