@@ -68,20 +68,32 @@ pub enum QueryType {
     #[strum(serialize = "IpV6 CIDR Rdap-Top Lookup")]
     IpV6CidrTop(Ipv6Cidr),
 
-    #[strum(serialize = "IpV4 Address Rdap-Bottom Lookup")]
+    #[strum(serialize = "IpV4 Address Rdap-Bottom Search")]
     IpV4AddrBottom(Ipv4Addr),
 
-    #[strum(serialize = "IpV6 Address Rdap-Bottom Lookup")]
+    #[strum(serialize = "IpV6 Address Rdap-Bottom Search")]
     IpV6AddrBottom(Ipv6Addr),
 
-    #[strum(serialize = "IpV4 CIDR Rdap-Bottom Lookup")]
+    #[strum(serialize = "IpV4 CIDR Rdap-Bottom Search")]
     IpV4CidrBottom(Ipv4Cidr),
 
-    #[strum(serialize = "IpV6 CIDR Rdap-Bottom Lookup")]
+    #[strum(serialize = "IpV6 CIDR Rdap-Bottom Search")]
     IpV6CidrBottom(Ipv6Cidr),
 
     #[strum(serialize = "Autonomous System Number Lookup")]
     AsNumber(u32),
+
+    #[strum(serialize = "Autonomous System Number Rdap-Up Lookup")]
+    AsNumberUp(u32),
+
+    #[strum(serialize = "Autonomous System Number Rdap-Down Lookup")]
+    AsNumberDown(u32),
+
+    #[strum(serialize = "Autonomous System Number Rdap-Top Search")]
+    AsNumberTop(u32),
+
+    #[strum(serialize = "Autonomous System Number Rdap-Bottom Search")]
+    AsNumberBottom(u32),
 
     #[strum(serialize = "Domain Lookup")]
     Domain(DomainName),
@@ -224,6 +236,22 @@ impl QueryType {
                 "{base_url}/autnum/{}",
                 PctString::encode(value.to_string().chars(), URIReserved)
             )),
+            Self::AsNumberUp(value) => Ok(format!(
+                "{base_url}/autnums/rirSearch1/rdap-up/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
+            Self::AsNumberDown(value) => Ok(format!(
+                "{base_url}/autnums/rirSearch1/rdap-down/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
+            Self::AsNumberTop(value) => Ok(format!(
+                "{base_url}/autnums/rirSearch1/rdap-top/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
+            Self::AsNumberBottom(value) => Ok(format!(
+                "{base_url}/autnums/rirSearch1/rdap-bottom/{}",
+                PctString::encode(value.to_string().chars(), URIReserved)
+            )),
             Self::Domain(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(value.trim_leading_dot().chars(), URIReserved)
@@ -284,11 +312,28 @@ impl QueryType {
     }
 
     pub fn autnum(autnum: &str) -> Result<Self, RdapClientError> {
-        let value = autnum
-            .trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') })
-            .parse::<u32>()
-            .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        let value = parse_autnum(autnum)?;
         Ok(Self::AsNumber(value))
+    }
+
+    pub fn autnum_up(autnum: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(autnum)?;
+        Ok(Self::AsNumberUp(value))
+    }
+
+    pub fn autnum_down(autnum: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(autnum)?;
+        Ok(Self::AsNumberDown(value))
+    }
+
+    pub fn autnum_top(autnum: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(autnum)?;
+        Ok(Self::AsNumberTop(value))
+    }
+
+    pub fn autnum_bottom(autnum: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(autnum)?;
+        Ok(Self::AsNumberBottom(value))
     }
 
     pub fn ipv4(ip: &str) -> Result<Self, RdapClientError> {
@@ -513,6 +558,9 @@ impl FromStr for QueryType {
                     IpCidr::V6(cidr) => Self::IpV6CidrUp(cidr),
                 });
             }
+            if let Ok(asn) = parse_autnum(rest) {
+                return Ok(Self::AsNumberUp(asn));
+            }
             return Err(RdapClientError::InvalidQueryValue);
         }
 
@@ -530,6 +578,9 @@ impl FromStr for QueryType {
                     IpCidr::V4(cidr) => Self::IpV4CidrDown(cidr),
                     IpCidr::V6(cidr) => Self::IpV6CidrDown(cidr),
                 });
+            }
+            if let Ok(asn) = parse_autnum(rest) {
+                return Ok(Self::AsNumberDown(asn));
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -549,6 +600,9 @@ impl FromStr for QueryType {
                     IpCidr::V6(cidr) => Self::IpV6CidrTop(cidr),
                 });
             }
+            if let Ok(asn) = parse_autnum(rest) {
+                return Ok(Self::AsNumberTop(asn));
+            }
             return Err(RdapClientError::InvalidQueryValue);
         }
 
@@ -567,12 +621,14 @@ impl FromStr for QueryType {
                     IpCidr::V6(cidr) => Self::IpV6CidrBottom(cidr),
                 });
             }
+            if let Ok(asn) = parse_autnum(rest) {
+                return Ok(Self::AsNumberBottom(asn));
+            }
             return Err(RdapClientError::InvalidQueryValue);
         }
 
         // if looks like an autnum
-        let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
-        if u32::from_str(autnum).is_ok() {
+        if parse_autnum(s).is_ok() {
             return Self::autnum(s);
         }
 
@@ -612,6 +668,13 @@ impl FromStr for QueryType {
         // The query type cannot be determined.
         Err(RdapClientError::AmbiguousQueryType)
     }
+}
+
+fn parse_autnum(s: &str) -> Result<u32, RdapClientError> {
+    let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
+    autnum
+        .parse::<u32>()
+        .map_err(|_e| RdapClientError::InvalidQueryValue)
 }
 
 fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
@@ -1279,6 +1342,162 @@ mod tests {
 
     #[test]
     fn test_bottom_prefix_invalid_input() {
+        // GIVEN
+        let s = "bottom:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_autnum_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("up:AS16509").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/autnums/rirSearch1/rdap-up/16509"
+        )
+    }
+
+    #[test]
+    fn test_autnum_down_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("down:AS16509").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/autnums/rirSearch1/rdap-down/16509"
+        )
+    }
+
+    #[test]
+    fn test_autnum_top_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("top:16509").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/autnums/rirSearch1/rdap-top/16509"
+        )
+    }
+
+    #[test]
+    fn test_autnum_bottom_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("bottom:as16509").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/autnums/rirSearch1/rdap-bottom/16509"
+        )
+    }
+
+    #[test]
+    fn test_autnum_up_from_str() {
+        // GIVEN
+        let s = "up:16509";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::AsNumberUp(16509)))
+    }
+
+    #[test]
+    fn test_autnum_down_from_str() {
+        // GIVEN
+        let s = "down:16509";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::AsNumberDown(16509)))
+    }
+
+    #[test]
+    fn test_autnum_top_from_str() {
+        // GIVEN
+        let s = "top:16509";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::AsNumberTop(16509)))
+    }
+
+    #[test]
+    fn test_autnum_bottom_from_str() {
+        // GIVEN
+        let s = "bottom:16509";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::AsNumberBottom(16509)))
+    }
+
+    #[test]
+    fn test_autnum_up_prefix_invalid_input() {
+        // GIVEN
+        let s = "up:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_autnum_down_prefix_invalid_input() {
+        // GIVEN
+        let s = "down:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_autnum_top_prefix_invalid_input() {
+        // GIVEN
+        let s = "top:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_autnum_bottom_prefix_invalid_input() {
         // GIVEN
         let s = "bottom:foo";
 
