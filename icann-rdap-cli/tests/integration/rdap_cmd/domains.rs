@@ -1,8 +1,4 @@
-use {
-    icann_rdap_common::response::Domain,
-    icann_rdap_srv::storage::StoreOps,
-    rstest::rstest,
-};
+use {icann_rdap_common::response::Domain, icann_rdap_srv::storage::StoreOps, rstest::rstest};
 
 use crate::test_jig::TestJig;
 

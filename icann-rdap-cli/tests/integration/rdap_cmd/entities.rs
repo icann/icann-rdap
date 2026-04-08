@@ -1,7 +1,4 @@
-use {
-    icann_rdap_common::response::Entity,
-    icann_rdap_srv::storage::StoreOps,
-};
+use {icann_rdap_common::response::Entity, icann_rdap_srv::storage::StoreOps};
 
 use crate::test_jig::TestJig;
 
