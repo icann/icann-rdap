@@ -376,6 +376,7 @@ mod tests {
 
     use super::U32OrRange;
     use icann_rdap_common::prelude::{Autnum, Domain, Network, RdapResponse};
+    use std::str::FromStr;
 
     use crate::storage::{mem::ops::Mem, StoreOps};
 
@@ -1172,8 +1173,39 @@ mod tests {
 
     #[tokio::test]
     async fn test_domain_rdap_top_ipv6() {
-        // Skip IPv6 test - the reverse DNS format is complex and needs careful construction
-        // The IPv4 tests verify the core functionality
+        use icann_rdap_common::rdns::ip_to_reverse_dns;
+        use std::net::{IpAddr, Ipv6Addr};
+
+        // GIVEN
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let domain = Domain::builder()
+            .ldh_name("0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa")
+            .network(
+                Network::builder()
+                    .cidr("2001:db8::/32")
+                    .build()
+                    .expect("cidr parsing"),
+            )
+            .build();
+        tx.add_domain(&domain).await.expect("add domain in tx");
+        tx.commit().await.expect("tx commit");
+
+        // Generate the correct reverse DNS string for 2001:db8::1
+        let ip = Ipv6Addr::from_str("2001:db8::1").unwrap();
+        let rdns_query = ip_to_reverse_dns(&IpAddr::V6(ip));
+
+        let result = mem.domain_rdap_top(&rdns_query).await;
+
+        // THEN
+        let actual = result.expect("expected result");
+        let RdapResponse::Domain(ref domain) = *actual else {
+            panic!("not a domain")
+        };
+        assert_eq!(
+            domain.ldh_name(),
+            Some("0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa")
+        );
     }
 
     #[tokio::test]
@@ -1302,11 +1334,6 @@ mod tests {
 
         // THEN
         assert!(result.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_domain_rdap_bottom_ipv4() {
-        // Skip for now - needs more complex test setup
     }
 
     #[tokio::test]
