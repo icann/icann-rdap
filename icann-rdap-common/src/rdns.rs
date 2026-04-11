@@ -1,5 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
+use ipnet::{IpNet, Ipv4Net, Ipv6Net};
+
 /// Takes an IP address and creates a reverse DNS domain name.
 pub fn ip_to_reverse_dns(ip: &IpAddr) -> String {
     match ip {
@@ -73,6 +75,78 @@ pub fn reverse_dns_to_ip(dns_name: &str) -> Option<IpAddr> {
         Some(IpAddr::V6(Ipv6Addr::from(octets)))
     } else {
         None // Not a reverse DNS domain
+    }
+}
+
+/// Converts a reverse DNS domain name to an IpNet (Ipv4Net or Ipv6Net).
+/// Infers the prefix length from the number of labels:
+/// - IPv4: 1 label = /8, 2 = /16, 3 = /24, 4 = /32
+/// - IPv6: n nibbles = n * 4 bits
+///
+/// # Examples
+/// - "10.in-addr.arpa" → Some(IpNet::V4(Ipv4Net::new(Ipv4Addr::from(10), 8)))
+/// - "d.ip6.arpa" → Some(IpNet::V6(Ipv6Net::new(Ipv6Addr::from(0x000d), 4)))
+pub fn reverse_dns_to_ipnet(dns_name: &str) -> Option<IpNet> {
+    let dns_name = dns_name.to_lowercase();
+
+    if dns_name.ends_with(".in-addr.arpa") || dns_name.ends_with(".in-addr.arpa.") {
+        let parts: Vec<&str> = dns_name
+            .trim_end_matches('.')
+            .trim_end_matches(".in-addr.arpa")
+            .split('.')
+            .collect();
+
+        let prefix_len = (parts.len() * 8) as u8;
+
+        if prefix_len > 32 {
+            return None;
+        }
+
+        let mut octets = [0u8; 4];
+        for (i, part) in parts.iter().enumerate() {
+            if i < 4 {
+                octets[i] = part.parse().ok()?;
+            }
+        }
+        let ip = Ipv4Addr::from(octets);
+        Ipv4Net::new(ip, prefix_len).map(IpNet::V4).ok()
+    } else if dns_name.ends_with(".ip6.arpa") || dns_name.ends_with(".ip6.arpa.") {
+        let nibbles: Vec<u8> = dns_name
+            .trim_end_matches('.')
+            .trim_end_matches(".ip6.arpa")
+            .split('.')
+            .filter_map(|s| u8::from_str_radix(s, 16).ok())
+            .collect();
+
+        let prefix_len = nibbles.len() * 4;
+
+        if prefix_len > 128 {
+            return None;
+        }
+
+        if nibbles.len() == 32 {
+            let mut reversed = nibbles;
+            reversed.reverse();
+            let mut octets = [0u8; 16];
+            for i in 0..16 {
+                octets[i] = (reversed[i * 2] << 4) | reversed[i * 2 + 1];
+            }
+            let ip = Ipv6Addr::from(octets);
+            return Ipv6Net::new(ip, prefix_len as u8).map(IpNet::V6).ok();
+        }
+
+        let mut padded: Vec<u8> = nibbles;
+        while padded.len() < 32 {
+            padded.push(0);
+        }
+        let mut octets = [0u8; 16];
+        for i in 0..16 {
+            octets[i] = (padded[i * 2] << 4) | padded[i * 2 + 1];
+        }
+        let ip = Ipv6Addr::from(octets);
+        Ipv6Net::new(ip, prefix_len as u8).map(IpNet::V6).ok()
+    } else {
+        None
     }
 }
 
@@ -184,5 +258,101 @@ mod tests {
 
         // THEN
         assert_eq!(Some(original_ip), converted_back);
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_single_label_ipv4() {
+        // GIVEN
+        let dns_name = "10.in-addr.arpa";
+        let expected: Ipv4Net = "10.0.0.0/8".parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V4(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V4");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_two_label_ipv4() {
+        // GIVEN
+        let dns_name = "1.10.in-addr.arpa";
+        let expected: Ipv4Net = "1.10.0.0/16".parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V4(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V4");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_three_label_ipv4() {
+        // GIVEN
+        let dns_name = "1.2.3.in-addr.arpa";
+        let expected: Ipv4Net = "1.2.3.0/24".parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V4(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V4");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_single_label_ipv6() {
+        // GIVEN
+        let dns_name = "d.ip6.arpa";
+        let expected: Ipv6Net = "d000::/4".parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V6(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V6");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_four_label_ipv6() {
+        // GIVEN
+        let dns_name = "d.c.b.a.ip6.arpa";
+        let expected: Ipv6Net = "dcba::/16".parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V6(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V6");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_not_rdns() {
+        let result = reverse_dns_to_ipnet("example.com");
+        assert!(result.is_none());
     }
 }

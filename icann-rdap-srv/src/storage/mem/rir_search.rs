@@ -2,7 +2,7 @@ use std::net::IpAddr;
 use std::ops::Range;
 use std::sync::Arc;
 
-use icann_rdap_common::prelude::RdapResponse;
+use icann_rdap_common::{prelude::RdapResponse, rdns::reverse_dns_to_ipnet};
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use prefix_trie::{Prefix, PrefixMap};
 
@@ -306,33 +306,20 @@ impl Mem {
     }
 
     pub(crate) async fn domain_rdap_down(&self, ldh: &str) -> Vec<Arc<RdapResponse>> {
-        // First convert the reverse DNS name to an IP
-        if let Some(ip) = icann_rdap_common::rdns::reverse_dns_to_ip(ldh) {
-            match ip {
-                IpAddr::V4(v4) => {
-                    let v4net = Ipv4Net::new(v4, 32).ok();
-                    if let Some(v4net) = v4net {
-                        let guard = self.domains_by_ipv4.read().await;
-                        // Find the domain containing this IP (the container)
-                        if let Some((container_prefix, _)) = guard.get_lpm(&v4net) {
-                            // Get children of the container, excluding the container itself
-                            get_domain_rdap_down(&*guard, container_prefix)
-                        } else {
-                            Vec::new()
-                        }
+        if let Some(ipnet) = reverse_dns_to_ipnet(ldh) {
+            match ipnet {
+                IpNet::V4(v4net) => {
+                    let guard = self.domains_by_ipv4.read().await;
+                    if let Some((container_prefix, _)) = guard.get_lpm(&v4net) {
+                        get_domain_rdap_down(&*guard, container_prefix)
                     } else {
                         Vec::new()
                     }
                 }
-                IpAddr::V6(v6) => {
-                    let v6net = Ipv6Net::new(v6, 128).ok();
-                    if let Some(v6net) = v6net {
-                        let guard = self.domains_by_ipv6.read().await;
-                        if let Some((container_prefix, _)) = guard.get_lpm(&v6net) {
-                            get_domain_rdap_down(&*guard, container_prefix)
-                        } else {
-                            Vec::new()
-                        }
+                IpNet::V6(v6net) => {
+                    let guard = self.domains_by_ipv6.read().await;
+                    if let Some((container_prefix, _)) = guard.get_lpm(&v6net) {
+                        get_domain_rdap_down(&*guard, container_prefix)
                     } else {
                         Vec::new()
                     }
@@ -344,25 +331,15 @@ impl Mem {
     }
 
     pub(crate) async fn domain_rdap_bottom(&self, ldh: &str) -> Vec<Arc<RdapResponse>> {
-        if let Some(ip) = icann_rdap_common::rdns::reverse_dns_to_ip(ldh) {
-            match ip {
-                IpAddr::V4(v4) => {
-                    let v4net = Ipv4Net::new(v4, 32).ok();
-                    if let Some(v4net) = v4net {
-                        let guard = self.domains_by_ipv4.read().await;
-                        get_domain_rdap_bottom(&*guard, &v4net)
-                    } else {
-                        Vec::new()
-                    }
+        if let Some(ipnet) = reverse_dns_to_ipnet(ldh) {
+            match ipnet {
+                IpNet::V4(v4net) => {
+                    let guard = self.domains_by_ipv4.read().await;
+                    get_domain_rdap_bottom(&*guard, &v4net)
                 }
-                IpAddr::V6(v6) => {
-                    let v6net = Ipv6Net::new(v6, 128).ok();
-                    if let Some(v6net) = v6net {
-                        let guard = self.domains_by_ipv6.read().await;
-                        get_domain_rdap_bottom(&*guard, &v6net)
-                    } else {
-                        Vec::new()
-                    }
+                IpNet::V6(v6net) => {
+                    let guard = self.domains_by_ipv6.read().await;
+                    get_domain_rdap_bottom(&*guard, &v6net)
                 }
             }
         } else {
