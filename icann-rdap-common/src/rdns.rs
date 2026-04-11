@@ -90,11 +90,12 @@ pub fn reverse_dns_to_ipnet(dns_name: &str) -> Option<IpNet> {
     let dns_name = dns_name.to_lowercase();
 
     if dns_name.ends_with(".in-addr.arpa") || dns_name.ends_with(".in-addr.arpa.") {
-        let parts: Vec<&str> = dns_name
+        let mut parts: Vec<&str> = dns_name
             .trim_end_matches('.')
             .trim_end_matches(".in-addr.arpa")
             .split('.')
             .collect();
+        parts.reverse();
 
         let prefix_len = (parts.len() * 8) as u8;
 
@@ -111,28 +112,18 @@ pub fn reverse_dns_to_ipnet(dns_name: &str) -> Option<IpNet> {
         let ip = Ipv4Addr::from(octets);
         Ipv4Net::new(ip, prefix_len).map(IpNet::V4).ok()
     } else if dns_name.ends_with(".ip6.arpa") || dns_name.ends_with(".ip6.arpa.") {
-        let nibbles: Vec<u8> = dns_name
+        let mut nibbles: Vec<u8> = dns_name
             .trim_end_matches('.')
             .trim_end_matches(".ip6.arpa")
             .split('.')
             .filter_map(|s| u8::from_str_radix(s, 16).ok())
             .collect();
+        nibbles.reverse();
 
         let prefix_len = nibbles.len() * 4;
 
         if prefix_len > 128 {
             return None;
-        }
-
-        if nibbles.len() == 32 {
-            let mut reversed = nibbles;
-            reversed.reverse();
-            let mut octets = [0u8; 16];
-            for i in 0..16 {
-                octets[i] = (reversed[i * 2] << 4) | reversed[i * 2 + 1];
-            }
-            let ip = Ipv6Addr::from(octets);
-            return Ipv6Net::new(ip, prefix_len as u8).map(IpNet::V6).ok();
         }
 
         let mut padded: Vec<u8> = nibbles;
@@ -282,7 +273,7 @@ mod tests {
     fn test_reverse_dns_to_ipnet_two_label_ipv4() {
         // GIVEN
         let dns_name = "1.10.in-addr.arpa";
-        let expected: Ipv4Net = "1.10.0.0/16".parse().unwrap();
+        let expected: Ipv4Net = "10.1.0.0/16".parse().unwrap();
 
         // WHEN
         let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
@@ -300,7 +291,25 @@ mod tests {
     fn test_reverse_dns_to_ipnet_three_label_ipv4() {
         // GIVEN
         let dns_name = "1.2.3.in-addr.arpa";
-        let expected: Ipv4Net = "1.2.3.0/24".parse().unwrap();
+        let expected: Ipv4Net = "3.2.1.0/24".parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V4(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V4");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_four_label_ipv4() {
+        // GIVEN
+        let dns_name = "1.2.3.4.in-addr.arpa";
+        let expected: Ipv4Net = "4.3.2.1/32".parse().unwrap();
 
         // WHEN
         let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
@@ -336,10 +345,31 @@ mod tests {
     fn test_reverse_dns_to_ipnet_four_label_ipv6() {
         // GIVEN
         let dns_name = "d.c.b.a.ip6.arpa";
-        let expected: Ipv6Net = "dcba::/16".parse().unwrap();
+        let expected: Ipv6Net = "abcd::/16".parse().unwrap();
+        eprintln!("expected = {expected:?}");
 
         // WHEN
         let result = reverse_dns_to_ipnet(dns_name).expect("should parse");
+
+        // THEN
+        if let IpNet::V6(net) = result {
+            assert_eq!(net.network(), expected.network());
+            assert_eq!(net.prefix_len(), expected.prefix_len());
+        } else {
+            panic!("expected V6");
+        }
+    }
+
+    #[test]
+    fn test_reverse_dns_to_ipnet_all_labels_ipv6() {
+        // GIVEN
+        let addr_str = "2001:db8::567:89ab";
+        let ip = IpAddr::from_str(addr_str).expect("ip address");
+        let dns_name = ip_to_reverse_dns(&ip);
+        let expected: Ipv6Net = format!("{addr_str}/128").parse().unwrap();
+
+        // WHEN
+        let result = reverse_dns_to_ipnet(&dns_name).expect("should parse");
 
         // THEN
         if let IpNet::V6(net) = result {

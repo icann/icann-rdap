@@ -5,7 +5,8 @@ use std::{
     sync::LazyLock,
 };
 
-use icann_rdap_common::rdns::{ip_to_reverse_dns, reverse_dns_to_ip};
+use icann_rdap_common::rdns::{ip_to_reverse_dns, reverse_dns_to_ipnet};
+use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 
 use {
     cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr},
@@ -102,7 +103,7 @@ pub enum QueryType {
     ALabel(DomainName),
 
     #[strum(serialize = "Reverse DNS Domain Lookup")]
-    ReverseDns(IpAddr),
+    ReverseDns(IpNet),
 
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
@@ -258,7 +259,7 @@ impl QueryType {
             )),
             Self::ReverseDns(value) => Ok(format!(
                 "{base_url}/domain/{}",
-                PctString::encode(ip_to_reverse_dns(value).chars(), URIReserved)
+                PctString::encode(ip_to_reverse_dns(&value.network()).chars(), URIReserved)
             )),
             Self::ALabel(value) => Ok(format!(
                 "{base_url}/domain/{}",
@@ -297,14 +298,42 @@ impl QueryType {
     }
 
     pub fn rdns(domain_name: &str) -> Result<Self, RdapClientError> {
-        let value = reverse_dns_to_ip(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDns(value))
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDns(ipnet))
     }
 
     pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
-        let value =
+        if let Ok(ip_cidr) = parse_cidr(ip_address) {
+            return Ok(match ip_cidr {
+                IpCidr::V4(cidr) => {
+                    let first = cidr.first_address();
+                    let prefix = cidr.network_length();
+                    Self::ReverseDns(IpNet::V4(
+                        Ipv4Net::new(first, prefix)
+                            .map_err(|_e| RdapClientError::InvalidQueryValue)?,
+                    ))
+                }
+                IpCidr::V6(cidr) => {
+                    let first = cidr.first_address();
+                    let prefix = cidr.network_length();
+                    Self::ReverseDns(IpNet::V6(
+                        Ipv6Net::new(first, prefix)
+                            .map_err(|_e| RdapClientError::InvalidQueryValue)?,
+                    ))
+                }
+            });
+        }
+        let ip_addr =
             IpAddr::from_str(ip_address).map_err(|_e| RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDns(value))
+        let ipnet = match ip_addr {
+            IpAddr::V4(ipv4) => {
+                IpNet::V4(Ipv4Net::new(ipv4, 32).map_err(|_e| RdapClientError::InvalidQueryValue)?)
+            }
+            IpAddr::V6(ipv6) => {
+                IpNet::V6(Ipv6Net::new(ipv6, 128).map_err(|_e| RdapClientError::InvalidQueryValue)?)
+            }
+        };
+        Ok(Self::ReverseDns(ipnet))
     }
 
     pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
@@ -653,8 +682,8 @@ impl FromStr for QueryType {
         if is_domain_name(s) {
             return if is_nameserver(s) {
                 Self::ns(s)
-            } else if let Some(ip) = reverse_dns_to_ip(s) {
-                Ok(Self::ReverseDns(ip))
+            } else if let Some(ipnet) = reverse_dns_to_ipnet(s) {
+                Ok(Self::ReverseDns(ipnet))
             } else {
                 Self::domain(s)
             };
