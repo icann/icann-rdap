@@ -183,6 +183,30 @@ pub trait StoreOps: Send + Sync {
         start: u32,
         end: u32,
     ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_up_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing domain (rdap-top per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_top_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child domains (rdap-down per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_down_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf domains (rdap-bottom per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_bottom_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.

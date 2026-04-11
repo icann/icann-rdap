@@ -38,6 +38,10 @@ pub const AUTNUM_RDAP_UP_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_UP";
 pub const AUTNUM_RDAP_TOP_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_TOP";
 pub const AUTNUM_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_DOWN";
 pub const AUTNUM_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_BOTTOM";
+pub const DOMAIN_RDAP_UP_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_UP";
+pub const DOMAIN_RDAP_TOP_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_TOP";
+pub const DOMAIN_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_DOWN";
+pub const DOMAIN_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_BOTTOM";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -123,6 +127,10 @@ impl StorageType {
         let autnum_rdap_top = get_parse_or(AUTNUM_RDAP_TOP_ENABLE, false)?;
         let autnum_rdap_down = get_parse_or(AUTNUM_RDAP_DOWN_ENABLE, false)?;
         let autnum_rdap_bottom = get_parse_or(AUTNUM_RDAP_BOTTOM_ENABLE, false)?;
+        let domain_rdap_up = get_parse_or(DOMAIN_RDAP_UP_ENABLE, false)?;
+        let domain_rdap_top = get_parse_or(DOMAIN_RDAP_TOP_ENABLE, false)?;
+        let domain_rdap_down = get_parse_or(DOMAIN_RDAP_DOWN_ENABLE, false)?;
+        let domain_rdap_bottom = get_parse_or(DOMAIN_RDAP_BOTTOM_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -139,6 +147,10 @@ impl StorageType {
             .autnum_rdap_top_enable(autnum_rdap_top)
             .autnum_rdap_down_enable(autnum_rdap_down)
             .autnum_rdap_bottom_enable(autnum_rdap_bottom)
+            .domain_rdap_up_enable(domain_rdap_up)
+            .domain_rdap_top_enable(domain_rdap_top)
+            .domain_rdap_down_enable(domain_rdap_down)
+            .domain_rdap_bottom_enable(domain_rdap_bottom)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
@@ -193,6 +205,10 @@ pub struct CommonConfig {
     pub autnum_rdap_top_enable: bool,
     pub autnum_rdap_down_enable: bool,
     pub autnum_rdap_bottom_enable: bool,
+    pub domain_rdap_up_enable: bool,
+    pub domain_rdap_top_enable: bool,
+    pub domain_rdap_down_enable: bool,
+    pub domain_rdap_bottom_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
 }
@@ -215,6 +231,10 @@ impl Default for CommonConfig {
             autnum_rdap_top_enable: false,
             autnum_rdap_down_enable: false,
             autnum_rdap_bottom_enable: false,
+            domain_rdap_up_enable: false,
+            domain_rdap_top_enable: false,
+            domain_rdap_down_enable: false,
+            domain_rdap_bottom_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
         }
@@ -240,6 +260,10 @@ impl CommonConfig {
         autnum_rdap_top_enable: Option<bool>,
         autnum_rdap_down_enable: Option<bool>,
         autnum_rdap_bottom_enable: Option<bool>,
+        domain_rdap_up_enable: Option<bool>,
+        domain_rdap_top_enable: Option<bool>,
+        domain_rdap_down_enable: Option<bool>,
+        domain_rdap_bottom_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
     ) -> Self {
@@ -261,6 +285,10 @@ impl CommonConfig {
             autnum_rdap_top_enable: autnum_rdap_top_enable.unwrap_or_default(),
             autnum_rdap_down_enable: autnum_rdap_down_enable.unwrap_or_default(),
             autnum_rdap_bottom_enable: autnum_rdap_bottom_enable.unwrap_or_default(),
+            domain_rdap_up_enable: domain_rdap_up_enable.unwrap_or_default(),
+            domain_rdap_top_enable: domain_rdap_top_enable.unwrap_or_default(),
+            domain_rdap_down_enable: domain_rdap_down_enable.unwrap_or_default(),
+            domain_rdap_bottom_enable: domain_rdap_bottom_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
         }

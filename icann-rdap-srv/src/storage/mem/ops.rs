@@ -34,6 +34,8 @@ pub struct Mem {
     pub(crate) domains_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) domains_by_ns_ip: Arc<RwLock<HashMap<IpAddr, Vec<Arc<RdapResponse>>>>>,
     pub(crate) domains_by_ns_ldh_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) domains_by_ipv4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
+    pub(crate) domains_by_ipv6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
@@ -55,6 +57,8 @@ impl Mem {
             domains_by_name: Arc::new(RwLock::new(SearchLabels::dns_labels().build())),
             domains_by_ns_ip: <_>::default(),
             domains_by_ns_ldh_name: Arc::new(RwLock::new(SearchLabels::dns_labels().build())),
+            domains_by_ipv4: <_>::default(),
+            domains_by_ipv6: <_>::default(),
             idns: <_>::default(),
             nameservers: <_>::default(),
             nameservers_by_name: Arc::new(RwLock::new(SearchLabels::dns_labels().build())),
@@ -712,6 +716,96 @@ impl StoreOps for Mem {
             })
             .collect();
         Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_domain_rdap_up_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.domain_rdap_up(ldh).await {
+            Some(domain) => {
+                let domain = Arc::unwrap_or_clone(domain);
+                let domain = match domain {
+                    RdapResponse::Domain(d) => *d,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(DomainSearchResults::response_obj()
+                    .results(vec![domain])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_domain_rdap_top_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.domain_rdap_top(ldh).await {
+            Some(domain) => {
+                let domain = Arc::unwrap_or_clone(domain);
+                let domain = match domain {
+                    RdapResponse::Domain(d) => *d,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(DomainSearchResults::response_obj()
+                    .results(vec![domain])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_domain_rdap_down_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.domain_rdap_down(ldh).await;
+        let results: Vec<Domain> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect();
+        Ok(DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_domain_rdap_bottom_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.domain_rdap_bottom(ldh).await;
+        let results: Vec<Domain> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect();
+        Ok(DomainSearchResults::response_obj()
             .results(results)
             .build()
             .to_response())

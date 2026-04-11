@@ -207,4 +207,28 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+    async fn search_domain_rdap_up_by_ldh(
+        &self,
+        _ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_domain_rdap_top_by_ldh(
+        &self,
+        _ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_domain_rdap_down_by_ldh(
+        &self,
+        _ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+    async fn search_domain_rdap_bottom_by_ldh(
+        &self,
+        _ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
 }
