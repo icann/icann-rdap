@@ -120,8 +120,10 @@ impl SrvTestJig {
     }
 
     pub async fn new_bootstrap() -> Self {
-        let mut common_config = CommonConfig::default();
-        common_config.bootstrap = true;
+        let common_config = CommonConfig {
+            bootstrap: true,
+            ..Default::default()
+        };
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
@@ -142,8 +144,10 @@ impl SrvTestJig {
     }
 
     pub async fn new_jscontact_conversion(jscontact_conversion: JsContactConversion) -> Self {
-        let mut common_config = CommonConfig::default();
-        common_config.jscontact_conversion = jscontact_conversion;
+        let common_config = CommonConfig {
+            jscontact_conversion,
+            ..Default::default()
+        };
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
