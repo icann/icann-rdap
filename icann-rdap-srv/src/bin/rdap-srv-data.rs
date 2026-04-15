@@ -379,6 +379,12 @@ struct DomainArgs {
     /// This argument may be given multiple times.
     #[arg(long)]
     ns: Vec<String>,
+
+    /// Network CIDR for reverse DNS domains.
+    ///
+    /// The network must already exist in storage.
+    #[arg(long)]
+    net: Option<String>,
 }
 
 fn parse_ds_datum(arg: &str) -> Result<DsDatum, RdapServerError> {
@@ -801,6 +807,27 @@ async fn get_ns(store: &dyn StoreOps, ldh: &str) -> Result<Nameserver, RdapServe
     }
 }
 
+async fn get_network(store: &dyn StoreOps, cidr: &str) -> Result<Network, RdapServerError> {
+    let n = store.get_network_by_cidr(cidr).await?;
+    if let RdapResponse::Network(n) = n {
+        Ok(n.to_child())
+    } else {
+        Err(RdapServerError::InvalidArg(cidr.to_string()))
+    }
+}
+
+async fn network(
+    store: &dyn StoreOps,
+    network_cidr: Option<String>,
+) -> Result<Option<Network>, RdapServerError> {
+    if let Some(cidr) = network_cidr {
+        let n = get_network(store, &cidr).await?;
+        Ok(Some(n))
+    } else {
+        Ok(None)
+    }
+}
+
 fn events(args: &ObjectArgs) -> Option<Events> {
     let mut events: Events = vec![];
     let created_at = if let Some(dt) = args.created {
@@ -988,6 +1015,7 @@ async fn make_domain(
         .unicode_name(unicode_name)
         .and_secure_dns(secure_dns)
         .nameservers(nameservers(store, args.ns).await?)
+        .and_network(network(store, args.net).await?)
         .notices(args.object_args.notice.clone().to_notices())
         .remarks(args.object_args.remark.clone().to_remarks())
         .entities(entities(store, &args.object_args).await?)
