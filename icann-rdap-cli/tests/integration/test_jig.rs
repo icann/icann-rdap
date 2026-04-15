@@ -46,6 +46,10 @@ impl TestJig {
             .autnum_rdap_top_enable(true)
             .autnum_rdap_down_enable(true)
             .autnum_rdap_bottom_enable(true)
+            .domain_rdap_up_enable(true)
+            .domain_rdap_top_enable(true)
+            .domain_rdap_down_enable(true)
+            .domain_rdap_bottom_enable(true)
             .build();
         Self::new_common_config(common_config, CommandType::Rdap).await
     }
