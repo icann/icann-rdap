@@ -105,6 +105,18 @@ pub enum QueryType {
     #[strum(serialize = "Reverse DNS Domain Lookup")]
     ReverseDns(IpNet),
 
+    #[strum(serialize = "Reverse DNS Domain Rdap-Up Lookup")]
+    ReverseDnsUp(IpNet),
+
+    #[strum(serialize = "Reverse DNS Domain Rdap-Down Lookup")]
+    ReverseDnsDown(IpNet),
+
+    #[strum(serialize = "Reverse DNS Domain Rdap-Top Lookup")]
+    ReverseDnsTop(IpNet),
+
+    #[strum(serialize = "Reverse DNS Domain Rdap-Bottom Lookup")]
+    ReverseDnsBottom(IpNet),
+
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
 
@@ -261,6 +273,22 @@ impl QueryType {
                 "{base_url}/domain/{}",
                 PctString::encode(ip_to_reverse_dns(&value.network()).chars(), URIReserved)
             )),
+            Self::ReverseDnsUp(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-up/{}",
+                PctString::encode(ip_to_reverse_dns(&value.network()).chars(), URIReserved)
+            )),
+            Self::ReverseDnsDown(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-down/{}",
+                PctString::encode(ip_to_reverse_dns(&value.network()).chars(), URIReserved)
+            )),
+            Self::ReverseDnsTop(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-top/{}",
+                PctString::encode(ip_to_reverse_dns(&value.network()).chars(), URIReserved)
+            )),
+            Self::ReverseDnsBottom(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-bottom/{}",
+                PctString::encode(ip_to_reverse_dns(&value.network()).chars(), URIReserved)
+            )),
             Self::ALabel(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(value.to_ascii().chars(), URIReserved),
@@ -300,6 +328,26 @@ impl QueryType {
     pub fn rdns(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         Ok(Self::ReverseDns(ipnet))
+    }
+
+    pub fn rdns_up(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDnsUp(ipnet))
+    }
+
+    pub fn rdns_down(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDnsDown(ipnet))
+    }
+
+    pub fn rdns_top(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDnsTop(ipnet))
+    }
+
+    pub fn rdns_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        Ok(Self::ReverseDnsBottom(ipnet))
     }
 
     pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
@@ -590,6 +638,9 @@ impl FromStr for QueryType {
             if let Ok(asn) = parse_autnum(rest) {
                 return Ok(Self::AsNumberUp(asn));
             }
+            if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
+                return Ok(Self::ReverseDnsUp(ipnet));
+            }
             return Err(RdapClientError::InvalidQueryValue);
         }
 
@@ -610,6 +661,9 @@ impl FromStr for QueryType {
             }
             if let Ok(asn) = parse_autnum(rest) {
                 return Ok(Self::AsNumberDown(asn));
+            }
+            if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
+                return Ok(Self::ReverseDnsDown(ipnet));
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -632,6 +686,9 @@ impl FromStr for QueryType {
             if let Ok(asn) = parse_autnum(rest) {
                 return Ok(Self::AsNumberTop(asn));
             }
+            if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
+                return Ok(Self::ReverseDnsTop(ipnet));
+            }
             return Err(RdapClientError::InvalidQueryValue);
         }
 
@@ -652,6 +709,9 @@ impl FromStr for QueryType {
             }
             if let Ok(asn) = parse_autnum(rest) {
                 return Ok(Self::AsNumberBottom(asn));
+            }
+            if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
+                return Ok(Self::ReverseDnsBottom(ipnet));
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -1527,6 +1587,162 @@ mod tests {
 
     #[test]
     fn test_autnum_bottom_prefix_invalid_input() {
+        // GIVEN
+        let s = "bottom:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("up:2.0.192.in-addr.arpa").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-up/0.2.0.192.in-addr.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_down_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("down:2.0.192.in-addr.arpa").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-down/0.2.0.192.in-addr.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_top_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("top:2.0.192.in-addr.arpa").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-top/0.2.0.192.in-addr.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_bottom_query_url() {
+        // GIVEN
+        let q = QueryType::from_str("bottom:2.0.192.in-addr.arpa").expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-bottom/0.2.0.192.in-addr.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_up_from_str() {
+        // GIVEN
+        let s = "up:2.0.192.in-addr.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::ReverseDnsUp(_)))
+    }
+
+    #[test]
+    fn test_rdns_down_from_str() {
+        // GIVEN
+        let s = "down:2.0.192.in-addr.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::ReverseDnsDown(_)))
+    }
+
+    #[test]
+    fn test_rdns_top_from_str() {
+        // GIVEN
+        let s = "top:2.0.192.in-addr.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::ReverseDnsTop(_)))
+    }
+
+    #[test]
+    fn test_rdns_bottom_from_str() {
+        // GIVEN
+        let s = "bottom:2.0.192.in-addr.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::ReverseDnsBottom(_)))
+    }
+
+    #[test]
+    fn test_rdns_up_prefix_invalid_input() {
+        // GIVEN
+        let s = "up:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_down_prefix_invalid_input() {
+        // GIVEN
+        let s = "down:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_top_prefix_invalid_input() {
+        // GIVEN
+        let s = "top:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_bottom_prefix_invalid_input() {
         // GIVEN
         let s = "bottom:foo";
 
