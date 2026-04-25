@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use ipnet::IpNet;
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::Response,
 };
 use http::HeaderMap;
@@ -11,6 +11,7 @@ use icann_rdap_common::{
     prelude::{normalize_extensions, normalize_extensions_with, ExtensionId},
     response::RdapResponse,
 };
+use serde::Deserialize;
 use tracing::debug;
 
 use crate::{
@@ -22,6 +23,11 @@ use crate::{
     },
     server::DynServiceState,
 };
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct IpsParams {
+    handle: Option<String>,
+}
 
 fn add_rfc9910_extensions(rdap: RdapResponse) -> RdapResponse {
     if matches!(rdap, RdapResponse::Network(_)) || matches!(rdap, RdapResponse::IpSearchResults(_))
@@ -217,5 +223,30 @@ pub(crate) async fn ip_rdap_bottom(
         );
         let results = add_rfc9910_extensions(results);
         Ok(results.response())
+    }
+}
+
+#[axum_macros::debug_handler]
+#[tracing::instrument(level = "debug")]
+pub(crate) async fn networks(
+    Query(params): Query<IpsParams>,
+    headers: HeaderMap,
+    state: State<DynServiceState>,
+) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = \'{}\'", exts_list.join(" "));
+
+    if let Some(handle) = params.handle {
+        let storage = state.get_storage().await?;
+        let results = storage.search_networks_by_handle(&handle).await?;
+        let results = jscontact_conversion(
+            results,
+            state.get_common_config().jscontact_conversion,
+            &exts_list,
+        );
+        let results = add_rfc9910_extensions(results);
+        Ok(results.response())
+    } else {
+        Ok(BAD_REQUEST.response())
     }
 }

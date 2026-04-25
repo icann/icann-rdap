@@ -91,6 +91,12 @@ pub trait StoreOps: Send + Sync {
         full_name: &str,
     ) -> Result<RdapResponse, RdapServerError>;
 
+    /// Search for networks by handle.
+    async fn search_networks_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
     /// Search for the supernet (rdap-up per RFC 9910) by IP address.
     async fn search_ip_rdap_up_by_ipaddr(
         &self,

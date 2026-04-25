@@ -107,6 +107,12 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+    async fn search_networks_by_handle(
+        &self,
+        _handle: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        todo!()
+    }
     async fn search_ip_rdap_up_by_ipaddr(
         &self,
         _ipaddr: &str,

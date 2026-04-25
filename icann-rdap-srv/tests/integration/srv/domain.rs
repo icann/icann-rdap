@@ -1,4 +1,3 @@
-use reqwest;
 use {
     icann_rdap_client::{
         http::{create_client, ClientConfig},

@@ -1,5 +1,6 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
+use icann_rdap_common::prelude::ObjectCommonFields;
 use rangemap::RangeInclusiveMap;
 
 use {
@@ -40,6 +41,7 @@ pub struct MemTx {
     entities: HashMap<String, Arc<RdapResponse>>,
     entities_by_handle: SearchLabels<Arc<RdapResponse>>,
     entities_by_full_name: SearchLabels<Arc<RdapResponse>>,
+    networks_by_handle: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
@@ -57,6 +59,10 @@ impl MemTx {
             .clone();
         let entities = Arc::clone(&mem.entities).read_owned().await.clone();
         let mut entities_by_handle = SearchLabels::handle_labels().build();
+        let mut entities_by_full_name = SearchLabels::name_labels().build();
+        let ip4 = Arc::clone(&mem.ip4).read_owned().await.clone();
+        let ip6 = Arc::clone(&mem.ip6).read_owned().await.clone();
+        let mut networks_by_handle = SearchLabels::handle_labels().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
@@ -94,7 +100,6 @@ impl MemTx {
             }
         }
 
-        let mut entities_by_full_name = SearchLabels::name_labels().build();
         if mem.config.common_config.entity_search_by_full_name_enable {
             for (_handle, value) in entities.iter() {
                 if let RdapResponse::Entity(entity) = value.as_ref() {
@@ -102,6 +107,23 @@ impl MemTx {
                         if let Some(full_name) = contact.full_name() {
                             entities_by_full_name.insert(full_name, value.clone());
                         }
+                    }
+                }
+            }
+        }
+
+        if mem.config.common_config.network_search_by_handle_enable {
+            for (_net, value) in ip4.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(handle) = network.handle() {
+                        networks_by_handle.insert(handle, value.clone());
+                    }
+                }
+            }
+            for (_net, value) in ip6.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(handle) = network.handle() {
+                        networks_by_handle.insert(handle, value.clone());
                     }
                 }
             }
@@ -125,6 +147,7 @@ impl MemTx {
             entities,
             entities_by_handle,
             entities_by_full_name,
+            networks_by_handle,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -148,6 +171,7 @@ impl MemTx {
             entities: HashMap::new(),
             entities_by_handle: SearchLabels::handle_labels().build(),
             entities_by_full_name: SearchLabels::name_labels().build(),
+            networks_by_handle: SearchLabels::handle_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -385,6 +409,21 @@ impl TxHandle for MemTx {
     }
 
     async fn add_network(&mut self, network: &Network) -> Result<(), RdapServerError> {
+        let handle = network.object_common.handle.as_ref().map(|h| h.to_string());
+        let network_response = Arc::new(network.clone().to_response());
+
+        if self
+            .mem
+            .config
+            .common_config
+            .network_search_by_handle_enable
+        {
+            if let Some(ref handle_str) = handle {
+                self.networks_by_handle
+                    .insert(handle_str, network_response.clone());
+            }
+        }
+
         let start_addr = network
             .start_address
             .as_ref()
@@ -401,16 +440,26 @@ impl TxHandle for MemTx {
         if is_v4 {
             let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
-                self.ip4
-                    .insert(net, Arc::new(network.clone().to_response()));
+                self.ip4.insert(net, network_response.clone());
             }
         } else {
             let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
-                self.ip6
-                    .insert(net, Arc::new(network.clone().to_response()));
+                self.ip6.insert(net, network_response.clone());
             }
         };
+
+        if self
+            .mem
+            .config
+            .common_config
+            .network_search_by_handle_enable
+        {
+            if let Some(ref handle_str) = handle {
+                self.networks_by_handle
+                    .insert(handle_str, network_response.clone());
+            }
+        }
         Ok(())
     }
 
@@ -546,6 +595,10 @@ impl TxHandle for MemTx {
             &mut self.entities_by_full_name,
             &mut entities_by_full_name_g,
         );
+
+        // networks by handle
+        let mut networks_by_handle_g = self.mem.networks_by_handle.write().await;
+        std::mem::swap(&mut self.networks_by_handle, &mut networks_by_handle_g);
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;

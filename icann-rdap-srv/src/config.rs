@@ -42,6 +42,7 @@ pub const DOMAIN_RDAP_UP_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_UP";
 pub const DOMAIN_RDAP_TOP_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_TOP";
 pub const DOMAIN_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_DOWN";
 pub const DOMAIN_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_BOTTOM";
+pub const NETWORK_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_HANDLE";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -70,6 +71,7 @@ pub fn debug_config_vars() {
         AUTNUM_RDAP_TOP_ENABLE,
         AUTNUM_RDAP_DOWN_ENABLE,
         AUTNUM_RDAP_BOTTOM_ENABLE,
+        NETWORK_SEARCH_BY_HANDLE_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -131,6 +133,7 @@ impl StorageType {
         let domain_rdap_top = get_parse_or(DOMAIN_RDAP_TOP_ENABLE, false)?;
         let domain_rdap_down = get_parse_or(DOMAIN_RDAP_DOWN_ENABLE, false)?;
         let domain_rdap_bottom = get_parse_or(DOMAIN_RDAP_BOTTOM_ENABLE, false)?;
+        let network_search_by_handle = get_parse_or(NETWORK_SEARCH_BY_HANDLE_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -151,6 +154,7 @@ impl StorageType {
             .domain_rdap_top_enable(domain_rdap_top)
             .domain_rdap_down_enable(domain_rdap_down)
             .domain_rdap_bottom_enable(domain_rdap_bottom)
+            .network_search_by_handle_enable(network_search_by_handle)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
@@ -209,6 +213,7 @@ pub struct CommonConfig {
     pub domain_rdap_top_enable: bool,
     pub domain_rdap_down_enable: bool,
     pub domain_rdap_bottom_enable: bool,
+    pub network_search_by_handle_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
 }
@@ -235,6 +240,7 @@ impl Default for CommonConfig {
             domain_rdap_top_enable: false,
             domain_rdap_down_enable: false,
             domain_rdap_bottom_enable: false,
+            network_search_by_handle_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
         }
@@ -264,6 +270,7 @@ impl CommonConfig {
         domain_rdap_top_enable: Option<bool>,
         domain_rdap_down_enable: Option<bool>,
         domain_rdap_bottom_enable: Option<bool>,
+        network_search_by_handle_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
     ) -> Self {
@@ -289,6 +296,7 @@ impl CommonConfig {
             domain_rdap_top_enable: domain_rdap_top_enable.unwrap_or_default(),
             domain_rdap_down_enable: domain_rdap_down_enable.unwrap_or_default(),
             domain_rdap_bottom_enable: domain_rdap_bottom_enable.unwrap_or_default(),
+            network_search_by_handle_enable: network_search_by_handle_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
         }

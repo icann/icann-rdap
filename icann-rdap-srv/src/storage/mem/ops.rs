@@ -43,6 +43,7 @@ pub struct Mem {
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) entities_by_handle: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) entities_by_full_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) networks_by_handle: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
 }
@@ -66,6 +67,7 @@ impl Mem {
             entities: <_>::default(),
             entities_by_handle: Arc::new(RwLock::new(SearchLabels::handle_labels().build())),
             entities_by_full_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
+            networks_by_handle: Arc::new(RwLock::new(SearchLabels::handle_labels().build())),
             srvhelps: <_>::default(),
             config,
         }
@@ -343,6 +345,31 @@ impl StoreOps for Mem {
             })
             .collect::<Vec<Entity>>();
         let response = EntitySearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_networks_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.network_search_by_handle_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let networks_by_handle = self.networks_by_handle.read().await;
+        let results = networks_by_handle
+            .search(handle)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|n| match n {
+                RdapResponse::Network(net) => Some(*net),
+                _ => None,
+            })
+            .collect::<Vec<Network>>();
+        let response = IpSearchResults::response_obj()
             .results(results)
             .build()
             .to_response();
