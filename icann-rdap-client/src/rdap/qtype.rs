@@ -129,6 +129,9 @@ pub enum QueryType {
     #[strum(serialize = "Entity Handle Search")]
     EntityHandleSearch(String),
 
+    #[strum(serialize = "Network Handle Search")]
+    NetworkHandleSearch(String),
+
     #[strum(serialize = "Domain Name Search")]
     DomainNameSearch(String),
 
@@ -303,6 +306,7 @@ impl QueryType {
             )),
             Self::EntityNameSearch(value) => search_query(value, "entities?fn", base_url),
             Self::EntityHandleSearch(value) => search_query(value, "entities?handle", base_url),
+            Self::NetworkHandleSearch(value) => search_query(value, "ips?handle", base_url),
             Self::DomainNameSearch(value) => search_query(value, "domains?name", base_url),
             Self::DomainNsNameSearch(value) => search_query(value, "domains?nsLdhName", base_url),
             Self::DomainNsIpSearch(value) => {
@@ -1091,6 +1095,18 @@ mod tests {
 
         // THEN
         assert_eq!(actual, "https://example.com/entities?handle=foo")
+    }
+
+    #[test]
+    fn test_network_handle_search_query_url() {
+        // GIVEN
+        let q = QueryType::NetworkHandleSearch("foo".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/ips?handle=foo")
     }
 
     #[test]
