@@ -9,7 +9,6 @@ use {
 
 use crate::test_jig::SrvTestJig;
 
-
 #[tokio::test]
 async fn test_server_ipv4_lookup() {
     // GIVEN

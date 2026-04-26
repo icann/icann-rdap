@@ -57,7 +57,10 @@ async fn test_server_rdap_bottom_disabled() {
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!("{}/ips/rirSearch1/rdap-bottom/10.0.0.0/8", test_srv.rdap_base);
+    let url = format!(
+        "{}/ips/rirSearch1/rdap-bottom/10.0.0.0/8",
+        test_srv.rdap_base
+    );
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")
@@ -120,7 +123,10 @@ async fn test_server_rdap_bottom_cidr() {
 
     // WHEN
     let client = reqwest::Client::new();
-    let url = format!("{}/ips/rirSearch1/rdap-bottom/10.0.0.0/8", test_srv.rdap_base);
+    let url = format!(
+        "{}/ips/rirSearch1/rdap-bottom/10.0.0.0/8",
+        test_srv.rdap_base
+    );
     let response = client
         .get(&url)
         .header("accept", "application/rdap+json")
