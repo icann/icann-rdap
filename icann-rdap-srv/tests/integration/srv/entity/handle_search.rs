@@ -1,3 +1,4 @@
+use crate::test_jig::SrvTestJig;
 use {
     icann_rdap_client::{
         http::{create_client, ClientConfig},
@@ -6,7 +7,6 @@ use {
     icann_rdap_common::{prelude::RdapResponse, response::Entity},
     icann_rdap_srv::{config::CommonConfig, storage::StoreOps},
 };
-use crate::test_jig::SrvTestJig;
 
 #[tokio::test]
 async fn test_server_entity_search_disabled() {
