@@ -439,6 +439,9 @@ enum QtypeArg {
 
     /// Autonomous System Number Rdap-Bottom Search
     AutnumBottom,
+
+    /// Network Handle Search
+    NetHandle,
 }
 
 /// Represents the output type possibilities.
@@ -823,6 +826,7 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
         QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
+        QtypeArg::NetHandle => QueryType::NetworkHandleSearch(query_value),
         QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
         QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
         QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
