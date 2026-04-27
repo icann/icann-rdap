@@ -5,7 +5,6 @@ use {
     },
     icann_rdap_common::{prelude::RdapResponse, response::Nameserver},
     icann_rdap_srv::{config::CommonConfig, storage::StoreOps},
-    std::net::{IpAddr, Ipv4Addr},
 };
 
 use crate::test_jig::SrvTestJig;

@@ -17,6 +17,7 @@ use super::{
 pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
     Router::new()
         .route("/domain/:domain", get(domain_by_name))
+        .route("/ips", get(networks))
         .route("/ip/*netid", get(network_by_netid))
         .route("/autnum/:asnumber", get(autnum_by_num))
         .route("/autnums/rirSearch1/rdap-up/*asNumber", get(autnum_rdap_up))
@@ -33,6 +34,7 @@ pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
             get(autnum_rdap_bottom),
         )
         .route("/nameserver/:name", get(nameserver_by_name))
+        .route("/entities", get(entities))
         .route("/entity/:handle", get(entity_by_handle))
         .route("/domains", get(domains))
         .route("/domains/rirSearch1/rdap-up/*domain", get(domain_rdap_up))
@@ -46,7 +48,6 @@ pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
             get(domain_rdap_bottom),
         )
         .route("/nameservers", get(nameservers))
-        .route("/entities", get(entities))
         .route("/help", get(srvhelp))
         .route("/ips/rirSearch1/rdap-up/*ipAddress", get(ip_rdap_up))
         .route("/ips/rirSearch1/rdap-top/*ipAddress", get(ip_rdap_top))
@@ -55,5 +56,4 @@ pub(crate) fn rdap_router() -> Router<crate::server::DynServiceState> {
             "/ips/rirSearch1/rdap-bottom/*ipAddress",
             get(ip_rdap_bottom),
         )
-        .route("/ips", get(networks))
 }
