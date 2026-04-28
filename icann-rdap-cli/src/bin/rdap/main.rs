@@ -442,6 +442,9 @@ enum QtypeArg {
 
     /// Network Handle Search
     NetHandle,
+
+    /// Network Name Search
+    NetName,
 }
 
 /// Represents the output type possibilities.
@@ -827,6 +830,7 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
         QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
         QtypeArg::NetHandle => QueryType::NetworkHandleSearch(query_value),
+        QtypeArg::NetName => QueryType::NetworkNameSearch(query_value),
         QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
         QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
         QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,

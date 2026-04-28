@@ -752,3 +752,155 @@ async fn GIVEN_help_in_mem_WHEN_lookup_help_with_host_THEN_get_host_help() {
         "bar"
     );
 }
+
+#[tokio::test]
+async fn GIVEN_network_in_mem_WHEN_search_networks_by_name_THEN_network_returned() {
+    // GIVEN
+    let mem_config = MemConfig::builder()
+        .common_config(
+            CommonConfig::builder()
+                .network_search_by_name_enable(true)
+                .build(),
+        )
+        .build();
+    let mem = Mem::new(mem_config);
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .name("ARIN-001")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .search_networks_by_name("ARIN-*")
+        .await
+        .expect("searching networks by name");
+
+    // THEN
+    let RdapResponse::IpSearchResults(results) = actual else {
+        panic!("not ip search results")
+    };
+    assert_eq!(results.results.len(), 1);
+}
+
+#[tokio::test]
+async fn GIVEN_networks_in_mem_WHEN_search_networks_by_name_multiple_THEN_all_returned() {
+    // GIVEN
+    let mem_config = MemConfig::builder()
+        .common_config(
+            CommonConfig::builder()
+                .network_search_by_name_enable(true)
+                .build(),
+        )
+        .build();
+    let mem = Mem::new(mem_config);
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .name("ARIN-001")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("198.51.100.0/24")
+            .name("ARIN-002")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .search_networks_by_name("ARIN-*")
+        .await
+        .expect("searching networks by name");
+
+    // THEN
+    let RdapResponse::IpSearchResults(results) = actual else {
+        panic!("not ip search results")
+    };
+    assert_eq!(results.results.len(), 2);
+}
+
+#[tokio::test]
+async fn GIVEN_network_in_mem_WHEN_search_networks_by_name_not_found_THEN_empty() {
+    // GIVEN
+    let mem_config = MemConfig::builder()
+        .common_config(
+            CommonConfig::builder()
+                .network_search_by_name_enable(true)
+                .build(),
+        )
+        .build();
+    let mem = Mem::new(mem_config);
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .name("ARIN-001")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .search_networks_by_name("LACNIC-*")
+        .await
+        .expect("searching networks by name");
+
+    // THEN
+    let RdapResponse::IpSearchResults(results) = actual else {
+        panic!("not ip search results")
+    };
+    assert_eq!(results.results.len(), 0);
+}
+
+#[tokio::test]
+async fn GIVEN_network_in_mem_WHEN_search_not_enabled_THEN_not_implemented() {
+    // GIVEN
+    let mem_config = MemConfig::builder()
+        .common_config(
+            CommonConfig::builder()
+                .network_search_by_name_enable(false)
+                .build(),
+        )
+        .build();
+    let mem = Mem::new(mem_config);
+    let mut tx = mem.new_tx().await.expect("new transaction");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .name("ARIN-001")
+            .build()
+            .expect("cidr parsing"),
+    )
+    .await
+    .expect("add network in tx");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let actual = mem
+        .search_networks_by_name("ARIN-*")
+        .await
+        .expect("searching networks by name");
+
+    // THEN
+    let RdapResponse::ErrorResponse(_e) = actual else {
+        panic!("not error response")
+    };
+}
