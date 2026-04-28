@@ -3,4 +3,8 @@ mod domains;
 mod entities;
 mod nameservers;
 mod networks;
+mod networks_bottom;
+mod networks_down;
+mod networks_top;
+mod networks_up;
 mod url_lookup;
