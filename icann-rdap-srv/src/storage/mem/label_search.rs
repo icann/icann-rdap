@@ -422,4 +422,53 @@ mod tests {
         assert_eq!(actual.len(), 1);
         assert!(actual.contains(&"Bob Person".to_string()));
     }
+
+    #[test]
+    fn test_name_labels_search_prefix_wildcard() {
+        // GIVEN
+        let mut labels = SearchLabels::name_labels().build();
+        labels.insert("ARIN-001", "ARIN-001".to_owned());
+        labels.insert("ARIN-002", "ARIN-002".to_owned());
+        labels.insert("RIPE-NCC-001", "RIPE-NCC-001".to_owned());
+
+        // WHEN
+        let actual = labels.search("ARIN-*").expect("search is invalid");
+
+        // THEN
+        dbg!(&actual);
+        assert_eq!(actual.len(), 2);
+        assert!(actual.contains(&"ARIN-001".to_string()));
+        assert!(actual.contains(&"ARIN-002".to_string()));
+    }
+
+    #[test]
+    fn test_name_labels_search_suffix_wildcard() {
+        // GIVEN
+        let mut labels = SearchLabels::name_labels().build();
+        labels.insert("Network Allocation", "Network Allocation".to_owned());
+        labels.insert("Network Assignment", "Network Assignment".to_owned());
+        labels.insert("Autnum Allocation", "Autnum Allocation".to_owned());
+
+        // WHEN
+        let actual = labels.search("Autnum*").expect("search is invalid");
+
+        // THEN
+        dbg!(&actual);
+        assert_eq!(actual.len(), 1);
+        assert!(actual.contains(&"Autnum Allocation".to_string()));
+    }
+
+    #[test]
+    fn test_name_labels_search_no_match() {
+        // GIVEN
+        let mut labels = SearchLabels::name_labels().build();
+        labels.insert("ARIN-001", "ARIN-001".to_owned());
+        labels.insert("RIPE-NCC-001", "RIPE-NCC-001".to_owned());
+
+        // WHEN
+        let actual = labels.search("LACNIC-*").expect("search is invalid");
+
+        // THEN
+        assert_eq!(actual.len(), 0);
+    }
 }

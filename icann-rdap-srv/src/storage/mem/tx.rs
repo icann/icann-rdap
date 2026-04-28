@@ -42,6 +42,7 @@ pub struct MemTx {
     entities_by_handle: SearchLabels<Arc<RdapResponse>>,
     entities_by_full_name: SearchLabels<Arc<RdapResponse>>,
     networks_by_handle: SearchLabels<Arc<RdapResponse>>,
+    networks_by_name: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
@@ -63,6 +64,7 @@ impl MemTx {
         let ip4 = Arc::clone(&mem.ip4).read_owned().await.clone();
         let ip6 = Arc::clone(&mem.ip6).read_owned().await.clone();
         let mut networks_by_handle = SearchLabels::handle_labels().build();
+        let mut networks_by_name = SearchLabels::name_labels().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
@@ -129,6 +131,23 @@ impl MemTx {
             }
         }
 
+        if mem.config.common_config.network_search_by_name_enable {
+            for (_net, value) in ip4.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(name) = network.name() {
+                        networks_by_name.insert(name, value.clone());
+                    }
+                }
+            }
+            for (_net, value) in ip6.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(name) = network.name() {
+                        networks_by_name.insert(name, value.clone());
+                    }
+                }
+            }
+        }
+
         Self {
             mem: mem.clone(),
             autnums: Arc::clone(&mem.autnums).read_owned().await.clone(),
@@ -148,6 +167,7 @@ impl MemTx {
             entities_by_handle,
             entities_by_full_name,
             networks_by_handle,
+            networks_by_name,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -172,6 +192,7 @@ impl MemTx {
             entities_by_handle: SearchLabels::handle_labels().build(),
             entities_by_full_name: SearchLabels::name_labels().build(),
             networks_by_handle: SearchLabels::handle_labels().build(),
+            networks_by_name: SearchLabels::name_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -460,6 +481,13 @@ impl TxHandle for MemTx {
                     .insert(handle_str, network_response.clone());
             }
         }
+
+        if self.mem.config.common_config.network_search_by_name_enable {
+            if let Some(ref name) = network.name {
+                self.networks_by_name.insert(name, network_response.clone());
+            }
+        }
+
         Ok(())
     }
 
@@ -599,6 +627,10 @@ impl TxHandle for MemTx {
         // networks by handle
         let mut networks_by_handle_g = self.mem.networks_by_handle.write().await;
         std::mem::swap(&mut self.networks_by_handle, &mut networks_by_handle_g);
+
+        // networks by name
+        let mut networks_by_name_g = self.mem.networks_by_name.write().await;
+        std::mem::swap(&mut self.networks_by_name, &mut networks_by_name_g);
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;
