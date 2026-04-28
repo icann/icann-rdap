@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::Response,
 };
 use http::HeaderMap;
@@ -9,6 +9,7 @@ use icann_rdap_common::{
     prelude::{normalize_extensions, normalize_extensions_with, ExtensionId},
     response::RdapResponse,
 };
+use serde::Deserialize;
 use tracing::debug;
 
 use crate::{
@@ -44,6 +45,40 @@ fn parse_as_path(as_path: &str) -> Result<(u32, Option<u32>), ()> {
         let single = u32::from_str(as_path).map_err(|_| ())?;
         Ok((single, None))
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct AutnumsParams {
+    handle: Option<String>,
+    name: Option<String>,
+}
+
+#[axum_macros::debug_handler]
+#[tracing::instrument(level = "debug")]
+pub(crate) async fn autnums(
+    Query(params): Query<AutnumsParams>,
+    headers: HeaderMap,
+    state: State<DynServiceState>,
+) -> Result<Response, RdapServerError> {
+    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    debug!("exts_list = '{}'", exts_list.join(" "));
+
+    let storage = state.get_storage().await?;
+    let results = if let Some(handle) = params.handle {
+        storage.search_autnums_by_handle(&handle).await?
+    } else if let Some(name) = params.name {
+        storage.search_autnums_by_name(&name).await?
+    } else {
+        return Ok(BAD_REQUEST.response());
+    };
+
+    let results = jscontact_conversion(
+        results,
+        state.get_common_config().jscontact_conversion,
+        &exts_list,
+    );
+    let results = add_rfc9910_extensions(results);
+    Ok(results.response())
 }
 
 #[axum_macros::debug_handler]

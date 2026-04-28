@@ -150,6 +150,12 @@ pub enum QueryType {
     #[strum(serialize = "Nameserver IP Address Search")]
     NameserverIpSearch(IpAddr),
 
+    #[strum(serialize = "Autnum Handle Search")]
+    AutnumHandleSearch(String),
+
+    #[strum(serialize = "Autnum Name Search")]
+    AutnumNameSearch(String),
+
     #[strum(serialize = "Server Help Lookup")]
     Help,
 
@@ -320,6 +326,8 @@ impl QueryType {
             Self::NameserverIpSearch(value) => {
                 search_query(&value.to_string(), "nameservers?ip", base_url)
             }
+            Self::AutnumHandleSearch(value) => search_query(value, "autnums?handle", base_url),
+            Self::AutnumNameSearch(value) => search_query(value, "autnums?name", base_url),
             Self::Help => Ok(format!("{base_url}/help")),
             Self::Url(url) => Ok(url.to_owned()),
         }

@@ -143,6 +143,13 @@ pub trait StoreOps: Send + Sync {
         cidr: &str,
     ) -> Result<RdapResponse, RdapServerError>;
 
+    /// Search for autnums by handle (RFC 9910).
+    async fn search_autnums_by_handle(&self, handle: &str)
+        -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for autnums by name (RFC 9910).
+    async fn search_autnums_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError>;
+
     /// Search for the supernet (rdap-up per RFC 9910) by AS number.
     async fn search_autnum_rdap_up_by_num(&self, num: u32)
         -> Result<RdapResponse, RdapServerError>;

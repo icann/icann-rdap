@@ -68,108 +68,129 @@ impl StoreOps for Pg {
     async fn get_network_by_ipaddr(&self, _ipaddr: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn get_network_by_cidr(&self, _cidr: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn get_srv_help(&self, _host: Option<&str>) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_domains_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_nameservers_by_name(
         &self,
         _name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_nameservers_by_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_domains_by_ns_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_domains_by_ns_ldh_name(
         &self,
         _name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_entities_by_handle(
         &self,
         _handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_entities_by_full_name(
         &self,
         _full_name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_networks_by_handle(
         &self,
         _handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         todo!()
     }
+
     async fn search_networks_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_up_by_ipaddr(
         &self,
         _ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_up_by_cidr(
         &self,
         _cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_top_by_ipaddr(
         &self,
         _ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_top_by_cidr(
         &self,
         _cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_down_by_ipaddr(
         &self,
         _ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_down_by_cidr(
         &self,
         _cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_bottom_by_ipaddr(
         &self,
         _ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_ip_rdap_bottom_by_cidr(
         &self,
         _cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_up_by_num(
         &self,
         _num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_up_by_range(
         &self,
         _start: u32,
@@ -177,12 +198,14 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_top_by_num(
         &self,
         _num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_top_by_range(
         &self,
         _start: u32,
@@ -190,12 +213,14 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_down_by_num(
         &self,
         _num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_down_by_range(
         &self,
         _start: u32,
@@ -203,12 +228,14 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_bottom_by_num(
         &self,
         _num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_autnum_rdap_bottom_by_range(
         &self,
         _start: u32,
@@ -216,24 +243,39 @@ impl StoreOps for Pg {
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
+    async fn search_autnums_by_handle(
+        &self,
+        _handle: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+
+    async fn search_autnums_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
+        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    }
+
     async fn search_domain_rdap_up_by_ldh(
         &self,
         _ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_domain_rdap_top_by_ldh(
         &self,
         _ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_domain_rdap_down_by_ldh(
         &self,
         _ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
     }
+
     async fn search_domain_rdap_bottom_by_ldh(
         &self,
         _ldh: &str,

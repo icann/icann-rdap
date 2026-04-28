@@ -44,6 +44,8 @@ pub const DOMAIN_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_DOWN";
 pub const DOMAIN_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_BOTTOM";
 pub const NETWORK_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_HANDLE";
 pub const NETWORK_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_NAME";
+pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
+pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -74,6 +76,8 @@ pub fn debug_config_vars() {
         AUTNUM_RDAP_BOTTOM_ENABLE,
         NETWORK_SEARCH_BY_HANDLE_ENABLE,
         NETWORK_SEARCH_BY_NAME_ENABLE,
+        AUTNUM_SEARCH_BY_NAME_ENABLE,
+        AUTNUM_SEARCH_BY_HANDLE_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -137,6 +141,8 @@ impl StorageType {
         let domain_rdap_bottom = get_parse_or(DOMAIN_RDAP_BOTTOM_ENABLE, false)?;
         let network_search_by_handle = get_parse_or(NETWORK_SEARCH_BY_HANDLE_ENABLE, false)?;
         let network_search_by_name = get_parse_or(NETWORK_SEARCH_BY_NAME_ENABLE, false)?;
+        let autnum_search_by_name = get_parse_or(AUTNUM_SEARCH_BY_NAME_ENABLE, false)?;
+        let autnum_search_by_handle = get_parse_or(AUTNUM_SEARCH_BY_HANDLE_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -159,6 +165,8 @@ impl StorageType {
             .domain_rdap_bottom_enable(domain_rdap_bottom)
             .network_search_by_handle_enable(network_search_by_handle)
             .network_search_by_name_enable(network_search_by_name)
+            .autnum_search_by_name_enable(autnum_search_by_name)
+            .autnum_search_by_handle_enable(autnum_search_by_handle)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
@@ -219,6 +227,8 @@ pub struct CommonConfig {
     pub domain_rdap_bottom_enable: bool,
     pub network_search_by_handle_enable: bool,
     pub network_search_by_name_enable: bool,
+    pub autnum_search_by_name_enable: bool,
+    pub autnum_search_by_handle_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
 }
@@ -247,6 +257,8 @@ impl Default for CommonConfig {
             domain_rdap_bottom_enable: false,
             network_search_by_handle_enable: false,
             network_search_by_name_enable: false,
+            autnum_search_by_name_enable: false,
+            autnum_search_by_handle_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
         }
@@ -278,6 +290,8 @@ impl CommonConfig {
         domain_rdap_bottom_enable: Option<bool>,
         network_search_by_handle_enable: Option<bool>,
         network_search_by_name_enable: Option<bool>,
+        autnum_search_by_name_enable: Option<bool>,
+        autnum_search_by_handle_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
     ) -> Self {
@@ -305,6 +319,8 @@ impl CommonConfig {
             domain_rdap_bottom_enable: domain_rdap_bottom_enable.unwrap_or_default(),
             network_search_by_handle_enable: network_search_by_handle_enable.unwrap_or_default(),
             network_search_by_name_enable: network_search_by_name_enable.unwrap_or_default(),
+            autnum_search_by_name_enable: autnum_search_by_name_enable.unwrap_or_default(),
+            autnum_search_by_handle_enable: autnum_search_by_handle_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
         }

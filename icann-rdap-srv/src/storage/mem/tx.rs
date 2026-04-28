@@ -43,6 +43,8 @@ pub struct MemTx {
     entities_by_full_name: SearchLabels<Arc<RdapResponse>>,
     networks_by_handle: SearchLabels<Arc<RdapResponse>>,
     networks_by_name: SearchLabels<Arc<RdapResponse>>,
+    autnums_by_handle: SearchLabels<Arc<RdapResponse>>,
+    autnums_by_name: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
@@ -65,6 +67,8 @@ impl MemTx {
         let ip6 = Arc::clone(&mem.ip6).read_owned().await.clone();
         let mut networks_by_handle = SearchLabels::handle_labels().build();
         let mut networks_by_name = SearchLabels::name_labels().build();
+        let mut autnums_by_handle = SearchLabels::handle_labels().build();
+        let mut autnums_by_name = SearchLabels::name_labels().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
@@ -148,6 +152,28 @@ impl MemTx {
             }
         }
 
+        if mem.config.common_config.autnum_search_by_handle_enable {
+            let autnums = mem.autnums.read().await;
+            for (_range, value) in autnums.iter() {
+                if let RdapResponse::Autnum(autnum) = value.as_ref() {
+                    if let Some(handle) = autnum.handle() {
+                        autnums_by_handle.insert(handle, value.clone());
+                    }
+                }
+            }
+        }
+
+        if mem.config.common_config.autnum_search_by_name_enable {
+            let autnums = mem.autnums.read().await;
+            for (_range, value) in autnums.iter() {
+                if let RdapResponse::Autnum(autnum) = value.as_ref() {
+                    if let Some(name) = autnum.name() {
+                        autnums_by_name.insert(name, value.clone());
+                    }
+                }
+            }
+        }
+
         Self {
             mem: mem.clone(),
             autnums: Arc::clone(&mem.autnums).read_owned().await.clone(),
@@ -168,6 +194,8 @@ impl MemTx {
             entities_by_full_name,
             networks_by_handle,
             networks_by_name,
+            autnums_by_handle,
+            autnums_by_name,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -193,6 +221,8 @@ impl MemTx {
             entities_by_full_name: SearchLabels::name_labels().build(),
             networks_by_handle: SearchLabels::handle_labels().build(),
             networks_by_name: SearchLabels::name_labels().build(),
+            autnums_by_handle: SearchLabels::handle_labels().build(),
+            autnums_by_name: SearchLabels::name_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -410,10 +440,20 @@ impl TxHandle for MemTx {
             .as_ref()
             .and_then(|n| n.as_u32())
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
-        self.autnums.insert(
-            (start_num)..=(end_num),
-            Arc::new(autnum.clone().to_response()),
-        );
+        let autnum_response = Arc::new(autnum.clone().to_response());
+        self.autnums
+            .insert((start_num)..=(end_num), autnum_response.clone());
+        if self.mem.config.common_config.autnum_search_by_handle_enable {
+            if let Some(handle) = autnum.handle() {
+                self.autnums_by_handle
+                    .insert(handle, autnum_response.clone());
+            }
+        }
+        if self.mem.config.common_config.autnum_search_by_name_enable {
+            if let Some(name) = autnum.name() {
+                self.autnums_by_name.insert(name, autnum_response);
+            }
+        }
         Ok(())
     }
 
@@ -631,6 +671,14 @@ impl TxHandle for MemTx {
         // networks by name
         let mut networks_by_name_g = self.mem.networks_by_name.write().await;
         std::mem::swap(&mut self.networks_by_name, &mut networks_by_name_g);
+
+        // autnums by handle
+        let mut autnums_by_handle_g = self.mem.autnums_by_handle.write().await;
+        std::mem::swap(&mut self.autnums_by_handle, &mut autnums_by_handle_g);
+
+        // autnums by name
+        let mut autnums_by_name_g = self.mem.autnums_by_name.write().await;
+        std::mem::swap(&mut self.autnums_by_name, &mut autnums_by_name_g);
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;
