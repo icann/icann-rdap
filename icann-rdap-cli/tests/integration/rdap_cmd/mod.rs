@@ -1,12 +1,6 @@
-mod autnums;
 mod bootstrap;
 mod cache;
-mod domains;
-mod entities;
-mod misc;
-mod nameservers;
-mod networks;
 mod not_found;
 mod output;
-mod searches;
-mod url;
+mod query;
+mod search;
