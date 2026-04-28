@@ -45,5 +45,3 @@ async fn test_entity_name_search() {
     let assert = test_jig.cmd.assert();
     assert.success();
 }
-
-

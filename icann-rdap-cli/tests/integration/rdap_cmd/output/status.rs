@@ -1,8 +1,5 @@
 use {
-    icann_rdap_common::{
-        prelude::Link,
-        response::Domain,
-    },
+    icann_rdap_common::{prelude::Link, response::Domain},
     icann_rdap_srv::storage::StoreOps,
     serde_json::json,
 };
