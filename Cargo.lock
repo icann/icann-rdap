@@ -1553,7 +1553,6 @@ dependencies = [
  "cidr-utils",
  "clap",
  "const_format",
- "crossbeam-channel",
  "directories",
  "dotenvy",
  "enumflags2",

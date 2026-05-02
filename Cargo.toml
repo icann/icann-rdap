@@ -48,10 +48,6 @@ chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], defau
 # compile time constants formatting
 const_format = "0.2"
 
-# subdependency used by minus and termimad
-# this can be removed once minus and termimad are updated
-crossbeam-channel = "0.5.15"
-
 # cross-platform application directories
 directories = "6.0"
 
@@ -99,7 +95,7 @@ idna = "1.1"
 ipnet = { version = "2.12", features = ["json"] }
 
 # embedded pager
-minus = {version = "5.5", features = ["dynamic_output", "search"] }
+minus = {version = "5.6", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "3.0"
