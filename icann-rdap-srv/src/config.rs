@@ -11,7 +11,7 @@ use {
 
 use crate::{
     error::RdapServerError,
-    storage::{mem::config::MemConfig, pg::config::PgConfig, CommonConfig},
+    storage::{mem::config::MemConfig, pg::config::PgConfig},
 };
 
 pub const LOG: &str = "RDAP_SRV_LOG";
@@ -30,6 +30,22 @@ pub const NAMESERVER_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_B
 pub const NAMESERVER_SEARCH_BY_IP_ENABLE: &str = "RDAP_SRV_NAMESERVER_SEARCH_BY_IP";
 pub const ENTITY_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_ENTITY_SEARCH_BY_HANDLE";
 pub const ENTITY_SEARCH_BY_FULL_NAME_ENABLE: &str = "RDAP_SRV_ENTITY_SEARCH_BY_FULL_NAME";
+pub const IP_RDAP_UP_ENABLE: &str = "RDAP_SRV_IP_RDAP_UP";
+pub const IP_RDAP_TOP_ENABLE: &str = "RDAP_SRV_IP_RDAP_TOP";
+pub const IP_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_IP_RDAP_DOWN";
+pub const IP_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_IP_RDAP_BOTTOM";
+pub const AUTNUM_RDAP_UP_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_UP";
+pub const AUTNUM_RDAP_TOP_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_TOP";
+pub const AUTNUM_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_DOWN";
+pub const AUTNUM_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_AUTNUM_RDAP_BOTTOM";
+pub const DOMAIN_RDAP_UP_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_UP";
+pub const DOMAIN_RDAP_TOP_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_TOP";
+pub const DOMAIN_RDAP_DOWN_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_DOWN";
+pub const DOMAIN_RDAP_BOTTOM_ENABLE: &str = "RDAP_SRV_DOMAIN_RDAP_BOTTOM";
+pub const NETWORK_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_HANDLE";
+pub const NETWORK_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_NAME";
+pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
+pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -50,6 +66,18 @@ pub fn debug_config_vars() {
         NAMESERVER_SEARCH_BY_IP_ENABLE,
         ENTITY_SEARCH_BY_HANDLE_ENABLE,
         ENTITY_SEARCH_BY_FULL_NAME_ENABLE,
+        IP_RDAP_UP_ENABLE,
+        IP_RDAP_TOP_ENABLE,
+        IP_RDAP_DOWN_ENABLE,
+        IP_RDAP_BOTTOM_ENABLE,
+        AUTNUM_RDAP_UP_ENABLE,
+        AUTNUM_RDAP_TOP_ENABLE,
+        AUTNUM_RDAP_DOWN_ENABLE,
+        AUTNUM_RDAP_BOTTOM_ENABLE,
+        NETWORK_SEARCH_BY_HANDLE_ENABLE,
+        NETWORK_SEARCH_BY_NAME_ENABLE,
+        AUTNUM_SEARCH_BY_NAME_ENABLE,
+        AUTNUM_SEARCH_BY_HANDLE_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -99,6 +127,22 @@ impl StorageType {
         let nameserver_search_by_ip = get_parse_or(NAMESERVER_SEARCH_BY_IP_ENABLE, false)?;
         let entity_search_by_handle = get_parse_or(ENTITY_SEARCH_BY_HANDLE_ENABLE, false)?;
         let entity_search_by_full_name = get_parse_or(ENTITY_SEARCH_BY_FULL_NAME_ENABLE, false)?;
+        let ip_rdap_up = get_parse_or(IP_RDAP_UP_ENABLE, false)?;
+        let ip_rdap_top = get_parse_or(IP_RDAP_TOP_ENABLE, false)?;
+        let ip_rdap_down = get_parse_or(IP_RDAP_DOWN_ENABLE, false)?;
+        let ip_rdap_bottom = get_parse_or(IP_RDAP_BOTTOM_ENABLE, false)?;
+        let autnum_rdap_up = get_parse_or(AUTNUM_RDAP_UP_ENABLE, false)?;
+        let autnum_rdap_top = get_parse_or(AUTNUM_RDAP_TOP_ENABLE, false)?;
+        let autnum_rdap_down = get_parse_or(AUTNUM_RDAP_DOWN_ENABLE, false)?;
+        let autnum_rdap_bottom = get_parse_or(AUTNUM_RDAP_BOTTOM_ENABLE, false)?;
+        let domain_rdap_up = get_parse_or(DOMAIN_RDAP_UP_ENABLE, false)?;
+        let domain_rdap_top = get_parse_or(DOMAIN_RDAP_TOP_ENABLE, false)?;
+        let domain_rdap_down = get_parse_or(DOMAIN_RDAP_DOWN_ENABLE, false)?;
+        let domain_rdap_bottom = get_parse_or(DOMAIN_RDAP_BOTTOM_ENABLE, false)?;
+        let network_search_by_handle = get_parse_or(NETWORK_SEARCH_BY_HANDLE_ENABLE, false)?;
+        let network_search_by_name = get_parse_or(NETWORK_SEARCH_BY_NAME_ENABLE, false)?;
+        let autnum_search_by_name = get_parse_or(AUTNUM_SEARCH_BY_NAME_ENABLE, false)?;
+        let autnum_search_by_handle = get_parse_or(AUTNUM_SEARCH_BY_HANDLE_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -107,6 +151,22 @@ impl StorageType {
             .nameserver_search_by_ip_enable(nameserver_search_by_ip)
             .entity_search_by_handle_enable(entity_search_by_handle)
             .entity_search_by_full_name_enable(entity_search_by_full_name)
+            .ip_rdap_up_enable(ip_rdap_up)
+            .ip_rdap_top_enable(ip_rdap_top)
+            .ip_rdap_down_enable(ip_rdap_down)
+            .ip_rdap_bottom_enable(ip_rdap_bottom)
+            .autnum_rdap_up_enable(autnum_rdap_up)
+            .autnum_rdap_top_enable(autnum_rdap_top)
+            .autnum_rdap_down_enable(autnum_rdap_down)
+            .autnum_rdap_bottom_enable(autnum_rdap_bottom)
+            .domain_rdap_up_enable(domain_rdap_up)
+            .domain_rdap_top_enable(domain_rdap_top)
+            .domain_rdap_down_enable(domain_rdap_down)
+            .domain_rdap_bottom_enable(domain_rdap_bottom)
+            .network_search_by_handle_enable(network_search_by_handle)
+            .network_search_by_name_enable(network_search_by_name)
+            .autnum_search_by_name_enable(autnum_search_by_name)
+            .autnum_search_by_handle_enable(autnum_search_by_handle)
             .build();
         let storage = get_or(STORAGE, "memory");
         if storage == "memory" {
@@ -141,6 +201,130 @@ pub enum JsContactConversion {
 
     /// Convert vCard to JSContact and remove vCard.
     Only,
+}
+
+/// Common configuration for storage back ends.
+#[derive(Debug, Clone, Copy)]
+pub struct CommonConfig {
+    pub domain_search_by_name_enable: bool,
+    pub nameserver_search_by_name_enable: bool,
+    pub nameserver_search_by_ip_enable: bool,
+    pub domain_search_by_ns_ip_enable: bool,
+    pub domain_search_by_ns_ldh_name_enable: bool,
+    pub entity_search_by_handle_enable: bool,
+    pub entity_search_by_full_name_enable: bool,
+    pub ip_rdap_up_enable: bool,
+    pub ip_rdap_top_enable: bool,
+    pub ip_rdap_down_enable: bool,
+    pub ip_rdap_bottom_enable: bool,
+    pub autnum_rdap_up_enable: bool,
+    pub autnum_rdap_top_enable: bool,
+    pub autnum_rdap_down_enable: bool,
+    pub autnum_rdap_bottom_enable: bool,
+    pub domain_rdap_up_enable: bool,
+    pub domain_rdap_top_enable: bool,
+    pub domain_rdap_down_enable: bool,
+    pub domain_rdap_bottom_enable: bool,
+    pub network_search_by_handle_enable: bool,
+    pub network_search_by_name_enable: bool,
+    pub autnum_search_by_name_enable: bool,
+    pub autnum_search_by_handle_enable: bool,
+    pub jscontact_conversion: JsContactConversion,
+    pub bootstrap: bool,
+}
+
+impl Default for CommonConfig {
+    fn default() -> Self {
+        Self {
+            domain_search_by_name_enable: false,
+            nameserver_search_by_name_enable: false,
+            nameserver_search_by_ip_enable: false,
+            domain_search_by_ns_ip_enable: false,
+            domain_search_by_ns_ldh_name_enable: false,
+            entity_search_by_handle_enable: false,
+            entity_search_by_full_name_enable: false,
+            ip_rdap_up_enable: false,
+            ip_rdap_top_enable: false,
+            ip_rdap_down_enable: false,
+            ip_rdap_bottom_enable: false,
+            autnum_rdap_up_enable: false,
+            autnum_rdap_top_enable: false,
+            autnum_rdap_down_enable: false,
+            autnum_rdap_bottom_enable: false,
+            domain_rdap_up_enable: false,
+            domain_rdap_top_enable: false,
+            domain_rdap_down_enable: false,
+            domain_rdap_bottom_enable: false,
+            network_search_by_handle_enable: false,
+            network_search_by_name_enable: false,
+            autnum_search_by_name_enable: false,
+            autnum_search_by_handle_enable: false,
+            jscontact_conversion: JsContactConversion::None,
+            bootstrap: false,
+        }
+    }
+}
+
+#[buildstructor::buildstructor]
+impl CommonConfig {
+    #[builder]
+    pub fn new(
+        domain_search_by_name_enable: Option<bool>,
+        domain_search_by_ns_ip_enable: Option<bool>,
+        domain_search_by_ns_ldh_name_enable: Option<bool>,
+        nameserver_search_by_name_enable: Option<bool>,
+        nameserver_search_by_ip_enable: Option<bool>,
+        entity_search_by_handle_enable: Option<bool>,
+        entity_search_by_full_name_enable: Option<bool>,
+        ip_rdap_up_enable: Option<bool>,
+        ip_rdap_top_enable: Option<bool>,
+        ip_rdap_down_enable: Option<bool>,
+        ip_rdap_bottom_enable: Option<bool>,
+        autnum_rdap_up_enable: Option<bool>,
+        autnum_rdap_top_enable: Option<bool>,
+        autnum_rdap_down_enable: Option<bool>,
+        autnum_rdap_bottom_enable: Option<bool>,
+        domain_rdap_up_enable: Option<bool>,
+        domain_rdap_top_enable: Option<bool>,
+        domain_rdap_down_enable: Option<bool>,
+        domain_rdap_bottom_enable: Option<bool>,
+        network_search_by_handle_enable: Option<bool>,
+        network_search_by_name_enable: Option<bool>,
+        autnum_search_by_name_enable: Option<bool>,
+        autnum_search_by_handle_enable: Option<bool>,
+        jscontact_conversion: Option<JsContactConversion>,
+        bootstrap: Option<bool>,
+    ) -> Self {
+        Self {
+            domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
+            domain_search_by_ns_ip_enable: domain_search_by_ns_ip_enable.unwrap_or_default(),
+            domain_search_by_ns_ldh_name_enable: domain_search_by_ns_ldh_name_enable
+                .unwrap_or_default(),
+            nameserver_search_by_name_enable: nameserver_search_by_name_enable.unwrap_or_default(),
+            nameserver_search_by_ip_enable: nameserver_search_by_ip_enable.unwrap_or_default(),
+            entity_search_by_handle_enable: entity_search_by_handle_enable.unwrap_or_default(),
+            entity_search_by_full_name_enable: entity_search_by_full_name_enable
+                .unwrap_or_default(),
+            ip_rdap_up_enable: ip_rdap_up_enable.unwrap_or_default(),
+            ip_rdap_top_enable: ip_rdap_top_enable.unwrap_or_default(),
+            ip_rdap_down_enable: ip_rdap_down_enable.unwrap_or_default(),
+            ip_rdap_bottom_enable: ip_rdap_bottom_enable.unwrap_or_default(),
+            autnum_rdap_up_enable: autnum_rdap_up_enable.unwrap_or_default(),
+            autnum_rdap_top_enable: autnum_rdap_top_enable.unwrap_or_default(),
+            autnum_rdap_down_enable: autnum_rdap_down_enable.unwrap_or_default(),
+            autnum_rdap_bottom_enable: autnum_rdap_bottom_enable.unwrap_or_default(),
+            domain_rdap_up_enable: domain_rdap_up_enable.unwrap_or_default(),
+            domain_rdap_top_enable: domain_rdap_top_enable.unwrap_or_default(),
+            domain_rdap_down_enable: domain_rdap_down_enable.unwrap_or_default(),
+            domain_rdap_bottom_enable: domain_rdap_bottom_enable.unwrap_or_default(),
+            network_search_by_handle_enable: network_search_by_handle_enable.unwrap_or_default(),
+            network_search_by_name_enable: network_search_by_name_enable.unwrap_or_default(),
+            autnum_search_by_name_enable: autnum_search_by_name_enable.unwrap_or_default(),
+            autnum_search_by_handle_enable: autnum_search_by_handle_enable.unwrap_or_default(),
+            jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
+            bootstrap: bootstrap.unwrap_or(false),
+        }
+    }
 }
 
 /// RDAP service configuration.

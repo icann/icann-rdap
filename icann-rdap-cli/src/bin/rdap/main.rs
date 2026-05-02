@@ -373,6 +373,90 @@ enum QtypeArg {
 
     /// RDAP URL
     Url,
+
+    /// Ipv4 Address Rdap-Up Lookup
+    V4Up,
+
+    /// Ipv6 Address Rdap-Up Lookup
+    V6Up,
+
+    /// Ipv4 CIDR Rdap-Up Lookup
+    V4CidrUp,
+
+    /// Ipv6 CIDR Rdap-Up Lookup
+    V6CidrUp,
+
+    /// Ipv4 Address Rdap-Top Lookup
+    V4Top,
+
+    /// Ipv6 Address Rdap-Top Lookup
+    V6Top,
+
+    /// Ipv4 CIDR Rdap-Top Lookup
+    V4CidrTop,
+
+    /// Ipv6 CIDR Rdap-Top Lookup
+    V6CidrTop,
+
+    /// Ipv4 Address Rdap-Down Search
+    V4Down,
+
+    /// Ipv6 Address Rdap-Down Search
+    V6Down,
+
+    /// Ipv4 CIDR Rdap-Down Search
+    V4CidrDown,
+
+    /// Ipv6 CIDR Rdap-Down Search
+    V6CidrDown,
+
+    /// Ipv4 Address Rdap-Bottom Search
+    V4Bottom,
+
+    /// Ipv6 Address Rdap-Bottom Search
+    V6Bottom,
+
+    /// Ipv4 CIDR Rdap-Bottom Search
+    V4CidrBottom,
+
+    /// Ipv6 CIDR Rdap-Bottom Search
+    V6CidrBottom,
+
+    /// Reverse DNS Rdap-Up Lookup
+    RdnsUp,
+
+    /// Reverse DNS Rdap-Down Search
+    RdnsDown,
+
+    /// Reverse DNS Rdap-Top Search
+    RdnsTop,
+
+    /// Reverse DNS Rdap-Bottom Search
+    RdnsBottom,
+
+    /// Autonomous System Number Rdap-Up Lookup
+    AutnumUp,
+
+    /// Autonomous System Number Rdap-Down Lookup
+    AutnumDown,
+
+    /// Autonomous System Number Rdap-Top Search
+    AutnumTop,
+
+    /// Autonomous System Number Rdap-Bottom Search
+    AutnumBottom,
+
+    /// Network Handle Search
+    NetHandle,
+
+    /// Network Name Search
+    NetName,
+
+    /// Autonomous System Number Handle Search
+    AutnumHandle,
+
+    /// Autonomous System Number Name Search
+    AutnumName,
 }
 
 /// Represents the output type possibilities.
@@ -726,14 +810,42 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::V6 => QueryType::ipv6(&query_value)?,
         QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
         QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
+        QtypeArg::V4Up => QueryType::ipv4_up(&query_value)?,
+        QtypeArg::V6Up => QueryType::ipv6_up(&query_value)?,
+        QtypeArg::V4CidrUp => QueryType::ipv4cidr_up(&query_value)?,
+        QtypeArg::V6CidrUp => QueryType::ipv6cidr_up(&query_value)?,
+        QtypeArg::V4Top => QueryType::ipv4_top(&query_value)?,
+        QtypeArg::V6Top => QueryType::ipv6_top(&query_value)?,
+        QtypeArg::V4CidrTop => QueryType::ipv4cidr_top(&query_value)?,
+        QtypeArg::V6CidrTop => QueryType::ipv6cidr_top(&query_value)?,
+        QtypeArg::V4Down => QueryType::ipv4_down(&query_value)?,
+        QtypeArg::V6Down => QueryType::ipv6_down(&query_value)?,
+        QtypeArg::V4CidrDown => QueryType::ipv4cidr_down(&query_value)?,
+        QtypeArg::V6CidrDown => QueryType::ipv6cidr_down(&query_value)?,
+        QtypeArg::V4Bottom => QueryType::ipv4_bottom(&query_value)?,
+        QtypeArg::V6Bottom => QueryType::ipv6_bottom(&query_value)?,
+        QtypeArg::V4CidrBottom => QueryType::ipv4cidr_bottom(&query_value)?,
+        QtypeArg::V6CidrBottom => QueryType::ipv6cidr_bottom(&query_value)?,
         QtypeArg::Autnum => QueryType::autnum(&query_value)?,
+        QtypeArg::AutnumUp => QueryType::autnum_up(&query_value)?,
+        QtypeArg::AutnumDown => QueryType::autnum_down(&query_value)?,
+        QtypeArg::AutnumTop => QueryType::autnum_top(&query_value)?,
+        QtypeArg::AutnumBottom => QueryType::autnum_bottom(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
         QtypeArg::Rdns => QueryType::rdns_ipstr(&query_value)?,
+        QtypeArg::RdnsUp => QueryType::rdns_up(&query_value)?,
+        QtypeArg::RdnsDown => QueryType::rdns_down(&query_value)?,
+        QtypeArg::RdnsTop => QueryType::rdns_top(&query_value)?,
+        QtypeArg::RdnsBottom => QueryType::rdns_bottom(&query_value)?,
         QtypeArg::Entity => QueryType::Entity(query_value),
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
         QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
+        QtypeArg::NetHandle => QueryType::NetworkHandleSearch(query_value),
+        QtypeArg::NetName => QueryType::NetworkNameSearch(query_value),
+        QtypeArg::AutnumHandle => QueryType::AutnumHandleSearch(query_value),
+        QtypeArg::AutnumName => QueryType::AutnumNameSearch(query_value),
         QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
         QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
         QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,

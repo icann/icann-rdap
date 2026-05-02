@@ -1,8 +1,10 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
+use icann_rdap_common::prelude::ObjectCommonFields;
+use rangemap::RangeInclusiveMap;
+
 use {
     async_trait::async_trait,
-    btree_range_map::RangeMap,
     icann_rdap_common::{
         prelude::ToResponse,
         response::{Autnum, Domain, Entity, Help, Nameserver, Network, RdapResponse, Rfc9083Error},
@@ -23,13 +25,15 @@ use super::{label_search::SearchLabels, ops::Mem};
 
 pub struct MemTx {
     mem: Mem,
-    autnums: RangeMap<u32, Arc<RdapResponse>>,
+    autnums: RangeInclusiveMap<u32, Arc<RdapResponse>>,
     ip4: PrefixMap<Ipv4Net, Arc<RdapResponse>>,
     ip6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     domains: HashMap<String, Arc<RdapResponse>>,
     domains_by_name: SearchLabels<Arc<RdapResponse>>,
     domains_by_ns_ip: HashMap<IpAddr, Vec<Arc<RdapResponse>>>,
     domains_by_ns_ldh_name: SearchLabels<Arc<RdapResponse>>,
+    domains_by_ipv4: PrefixMap<Ipv4Net, Arc<RdapResponse>>,
+    domains_by_ipv6: PrefixMap<Ipv6Net, Arc<RdapResponse>>,
     idns: HashMap<String, Arc<RdapResponse>>,
     nameservers: HashMap<String, Arc<RdapResponse>>,
     nameservers_by_name: SearchLabels<Arc<RdapResponse>>,
@@ -37,6 +41,10 @@ pub struct MemTx {
     entities: HashMap<String, Arc<RdapResponse>>,
     entities_by_handle: SearchLabels<Arc<RdapResponse>>,
     entities_by_full_name: SearchLabels<Arc<RdapResponse>>,
+    networks_by_handle: SearchLabels<Arc<RdapResponse>>,
+    networks_by_name: SearchLabels<Arc<RdapResponse>>,
+    autnums_by_handle: SearchLabels<Arc<RdapResponse>>,
+    autnums_by_name: SearchLabels<Arc<RdapResponse>>,
     srvhelps: HashMap<String, Arc<RdapResponse>>,
 }
 
@@ -54,6 +62,13 @@ impl MemTx {
             .clone();
         let entities = Arc::clone(&mem.entities).read_owned().await.clone();
         let mut entities_by_handle = SearchLabels::handle_labels().build();
+        let mut entities_by_full_name = SearchLabels::name_labels().build();
+        let ip4 = Arc::clone(&mem.ip4).read_owned().await.clone();
+        let ip6 = Arc::clone(&mem.ip6).read_owned().await.clone();
+        let mut networks_by_handle = SearchLabels::handle_labels().build();
+        let mut networks_by_name = SearchLabels::name_labels().build();
+        let mut autnums_by_handle = SearchLabels::handle_labels().build();
+        let mut autnums_by_name = SearchLabels::name_labels().build();
 
         // only do load up domain search labels if search by domain names is supported
         if mem.config.common_config.domain_search_by_name_enable {
@@ -91,7 +106,6 @@ impl MemTx {
             }
         }
 
-        let mut entities_by_full_name = SearchLabels::name_labels().build();
         if mem.config.common_config.entity_search_by_full_name_enable {
             for (_handle, value) in entities.iter() {
                 if let RdapResponse::Entity(entity) = value.as_ref() {
@@ -99,6 +113,62 @@ impl MemTx {
                         if let Some(full_name) = contact.full_name() {
                             entities_by_full_name.insert(full_name, value.clone());
                         }
+                    }
+                }
+            }
+        }
+
+        if mem.config.common_config.network_search_by_handle_enable {
+            for (_net, value) in ip4.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(handle) = network.handle() {
+                        networks_by_handle.insert(handle, value.clone());
+                    }
+                }
+            }
+            for (_net, value) in ip6.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(handle) = network.handle() {
+                        networks_by_handle.insert(handle, value.clone());
+                    }
+                }
+            }
+        }
+
+        if mem.config.common_config.network_search_by_name_enable {
+            for (_net, value) in ip4.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(name) = network.name() {
+                        networks_by_name.insert(name, value.clone());
+                    }
+                }
+            }
+            for (_net, value) in ip6.iter() {
+                if let RdapResponse::Network(network) = value.as_ref() {
+                    if let Some(name) = network.name() {
+                        networks_by_name.insert(name, value.clone());
+                    }
+                }
+            }
+        }
+
+        if mem.config.common_config.autnum_search_by_handle_enable {
+            let autnums = mem.autnums.read().await;
+            for (_range, value) in autnums.iter() {
+                if let RdapResponse::Autnum(autnum) = value.as_ref() {
+                    if let Some(handle) = autnum.handle() {
+                        autnums_by_handle.insert(handle, value.clone());
+                    }
+                }
+            }
+        }
+
+        if mem.config.common_config.autnum_search_by_name_enable {
+            let autnums = mem.autnums.read().await;
+            for (_range, value) in autnums.iter() {
+                if let RdapResponse::Autnum(autnum) = value.as_ref() {
+                    if let Some(name) = autnum.name() {
+                        autnums_by_name.insert(name, value.clone());
                     }
                 }
             }
@@ -113,6 +183,8 @@ impl MemTx {
             domains_by_name,
             domains_by_ns_ip,
             domains_by_ns_ldh_name,
+            domains_by_ipv4: Arc::clone(&mem.domains_by_ipv4).read_owned().await.clone(),
+            domains_by_ipv6: Arc::clone(&mem.domains_by_ipv6).read_owned().await.clone(),
             idns: Arc::clone(&mem.idns).read_owned().await.clone(),
             nameservers,
             nameservers_by_name,
@@ -120,6 +192,10 @@ impl MemTx {
             entities,
             entities_by_handle,
             entities_by_full_name,
+            networks_by_handle,
+            networks_by_name,
+            autnums_by_handle,
+            autnums_by_name,
             srvhelps: Arc::clone(&mem.srvhelps).read_owned().await.clone(),
         }
     }
@@ -127,13 +203,15 @@ impl MemTx {
     pub fn new_truncate(mem: &Mem) -> Self {
         Self {
             mem: mem.clone(),
-            autnums: RangeMap::new(),
+            autnums: RangeInclusiveMap::new(),
             ip4: PrefixMap::new(),
             ip6: PrefixMap::new(),
             domains: HashMap::new(),
             domains_by_name: SearchLabels::dns_labels().build(),
             domains_by_ns_ip: HashMap::new(),
             domains_by_ns_ldh_name: SearchLabels::dns_labels().build(),
+            domains_by_ipv4: PrefixMap::new(),
+            domains_by_ipv6: PrefixMap::new(),
             idns: HashMap::new(),
             nameservers: HashMap::new(),
             nameservers_by_name: SearchLabels::dns_labels().build(),
@@ -141,6 +219,10 @@ impl MemTx {
             entities: HashMap::new(),
             entities_by_handle: SearchLabels::handle_labels().build(),
             entities_by_full_name: SearchLabels::name_labels().build(),
+            networks_by_handle: SearchLabels::handle_labels().build(),
+            networks_by_name: SearchLabels::name_labels().build(),
+            autnums_by_handle: SearchLabels::handle_labels().build(),
+            autnums_by_name: SearchLabels::name_labels().build(),
             srvhelps: HashMap::new(),
         }
     }
@@ -252,6 +334,31 @@ impl TxHandle for MemTx {
             }
         }
 
+        // Index reverse DNS domains by their embedded network IP prefix
+        if let Some(network) = domain.network() {
+            if let Some(cidrs) = network.cidr0_cidrs().first() {
+                if let Some(prefix) = cidrs.prefix() {
+                    if let Some(length) = cidrs.length() {
+                        if let Some(ip_version) = network.ip_version() {
+                            if ip_version.eq_ignore_ascii_case("v4") {
+                                if let Ok(ipnet) =
+                                    format!("{}/{}", prefix, length).parse::<Ipv4Net>()
+                                {
+                                    self.domains_by_ipv4.insert(ipnet, domain_response.clone());
+                                }
+                            } else if ip_version.eq_ignore_ascii_case("v6") {
+                                if let Ok(ipnet) =
+                                    format!("{}/{}", prefix, length).parse::<Ipv6Net>()
+                                {
+                                    self.domains_by_ipv6.insert(ipnet, domain_response.clone());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -333,10 +440,20 @@ impl TxHandle for MemTx {
             .as_ref()
             .and_then(|n| n.as_u32())
             .ok_or_else(|| RdapServerError::EmptyIndexData("endNum".to_string()))?;
-        self.autnums.insert(
-            (start_num)..=(end_num),
-            Arc::new(autnum.clone().to_response()),
-        );
+        let autnum_response = Arc::new(autnum.clone().to_response());
+        self.autnums
+            .insert((start_num)..=(end_num), autnum_response.clone());
+        if self.mem.config.common_config.autnum_search_by_handle_enable {
+            if let Some(handle) = autnum.handle() {
+                self.autnums_by_handle
+                    .insert(handle, autnum_response.clone());
+            }
+        }
+        if self.mem.config.common_config.autnum_search_by_name_enable {
+            if let Some(name) = autnum.name() {
+                self.autnums_by_name.insert(name, autnum_response);
+            }
+        }
         Ok(())
     }
 
@@ -353,6 +470,21 @@ impl TxHandle for MemTx {
     }
 
     async fn add_network(&mut self, network: &Network) -> Result<(), RdapServerError> {
+        let handle = network.object_common.handle.as_ref().map(|h| h.to_string());
+        let network_response = Arc::new(network.clone().to_response());
+
+        if self
+            .mem
+            .config
+            .common_config
+            .network_search_by_handle_enable
+        {
+            if let Some(ref handle_str) = handle {
+                self.networks_by_handle
+                    .insert(handle_str, network_response.clone());
+            }
+        }
+
         let start_addr = network
             .start_address
             .as_ref()
@@ -369,16 +501,33 @@ impl TxHandle for MemTx {
         if is_v4 {
             let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
-                self.ip4
-                    .insert(net, Arc::new(network.clone().to_response()));
+                self.ip4.insert(net, network_response.clone());
             }
         } else {
             let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
             for net in subnets {
-                self.ip6
-                    .insert(net, Arc::new(network.clone().to_response()));
+                self.ip6.insert(net, network_response.clone());
             }
         };
+
+        if self
+            .mem
+            .config
+            .common_config
+            .network_search_by_handle_enable
+        {
+            if let Some(ref handle_str) = handle {
+                self.networks_by_handle
+                    .insert(handle_str, network_response.clone());
+            }
+        }
+
+        if self.mem.config.common_config.network_search_by_name_enable {
+            if let Some(ref name) = network.name {
+                self.networks_by_name.insert(name, network_response.clone());
+            }
+        }
+
         Ok(())
     }
 
@@ -476,6 +625,14 @@ impl TxHandle for MemTx {
             &mut domains_by_ns_ldh_name_g,
         );
 
+        //domains by ipv4
+        let mut domains_by_ipv4_g = self.mem.domains_by_ipv4.write().await;
+        std::mem::swap(&mut self.domains_by_ipv4, &mut domains_by_ipv4_g);
+
+        //domains by ipv6
+        let mut domains_by_ipv6_g = self.mem.domains_by_ipv6.write().await;
+        std::mem::swap(&mut self.domains_by_ipv6, &mut domains_by_ipv6_g);
+
         //idns
         let mut idns_g = self.mem.idns.write().await;
         std::mem::swap(&mut self.idns, &mut idns_g);
@@ -506,6 +663,22 @@ impl TxHandle for MemTx {
             &mut self.entities_by_full_name,
             &mut entities_by_full_name_g,
         );
+
+        // networks by handle
+        let mut networks_by_handle_g = self.mem.networks_by_handle.write().await;
+        std::mem::swap(&mut self.networks_by_handle, &mut networks_by_handle_g);
+
+        // networks by name
+        let mut networks_by_name_g = self.mem.networks_by_name.write().await;
+        std::mem::swap(&mut self.networks_by_name, &mut networks_by_name_g);
+
+        // autnums by handle
+        let mut autnums_by_handle_g = self.mem.autnums_by_handle.write().await;
+        std::mem::swap(&mut self.autnums_by_handle, &mut autnums_by_handle_g);
+
+        // autnums by name
+        let mut autnums_by_name_g = self.mem.autnums_by_name.write().await;
+        std::mem::swap(&mut self.autnums_by_name, &mut autnums_by_name_g);
 
         //srvhelps
         let mut srvhelps_g = self.mem.srvhelps.write().await;

@@ -90,6 +90,139 @@ pub trait StoreOps: Send + Sync {
         &self,
         full_name: &str,
     ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for networks by handle.
+    async fn search_networks_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for networks by name (RFC 9910).
+    async fn search_networks_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) by IP address.
+    async fn search_ip_rdap_up_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) by CIDR.
+    async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by IP address.
+    async fn search_ip_rdap_top_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by CIDR.
+    async fn search_ip_rdap_top_by_cidr(&self, cidr: &str)
+        -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child networks (rdap-down per RFC 9910) by IP address.
+    async fn search_ip_rdap_down_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child networks (rdap-down per RFC 9910) by CIDR.
+    async fn search_ip_rdap_down_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf networks (rdap-bottom per RFC 9910) by IP address.
+    async fn search_ip_rdap_bottom_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf networks (rdap-bottom per RFC 9910) by CIDR.
+    async fn search_ip_rdap_bottom_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for autnums by handle (RFC 9910).
+    async fn search_autnums_by_handle(&self, handle: &str)
+        -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for autnums by name (RFC 9910).
+    async fn search_autnums_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) by AS number.
+    async fn search_autnum_rdap_up_by_num(&self, num: u32)
+        -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) by AS range.
+    async fn search_autnum_rdap_up_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by AS number.
+    async fn search_autnum_rdap_top_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing network (rdap-top per RFC 9910) by AS range.
+    async fn search_autnum_rdap_top_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child networks (rdap-down per RFC 9910) by AS number.
+    async fn search_autnum_rdap_down_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child networks (rdap-down per RFC 9910) by AS range.
+    async fn search_autnum_rdap_down_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf networks (rdap-bottom per RFC 9910) by AS number.
+    async fn search_autnum_rdap_bottom_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf networks (rdap-bottom per RFC 9910) by AS range.
+    async fn search_autnum_rdap_bottom_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the supernet (rdap-up per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_up_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for the topmost containing domain (rdap-top per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_top_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for immediate child domains (rdap-down per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_down_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
+
+    /// Search for leaf domains (rdap-bottom per RFC 9910) for reverse DNS domains by domain name.
+    async fn search_domain_rdap_bottom_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError>;
 }
 
 /// Represents a handle to a transaction.
@@ -158,42 +291,4 @@ pub trait TxHandle: Send {
 
     /// Rollback the transaction.
     async fn rollback(self: Box<Self>) -> Result<(), RdapServerError>;
-}
-
-/// Common configuration for storage back ends.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct CommonConfig {
-    pub domain_search_by_name_enable: bool,
-    pub nameserver_search_by_name_enable: bool,
-    pub nameserver_search_by_ip_enable: bool,
-    pub domain_search_by_ns_ip_enable: bool,
-    pub domain_search_by_ns_ldh_name_enable: bool,
-    pub entity_search_by_handle_enable: bool,
-    pub entity_search_by_full_name_enable: bool,
-}
-
-#[buildstructor::buildstructor]
-impl CommonConfig {
-    #[builder]
-    pub fn new(
-        domain_search_by_name_enable: Option<bool>,
-        domain_search_by_ns_ip_enable: Option<bool>,
-        domain_search_by_ns_ldh_name_enable: Option<bool>,
-        nameserver_search_by_name_enable: Option<bool>,
-        nameserver_search_by_ip_enable: Option<bool>,
-        entity_search_by_handle_enable: Option<bool>,
-        entity_search_by_full_name_enable: Option<bool>,
-    ) -> Self {
-        Self {
-            domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
-            domain_search_by_ns_ip_enable: domain_search_by_ns_ip_enable.unwrap_or_default(),
-            domain_search_by_ns_ldh_name_enable: domain_search_by_ns_ldh_name_enable
-                .unwrap_or_default(),
-            nameserver_search_by_name_enable: nameserver_search_by_name_enable.unwrap_or_default(),
-            nameserver_search_by_ip_enable: nameserver_search_by_ip_enable.unwrap_or_default(),
-            entity_search_by_handle_enable: entity_search_by_handle_enable.unwrap_or_default(),
-            entity_search_by_full_name_enable: entity_search_by_full_name_enable
-                .unwrap_or_default(),
-        }
-    }
 }

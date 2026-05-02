@@ -6,8 +6,8 @@
 use crate::{
     contact::Contact,
     prelude::{
-        Autnum, Domain, DomainSearchResults, Entity, EntitySearchResults, Nameserver,
-        NameserverSearchResults, Network, RdapResponse, ToResponse,
+        Autnum, AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
+        IpSearchResults, Nameserver, NameserverSearchResults, Network, RdapResponse, ToResponse,
     },
 };
 
@@ -36,6 +36,12 @@ impl JsContactConvert for RdapResponse {
             RdapResponse::NameserverSearchResults(nameserver_search_results) => {
                 nameserver_search_results.to_jscontact().to_response()
             }
+            RdapResponse::IpSearchResults(ip_search_results) => {
+                ip_search_results.to_jscontact().to_response()
+            }
+            RdapResponse::AutnumSearchResults(autnum_search_results) => {
+                autnum_search_results.to_jscontact().to_response()
+            }
             RdapResponse::ErrorResponse(rfc9083_error) => rfc9083_error.to_response(),
             RdapResponse::Help(help) => help.to_response(),
         }
@@ -56,6 +62,12 @@ impl JsContactConvert for RdapResponse {
             }
             RdapResponse::NameserverSearchResults(nameserver_search_results) => {
                 nameserver_search_results.only_jscontact().to_response()
+            }
+            RdapResponse::IpSearchResults(ip_search_results) => {
+                ip_search_results.only_jscontact().to_response()
+            }
+            RdapResponse::AutnumSearchResults(autnum_search_results) => {
+                autnum_search_results.only_jscontact().to_response()
             }
             RdapResponse::ErrorResponse(rfc9083_error) => rfc9083_error.to_response(),
             RdapResponse::Help(help) => help.to_response(),
@@ -231,6 +243,46 @@ impl JsContactConvert for NameserverSearchResults {
 }
 
 impl JsContactConvert for EntitySearchResults {
+    fn to_jscontact(self) -> Self {
+        Self {
+            results: self.results.into_iter().map(|i| i.to_jscontact()).collect(),
+            ..self
+        }
+    }
+
+    fn only_jscontact(self) -> Self {
+        Self {
+            results: self
+                .results
+                .into_iter()
+                .map(|i| i.only_jscontact())
+                .collect(),
+            ..self
+        }
+    }
+}
+
+impl JsContactConvert for IpSearchResults {
+    fn to_jscontact(self) -> Self {
+        Self {
+            results: self.results.into_iter().map(|i| i.to_jscontact()).collect(),
+            ..self
+        }
+    }
+
+    fn only_jscontact(self) -> Self {
+        Self {
+            results: self
+                .results
+                .into_iter()
+                .map(|i| i.only_jscontact())
+                .collect(),
+            ..self
+        }
+    }
+}
+
+impl JsContactConvert for AutnumSearchResults {
     fn to_jscontact(self) -> Self {
         Self {
             results: self.results.into_iter().map(|i| i.to_jscontact()).collect(),

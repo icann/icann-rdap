@@ -369,11 +369,11 @@ mod tests {
     };
 
     use crate::{
-        config::{ServiceConfig, StorageType},
+        config::{CommonConfig, ServiceConfig, StorageType},
         storage::{
             data::load_data,
             mem::{config::MemConfig, ops::Mem},
-            CommonConfig, StoreOps,
+            StoreOps,
         },
     };
 

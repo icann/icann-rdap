@@ -119,6 +119,7 @@ pub static ERROR_CHECK_CLASSES: &[CheckClass] = &[
 #[serde(rename_all = "snake_case")]
 pub enum RdapStructure {
     Autnum,
+    AutnumSearchResults,
     Cidr0,
     Domain,
     DomainSearchResults,
@@ -133,6 +134,7 @@ pub enum RdapStructure {
     Handle,
     HttpData,
     IpNetwork,
+    IpSearchResults,
     KeyData,
     Link,
     Links,
@@ -260,6 +262,8 @@ impl GetChecks for RdapResponse {
             Self::DomainSearchResults(r) => r.get_checks(index, params),
             Self::EntitySearchResults(r) => r.get_checks(index, params),
             Self::NameserverSearchResults(r) => r.get_checks(index, params),
+            Self::IpSearchResults(r) => r.get_checks(index, params),
+            Self::AutnumSearchResults(r) => r.get_checks(index, params),
             Self::ErrorResponse(e) => e.get_checks(index, params),
             Self::Help(h) => h.get_checks(index, params),
         }

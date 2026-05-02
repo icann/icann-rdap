@@ -1,13 +1,14 @@
 use std::{collections::HashMap, net::IpAddr, str::FromStr, sync::Arc};
 
+use rangemap::RangeInclusiveMap;
+
 use {
     async_trait::async_trait,
-    btree_range_map::RangeMap,
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            Domain, DomainSearchResults, Entity, EntitySearchResults, Nameserver,
-            NameserverSearchResults, RdapResponse,
+            Autnum, AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
+            IpSearchResults, Nameserver, NameserverSearchResults, Network, RdapResponse,
         },
     },
     ipnet::{IpNet, Ipv4Net, Ipv6Net},
@@ -16,22 +17,25 @@ use {
 };
 
 use crate::{
+    config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{CommonConfig, StoreOps, TxHandle},
+    storage::{StoreOps, TxHandle},
 };
 
-use super::{config::MemConfig, label_search::SearchLabels, tx::MemTx};
+use super::{config::MemConfig, label_search::SearchLabels, rir_search::U32OrRange, tx::MemTx};
 
 #[derive(Clone)]
 pub struct Mem {
-    pub(crate) autnums: Arc<RwLock<RangeMap<u32, Arc<RdapResponse>>>>,
+    pub(crate) autnums: Arc<RwLock<RangeInclusiveMap<u32, Arc<RdapResponse>>>>,
     pub(crate) ip4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
     pub(crate) ip6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) domains: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) domains_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) domains_by_ns_ip: Arc<RwLock<HashMap<IpAddr, Vec<Arc<RdapResponse>>>>>,
     pub(crate) domains_by_ns_ldh_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) domains_by_ipv4: Arc<RwLock<PrefixMap<Ipv4Net, Arc<RdapResponse>>>>,
+    pub(crate) domains_by_ipv6: Arc<RwLock<PrefixMap<Ipv6Net, Arc<RdapResponse>>>>,
     pub(crate) idns: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) nameservers_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
@@ -39,6 +43,10 @@ pub struct Mem {
     pub(crate) entities: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) entities_by_handle: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) entities_by_full_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) networks_by_handle: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) networks_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) autnums_by_handle: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
+    pub(crate) autnums_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
 }
@@ -53,6 +61,8 @@ impl Mem {
             domains_by_name: Arc::new(RwLock::new(SearchLabels::dns_labels().build())),
             domains_by_ns_ip: <_>::default(),
             domains_by_ns_ldh_name: Arc::new(RwLock::new(SearchLabels::dns_labels().build())),
+            domains_by_ipv4: <_>::default(),
+            domains_by_ipv6: <_>::default(),
             idns: <_>::default(),
             nameservers: <_>::default(),
             nameservers_by_name: Arc::new(RwLock::new(SearchLabels::dns_labels().build())),
@@ -60,6 +70,10 @@ impl Mem {
             entities: <_>::default(),
             entities_by_handle: Arc::new(RwLock::new(SearchLabels::handle_labels().build())),
             entities_by_full_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
+            networks_by_handle: Arc::new(RwLock::new(SearchLabels::handle_labels().build())),
+            networks_by_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
+            autnums_by_handle: Arc::new(RwLock::new(SearchLabels::handle_labels().build())),
+            autnums_by_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
             srvhelps: <_>::default(),
             config,
         }
@@ -128,7 +142,7 @@ impl StoreOps for Mem {
 
     async fn get_autnum_by_num(&self, num: u32) -> Result<RdapResponse, RdapServerError> {
         let autnums = self.autnums.read().await;
-        let result = autnums.get(num);
+        let result = autnums.get(&num);
         match result {
             Some(autnum) => Ok(RdapResponse::clone(autnum)),
             None => Ok(NOT_FOUND.clone()),
@@ -343,6 +357,53 @@ impl StoreOps for Mem {
         Ok(response)
     }
 
+    async fn search_networks_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.network_search_by_handle_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let networks_by_handle = self.networks_by_handle.read().await;
+        let results = networks_by_handle
+            .search(handle)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|n| match n {
+                RdapResponse::Network(net) => Some(*net),
+                _ => None,
+            })
+            .collect::<Vec<Network>>();
+        let response = IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_networks_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.network_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let ip_networks_by_name = self.networks_by_name.read().await;
+        let results = ip_networks_by_name
+            .search(name)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|n| match n {
+                RdapResponse::Network(net) => Some(*net),
+                _ => None,
+            })
+            .collect::<Vec<Network>>();
+        let response = IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
     async fn search_entities_by_full_name(
         &self,
         full_name: &str,
@@ -366,5 +427,489 @@ impl StoreOps for Mem {
             .build()
             .to_response();
         Ok(response)
+    }
+
+    async fn search_ip_rdap_up_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        match self.ip_rdap_up(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        match self.ip_rdap_up(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_ip_rdap_top_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        match self.ip_rdap_top(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_ip_rdap_top_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        match self.ip_rdap_top(&net).await {
+            Some(network) => Ok(Arc::unwrap_or_clone(network)),
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_ip_rdap_down_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        let results = self.ip_rdap_down(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_ip_rdap_down_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        let results = self.ip_rdap_down(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_ip_rdap_bottom_by_ipaddr(
+        &self,
+        ipaddr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let addr = ipaddr.parse::<IpAddr>()?;
+        let net = match addr {
+            IpAddr::V4(v4) => IpNet::V4(Ipv4Net::new(v4, 32)?),
+            IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
+        };
+        let results = self.ip_rdap_bottom(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_ip_rdap_bottom_by_cidr(
+        &self,
+        cidr: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let net = IpNet::from_str(cidr)?;
+        let results = self.ip_rdap_bottom(&net).await;
+        let results: Vec<Network> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
+            })
+            .collect();
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_up_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_up(&U32OrRange::Single(num)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_up_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_up(&U32OrRange::Range(start..end)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_top_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_top(&U32OrRange::Single(num)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_top_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.autnum_rdap_top(&U32OrRange::Range(start..end)).await {
+            Some(autnum) => {
+                let autnum = Arc::unwrap_or_clone(autnum);
+                let autnum = match autnum {
+                    RdapResponse::Autnum(a) => *a,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(AutnumSearchResults::response_obj()
+                    .results(vec![autnum])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_autnum_rdap_down_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.autnum_rdap_down(&U32OrRange::Single(num)).await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_down_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.autnum_rdap_down(&U32OrRange::Range(start..end)).await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_bottom_by_num(
+        &self,
+        num: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.autnum_rdap_bottom(&U32OrRange::Single(num)).await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnum_rdap_bottom_by_range(
+        &self,
+        start: u32,
+        end: u32,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self
+            .autnum_rdap_bottom(&U32OrRange::Range(start..end))
+            .await;
+        let results: Vec<Autnum> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_autnums_by_handle(
+        &self,
+        handle: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_search_by_handle_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let autnums_by_handle = self.autnums_by_handle.read().await;
+        let results = autnums_by_handle
+            .search(handle)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|a| match a {
+                RdapResponse::Autnum(aut) => Some(*aut),
+                _ => None,
+            })
+            .collect::<Vec<Autnum>>();
+        let response = AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_autnums_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let autnums_by_name = self.autnums_by_name.read().await;
+        let results = autnums_by_name
+            .search(name)
+            .unwrap_or_default()
+            .into_iter()
+            .map(Arc::<RdapResponse>::unwrap_or_clone)
+            .filter_map(|a| match a {
+                RdapResponse::Autnum(aut) => Some(*aut),
+                _ => None,
+            })
+            .collect::<Vec<Autnum>>();
+        let response = AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
+    }
+
+    async fn search_domain_rdap_up_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.domain_rdap_up(ldh).await {
+            Some(domain) => {
+                let domain = Arc::unwrap_or_clone(domain);
+                let domain = match domain {
+                    RdapResponse::Domain(d) => *d,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(DomainSearchResults::response_obj()
+                    .results(vec![domain])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_domain_rdap_top_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        match self.domain_rdap_top(ldh).await {
+            Some(domain) => {
+                let domain = Arc::unwrap_or_clone(domain);
+                let domain = match domain {
+                    RdapResponse::Domain(d) => *d,
+                    _ => return Ok(NOT_FOUND.clone()),
+                };
+                Ok(DomainSearchResults::response_obj()
+                    .results(vec![domain])
+                    .build()
+                    .to_response())
+            }
+            None => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    async fn search_domain_rdap_down_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.domain_rdap_down(ldh).await;
+        let results: Vec<Domain> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect();
+        Ok(DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
+
+    async fn search_domain_rdap_bottom_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        let results = self.domain_rdap_bottom(ldh).await;
+        let results: Vec<Domain> = results
+            .into_iter()
+            .map(Arc::unwrap_or_clone)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect();
+        Ok(DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
     }
 }
