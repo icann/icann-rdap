@@ -96,7 +96,7 @@ json-pretty-compact = "0.1.2"
 idna = "1.1"
 
 # for use prefixmap
-ipnet = { version = "2.9", features = ["json"] }
+ipnet = { version = "2.12", features = ["json"] }
 
 # embedded pager
 minus = {version = "5.5", features = ["dynamic_output", "search"] }
