@@ -75,6 +75,9 @@ futures-util = "0.3"
 # macros to get the git version
 git-version = "0.3"
 
+# goldfile
+goldenfile = "1.11"
+
 # headers (http headers)
 headers = "0.4"
 

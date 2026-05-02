@@ -35,8 +35,6 @@ tokio.workspace = true
 
 [dev-dependencies]
 
-# goldfile
-goldenfile = "1.8"
-
+goldenfile.workspace = true
 rstest.workspace = true
 tokio.workspace = true
