@@ -53,7 +53,7 @@ const_format = "0.2"
 crossbeam-channel = "0.5.15"
 
 # cross-platform application directories
-directories = "5.0"
+directories = "6.0"
 
 # loads environment variables from a file
 dotenvy = "0.15"
