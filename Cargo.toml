@@ -146,6 +146,9 @@ strum_macros = "0.28"
 # terminal markdown generator
 termimad = "0.34"
 
+# test directories
+test_dir = "0.2.0"
+
 # error macros
 thiserror = "1.0"
 

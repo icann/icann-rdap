@@ -51,6 +51,4 @@ tracing-subscriber.workspace = true
 
 assert_cmd.workspace = true
 rstest.workspace = true
-
-# test directories
-test_dir = "0.2.0"
+test_dir.workspace = true
