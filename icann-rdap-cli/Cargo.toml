@@ -43,9 +43,7 @@ icann-rdap-srv = { path = "../icann-rdap-srv" }
 
 assert_cmd.workspace = true
 cidr-utils.workspace = true
-
-# fixture testings
-rstest = "0.17.0"
+rstest.workspace = true
 
 # serial testings
 serial_test = "2.0.0"

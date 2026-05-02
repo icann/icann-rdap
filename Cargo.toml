@@ -118,6 +118,9 @@ regex = "1.12"
 # http client library
 reqwest = {version = "0.13", features = ["json", "stream", "native-tls-vendored"]}
 
+# fixture testings
+rstest = "0.26.0"
+
 # serialization / deserialization library
 serde = { version = "1.0", features = [ "derive" ] }
 

@@ -38,8 +38,5 @@ tokio.workspace = true
 # goldfile
 goldenfile = "1.8"
 
-# fixture testings
-rstest = "0.17.0"
-
-# tokio async runtime
+rstest.workspace = true
 tokio.workspace = true

@@ -50,9 +50,7 @@ tracing-subscriber.workspace = true
 [dev-dependencies]
 
 assert_cmd.workspace = true
-
-# fixture testings
-rstest = "0.17.0"
+rstest.workspace = true
 
 # test directories
 test_dir = "0.2.0"
