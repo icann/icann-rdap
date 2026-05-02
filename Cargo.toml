@@ -26,12 +26,12 @@ anyhow = "1.0"
 async-trait = "0.1"
 
 # axum (web server)
-axum = { version = "0.7" }
-axum-extra = { version = "0.9", features = [ "typed-header" ] }
-axum-macros = "0.4"
+axum = { version = "0.8" }
+axum-extra = { version = "0.10", features = [ "typed-header" ] }
+axum-macros = "0.5"
 
 # client IP address extractor
-axum-client-ip = "0.5"
+axum-client-ip = "0.7"
 
 # macros for the builder pattern
 buildstructor = "0.6"
