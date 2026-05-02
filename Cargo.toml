@@ -22,6 +22,9 @@ ab-radix-trie = "0.2.1"
 # easy error handling
 anyhow = "1.0"
 
+# cli assertions
+assert_cmd = "2.2"
+
 # async traits
 async-trait = "0.1"
 

@@ -49,8 +49,7 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 
-# cli assertions
-assert_cmd = "2.0.11"
+assert_cmd.workspace = true
 
 # fixture testings
 rstest = "0.17.0"
