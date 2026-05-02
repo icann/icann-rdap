@@ -55,8 +55,7 @@ serial_test = "2.0.0"
 # test directories
 test_dir = "0.2.0"
 
-# tracing
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber.workspace = true
 
 # temp files
 tempfile = "3.10.1"
