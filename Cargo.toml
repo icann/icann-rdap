@@ -40,7 +40,7 @@ buildstructor = "0.6"
 cidr = "0.3.0"
 
 # command line options parser
-clap = { version = "4.4", features = [ "std", "derive", "env", "unstable-styles" ] }
+clap = { version = "4.6", features = [ "std", "derive", "env", "unstable-styles" ] }
 
 # chrono (time and date library)
 chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
