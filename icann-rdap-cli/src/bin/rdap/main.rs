@@ -868,6 +868,7 @@ fn hostname_to_baseurl(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use std::collections::HashSet;
 
     use crate::{hostname_to_baseurl, Cli};
 
@@ -888,5 +889,67 @@ mod tests {
 
         // THEN
         assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn test_rdap_env_has_all_cli_env_vars() {
+        use clap::CommandFactory;
+
+        // GIVEN - parse rdap.env and collect env var names (both commented and uncommented)
+        let env_content = include_str!("../../dirs/rdap.env");
+        let mut env_vars: HashSet<String> = HashSet::new();
+        for line in env_content.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                continue;
+            }
+            // uncommented line: VARNAME=value
+            if let Some(eq_pos) = trimmed.find('=') {
+                env_vars.insert(trimmed[..eq_pos].to_string());
+            }
+        }
+        // also check commented lines: #VARNAME=value, # VARNAME=value, or #VARNAME
+        for line in env_content.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let check = if trimmed.starts_with('#') {
+                &trimmed[1..]
+            } else {
+                trimmed
+            };
+            let check = check.trim_start();
+            if let Some(eq_pos) = check.find('=') {
+                env_vars.insert(check[..eq_pos].trim().to_string());
+            } else {
+                // line like #RDAP_BASE_URL with no = sign
+                let name = check.trim();
+                if !name.is_empty() && !name.starts_with('#') {
+                    env_vars.insert(name.to_string());
+                }
+            }
+        }
+
+        // WHEN - collect env var names from Cli arguments
+        let command = Cli::command();
+        let mut missing: Vec<String> = Vec::new();
+        for arg in command.get_arguments() {
+            if let Some(env_name) = arg.get_env() {
+                let env_str = env_name.to_str().unwrap_or_default();
+                if !env_vars.contains(env_str) {
+                    missing.push(env_str.to_string());
+                }
+            }
+        }
+
+        // THEN - all Cli args with env attributes must have a corresponding line in rdap.env
+        if !missing.is_empty() {
+            missing.sort();
+            panic!(
+                "rdap.env is missing environment variables for the following Cli args: {}",
+                missing.join(", ")
+            );
+        }
     }
 }
