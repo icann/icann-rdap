@@ -42,9 +42,7 @@ url.workspace = true
 icann-rdap-srv = { path = "../icann-rdap-srv" }
 
 assert_cmd.workspace = true
-
-# CIDR utilities
-cidr-utils = "0.5"
+cidr-utils.workspace = true
 
 # fixture testings
 rstest = "0.17.0"
