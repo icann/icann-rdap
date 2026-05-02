@@ -47,6 +47,4 @@ rstest.workspace = true
 serial_test.workspace = true
 test_dir.workspace = true
 tracing-subscriber.workspace = true
-
-# temp files
-tempfile = "3.10.1"
+tempfile.workspace = true

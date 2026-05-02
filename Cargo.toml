@@ -143,6 +143,9 @@ sqlx = { version = "0.8", features = [
 strum = "0.28"
 strum_macros = "0.28"
 
+# temp files
+tempfile = "3.27"
+
 # terminal markdown generator
 termimad = "0.34"
 
