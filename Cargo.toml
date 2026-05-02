@@ -145,8 +145,8 @@ thiserror = "1.0"
 tokio = { version = "1.52", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
-tower = { version = "0.4", features = ["timeout", "util"] }
-tower-http = { version = "0.5", features = [
+tower = { version = "0.5", features = ["timeout", "util"] }
+tower-http = { version = "0.6", features = [
     "add-extension",
     "trace",
     "cors",
