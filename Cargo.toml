@@ -87,6 +87,9 @@ http = "1.4"
 # hyper (http implementation used by axum)
 hyper = { version = "1.9", features = ["full"] }
 
+# indoc
+indoc = "2"
+
 # JSONPath
 jsonpath-rust = "1.0.4"
 jsonpath_lib = "0.3.0"
