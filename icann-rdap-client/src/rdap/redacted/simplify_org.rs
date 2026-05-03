@@ -65,8 +65,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_registrant_entity_when_simplify_registrant_org_then_redacts_organization()
-    {
+    fn org_redacts_when_empty() {
         // Given
         let contact = Contact::builder().organization_names(vec!["".to_string()]).build();
 
@@ -105,8 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_multiple_entities_when_simplify_registrant_org_then_only_redacts_first_registrant(
-    ) {
+    fn only_first_registrant_redacted() {
         // Given
         let registrant_contact = Contact::builder().organization_names(vec!["".to_string()]).build();
 
@@ -153,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_without_entities_when_simplify_registrant_org_then_returns_unchanged() {
+    fn no_entities_returns_unchanged() {
         // Given
         let domain = Domain::builder().ldh_name("example.com").build();
 
@@ -165,8 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_non_registrant_entities_when_simplify_registrant_org_then_returns_unchanged(
-    ) {
+    fn non_registrant_unchanged() {
         // Given
         let contact = Contact::builder().organization_name("Admin Org").build();
 
@@ -195,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_entity_without_contact_when_simplify_registrant_org_then_skips_entity() {
+    fn no_contact_skips() {
         // Given
         let entity = Entity::builder()
             .handle("test-registrant")
@@ -219,8 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_existing_remarks_when_simplify_registrant_org_then_adds_redaction_remark(
-    ) {
+    fn remark_added_with_existing_remarks() {
         // Given
         let existing_remark = Remark::builder()
             .title("Existing Remark")
@@ -262,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_non_empty_org_when_simplify_registrant_org_then_skips_redaction() {
+    fn org_skips_when_present() {
         // Given
         let contact = Contact::builder().organization_name("Acme Corp").build();
 
@@ -291,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_empty_org_names_when_simplify_registrant_org_then_redacts() {
+    fn org_redacts_when_only_empty_strings() {
         // Given
         let contact = Contact::builder().organization_names(vec!["".to_string()]).build();
 
@@ -322,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_localized_org_when_simplify_registrant_org_then_skips_redaction() {
+    fn org_skips_when_localized_present() {
         // Given
         let mut contact = Contact::builder().organization_names(vec!["".to_string()]).build();
 
@@ -363,8 +359,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_localizations_when_simplify_registrant_org_then_redacts_localized_org_names(
-    ) {
+    fn org_redacts_localized_when_empty() {
         // Given
         let mut contact = Contact::builder().organization_names(vec!["".to_string()]).build();
 
