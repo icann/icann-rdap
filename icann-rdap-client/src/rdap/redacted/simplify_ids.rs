@@ -22,33 +22,27 @@ pub(crate) fn simplify_registry_domain_id(
 }
 
 pub(crate) fn simplify_registry_registrant_id(
-    mut domain: Box<Domain>,
+    domain: Box<Domain>,
     redaction: &Redacted,
 ) -> Box<Domain> {
-    if let Some(entities) = &mut domain.object_common.entities {
-        for entity in entities.iter_mut() {
-            if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
-                entity.object_common.handle = Some(REDACTED_ID.into());
-                entity.object_common.remarks = add_remark(
-                    REDACTED_ID,
-                    REDACTED_ID_DESC,
-                    redaction,
-                    entity.object_common.remarks.clone(),
-                );
-                break; // Only modify first registrant
-            }
-        }
-    }
-    domain
+    simplify_registry_entity_id(domain, redaction, EntityRole::Registrant)
 }
 
 pub(crate) fn simplify_registry_tech_id(
+    domain: Box<Domain>,
+    redaction: &Redacted,
+) -> Box<Domain> {
+    simplify_registry_entity_id(domain, redaction, EntityRole::Technical)
+}
+
+fn simplify_registry_entity_id(
     mut domain: Box<Domain>,
     redaction: &Redacted,
+    role: EntityRole,
 ) -> Box<Domain> {
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
-            if entity.is_entity_role(&EntityRole::Technical.to_string()) {
+            if entity.is_entity_role(&role.to_string()) {
                 entity.object_common.handle = Some(REDACTED_ID.into());
                 entity.object_common.remarks = add_remark(
                     REDACTED_ID,
@@ -56,7 +50,7 @@ pub(crate) fn simplify_registry_tech_id(
                     redaction,
                     entity.object_common.remarks.clone(),
                 );
-                break; // Only modify first tech
+                break; // Only modify first matching entity
             }
         }
     }
