@@ -46,6 +46,11 @@ fn simplify_registry_entity_id(
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&role.to_string()) {
+                if let Some(ref h) = entity.object_common.handle {
+                    if !h.is_empty() {
+                        return domain;
+                    }
+                }
                 entity.object_common.handle = Some(REDACTED_ID.into());
                 entity.object_common.remarks = add_remark(
                     REDACTED_ID,
@@ -166,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_simplify_registry_registrant_id_with_registrant_entity() {
-        // GIVEN a domain with a registrant entity
+        // GIVEN a domain with a registrant entity that has a non-empty handle
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
             .role(EntityRole::Registrant.to_string())
@@ -181,26 +186,20 @@ mod tests {
         // WHEN calling simplify_registry_registrant_id
         let result = simplify_registry_registrant_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the registrant entity's handle should be redacted
+        // THEN the registrant entity's handle should remain unchanged
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
 
         let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some(REDACTED_ID));
+        assert_eq!(registrant.handle(), Some("registrant_123"));
 
-        // AND a remark should be added
-        let remarks = registrant.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_ID_DESC.to_string())
-        );
+        // AND no redaction remark should be added
+        assert!(registrant.object_common.remarks.is_none());
     }
 
     #[test]
     fn test_simplify_registry_registrant_id_with_multiple_entities_first_is_registrant() {
-        // GIVEN a domain with multiple entities, first is registrant
+        // GIVEN a domain with multiple entities, first is registrant (all with non-empty handles)
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
             .role(EntityRole::Registrant.to_string())
@@ -225,24 +224,24 @@ mod tests {
         // WHEN calling simplify_registry_registrant_id
         let result = simplify_registry_registrant_id(Box::new(domain), &get_test_redacted());
 
-        // THEN only the first registrant should be modified
+        // THEN no entities should be modified (registrant has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 3);
 
-        // First entity (registrant) should be redacted
-        assert_eq!(entities[0].handle(), Some(REDACTED_ID));
-        let registrant_remarks = entities[0].object_common.remarks.as_ref().unwrap();
-        assert_eq!(registrant_remarks.len(), 1);
-        assert!(registrant_remarks[0].has_simple_redaction_key(REDACTED_ID));
-
-        // Other entities should be unchanged
+        // All entities should remain unchanged
+        assert_eq!(entities[0].handle(), Some("registrant_123"));
         assert_eq!(entities[1].handle(), Some("tech_456"));
         assert_eq!(entities[2].handle(), Some("admin_789"));
+
+        // AND no remarks should be added to any entity
+        assert!(entities[0].object_common.remarks.is_none());
+        assert!(entities[1].object_common.remarks.is_none());
+        assert!(entities[2].object_common.remarks.is_none());
     }
 
     #[test]
     fn test_simplify_registry_registrant_id_with_multiple_entities_registrant_not_first() {
-        // GIVEN a domain with multiple entities, registrant is second
+        // GIVEN a domain with multiple entities, registrant is second (all with non-empty handles)
         let tech_entity = Entity::builder()
             .handle("tech_456")
             .role(EntityRole::Technical.to_string())
@@ -267,21 +266,19 @@ mod tests {
         // WHEN calling simplify_registry_registrant_id
         let result = simplify_registry_registrant_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the registrant entity should be redacted
+        // THEN the registrant entity should remain unchanged (has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 3);
 
-        // First entity (tech) should be unchanged
+        // All entities should remain unchanged
         assert_eq!(entities[0].handle(), Some("tech_456"));
-
-        // Second entity (registrant) should be redacted
-        assert_eq!(entities[1].handle(), Some(REDACTED_ID));
-        let registrant_remarks = entities[1].object_common.remarks.as_ref().unwrap();
-        assert_eq!(registrant_remarks.len(), 1);
-        assert!(registrant_remarks[0].has_simple_redaction_key(REDACTED_ID));
-
-        // Third entity (admin) should be unchanged
+        assert_eq!(entities[1].handle(), Some("registrant_123"));
         assert_eq!(entities[2].handle(), Some("admin_789"));
+
+        // AND no remarks should be added
+        assert!(entities[0].object_common.remarks.is_none());
+        assert!(entities[1].object_common.remarks.is_none());
+        assert!(entities[2].object_common.remarks.is_none());
     }
 
     #[test]
@@ -335,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_simplify_registry_registrant_id_with_entity_with_same_redaction_remark() {
-        // GIVEN a registrant entity with existing redaction remark
+        // GIVEN a registrant entity with existing redaction remark and non-empty handle
         let existing_remark = Remark::builder()
             .simple_redaction_keys(vec![REDACTED_ID.to_string()])
             .description_entry("existing redaction description")
@@ -356,17 +353,16 @@ mod tests {
         // WHEN calling simplify_registry_registrant_id
         let result = simplify_registry_registrant_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the registrant should not have duplicate redaction remark
+        // THEN the registrant should not have been modified (has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
 
         let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some(REDACTED_ID));
+        assert_eq!(registrant.handle(), Some("registrant_123"));
 
+        // AND the existing remark should be preserved unchanged
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-
-        // Should only have the existing remark (no duplicate)
         assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec().first(),
@@ -376,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_simplify_registry_registrant_id_with_entity_with_multiple_roles_including_registrant() {
-        // GIVEN an entity with multiple roles including registrant
+        // GIVEN an entity with multiple roles including registrant (with non-empty handle)
         let multi_role_entity = Entity::builder()
             .handle("multi_role_123")
             .roles(vec![
@@ -395,16 +391,15 @@ mod tests {
         // WHEN calling simplify_registry_registrant_id
         let result = simplify_registry_registrant_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the entity should be redacted (it has registrant role)
+        // THEN the entity should not be redacted (has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
 
         let entity = &entities[0];
-        assert_eq!(entity.handle(), Some(REDACTED_ID));
+        assert_eq!(entity.handle(), Some("multi_role_123"));
 
-        let remarks = entity.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
+        // AND no remarks should be added
+        assert!(entity.object_common.remarks.is_none());
     }
 
     #[test]
@@ -436,8 +431,37 @@ mod tests {
     }
 
     #[test]
+    fn test_simplify_registry_registrant_id_with_entity_empty_handle() {
+        // GIVEN a registrant entity with an empty string handle
+        let registrant_entity = Entity::builder()
+            .handle("")
+            .role(EntityRole::Registrant.to_string())
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![registrant_entity])
+            .build();
+
+        // WHEN calling simplify_registry_registrant_id
+        let result = simplify_registry_registrant_id(Box::new(domain), &get_test_redacted());
+
+        // THEN the registrant entity should have redacted handle
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let registrant = &entities[0];
+        assert_eq!(registrant.handle(), Some(REDACTED_ID));
+
+        let remarks = registrant.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
+    }
+
+    #[test]
     fn test_simplify_registry_tech_id_with_tech_entity() {
-        // GIVEN a domain with a technical entity
+        // GIVEN a domain with a technical entity that has a non-empty handle
         let tech_entity = Entity::builder()
             .handle("tech_456")
             .role(EntityRole::Technical.to_string())
@@ -452,21 +476,20 @@ mod tests {
         // WHEN calling simplify_registry_tech_id
         let result = simplify_registry_tech_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the technical entity should have redacted handle
+        // THEN the technical entity's handle should remain unchanged
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
 
         let tech = &entities[0];
-        assert_eq!(tech.handle(), Some(REDACTED_ID));
+        assert_eq!(tech.handle(), Some("tech_456"));
 
-        let remarks = tech.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
+        // AND no redaction remark should be added
+        assert!(tech.object_common.remarks.is_none());
     }
 
     #[test]
     fn test_simplify_registry_tech_id_with_multiple_entities_first_is_tech() {
-        // GIVEN a domain with multiple entities, first is technical
+        // GIVEN a domain with multiple entities, first is technical (all with non-empty handles)
         let tech_entity = Entity::builder()
             .handle("tech_456")
             .role(EntityRole::Technical.to_string())
@@ -491,24 +514,24 @@ mod tests {
         // WHEN calling simplify_registry_tech_id
         let result = simplify_registry_tech_id(Box::new(domain), &get_test_redacted());
 
-        // THEN only the first technical entity should be modified
+        // THEN no entities should be modified (tech has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 3);
 
-        // First entity (tech) should be redacted
-        assert_eq!(entities[0].handle(), Some(REDACTED_ID));
-        let tech_remarks = entities[0].object_common.remarks.as_ref().unwrap();
-        assert_eq!(tech_remarks.len(), 1);
-        assert!(tech_remarks[0].has_simple_redaction_key(REDACTED_ID));
-
-        // Other entities should be unchanged
+        // All entities should remain unchanged
+        assert_eq!(entities[0].handle(), Some("tech_456"));
         assert_eq!(entities[1].handle(), Some("registrant_123"));
         assert_eq!(entities[2].handle(), Some("admin_789"));
+
+        // AND no remarks should be added to any entity
+        assert!(entities[0].object_common.remarks.is_none());
+        assert!(entities[1].object_common.remarks.is_none());
+        assert!(entities[2].object_common.remarks.is_none());
     }
 
     #[test]
     fn test_simplify_registry_tech_id_with_multiple_entities_tech_not_first() {
-        // GIVEN a domain with multiple entities, tech is not first
+        // GIVEN a domain with multiple entities, tech is not first (all with non-empty handles)
         let tech_entity = Entity::builder()
             .handle("tech_456")
             .role(EntityRole::Technical.to_string())
@@ -533,21 +556,19 @@ mod tests {
         // WHEN calling simplify_registry_tech_id
         let result = simplify_registry_tech_id(Box::new(domain), &get_test_redacted());
 
-        // THEN only the technical entity should be redacted
+        // THEN only the technical entity should remain unchanged (has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 3);
 
-        // First entity (registrant) should be unchanged
+        // All entities should remain unchanged
         assert_eq!(entities[0].handle(), Some("registrant_123"));
-
-        // Second entity (tech) should be redacted
-        assert_eq!(entities[1].handle(), Some(REDACTED_ID));
-        let tech_remarks = entities[1].object_common.remarks.as_ref().unwrap();
-        assert_eq!(tech_remarks.len(), 1);
-        assert!(tech_remarks[0].has_simple_redaction_key(REDACTED_ID));
-
-        // Third entity (admin) should be unchanged
+        assert_eq!(entities[1].handle(), Some("tech_456"));
         assert_eq!(entities[2].handle(), Some("admin_789"));
+
+        // AND no remarks should be added
+        assert!(entities[0].object_common.remarks.is_none());
+        assert!(entities[1].object_common.remarks.is_none());
+        assert!(entities[2].object_common.remarks.is_none());
     }
 
     #[test]
@@ -585,7 +606,7 @@ mod tests {
 
     #[test]
     fn test_simplify_registry_tech_id_with_tech_entity_with_same_redaction_remark() {
-        // GIVEN a technical entity with existing redaction remark
+        // GIVEN a technical entity with existing redaction remark and non-empty handle
         let existing_remark = Remark::builder()
             .simple_redaction_keys(vec![REDACTED_ID.to_string()])
             .description_entry("existing redaction description")
@@ -606,13 +627,14 @@ mod tests {
         // WHEN calling simplify_registry_tech_id
         let result = simplify_registry_tech_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the technical entity should not have duplicate redaction remark
+        // THEN the technical entity should not have been modified (has non-empty handle)
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
 
         let tech = &entities[0];
-        assert_eq!(tech.handle(), Some(REDACTED_ID));
+        assert_eq!(tech.handle(), Some("tech_456"));
 
+        // AND the existing remark should be preserved unchanged
         let remarks = tech.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
 
@@ -628,6 +650,35 @@ mod tests {
     fn test_simplify_registry_tech_id_with_tech_entity_no_handle() {
         // GIVEN a technical entity with no handle
         let tech_entity = Entity::builder::<String>()
+            .role(EntityRole::Technical.to_string())
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![tech_entity])
+            .build();
+
+        // WHEN calling simplify_registry_tech_id
+        let result = simplify_registry_tech_id(Box::new(domain), &get_test_redacted());
+
+        // THEN the technical entity should have redacted handle
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let tech = &entities[0];
+        assert_eq!(tech.handle(), Some(REDACTED_ID));
+
+        let remarks = tech.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
+    }
+
+    #[test]
+    fn test_simplify_registry_tech_id_with_tech_entity_empty_handle() {
+        // GIVEN a technical entity with an empty string handle
+        let tech_entity = Entity::builder()
+            .handle("")
             .role(EntityRole::Technical.to_string())
             .build();
 
