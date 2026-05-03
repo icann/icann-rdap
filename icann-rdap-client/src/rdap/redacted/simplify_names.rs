@@ -18,9 +18,9 @@ pub(crate) fn simplify_registrant_name(
                 if let Some(mut contact) = contact {
                     // Skip redaction if full name is already present and non-empty
                     let has_non_empty_name = contact.full_name().map_or(false, |s| !s.is_empty())
-                        || contact.localizations_iter().any(|(_, loc)| {
-                            loc.full_name().map_or(false, |s| !s.is_empty())
-                        });
+                        || contact
+                            .localizations_iter()
+                            .any(|(_, loc)| loc.full_name().map_or(false, |s| !s.is_empty()));
 
                     if has_non_empty_name {
                         return domain;
@@ -60,9 +60,9 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
                 if let Some(mut contact) = contact {
                     // Skip redaction if full name is already present and non-empty
                     let has_non_empty_name = contact.full_name().map_or(false, |s| !s.is_empty())
-                        || contact.localizations_iter().any(|(_, loc)| {
-                            loc.full_name().map_or(false, |s| !s.is_empty())
-                        });
+                        || contact
+                            .localizations_iter()
+                            .any(|(_, loc)| loc.full_name().map_or(false, |s| !s.is_empty()));
 
                     if has_non_empty_name {
                         return domain;

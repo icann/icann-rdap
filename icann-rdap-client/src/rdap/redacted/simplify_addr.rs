@@ -38,9 +38,7 @@ pub(crate) fn simplify_registrant_street(
                         let mut all_addrs = vec![];
                         for addr in localizable.postal_addresses().to_vec().iter_mut() {
                             if addr.street_parts.is_none()
-                                || addr.street_parts
-                                    .as_ref()
-                                    .map_or(true, |v| v.is_empty())
+                                || addr.street_parts.as_ref().map_or(true, |v| v.is_empty())
                             {
                                 addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
                                 modified = true;
@@ -79,7 +77,9 @@ pub(crate) fn simplify_registrant_city(
                     let mut modified = false;
                     let mut all_addrs = vec![];
                     for addr in contact.postal_addresses().to_vec().iter_mut() {
-                        if addr.locality.is_none() || addr.locality.as_ref().map_or(true, |s| s.is_empty()) {
+                        if addr.locality.is_none()
+                            || addr.locality.as_ref().map_or(true, |s| s.is_empty())
+                        {
                             addr.locality = Some(REDACTED_CITY.to_string());
                             modified = true;
                         }
@@ -89,7 +89,9 @@ pub(crate) fn simplify_registrant_city(
                     for (_lang, localizable) in contact.localizations_iter_mut() {
                         let mut all_addrs = vec![];
                         for addr in localizable.postal_addresses().to_vec().iter_mut() {
-                            if addr.locality.is_none() || addr.locality.as_ref().map_or(true, |s| s.is_empty()) {
+                            if addr.locality.is_none()
+                                || addr.locality.as_ref().map_or(true, |s| s.is_empty())
+                            {
                                 addr.locality = Some(REDACTED_CITY.to_string());
                                 modified = true;
                             }
@@ -127,7 +129,9 @@ pub(crate) fn simplify_registrant_postal_code(
                     let mut modified = false;
                     let mut all_addrs = vec![];
                     for addr in contact.postal_addresses().to_vec().iter_mut() {
-                        if addr.postal_code.is_none() || addr.postal_code.as_ref().map_or(true, |s| s.is_empty()) {
+                        if addr.postal_code.is_none()
+                            || addr.postal_code.as_ref().map_or(true, |s| s.is_empty())
+                        {
                             addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
                             modified = true;
                         }
@@ -138,7 +142,9 @@ pub(crate) fn simplify_registrant_postal_code(
                     for (_lang, localizable) in contact.localizations_iter_mut() {
                         let mut all_addrs = vec![];
                         for addr in localizable.postal_addresses().to_vec().iter_mut() {
-                            if addr.postal_code.is_none() || addr.postal_code.as_ref().map_or(true, |s| s.is_empty()) {
+                            if addr.postal_code.is_none()
+                                || addr.postal_code.as_ref().map_or(true, |s| s.is_empty())
+                            {
                                 addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
                                 modified = true;
                             }
@@ -277,8 +283,7 @@ mod tests {
     fn given_domain_with_multiple_entities_when_simplify_registrant_street_then_only_redacts_first_registrant(
     ) {
         // Given
-        let registrant_address = PostalAddress::builder()
-            .build();
+        let registrant_address = PostalAddress::builder().build();
 
         let registrant_contact = Contact::builder()
             .postal_address(registrant_address)
@@ -535,8 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_registrant_entity_when_postal_code_absent_then_redacts_postal_code(
-    ) {
+    fn given_domain_with_registrant_entity_when_postal_code_absent_then_redacts_postal_code() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -700,13 +704,9 @@ mod tests {
     fn given_registrant_with_multiple_addresses_when_simplify_registrant_street_then_redacts_all_streets(
     ) {
         // Given
-        let address1 = PostalAddress::builder()
-            .locality("City1")
-            .build();
+        let address1 = PostalAddress::builder().locality("City1").build();
 
-        let address2 = PostalAddress::builder()
-            .locality("City2")
-            .build();
+        let address2 = PostalAddress::builder().locality("City2").build();
 
         let contact = Contact::builder()
             .postal_address(address1)

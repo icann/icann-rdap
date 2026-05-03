@@ -191,10 +191,7 @@ mod tests {
         Box::new(domain)
     }
 
-    fn given_domain_with_empty_phone_contact(
-        role: &str,
-        feature: &str,
-    ) -> Box<Domain> {
+    fn given_domain_with_empty_phone_contact(role: &str, feature: &str) -> Box<Domain> {
         let phone = Phone::builder()
             .phone("".to_string())
             .features(vec![feature.to_string()])
@@ -385,7 +382,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_voice_phone_when_simplify_registrant_phone_then_phone_is_not_redacted() {
+    fn given_registrant_with_voice_phone_when_simplify_registrant_phone_then_phone_is_not_redacted()
+    {
         // GIVEN a domain with a registrant entity having a voice phone
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "voice");
 
@@ -516,7 +514,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_empty_voice_phone_when_simplify_registrant_phone_then_phone_is_redacted() {
+    fn given_registrant_with_empty_voice_phone_when_simplify_registrant_phone_then_phone_is_redacted(
+    ) {
         // GIVEN a domain with a registrant entity having an empty voice phone
         let domain = given_domain_with_empty_phone_contact("registrant", "voice");
 
@@ -573,7 +572,8 @@ mod tests {
     }
 
     #[test]
-    fn given_multiple_entities_with_empty_when_simplify_registrant_phone_then_only_registrant_is_redacted() {
+    fn given_multiple_entities_with_empty_when_simplify_registrant_phone_then_only_registrant_is_redacted(
+    ) {
         // GIVEN a domain with both registrant and administrative entities with empty phones
         let registrant_phone = Phone::builder()
             .phone("".to_string())

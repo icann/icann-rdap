@@ -17,10 +17,11 @@ pub(crate) fn simplify_registrant_org(
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     // Skip redaction if organization name is already present and non-empty
-                    let has_non_empty_org = contact.organization_names().iter().any(|s| !s.is_empty())
-                        || contact.localizations_iter().any(|(_, loc)| {
-                            loc.organization_names().iter().any(|s| !s.is_empty())
-                        });
+                    let has_non_empty_org =
+                        contact.organization_names().iter().any(|s| !s.is_empty())
+                            || contact.localizations_iter().any(|(_, loc)| {
+                                loc.organization_names().iter().any(|s| !s.is_empty())
+                            });
 
                     if has_non_empty_org {
                         return domain;
@@ -67,7 +68,9 @@ mod tests {
     #[test]
     fn org_redacts_when_empty() {
         // Given
-        let contact = Contact::builder().organization_names(vec!["".to_string()]).build();
+        let contact = Contact::builder()
+            .organization_names(vec!["".to_string()])
+            .build();
 
         let entity = Entity::builder()
             .handle("test-registrant")
@@ -106,7 +109,9 @@ mod tests {
     #[test]
     fn only_first_registrant_redacted() {
         // Given
-        let registrant_contact = Contact::builder().organization_names(vec!["".to_string()]).build();
+        let registrant_contact = Contact::builder()
+            .organization_names(vec!["".to_string()])
+            .build();
 
         let registrant = Entity::builder()
             .handle("test-registrant")
@@ -223,7 +228,9 @@ mod tests {
             .description_entry("Existing description")
             .build();
 
-        let contact = Contact::builder().organization_names(vec!["".to_string()]).build();
+        let contact = Contact::builder()
+            .organization_names(vec!["".to_string()])
+            .build();
 
         let entity = Entity::builder()
             .handle("test-registrant")
@@ -289,7 +296,9 @@ mod tests {
     #[test]
     fn org_redacts_when_only_empty_strings() {
         // Given
-        let contact = Contact::builder().organization_names(vec!["".to_string()]).build();
+        let contact = Contact::builder()
+            .organization_names(vec!["".to_string()])
+            .build();
 
         let entity = Entity::builder()
             .handle("test-registrant")
@@ -320,7 +329,9 @@ mod tests {
     #[test]
     fn org_skips_when_localized_present() {
         // Given
-        let mut contact = Contact::builder().organization_names(vec!["".to_string()]).build();
+        let mut contact = Contact::builder()
+            .organization_names(vec!["".to_string()])
+            .build();
 
         // Add a French localization with a non-empty organization name
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
@@ -350,7 +361,10 @@ mod tests {
         if let Some(contact) = entity.contact() {
             assert_eq!(contact.organization_names(), &["".to_string()]);
             if let Some(fr_local) = contact.localization("fr") {
-                assert_eq!(fr_local.organization_names(), &["Organisation Française".to_string()]);
+                assert_eq!(
+                    fr_local.organization_names(),
+                    &["Organisation Française".to_string()]
+                );
             } else {
                 panic!("French localization should exist");
             }
@@ -361,7 +375,9 @@ mod tests {
     #[test]
     fn org_redacts_localized_when_empty() {
         // Given
-        let mut contact = Contact::builder().organization_names(vec!["".to_string()]).build();
+        let mut contact = Contact::builder()
+            .organization_names(vec!["".to_string()])
+            .build();
 
         // Add a French localization with empty organization name that should be redacted
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
