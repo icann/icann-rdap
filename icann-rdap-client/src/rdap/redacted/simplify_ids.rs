@@ -11,6 +11,12 @@ pub(crate) fn simplify_registry_domain_id(
     mut domain: Box<Domain>,
     redaction: &Redacted,
 ) -> Box<Domain> {
+    if let Some(ref h) = domain.object_common.handle {
+        if !h.is_empty() {
+            return domain;
+        }
+    }
+
     domain.object_common.handle = Some(REDACTED_ID.into());
     domain.object_common.remarks = add_remark(
         REDACTED_ID,
@@ -28,10 +34,7 @@ pub(crate) fn simplify_registry_registrant_id(
     simplify_registry_entity_id(domain, redaction, EntityRole::Registrant)
 }
 
-pub(crate) fn simplify_registry_tech_id(
-    domain: Box<Domain>,
-    redaction: &Redacted,
-) -> Box<Domain> {
+pub(crate) fn simplify_registry_tech_id(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
     simplify_registry_entity_id(domain, redaction, EntityRole::Technical)
 }
 
@@ -76,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_simplify_registry_domain_id_with_domain() {
-        // GIVEN a domain with a handle
+        // GIVEN a domain with a non-empty handle
         let domain = Domain::builder()
             .ldh_name("example.com")
             .handle("example_com-1")
@@ -85,22 +88,16 @@ mod tests {
         // WHEN calling simplify_registry_domain_id
         let result = simplify_registry_domain_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the domain's handle should be redacted
-        assert_eq!(result.handle(), Some(REDACTED_ID));
+        // THEN the domain's handle should remain unchanged
+        assert_eq!(result.handle(), Some("example_com-1"));
 
-        // AND a remark should be added
-        let remarks = result.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_ID_DESC.to_string())
-        );
+        // AND no redaction remark should be added
+        assert!(result.object_common.remarks.is_none());
     }
 
     #[test]
     fn test_simplify_registry_domain_id_with_domain_with_same_redaction_remark() {
-        // GIVEN a domain with existing redaction remark
+        // GIVEN a domain with a non-empty handle and existing redaction remark
         let existing_remark = Remark::builder()
             .simple_redaction_keys(vec![REDACTED_ID.to_string()])
             .description_entry("existing redaction description")
@@ -115,13 +112,12 @@ mod tests {
         // WHEN calling simplify_registry_domain_id
         let result = simplify_registry_domain_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the domain should not have duplicate redaction remark
-        assert_eq!(result.handle(), Some(REDACTED_ID));
+        // THEN the domain's handle should remain unchanged
+        assert_eq!(result.handle(), Some("example_com-1"));
 
+        // AND the existing remark should be preserved unchanged
         let remarks = result.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
-
-        // Should only have the existing remark (no duplicate)
         assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
         assert_eq!(
             remarks[0].description.as_ref().unwrap().vec().first(),
@@ -152,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_simplify_registry_domain_id_with_domain_no_remarks() {
-        // GIVEN a domain with no remarks
+        // GIVEN a domain with a non-empty handle and no remarks
         let domain = Domain::builder()
             .ldh_name("example.com")
             .handle("example_com-1")
@@ -161,16 +157,11 @@ mod tests {
         // WHEN calling simplify_registry_domain_id
         let result = simplify_registry_domain_id(Box::new(domain), &get_test_redacted());
 
-        // THEN the domain should have redacted handle and remark
-        assert_eq!(result.handle(), Some(REDACTED_ID));
+        // THEN the domain should have its original handle unchanged
+        assert_eq!(result.handle(), Some("example_com-1"));
 
-        let remarks = result.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_ID));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_ID_DESC.to_string())
-        );
+        // AND remarks should remain None
+        assert!(result.object_common.remarks.is_none());
     }
 
     #[test]
