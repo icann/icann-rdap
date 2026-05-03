@@ -185,7 +185,7 @@ mod tests {
 
     // Tests for simplify_registrant_street
     #[test]
-    fn given_domain_with_registrant_entity_when_street_present_then_no_redaction() {
+    fn when_street_present_then_no_redaction() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -228,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_registrant_entity_when_street_absent_then_redacts_street() {
+    fn when_street_absent_then_redacts() {
         // Given
         let postal_address = PostalAddress::builder()
             .locality("Anytown")
@@ -280,8 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_multiple_entities_when_simplify_registrant_street_then_only_redacts_first_registrant(
-    ) {
+    fn when_multiple_entities_then_only_first_registrant_redacted() {
         // Given
         let registrant_address = PostalAddress::builder().build();
 
@@ -340,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_without_postal_address_when_simplify_registrant_street_then_skips_entity() {
+    fn when_no_postal_address_then_skips() {
         // Given
         let contact = Contact::builder().full_name("John Doe").build();
 
@@ -367,7 +366,7 @@ mod tests {
 
     // Tests for simplify_registrant_city
     #[test]
-    fn given_domain_with_registrant_entity_when_city_present_then_no_redaction() {
+    fn when_city_present_then_no_redaction() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -410,7 +409,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_registrant_entity_when_city_absent_then_redacts_city() {
+    fn when_city_absent_then_redacts() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -459,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_without_city_when_simplify_registrant_city_then_sets_redacted_city() {
+    fn when_city_absent_then_sets_redacted() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -497,7 +496,7 @@ mod tests {
 
     // Tests for simplify_registrant_postal_code
     #[test]
-    fn given_domain_with_registrant_entity_when_postal_code_present_then_no_redaction() {
+    fn when_postal_code_present_then_no_redaction() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -540,7 +539,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_registrant_entity_when_postal_code_absent_then_redacts_postal_code() {
+    fn when_postal_code_absent_then_redacts() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -589,8 +588,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_without_postal_code_when_simplify_registrant_postal_code_then_sets_redacted_postal_code(
-    ) {
+    fn when_postal_code_absent_then_sets_redacted() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -631,7 +629,7 @@ mod tests {
 
     // Common edge case tests
     #[test]
-    fn given_domain_without_entities_when_simplify_registrant_street_then_returns_unchanged() {
+    fn when_no_entities_then_unchanged() {
         // Given
         let domain = Domain::builder().ldh_name("example.com").build();
 
@@ -643,8 +641,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_non_registrant_entities_when_simplify_registrant_city_then_returns_unchanged(
-    ) {
+    fn when_non_registrant_then_unchanged() {
         // Given
         let postal_address = PostalAddress::builder().locality("Admin City").build();
 
@@ -676,8 +673,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_entity_without_contact_when_simplify_registrant_postal_code_then_skips_entity(
-    ) {
+    fn when_no_contact_then_skips() {
         // Given
         let entity = Entity::builder()
             .handle("test-registrant")
@@ -701,8 +697,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_multiple_addresses_when_simplify_registrant_street_then_redacts_all_streets(
-    ) {
+    fn when_multiple_addresses_then_all_redacted() {
         // Given
         let address1 = PostalAddress::builder().locality("City1").build();
 
@@ -747,8 +742,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_existing_remarks_and_missing_city_when_simplify_registrant_city_then_adds_redaction_remark(
-    ) {
+    fn when_existing_remarks_and_missing_city_then_adds_remark() {
         // Given
         let existing_remark = Remark::builder()
             .title("Existing Remark")
