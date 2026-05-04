@@ -914,8 +914,8 @@ mod tests {
             if trimmed.is_empty() {
                 continue;
             }
-            let check = if trimmed.starts_with('#') {
-                &trimmed[1..]
+            let check = if let Some(my_trimmed) = trimmed.strip_prefix('#') {
+                my_trimmed
             } else {
                 trimmed
             };
