@@ -17,6 +17,7 @@ RDAP query support in this server is as follows:
 - [X] Domain searches
 - [X] Nameserver searches
 - [X] Entity searches
+- [X] RFC 9910 searches
 - [X] Help (`/help`)
 
 This server explicitly supports the following extensions:
@@ -25,6 +26,7 @@ This server explicitly supports the following extensions:
 - Exts
 - JSContact
 - Redacted
+- RirSearch1 (ips, autnums, ipSearchResults, autnumSearchResults)
 - SimpleRedaction
 - Ttl0
 

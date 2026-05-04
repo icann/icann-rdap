@@ -32,6 +32,8 @@ documentation.
 
 For macOS and Windows, the native TLS libraries are used, and there are no steps needed to install them.
 
+To build and install the binaries in the Rust executable path: `cargo install icann-rdap-srv`.
+
 ## Compiling from Source
 
 If you have [Rust](https://www.rust-lang.org/) installed on your system, then compiling from source is

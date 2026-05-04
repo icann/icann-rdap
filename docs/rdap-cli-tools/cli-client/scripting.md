@@ -61,62 +61,6 @@ rdap --json example.com | jq -r '.entities[0].vcardArray[1][] | select(.[0] == "
 rdap -O url example.com
 ```
 
-### Check if a domain exists (exit code 0 = found)
-
-```bash
-rdap --json example.com > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo "Domain exists"
-fi
-```
-
-### Get all nameservers
-
-```bash
-rdap --json example.com | jq -r '.nameservers[].ldhName'
-```
-
-### Get all entity names
-
-```bash
-rdap --json example.com | jq -r '.entities[].fn'
-```
-
-### Get registration date
-
-```bash
-rdap --json example.com | jq -r '.events[] | select(.eventAction == "registration").eventDate'
-```
-
-### Get domain status
-
-```bash
-rdap --json example.com | jq -r '.status[]'
-```
-
-### Query an IP address and get network info
-
-```bash
-rdap --json 192.0.2.0 | jq '.network'
-```
-
-### Query an AS number
-
-```bash
-rdap --json AS15169 | jq '.autnums[0]'
-```
-
-### Get only status information
-
-```bash
-rdap -O status-json example.com
-```
-
-### Get only events
-
-```bash
-rdap -O event-json example.com
-```
 
 ## Redaction Flags
 
@@ -180,26 +124,3 @@ The CLI returns specific exit codes that scripts can use for error handling:
 
 See the [Usage](./usage.md) documentation for the complete exit code table.
 
-## Piping to Other Tools
-
-The output is designed to work with standard Unix tools:
-
-### Using grep
-
-```bash
-rdap --json example.com | jq '.entities' | grep -i "registrar"
-```
-
-### Using awk
-
-```bash
-rdap --json example.com | jq -r '.events[] | "\(.eventAction) \(.eventDate)"' | awk '{print $2}'
-```
-
-### Using while read
-
-```bash
-for domain in example.com example.org; do
-    rdap --json "$domain" | jq -r '.handle // "N/A"'
-done
-```

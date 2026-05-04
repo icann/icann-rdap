@@ -7,6 +7,7 @@ It supports RDAP bootstrapping, caching, different output formats, link followin
 * Exts
 * JSContact
 * Redacted
+* RirSearch1
 * SimpleRedaction
 * Ttl0
 

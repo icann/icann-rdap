@@ -49,6 +49,7 @@ nav:
     - rdap-cli-tools/cli-client/domain_queries.md
     - rdap-cli-tools/cli-client/ip_queries.md
     - rdap-cli-tools/cli-client/autnum_queries.md
+    - rdap-cli-tools/cli-client/rir_searches.md
     - rdap-cli-tools/cli-client/redaction_handling.md
     - rdap-cli-tools/cli-client/output_formats.md
     - rdap-cli-tools/cli-client/link_targets.md
