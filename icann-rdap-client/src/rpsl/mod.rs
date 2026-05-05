@@ -51,6 +51,8 @@ impl ToRpsl for RdapResponse {
             Self::DomainSearchResults(results) => results.to_rpsl(params),
             Self::EntitySearchResults(results) => results.to_rpsl(params),
             Self::NameserverSearchResults(results) => results.to_rpsl(params),
+            Self::IpSearchResults(results) => results.to_rpsl(params),
+            Self::AutnumSearchResults(results) => results.to_rpsl(params),
             Self::ErrorResponse(error) => error.to_rpsl(params),
             Self::Help(help) => help.to_rpsl(params),
         };

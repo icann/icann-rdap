@@ -373,6 +373,90 @@ enum QtypeArg {
 
     /// RDAP URL
     Url,
+
+    /// Ipv4 Address Rdap-Up Lookup
+    V4Up,
+
+    /// Ipv6 Address Rdap-Up Lookup
+    V6Up,
+
+    /// Ipv4 CIDR Rdap-Up Lookup
+    V4CidrUp,
+
+    /// Ipv6 CIDR Rdap-Up Lookup
+    V6CidrUp,
+
+    /// Ipv4 Address Rdap-Top Lookup
+    V4Top,
+
+    /// Ipv6 Address Rdap-Top Lookup
+    V6Top,
+
+    /// Ipv4 CIDR Rdap-Top Lookup
+    V4CidrTop,
+
+    /// Ipv6 CIDR Rdap-Top Lookup
+    V6CidrTop,
+
+    /// Ipv4 Address Rdap-Down Search
+    V4Down,
+
+    /// Ipv6 Address Rdap-Down Search
+    V6Down,
+
+    /// Ipv4 CIDR Rdap-Down Search
+    V4CidrDown,
+
+    /// Ipv6 CIDR Rdap-Down Search
+    V6CidrDown,
+
+    /// Ipv4 Address Rdap-Bottom Search
+    V4Bottom,
+
+    /// Ipv6 Address Rdap-Bottom Search
+    V6Bottom,
+
+    /// Ipv4 CIDR Rdap-Bottom Search
+    V4CidrBottom,
+
+    /// Ipv6 CIDR Rdap-Bottom Search
+    V6CidrBottom,
+
+    /// Reverse DNS Rdap-Up Lookup
+    RdnsUp,
+
+    /// Reverse DNS Rdap-Down Search
+    RdnsDown,
+
+    /// Reverse DNS Rdap-Top Search
+    RdnsTop,
+
+    /// Reverse DNS Rdap-Bottom Search
+    RdnsBottom,
+
+    /// Autonomous System Number Rdap-Up Lookup
+    AutnumUp,
+
+    /// Autonomous System Number Rdap-Down Lookup
+    AutnumDown,
+
+    /// Autonomous System Number Rdap-Top Search
+    AutnumTop,
+
+    /// Autonomous System Number Rdap-Bottom Search
+    AutnumBottom,
+
+    /// Network Handle Search
+    NetHandle,
+
+    /// Network Name Search
+    NetName,
+
+    /// Autonomous System Number Handle Search
+    AutnumHandle,
+
+    /// Autonomous System Number Name Search
+    AutnumName,
 }
 
 /// Represents the output type possibilities.
@@ -726,14 +810,42 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::V6 => QueryType::ipv6(&query_value)?,
         QtypeArg::V4Cidr => QueryType::ipv4cidr(&query_value)?,
         QtypeArg::V6Cidr => QueryType::ipv6cidr(&query_value)?,
+        QtypeArg::V4Up => QueryType::ipv4_up(&query_value)?,
+        QtypeArg::V6Up => QueryType::ipv6_up(&query_value)?,
+        QtypeArg::V4CidrUp => QueryType::ipv4cidr_up(&query_value)?,
+        QtypeArg::V6CidrUp => QueryType::ipv6cidr_up(&query_value)?,
+        QtypeArg::V4Top => QueryType::ipv4_top(&query_value)?,
+        QtypeArg::V6Top => QueryType::ipv6_top(&query_value)?,
+        QtypeArg::V4CidrTop => QueryType::ipv4cidr_top(&query_value)?,
+        QtypeArg::V6CidrTop => QueryType::ipv6cidr_top(&query_value)?,
+        QtypeArg::V4Down => QueryType::ipv4_down(&query_value)?,
+        QtypeArg::V6Down => QueryType::ipv6_down(&query_value)?,
+        QtypeArg::V4CidrDown => QueryType::ipv4cidr_down(&query_value)?,
+        QtypeArg::V6CidrDown => QueryType::ipv6cidr_down(&query_value)?,
+        QtypeArg::V4Bottom => QueryType::ipv4_bottom(&query_value)?,
+        QtypeArg::V6Bottom => QueryType::ipv6_bottom(&query_value)?,
+        QtypeArg::V4CidrBottom => QueryType::ipv4cidr_bottom(&query_value)?,
+        QtypeArg::V6CidrBottom => QueryType::ipv6cidr_bottom(&query_value)?,
         QtypeArg::Autnum => QueryType::autnum(&query_value)?,
+        QtypeArg::AutnumUp => QueryType::autnum_up(&query_value)?,
+        QtypeArg::AutnumDown => QueryType::autnum_down(&query_value)?,
+        QtypeArg::AutnumTop => QueryType::autnum_top(&query_value)?,
+        QtypeArg::AutnumBottom => QueryType::autnum_bottom(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
         QtypeArg::Rdns => QueryType::rdns_ipstr(&query_value)?,
+        QtypeArg::RdnsUp => QueryType::rdns_up(&query_value)?,
+        QtypeArg::RdnsDown => QueryType::rdns_down(&query_value)?,
+        QtypeArg::RdnsTop => QueryType::rdns_top(&query_value)?,
+        QtypeArg::RdnsBottom => QueryType::rdns_bottom(&query_value)?,
         QtypeArg::Entity => QueryType::Entity(query_value),
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
         QtypeArg::EntityHandle => QueryType::EntityHandleSearch(query_value),
+        QtypeArg::NetHandle => QueryType::NetworkHandleSearch(query_value),
+        QtypeArg::NetName => QueryType::NetworkNameSearch(query_value),
+        QtypeArg::AutnumHandle => QueryType::AutnumHandleSearch(query_value),
+        QtypeArg::AutnumName => QueryType::AutnumNameSearch(query_value),
         QtypeArg::DomainName => QueryType::DomainNameSearch(query_value),
         QtypeArg::DomainNsName => QueryType::DomainNsNameSearch(query_value),
         QtypeArg::DomainNsIp => QueryType::domain_ns_ip_search(&query_value)?,
@@ -756,6 +868,7 @@ fn hostname_to_baseurl(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use std::collections::HashSet;
 
     use crate::{hostname_to_baseurl, Cli};
 
@@ -776,5 +889,67 @@ mod tests {
 
         // THEN
         assert_eq!(&actual, expected);
+    }
+
+    #[test]
+    fn test_rdap_env_has_all_cli_env_vars() {
+        use clap::CommandFactory;
+
+        // GIVEN - parse rdap.env and collect env var names (both commented and uncommented)
+        let env_content = include_str!("../../dirs/rdap.env");
+        let mut env_vars: HashSet<String> = HashSet::new();
+        for line in env_content.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                continue;
+            }
+            // uncommented line: VARNAME=value
+            if let Some(eq_pos) = trimmed.find('=') {
+                env_vars.insert(trimmed[..eq_pos].to_string());
+            }
+        }
+        // also check commented lines: #VARNAME=value, # VARNAME=value, or #VARNAME
+        for line in env_content.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let check = if let Some(my_trimmed) = trimmed.strip_prefix('#') {
+                my_trimmed
+            } else {
+                trimmed
+            };
+            let check = check.trim_start();
+            if let Some(eq_pos) = check.find('=') {
+                env_vars.insert(check[..eq_pos].trim().to_string());
+            } else {
+                // line like #RDAP_BASE_URL with no = sign
+                let name = check.trim();
+                if !name.is_empty() && !name.starts_with('#') {
+                    env_vars.insert(name.to_string());
+                }
+            }
+        }
+
+        // WHEN - collect env var names from Cli arguments
+        let command = Cli::command();
+        let mut missing: Vec<String> = Vec::new();
+        for arg in command.get_arguments() {
+            if let Some(env_name) = arg.get_env() {
+                let env_str = env_name.to_str().unwrap_or_default();
+                if !env_vars.contains(env_str) {
+                    missing.push(env_str.to_string());
+                }
+            }
+        }
+
+        // THEN - all Cli args with env attributes must have a corresponding line in rdap.env
+        if !missing.is_empty() {
+            missing.sort();
+            panic!(
+                "rdap.env is missing environment variables for the following Cli args: {}",
+                missing.join(", ")
+            );
+        }
     }
 }

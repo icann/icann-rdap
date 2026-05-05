@@ -1,12 +1,9 @@
 use {
     assert_cmd::Command,
     icann_rdap_srv::{
-        config::{JsContactConversion, ListenConfig},
+        config::{CommonConfig, ListenConfig},
         server::{AppState, Listener},
-        storage::{
-            mem::{config::MemConfig, ops::Mem},
-            CommonConfig,
-        },
+        storage::mem::{config::MemConfig, ops::Mem},
     },
     std::time::Duration,
     test_dir::{DirBuilder, FileType, TestDir},
@@ -41,6 +38,18 @@ impl TestJig {
             .nameserver_search_by_ip_enable(true)
             .entity_search_by_handle_enable(true)
             .entity_search_by_full_name_enable(true)
+            .ip_rdap_up_enable(true)
+            .ip_rdap_top_enable(true)
+            .ip_rdap_down_enable(true)
+            .ip_rdap_bottom_enable(true)
+            .autnum_rdap_up_enable(true)
+            .autnum_rdap_top_enable(true)
+            .autnum_rdap_down_enable(true)
+            .autnum_rdap_bottom_enable(true)
+            .domain_rdap_up_enable(true)
+            .domain_rdap_top_enable(true)
+            .domain_rdap_down_enable(true)
+            .domain_rdap_bottom_enable(true)
             .build();
         Self::new_common_config(common_config, CommandType::Rdap).await
     }
@@ -62,8 +71,7 @@ impl TestJig {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion: JsContactConversion::None,
+            common_config,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -94,8 +102,7 @@ impl TestJig {
         let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
         let app_state = AppState {
             storage: mem.clone(),
-            bootstrap: false,
-            jscontact_conversion: JsContactConversion::None,
+            common_config,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())

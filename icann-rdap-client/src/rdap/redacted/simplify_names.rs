@@ -16,6 +16,16 @@ pub(crate) fn simplify_registrant_name(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
+                    // Skip redaction if full name is already present and non-empty
+                    let has_non_empty_name = contact.full_name().map_or(false, |s| !s.is_empty())
+                        || contact
+                            .localizations_iter()
+                            .any(|(_, loc)| loc.full_name().map_or(false, |s| !s.is_empty()));
+
+                    if has_non_empty_name {
+                        return domain;
+                    }
+
                     // First redact the main full name
                     contact = contact.with_full_name(REDACTED_NAME.to_string());
 
@@ -48,6 +58,16 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
             if entity.is_entity_role(&EntityRole::Technical.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
+                    // Skip redaction if full name is already present and non-empty
+                    let has_non_empty_name = contact.full_name().map_or(false, |s| !s.is_empty())
+                        || contact
+                            .localizations_iter()
+                            .any(|(_, loc)| loc.full_name().map_or(false, |s| !s.is_empty()));
+
+                    if has_non_empty_name {
+                        return domain;
+                    }
+
                     // First redact main full name
                     contact = contact.with_full_name(REDACTED_NAME.to_string());
 
@@ -92,7 +112,7 @@ mod tests {
     #[test]
     fn test_simplify_registrant_name_with_registrant_entity_with_contact() {
         // GIVEN a domain with a registrant entity that has a contact with full name
-        let contact = Contact::builder().full_name("John Doe").build();
+        let contact = Contact::builder().full_name("").build();
 
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
@@ -163,7 +183,7 @@ mod tests {
     #[test]
     fn test_simplify_registrant_name_with_multiple_entities_first_is_registrant_with_contact() {
         // GIVEN a domain with multiple entities, first is registrant with contact
-        let contact = Contact::builder().full_name("Jane Smith").build();
+        let contact = Contact::builder().full_name("").build();
 
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
@@ -207,7 +227,7 @@ mod tests {
     #[test]
     fn test_simplify_registrant_name_with_multiple_entities_registrant_not_first() {
         // GIVEN a domain with multiple entities, registrant is second
-        let contact = Contact::builder().full_name("Bob Johnson").build();
+        let contact = Contact::builder().full_name("").build();
 
         let tech_entity = Entity::builder()
             .handle("tech_456")
@@ -306,7 +326,7 @@ mod tests {
             .description_entry("existing redaction description")
             .build();
 
-        let contact = Contact::builder().full_name("Charlie Brown").build();
+        let contact = Contact::builder().full_name("").build();
 
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
@@ -346,7 +366,7 @@ mod tests {
     #[test]
     fn test_simplify_registrant_name_with_entity_with_multiple_roles_including_registrant() {
         // GIVEN an entity with multiple roles including registrant and contact
-        let contact = Contact::builder().full_name("Diana Prince").build();
+        let contact = Contact::builder().full_name("").build();
 
         let multi_role_entity = Entity::builder()
             .handle("multi_role_123")
@@ -423,8 +443,8 @@ mod tests {
 
     #[test]
     fn test_simplify_tech_name_with_tech_entity_with_contact() {
-        // GIVEN a domain with a technical entity that has a contact with full name
-        let contact = Contact::builder().full_name("John Tech").build();
+        // GIVEN a domain with a technical entity that has a contact with empty full name
+        let contact = Contact::builder().full_name("").build();
 
         let tech_entity = Entity::builder()
             .handle("tech_456")
@@ -495,7 +515,7 @@ mod tests {
     #[test]
     fn test_simplify_tech_name_with_multiple_entities_first_is_tech_with_contact() {
         // GIVEN a domain with multiple entities, first is technical with contact
-        let contact = Contact::builder().full_name("Jane Tech").build();
+        let contact = Contact::builder().full_name("").build();
 
         let tech_entity = Entity::builder()
             .handle("tech_456")
@@ -539,7 +559,7 @@ mod tests {
     #[test]
     fn test_simplify_tech_name_with_multiple_entities_tech_not_first() {
         // GIVEN a domain with multiple entities, tech is second
-        let contact = Contact::builder().full_name("Bob Tech").build();
+        let contact = Contact::builder().full_name("").build();
 
         let registrant_entity = Entity::builder()
             .handle("registrant_123")
@@ -638,7 +658,7 @@ mod tests {
             .description_entry("existing redaction description")
             .build();
 
-        let contact = Contact::builder().full_name("Charlie Tech").build();
+        let contact = Contact::builder().full_name("").build();
 
         let tech_entity = Entity::builder()
             .handle("tech_456")
@@ -678,7 +698,7 @@ mod tests {
     #[test]
     fn test_simplify_tech_name_with_entity_with_multiple_roles_including_tech() {
         // GIVEN an entity with multiple roles including technical and contact
-        let contact = Contact::builder().full_name("Diana Tech").build();
+        let contact = Contact::builder().full_name("").build();
 
         let multi_role_entity = Entity::builder()
             .handle("multi_role_123")
@@ -755,18 +775,18 @@ mod tests {
 
     #[test]
     fn test_simplify_registrant_name_with_registrant_entity_with_localizations() {
-        // GIVEN a registrant entity with contact and localizations with different full names
-        let mut contact = Contact::builder().full_name("John Doe").build();
+        // GIVEN a registrant entity with contact and localizations with empty full names
+        let mut contact = Contact::builder().full_name("").build();
 
-        // Add a French localization with different full name
+        // Add a French localization with empty full name
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
-            .full_name("Jean Dupont")
+            .full_name("")
             .build();
         contact = contact.with_localization("fr".to_string(), fr_localization);
 
-        // Add a Spanish localization with different full name
+        // Add a Spanish localization with empty full name
         let es_localization = icann_rdap_common::contact::Localizable::builder()
-            .full_name("Juan Pérez")
+            .full_name("")
             .build();
         contact = contact.with_localization("es".to_string(), es_localization);
 
@@ -826,18 +846,18 @@ mod tests {
 
     #[test]
     fn test_simplify_tech_name_with_tech_entity_with_localizations() {
-        // GIVEN a technical entity with contact and localizations with different full names
-        let mut contact = Contact::builder().full_name("John Tech").build();
+        // GIVEN a technical entity with contact and localizations with empty full names
+        let mut contact = Contact::builder().full_name("").build();
 
-        // Add a French localization with different full name
+        // Add a French localization with empty full name
         let fr_localization = icann_rdap_common::contact::Localizable::builder()
-            .full_name("Jean Technique")
+            .full_name("")
             .build();
         contact = contact.with_localization("fr".to_string(), fr_localization);
 
-        // Add a Spanish localization with different full name
+        // Add a Spanish localization with empty full name
         let es_localization = icann_rdap_common::contact::Localizable::builder()
-            .full_name("Juan Técnico")
+            .full_name("")
             .build();
         contact = contact.with_localization("es".to_string(), es_localization);
 
@@ -893,5 +913,231 @@ mod tests {
             remarks[0].description.as_ref().unwrap().vec().first(),
             Some(&REDACTED_NAME_DESC.to_string())
         );
+    }
+
+    #[test]
+    fn test_simplify_registrant_name_skips_when_name_present() {
+        let contact = Contact::builder().full_name("John Doe").build();
+
+        let registrant_entity = Entity::builder()
+            .handle("registrant_123")
+            .role(EntityRole::Registrant.to_string())
+            .contact(contact)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![registrant_entity])
+            .build();
+
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
+
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let registrant = &entities[0];
+        if let Some(contact) = registrant.contact() {
+            assert_eq!(contact.full_name(), Some("John Doe"));
+        } else {
+            panic!("Expected contact to be present");
+        }
+
+        assert!(registrant.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn test_simplify_registrant_name_skips_when_localized_name_present() {
+        let mut contact = Contact::builder().full_name("").build();
+
+        let fr_localization = icann_rdap_common::contact::Localizable::builder()
+            .full_name("Jean Dupont")
+            .build();
+        contact = contact.with_localization("fr".to_string(), fr_localization);
+
+        let registrant_entity = Entity::builder()
+            .handle("registrant_123")
+            .role(EntityRole::Registrant.to_string())
+            .contact(contact)
+            .jscontact(true)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![registrant_entity])
+            .build();
+
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
+
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let registrant = &entities[0];
+        if let Some(contact) = registrant.contact() {
+            assert!(contact.full_name().map_or(true, |s| s.is_empty()));
+            if let Some(fr_local) = contact.localization("fr") {
+                assert_eq!(fr_local.full_name(), Some("Jean Dupont"));
+            } else {
+                panic!("French localization should exist");
+            }
+        }
+
+        assert!(registrant.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn test_simplify_registrant_name_redacts_when_all_empty() {
+        let mut contact = Contact::builder().full_name("").build();
+
+        let fr_localization = icann_rdap_common::contact::Localizable::builder()
+            .full_name("")
+            .build();
+        contact = contact.with_localization("fr".to_string(), fr_localization);
+
+        let registrant_entity = Entity::builder()
+            .handle("registrant_123")
+            .role(EntityRole::Registrant.to_string())
+            .contact(contact)
+            .jscontact(true)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![registrant_entity])
+            .build();
+
+        let result = simplify_registrant_name(Box::new(domain), &get_test_redacted());
+
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let registrant = &entities[0];
+        if let Some(contact) = registrant.contact() {
+            assert_eq!(contact.full_name(), Some(REDACTED_NAME));
+            if let Some(fr_local) = contact.localization("fr") {
+                assert_eq!(fr_local.full_name(), Some(REDACTED_NAME));
+            } else {
+                panic!("French localization should exist");
+            }
+        }
+
+        let remarks = registrant.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_NAME));
+    }
+
+    #[test]
+    fn test_simplify_tech_name_skips_when_name_present() {
+        let contact = Contact::builder().full_name("John Tech").build();
+
+        let tech_entity = Entity::builder()
+            .handle("tech_456")
+            .role(EntityRole::Technical.to_string())
+            .contact(contact)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![tech_entity])
+            .build();
+
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
+
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let tech = &entities[0];
+        if let Some(contact) = tech.contact() {
+            assert_eq!(contact.full_name(), Some("John Tech"));
+        } else {
+            panic!("Expected contact to be present");
+        }
+
+        assert!(tech.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn test_simplify_tech_name_skips_when_localized_name_present() {
+        let mut contact = Contact::builder().full_name("").build();
+
+        let fr_localization = icann_rdap_common::contact::Localizable::builder()
+            .full_name("Jean Technique")
+            .build();
+        contact = contact.with_localization("fr".to_string(), fr_localization);
+
+        let tech_entity = Entity::builder()
+            .handle("tech_456")
+            .role(EntityRole::Technical.to_string())
+            .contact(contact)
+            .jscontact(true)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![tech_entity])
+            .build();
+
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
+
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let tech = &entities[0];
+        if let Some(contact) = tech.contact() {
+            assert!(contact.full_name().map_or(true, |s| s.is_empty()));
+            if let Some(fr_local) = contact.localization("fr") {
+                assert_eq!(fr_local.full_name(), Some("Jean Technique"));
+            } else {
+                panic!("French localization should exist");
+            }
+        }
+
+        assert!(tech.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn test_simplify_tech_name_redacts_when_all_empty() {
+        let mut contact = Contact::builder().full_name("").build();
+
+        let fr_localization = icann_rdap_common::contact::Localizable::builder()
+            .full_name("")
+            .build();
+        contact = contact.with_localization("fr".to_string(), fr_localization);
+
+        let tech_entity = Entity::builder()
+            .handle("tech_456")
+            .role(EntityRole::Technical.to_string())
+            .contact(contact)
+            .jscontact(true)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .handle("example_com-1")
+            .entities(vec![tech_entity])
+            .build();
+
+        let result = simplify_tech_name(Box::new(domain), &get_test_redacted());
+
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let tech = &entities[0];
+        if let Some(contact) = tech.contact() {
+            assert_eq!(contact.full_name(), Some(REDACTED_NAME));
+            if let Some(fr_local) = contact.localization("fr") {
+                assert_eq!(fr_local.full_name(), Some(REDACTED_NAME));
+            } else {
+                panic!("French localization should exist");
+            }
+        }
+
+        let remarks = tech.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_NAME));
     }
 }

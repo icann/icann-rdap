@@ -22,7 +22,9 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     let emails = contact.emails().to_vec();
-                    if !emails.is_empty() {
+                    let has_any_email = !emails.is_empty();
+                    let has_valid_email = emails.iter().any(|e| !e.email.is_empty());
+                    if has_any_email && !has_valid_email {
                         let mut emails = emails;
                         for email in emails.iter_mut() {
                             email.email = REDACTED_EMAIL.to_string();
@@ -47,6 +49,8 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::Remark;
     use icann_rdap_common::prelude::{Contact, Email, Entity};
@@ -60,51 +64,594 @@ mod tests {
             .build()
     }
 
-    #[test]
-    fn test_simplify_registrant_email_with_registrant_entity_with_contact_and_emails() {
-        // GIVEN a domain with a registrant entity that has a contact with emails
-        let email1 = Email::builder()
-            .preference(1)
-            .contexts(vec!["work".to_string()])
-            .email("john@example.com".to_string())
-            .build();
+    fn multi_email_domain(roles: &[EntityRole], emails: &[&str], handles: &[&str]) -> Box<Domain> {
+        let entities: Vec<Entity> = roles
+            .iter()
+            .zip(handles.iter())
+            .map(|(role, handle)| {
+                let contact = if emails.is_empty() {
+                    Contact::builder().full_name("Test User").build()
+                } else {
+                    let idx = roles.iter().position(|r| r == role).unwrap();
+                    let email_obj = Email::builder().email(emails[idx].to_string()).build();
+                    Contact::builder().emails(vec![email_obj]).build()
+                };
+                Entity::builder()
+                    .handle(handle.to_string())
+                    .role(role.to_string())
+                    .contact(contact)
+                    .build()
+            })
+            .collect();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(entities)
+                .build(),
+        )
+    }
 
-        let email2 = Email::builder()
-            .preference(2)
-            .contexts(vec!["home".to_string()])
-            .email("john@home.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email1, email2]).build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
+    fn empty_email_domain(role: EntityRole, handle: &str) -> Box<Domain> {
+        let email_obj = Email::builder().email("".to_string()).build();
+        let contact = Contact::builder().emails(vec![email_obj]).build();
+        let entity = Entity::builder()
+            .handle(handle.to_string())
+            .role(role.to_string())
             .contact(contact)
             .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![entity])
+                .build(),
+        )
+    }
 
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity])
+    fn multi_empty_email_domain(role: EntityRole, handle: &str) -> Box<Domain> {
+        let email1 = Email::builder().email("".to_string()).build();
+        let email2 = Email::builder().email("".to_string()).build();
+        let contact = Contact::builder().emails(vec![email1, email2]).build();
+        let entity = Entity::builder()
+            .handle(handle.to_string())
+            .role(role.to_string())
+            .contact(contact)
             .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![entity])
+                .build(),
+        )
+    }
+
+    fn no_contact_domain(role: EntityRole, handle: &str) -> Box<Domain> {
+        let entity = Entity::builder()
+            .handle(handle.to_string())
+            .role(role.to_string())
+            .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![entity])
+                .build(),
+        )
+    }
+
+    fn no_email_contact_domain(role: EntityRole, handle: &str) -> Box<Domain> {
+        let contact = Contact::builder().kind("individual").build();
+        let entity = Entity::builder()
+            .handle(handle.to_string())
+            .role(role.to_string())
+            .contact(contact)
+            .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![entity])
+                .build(),
+        )
+    }
+
+    fn no_matching_entity_domain(mismatched_roles: &[EntityRole], handles: &[&str]) -> Box<Domain> {
+        let entities: Vec<Entity> = mismatched_roles
+            .iter()
+            .zip(handles.iter())
+            .map(|(role, handle)| {
+                Entity::builder()
+                    .handle(handle.to_string())
+                    .role(role.to_string())
+                    .build()
+            })
+            .collect();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(entities)
+                .build(),
+        )
+    }
+
+    fn no_entities_domain() -> Box<Domain> {
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .build(),
+        )
+    }
+
+    fn multi_role_domain(role: EntityRole, handle: &str) -> Box<Domain> {
+        let email_obj = Email::builder()
+            .email("multi@example.com".to_string())
+            .build();
+        let contact = Contact::builder().emails(vec![email_obj]).build();
+        let entity = Entity::builder()
+            .handle(handle.to_string())
+            .roles(vec![
+                EntityRole::Registrant.to_string(),
+                role.to_string(),
+                EntityRole::Administrative.to_string(),
+            ])
+            .contact(contact)
+            .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![entity])
+                .build(),
+        )
+    }
+
+    fn existing_remark_domain(role: EntityRole, handle: &str, email: &str) -> Box<Domain> {
+        let existing_remark = Remark::builder()
+            .simple_redaction_keys(vec![REDACTED_EMAIL.to_string()])
+            .description_entry("existing redaction description")
+            .build();
+        let email_obj = Email::builder().email(email.to_string()).build();
+        let contact = Contact::builder().emails(vec![email_obj]).build();
+        let entity = Entity::builder()
+            .handle(handle.to_string())
+            .role(role.to_string())
+            .contact(contact)
+            .remarks(vec![existing_remark])
+            .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![entity])
+                .build(),
+        )
+    }
+
+    fn first_is_target_domain(
+        target_email: &str,
+        target_role: EntityRole,
+        target_handle: &str,
+        other_role: EntityRole,
+        other_handle: &str,
+    ) -> Box<Domain> {
+        let target_contact = Contact::builder()
+            .emails(vec![Email::builder()
+                .email(target_email.to_string())
+                .build()])
+            .build();
+        let target_entity = Entity::builder()
+            .handle(target_handle.to_string())
+            .role(target_role.to_string())
+            .contact(target_contact)
+            .build();
+        let other_entity = Entity::builder()
+            .handle(other_handle.to_string())
+            .role(other_role.to_string())
+            .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![target_entity, other_entity])
+                .build(),
+        )
+    }
+
+    fn second_is_target_domain(
+        target_email: &str,
+        target_role: EntityRole,
+        target_handle: &str,
+        other_role: EntityRole,
+        other_handle: &str,
+    ) -> Box<Domain> {
+        let other_entity = Entity::builder()
+            .handle(other_handle.to_string())
+            .role(other_role.to_string())
+            .build();
+        let target_contact = Contact::builder()
+            .emails(vec![Email::builder()
+                .email(target_email.to_string())
+                .build()])
+            .build();
+        let target_entity = Entity::builder()
+            .handle(target_handle.to_string())
+            .role(target_role.to_string())
+            .contact(target_contact)
+            .build();
+        Box::new(
+            Domain::builder()
+                .ldh_name("example.com")
+                .handle("example_com-1")
+                .entities(vec![other_entity, target_entity])
+                .build(),
+        )
+    }
+
+    #[rstest]
+    #[case(
+        "john@example.com",
+        EntityRole::Registrant,
+        "registrant_123",
+        simplify_registrant_email
+    )]
+    #[case(
+        "tech@example.com",
+        EntityRole::Technical,
+        "tech_456",
+        simplify_tech_email
+    )]
+    fn valid_emails_preserved(
+        #[case] email: &str,
+        #[case] role: EntityRole,
+        #[case] handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN a domain with an entity that has a contact with valid emails
+        let domain = multi_email_domain(&[role], &[email], &[handle]);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the entity's contact emails should NOT be redacted
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let entity = &entities[0];
+        assert_eq!(entity.handle(), Some(handle));
+
+        if let Some(contact) = entity.contact() {
+            let emails = contact.emails();
+            assert_eq!(emails.len(), 1);
+            assert_eq!(emails[0].email, email);
+        } else {
+            panic!("Expected contact to be present");
+        }
+
+        // AND no remark should be added since emails are valid
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[rstest]
+    #[case(EntityRole::Registrant, "registrant_123", simplify_registrant_email)]
+    #[case(EntityRole::Technical, "tech_456", simplify_tech_email)]
+    fn empty_email_redacted(
+        #[case] role: EntityRole,
+        #[case] handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN an entity with contact containing an empty email
+        let domain = empty_email_domain(role, handle);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the empty email should be redacted
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let entity = &entities[0];
+        assert_eq!(entity.handle(), Some(handle));
+
+        if let Some(contact) = entity.contact() {
+            let emails = contact.emails();
+            assert_eq!(emails.len(), 1);
+            assert_eq!(emails[0].email, REDACTED_EMAIL);
+        } else {
+            panic!("Expected contact to be present");
+        }
+
+        // AND a remark should be added
+        let remarks = entity.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
+    }
+
+    #[rstest]
+    #[case(EntityRole::Registrant, "registrant_123", simplify_registrant_email)]
+    #[case(EntityRole::Technical, "tech_456", simplify_tech_email)]
+    fn no_contact_no_change(
+        #[case] role: EntityRole,
+        #[case] handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN an entity but no contact
+        let domain = no_contact_domain(role, handle);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the domain should be unchanged
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let entity = &entities[0];
+        assert_eq!(entity.handle(), Some(handle));
+        assert!(entity.contact().is_none());
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[rstest]
+    #[case(EntityRole::Registrant, "registrant_123", simplify_registrant_email)]
+    #[case(EntityRole::Technical, "tech_456", simplify_tech_email)]
+    fn no_emails_in_contact_no_change(
+        #[case] role: EntityRole,
+        #[case] handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN an entity with contact but no emails
+        let domain = no_email_contact_domain(role, handle);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the contact should be preserved but no remark added
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let entity = &entities[0];
+        assert_eq!(entity.handle(), Some(handle));
+        assert!(entity.contact().is_some());
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[rstest]
+    #[case(EntityRole::Registrant, simplify_registrant_email)]
+    #[case(EntityRole::Technical, simplify_tech_email)]
+    fn no_matching_entity_no_change(
+        #[case] _target_role: EntityRole,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN a domain with no entity matching the target role
+        let domain = no_matching_entity_domain(
+            &[EntityRole::Technical, EntityRole::Administrative],
+            &["tech_456", "admin_789"],
+        );
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN no entities should be modified
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 2);
+        assert_eq!(entities[0].handle(), Some("tech_456"));
+        assert_eq!(entities[1].handle(), Some("admin_789"));
+        assert!(entities[0].contact().is_none());
+        assert!(entities[1].contact().is_none());
+        assert!(entities[0].object_common.remarks.is_none());
+        assert!(entities[1].object_common.remarks.is_none());
+    }
+
+    #[rstest]
+    #[case(EntityRole::Registrant, simplify_registrant_email)]
+    #[case(EntityRole::Technical, simplify_tech_email)]
+    fn no_entities_no_change(
+        #[case] _role: EntityRole,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN a domain with no entities
+        let domain = no_entities_domain();
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the domain should be unchanged
+        assert!(result.object_common.entities.is_none());
+        assert_eq!(result.handle(), Some("example_com-1"));
+    }
+
+    #[rstest]
+    #[case("registrant_123", EntityRole::Registrant, simplify_registrant_email)]
+    #[case("tech_456", EntityRole::Technical, simplify_tech_email)]
+    fn existing_remark_preserved(
+        #[case] handle: &str,
+        #[case] role: EntityRole,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN an entity with existing redaction remark and valid emails
+        let domain = existing_remark_domain(role, handle, "charlie@example.com");
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the emails should be preserved and existing remark kept
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let entity = &entities[0];
+        assert_eq!(entity.handle(), Some(handle));
+        assert!(entity.contact().is_some());
+
+        if let Some(contact) = entity.contact() {
+            assert_eq!(contact.emails()[0].email, "charlie@example.com");
+        }
+
+        let remarks = entity.object_common.remarks.as_ref().unwrap();
+        assert_eq!(remarks.len(), 1);
+        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
+        assert_eq!(
+            remarks[0].description.as_ref().unwrap().vec().first(),
+            Some(&"existing redaction description".to_string())
+        );
+    }
+
+    #[rstest]
+    #[case(EntityRole::Registrant, "multi_role_123", simplify_registrant_email)]
+    #[case(EntityRole::Technical, "multi_role_123", simplify_tech_email)]
+    fn multi_role_email_preserved(
+        #[case] role: EntityRole,
+        #[case] handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN an entity with multiple roles including the target role
+        let domain = multi_role_domain(role, handle);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the entity emails should NOT be redacted
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+
+        let entity = &entities[0];
+        assert_eq!(entity.handle(), Some(handle));
+        assert!(entity.contact().is_some());
+
+        if let Some(contact) = entity.contact() {
+            assert_eq!(contact.emails()[0].email, "multi@example.com");
+        }
+
+        // No remark should be added
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[rstest]
+    #[case(
+        "jane@example.com",
+        EntityRole::Registrant,
+        "registrant_123",
+        EntityRole::Technical,
+        "tech_456",
+        simplify_registrant_email
+    )]
+    #[case(
+        "jane.tech@example.com",
+        EntityRole::Technical,
+        "tech_456",
+        EntityRole::Registrant,
+        "registrant_123",
+        simplify_tech_email
+    )]
+    fn first_is_target(
+        #[case] email: &str,
+        #[case] target_role: EntityRole,
+        #[case] target_handle: &str,
+        #[case] other_role: EntityRole,
+        #[case] other_handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN a domain with multiple entities, first is the target with valid emails
+        let domain =
+            first_is_target_domain(email, target_role, target_handle, other_role, other_handle);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the target emails should NOT be redacted
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 2);
+
+        let target = &entities[0];
+        assert_eq!(target.handle(), Some(target_handle));
+        assert!(target.contact().is_some());
+
+        if let Some(contact) = target.contact() {
+            assert_eq!(contact.emails()[0].email, email);
+        }
+
+        // No remark should be added
+        assert!(target.object_common.remarks.is_none());
+
+        // Second entity should be unchanged
+        assert_eq!(entities[1].handle(), Some(other_handle));
+        assert!(entities[1].contact().is_none());
+        assert!(entities[1].object_common.remarks.is_none());
+    }
+
+    #[rstest]
+    #[case(
+        "bob@example.com",
+        EntityRole::Registrant,
+        "registrant_123",
+        EntityRole::Technical,
+        "tech_456",
+        simplify_registrant_email
+    )]
+    #[case(
+        "bob.tech@example.com",
+        EntityRole::Technical,
+        "tech_456",
+        EntityRole::Registrant,
+        "registrant_123",
+        simplify_tech_email
+    )]
+    fn second_is_target(
+        #[case] email: &str,
+        #[case] target_role: EntityRole,
+        #[case] target_handle: &str,
+        #[case] other_role: EntityRole,
+        #[case] other_handle: &str,
+        #[case] func: fn(Box<Domain>, &Redacted) -> Box<Domain>,
+    ) {
+        // GIVEN a domain with multiple entities, target is second with valid emails
+        let domain =
+            second_is_target_domain(email, target_role, target_handle, other_role, other_handle);
+
+        // WHEN calling the simplify function
+        let result = func(domain, &get_test_redacted());
+
+        // THEN the target emails should NOT be redacted
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 2);
+
+        // First entity should be unchanged
+        assert_eq!(entities[0].handle(), Some(other_handle));
+        assert!(entities[0].contact().is_none());
+
+        // Second entity (target) should have preserved emails
+        let target = &entities[1];
+        assert_eq!(target.handle(), Some(target_handle));
+        assert!(target.contact().is_some());
+
+        if let Some(contact) = target.contact() {
+            assert_eq!(contact.emails()[0].email, email);
+        }
+
+        // No remark should be added
+        assert!(target.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn multi_empty_emails_all_redacted() {
+        // GIVEN a registrant entity with multiple contacts all having empty emails
+        let domain = multi_empty_email_domain(EntityRole::Registrant, "registrant_123");
 
         // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
+        let result = simplify_registrant_email(domain, &get_test_redacted());
 
-        // THEN the registrant's contact emails should be redacted
+        // THEN all empty emails should be redacted
         let entities = result.object_common.entities.as_ref().unwrap();
         assert_eq!(entities.len(), 1);
 
         let registrant = &entities[0];
         assert_eq!(registrant.handle(), Some("registrant_123"));
 
-        // Check that contact emails were updated with redacted emails
         if let Some(contact) = registrant.contact() {
             let emails = contact.emails();
             assert_eq!(emails.len(), 2);
-
-            // Both emails should be redacted
             for email in emails {
                 assert_eq!(email.email, REDACTED_EMAIL);
             }
@@ -116,648 +663,5 @@ mod tests {
         let remarks = registrant.object_common.remarks.as_ref().unwrap();
         assert_eq!(remarks.len(), 1);
         assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_EMAIL_DESC.to_string())
-        );
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_registrant_entity_contact_no_emails() {
-        // GIVEN a domain with a registrant entity with contact but no emails
-        let contact = Contact::builder().full_name("John Doe").build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the domain should have vcard_array but no remark (no emails to redact)
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.contact().is_some()); // vcard_array should be created
-        assert!(registrant.object_common.remarks.is_none()); // No remark since no emails to redact
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_registrant_entity_no_contact() {
-        // GIVEN a domain with a registrant entity but no contact
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the domain should be unchanged (no contact to modify)
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.contact().is_none());
-        assert!(registrant.object_common.remarks.is_none());
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_multiple_entities_first_is_registrant_with_contact_and_emails(
-    ) {
-        // GIVEN a domain with multiple entities, first is registrant with contact and emails
-        let email = Email::builder()
-            .email("jane@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .contact(contact)
-            .build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity, tech_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN only the first registrant should be modified
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 2);
-
-        // First entity (registrant) should have redacted emails
-        let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.contact().is_some());
-
-        let remarks = registrant.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-
-        // Second entity (tech) should be unchanged
-        assert_eq!(entities[1].handle(), Some("tech_456"));
-        assert!(entities[1].contact().is_none());
-        assert!(entities[1].object_common.remarks.is_none());
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_multiple_entities_registrant_not_first() {
-        // GIVEN a domain with multiple entities, registrant is second
-        let email = Email::builder()
-            .email("bob@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity, registrant_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the registrant entity should be redacted
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 2);
-
-        // First entity (tech) should be unchanged
-        assert_eq!(entities[0].handle(), Some("tech_456"));
-        assert!(entities[0].contact().is_none());
-
-        // Second entity (registrant) should have redacted emails
-        let registrant = &entities[1];
-        assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.contact().is_some());
-
-        let remarks = registrant.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_no_registrant_entity() {
-        // GIVEN a domain with no registrant entity
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .build();
-
-        let admin_entity = Entity::builder()
-            .handle("admin_789")
-            .role(EntityRole::Administrative.to_string())
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity, admin_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN no entities should be modified
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 2);
-        assert_eq!(entities[0].handle(), Some("tech_456"));
-        assert_eq!(entities[1].handle(), Some("admin_789"));
-
-        // AND no vcard_arrays or remarks should be added
-        assert!(entities[0].contact().is_none());
-        assert!(entities[1].contact().is_none());
-        assert!(entities[0].object_common.remarks.is_none());
-        assert!(entities[1].object_common.remarks.is_none());
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_no_entities() {
-        // GIVEN a domain with no entities
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the domain should be unchanged
-        assert!(result.object_common.entities.is_none());
-        assert_eq!(result.handle(), Some("example_com-1"));
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_registrant_entity_with_same_redaction_remark() {
-        // GIVEN a registrant entity with existing redaction remark and contact with emails
-        let existing_remark = Remark::builder()
-            .simple_redaction_keys(vec![REDACTED_EMAIL.to_string()])
-            .description_entry("existing redaction description")
-            .build();
-
-        let email = Email::builder()
-            .email("charlie@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .contact(contact)
-            .remarks(vec![existing_remark])
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the registrant should not have duplicate redaction remark
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let registrant = &entities[0];
-        assert_eq!(registrant.handle(), Some("registrant_123"));
-        assert!(registrant.contact().is_some());
-
-        let remarks = registrant.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-
-        // Should only have the existing remark (no duplicate)
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&"existing redaction description".to_string())
-        );
-    }
-
-    #[test]
-    fn test_simplify_registrant_email_with_entity_with_multiple_roles_including_registrant() {
-        // GIVEN an entity with multiple roles including registrant and contact with emails
-        let email = Email::builder()
-            .email("diana@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let multi_role_entity = Entity::builder()
-            .handle("multi_role_123")
-            .roles(vec![
-                EntityRole::Technical.to_string(),
-                EntityRole::Registrant.to_string(),
-                EntityRole::Administrative.to_string(),
-            ])
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![multi_role_entity])
-            .build();
-
-        // WHEN calling simplify_registrant_email
-        let result = simplify_registrant_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the entity should be redacted (it has registrant role)
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let entity = &entities[0];
-        assert_eq!(entity.handle(), Some("multi_role_123"));
-        assert!(entity.contact().is_some());
-
-        let remarks = entity.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_tech_entity_with_contact_and_emails() {
-        // GIVEN a domain with a technical entity that has a contact with emails
-        let email = Email::builder()
-            .email("tech@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the technical entity's contact emails should be redacted
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let tech = &entities[0];
-        assert_eq!(tech.handle(), Some("tech_456"));
-
-        // Check that contact emails were updated with redacted emails
-        if let Some(contact) = tech.contact() {
-            let emails = contact.emails();
-            assert_eq!(emails.len(), 1);
-
-            // Email should be redacted
-            assert_eq!(emails[0].email, REDACTED_EMAIL);
-        } else {
-            panic!("Expected contact to be present");
-        }
-
-        // AND a remark should be added
-        let remarks = tech.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&REDACTED_EMAIL_DESC.to_string())
-        );
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_tech_entity_no_contact() {
-        // GIVEN a domain with a technical entity but no contact
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the domain should be unchanged (no contact to modify)
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let tech = &entities[0];
-        assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.contact().is_none());
-        assert!(tech.object_common.remarks.is_none());
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_multiple_entities_first_is_tech_with_contact_and_emails() {
-        // GIVEN a domain with multiple entities, first is technical with contact and emails
-        let email = Email::builder()
-            .email("jane.tech@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .contact(contact)
-            .build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity, registrant_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN only the first technical entity should be modified
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 2);
-
-        // First entity (tech) should have redacted emails
-        let tech = &entities[0];
-        assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.contact().is_some());
-
-        let remarks = tech.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-
-        // Second entity (registrant) should be unchanged
-        assert_eq!(entities[1].handle(), Some("registrant_123"));
-        assert!(entities[1].contact().is_none());
-        assert!(entities[1].object_common.remarks.is_none());
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_multiple_entities_tech_not_first() {
-        // GIVEN a domain with multiple entities, tech is second
-        let email = Email::builder()
-            .email("bob.tech@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity, tech_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the technical entity should be redacted
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 2);
-
-        // First entity (registrant) should be unchanged
-        assert_eq!(entities[0].handle(), Some("registrant_123"));
-        assert!(entities[0].contact().is_none());
-
-        // Second entity (tech) should have redacted emails
-        let tech = &entities[1];
-        assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.contact().is_some());
-
-        let remarks = tech.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_no_tech_entity() {
-        // GIVEN a domain with no technical entity
-        let registrant_entity = Entity::builder()
-            .handle("registrant_123")
-            .role(EntityRole::Registrant.to_string())
-            .build();
-
-        let admin_entity = Entity::builder()
-            .handle("admin_789")
-            .role(EntityRole::Administrative.to_string())
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![registrant_entity, admin_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN no entities should be modified
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 2);
-        assert_eq!(entities[0].handle(), Some("registrant_123"));
-        assert_eq!(entities[1].handle(), Some("admin_789"));
-
-        // AND no vcard_arrays or remarks should be added
-        assert!(entities[0].contact().is_none());
-        assert!(entities[1].contact().is_none());
-        assert!(entities[0].object_common.remarks.is_none());
-        assert!(entities[1].object_common.remarks.is_none());
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_no_entities() {
-        // GIVEN a domain with no entities
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the domain should be unchanged
-        assert!(result.object_common.entities.is_none());
-        assert_eq!(result.handle(), Some("example_com-1"));
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_tech_entity_with_same_redaction_remark() {
-        // GIVEN a technical entity with existing redaction remark and contact with emails
-        let existing_remark = Remark::builder()
-            .simple_redaction_keys(vec![REDACTED_EMAIL.to_string()])
-            .description_entry("existing redaction description")
-            .build();
-
-        let email = Email::builder()
-            .email("charlie.tech@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .contact(contact)
-            .remarks(vec![existing_remark])
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the technical entity should not have duplicate redaction remark
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let tech = &entities[0];
-        assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.contact().is_some());
-
-        let remarks = tech.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-
-        // Should only have the existing remark (no duplicate)
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-        assert_eq!(
-            remarks[0].description.as_ref().unwrap().vec().first(),
-            Some(&"existing redaction description".to_string())
-        );
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_entity_with_multiple_roles_including_tech() {
-        // GIVEN an entity with multiple roles including technical and contact with emails
-        let email = Email::builder()
-            .email("diana.tech@example.com".to_string())
-            .build();
-
-        let contact = Contact::builder().emails(vec![email]).build();
-
-        let multi_role_entity = Entity::builder()
-            .handle("multi_role_123")
-            .roles(vec![
-                EntityRole::Registrant.to_string(),
-                EntityRole::Technical.to_string(),
-                EntityRole::Administrative.to_string(),
-            ])
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![multi_role_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the entity should be redacted (it has technical role)
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let entity = &entities[0];
-        assert_eq!(entity.handle(), Some("multi_role_123"));
-        assert!(entity.contact().is_some());
-
-        let remarks = entity.object_common.remarks.as_ref().unwrap();
-        assert_eq!(remarks.len(), 1);
-        assert!(remarks[0].has_simple_redaction_key(REDACTED_EMAIL));
-    }
-
-    #[test]
-    fn test_simplify_tech_email_with_tech_entity_contact_no_emails() {
-        // GIVEN a technical entity with contact but no emails
-        let contact = Contact::builder().kind("individual").build();
-
-        let tech_entity = Entity::builder()
-            .handle("tech_456")
-            .role(EntityRole::Technical.to_string())
-            .contact(contact)
-            .build();
-
-        let domain = Domain::builder()
-            .ldh_name("example.com")
-            .handle("example_com-1")
-            .entities(vec![tech_entity])
-            .build();
-
-        // WHEN calling simplify_tech_email
-        let result = simplify_tech_email(Box::new(domain), &get_test_redacted());
-
-        // THEN the technical entity's contact should have vcard_array but no remark
-        let entities = result.object_common.entities.as_ref().unwrap();
-        assert_eq!(entities.len(), 1);
-
-        let tech = &entities[0];
-        assert_eq!(tech.handle(), Some("tech_456"));
-        assert!(tech.contact().is_some()); // vcard_array should be created
-        assert!(tech.object_common.remarks.is_none()); // No remark since no emails to redact
     }
 }

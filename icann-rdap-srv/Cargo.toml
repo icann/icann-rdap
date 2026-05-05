@@ -10,8 +10,8 @@ An RDAP Server.
 
 [dependencies]
 
-icann-rdap-client = { version = "0.0.28", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.28", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "0.0.29", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "0.0.29", path = "../icann-rdap-common" }
 
 ab-radix-trie.workspace = true
 async-trait.workspace = true
@@ -19,7 +19,6 @@ axum.workspace = true
 axum-extra.workspace = true
 axum-macros.workspace = true
 axum-client-ip.workspace = true
-btree-range-map.workspace = true
 buildstructor.workspace = true
 chrono.workspace = true
 cidr.workspace = true
@@ -33,6 +32,7 @@ http.workspace = true
 hyper.workspace = true
 pct-str.workspace = true
 prefix-trie.workspace = true
+rangemap.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 serde.workspace = true
@@ -49,11 +49,6 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 
-# cli assertions
-assert_cmd = "2.0.11"
-
-# fixture testings
-rstest = "0.17.0"
-
-# test directories
-test_dir = "0.2.0"
+assert_cmd.workspace = true
+rstest.workspace = true
+test_dir.workspace = true

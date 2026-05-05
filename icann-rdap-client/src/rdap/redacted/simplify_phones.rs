@@ -69,13 +69,15 @@ fn simplify_phone(
                         let mut phones = phones;
                         for phone in phones.iter_mut() {
                             if phone.features().contains(&feature.to_string()) {
-                                phone.phone = redaction_key.to_string();
-                                entity.object_common.remarks = add_remark(
-                                    redaction_key,
-                                    redaction_desc,
-                                    redaction,
-                                    entity.object_common.remarks.clone(),
-                                );
+                                if phone.phone.is_empty() {
+                                    phone.phone = redaction_key.to_string();
+                                    entity.object_common.remarks = add_remark(
+                                        redaction_key,
+                                        redaction_desc,
+                                        redaction,
+                                        entity.object_common.remarks.clone(),
+                                    );
+                                }
                             }
                         }
                         contact = contact.with_phones(phones);
@@ -167,6 +169,31 @@ mod tests {
     ) -> Box<Domain> {
         let phone = Phone::builder()
             .phone(phone_number.to_string())
+            .features(vec![feature.to_string()])
+            .build();
+
+        let contact = Contact::builder()
+            .full_name("Test User")
+            .phone(phone)
+            .build();
+
+        let entity = Entity::builder()
+            .handle("test-entity")
+            .role(role.to_string())
+            .contact(contact)
+            .build();
+
+        let domain = Domain::response_obj()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        Box::new(domain)
+    }
+
+    fn given_domain_with_empty_phone_contact(role: &str, feature: &str) -> Box<Domain> {
+        let phone = Phone::builder()
+            .phone("".to_string())
             .features(vec![feature.to_string()])
             .build();
 
@@ -355,56 +382,57 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_voice_phone_when_simplify_registrant_phone_then_phone_is_redacted() {
+    fn given_registrant_with_voice_phone_when_simplify_registrant_phone_then_phone_is_not_redacted()
+    {
         // GIVEN a domain with a registrant entity having a voice phone
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "voice");
 
         // WHEN simplifying registrant phone
         let result = simplify_registrant_phone(domain, &get_test_redacted());
 
-        // THEN the phone should be redacted
+        // THEN the phone should not be redacted (it has a non-empty value)
         let entities = result.object_common.entities.as_ref().unwrap();
         let entity = &entities[0];
         let contact = entity.contact().unwrap();
         let phones = contact.phones();
 
-        assert_eq!(phones[0].phone(), REDACTED_PHONE);
+        assert_eq!(phones[0].phone(), "+1-555-123-4567");
         assert!(phones[0].features().contains(&"voice".to_string()));
     }
 
     #[test]
-    fn given_registrant_with_fax_phone_when_simplify_registrant_fax_then_phone_is_redacted() {
+    fn given_registrant_with_fax_phone_when_simplify_registrant_fax_then_phone_is_not_redacted() {
         // GIVEN a domain with a registrant entity having a fax phone
         let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4568", "fax");
 
         // WHEN simplifying registrant fax
         let result = simplify_registrant_fax(domain, &get_test_redacted());
 
-        // THEN the fax should be redacted
+        // THEN the fax should not be redacted (it has a non-empty value)
         let entities = result.object_common.entities.as_ref().unwrap();
         let entity = &entities[0];
         let contact = entity.contact().unwrap();
         let phones = contact.phones();
 
-        assert_eq!(phones[0].phone(), REDACTED_FAX);
+        assert_eq!(phones[0].phone(), "+1-555-123-4568");
         assert!(phones[0].features().contains(&"fax".to_string()));
     }
 
     #[test]
-    fn given_technical_with_voice_phone_when_simplify_tech_phone_then_phone_is_redacted() {
+    fn given_technical_with_voice_phone_when_simplify_tech_phone_then_phone_is_not_redacted() {
         // GIVEN a domain with a technical entity having a voice phone
         let domain = given_domain_with_phone_contact("technical", "+1-555-987-6543", "voice");
 
         // WHEN simplifying technical phone
         let result = simplify_tech_phone(domain, &get_test_redacted());
 
-        // THEN the phone should be redacted
+        // THEN the phone should not be redacted (it has a non-empty value)
         let entities = result.object_common.entities.as_ref().unwrap();
         let entity = &entities[0];
         let contact = entity.contact().unwrap();
         let phones = contact.phones();
 
-        assert_eq!(phones[0].phone(), REDACTED_PHONE);
+        assert_eq!(phones[0].phone(), "+1-555-987-6543");
         assert!(phones[0].features().contains(&"voice".to_string()));
     }
 
@@ -486,29 +514,46 @@ mod tests {
     }
 
     #[test]
-    fn given_multiple_entities_when_simplify_registrant_phone_then_only_registrant_is_redacted() {
-        // GIVEN a domain with both registrant and administrative entities
-        let domain = given_domain_with_multiple_entities();
+    fn given_registrant_with_empty_voice_phone_when_simplify_registrant_phone_then_phone_is_redacted(
+    ) {
+        // GIVEN a domain with a registrant entity having an empty voice phone
+        let domain = given_domain_with_empty_phone_contact("registrant", "voice");
 
         // WHEN simplifying registrant phone
         let result = simplify_registrant_phone(domain, &get_test_redacted());
+
+        // THEN the phone should be redacted with the redaction key
         let entities = result.object_common.entities.as_ref().unwrap();
+        let entity = &entities[0];
+        let contact = entity.contact().unwrap();
+        let phones = contact.phones();
 
-        // THEN only the registrant entity's phone should be redacted
-        let registrant_contact = entities[0].contact().unwrap();
-        let registrant_phones = registrant_contact.phones();
-        assert_eq!(registrant_phones[0].phone(), REDACTED_PHONE);
-
-        // AND the administrative entity's phone should not be redacted
-        let admin_contact = entities[1].contact().unwrap();
-        let admin_phones = admin_contact.phones();
-        assert_eq!(admin_phones[0].phone(), "+1-555-222-2222");
+        assert_eq!(phones[0].phone(), REDACTED_PHONE);
+        assert!(phones[0].features().contains(&"voice".to_string()));
     }
 
     #[test]
-    fn given_registrant_with_phone_when_simplify_registrant_phone_then_remark_is_added() {
-        // GIVEN a domain with a registrant entity having a voice phone
-        let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "voice");
+    fn given_registrant_with_empty_fax_phone_when_simplify_registrant_fax_then_phone_is_redacted() {
+        // GIVEN a domain with a registrant entity having an empty fax phone
+        let domain = given_domain_with_empty_phone_contact("registrant", "fax");
+
+        // WHEN simplifying registrant fax
+        let result = simplify_registrant_fax(domain, &get_test_redacted());
+
+        // THEN the fax should be redacted with the redaction key
+        let entities = result.object_common.entities.as_ref().unwrap();
+        let entity = &entities[0];
+        let contact = entity.contact().unwrap();
+        let phones = contact.phones();
+
+        assert_eq!(phones[0].phone(), REDACTED_FAX);
+        assert!(phones[0].features().contains(&"fax".to_string()));
+    }
+
+    #[test]
+    fn given_registrant_with_empty_phone_when_simplify_registrant_phone_then_remark_is_added() {
+        // GIVEN a domain with a registrant entity having an empty voice phone
+        let domain = given_domain_with_empty_phone_contact("registrant", "voice");
 
         // WHEN simplifying registrant phone
         let result = simplify_registrant_phone(domain, &get_test_redacted());
@@ -524,6 +569,99 @@ mod tests {
             .description()
             .iter()
             .any(|desc| desc.contains("redacted")));
+    }
+
+    #[test]
+    fn given_multiple_entities_with_empty_when_simplify_registrant_phone_then_only_registrant_is_redacted(
+    ) {
+        // GIVEN a domain with both registrant and administrative entities with empty phones
+        let registrant_phone = Phone::builder()
+            .phone("".to_string())
+            .features(vec!["voice".to_string()])
+            .build();
+
+        let registrant_contact = Contact::builder()
+            .full_name("Registrant User")
+            .phone(registrant_phone)
+            .build();
+
+        let registrant_entity = Entity::builder()
+            .handle("registrant-entity")
+            .role("registrant".to_string())
+            .contact(registrant_contact)
+            .build();
+
+        let admin_phone = Phone::builder()
+            .phone("+1-555-222-2222".to_string())
+            .features(vec!["voice".to_string()])
+            .build();
+
+        let admin_contact = Contact::builder()
+            .full_name("Admin User")
+            .phone(admin_phone)
+            .build();
+
+        let admin_entity = Entity::builder()
+            .handle("admin-entity")
+            .role("administrative".to_string())
+            .contact(admin_contact)
+            .build();
+
+        let domain = Domain::response_obj()
+            .ldh_name("example.com")
+            .entity(registrant_entity)
+            .entity(admin_entity)
+            .build();
+
+        // WHEN simplifying registrant phone
+        let result = simplify_registrant_phone(Box::new(domain), &get_test_redacted());
+        let entities = result.object_common.entities.as_ref().unwrap();
+
+        // THEN only the registrant entity's phone should be redacted
+        let registrant_contact = entities[0].contact().unwrap();
+        let registrant_phones = registrant_contact.phones();
+        assert_eq!(registrant_phones[0].phone(), REDACTED_PHONE);
+
+        // AND the administrative entity's phone should not be redacted
+        let admin_contact = entities[1].contact().unwrap();
+        let admin_phones = admin_contact.phones();
+        assert_eq!(admin_phones[0].phone(), "+1-555-222-2222");
+    }
+
+    #[test]
+    fn given_multiple_entities_when_simplify_registrant_phone_then_neither_is_redacted() {
+        // GIVEN a domain with both registrant and administrative entities
+        let domain = given_domain_with_multiple_entities();
+
+        // WHEN simplifying registrant phone
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
+        let entities = result.object_common.entities.as_ref().unwrap();
+
+        // THEN neither entity's phone should be redacted
+        let registrant_contact = entities[0].contact().unwrap();
+        let registrant_phones = registrant_contact.phones();
+        assert_eq!(registrant_phones[0].phone(), "+1-555-111-1111");
+
+        // AND the administrative entity's phone should also not be redacted
+        let admin_contact = entities[1].contact().unwrap();
+        let admin_phones = admin_contact.phones();
+        assert_eq!(admin_phones[0].phone(), "+1-555-222-2222");
+    }
+
+    #[test]
+    fn given_registrant_with_phone_when_simplify_registrant_phone_then_no_remark_is_added() {
+        // GIVEN a domain with a registrant entity having a voice phone
+        let domain = given_domain_with_phone_contact("registrant", "+1-555-123-4567", "voice");
+
+        // WHEN simplifying registrant phone
+        let result = simplify_registrant_phone(domain, &get_test_redacted());
+
+        // THEN no remark about phone redaction should be added
+        let entities = result.object_common.entities.as_ref().unwrap();
+        let entity = &entities[0];
+        let remarks = entity.object_common.remarks.as_ref();
+
+        assert!(remarks.is_none() || remarks.as_ref().unwrap().is_empty());
     }
 
     // Tests for simplify_phone_ext function

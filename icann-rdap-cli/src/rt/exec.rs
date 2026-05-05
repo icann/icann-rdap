@@ -14,11 +14,14 @@ use icann_rdap_common::{
 
 use {
     hickory_client::{
-        client::{AsyncClient, ClientConnection, ClientHandle},
-        error::ClientError,
-        proto::error::ProtoError,
-        rr::{DNSClass, Name, RecordType},
-        udp::UdpClientConnection,
+        client::{Client, ClientHandle},
+        proto::{
+            rr::{DNSClass, Name, RecordType},
+            runtime::TokioRuntimeProvider,
+            udp::UdpClientStream,
+            ProtoError,
+        },
+        ClientError,
     },
     icann_rdap_client::{
         http::{create_client, create_client_with_addr, ClientConfig},
@@ -347,8 +350,9 @@ async fn get_dns_records(
         .dns_resolver
         .as_ref()
         .unwrap_or(&def_dns_resolver);
-    let conn = UdpClientConnection::new(dns_resolver.parse()?)?.new_stream(None);
-    let (mut client, bg) = AsyncClient::connect(conn).await?;
+    let connect =
+        UdpClientStream::builder(dns_resolver.parse()?, TokioRuntimeProvider::new()).build();
+    let (mut client, bg) = Client::connect(connect).await?;
 
     // make sure to run the background task
     tokio::spawn(bg);
@@ -366,7 +370,6 @@ async fn get_dns_records(
             RecordType::CNAME => {
                 let cname = answer
                     .data()
-                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_cname()
                     .map_err(|_e| TestExecutionError::BadRdata)?
@@ -378,7 +381,6 @@ async fn get_dns_records(
             RecordType::A => {
                 let addr = answer
                     .data()
-                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_a()
                     .map_err(|_e| TestExecutionError::BadRdata)?
@@ -386,9 +388,7 @@ async fn get_dns_records(
                 debug!("Found IPv4 {addr}");
                 dns_data.v4_addrs.push(addr);
             }
-            _ => {
-                // do nothing
-            }
+            _ => return Err(TestExecutionError::NoRdata),
         };
     }
 
@@ -403,7 +403,6 @@ async fn get_dns_records(
             RecordType::CNAME => {
                 let cname = answer
                     .data()
-                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_cname()
                     .map_err(|_e| TestExecutionError::BadRdata)?
@@ -415,7 +414,6 @@ async fn get_dns_records(
             RecordType::AAAA => {
                 let addr = answer
                     .data()
-                    .ok_or(TestExecutionError::NoRdata)?
                     .clone()
                     .into_aaaa()
                     .map_err(|_e| TestExecutionError::BadRdata)?
@@ -423,9 +421,7 @@ async fn get_dns_records(
                 debug!("Found IPv6 {addr}");
                 dns_data.v6_addrs.push(addr);
             }
-            _ => {
-                // do nothing
-            }
+            _ => return Err(TestExecutionError::NoRdata),
         };
     }
 

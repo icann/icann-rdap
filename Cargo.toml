@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.28"
+version = "0.0.29"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
@@ -22,19 +22,19 @@ ab-radix-trie = "0.2.1"
 # easy error handling
 anyhow = "1.0"
 
+# cli assertions
+assert_cmd = "2.2"
+
 # async traits
 async-trait = "0.1"
 
 # axum (web server)
-axum = { version = "0.7" }
-axum-extra = { version = "0.9", features = [ "typed-header" ] }
-axum-macros = "0.4"
+axum = { version = "0.8" }
+axum-extra = { version = "0.10", features = [ "typed-header" ] }
+axum-macros = "0.5"
 
 # client IP address extractor
-axum-client-ip = "0.5"
-
-# b-tree with ranges
-btree-range-map = "0.7.2"
+axum-client-ip = "0.7"
 
 # macros for the builder pattern
 buildstructor = "0.6"
@@ -43,20 +43,19 @@ buildstructor = "0.6"
 cidr = "0.3.0"
 
 # command line options parser
-clap = { version = "4.4", features = [ "std", "derive", "env", "unstable-styles" ] }
+clap = { version = "4.6", features = [ "std", "derive", "env", "unstable-styles" ] }
 
 # chrono (time and date library)
 chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
 
+# CIDR utilities
+cidr-utils = "0.6"
+
 # compile time constants formatting
 const_format = "0.2"
 
-# subdependency used by minus and termimad
-# this can be removed once minus and termimad are updated
-crossbeam-channel = "0.5.15"
-
 # cross-platform application directories
-directories = "5.0"
+directories = "6.0"
 
 # loads environment variables from a file
 dotenvy = "0.15"
@@ -76,17 +75,23 @@ futures-util = "0.3"
 # macros to get the git version
 git-version = "0.3"
 
+# goldfile
+goldenfile = "1.11"
+
 # headers (http headers)
 headers = "0.4"
 
 # Hickory DNS client
-hickory-client = "0.24"
+hickory-client = "0.25"
 
 # http constructs
-http = "1.0"
+http = "1.4"
 
 # hyper (http implementation used by axum)
-hyper = { version = "1.0", features = ["full"] }
+hyper = { version = "1.9", features = ["full"] }
+
+# indoc
+indoc = "2"
 
 # JSONPath
 jsonpath-rust = "1.0.4"
@@ -96,31 +101,40 @@ jsonpath_lib = "0.3.0"
 json-pretty-compact = "0.1.2"
 
 # internationalized domain names for applications
-idna = "1.0"
+idna = "1.1"
 
 # for use prefixmap
-ipnet = { version = "2.9", features = ["json"] }
+ipnet = { version = "2.12", features = ["json"] }
 
 # embedded pager
-minus = {version = "5.5", features = ["dynamic_output", "search"] }
+minus = {version = "5.6", features = ["dynamic_output", "search"] }
 
 # percent encoding
 pct-str = "3.0"
 
 # ip address trie
-prefix-trie = "0.2.4"
+prefix-trie = "0.8.1"
+
+# flexible range map
+rangemap = "1.7.1"
 
 # regular expressions
-regex = "1.10"
+regex = "1.12"
 
 # http client library
 reqwest = {version = "0.13", features = ["json", "stream", "native-tls-vendored"]}
+
+# fixture testings
+rstest = "0.26.0"
 
 # serialization / deserialization library
 serde = { version = "1.0", features = [ "derive" ] }
 
 # json serializer
 serde_json = "1.0"
+
+# serial testings
+serial_test = "3.4"
 
 # sqlx (async db)
 sqlx = { version = "0.8", features = [
@@ -132,21 +146,27 @@ sqlx = { version = "0.8", features = [
 ] }
 
 # enum utilities
-strum = "0.27"
-strum_macros = "0.27"
+strum = "0.28"
+strum_macros = "0.28"
+
+# temp files
+tempfile = "3.27"
 
 # terminal markdown generator
 termimad = "0.34"
+
+# test directories
+test_dir = "0.2.0"
 
 # error macros
 thiserror = "1.0"
 
 # tokio async runtime
-tokio = { version = "1.49", features = [ "full" ] }
+tokio = { version = "1.52", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
-tower = { version = "0.4", features = ["timeout", "util"] }
-tower-http = { version = "0.5", features = [
+tower = { version = "0.5", features = ["timeout", "util"] }
+tower-http = { version = "0.6", features = [
     "add-extension",
     "trace",
     "cors",

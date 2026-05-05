@@ -24,8 +24,5 @@ thiserror.workspace = true
 
 [dev-dependencies]
 
-# indoc
-indoc = "2"
-
-# fixture testings
-rstest = "0.17.0"
+indoc.workspace = true
+rstest.workspace = true

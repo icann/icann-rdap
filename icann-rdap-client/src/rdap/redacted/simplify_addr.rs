@@ -22,21 +22,32 @@ pub(crate) fn simplify_registrant_street(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if !contact.postal_addresses().is_empty() {
-                        let mut all_addrs = vec![];
-                        for addr in contact.postal_addresses().to_vec().iter_mut() {
+                    let mut modified = false;
+                    let mut all_addrs = vec![];
+                    for addr in contact.postal_addresses().to_vec().iter_mut() {
+                        if addr.street_parts.is_none()
+                            || addr.street_parts.as_ref().map_or(true, |v| v.is_empty())
+                        {
                             addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
+                            modified = true;
+                        }
+                        all_addrs.push(addr.clone());
+                    }
+                    contact = contact.with_postal_addresses(all_addrs);
+                    for (_lang, localizable) in contact.localizations_iter_mut() {
+                        let mut all_addrs = vec![];
+                        for addr in localizable.postal_addresses().to_vec().iter_mut() {
+                            if addr.street_parts.is_none()
+                                || addr.street_parts.as_ref().map_or(true, |v| v.is_empty())
+                            {
+                                addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
+                                modified = true;
+                            }
                             all_addrs.push(addr.clone());
                         }
-                        contact = contact.with_postal_addresses(all_addrs);
-                        for (_lang, localizable) in contact.localizations_iter_mut() {
-                            let mut all_addrs = vec![];
-                            for addr in localizable.postal_addresses().to_vec().iter_mut() {
-                                addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
-                                all_addrs.push(addr.clone());
-                            }
-                            *localizable = localizable.clone().with_postal_addresses(all_addrs);
-                        }
+                        *localizable = localizable.clone().with_postal_addresses(all_addrs);
+                    }
+                    if modified {
                         entity.object_common.remarks = add_remark(
                             REDACTED_STREET,
                             REDACTED_STREET_DESC,
@@ -63,21 +74,32 @@ pub(crate) fn simplify_registrant_city(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if !contact.postal_addresses().is_empty() {
-                        let mut all_addrs = vec![];
-                        for addr in contact.postal_addresses().to_vec().iter_mut() {
+                    let mut modified = false;
+                    let mut all_addrs = vec![];
+                    for addr in contact.postal_addresses().to_vec().iter_mut() {
+                        if addr.locality.is_none()
+                            || addr.locality.as_ref().map_or(true, |s| s.is_empty())
+                        {
                             addr.locality = Some(REDACTED_CITY.to_string());
+                            modified = true;
+                        }
+                        all_addrs.push(addr.clone());
+                    }
+                    contact = contact.with_postal_addresses(all_addrs);
+                    for (_lang, localizable) in contact.localizations_iter_mut() {
+                        let mut all_addrs = vec![];
+                        for addr in localizable.postal_addresses().to_vec().iter_mut() {
+                            if addr.locality.is_none()
+                                || addr.locality.as_ref().map_or(true, |s| s.is_empty())
+                            {
+                                addr.locality = Some(REDACTED_CITY.to_string());
+                                modified = true;
+                            }
                             all_addrs.push(addr.clone());
                         }
-                        contact = contact.with_postal_addresses(all_addrs);
-                        for (_lang, localizable) in contact.localizations_iter_mut() {
-                            let mut all_addrs = vec![];
-                            for addr in localizable.postal_addresses().to_vec().iter_mut() {
-                                addr.locality = Some(REDACTED_CITY.to_string());
-                                all_addrs.push(addr.clone());
-                            }
-                            *localizable = localizable.clone().with_postal_addresses(all_addrs);
-                        }
+                        *localizable = localizable.clone().with_postal_addresses(all_addrs);
+                    }
+                    if modified {
                         entity.object_common.remarks = add_remark(
                             REDACTED_CITY,
                             REDACTED_CITY_DESC,
@@ -104,23 +126,34 @@ pub(crate) fn simplify_registrant_postal_code(
             if entity.is_entity_role(&EntityRole::Registrant.to_string()) {
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
-                    if !contact.postal_addresses().is_empty() {
-                        let mut all_addrs = vec![];
-                        for addr in contact.postal_addresses().to_vec().iter_mut() {
+                    let mut modified = false;
+                    let mut all_addrs = vec![];
+                    for addr in contact.postal_addresses().to_vec().iter_mut() {
+                        if addr.postal_code.is_none()
+                            || addr.postal_code.as_ref().map_or(true, |s| s.is_empty())
+                        {
                             addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
+                            modified = true;
+                        }
+                        all_addrs.push(addr.clone());
+                    }
+                    contact = contact.with_postal_addresses(all_addrs);
+
+                    for (_lang, localizable) in contact.localizations_iter_mut() {
+                        let mut all_addrs = vec![];
+                        for addr in localizable.postal_addresses().to_vec().iter_mut() {
+                            if addr.postal_code.is_none()
+                                || addr.postal_code.as_ref().map_or(true, |s| s.is_empty())
+                            {
+                                addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
+                                modified = true;
+                            }
                             all_addrs.push(addr.clone());
                         }
-                        contact = contact.with_postal_addresses(all_addrs);
+                        *localizable = localizable.clone().with_postal_addresses(all_addrs);
+                    }
 
-                        for (_lang, localizable) in contact.localizations_iter_mut() {
-                            let mut all_addrs = vec![];
-                            for addr in localizable.postal_addresses().to_vec().iter_mut() {
-                                addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
-                                all_addrs.push(addr.clone());
-                            }
-                            *localizable = localizable.clone().with_postal_addresses(all_addrs);
-                        }
-
+                    if modified {
                         entity.object_common.remarks = add_remark(
                             REDACTED_POSTAL_CODE,
                             REDACTED_POSTAL_CODE_DESC,
@@ -152,10 +185,52 @@ mod tests {
 
     // Tests for simplify_registrant_street
     #[test]
-    fn given_domain_with_registrant_entity_when_simplify_registrant_street_then_redacts_street() {
+    fn when_street_present_then_no_redaction() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
+            .locality("Anytown")
+            .postal_code("12345")
+            .build();
+
+        let contact = Contact::builder().postal_address(postal_address).build();
+
+        let entity = Entity::builder()
+            .handle("test-registrant")
+            .role("registrant")
+            .contact(contact)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        // When
+        let result = simplify_registrant_street(Box::new(domain), &get_test_redacted());
+
+        // Then
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+        let entity = &entities[0];
+        assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
+
+        if let Some(contact) = entity.contact() {
+            let addresses = contact.postal_addresses();
+            assert_eq!(addresses.len(), 1);
+            let address = &addresses[0];
+            assert_eq!(address.street_parts, Some(vec!["123 Main St".to_string()]));
+            assert_eq!(address.locality, Some("Anytown".to_string()));
+            assert_eq!(address.postal_code, Some("12345".to_string()));
+        }
+
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn when_street_absent_then_redacts() {
+        // Given
+        let postal_address = PostalAddress::builder()
             .locality("Anytown")
             .postal_code("12345")
             .build();
@@ -205,12 +280,9 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_multiple_entities_when_simplify_registrant_street_then_only_redacts_first_registrant(
-    ) {
+    fn when_multiple_entities_then_only_first_registrant_redacted() {
         // Given
-        let registrant_address = PostalAddress::builder()
-            .street_part("123 Registrant St")
-            .build();
+        let registrant_address = PostalAddress::builder().build();
 
         let registrant_contact = Contact::builder()
             .postal_address(registrant_address)
@@ -267,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_without_postal_address_when_simplify_registrant_street_then_skips_entity() {
+    fn when_no_postal_address_then_skips() {
         // Given
         let contact = Contact::builder().full_name("John Doe").build();
 
@@ -294,11 +366,53 @@ mod tests {
 
     // Tests for simplify_registrant_city
     #[test]
-    fn given_domain_with_registrant_entity_when_simplify_registrant_city_then_redacts_city() {
+    fn when_city_present_then_no_redaction() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
             .locality("Anytown")
+            .postal_code("12345")
+            .build();
+
+        let contact = Contact::builder().postal_address(postal_address).build();
+
+        let entity = Entity::builder()
+            .handle("test-registrant")
+            .role("registrant")
+            .contact(contact)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        // When
+        let result = simplify_registrant_city(Box::new(domain), &get_test_redacted());
+
+        // Then
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+        let entity = &entities[0];
+        assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
+
+        if let Some(contact) = entity.contact() {
+            let addresses = contact.postal_addresses();
+            assert_eq!(addresses.len(), 1);
+            let address = &addresses[0];
+            assert_eq!(address.street_parts, Some(vec!["123 Main St".to_string()]));
+            assert_eq!(address.locality, Some("Anytown".to_string()));
+            assert_eq!(address.postal_code, Some("12345".to_string()));
+        }
+
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn when_city_absent_then_redacts() {
+        // Given
+        let postal_address = PostalAddress::builder()
+            .street_part("123 Main St")
             .postal_code("12345")
             .build();
 
@@ -344,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_without_city_when_simplify_registrant_city_then_sets_redacted_city() {
+    fn when_city_absent_then_sets_redacted() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -382,13 +496,54 @@ mod tests {
 
     // Tests for simplify_registrant_postal_code
     #[test]
-    fn given_domain_with_registrant_entity_when_simplify_registrant_postal_code_then_redacts_postal_code(
-    ) {
+    fn when_postal_code_present_then_no_redaction() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
             .locality("Anytown")
             .postal_code("12345")
+            .build();
+
+        let contact = Contact::builder().postal_address(postal_address).build();
+
+        let entity = Entity::builder()
+            .handle("test-registrant")
+            .role("registrant")
+            .contact(contact)
+            .build();
+
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .entity(entity)
+            .build();
+
+        // When
+        let result = simplify_registrant_postal_code(Box::new(domain), &get_test_redacted());
+
+        // Then
+        let entities = result.object_common.entities.as_ref().unwrap();
+        assert_eq!(entities.len(), 1);
+        let entity = &entities[0];
+        assert!(entity.is_entity_role(&EntityRole::Registrant.to_string()));
+
+        if let Some(contact) = entity.contact() {
+            let addresses = contact.postal_addresses();
+            assert_eq!(addresses.len(), 1);
+            let address = &addresses[0];
+            assert_eq!(address.street_parts, Some(vec!["123 Main St".to_string()]));
+            assert_eq!(address.locality, Some("Anytown".to_string()));
+            assert_eq!(address.postal_code, Some("12345".to_string()));
+        }
+
+        assert!(entity.object_common.remarks.is_none());
+    }
+
+    #[test]
+    fn when_postal_code_absent_then_redacts() {
+        // Given
+        let postal_address = PostalAddress::builder()
+            .street_part("123 Main St")
+            .locality("Anytown")
             .build();
 
         let contact = Contact::builder().postal_address(postal_address).build();
@@ -433,8 +588,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_without_postal_code_when_simplify_registrant_postal_code_then_sets_redacted_postal_code(
-    ) {
+    fn when_postal_code_absent_then_sets_redacted() {
         // Given
         let postal_address = PostalAddress::builder()
             .street_part("123 Main St")
@@ -475,7 +629,7 @@ mod tests {
 
     // Common edge case tests
     #[test]
-    fn given_domain_without_entities_when_simplify_registrant_street_then_returns_unchanged() {
+    fn when_no_entities_then_unchanged() {
         // Given
         let domain = Domain::builder().ldh_name("example.com").build();
 
@@ -487,8 +641,7 @@ mod tests {
     }
 
     #[test]
-    fn given_domain_with_non_registrant_entities_when_simplify_registrant_city_then_returns_unchanged(
-    ) {
+    fn when_non_registrant_then_unchanged() {
         // Given
         let postal_address = PostalAddress::builder().locality("Admin City").build();
 
@@ -520,8 +673,7 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_entity_without_contact_when_simplify_registrant_postal_code_then_skips_entity(
-    ) {
+    fn when_no_contact_then_skips() {
         // Given
         let entity = Entity::builder()
             .handle("test-registrant")
@@ -545,18 +697,11 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_multiple_addresses_when_simplify_registrant_street_then_redacts_all_streets(
-    ) {
+    fn when_multiple_addresses_then_all_redacted() {
         // Given
-        let address1 = PostalAddress::builder()
-            .street_part("123 Main St")
-            .locality("City1")
-            .build();
+        let address1 = PostalAddress::builder().locality("City1").build();
 
-        let address2 = PostalAddress::builder()
-            .street_part("456 Oak Ave")
-            .locality("City2")
-            .build();
+        let address2 = PostalAddress::builder().locality("City2").build();
 
         let contact = Contact::builder()
             .postal_address(address1)
@@ -597,15 +742,17 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_existing_remarks_when_simplify_registrant_city_then_adds_redaction_remark(
-    ) {
+    fn when_existing_remarks_and_missing_city_then_adds_remark() {
         // Given
         let existing_remark = Remark::builder()
             .title("Existing Remark")
             .description_entry("Existing description")
             .build();
 
-        let postal_address = PostalAddress::builder().locality("Anytown").build();
+        let postal_address = PostalAddress::builder()
+            .street_part("123 Main St")
+            .postal_code("12345")
+            .build();
 
         let contact = Contact::builder().postal_address(postal_address).build();
 

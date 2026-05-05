@@ -45,6 +45,10 @@ pub enum ExtensionId {
     RdapLevel0,
     #[strum(serialize = "arin_originas0")]
     ArinOriginAs0,
+    #[strum(serialize = "autnums")]
+    Autnums,
+    #[strum(serialize = "autnumSearchResults")]
+    AutnumSearchResults,
     #[strum(serialize = "artRecord")]
     ArtRecord,
     #[strum(serialize = "cidr0")]
@@ -63,6 +67,10 @@ pub enum ExtensionId {
     IcannRdapTechnicalImplementationGuide0,
     #[strum(serialize = "icann_rdap_technical_implementation_guide_1")]
     IcannRdapTechnicalImplementationGuide1,
+    #[strum(serialize = "ips")]
+    Ips,
+    #[strum(serialize = "ipSearchResults")]
+    IpSearchResults,
     #[strum(serialize = "jscontact")]
     JsContact,
     #[strum(serialize = "nro_rdap_profile_0")]
@@ -85,6 +93,8 @@ pub enum ExtensionId {
     RegType,
     #[strum(serialize = "reverse_search")]
     ReverseSearch,
+    #[strum(serialize = "rirSearch1")]
+    RirSearch1,
     #[strum(serialize = "simpleRedaction")]
     SimpleRedaction,
     #[strum(serialize = "sorting")]

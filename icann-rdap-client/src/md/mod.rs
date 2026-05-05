@@ -112,6 +112,8 @@ impl ToMd for RdapResponse {
             Self::DomainSearchResults(results) => results.to_md(params),
             Self::EntitySearchResults(results) => results.to_md(params),
             Self::NameserverSearchResults(results) => results.to_md(params),
+            Self::IpSearchResults(results) => results.to_md(params),
+            Self::AutnumSearchResults(results) => results.to_md(params),
             Self::ErrorResponse(error) => error.to_md(params),
             Self::Help(help) => help.to_md(params),
         };
@@ -148,6 +150,8 @@ impl MdUtil for RdapResponse {
             Self::DomainSearchResults(results) => results.get_header_text(),
             Self::EntitySearchResults(results) => results.get_header_text(),
             Self::NameserverSearchResults(results) => results.get_header_text(),
+            Self::IpSearchResults(results) => results.get_header_text(),
+            Self::AutnumSearchResults(results) => results.get_header_text(),
             Self::ErrorResponse(error) => error.get_header_text(),
             Self::Help(help) => help.get_header_text(),
         }

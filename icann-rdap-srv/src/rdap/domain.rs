@@ -1,5 +1,5 @@
 use http::HeaderMap;
-use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ip};
+use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ipnet};
 use tracing::debug;
 
 use {
@@ -48,10 +48,12 @@ pub(crate) async fn domain_by_name(
         domain = storage.get_domain_by_unicode(&domain_name).await?;
     }
 
-    if state.get_bootstrap() && !matches!(domain, RdapResponse::Domain(_)) && !domain.is_redirect()
+    if state.get_common_config().bootstrap
+        && !matches!(domain, RdapResponse::Domain(_))
+        && !domain.is_redirect()
     {
-        if let Some(ip) = reverse_dns_to_ip(domain_name.as_str()) {
-            let network = storage.get_network_by_ipaddr(&ip.to_string()).await?;
+        if let Some(ipnet) = reverse_dns_to_ipnet(domain_name.as_str()) {
+            let network = storage.get_network_by_cidr(&ipnet.to_string()).await?;
             return Ok(network.to_domain_bootstrap(&domain_name).response());
         } else {
             let mut dn_slice = domain_name.as_str();
@@ -66,7 +68,11 @@ pub(crate) async fn domain_by_name(
         }
     }
 
-    let domain = jscontact_conversion(domain, state.get_jscontact_conversion(), &exts_list);
+    let domain = jscontact_conversion(
+        domain,
+        state.get_common_config().jscontact_conversion,
+        &exts_list,
+    );
     let domain = normalize_extensions(domain);
     Ok(domain.response())
 }

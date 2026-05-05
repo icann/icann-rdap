@@ -1,5 +1,6 @@
 mod bootstrap;
 mod cache;
 mod not_found;
-mod queries;
-mod url;
+mod output;
+mod query;
+mod search;
