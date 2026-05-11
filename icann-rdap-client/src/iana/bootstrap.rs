@@ -53,10 +53,15 @@ pub trait BootstrapStore: Send + Sync {
         &self,
         query_type: &QueryType,
     ) -> Result<Option<Vec<String>>, RdapClientError> {
-        let QueryType::AsNumber(asn) = query_type else {
-            panic!("invalid query type")
+        let asn = match query_type {
+            QueryType::AsNumber(asn)
+            | QueryType::AsNumberUp(asn)
+            | QueryType::AsNumberDown(asn)
+            | QueryType::AsNumberTop(asn)
+            | QueryType::AsNumberBottom(asn) => asn.to_string(),
+            _ => panic!("invalid query type"),
         };
-        self.get_asn_urls(asn.to_string().as_str())
+        self.get_asn_urls(asn.as_str())
     }
 
     /// Get the urls for an IPv4 query type.
@@ -67,8 +72,16 @@ pub trait BootstrapStore: Send + Sync {
         query_type: &QueryType,
     ) -> Result<Option<Vec<String>>, RdapClientError> {
         let ip = match query_type {
-            QueryType::IpV4Addr(addr) => format!("{addr}/32"),
-            QueryType::IpV4Cidr(cidr) => cidr.to_string(),
+            QueryType::IpV4Addr(addr)
+            | QueryType::IpV4AddrUp(addr)
+            | QueryType::IpV4AddrDown(addr)
+            | QueryType::IpV4AddrTop(addr)
+            | QueryType::IpV4AddrBottom(addr) => format!("{addr}/32"),
+            QueryType::IpV4Cidr(cidr)
+            | QueryType::IpV4CidrUp(cidr)
+            | QueryType::IpV4CidrDown(cidr)
+            | QueryType::IpV4CidrTop(cidr)
+            | QueryType::IpV4CidrBottom(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv4_urls(&ip)
@@ -82,8 +95,16 @@ pub trait BootstrapStore: Send + Sync {
         query_type: &QueryType,
     ) -> Result<Option<Vec<String>>, RdapClientError> {
         let ip = match query_type {
-            QueryType::IpV6Addr(addr) => format!("{addr}/128"),
-            QueryType::IpV6Cidr(cidr) => cidr.to_string(),
+            QueryType::IpV6Addr(addr)
+            | QueryType::IpV6AddrUp(addr)
+            | QueryType::IpV6AddrDown(addr)
+            | QueryType::IpV6AddrTop(addr)
+            | QueryType::IpV6AddrBottom(addr) => format!("{addr}/128"),
+            QueryType::IpV6Cidr(cidr)
+            | QueryType::IpV6CidrUp(cidr)
+            | QueryType::IpV6CidrDown(cidr)
+            | QueryType::IpV6CidrTop(cidr)
+            | QueryType::IpV6CidrBottom(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv6_urls(&ip)
@@ -313,7 +334,16 @@ where
     F: FnOnce(&IanaRegistryType),
 {
     match query_type {
-        QueryType::IpV4Addr(_) | QueryType::IpV4Cidr(_) => {
+        QueryType::IpV4Addr(_)
+        | QueryType::IpV4Cidr(_)
+        | QueryType::IpV4AddrUp(_)
+        | QueryType::IpV4CidrUp(_)
+        | QueryType::IpV4AddrDown(_)
+        | QueryType::IpV4CidrDown(_)
+        | QueryType::IpV4AddrTop(_)
+        | QueryType::IpV4CidrTop(_)
+        | QueryType::IpV4AddrBottom(_)
+        | QueryType::IpV4CidrBottom(_) => {
             fetch_bootstrap(
                 &IanaRegistryType::RdapBootstrapIpv4,
                 client,
@@ -323,7 +353,16 @@ where
             .await?;
             Ok(store.get_ipv4_query_urls(query_type)?.preferred_url()?)
         }
-        QueryType::IpV6Addr(_) | QueryType::IpV6Cidr(_) => {
+        QueryType::IpV6Addr(_)
+        | QueryType::IpV6Cidr(_)
+        | QueryType::IpV6AddrUp(_)
+        | QueryType::IpV6CidrUp(_)
+        | QueryType::IpV6AddrDown(_)
+        | QueryType::IpV6CidrDown(_)
+        | QueryType::IpV6AddrTop(_)
+        | QueryType::IpV6CidrTop(_)
+        | QueryType::IpV6AddrBottom(_)
+        | QueryType::IpV6CidrBottom(_) => {
             fetch_bootstrap(
                 &IanaRegistryType::RdapBootstrapIpv6,
                 client,
@@ -333,7 +372,11 @@ where
             .await?;
             Ok(store.get_ipv6_query_urls(query_type)?.preferred_url()?)
         }
-        QueryType::AsNumber(_) => {
+        QueryType::AsNumber(_)
+        | QueryType::AsNumberUp(_)
+        | QueryType::AsNumberDown(_)
+        | QueryType::AsNumberTop(_)
+        | QueryType::AsNumberBottom(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapBootstrapAsn, client, store, callback).await?;
             Ok(store.get_autnum_query_urls(query_type)?.preferred_url()?)
         }
