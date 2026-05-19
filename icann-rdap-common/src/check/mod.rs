@@ -5,13 +5,12 @@ use std::{any::TypeId, sync::LazyLock};
 use {
     crate::response::RdapResponse,
     serde::{Deserialize, Serialize},
-    strum::{EnumMessage, IntoEnumIterator},
-    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr, VariantArray},
+    strum::{EnumMessage, IntoEnumIterator, VariantArray},
+    strum_macros::{Display, EnumIter,  EnumString, FromRepr},
 };
 
 #[doc(inline)]
 pub use string::*;
-use strum::VariantArray;
 
 mod autnum;
 mod domain;
@@ -47,7 +46,7 @@ pub static CHECK_CLASS_LEN: LazyLock<usize> = LazyLock::new(|| {
     Deserialize,
     Clone,
     Copy,
-    VariantArray,
+    strum_macros::VariantArray,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
@@ -328,7 +327,7 @@ pub fn is_checked_item(check: Check, checks: &Checks) -> bool {
 /// The variant check types.
 #[derive(
     Debug,
-    EnumMessage,
+    strum_macros::EnumMessage,
     EnumString,
     Display,
     Serialize,
