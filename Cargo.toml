@@ -3,7 +3,8 @@ members = [
   "icann-rdap-cli",
   "icann-rdap-client",
   "icann-rdap-common",
-  "icann-rdap-srv"
+  "icann-rdap-srv",
+  "tests/downstream_compat"
 ]
 resolver = "2"
 
