@@ -13,13 +13,14 @@ use {
     icann_rdap_common::{check::StringCheck, dns_types::DomainName},
     pct_str::{PctString, UriReserved},
     regex::Regex,
-    strum_macros::Display,
 };
+
+use strum::Display as EnumDisplay;
 
 use crate::RdapClientError;
 
 /// Defines the various types of RDAP lookups and searches.
-#[derive(Display, Debug, Clone)]
+#[derive(EnumDisplay, Debug, Clone)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]
     IpV4Addr(Ipv4Addr),

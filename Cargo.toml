@@ -147,8 +147,7 @@ sqlx = { version = "0.8", features = [
 ] }
 
 # enum utilities
-strum = "0.28"
-strum_macros = "0.28"
+strum = { version = "0.28", features = [ "derive" ] }
 
 # temp files
 tempfile = "3.27"

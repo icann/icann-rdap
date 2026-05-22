@@ -8,7 +8,9 @@ use icann_rdap_common::{
     prelude::{Entity, Event, Notice, ObjectCommonFields, PublicId, RdapResponse, Remark},
 };
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
+use strum::{EnumIter, EnumString};
+
+use strum::Display as EnumDisplay;
 
 pub mod autnum;
 pub mod domain;
@@ -70,7 +72,7 @@ pub static ATTR_NAME_LEN: LazyLock<usize> = LazyLock::new(|| {
 });
 
 /// Rpsl Attribute Names
-#[derive(EnumIter, EnumString, Debug, Display, PartialEq, Eq, Clone, Copy)]
+#[derive(EnumIter, EnumString, Debug, EnumDisplay, PartialEq, Eq, Clone, Copy)]
 pub enum AttrName {
     #[strum(serialize = "abuse-c")]
     AbuseC,

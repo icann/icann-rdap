@@ -1547,7 +1547,6 @@ dependencies = [
  "serde_json",
  "serial_test",
  "strum",
- "strum_macros",
  "tempfile",
  "termimad",
  "test_dir",
@@ -1579,7 +1578,6 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
- "strum_macros",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -1601,7 +1599,6 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
- "strum_macros",
  "thiserror 1.0.69",
 ]
 
@@ -1639,7 +1636,6 @@ dependencies = [
  "serde_json",
  "sqlx",
  "strum",
- "strum_macros",
  "test_dir",
  "thiserror 1.0.69",
  "tokio",

@@ -3,8 +3,10 @@
 use {
     super::Extension,
     serde::{Deserialize, Serialize},
-    strum_macros::{AsRefStr, Display, EnumString},
+    strum::{AsRefStr, EnumString},
 };
+
+use strum::Display as EnumDisplay;
 
 /// Extension Identifiers
 ///
@@ -38,7 +40,7 @@ use {
 /// let s = ExtensionId::Cidr0.as_ref();
 /// ```
 #[derive(
-    Serialize, Deserialize, EnumString, Display, Debug, PartialEq, Eq, AsRefStr, Hash, Clone,
+    Serialize, Deserialize, EnumString, EnumDisplay, Debug, PartialEq, Eq, AsRefStr, Hash, Clone,
 )]
 pub enum ExtensionId {
     #[strum(serialize = "rdap_level_0")]
@@ -113,7 +115,7 @@ impl ExtensionId {
 }
 
 /// IANA registered roles for entities.
-#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+#[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 #[strum(serialize_all = "lowercase")]
 pub enum EntityRole {
     Registrant,
@@ -130,7 +132,7 @@ pub enum EntityRole {
 }
 
 /// Notice/Remark Values.
-#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+#[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 pub enum NrType {
     #[strum(serialize = "result set truncated due to authorization")]
     ResultSetTruncatedDueToAuthorization,
@@ -149,7 +151,7 @@ pub enum NrType {
 }
 
 /// Status Values
-#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+#[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 pub enum StatusValue {
     #[strum(serialize = "validated")]
     Validated,
@@ -226,7 +228,7 @@ pub enum StatusValue {
 }
 
 /// Event Actions
-#[derive(PartialEq, Eq, Debug, EnumString, Display)]
+#[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 pub enum EventActionValue {
     #[strum(serialize = "registration")]
     Registration,

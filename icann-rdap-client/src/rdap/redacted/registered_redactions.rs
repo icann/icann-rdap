@@ -2,11 +2,13 @@
 
 use {
     icann_rdap_common::response::{Entity, EntityRole, RdapResponse},
-    strum_macros::{Display, EnumString},
+    strum::EnumString,
 };
 
+use strum::Display as EnumDisplay;
+
 /// Redacted types in the IANA registry
-#[derive(Debug, PartialEq, Eq, EnumString, Display)]
+#[derive(Debug, PartialEq, Eq, EnumString, EnumDisplay)]
 pub enum RedactedName {
     #[strum(serialize = "Registry Domain ID")]
     RegistryDomainId,

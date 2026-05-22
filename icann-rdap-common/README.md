@@ -187,6 +187,12 @@ let data: Vec<Value> = serde_json::from_str(json).unwrap();
 let contact = Contact::from_vcard(&data);
 ```
 
+## Using `strum`
+
+This project uses the [strum](https://crates.io/crates/strum) crate to provide many compile-time
+utilities for enums. To avoid conflicts with the macros used by strum, this project uses strums
+"derive" feature. Code depending on this project are recommended to do the same.
+
 License
 -------
 

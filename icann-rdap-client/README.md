@@ -89,6 +89,12 @@ async fn main() -> Result<(), RdapClientError> {
 
 ```
 
+## Using `strum`
+
+This project uses the [strum](https://crates.io/crates/strum) crate to provide many compile-time
+utilities for enums. To avoid conflicts with the macros used by strum, this project uses strums
+"derive" feature. Code depending on this project are recommended to do the same.
+
 License
 -------
 
