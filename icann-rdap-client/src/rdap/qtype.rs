@@ -10,17 +10,18 @@ use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 
 use {
     cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr},
-    icann_rdap_common::{check::StringCheck, dns_types::DomainName},
+    icann_rdap_common::{check::StringCheck, dns_types::DomainName, iana::IanaRegistryType},
     pct_str::{PctString, UriReserved},
     regex::Regex,
 };
 
-use strum::Display as EnumDisplay;
+use strum::{Display as EnumDisplay, VariantArray};
 
 use crate::RdapClientError;
 
 /// Defines the various types of RDAP lookups and searches.
 #[derive(EnumDisplay, Debug, Clone)]
+#[allow(clippy::enum_variant_names)]
 pub enum QueryType {
     #[strum(serialize = "IpV4 Address Lookup")]
     IpV4Addr(Ipv4Addr),
@@ -162,6 +163,150 @@ pub enum QueryType {
 
     #[strum(serialize = "Explicit URL")]
     Url(String),
+}
+
+/// Unit-only discriminants for [`QueryType`], enabling iteration over all
+/// query type variants without needing to construct values with associated data.
+#[derive(Debug, Clone, Copy, VariantArray)]
+pub enum QueryTypeVariant {
+    IpV4Addr,
+    IpV6Addr,
+    IpV4Cidr,
+    IpV6Cidr,
+    IpV4AddrUp,
+    IpV6AddrUp,
+    IpV4CidrUp,
+    IpV6CidrUp,
+    IpV4AddrDown,
+    IpV6AddrDown,
+    IpV4CidrDown,
+    IpV6CidrDown,
+    IpV4AddrTop,
+    IpV6AddrTop,
+    IpV4CidrTop,
+    IpV6CidrTop,
+    IpV4AddrBottom,
+    IpV6AddrBottom,
+    IpV4CidrBottom,
+    IpV6CidrBottom,
+    AsNumber,
+    AsNumberUp,
+    AsNumberDown,
+    AsNumberTop,
+    AsNumberBottom,
+    Domain,
+    ALabel,
+    ReverseDns,
+    ReverseDnsUp,
+    ReverseDnsDown,
+    ReverseDnsTop,
+    ReverseDnsBottom,
+    Entity,
+    Nameserver,
+    EntityNameSearch,
+    EntityHandleSearch,
+    NetworkHandleSearch,
+    NetworkNameSearch,
+    DomainNameSearch,
+    DomainNsNameSearch,
+    DomainNsIpSearch,
+    NameserverNameSearch,
+    NameserverIpSearch,
+    AutnumHandleSearch,
+    AutnumNameSearch,
+    Help,
+    Url,
+}
+
+impl QueryTypeVariant {
+    /// Returns the [`IanaRegistryType`] this variant maps to for bootstrapping,
+    /// or `None` if the variant does not use bootstrap lookups.
+    pub fn bootstrap_registry(&self) -> Option<IanaRegistryType> {
+        match self {
+            Self::IpV4Addr
+            | Self::IpV4Cidr
+            | Self::IpV4AddrUp
+            | Self::IpV4CidrUp
+            | Self::IpV4AddrDown
+            | Self::IpV4CidrDown
+            | Self::IpV4AddrTop
+            | Self::IpV4CidrTop
+            | Self::IpV4AddrBottom
+            | Self::IpV4CidrBottom => Some(IanaRegistryType::RdapBootstrapIpv4),
+            Self::IpV6Addr
+            | Self::IpV6Cidr
+            | Self::IpV6AddrUp
+            | Self::IpV6CidrUp
+            | Self::IpV6AddrDown
+            | Self::IpV6CidrDown
+            | Self::IpV6AddrTop
+            | Self::IpV6CidrTop
+            | Self::IpV6AddrBottom
+            | Self::IpV6CidrBottom => Some(IanaRegistryType::RdapBootstrapIpv6),
+            Self::AsNumber
+            | Self::AsNumberUp
+            | Self::AsNumberDown
+            | Self::AsNumberTop
+            | Self::AsNumberBottom => Some(IanaRegistryType::RdapBootstrapAsn),
+            Self::Domain | Self::Nameserver => Some(IanaRegistryType::RdapBootstrapDns),
+            Self::Entity => Some(IanaRegistryType::RdapObjectTags),
+            _ => None,
+        }
+    }
+
+    /// Constructs a concrete [`QueryType`] value suitable for passing to
+    /// [`crate::iana::bootstrap::qtype_to_bootstrap_url`].
+    pub fn to_query_type(&self) -> QueryType {
+        match self {
+            Self::IpV4Addr => QueryType::ipv4("192.0.2.1").unwrap(),
+            Self::IpV6Addr => QueryType::ipv6("2001:db8::1").unwrap(),
+            Self::IpV4Cidr => QueryType::ipv4cidr("192.0.2.0/24").unwrap(),
+            Self::IpV6Cidr => QueryType::ipv6cidr("2001:db8::/32").unwrap(),
+            Self::IpV4AddrUp => QueryType::ipv4_up("192.0.2.1").unwrap(),
+            Self::IpV6AddrUp => QueryType::ipv6_up("2001:db8::1").unwrap(),
+            Self::IpV4CidrUp => QueryType::ipv4cidr_up("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrUp => QueryType::ipv6cidr_up("2001:db8::/32").unwrap(),
+            Self::IpV4AddrDown => QueryType::ipv4_down("192.0.2.1").unwrap(),
+            Self::IpV6AddrDown => QueryType::ipv6_down("2001:db8::1").unwrap(),
+            Self::IpV4CidrDown => QueryType::ipv4cidr_down("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrDown => QueryType::ipv6cidr_down("2001:db8::/32").unwrap(),
+            Self::IpV4AddrTop => QueryType::ipv4_top("192.0.2.1").unwrap(),
+            Self::IpV6AddrTop => QueryType::ipv6_top("2001:db8::1").unwrap(),
+            Self::IpV4CidrTop => QueryType::ipv4cidr_top("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrTop => QueryType::ipv6cidr_top("2001:db8::/32").unwrap(),
+            Self::IpV4AddrBottom => QueryType::ipv4_bottom("192.0.2.1").unwrap(),
+            Self::IpV6AddrBottom => QueryType::ipv6_bottom("2001:db8::1").unwrap(),
+            Self::IpV4CidrBottom => QueryType::ipv4cidr_bottom("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrBottom => QueryType::ipv6cidr_bottom("2001:db8::/32").unwrap(),
+            Self::AsNumber => QueryType::autnum("as64512").unwrap(),
+            Self::AsNumberUp => QueryType::autnum_up("as64512").unwrap(),
+            Self::AsNumberDown => QueryType::autnum_down("as64512").unwrap(),
+            Self::AsNumberTop => QueryType::autnum_top("as64512").unwrap(),
+            Self::AsNumberBottom => QueryType::autnum_bottom("as64512").unwrap(),
+            Self::Domain => QueryType::domain("example.org").unwrap(),
+            Self::ALabel => QueryType::alabel("xn--fsq.org").unwrap(),
+            Self::ReverseDns => QueryType::rdns("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::ReverseDnsUp => QueryType::rdns_up("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::ReverseDnsDown => QueryType::rdns_down("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::ReverseDnsTop => QueryType::rdns_top("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::ReverseDnsBottom => QueryType::rdns_bottom("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::Entity => QueryType::Entity("X".to_string()),
+            Self::Nameserver => QueryType::ns("ns.example.org").unwrap(),
+            Self::EntityNameSearch => QueryType::EntityNameSearch("test".to_string()),
+            Self::EntityHandleSearch => QueryType::EntityHandleSearch("X".to_string()),
+            Self::NetworkHandleSearch => QueryType::NetworkHandleSearch("test".to_string()),
+            Self::NetworkNameSearch => QueryType::NetworkNameSearch("test".to_string()),
+            Self::DomainNameSearch => QueryType::DomainNameSearch("example".to_string()),
+            Self::DomainNsNameSearch => QueryType::DomainNsNameSearch("ns".to_string()),
+            Self::DomainNsIpSearch => QueryType::DomainNsIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))),
+            Self::NameserverNameSearch => QueryType::NameserverNameSearch("ns".to_string()),
+            Self::NameserverIpSearch => QueryType::NameserverIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))),
+            Self::AutnumHandleSearch => QueryType::AutnumHandleSearch("AS64512".to_string()),
+            Self::AutnumNameSearch => QueryType::AutnumNameSearch("test".to_string()),
+            Self::Help => QueryType::Help,
+            Self::Url => QueryType::Url("https://example.com".to_string()),
+        }
+    }
 }
 
 impl QueryType {

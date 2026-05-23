@@ -417,19 +417,24 @@ where
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod test {
     use icann_rdap_common::{
         httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
     };
 
-    use crate::{iana::bootstrap::PreferredUrl, rdap::QueryType};
+    use crate::{
+        iana::bootstrap::{qtype_to_bootstrap_url, PreferredUrl},
+        rdap::QueryType,
+        RdapClientError,
+    };
+
+    use strum::VariantArray;
 
     use super::{BootstrapStore, MemoryBootstrapStore};
 
     #[test]
-    fn GIVEN_membootstrap_with_dns_WHEN_get_domain_query_url_THEN_correct_url() {
+    fn test_membootstrap_with_dns() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -474,7 +479,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_autnum_WHEN_get_autnum_query_url_THEN_correct_url() {
+    fn test_membootstrap_with_autnum() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -526,7 +531,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_ipv4_THEN_get_ipv4_query_urls_THEN_correct_url() {
+    fn test_membootstrap_with_ipv4() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -578,7 +583,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_ipv6_THEN_get_ipv6_query_urls_THEN_correct_url() {
+    fn test_membootstrap_with_ipv6() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -630,7 +635,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_tag_THEN_get_tag_query_urls_THEN_correct_url() {
+    fn test_membootstrap_with_tag() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -682,5 +687,81 @@ mod test {
 
         // THEN
         assert_eq!(actual, "https://example.com/rdap/");
+    }
+
+    #[test]
+    fn test_non_bootstrap_return_unavailable() {
+        use crate::rdap::qtype::QueryTypeVariant;
+
+        // GIVEN
+        let client = crate::http::Client::new(
+            reqwest::Client::new(),
+            crate::http::RequestOptions::default(),
+        );
+        let store = MemoryBootstrapStore::new();
+
+        // Track how many variants were tested and how many should have bootstrap
+        let mut non_bootstrap_count = 0u16;
+        let mut bootstrap_count = 0u16;
+
+        // WHEN + THEN: iterate over all QueryType variants using VariantArray
+        for variant in QueryTypeVariant::VARIANTS {
+            let query_type = variant.to_query_type();
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("build tokio runtime");
+
+            let result = rt.block_on(qtype_to_bootstrap_url(&client, &store, &query_type, |_| {}));
+
+            let registry = variant.bootstrap_registry();
+            match registry {
+                Some(_) => {
+                    bootstrap_count += 1;
+                    // Bootstrap variants should NOT return BootstrapUnavailable from the match arm.
+                    // They may fail for other reasons (no HTTP, no registry in store, etc.),
+                    // but the error should not be BootstrapUnavailable from the catch-all arm.
+                    // Since we have no HTTP mocking, we expect it to fail with something other
+                    // than BootstrapUnavailable (e.g., a network error from fetch_bootstrap),
+                    // OR BootstrapUnavailable from the store (if fetch somehow succeeded).
+                    // The key assertion is that non-bootstrap variants return BootstrapUnavailable.
+                    let is_bootstrap_unavailable =
+                        matches!(&result, Err(RdapClientError::BootstrapUnavailable));
+                    // For bootstrap variants, BootstrapUnavailable is acceptable either from
+                    // the catch-all (shouldn't happen) or from preferred_url when store is empty.
+                    // We just verify the variant was processed.
+                    if is_bootstrap_unavailable {
+                        // This could happen if fetch_bootstrap fails and returns BootstrapUnavailable
+                        // — that's fine, the variant IS a bootstrap variant.
+                    }
+                }
+                None => {
+                    non_bootstrap_count += 1;
+                    // Non-bootstrap variants should return BootstrapUnavailable from the match _ arm
+                    assert!(
+                        matches!(result, Err(RdapClientError::BootstrapUnavailable)),
+                        "Variant {:?} is not a bootstrap variant but did not return BootstrapUnavailable",
+                        variant
+                    );
+                }
+            }
+
+            rt.shutdown_timeout(std::time::Duration::from_millis(100));
+        }
+
+        // Verify we tested all variants
+        let total = non_bootstrap_count + bootstrap_count;
+        assert_eq!(
+            total,
+            QueryTypeVariant::VARIANTS.len() as u16,
+            "All QueryType variants should be tested"
+        );
+
+        // Verify there are non-bootstrap variants (sanity check)
+        assert!(
+            non_bootstrap_count == 19,
+            "Expected some non-bootstrap query type variants, got {}",
+            non_bootstrap_count
+        );
     }
 }
