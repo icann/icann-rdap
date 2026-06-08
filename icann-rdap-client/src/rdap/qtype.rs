@@ -104,20 +104,35 @@ pub enum QueryType {
     #[strum(serialize = "A-Label Domain Lookup")]
     ALabel(DomainName),
 
-    #[strum(serialize = "Reverse DNS Domain Lookup")]
-    ReverseDns(IpNet),
+    #[strum(serialize = "Reverse DNS IPv4 Lookup")]
+    RdnsIpv4(Ipv4Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Up Lookup")]
-    ReverseDnsUp(IpNet),
+    #[strum(serialize = "Reverse DNS IPv6 Lookup")]
+    RdnsIpv6(Ipv6Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Down Lookup")]
-    ReverseDnsDown(IpNet),
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Up Lookup")]
+    RdnsIpv4Up(Ipv4Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Top Lookup")]
-    ReverseDnsTop(IpNet),
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Up Lookup")]
+    RdnsIpv6Up(Ipv6Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Bottom Lookup")]
-    ReverseDnsBottom(IpNet),
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Down Lookup")]
+    RdnsIpv4Down(Ipv4Net),
+
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Down Lookup")]
+    RdnsIpv6Down(Ipv6Net),
+
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Top Lookup")]
+    RdnsIpv4Top(Ipv4Net),
+
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Top Lookup")]
+    RdnsIpv6Top(Ipv6Net),
+
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Bottom Lookup")]
+    RdnsIpv4Bottom(Ipv4Net),
+
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Bottom Lookup")]
+    RdnsIpv6Bottom(Ipv6Net),
 
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
@@ -196,11 +211,16 @@ pub enum QueryTypeVariant {
     AsNumberBottom,
     Domain,
     ALabel,
-    ReverseDns,
-    ReverseDnsUp,
-    ReverseDnsDown,
-    ReverseDnsTop,
-    ReverseDnsBottom,
+    RdnsIpv4,
+    RdnsIpv6,
+    RdnsIpv4Up,
+    RdnsIpv6Up,
+    RdnsIpv4Down,
+    RdnsIpv6Down,
+    RdnsIpv4Top,
+    RdnsIpv6Top,
+    RdnsIpv4Bottom,
+    RdnsIpv6Bottom,
     Entity,
     Nameserver,
     EntityNameSearch,
@@ -287,11 +307,31 @@ impl QueryTypeVariant {
             Self::AsNumberBottom => QueryType::autnum_bottom("as64512").unwrap(),
             Self::Domain => QueryType::domain("example.org").unwrap(),
             Self::ALabel => QueryType::alabel("xn--fsq.org").unwrap(),
-            Self::ReverseDns => QueryType::rdns("2.0.0.192.in-addr.arpa").unwrap(),
-            Self::ReverseDnsUp => QueryType::rdns_up("2.0.0.192.in-addr.arpa").unwrap(),
-            Self::ReverseDnsDown => QueryType::rdns_down("2.0.0.192.in-addr.arpa").unwrap(),
-            Self::ReverseDnsTop => QueryType::rdns_top("2.0.0.192.in-addr.arpa").unwrap(),
-            Self::ReverseDnsBottom => QueryType::rdns_bottom("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv4 => QueryType::rdns_ipv4("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6 => QueryType::rdns_ipv6(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Up => QueryType::rdns_ipv4_up("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Up => QueryType::rdns_ipv6_up(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Down => QueryType::rdns_ipv4_down("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Down => QueryType::rdns_ipv6_down(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Top => QueryType::rdns_ipv4_top("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Top => QueryType::rdns_ipv6_top(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Bottom => QueryType::rdns_ipv4_bottom("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Bottom => QueryType::rdns_ipv6_bottom(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
             Self::Entity => QueryType::Entity("X".to_string()),
             Self::Nameserver => QueryType::ns("ns.example.org").unwrap(),
             Self::EntityNameSearch => QueryType::EntityNameSearch("test".to_string()),
@@ -463,38 +503,73 @@ impl QueryType {
                 "{base_url}/domain/{}",
                 PctString::encode(value.trim_leading_dot().chars(), UriReserved::Path)
             )),
-            Self::ReverseDns(value) => Ok(format!(
+            Self::RdnsIpv4(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsUp(value) => Ok(format!(
+            Self::RdnsIpv6(value) => Ok(format!(
+                "{base_url}/domain/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Up(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-up/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsDown(value) => Ok(format!(
+            Self::RdnsIpv6Up(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-up/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Down(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-down/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsTop(value) => Ok(format!(
+            Self::RdnsIpv6Down(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-down/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Top(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-top/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsBottom(value) => Ok(format!(
+            Self::RdnsIpv6Top(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-top/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Bottom(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-bottom/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv6Bottom(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-bottom/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
@@ -538,29 +613,84 @@ impl QueryType {
         Ok(Self::ALabel(DomainName::from_str(alabel)?))
     }
 
-    pub fn rdns(domain_name: &str) -> Result<Self, RdapClientError> {
+    pub fn rdns_ipv4(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDns(ipnet))
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_up(domain_name: &str) -> Result<Self, RdapClientError> {
+    pub fn rdns_ipv6(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsUp(ipnet))
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_down(domain_name: &str) -> Result<Self, RdapClientError> {
+    pub fn rdns_ipv4_up(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsDown(ipnet))
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Up(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_top(domain_name: &str) -> Result<Self, RdapClientError> {
+    pub fn rdns_ipv6_up(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsTop(ipnet))
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Up(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+    pub fn rdns_ipv4_down(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsBottom(ipnet))
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Down(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    pub fn rdns_ipv6_down(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Down(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    pub fn rdns_ipv4_top(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Top(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    pub fn rdns_ipv6_top(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Top(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    pub fn rdns_ipv4_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Bottom(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    pub fn rdns_ipv6_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Bottom(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
     pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
@@ -569,18 +699,18 @@ impl QueryType {
                 IpCidr::V4(cidr) => {
                     let first = cidr.first_address();
                     let prefix = cidr.network_length();
-                    Self::ReverseDns(IpNet::V4(
+                    Self::RdnsIpv4(
                         Ipv4Net::new(first, prefix)
                             .map_err(|_e| RdapClientError::InvalidQueryValue)?,
-                    ))
+                    )
                 }
                 IpCidr::V6(cidr) => {
                     let first = cidr.first_address();
                     let prefix = cidr.network_length();
-                    Self::ReverseDns(IpNet::V6(
+                    Self::RdnsIpv6(
                         Ipv6Net::new(first, prefix)
                             .map_err(|_e| RdapClientError::InvalidQueryValue)?,
-                    ))
+                    )
                 }
             });
         }
@@ -594,7 +724,10 @@ impl QueryType {
                 IpNet::V6(Ipv6Net::new(ipv6, 128).map_err(|_e| RdapClientError::InvalidQueryValue)?)
             }
         };
-        Ok(Self::ReverseDns(ipnet))
+        Ok(match ipnet {
+            IpNet::V4(v4) => Self::RdnsIpv4(v4),
+            IpNet::V6(v6) => Self::RdnsIpv6(v6),
+        })
     }
 
     pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
@@ -852,7 +985,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberUp(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsUp(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Up(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Up(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -876,7 +1012,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberDown(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsDown(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Down(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Down(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -900,7 +1039,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberTop(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsTop(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Top(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Top(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -924,7 +1066,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberBottom(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsBottom(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Bottom(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Bottom(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -956,7 +1101,10 @@ impl FromStr for QueryType {
             return if is_nameserver(s) {
                 Self::ns(s)
             } else if let Some(ipnet) = reverse_dns_to_ipnet(s) {
-                Ok(Self::ReverseDns(ipnet))
+                Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6(v6),
+                })
             } else {
                 Self::domain(s)
             };
@@ -1823,7 +1971,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_up_query_url() {
+    fn test_rdns_ipv4_up_query_url() {
         // GIVEN
         let q = QueryType::from_str("up:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1838,7 +1986,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_down_query_url() {
+    fn test_rdns_ipv6_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "up:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-up/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_down_query_url() {
         // GIVEN
         let q = QueryType::from_str("down:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1853,7 +2019,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_top_query_url() {
+    fn test_rdns_ipv6_down_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "down:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-down/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_top_query_url() {
         // GIVEN
         let q = QueryType::from_str("top:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1868,7 +2052,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_bottom_query_url() {
+    fn test_rdns_ipv6_top_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "top:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-top/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_bottom_query_url() {
         // GIVEN
         let q = QueryType::from_str("bottom:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1883,7 +2085,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_up_from_str() {
+    fn test_rdns_ipv6_bottom_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "bottom:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-bottom/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_up_from_str() {
         // GIVEN
         let s = "up:2.0.192.in-addr.arpa";
 
@@ -1891,11 +2111,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsUp(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Up(_)))
     }
 
     #[test]
-    fn test_rdns_down_from_str() {
+    fn test_rdns_ipv6_up_from_str() {
+        // GIVEN
+        let s = "up:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Up(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_down_from_str() {
         // GIVEN
         let s = "down:2.0.192.in-addr.arpa";
 
@@ -1903,11 +2135,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsDown(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Down(_)))
     }
 
     #[test]
-    fn test_rdns_top_from_str() {
+    fn test_rdns_ipv6_down_from_str() {
+        // GIVEN
+        let s = "down:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Down(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_top_from_str() {
         // GIVEN
         let s = "top:2.0.192.in-addr.arpa";
 
@@ -1915,11 +2159,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsTop(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Top(_)))
     }
 
     #[test]
-    fn test_rdns_bottom_from_str() {
+    fn test_rdns_ipv6_top_from_str() {
+        // GIVEN
+        let s = "top:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Top(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_bottom_from_str() {
         // GIVEN
         let s = "bottom:2.0.192.in-addr.arpa";
 
@@ -1927,11 +2183,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsBottom(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Bottom(_)))
     }
 
     #[test]
-    fn test_rdns_up_prefix_invalid_input() {
+    fn test_rdns_ipv6_bottom_from_str() {
+        // GIVEN
+        let s = "bottom:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Bottom(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_up_prefix_invalid_input() {
         // GIVEN
         let s = "up:foo";
 
@@ -1943,7 +2211,19 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_down_prefix_invalid_input() {
+    fn test_rdns_ipv6_up_prefix_invalid_input() {
+        // GIVEN
+        let s = "up:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv4_down_prefix_invalid_input() {
         // GIVEN
         let s = "down:foo";
 
@@ -1955,7 +2235,19 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_top_prefix_invalid_input() {
+    fn test_rdns_ipv6_down_prefix_invalid_input() {
+        // GIVEN
+        let s = "down:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv4_top_prefix_invalid_input() {
         // GIVEN
         let s = "top:foo";
 
@@ -1967,7 +2259,31 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_bottom_prefix_invalid_input() {
+    fn test_rdns_ipv6_top_prefix_invalid_input() {
+        // GIVEN
+        let s = "top:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv4_bottom_prefix_invalid_input() {
+        // GIVEN
+        let s = "bottom:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv6_bottom_prefix_invalid_input() {
         // GIVEN
         let s = "bottom:foo";
 
