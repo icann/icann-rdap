@@ -40,6 +40,7 @@ pub trait BootstrapStore: Send + Sync {
     ) -> Result<Option<Vec<String>>, RdapClientError> {
         let domain_name = match query_type {
             QueryType::Domain(domain) => domain.to_ascii(),
+            QueryType::ALabel(domain) => domain.to_ascii(),
             QueryType::Nameserver(ns) => ns.to_ascii(),
             _ => panic!("invalid domain query type"),
         };
@@ -380,7 +381,7 @@ where
             fetch_bootstrap(&IanaRegistryType::RdapBootstrapAsn, client, store, callback).await?;
             Ok(store.get_autnum_query_urls(query_type)?.preferred_url()?)
         }
-        QueryType::Domain(_) => {
+        QueryType::Domain(_) | QueryType::ALabel(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapBootstrapDns, client, store, callback).await?;
             Ok(store.get_domain_query_urls(query_type)?.preferred_url()?)
         }
@@ -444,7 +445,7 @@ mod test {
         MemoryBootstrapStore::new()
     }
 
-  fn bootstrap_url(
+    fn bootstrap_url(
         client: &Client,
         store: &MemoryBootstrapStore,
         variant: QueryTypeVariant,
@@ -453,8 +454,12 @@ mod test {
             .enable_all()
             .build()
             .expect("build tokio runtime");
-        let result =
-            rt.block_on(qtype_to_bootstrap_url(client, store, &variant.to_query_type(), |_| {}));
+        let result = rt.block_on(qtype_to_bootstrap_url(
+            client,
+            store,
+            &variant.to_query_type(),
+            |_| {},
+        ));
         rt.shutdown_timeout(std::time::Duration::from_millis(100));
         result
     }
@@ -761,7 +766,6 @@ mod test {
 
     // Non-bootstrap variants: must return BootstrapUnavailable from the catch-all `_` arm.
     #[rstest]
-    #[case(QueryTypeVariant::ALabel)]
     #[case(QueryTypeVariant::ReverseDns)]
     #[case(QueryTypeVariant::ReverseDnsUp)]
     #[case(QueryTypeVariant::ReverseDnsDown)]
@@ -825,6 +829,7 @@ mod test {
     #[case(QueryTypeVariant::AsNumberTop, IanaRegistryType::RdapBootstrapAsn)]
     #[case(QueryTypeVariant::AsNumberBottom, IanaRegistryType::RdapBootstrapAsn)]
     #[case(QueryTypeVariant::Domain, IanaRegistryType::RdapBootstrapDns)]
+    #[case(QueryTypeVariant::ALabel, IanaRegistryType::RdapBootstrapDns)]
     #[case(QueryTypeVariant::Nameserver, IanaRegistryType::RdapBootstrapDns)]
     #[case(QueryTypeVariant::Entity, IanaRegistryType::RdapObjectTags)]
     fn test_bootstrap_variant_dispatches_correctly(
@@ -853,8 +858,7 @@ mod test {
         assert!(
             callback_called,
             "Bootstrap variant {:?} (expected registry {:?}) did not reach the correct match arm",
-            variant,
-            expected_registry
+            variant, expected_registry
         );
 
         // The result may succeed (Ok), fail with a network error (Client), fail at
@@ -864,11 +868,9 @@ mod test {
             matches!(
                 &result,
                 Ok(_)
-                    | Err(
-                        RdapClientError::Client(_)
-                            | RdapClientError::BootstrapError(_)
-                            | RdapClientError::BootstrapUnavailable
-                    )
+                    | Err(RdapClientError::Client(_)
+                        | RdapClientError::BootstrapError(_)
+                        | RdapClientError::BootstrapUnavailable)
             ),
             "Bootstrap variant {:?} (expected registry {:?}) unexpected result: {:?}",
             variant,

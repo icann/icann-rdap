@@ -248,7 +248,9 @@ impl QueryTypeVariant {
             | Self::AsNumberDown
             | Self::AsNumberTop
             | Self::AsNumberBottom => Some(IanaRegistryType::RdapBootstrapAsn),
-            Self::Domain | Self::Nameserver => Some(IanaRegistryType::RdapBootstrapDns),
+            Self::Domain | Self::ALabel | Self::Nameserver => {
+                Some(IanaRegistryType::RdapBootstrapDns)
+            }
             Self::Entity => Some(IanaRegistryType::RdapObjectTags),
             _ => None,
         }
@@ -298,9 +300,13 @@ impl QueryTypeVariant {
             Self::NetworkNameSearch => QueryType::NetworkNameSearch("test".to_string()),
             Self::DomainNameSearch => QueryType::DomainNameSearch("example".to_string()),
             Self::DomainNsNameSearch => QueryType::DomainNsNameSearch("ns".to_string()),
-            Self::DomainNsIpSearch => QueryType::DomainNsIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))),
+            Self::DomainNsIpSearch => {
+                QueryType::DomainNsIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)))
+            }
             Self::NameserverNameSearch => QueryType::NameserverNameSearch("ns".to_string()),
-            Self::NameserverIpSearch => QueryType::NameserverIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1))),
+            Self::NameserverIpSearch => {
+                QueryType::NameserverIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)))
+            }
             Self::AutnumHandleSearch => QueryType::AutnumHandleSearch("AS64512".to_string()),
             Self::AutnumNameSearch => QueryType::AutnumNameSearch("test".to_string()),
             Self::Help => QueryType::Help,
