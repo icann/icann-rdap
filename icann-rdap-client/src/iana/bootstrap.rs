@@ -162,6 +162,41 @@ pub trait BootstrapStore: Send + Sync {
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_ipv6_bootstrap_urls] method.
     fn get_ipv6_urls(&self, ipv6: &str) -> Result<Option<Vec<String>>, RdapClientError>;
 
+    /// Get the URLs for an RDNS query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
+    fn get_rdns_query_urls(
+        &self,
+        query_type: &QueryType,
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
+        let ipnet = match query_type {
+            QueryType::RdnsIpv4(cidr)
+            | QueryType::RdnsIpv4Up(cidr)
+            | QueryType::RdnsIpv4Down(cidr)
+            | QueryType::RdnsIpv4Top(cidr)
+            | QueryType::RdnsIpv4Bottom(cidr) => cidr.to_string(),
+            QueryType::RdnsIpv6(cidr)
+            | QueryType::RdnsIpv6Up(cidr)
+            | QueryType::RdnsIpv6Down(cidr)
+            | QueryType::RdnsIpv6Top(cidr)
+            | QueryType::RdnsIpv6Bottom(cidr) => cidr.to_string(),
+            _ => panic!("non rdns query for rdns bootstrap"),
+        };
+        match query_type {
+            QueryType::RdnsIpv4(_)
+            | QueryType::RdnsIpv4Up(_)
+            | QueryType::RdnsIpv4Down(_)
+            | QueryType::RdnsIpv4Top(_)
+            | QueryType::RdnsIpv4Bottom(_) => self.get_ipv4_urls(&ipnet),
+            QueryType::RdnsIpv6(_)
+            | QueryType::RdnsIpv6Up(_)
+            | QueryType::RdnsIpv6Down(_)
+            | QueryType::RdnsIpv6Top(_)
+            | QueryType::RdnsIpv6Bottom(_) => self.get_ipv6_urls(&ipnet),
+            _ => panic!("non rdns query for rdns bootstrap"),
+        }
+    }
+
     /// Get the URLs associated with the IANA RDAP Object Tags bootstrap.
     ///
     /// Returns [None] if no URLs were found for the given key.
@@ -384,6 +419,34 @@ where
         QueryType::Domain(_) | QueryType::ALabel(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapBootstrapDns, client, store, callback).await?;
             Ok(store.get_domain_query_urls(query_type)?.preferred_url()?)
+        }
+        QueryType::RdnsIpv4(_)
+        | QueryType::RdnsIpv4Up(_)
+        | QueryType::RdnsIpv4Down(_)
+        | QueryType::RdnsIpv4Top(_)
+        | QueryType::RdnsIpv4Bottom(_) => {
+            fetch_bootstrap(
+                &IanaRegistryType::RdapBootstrapIpv4,
+                client,
+                store,
+                callback,
+            )
+            .await?;
+            Ok(store.get_rdns_query_urls(query_type)?.preferred_url()?)
+        }
+        QueryType::RdnsIpv6(_)
+        | QueryType::RdnsIpv6Up(_)
+        | QueryType::RdnsIpv6Down(_)
+        | QueryType::RdnsIpv6Top(_)
+        | QueryType::RdnsIpv6Bottom(_) => {
+            fetch_bootstrap(
+                &IanaRegistryType::RdapBootstrapIpv6,
+                client,
+                store,
+                callback,
+            )
+            .await?;
+            Ok(store.get_rdns_query_urls(query_type)?.preferred_url()?)
         }
         QueryType::Entity(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapObjectTags, client, store, callback).await?;
@@ -766,16 +829,6 @@ mod test {
 
     // Non-bootstrap variants: must return BootstrapUnavailable from the catch-all `_` arm.
     #[rstest]
-    #[case(QueryTypeVariant::RdnsIpv4)]
-    #[case(QueryTypeVariant::RdnsIpv6)]
-    #[case(QueryTypeVariant::RdnsIpv4Up)]
-    #[case(QueryTypeVariant::RdnsIpv6Up)]
-    #[case(QueryTypeVariant::RdnsIpv4Down)]
-    #[case(QueryTypeVariant::RdnsIpv6Down)]
-    #[case(QueryTypeVariant::RdnsIpv4Top)]
-    #[case(QueryTypeVariant::RdnsIpv6Top)]
-    #[case(QueryTypeVariant::RdnsIpv4Bottom)]
-    #[case(QueryTypeVariant::RdnsIpv6Bottom)]
     #[case(QueryTypeVariant::EntityNameSearch)]
     #[case(QueryTypeVariant::EntityHandleSearch)]
     #[case(QueryTypeVariant::NetworkHandleSearch)]
@@ -837,6 +890,16 @@ mod test {
     #[case(QueryTypeVariant::ALabel, IanaRegistryType::RdapBootstrapDns)]
     #[case(QueryTypeVariant::Nameserver, IanaRegistryType::RdapBootstrapDns)]
     #[case(QueryTypeVariant::Entity, IanaRegistryType::RdapObjectTags)]
+    #[case(QueryTypeVariant::RdnsIpv4, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Up, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Up, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Down, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Down, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Top, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Top, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Bottom, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Bottom, IanaRegistryType::RdapBootstrapIpv6)]
     fn test_bootstrap_variant_dispatches_correctly(
         #[case] variant: QueryTypeVariant,
         #[case] expected_registry: IanaRegistryType,

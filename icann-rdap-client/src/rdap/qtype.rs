@@ -252,7 +252,12 @@ impl QueryTypeVariant {
             | Self::IpV4AddrTop
             | Self::IpV4CidrTop
             | Self::IpV4AddrBottom
-            | Self::IpV4CidrBottom => Some(IanaRegistryType::RdapBootstrapIpv4),
+            | Self::IpV4CidrBottom
+            | Self::RdnsIpv4
+            | Self::RdnsIpv4Up
+            | Self::RdnsIpv4Down
+            | Self::RdnsIpv4Top
+            | Self::RdnsIpv4Bottom => Some(IanaRegistryType::RdapBootstrapIpv4),
             Self::IpV6Addr
             | Self::IpV6Cidr
             | Self::IpV6AddrUp
@@ -262,7 +267,12 @@ impl QueryTypeVariant {
             | Self::IpV6AddrTop
             | Self::IpV6CidrTop
             | Self::IpV6AddrBottom
-            | Self::IpV6CidrBottom => Some(IanaRegistryType::RdapBootstrapIpv6),
+            | Self::IpV6CidrBottom
+            | Self::RdnsIpv6
+            | Self::RdnsIpv6Up
+            | Self::RdnsIpv6Down
+            | Self::RdnsIpv6Top
+            | Self::RdnsIpv6Bottom => Some(IanaRegistryType::RdapBootstrapIpv6),
             Self::AsNumber
             | Self::AsNumberUp
             | Self::AsNumberDown
