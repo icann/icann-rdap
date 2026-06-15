@@ -38,6 +38,7 @@ use {
 
 use strum::Display as EnumDisplay;
 
+/// IANA RDAP Extension Identifiers.
 #[derive(
     Serialize, Deserialize, EnumString, EnumDisplay, Debug, PartialEq, Eq, AsRefStr, Hash, Clone,
 )]

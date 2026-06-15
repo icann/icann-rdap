@@ -3,6 +3,7 @@
 use super::EnumDisplay;
 use strum::EnumString;
 
+/// Event Actions registered in the IANA RDAP registry.
 #[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 pub enum EventActionValue {
     #[strum(serialize = "registration")]

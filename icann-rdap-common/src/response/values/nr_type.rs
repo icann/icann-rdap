@@ -3,6 +3,7 @@
 use super::EnumDisplay;
 use strum::EnumString;
 
+/// IANA registered Notice/Remark types.
 #[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 pub enum NrType {
     #[strum(serialize = "result set truncated due to authorization")]

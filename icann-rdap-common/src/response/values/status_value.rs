@@ -3,6 +3,7 @@
 use super::EnumDisplay;
 use strum::EnumString;
 
+/// RDAP status values registered with IANA.
 #[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay)]
 pub enum StatusValue {
     #[strum(serialize = "validated")]
