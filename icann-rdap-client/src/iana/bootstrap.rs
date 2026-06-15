@@ -44,7 +44,8 @@ pub trait BootstrapStore: Send + Sync {
             QueryType::Nameserver(ns) => ns.to_ascii(),
             _ => panic!("invalid domain query type"),
         };
-        self.get_dns_urls(domain_name)
+        let domain_name = domain_name.trim_end_matches('.').to_string();
+        self.get_dns_urls(&domain_name)
     }
 
     /// Get the urls for an autnum query type.
@@ -608,6 +609,51 @@ mod test {
         // WHEN
         let actual = mem
             .get_domain_query_urls(&QueryType::domain("example.org").expect("invalid domain name"))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://example.org/")
+    }
+
+    #[test]
+    fn test_membootstrap_with_dns_trailing_dot() {
+        // GIVEN
+        let mem = MemoryBootstrapStore::new();
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Some text",
+                "services": [
+                  [
+                    ["net", "com"],
+                    [
+                      "https://registry.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["org", "mytld"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse domain bootstrap");
+        mem.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapDns,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put iana registry");
+
+        // WHEN
+        let actual = mem
+            .get_domain_query_urls(&QueryType::domain("example.org.").expect("invalid domain name"))
             .expect("get bootstrap url")
             .preferred_url()
             .expect("preferred url");
