@@ -2,8 +2,8 @@ use std::sync::LazyLock;
 
 use {
     axum::{
-        response::{IntoResponse, Response},
         Json,
+        response::{IntoResponse, Response},
     },
     http::StatusCode,
     icann_rdap_common::{
@@ -108,7 +108,7 @@ mod tests {
         },
     };
 
-    use crate::rdap::response::{ResponseUtil, NOT_FOUND, NOT_IMPLEMENTED};
+    use crate::rdap::response::{NOT_FOUND, NOT_IMPLEMENTED, ResponseUtil};
 
     #[test]
     fn GIVEN_non_error_WHEN_exec_response_THEN_status_code_is_200() {
@@ -154,11 +154,13 @@ mod tests {
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("related")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("related")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build()

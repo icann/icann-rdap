@@ -1,6 +1,6 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
+use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 

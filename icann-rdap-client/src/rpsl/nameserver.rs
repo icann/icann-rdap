@@ -1,9 +1,9 @@
 use icann_rdap_common::prelude::{CommonFields, Nameserver, ObjectCommonFields};
 
-use crate::rpsl::{ttl::push_ttl0, RpslParams, ToRpsl};
+use crate::rpsl::{RpslParams, ToRpsl, ttl::push_ttl0};
 
 use super::{
-    push_entities, push_mandatory_attribute, push_notices, push_obj_common, AttrName, KeyRef,
+    AttrName, KeyRef, push_entities, push_mandatory_attribute, push_notices, push_obj_common,
 };
 
 impl ToRpsl for Nameserver {

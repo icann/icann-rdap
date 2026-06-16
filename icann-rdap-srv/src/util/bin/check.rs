@@ -1,7 +1,7 @@
 use {
     clap::{Args, ValueEnum},
     icann_rdap_common::{
-        check::{traverse_checks, CheckClass, CheckParams, GetChecks},
+        check::{CheckClass, CheckParams, GetChecks, traverse_checks},
         response::RdapResponse,
     },
     tracing::error,

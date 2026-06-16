@@ -98,10 +98,12 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is found
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::ContentTypeIsNotRdap));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::ContentTypeIsNotRdap)
+        );
     }
 
     #[test]
@@ -130,10 +132,12 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is not found
-        assert!(!checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::ContentTypeIsNotRdap));
+        assert!(
+            !checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::ContentTypeIsNotRdap)
+        );
     }
 
     #[test]
@@ -163,10 +167,12 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is not found
-        assert!(!checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::ContentTypeIsNotRdap));
+        assert!(
+            !checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::ContentTypeIsNotRdap)
+        );
     }
 
     #[test]
@@ -195,10 +201,12 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN no media type check is found
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::ContentTypeIsAbsent));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::ContentTypeIsAbsent)
+        );
     }
 
     #[test]
@@ -227,10 +235,12 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN no check is given
-        assert!(!checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::AllowOriginNotStar));
+        assert!(
+            !checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::AllowOriginNotStar)
+        );
     }
 
     #[test]
@@ -261,10 +271,12 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN the check is found
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::AllowOriginNotStar));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::AllowOriginNotStar)
+        );
     }
 
     #[test]
@@ -294,10 +306,12 @@ mod tests {
 
         // THEN check for missing cors is found
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::AllowOriginNotStar));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::AllowOriginNotStar)
+        );
     }
 
     #[test]

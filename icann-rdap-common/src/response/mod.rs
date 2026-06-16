@@ -604,10 +604,10 @@ mod tests {
 
     use crate::{
         media_types::RDAP_MEDIA_TYPE,
-        prelude::{get_relationship_links, ExtensionId},
+        prelude::{ExtensionId, get_relationship_links},
     };
 
-    use super::{get_related_links, Domain, Link, RdapResponse, ToResponse};
+    use super::{Domain, Link, RdapResponse, ToResponse, get_related_links};
 
     #[test]
     fn test_redaction_response_gets_object() {

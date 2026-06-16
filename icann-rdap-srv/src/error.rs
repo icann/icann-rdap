@@ -2,12 +2,12 @@ use std::{net::AddrParseError, num::ParseIntError};
 
 use {
     axum::{
-        response::{IntoResponse, Response},
         Json,
+        response::{IntoResponse, Response},
     },
     envmnt::errors::EnvmntError,
     http::StatusCode,
-    icann_rdap_client::{iana::IanaResponseError, RdapClientError},
+    icann_rdap_client::{RdapClientError, iana::IanaResponseError},
     icann_rdap_common::{
         prelude::ToResponse,
         response::{RdapResponseError, Rfc9083Error},

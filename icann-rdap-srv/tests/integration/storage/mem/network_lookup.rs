@@ -1,6 +1,6 @@
 use {
     icann_rdap_common::response::{Common, Network, ObjectCommon, RdapResponse},
-    icann_rdap_srv::storage::{mem::ops::Mem, StoreOps},
+    icann_rdap_srv::storage::{StoreOps, mem::ops::Mem},
     rstest::rstest,
 };
 

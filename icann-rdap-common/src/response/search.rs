@@ -8,7 +8,7 @@ use {
     serde::{Deserialize, Serialize},
 };
 
-use super::{domain::Domain, entity::Entity, nameserver::Nameserver, CommonFields, ToResponse};
+use super::{CommonFields, ToResponse, domain::Domain, entity::Entity, nameserver::Nameserver};
 
 /// Represents RDAP domain search results.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]

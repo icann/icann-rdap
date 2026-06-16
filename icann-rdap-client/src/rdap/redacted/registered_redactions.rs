@@ -164,8 +164,8 @@ mod tests {
     use icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            redacted::{Name, Redacted},
             Domain,
+            redacted::{Name, Redacted},
         },
     };
 

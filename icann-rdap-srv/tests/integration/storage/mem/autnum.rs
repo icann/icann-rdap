@@ -3,7 +3,7 @@ use {
         prelude::Numberish,
         response::{Autnum, RdapResponse},
     },
-    icann_rdap_srv::storage::{mem::ops::Mem, StoreOps},
+    icann_rdap_srv::storage::{StoreOps, mem::ops::Mem},
 };
 
 #[tokio::test]

@@ -1,7 +1,7 @@
 //! Convert a Contact to jCard/vCard.
 use std::str::FromStr;
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 use super::Contact;
 
@@ -240,18 +240,20 @@ mod tests {
             .titles(vec!["Research Scientist".to_string()])
             .roles(vec!["Project Lead".to_string()])
             .contact_uris(vec!["https://example.com/contact-form".to_string()])
-            .postal_addresses(vec![PostalAddress::builder()
-                .context("work")
-                .country_code("CA")
-                .country_name("Canada")
-                .postal_code("G1V 2M2")
-                .region_code("QC")
-                .locality("Quebec")
-                .street_parts(vec![
-                    "Suite 1234".to_string(),
-                    "4321 Rue Somewhere".to_string(),
-                ])
-                .build()])
+            .postal_addresses(vec![
+                PostalAddress::builder()
+                    .context("work")
+                    .country_code("CA")
+                    .country_name("Canada")
+                    .postal_code("G1V 2M2")
+                    .region_code("QC")
+                    .locality("Quebec")
+                    .street_parts(vec![
+                        "Suite 1234".to_string(),
+                        "4321 Rue Somewhere".to_string(),
+                    ])
+                    .build(),
+            ])
             .phones(vec![
                 Phone::builder()
                     .preference(1)
@@ -269,10 +271,12 @@ mod tests {
                     .phone("tel:+1-555-555-4321")
                     .build(),
             ])
-            .emails(vec![Email::builder()
-                .contexts(vec!["work".to_string()])
-                .email("joe.user@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder()
+                    .contexts(vec!["work".to_string()])
+                    .email("joe.user@example.com")
+                    .build(),
+            ])
             .urls(vec!["https://example.com/some-url".to_string()])
             .build();
 

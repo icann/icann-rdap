@@ -59,7 +59,7 @@ pub trait StoreOps: Send + Sync {
 
     /// Search for nameservers by name.
     async fn search_nameservers_by_name(&self, name: &str)
-        -> Result<RdapResponse, RdapServerError>;
+    -> Result<RdapResponse, RdapServerError>;
 
     /// Search for nameservers by IP address.
     async fn search_nameservers_by_ip(
@@ -117,7 +117,7 @@ pub trait StoreOps: Send + Sync {
 
     /// Search for the topmost containing network (rdap-top per RFC 9910) by CIDR.
     async fn search_ip_rdap_top_by_cidr(&self, cidr: &str)
-        -> Result<RdapResponse, RdapServerError>;
+    -> Result<RdapResponse, RdapServerError>;
 
     /// Search for immediate child networks (rdap-down per RFC 9910) by IP address.
     async fn search_ip_rdap_down_by_ipaddr(
@@ -145,14 +145,14 @@ pub trait StoreOps: Send + Sync {
 
     /// Search for autnums by handle (RFC 9910).
     async fn search_autnums_by_handle(&self, handle: &str)
-        -> Result<RdapResponse, RdapServerError>;
+    -> Result<RdapResponse, RdapServerError>;
 
     /// Search for autnums by name (RFC 9910).
     async fn search_autnums_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError>;
 
     /// Search for the supernet (rdap-up per RFC 9910) by AS number.
     async fn search_autnum_rdap_up_by_num(&self, num: u32)
-        -> Result<RdapResponse, RdapServerError>;
+    -> Result<RdapResponse, RdapServerError>;
 
     /// Search for the supernet (rdap-up per RFC 9910) by AS range.
     async fn search_autnum_rdap_up_by_range(

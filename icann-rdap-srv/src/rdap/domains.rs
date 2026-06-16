@@ -5,7 +5,7 @@ use axum::{
 
 use http::HeaderMap;
 use icann_rdap_common::{
-    prelude::{normalize_extensions, normalize_extensions_with, ExtensionId},
+    prelude::{ExtensionId, normalize_extensions, normalize_extensions_with},
     response::RdapResponse,
 };
 use serde::Deserialize;
@@ -14,7 +14,7 @@ use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil, ToBootStrap},
+    rdap::{ToBootStrap, jscontact_conversion, parse_extensions, response::ResponseUtil},
     server::DynServiceState,
 };
 

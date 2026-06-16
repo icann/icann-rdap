@@ -3,14 +3,14 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
 use icann_rdap_common::check::{
-    process::{do_check_processing, get_summaries},
     CheckSummary,
+    process::{do_check_processing, get_summaries},
 };
 use {
     icann_rdap_client::{
-        md::{string::StringUtil, table::MultiPartTable, MdOptions},
-        rdap::ResponseData,
         RdapClientError,
+        md::{MdOptions, string::StringUtil, table::MultiPartTable},
+        rdap::ResponseData,
     },
     icann_rdap_common::{
         check::{Check, CheckClass, CheckItem, Checks},

@@ -1,8 +1,8 @@
 use crate::test_jig::SrvTestJig;
 use {
     icann_rdap_client::{
-        http::{create_client, ClientConfig},
-        rdap::{rdap_request, QueryType},
+        http::{ClientConfig, create_client},
+        rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::{contact::Contact, prelude::RdapResponse, response::Entity},
     icann_rdap_srv::{config::CommonConfig, storage::StoreOps},

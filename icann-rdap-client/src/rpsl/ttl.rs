@@ -2,7 +2,7 @@
 
 use icann_rdap_common::prelude::ttl::Ttl0Data;
 
-use crate::rpsl::{push_optional_attribute, push_remarks, AttrName};
+use crate::rpsl::{AttrName, push_optional_attribute, push_remarks};
 
 pub fn push_ttl0(mut rpsl: String, ttl0_data: &Ttl0Data) -> String {
     // A record

@@ -3,7 +3,7 @@ use {
     icann_rdap_cli::dirs::fcbs::FileCacheBootstrapStore,
     icann_rdap_client::{
         http::Client,
-        iana::{fetch_bootstrap, qtype_to_bootstrap_url, BootstrapStore, PreferredUrl},
+        iana::{BootstrapStore, PreferredUrl, fetch_bootstrap, qtype_to_bootstrap_url},
         rdap::QueryType,
     },
     icann_rdap_common::iana::IanaRegistryType,

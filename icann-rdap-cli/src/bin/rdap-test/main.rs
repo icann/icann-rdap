@@ -1,11 +1,11 @@
 use std::{
-    io::{stdout, Read},
+    io::{Read, stdout},
     str::FromStr,
 };
 
 use clap::{ArgGroup, Args, CommandFactory, FromArgMatches};
 use icann_rdap_cli::{
-    args::target::{params_from_args, LinkTargetArgs},
+    args::target::{LinkTargetArgs, params_from_args},
     rt::exec::{HttpTestOptions, StringTestOptions, TestType},
 };
 use icann_rdap_common::check::{ALL_CHECK_CLASSES, ERROR_CHECK_CLASSES, WARNING_CHECK_CLASSES};
@@ -15,16 +15,16 @@ use serde_json::Serializer;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
-    clap::builder::{styling::AnsiColor, Styles},
+    clap::builder::{Styles, styling::AnsiColor},
     error::RdapTestError,
     icann_rdap_cli::{
         dirs,
         dirs::fcbs::FileCacheBootstrapStore,
-        rt::exec::{execute_tests, ExtensionGroup, TestOptions},
+        rt::exec::{ExtensionGroup, TestOptions, execute_tests},
     },
     icann_rdap_client::{http::ClientConfig, md::MdOptions, rdap::QueryType},
     icann_rdap_common::check::CheckClass,
-    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
+    termimad::{Alignment, MadSkin, crossterm::style::Color::*},
     tracing::info,
     tracing_subscriber::filter::LevelFilter,
 };

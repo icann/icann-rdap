@@ -5,12 +5,12 @@ use std::sync::{Arc, RwLock};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{
-        get_preferred_url, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
-        IanaRegistryType,
+        BootstrapRegistry, BootstrapRegistryError, IanaRegistry, IanaRegistryType,
+        get_preferred_url,
     },
 };
 
-use crate::{http::Client, iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
+use crate::{RdapClientError, http::Client, iana::iana_request::iana_request, rdap::QueryType};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
@@ -490,10 +490,10 @@ mod test {
     use rstest::rstest;
 
     use crate::{
-        http::Client,
-        iana::bootstrap::{qtype_to_bootstrap_url, PreferredUrl},
-        rdap::{qtype::QueryTypeVariant, QueryType},
         RdapClientError,
+        http::Client,
+        iana::bootstrap::{PreferredUrl, qtype_to_bootstrap_url},
+        rdap::{QueryType, qtype::QueryTypeVariant},
     };
 
     use super::{BootstrapStore, MemoryBootstrapStore};

@@ -8,8 +8,8 @@ use {
 use crate::{
     error::RdapServerError,
     storage::{
-        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
         TxHandle,
+        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
     },
 };
 

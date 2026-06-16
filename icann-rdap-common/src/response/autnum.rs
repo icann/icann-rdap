@@ -9,8 +9,8 @@ use {
 };
 
 use super::{
-    to_opt_vec, types::Link, CommonFields, Entity, Event, GetSelfLink, Notice, Numberish,
-    ObjectCommonFields, Port43, Remark, SelfLink, Stringish, ToChild, ToResponse,
+    CommonFields, Entity, Event, GetSelfLink, Notice, Numberish, ObjectCommonFields, Port43,
+    Remark, SelfLink, Stringish, ToChild, ToResponse, to_opt_vec, types::Link,
 };
 
 /// Represents an RDAP [autnum](https://rdap.rcode3.com/protocol/object_classes.html#autnum) object response.

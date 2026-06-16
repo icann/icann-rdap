@@ -1,6 +1,6 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
+use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
@@ -51,8 +51,8 @@ fn simplify_email(mut domain: Box<Domain>, role: &EntityRole, redaction: &Redact
 mod tests {
     use rstest::rstest;
 
-    use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::Remark;
+    use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::{Contact, Email, Entity};
     use icann_rdap_common::response::ObjectCommonFields;
 
@@ -239,9 +239,9 @@ mod tests {
         other_handle: &str,
     ) -> Box<Domain> {
         let target_contact = Contact::builder()
-            .emails(vec![Email::builder()
-                .email(target_email.to_string())
-                .build()])
+            .emails(vec![
+                Email::builder().email(target_email.to_string()).build(),
+            ])
             .build();
         let target_entity = Entity::builder()
             .handle(target_handle.to_string())
@@ -273,9 +273,9 @@ mod tests {
             .role(other_role.to_string())
             .build();
         let target_contact = Contact::builder()
-            .emails(vec![Email::builder()
-                .email(target_email.to_string())
-                .build()])
+            .emails(vec![
+                Email::builder().email(target_email.to_string()).build(),
+            ])
             .build();
         let target_entity = Entity::builder()
             .handle(target_handle.to_string())

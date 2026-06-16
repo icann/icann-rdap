@@ -16,9 +16,9 @@ use {
 };
 
 use super::{
+    HR, MdParams, ToMd,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
-    MdParams, ToMd, HR,
 };
 
 impl ToMd for RdapConformance {

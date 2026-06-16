@@ -1,20 +1,20 @@
 use std::{fs, path::PathBuf};
 
-use icann_rdap_srv::config::{data_dir, DEFAULT_DATA_RDAP_BASE_URL};
+use icann_rdap_srv::config::{DEFAULT_DATA_RDAP_BASE_URL, data_dir};
 
 use {
     clap::Parser,
     icann_rdap_common::{
+        VERSION,
         contact::{Contact, Email, Phone, PostalAddress},
         media_types::RDAP_MEDIA_TYPE,
         prelude::VectorStringish,
         response::{
             Autnum, Domain, Entity, Link, Nameserver, Network, Notice, NoticeOrRemark, Remark,
         },
-        VERSION,
     },
     icann_rdap_srv::{
-        config::{debug_config_vars, LOG},
+        config::{LOG, debug_config_vars},
         error::RdapServerError,
         storage::data::{
             AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError,
@@ -25,7 +25,7 @@ use {
     pct_str::{PctString, UriReserved},
     tracing::info,
     tracing_subscriber::{
-        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+        EnvFilter, fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
     },
 };
 
@@ -164,7 +164,7 @@ fn make_domain_template(
             NoticeOrRemark::builder()
                 .title("Test Domain")
                 .description(vec![
-                    "This is a test domain. Don't get so hung up over it.".to_string()
+                    "This is a test domain. Don't get so hung up over it.".to_string(),
                 ])
                 .build(),
         ))
@@ -212,7 +212,7 @@ fn make_autnum_template(
             NoticeOrRemark::builder()
                 .title("Test Autnum")
                 .description(vec![
-                    "This is a test autnum. Don't get so hung up over it.".to_string()
+                    "This is a test autnum. Don't get so hung up over it.".to_string(),
                 ])
                 .build(),
         ))
@@ -296,20 +296,24 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
         .kind("individual")
         .full_name(format!("Alfred E. {}", child_of.unwrap_or("Nueman")))
         .emails(vec![Email::builder().email("alfred@example.net").build()])
-        .phones(vec![Phone::builder()
-            .phone("+12025555555")
-            .features(vec!["voice".to_string()])
-            .contexts(vec!["work".to_string()])
-            .build()])
-        .postal_addresses(vec![PostalAddress::builder()
-            .street_parts(vec![
-                "123 Mocking Bird Lane".to_string(),
-                "Suite 900000".to_string(),
-            ])
-            .locality("Springfield")
-            .region_name("MA")
-            .country_code("US")
-            .build()])
+        .phones(vec![
+            Phone::builder()
+                .phone("+12025555555")
+                .features(vec!["voice".to_string()])
+                .contexts(vec!["work".to_string()])
+                .build(),
+        ])
+        .postal_addresses(vec![
+            PostalAddress::builder()
+                .street_parts(vec![
+                    "123 Mocking Bird Lane".to_string(),
+                    "Suite 900000".to_string(),
+                ])
+                .locality("Springfield")
+                .region_name("MA")
+                .country_code("US")
+                .build(),
+        ])
         .build();
     Entity::response_obj()
         .handle("TEMPLATE")
@@ -333,7 +337,7 @@ fn make_test_entity(base_url: &str, child_of: Option<&str>) -> Entity {
             NoticeOrRemark::builder()
                 .title("Test Entity")
                 .description(vec![
-                    "This is a test entity. Don't get so hung up over it.".to_string()
+                    "This is a test entity. Don't get so hung up over it.".to_string(),
                 ])
                 .build(),
         ))

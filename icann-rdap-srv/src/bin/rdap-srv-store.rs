@@ -3,25 +3,25 @@ use std::{net::IpAddr, path::PathBuf};
 use {
     clap::Parser,
     icann_rdap_common::{
+        VERSION,
         check::CheckClass,
         prelude::{Numberish, ToResponse},
         response::RdapResponse,
-        VERSION,
     },
     icann_rdap_srv::{
-        config::{data_dir, debug_config_vars, LOG},
+        config::{LOG, data_dir, debug_config_vars},
         error::RdapServerError,
         storage::data::{
-            trigger_reload, trigger_update, AutnumOrError, DomainOrError, EntityOrError,
-            NameserverOrError, NetworkIdType, NetworkOrError, Template,
+            AutnumOrError, DomainOrError, EntityOrError, NameserverOrError, NetworkIdType,
+            NetworkOrError, Template, trigger_reload, trigger_update,
         },
-        util::bin::check::{check_rdap, to_check_classes, CheckArgs},
+        util::bin::check::{CheckArgs, check_rdap, to_check_classes},
     },
     ipnet::IpNet,
     serde_json::Value,
     tracing::{debug, error, warn},
     tracing_subscriber::{
-        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+        EnvFilter, fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
     },
 };
 

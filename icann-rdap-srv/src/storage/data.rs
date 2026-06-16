@@ -478,19 +478,23 @@ fn make_network_from_template(
                 network.start_address = Some(v4.network().to_string());
                 network.end_address = Some(v4.broadcast().to_string());
                 network.ip_version = Some("v4".to_string().into());
-                network.cidr0_cidrs = Some(vec![Cidr0Cidr::v4()
-                    .prefix(v4.network().to_string())
-                    .length(v4.prefix_len())
-                    .build()])
+                network.cidr0_cidrs = Some(vec![
+                    Cidr0Cidr::v4()
+                        .prefix(v4.network().to_string())
+                        .length(v4.prefix_len())
+                        .build(),
+                ])
             }
             IpNet::V6(v6) => {
                 network.start_address = Some(v6.network().to_string());
                 network.end_address = Some(v6.broadcast().to_string());
                 network.ip_version = Some("v6".to_string().into());
-                network.cidr0_cidrs = Some(vec![Cidr0Cidr::v6()
-                    .prefix(v6.network().to_string())
-                    .length(v6.prefix_len())
-                    .build()]);
+                network.cidr0_cidrs = Some(vec![
+                    Cidr0Cidr::v6()
+                        .prefix(v6.network().to_string())
+                        .length(v6.prefix_len())
+                        .build(),
+                ]);
             }
         },
         NetworkIdType::Range {
@@ -596,11 +600,13 @@ mod tests {
                     .build()
                     .expect("cidr parsing"),
             )),
-            ids: vec![NetworkId::builder()
-                .network_id(NetworkIdType::Cidr(
-                    "10.0.0.0/24".parse().expect("ipnet parsing"),
-                ))
-                .build()],
+            ids: vec![
+                NetworkId::builder()
+                    .network_id(NetworkIdType::Cidr(
+                        "10.0.0.0/24".parse().expect("ipnet parsing"),
+                    ))
+                    .build(),
+            ],
         };
 
         // WHEN
@@ -638,12 +644,14 @@ mod tests {
                     .build()
                     .expect("cidr parsing"),
             )),
-            ids: vec![NetworkId::builder()
-                .network_id(NetworkIdType::Range {
-                    start_address: "10.0.0.0".to_string(),
-                    end_address: "10.0.0.255".to_string(),
-                })
-                .build()],
+            ids: vec![
+                NetworkId::builder()
+                    .network_id(NetworkIdType::Range {
+                        start_address: "10.0.0.0".to_string(),
+                        end_address: "10.0.0.255".to_string(),
+                    })
+                    .build(),
+            ],
         };
 
         // WHEN
@@ -706,11 +714,13 @@ mod tests {
                     .build()
                     .expect("cidr parsing"),
             )),
-            ids: vec![NetworkId::builder()
-                .network_id(NetworkIdType::Cidr(
-                    "10.0.0.0/24".parse().expect("ipnet parsing"),
-                ))
-                .build()],
+            ids: vec![
+                NetworkId::builder()
+                    .network_id(NetworkIdType::Cidr(
+                        "10.0.0.0/24".parse().expect("ipnet parsing"),
+                    ))
+                    .build(),
+            ],
         };
         assert_eq!(actual, expected);
     }
@@ -750,12 +760,14 @@ mod tests {
                     .build()
                     .expect("cidr parsing"),
             )),
-            ids: vec![NetworkId::builder()
-                .network_id(NetworkIdType::Range {
-                    start_address: "10.0.0.0".to_string(),
-                    end_address: "10.0.0.255".to_string(),
-                })
-                .build()],
+            ids: vec![
+                NetworkId::builder()
+                    .network_id(NetworkIdType::Range {
+                        start_address: "10.0.0.0".to_string(),
+                        end_address: "10.0.0.255".to_string(),
+                    })
+                    .build(),
+            ],
         };
         assert_eq!(actual, expected);
     }
