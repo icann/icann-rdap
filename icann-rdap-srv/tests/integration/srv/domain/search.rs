@@ -70,11 +70,13 @@ async fn test_server_search_disabled_for_query_domain_by_ns_ip() {
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let domain = Domain::builder()
         .ldh_name("foo.example")
-        .nameservers(vec![Nameserver::builder()
-            .ldh_name("ns1.example")
-            .addresses(vec!["192.0.2.1".to_string()])
-            .build()
-            .unwrap()])
+        .nameservers(vec![
+            Nameserver::builder()
+                .ldh_name("ns1.example")
+                .addresses(vec!["192.0.2.1".to_string()])
+                .build()
+                .unwrap(),
+        ])
         .build();
     tx.add_domain(&domain).await.expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -105,11 +107,13 @@ async fn test_server_search_enabled_for_query_domain_by_ns_ip() {
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let domain = Domain::builder()
         .ldh_name("foo.example")
-        .nameservers(vec![Nameserver::builder()
-            .ldh_name("ns1.example")
-            .addresses(vec!["192.0.2.1".to_string()])
-            .build()
-            .unwrap()])
+        .nameservers(vec![
+            Nameserver::builder()
+                .ldh_name("ns1.example")
+                .addresses(vec!["192.0.2.1".to_string()])
+                .build()
+                .unwrap(),
+        ])
         .build();
     tx.add_domain(&domain).await.expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -144,11 +148,13 @@ async fn test_server_search_domain_by_ns_ip_not_found() {
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let domain = Domain::builder()
         .ldh_name("foo.example")
-        .nameservers(vec![Nameserver::builder()
-            .ldh_name("ns1.example")
-            .addresses(vec!["192.0.2.1".to_string()])
-            .build()
-            .unwrap()])
+        .nameservers(vec![
+            Nameserver::builder()
+                .ldh_name("ns1.example")
+                .addresses(vec!["192.0.2.1".to_string()])
+                .build()
+                .unwrap(),
+        ])
         .build();
     tx.add_domain(&domain).await.expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -178,10 +184,12 @@ async fn test_server_search_disabled_for_query_domain_by_ns_ldh_name() {
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let domain = Domain::builder()
         .ldh_name("foo.example")
-        .nameservers(vec![Nameserver::builder()
-            .ldh_name("ns1.example")
-            .build()
-            .unwrap()])
+        .nameservers(vec![
+            Nameserver::builder()
+                .ldh_name("ns1.example")
+                .build()
+                .unwrap(),
+        ])
         .build();
     tx.add_domain(&domain).await.expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -211,10 +219,12 @@ async fn test_server_search_enabled_for_query_domain_by_ns_ldh_name() {
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let domain = Domain::builder()
         .ldh_name("foo.example")
-        .nameservers(vec![Nameserver::builder()
-            .ldh_name("ns1.example")
-            .build()
-            .unwrap()])
+        .nameservers(vec![
+            Nameserver::builder()
+                .ldh_name("ns1.example")
+                .build()
+                .unwrap(),
+        ])
         .build();
     tx.add_domain(&domain).await.expect("add domain in tx");
     tx.commit().await.expect("tx commit");
@@ -248,10 +258,12 @@ async fn test_server_search_domain_by_ns_ldh_name_not_found() {
     let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
     let domain = Domain::builder()
         .ldh_name("foo.example")
-        .nameservers(vec![Nameserver::builder()
-            .ldh_name("ns1.example")
-            .build()
-            .unwrap()])
+        .nameservers(vec![
+            Nameserver::builder()
+                .ldh_name("ns1.example")
+                .build()
+                .unwrap(),
+        ])
         .build();
     tx.add_domain(&domain).await.expect("add domain in tx");
     tx.commit().await.expect("tx commit");

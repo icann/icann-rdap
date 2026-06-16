@@ -19,7 +19,7 @@ use crate::rdap::redacted::simplify_phones::simplify_tech_phone;
 use crate::rdap::redacted::simplify_phones::simplify_tech_phone_ext;
 use std::str::FromStr;
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, RdapResponse, Remark, ToResponse};
+use icann_rdap_common::prelude::{Domain, RdapResponse, Remark, ToResponse, redacted::Redacted};
 
 use crate::rdap::redacted::RedactedName;
 

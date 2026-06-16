@@ -13,12 +13,12 @@ use {
 };
 
 use super::{
+    CommonFields, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
+    SelfLink, ToChild, ToResponse, VectorStringish,
     autnum::Autnum,
     network::Network,
     to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, PublicIds},
-    CommonFields, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
-    SelfLink, ToChild, ToResponse, VectorStringish,
 };
 
 /// Represents an RDAP [entity](https://rdap.rcode3.com/protocol/object_classes.html#entity) response.

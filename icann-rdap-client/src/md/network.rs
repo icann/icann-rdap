@@ -1,9 +1,9 @@
 use icann_rdap_common::{prelude::ObjectCommonFields, response::Network};
 
 use super::{
+    MdHeaderText, MdParams, MdUtil, ToMd,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Network {
@@ -54,10 +54,10 @@ impl ToMd for Network {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if params.show_rfc9537_redactions {
-            if let Some(redacted) = &self.object_common.redacted {
-                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
-            }
+        if params.show_rfc9537_redactions
+            && let Some(redacted) = &self.object_common.redacted
+        {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -102,8 +102,8 @@ mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
         prelude::{
-            redacted::{Method, Name, Redacted},
             Network, Remark, ToResponse,
+            redacted::{Method, Name, Redacted},
         },
     };
 

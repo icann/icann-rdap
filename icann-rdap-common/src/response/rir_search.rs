@@ -8,7 +8,7 @@ use {
     serde::{Deserialize, Serialize},
 };
 
-use super::{autnum::Autnum, network::Network, CommonFields, ToResponse};
+use super::{CommonFields, ToResponse, autnum::Autnum, network::Network};
 
 /// Represents RDAP IP search results as defined in RFC 9910 Section 4.2.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Eq)]

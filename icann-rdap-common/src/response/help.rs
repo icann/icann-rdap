@@ -8,7 +8,7 @@ use {
     serde::{Deserialize, Serialize},
 };
 
-use super::{to_opt_vec, Common, CommonFields, ToResponse};
+use super::{Common, CommonFields, ToResponse, to_opt_vec};
 
 /// Represents an RDAP help response.
 ///

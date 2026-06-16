@@ -9,8 +9,8 @@ use {
 use crate::{media_types::RDAP_MEDIA_TYPE, prelude::ContentExtensions};
 
 use super::{
-    types::{Link, Notice, NoticeOrRemark},
     Common, CommonFields, ToResponse,
+    types::{Link, Notice, NoticeOrRemark},
 };
 
 /// Represents an error response from an RDAP server.
@@ -89,12 +89,14 @@ impl Rfc9083Error {
     /// Creates an RFC 9083 error for an HTTP redirect.
     #[builder(entry = "redirect", visibility = "pub")]
     fn new_redirect(url: String, extensions: Vec<Extension>) -> Self {
-        let links = vec![Link::builder()
-            .href(&url)
-            .value(&url)
-            .media_type(RDAP_MEDIA_TYPE)
-            .rel("related")
-            .build()];
+        let links = vec![
+            Link::builder()
+                .href(&url)
+                .value(&url)
+                .media_type(RDAP_MEDIA_TYPE)
+                .rel("related")
+                .build(),
+        ];
         let notices = vec![Notice(NoticeOrRemark::builder().links(links).build())];
         Self {
             common: Common::level0()

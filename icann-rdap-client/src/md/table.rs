@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use icann_rdap_common::prelude::Remark;
 
-use super::{string::StringUtil, MdHeaderText, MdOptions, MdParams, ToMd};
+use super::{MdHeaderText, MdOptions, MdParams, ToMd, string::StringUtil};
 
 pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;

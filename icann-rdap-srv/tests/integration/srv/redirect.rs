@@ -2,13 +2,13 @@
 
 use {
     icann_rdap_client::{
-        http::{create_client, ClientConfig},
-        rdap::{rdap_request, QueryType},
+        http::{ClientConfig, create_client},
+        rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::response::{Link, Notice, NoticeOrRemark, Rfc9083Error},
     icann_rdap_srv::storage::{
-        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
         StoreOps,
+        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
     },
 };
 
@@ -28,11 +28,13 @@ async fn GIVEN_domain_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("about")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("about")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build(),
@@ -78,11 +80,13 @@ async fn GIVEN_nameserver_error_with_first_link_href_WHEN_query_THEN_status_code
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("about")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("about")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build(),
@@ -127,11 +131,13 @@ async fn GIVEN_entity_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("about")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("about")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build(),
@@ -177,11 +183,13 @@ async fn GIVEN_autnum_error_with_first_link_href_WHEN_query_THEN_status_code_is_
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("about")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("about")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build(),
@@ -226,11 +234,13 @@ async fn GIVEN_network_cidr_error_with_first_link_href_WHEN_query_THEN_status_co
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("about")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("about")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build(),
@@ -278,11 +288,13 @@ async fn GIVEN_network_addrs_error_with_first_link_href_WHEN_query_THEN_status_c
             .error_code(307)
             .notice(Notice(
                 NoticeOrRemark::builder()
-                    .links(vec![Link::builder()
-                        .href("https://other.example.com")
-                        .value("https://other.example.com")
-                        .rel("about")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://other.example.com")
+                            .value("https://other.example.com")
+                            .rel("about")
+                            .build(),
+                    ])
                     .build(),
             ))
             .build(),

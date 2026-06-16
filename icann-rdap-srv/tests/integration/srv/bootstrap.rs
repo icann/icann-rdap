@@ -1,12 +1,12 @@
 use {
     icann_rdap_client::{
-        http::{create_client, ClientConfig},
-        rdap::{rdap_request, QueryType},
+        http::{ClientConfig, create_client},
+        rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::response::Rfc9083Error,
     icann_rdap_srv::storage::{
-        data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
         StoreOps,
+        data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
     },
 };
 

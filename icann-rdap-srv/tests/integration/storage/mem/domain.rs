@@ -3,8 +3,8 @@ use {
     icann_rdap_srv::{
         config::CommonConfig,
         storage::{
-            mem::{config::MemConfig, ops::Mem},
             StoreOps,
+            mem::{config::MemConfig, ops::Mem},
         },
     },
 };

@@ -5,10 +5,10 @@ use icann_rdap_common::{
 };
 
 use super::{
+    MdHeaderText, MdParams, MdUtil, ToMd,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
     types::{events_to_table, links_to_table, public_ids_to_table},
-    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
@@ -85,10 +85,10 @@ impl ToMd for Domain {
         }
 
         // redacted
-        if params.show_rfc9537_redactions {
-            if let Some(redacted) = &self.object_common.redacted {
-                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
-            }
+        if params.show_rfc9537_redactions
+            && let Some(redacted) = &self.object_common.redacted
+        {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -254,8 +254,8 @@ mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
         prelude::{
-            redacted::{Method, Name, Redacted},
             Domain, DsDatum, Event, Link, SecureDns, ToResponse, Variant, VariantName,
+            redacted::{Method, Name, Redacted},
         },
     };
 

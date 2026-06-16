@@ -1,7 +1,7 @@
 use {
     icann_rdap_common::prelude::{
-        redacted::{Method, Name, Redacted},
         Domain,
+        redacted::{Method, Name, Redacted},
     },
     icann_rdap_srv::storage::StoreOps,
     serde_json::json,
@@ -14,10 +14,12 @@ async fn test_domain_with_redaction_env() {
     // GIVEN domain
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    let redactions = vec![Redacted::builder()
-        .name(Name::builder().type_field("Domain ID").build())
-        .method(Method::Removal)
-        .build()];
+    let redactions = vec![
+        Redacted::builder()
+            .name(Name::builder().type_field("Domain ID").build())
+            .method(Method::Removal)
+            .build(),
+    ];
     tx.add_domain(
         &Domain::builder()
             .ldh_name("bar.example")
@@ -54,10 +56,12 @@ async fn test_domain_with_redaction_flags() {
     // GIVEN domain
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    let redactions = vec![Redacted::builder()
-        .name(Name::builder().type_field("Domain ID").build())
-        .method(Method::Removal)
-        .build()];
+    let redactions = vec![
+        Redacted::builder()
+            .name(Name::builder().type_field("Domain ID").build())
+            .method(Method::Removal)
+            .build(),
+    ];
     tx.add_domain(
         &Domain::builder()
             .ldh_name("bar.example")
@@ -98,10 +102,12 @@ async fn test_domain_with_simple_redaction_flags() {
     // GIVEN domain
     let mut test_jig = TestJig::new_rdap().await;
     let mut tx = test_jig.mem.new_tx().await.expect("new transaction");
-    let redactions = vec![Redacted::builder()
-        .name(Name::builder().type_field("Registry Domain ID").build())
-        .method(Method::Removal)
-        .build()];
+    let redactions = vec![
+        Redacted::builder()
+            .name(Name::builder().type_field("Registry Domain ID").build())
+            .method(Method::Removal)
+            .build(),
+    ];
     tx.add_domain(
         &Domain::builder()
             .ldh_name("bar.example")

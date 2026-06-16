@@ -1086,11 +1086,13 @@ mod tests {
     fn test_set_self_link() {
         // GIVEN no self links
         let mut oc = ObjectCommon::domain()
-            .links(vec![Link::builder()
-                .href("http://bar.example")
-                .value("http://bar.example")
-                .rel("unknown")
-                .build()])
+            .links(vec![
+                Link::builder()
+                    .href("http://bar.example")
+                    .value("http://bar.example")
+                    .rel("unknown")
+                    .build(),
+            ])
             .build();
 
         // WHEN set self link
@@ -1142,11 +1144,13 @@ mod tests {
     fn test_set_self_link_when_one_exists() {
         // GIVEN one self link
         let mut oc = ObjectCommon::domain()
-            .links(vec![Link::builder()
-                .href("http://bar.example")
-                .value("http://bar.example")
-                .rel("self")
-                .build()])
+            .links(vec![
+                Link::builder()
+                    .href("http://bar.example")
+                    .value("http://bar.example")
+                    .rel("self")
+                    .build(),
+            ])
             .build();
 
         // WHEN set self link

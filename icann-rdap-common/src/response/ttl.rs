@@ -22,7 +22,7 @@
 //! ```
 use serde::{Deserialize, Serialize};
 
-use crate::prelude::{to_opt_vec, Remark, Remarks};
+use crate::prelude::{Remark, Remarks, to_opt_vec};
 
 /// Represents the TTL values using the "ttl0" extension.
 ///

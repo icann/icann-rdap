@@ -1,7 +1,7 @@
 //! RDAP Nameserver object class.
 use std::collections::HashSet;
 
-use crate::prelude::{ttl::Ttl0Data, ContentExtensions};
+use crate::prelude::{ContentExtensions, ttl::Ttl0Data};
 
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
@@ -11,9 +11,9 @@ use {
 use serde::{Deserialize, Serialize};
 
 use super::{
-    to_opt_vec, to_opt_vectorstringish, types::Link, CommonFields, Entity, Event, GetSelfLink,
-    Notice, ObjectCommonFields, Port43, RdapResponseError, Remark, SelfLink, ToChild, ToResponse,
-    VectorStringish,
+    CommonFields, Entity, Event, GetSelfLink, Notice, ObjectCommonFields, Port43,
+    RdapResponseError, Remark, SelfLink, ToChild, ToResponse, VectorStringish, to_opt_vec,
+    to_opt_vectorstringish, types::Link,
 };
 
 /// Represents an IP address set for nameservers.

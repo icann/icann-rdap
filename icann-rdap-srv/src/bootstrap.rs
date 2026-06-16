@@ -2,7 +2,7 @@ use std::{path::PathBuf, time::Duration};
 
 use {
     icann_rdap_client::{
-        http::{create_client, Client, ClientConfig},
+        http::{Client, ClientConfig, create_client},
         iana::iana_request,
     },
     icann_rdap_common::{
@@ -22,8 +22,8 @@ use crate::{
     config::ServiceConfig,
     error::RdapServerError,
     storage::data::{
-        trigger_reload, trigger_update, AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId,
-        EntityOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
+        AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError, NetworkId,
+        NetworkIdType, NetworkOrError, Template, trigger_reload, trigger_update,
     },
 };
 
@@ -371,9 +371,9 @@ mod tests {
     use crate::{
         config::{CommonConfig, ServiceConfig, StorageType},
         storage::{
+            StoreOps,
             data::load_data,
             mem::{config::MemConfig, ops::Mem},
-            StoreOps,
         },
     };
 

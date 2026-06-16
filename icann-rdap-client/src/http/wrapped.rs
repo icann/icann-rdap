@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 
 use icann_rdap_common::prelude::ExtensionId;
-pub use reqwest::{header::HeaderValue, Client as ReqwestClient, Error as ReqwestError};
+pub use reqwest::{Client as ReqwestClient, Error as ReqwestError, header::HeaderValue};
 use {
     icann_rdap_common::httpdata::HttpData,
     reqwest::header::{
@@ -15,7 +15,7 @@ use {
 };
 
 use {
-    super::{create_reqwest_client, ReqwestClientConfig},
+    super::{ReqwestClientConfig, create_reqwest_client},
     crate::RdapClientError,
 };
 

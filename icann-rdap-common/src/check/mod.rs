@@ -751,7 +751,7 @@ impl Check {
 mod tests {
     use crate::check::RdapStructure;
 
-    use super::{contains_check, traverse_checks, Check, CheckClass, CheckItem, Checks};
+    use super::{Check, CheckClass, CheckItem, Checks, contains_check, traverse_checks};
 
     #[test]
     fn test_traverse_info_checks() {

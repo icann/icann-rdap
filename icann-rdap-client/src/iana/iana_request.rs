@@ -9,7 +9,7 @@ use {
     thiserror::Error,
 };
 
-use crate::http::{wrapped_request, Client};
+use crate::http::{Client, wrapped_request};
 
 /// Response from getting an IANA registry.
 #[derive(Debug, Serialize, Deserialize, Clone)]

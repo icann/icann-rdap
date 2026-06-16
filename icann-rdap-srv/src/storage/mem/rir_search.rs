@@ -43,10 +43,10 @@ fn get_ip_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
             continue; // Skip the exact match of the query itself
         }
 
-        if let Some(cover) = current_cover {
-            if cover.contains(prefix) {
-                continue;
-            }
+        if let Some(cover) = current_cover
+            && cover.contains(prefix)
+        {
+            continue;
         }
 
         immediate_children.push(value.clone());
@@ -99,10 +99,10 @@ fn get_domain_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
             continue;
         }
 
-        if let Some(cover) = current_cover {
-            if cover.contains(prefix) {
-                continue;
-            }
+        if let Some(cover) = current_cover
+            && cover.contains(prefix)
+        {
+            continue;
         }
 
         immediate_children.push(value.clone());
@@ -243,12 +243,11 @@ impl Mem {
         };
 
         let autnums = self.autnums.read().await;
-        let children = autnums
+
+        autnums
             .overlapping(start..=end)
             .map(|(_r, a)| a.clone())
-            .collect();
-
-        children
+            .collect()
     }
 
     pub(crate) async fn autnum_rdap_bottom(&self, query: &U32OrRange) -> Vec<Arc<RdapResponse>> {
@@ -355,7 +354,7 @@ mod tests {
     use icann_rdap_common::prelude::{Autnum, Domain, Network, RdapResponse};
     use std::str::FromStr;
 
-    use crate::storage::{mem::ops::Mem, StoreOps};
+    use crate::storage::{StoreOps, mem::ops::Mem};
 
     #[tokio::test]
     async fn test_ip_rdap_top_with_ordered_insertion() {

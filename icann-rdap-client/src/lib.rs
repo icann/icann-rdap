@@ -22,21 +22,21 @@ pub mod rpsl;
 /// Basics necessary for a simple clients.
 pub mod prelude {
     #[doc(inline)]
-    pub use crate::http::create_client;
+    pub use crate::RdapClientError;
     #[doc(inline)]
     pub use crate::http::ClientConfig;
     #[doc(inline)]
+    pub use crate::http::create_client;
+    #[doc(inline)]
     pub use crate::iana::MemoryBootstrapStore;
+    #[doc(inline)]
+    pub use crate::rdap::QueryType;
     #[doc(inline)]
     pub use crate::rdap::rdap_bootstrapped_request;
     #[doc(inline)]
     pub use crate::rdap::rdap_request;
     #[doc(inline)]
     pub use crate::rdap::rdap_url_request;
-    #[doc(inline)]
-    pub use crate::rdap::QueryType;
-    #[doc(inline)]
-    pub use crate::RdapClientError;
 }
 
 /// Error returned by RDAP client functions and methods.

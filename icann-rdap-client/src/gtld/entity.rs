@@ -62,17 +62,13 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                         if role.as_str() == "registrar" {
                             if let Some(public_ids) = &entity.public_ids {
                                 for public_id in public_ids {
-                                    if let Some(id_type) = &public_id.id_type {
-                                        if let Some(identifier) = &public_id.identifier {
-                                            if id_type.as_ref() == "IANA Registrar ID"
-                                                && !identifier.is_empty()
-                                            {
-                                                formatted_data += &format!(
-                                                    "Registrar IANA ID: {}\n",
-                                                    identifier.clone()
-                                                );
-                                            }
-                                        }
+                                    if let Some(id_type) = &public_id.id_type
+                                        && let Some(identifier) = &public_id.identifier
+                                        && id_type.as_ref() == "IANA Registrar ID"
+                                        && !identifier.is_empty()
+                                    {
+                                        formatted_data +=
+                                            &format!("Registrar IANA ID: {}\n", identifier.clone());
                                     }
                                 }
                             }
@@ -137,27 +133,27 @@ fn append_abuse_contact_info(entity: &Entity, formatted_data: &mut String) {
     if let Some(entities) = &entity.object_common.entities {
         for entity in entities {
             for role in entity.roles() {
-                if role.as_str() == "abuse" {
-                    if let Some(contact) = entity.contact() {
-                        // Emails
-                        for email in contact.emails() {
-                            let abuse_contact_email = &email.email;
-                            if !abuse_contact_email.is_empty() {
-                                formatted_data.push_str(&format!(
-                                    "Registrar Abuse Contact Email: {}\n",
-                                    abuse_contact_email
-                                ));
-                            }
+                if role.as_str() == "abuse"
+                    && let Some(contact) = entity.contact()
+                {
+                    // Emails
+                    for email in contact.emails() {
+                        let abuse_contact_email = &email.email;
+                        if !abuse_contact_email.is_empty() {
+                            formatted_data.push_str(&format!(
+                                "Registrar Abuse Contact Email: {}\n",
+                                abuse_contact_email
+                            ));
                         }
-                        // Phones
-                        for phone in contact.phones() {
-                            let abuse_contact_phone = &phone.phone;
-                            if !abuse_contact_phone.is_empty() {
-                                formatted_data.push_str(&format!(
-                                    "Registrar Abuse Contact Phone: {}\n",
-                                    abuse_contact_phone
-                                ));
-                            }
+                    }
+                    // Phones
+                    for phone in contact.phones() {
+                        let abuse_contact_phone = &phone.phone;
+                        if !abuse_contact_phone.is_empty() {
+                            formatted_data.push_str(&format!(
+                                "Registrar Abuse Contact Phone: {}\n",
+                                abuse_contact_phone
+                            ));
                         }
                     }
                 }

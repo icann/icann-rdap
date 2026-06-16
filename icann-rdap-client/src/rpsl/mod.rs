@@ -349,30 +349,30 @@ pub fn push_remarks(mut rpsl: String, remarks: &[Remark]) -> String {
 
 pub fn push_events(mut rpsl: String, events: &[Event]) -> String {
     for event in events {
-        if let Some(event_date) = event.event_date() {
-            if let Ok(event_date) = DateTime::parse_from_rfc3339(event_date) {
-                let rpsl_date = event_date.format("%Y%m%d").to_string();
-                let readable_date = event_date.to_rfc2822();
-                let date_str = format!("{rpsl_date} ({readable_date})");
-                if let Some(event_action) = event.event_action() {
-                    let att_name = match event_action.to_ascii_lowercase().as_str() {
-                        "registration" => AttrName::Created,
-                        "deletion" => AttrName::Deletion,
-                        "enum validation expiration" => AttrName::EnumExp,
-                        "expiration" => AttrName::Expiration,
-                        "last update of rdap database" => AttrName::LastDbUpdate,
-                        "last changed" => AttrName::LastModified,
-                        "locked" => AttrName::Locked,
-                        "reregistration" => AttrName::Recreated,
-                        "registrar expiration" => AttrName::RegrExp,
-                        "transfer" => AttrName::Transfer,
-                        "unlocked" => AttrName::Unlocked,
-                        _ => AttrName::OtherEvent,
-                    };
-                    rpsl = push_mandatory_attribute(rpsl, att_name, &date_str);
-                } else {
-                    rpsl = push_mandatory_attribute(rpsl, AttrName::OtherEvent, &date_str);
-                }
+        if let Some(event_date) = event.event_date()
+            && let Ok(event_date) = DateTime::parse_from_rfc3339(event_date)
+        {
+            let rpsl_date = event_date.format("%Y%m%d").to_string();
+            let readable_date = event_date.to_rfc2822();
+            let date_str = format!("{rpsl_date} ({readable_date})");
+            if let Some(event_action) = event.event_action() {
+                let att_name = match event_action.to_ascii_lowercase().as_str() {
+                    "registration" => AttrName::Created,
+                    "deletion" => AttrName::Deletion,
+                    "enum validation expiration" => AttrName::EnumExp,
+                    "expiration" => AttrName::Expiration,
+                    "last update of rdap database" => AttrName::LastDbUpdate,
+                    "last changed" => AttrName::LastModified,
+                    "locked" => AttrName::Locked,
+                    "reregistration" => AttrName::Recreated,
+                    "registrar expiration" => AttrName::RegrExp,
+                    "transfer" => AttrName::Transfer,
+                    "unlocked" => AttrName::Unlocked,
+                    _ => AttrName::OtherEvent,
+                };
+                rpsl = push_mandatory_attribute(rpsl, att_name, &date_str);
+            } else {
+                rpsl = push_mandatory_attribute(rpsl, AttrName::OtherEvent, &date_str);
             }
         }
     }

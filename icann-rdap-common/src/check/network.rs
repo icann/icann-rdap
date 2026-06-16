@@ -4,7 +4,7 @@ use cidr::IpCidr;
 
 use crate::{prelude::Stringish, response::network::Network};
 
-use super::{string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks};
+use super::{Check, CheckParams, Checks, GetChecks, GetGroupChecks, string::StringCheck};
 
 impl GetChecks for Network {
     fn get_checks(&self, index: Option<usize>, params: CheckParams) -> super::Checks {
@@ -75,16 +75,16 @@ impl GetChecks for Network {
             }
         }
 
-        if let Some(parent_handle) = &self.parent_handle {
-            if parent_handle.is_number() || parent_handle.is_bool() {
-                items.push(Check::ParentHandleIsNotString.check_item())
-            }
+        if let Some(parent_handle) = &self.parent_handle
+            && (parent_handle.is_number() || parent_handle.is_bool())
+        {
+            items.push(Check::ParentHandleIsNotString.check_item())
         }
 
-        if let Some(country) = &self.country {
-            if country.is_number() || country.is_bool() {
-                items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
-            }
+        if let Some(country) = &self.country
+            && (country.is_number() || country.is_bool())
+        {
+            items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
         }
 
         if self.start_address.is_none() || self.end_address.is_none() {
@@ -204,8 +204,8 @@ mod tests {
         check::contains_check,
         prelude::{Cidr0CidrPrefix, Entity, Numberish, ToResponse},
         response::{
-            network::{Cidr0Cidr, Network},
             RdapResponse,
+            network::{Cidr0Cidr, Network},
         },
     };
 
@@ -226,10 +226,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty)
+        );
     }
 
     #[test]
@@ -255,10 +257,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString)
+        );
     }
 
     #[test]
@@ -276,10 +280,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty)
+        );
     }
 
     #[test]
@@ -305,10 +311,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString)
+        );
     }
 
     #[test]
@@ -326,10 +334,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMissing));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMissing)
+        );
     }
 
     #[test]
@@ -347,10 +357,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMissing));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMissing)
+        );
     }
 
     #[test]
@@ -368,10 +380,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMalformed));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMalformed)
+        );
     }
 
     #[test]
@@ -389,10 +403,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMalformed));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMalformed)
+        );
     }
 
     #[test]
@@ -412,10 +428,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressEndBeforeStart));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressEndBeforeStart)
+        );
     }
 
     #[rstest]
@@ -435,10 +453,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressVersionMismatch));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressVersionMismatch)
+        );
     }
 
     #[rstest]
@@ -460,10 +480,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMalformedVersion));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMalformedVersion)
+        );
     }
 
     #[test]
@@ -489,10 +511,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpVersionIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpVersionIsNotString)
+        );
     }
 
     #[test]
@@ -518,10 +542,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::ParentHandleIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::ParentHandleIsNotString)
+        );
     }
 
     #[test]
@@ -547,10 +573,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString)
+        );
     }
 
     #[test]
@@ -570,12 +598,14 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .sub(crate::check::RdapStructure::Cidr0)
-            .expect("Cidr0")
-            .items
-            .iter()
-            .any(|c| c.check == Check::Cidr0V4PrefixIsAbsent));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Cidr0)
+                .expect("Cidr0")
+                .items
+                .iter()
+                .any(|c| c.check == Check::Cidr0V4PrefixIsAbsent)
+        );
     }
 
     #[test]
@@ -595,12 +625,14 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .sub(crate::check::RdapStructure::Cidr0)
-            .expect("Cidr0")
-            .items
-            .iter()
-            .any(|c| c.check == Check::Cidr0V6PrefixIsAbsent));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Cidr0)
+                .expect("Cidr0")
+                .items
+                .iter()
+                .any(|c| c.check == Check::Cidr0V6PrefixIsAbsent)
+        );
     }
 
     #[test]
@@ -620,12 +652,14 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .sub(crate::check::RdapStructure::Cidr0)
-            .expect("Cidr0")
-            .items
-            .iter()
-            .any(|c| c.check == Check::Cidr0V4LengthIsAbsent));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Cidr0)
+                .expect("Cidr0")
+                .items
+                .iter()
+                .any(|c| c.check == Check::Cidr0V4LengthIsAbsent)
+        );
     }
 
     #[test]
@@ -645,12 +679,14 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .sub(crate::check::RdapStructure::Cidr0)
-            .expect("Cidr0")
-            .items
-            .iter()
-            .any(|c| c.check == Check::Cidr0V6LengthIsAbsent));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Cidr0)
+                .expect("Cidr0")
+                .items
+                .iter()
+                .any(|c| c.check == Check::Cidr0V6LengthIsAbsent)
+        );
     }
 
     #[test]

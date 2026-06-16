@@ -7,9 +7,9 @@ use {
 };
 
 use crate::{
-    http::{wrapped_request, Client},
-    iana::bootstrap::{qtype_to_bootstrap_url, BootstrapStore},
     RdapClientError,
+    http::{Client, wrapped_request},
+    iana::bootstrap::{BootstrapStore, qtype_to_bootstrap_url},
 };
 
 use super::qtype::QueryType;

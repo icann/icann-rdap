@@ -31,10 +31,12 @@ async fn test_domain_search_by_nameserver_ldh_name() {
     tx.add_domain(
         &Domain::builder()
             .ldh_name("foo.example")
-            .nameservers(vec![Nameserver::builder()
-                .ldh_name("ns.foo.example")
-                .build()
-                .unwrap()])
+            .nameservers(vec![
+                Nameserver::builder()
+                    .ldh_name("ns.foo.example")
+                    .build()
+                    .unwrap(),
+            ])
             .build(),
     )
     .await

@@ -1,17 +1,17 @@
 use std::collections::HashSet;
 
 use enumflags2::BitFlags;
-use icann_rdap_cli::args::target::{params_from_args, LinkTargetArgs};
+use icann_rdap_cli::args::target::{LinkTargetArgs, params_from_args};
 use icann_rdap_client::http::default_exts_list;
 use icann_rdap_common::check::StringCheck;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
     bootstrap::BootstrapType,
-    clap::builder::{styling::AnsiColor, Styles},
+    clap::builder::{Styles, styling::AnsiColor},
     error::RdapCliError,
     icann_rdap_cli::dirs,
-    icann_rdap_client::http::{create_client, Client, ClientConfig},
+    icann_rdap_client::http::{Client, ClientConfig, create_client},
     query::{InrBackupBootstrap, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
@@ -27,7 +27,7 @@ use {
     tokio::{join, task::spawn_blocking},
 };
 
-use crate::query::{exec_queries, RedactionFlag};
+use crate::query::{RedactionFlag, exec_queries};
 
 pub mod bootstrap;
 pub mod error;
@@ -601,17 +601,20 @@ impl From<&LogLevel> for LevelFilter {
 
 #[tokio::main]
 pub async fn main() -> RdapCliError {
-    if let Err(e) = wrapped_main().await {
-        let ec = e.exit_code();
-        match ec {
-            // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
-            205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
-            206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
-            _ => eprintln!("\n{e}\n"),
-        };
-        return e;
-    } else {
-        return RdapCliError::Success;
+    match wrapped_main().await {
+        Err(e) => {
+            let ec = e.exit_code();
+            match ec {
+                // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
+                205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
+                206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
+                _ => eprintln!("\n{e}\n"),
+            };
+            return e;
+        }
+        _ => {
+            return RdapCliError::Success;
+        }
     }
 }
 
@@ -890,7 +893,7 @@ mod tests {
     use rstest::rstest;
     use std::collections::HashSet;
 
-    use crate::{hostname_to_baseurl, Cli};
+    use crate::{Cli, hostname_to_baseurl};
 
     #[test]
     fn cli_debug_assert_test() {

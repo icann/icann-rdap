@@ -1,6 +1,6 @@
 use icann_rdap_common::response::Help;
 
-use super::{MdHeaderText, MdParams, MdUtil, ToMd, HR};
+use super::{HR, MdHeaderText, MdParams, MdUtil, ToMd};
 
 impl ToMd for Help {
     fn to_md(&self, params: MdParams) -> String {

@@ -14,9 +14,9 @@ use {
 };
 
 use super::{
-    to_opt_vec, types::Link, CommonFields, Entity, Event, ExtensionId, GetSelfLink, Notice,
-    Numberish, ObjectCommonFields, Port43, RdapResponseError, Remark, SelfLink, Stringish, ToChild,
-    ToResponse,
+    CommonFields, Entity, Event, ExtensionId, GetSelfLink, Notice, Numberish, ObjectCommonFields,
+    Port43, RdapResponseError, Remark, SelfLink, Stringish, ToChild, ToResponse, to_opt_vec,
+    types::Link,
 };
 
 /// Cidr0 structure from the Cidr0 extension.
@@ -259,14 +259,18 @@ impl Network {
             parent_handle: parent_handle.map(|s| s.into()),
             country: country.map(|s| s.into()),
             cidr0_cidrs: match cidr {
-                IpInet::V4(cidr) => Some(vec![Cidr0Cidr::v4()
-                    .length(cidr.network_length())
-                    .prefix(cidr.first_address().to_string())
-                    .build()]),
-                IpInet::V6(cidr) => Some(vec![Cidr0Cidr::v6()
-                    .length(cidr.network_length())
-                    .prefix(cidr.first_address().to_string())
-                    .build()]),
+                IpInet::V4(cidr) => Some(vec![
+                    Cidr0Cidr::v4()
+                        .length(cidr.network_length())
+                        .prefix(cidr.first_address().to_string())
+                        .build(),
+                ]),
+                IpInet::V6(cidr) => Some(vec![
+                    Cidr0Cidr::v6()
+                        .length(cidr.network_length())
+                        .prefix(cidr.first_address().to_string())
+                        .build(),
+                ]),
             },
         })
     }

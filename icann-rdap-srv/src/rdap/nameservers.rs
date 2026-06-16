@@ -13,7 +13,7 @@ use crate::{
     error::RdapServerError,
     rdap::{
         jscontact_conversion, parse_extensions,
-        response::{ResponseUtil, BAD_REQUEST},
+        response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
 };
@@ -72,7 +72,7 @@ mod tests {
 
     use {axum::response::IntoResponse, http::StatusCode};
 
-    use crate::rdap::response::{ResponseUtil, BAD_REQUEST};
+    use crate::rdap::response::{BAD_REQUEST, ResponseUtil};
 
     #[test]
     fn test_invalid_ip_parse() {
