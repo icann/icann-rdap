@@ -21,7 +21,12 @@ serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
+[features]
+default = []
+iana_registry_tests = []
+
 [dev-dependencies]
 
 indoc.workspace = true
+reqwest = { workspace = true, features = ["blocking"] }
 rstest.workspace = true
