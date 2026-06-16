@@ -341,8 +341,11 @@ enum QtypeArg {
     /// A-Label Domain Lookup
     ALabel,
 
-    /// Reverse Domain Lookup
-    Rdns,
+    /// Reverse DNS IPv4 Lookup
+    RdnsIpv4,
+
+    /// Reverse DNS IPv6 Lookup
+    RdnsIpv6,
 
     /// Entity Lookup
     Entity,
@@ -422,17 +425,29 @@ enum QtypeArg {
     /// Ipv6 CIDR Rdap-Bottom Search
     V6CidrBottom,
 
-    /// Reverse DNS Rdap-Up Lookup
-    RdnsUp,
+    /// Reverse DNS IPv4 Rdap-Up Lookup
+    RdnsIpv4Up,
 
-    /// Reverse DNS Rdap-Down Search
-    RdnsDown,
+    /// Reverse DNS IPv6 Rdap-Up Lookup
+    RdnsIpv6Up,
 
-    /// Reverse DNS Rdap-Top Search
-    RdnsTop,
+    /// Reverse DNS IPv4 Rdap-Down Search
+    RdnsIpv4Down,
 
-    /// Reverse DNS Rdap-Bottom Search
-    RdnsBottom,
+    /// Reverse DNS IPv6 Rdap-Down Search
+    RdnsIpv6Down,
+
+    /// Reverse DNS IPv4 Rdap-Top Search
+    RdnsIpv4Top,
+
+    /// Reverse DNS IPv6 Rdap-Top Search
+    RdnsIpv6Top,
+
+    /// Reverse DNS IPv4 Rdap-Bottom Search
+    RdnsIpv4Bottom,
+
+    /// Reverse DNS IPv6 Rdap-Bottom Search
+    RdnsIpv6Bottom,
 
     /// Autonomous System Number Rdap-Up Lookup
     AutnumUp,
@@ -833,11 +848,16 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::AutnumBottom => QueryType::autnum_bottom(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
-        QtypeArg::Rdns => QueryType::rdns_ipstr(&query_value)?,
-        QtypeArg::RdnsUp => QueryType::rdns_up(&query_value)?,
-        QtypeArg::RdnsDown => QueryType::rdns_down(&query_value)?,
-        QtypeArg::RdnsTop => QueryType::rdns_top(&query_value)?,
-        QtypeArg::RdnsBottom => QueryType::rdns_bottom(&query_value)?,
+        QtypeArg::RdnsIpv4 => QueryType::rdns_ipstr(&query_value)?,
+        QtypeArg::RdnsIpv6 => QueryType::rdns_ipstr(&query_value)?,
+        QtypeArg::RdnsIpv4Up => QueryType::rdns_ipv4_up(&query_value)?,
+        QtypeArg::RdnsIpv6Up => QueryType::rdns_ipv6_up(&query_value)?,
+        QtypeArg::RdnsIpv4Down => QueryType::rdns_ipv4_down(&query_value)?,
+        QtypeArg::RdnsIpv6Down => QueryType::rdns_ipv6_down(&query_value)?,
+        QtypeArg::RdnsIpv4Top => QueryType::rdns_ipv4_top(&query_value)?,
+        QtypeArg::RdnsIpv6Top => QueryType::rdns_ipv6_top(&query_value)?,
+        QtypeArg::RdnsIpv4Bottom => QueryType::rdns_ipv4_bottom(&query_value)?,
+        QtypeArg::RdnsIpv6Bottom => QueryType::rdns_ipv6_bottom(&query_value)?,
         QtypeArg::Entity => QueryType::Entity(query_value),
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),

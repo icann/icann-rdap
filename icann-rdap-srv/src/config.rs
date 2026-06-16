@@ -1,13 +1,14 @@
 use std::path::{self};
 
-use strum_macros::EnumString;
+use strum::EnumString;
 
 use {
     buildstructor::Builder,
     envmnt::{get_or, get_parse_or},
-    strum_macros::Display,
     tracing::debug,
 };
+
+use strum::Display as EnumDisplay;
 
 use crate::{
     error::RdapServerError,
@@ -107,7 +108,7 @@ pub struct ListenConfig {
 }
 
 /// Determines the storage type.
-#[derive(Debug, Display, Clone)]
+#[derive(Debug, EnumDisplay, Clone)]
 #[strum(serialize_all = "lowercase")]
 pub enum StorageType {
     /// Uses in-memory storage.
@@ -190,7 +191,7 @@ impl StorageType {
 }
 
 /// Determines how conversion of contact to JSContact.
-#[derive(Debug, Display, Clone, EnumString, Copy)]
+#[derive(Debug, EnumDisplay, Clone, EnumString, Copy)]
 #[strum(serialize_all = "lowercase")]
 pub enum JsContactConversion {
     /// Do no JSContact conversions.

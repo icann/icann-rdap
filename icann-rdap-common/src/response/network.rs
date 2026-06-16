@@ -103,7 +103,7 @@ impl std::fmt::Display for Cidr0Cidr {
     }
 }
 
-// Represents the prefix choices
+/// Represents the prefix choices
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum Cidr0CidrPrefix {
     #[serde(rename = "v4prefix")]

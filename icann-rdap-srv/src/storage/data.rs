@@ -16,10 +16,11 @@ use {
     ipnet::{IpNet, Ipv4Subnets, Ipv6Subnets},
     serde::{Deserialize, Serialize},
     serde_json::Value,
-    strum_macros::Display,
     tokio::time::sleep,
     tracing::{debug, info, warn},
 };
+
+use strum::Display as EnumDisplay;
 
 use crate::{
     config::ServiceConfig,
@@ -30,7 +31,7 @@ use crate::{
 pub const UPDATE: &str = "update";
 pub const RELOAD: &str = "reload";
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Display)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, EnumDisplay)]
 #[serde(untagged)]
 pub enum Template {
     Domain {
