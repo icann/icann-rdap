@@ -37,7 +37,8 @@ mod tests {
     use super::*;
     use strum::IntoEnumIterator;
 
-    const IANA_REGISTRY_URL: &str = "https://www.iana.org/assignments/rdap-json-values/rdap-json-values.xml";
+    const IANA_REGISTRY_URL: &str =
+        "https://www.iana.org/assignments/rdap-json-values/rdap-json-values.xml";
 
     #[test]
     fn iana_event_action_values_match_enum() {
@@ -75,7 +76,9 @@ mod tests {
                 Some(len) => len,
                 None => continue,
             };
-            let value = record[value_start..value_start + value_end].trim().to_string();
+            let value = record[value_start..value_start + value_end]
+                .trim()
+                .to_string();
             iana_values.insert(value);
         }
 
