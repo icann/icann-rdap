@@ -5,10 +5,10 @@ use icann_rdap_common::{
 };
 
 use super::{
+    MdHeaderText, MdParams, MdUtil, ToMd,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
     types::public_ids_to_table,
-    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Entity {
@@ -92,10 +92,10 @@ impl ToMd for Entity {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if params.show_rfc9537_redactions {
-            if let Some(redacted) = &self.object_common.redacted {
-                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
-            }
+        if params.show_rfc9537_redactions
+            && let Some(redacted) = &self.object_common.redacted
+        {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -238,8 +238,8 @@ mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
         prelude::{
-            redacted::{Method, Name, Redacted},
             Entity, ToResponse,
+            redacted::{Method, Name, Redacted},
         },
     };
 

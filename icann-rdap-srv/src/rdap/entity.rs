@@ -35,14 +35,13 @@ pub(crate) async fn entity_by_handle(
     if state.get_common_config().bootstrap
         && !matches!(entity, RdapResponse::Entity(_))
         && !entity.is_redirect()
+        && let Some(tag) = handle.rsplit_once('-')
     {
-        if let Some(tag) = handle.rsplit_once('-') {
-            let found = storage
-                .get_entity_by_handle(&format!("-{}", tag.1.to_ascii_uppercase()))
-                .await?;
-            if found.is_redirect() {
-                return Ok(found.to_entity_bootstrap(&handle).response());
-            }
+        let found = storage
+            .get_entity_by_handle(&format!("-{}", tag.1.to_ascii_uppercase()))
+            .await?;
+        if found.is_redirect() {
+            return Ok(found.to_entity_bootstrap(&handle).response());
         }
     }
 

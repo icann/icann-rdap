@@ -1,6 +1,6 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
+use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
@@ -26,7 +26,7 @@ pub(crate) fn simplify_registrant_street(
                     let mut all_addrs = vec![];
                     for addr in contact.postal_addresses().to_vec().iter_mut() {
                         if addr.street_parts.is_none()
-                            || addr.street_parts.as_ref().map_or(true, |v| v.is_empty())
+                            || addr.street_parts.as_ref().is_none_or(|v| v.is_empty())
                         {
                             addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
                             modified = true;
@@ -38,7 +38,7 @@ pub(crate) fn simplify_registrant_street(
                         let mut all_addrs = vec![];
                         for addr in localizable.postal_addresses().to_vec().iter_mut() {
                             if addr.street_parts.is_none()
-                                || addr.street_parts.as_ref().map_or(true, |v| v.is_empty())
+                                || addr.street_parts.as_ref().is_none_or(|v| v.is_empty())
                             {
                                 addr.street_parts = Some(vec![REDACTED_STREET.to_string()]);
                                 modified = true;
@@ -78,7 +78,7 @@ pub(crate) fn simplify_registrant_city(
                     let mut all_addrs = vec![];
                     for addr in contact.postal_addresses().to_vec().iter_mut() {
                         if addr.locality.is_none()
-                            || addr.locality.as_ref().map_or(true, |s| s.is_empty())
+                            || addr.locality.as_ref().is_none_or(|s| s.is_empty())
                         {
                             addr.locality = Some(REDACTED_CITY.to_string());
                             modified = true;
@@ -90,7 +90,7 @@ pub(crate) fn simplify_registrant_city(
                         let mut all_addrs = vec![];
                         for addr in localizable.postal_addresses().to_vec().iter_mut() {
                             if addr.locality.is_none()
-                                || addr.locality.as_ref().map_or(true, |s| s.is_empty())
+                                || addr.locality.as_ref().is_none_or(|s| s.is_empty())
                             {
                                 addr.locality = Some(REDACTED_CITY.to_string());
                                 modified = true;
@@ -130,7 +130,7 @@ pub(crate) fn simplify_registrant_postal_code(
                     let mut all_addrs = vec![];
                     for addr in contact.postal_addresses().to_vec().iter_mut() {
                         if addr.postal_code.is_none()
-                            || addr.postal_code.as_ref().map_or(true, |s| s.is_empty())
+                            || addr.postal_code.as_ref().is_none_or(|s| s.is_empty())
                         {
                             addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
                             modified = true;
@@ -143,7 +143,7 @@ pub(crate) fn simplify_registrant_postal_code(
                         let mut all_addrs = vec![];
                         for addr in localizable.postal_addresses().to_vec().iter_mut() {
                             if addr.postal_code.is_none()
-                                || addr.postal_code.as_ref().map_or(true, |s| s.is_empty())
+                                || addr.postal_code.as_ref().is_none_or(|s| s.is_empty())
                             {
                                 addr.postal_code = Some(REDACTED_POSTAL_CODE.to_string());
                                 modified = true;

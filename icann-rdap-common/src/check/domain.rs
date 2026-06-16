@@ -3,7 +3,7 @@ use std::any::TypeId;
 use crate::response::domain::{Domain, SecureDns};
 
 use super::{
-    string::StringCheck, Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks,
+    Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks, string::StringCheck,
 };
 
 impl GetChecks for Domain {
@@ -75,10 +75,10 @@ impl GetChecks for Domain {
             // if there is also a unicodeName
             if let Some(unicode_name) = &self.unicode_name {
                 let expected = idna::domain_to_ascii(unicode_name);
-                if let Ok(expected) = expected {
-                    if !expected.eq_ignore_ascii_case(ldh) {
-                        items.push(Check::LdhNameDoesNotMatchUnicode.check_item())
-                    }
+                if let Ok(expected) = expected
+                    && !expected.eq_ignore_ascii_case(ldh)
+                {
+                    items.push(Check::LdhNameDoesNotMatchUnicode.check_item())
                 }
             }
         }
@@ -106,20 +106,20 @@ impl GetChecks for Domain {
 impl GetChecks for SecureDns {
     fn get_checks(&self, index: Option<usize>, params: CheckParams) -> Checks {
         let mut items: Vec<CheckItem> = vec![];
-        if let Some(delegation_signed) = &self.delegation_signed {
-            if delegation_signed.is_string() {
-                items.push(Check::DelegationSignedIsString.check_item());
-            }
+        if let Some(delegation_signed) = &self.delegation_signed
+            && delegation_signed.is_string()
+        {
+            items.push(Check::DelegationSignedIsString.check_item());
         }
-        if let Some(zone_signed) = &self.zone_signed {
-            if zone_signed.is_string() {
-                items.push(Check::ZoneSignedIsString.check_item());
-            }
+        if let Some(zone_signed) = &self.zone_signed
+            && zone_signed.is_string()
+        {
+            items.push(Check::ZoneSignedIsString.check_item());
         }
-        if let Some(max_sig_life) = &self.max_sig_life {
-            if max_sig_life.is_string() {
-                items.push(Check::MaxSigLifeIsString.check_item());
-            }
+        if let Some(max_sig_life) = &self.max_sig_life
+            && max_sig_life.is_string()
+        {
+            items.push(Check::MaxSigLifeIsString.check_item());
         }
 
         let mut sub_checks = vec![];
@@ -256,7 +256,7 @@ mod tests {
     };
 
     use crate::{
-        check::{contains_check, Check, CheckParams, GetChecks},
+        check::{Check, CheckParams, GetChecks, contains_check},
         prelude::{Entity, Nameserver, Network},
     };
 

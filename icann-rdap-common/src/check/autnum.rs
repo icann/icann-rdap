@@ -3,7 +3,7 @@ use std::any::TypeId;
 use crate::response::autnum::Autnum;
 
 use super::{
-    string::StringCheck, Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
+    Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure, string::StringCheck,
 };
 
 impl GetChecks for Autnum {
@@ -29,20 +29,20 @@ impl GetChecks for Autnum {
             items.push(Check::AutnumMissing.check_item())
         }
 
-        if let Some(start_num) = &self.start_autnum.as_ref().and_then(|n| n.as_u32()) {
-            if let Some(end_num) = &self.end_autnum.as_ref().and_then(|n| n.as_u32()) {
-                if start_num > end_num {
-                    items.push(Check::AutnumEndBeforeStart.check_item())
-                }
-                if is_autnum_reserved(*start_num) || is_autnum_reserved(*end_num) {
-                    items.push(Check::AutnumReserved.check_item())
-                }
-                if is_autnum_documentation(*start_num) || is_autnum_documentation(*end_num) {
-                    items.push(Check::AutnumDocumentation.check_item())
-                }
-                if is_autnum_private_use(*start_num) || is_autnum_private_use(*end_num) {
-                    items.push(Check::AutnumPrivateUse.check_item())
-                }
+        if let Some(start_num) = &self.start_autnum.as_ref().and_then(|n| n.as_u32())
+            && let Some(end_num) = &self.end_autnum.as_ref().and_then(|n| n.as_u32())
+        {
+            if start_num > end_num {
+                items.push(Check::AutnumEndBeforeStart.check_item())
+            }
+            if is_autnum_reserved(*start_num) || is_autnum_reserved(*end_num) {
+                items.push(Check::AutnumReserved.check_item())
+            }
+            if is_autnum_documentation(*start_num) || is_autnum_documentation(*end_num) {
+                items.push(Check::AutnumDocumentation.check_item())
+            }
+            if is_autnum_private_use(*start_num) || is_autnum_private_use(*end_num) {
+                items.push(Check::AutnumPrivateUse.check_item())
             }
         }
 
@@ -64,10 +64,10 @@ impl GetChecks for Autnum {
             }
         }
 
-        if let Some(country) = &self.country {
-            if country.is_number() || country.is_bool() {
-                items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
-            }
+        if let Some(country) = &self.country
+            && (country.is_number() || country.is_bool())
+        {
+            items.push(Check::NetworkOrAutnumCountryIsNotString.check_item())
         }
 
         Checks {
@@ -104,7 +104,7 @@ mod tests {
 
     use crate::{
         check::{Check, CheckParams, GetChecks},
-        response::{autnum::Autnum, RdapResponse},
+        response::{RdapResponse, autnum::Autnum},
     };
 
     use super::*;
@@ -121,10 +121,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumNameIsEmpty)
+        );
     }
 
     #[test]
@@ -148,10 +150,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumNameIsNotString)
+        );
     }
 
     #[test]
@@ -166,10 +170,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumTypeIsEmpty)
+        );
     }
 
     #[test]
@@ -193,10 +199,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumTypeIsNotString)
+        );
     }
 
     #[test]
@@ -220,10 +228,12 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::NetworkOrAutnumCountryIsNotString)
+        );
     }
 
     #[rstest]

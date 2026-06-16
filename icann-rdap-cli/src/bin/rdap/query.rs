@@ -9,18 +9,18 @@ use {
         md::{MdOptions, MdParams, ToMd},
         rdap::{QueryType, RequestData, RequestResponse, ResponseData},
     },
-    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
+    termimad::{Alignment, MadSkin, crossterm::style::Color::*},
 };
 
 use chrono::DateTime;
-use enumflags2::{bitflags, BitFlags};
+use enumflags2::{BitFlags, bitflags};
 use icann_rdap_cli::args::target::LinkParams;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     check::{
-        process::do_check_processing, traverse_checks, ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES,
+        ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES, process::do_check_processing, traverse_checks,
     },
-    prelude::{get_relationship_links, Event, RdapResponse},
+    prelude::{Event, RdapResponse, get_relationship_links},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
@@ -29,7 +29,7 @@ use serde_json::Serializer;
 use tracing::warn;
 
 use crate::{
-    bootstrap::{get_base_url, BootstrapType},
+    bootstrap::{BootstrapType, get_base_url},
     error::RdapCliError,
     request::request_and_process,
 };
@@ -398,19 +398,19 @@ fn output_immediately<W: std::io::Write>(
                 };
                 if let Some(events) = events {
                     for event in events {
-                        if let Some(event_action) = &event.event_action {
-                            if let Some(date) = &event.event_date {
-                                let date = DateTime::parse_from_rfc3339(date).ok();
-                                if let Some(date) = date {
-                                    writeln!(
-                                        write,
-                                        "{} = {}",
-                                        event_action,
-                                        date.format("%a, %v %X %Z")
-                                    )?;
-                                } else {
-                                    writeln!(write, "{} = BAD DATE", event_action,)?;
-                                }
+                        if let Some(event_action) = &event.event_action
+                            && let Some(date) = &event.event_date
+                        {
+                            let date = DateTime::parse_from_rfc3339(date).ok();
+                            if let Some(date) = date {
+                                writeln!(
+                                    write,
+                                    "{} = {}",
+                                    event_action,
+                                    date.format("%a, %v %X %Z")
+                                )?;
+                            } else {
+                                writeln!(write, "{} = BAD DATE", event_action,)?;
                             }
                         }
                     }

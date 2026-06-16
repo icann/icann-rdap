@@ -3,11 +3,11 @@ use jsonpath_rust::JsonPath;
 
 use {
     icann_rdap_common::response::redacted::Redacted,
-    serde_json::{json, Value},
+    serde_json::{Value, json},
 };
 
 use {
-    super::{string::StringUtil, table::MultiPartTable, MdParams, ToMd},
+    super::{MdParams, ToMd, string::StringUtil, table::MultiPartTable},
     icann_rdap_common::response::RdapResponse,
 };
 
@@ -103,12 +103,11 @@ fn convert_redactions<'a>(
         let post_path = get_string_from_map(item_map, "postPath");
         let method = get_string_from_map(item_map, "method");
 
-        if let Some(path_lang) = item_map.get("pathLang") {
-            if let Some(path_lang) = path_lang.as_str() {
-                if !path_lang.eq_ignore_ascii_case("jsonpath") {
-                    continue;
-                }
-            }
+        if let Some(path_lang) = item_map.get("pathLang")
+            && let Some(path_lang) = path_lang.as_str()
+            && !path_lang.eq_ignore_ascii_case("jsonpath")
+        {
+            continue;
         }
 
         // if method doesn't equal emptyValue or partialValue, we don't need to do anything, we can skip to the next item
@@ -168,15 +167,13 @@ fn convert_redactions<'a>(
 
 // utility functions
 fn convert_to_json_pointer_path(path: &str) -> String {
-    let pointer_path = path
-        .trim_start_matches('$')
+    path.trim_start_matches('$')
         .replace('.', "/")
         .replace("['", "/")
         .replace("']", "")
         .replace('[', "/")
         .replace(']', "")
-        .replace("//", "/");
-    pointer_path
+        .replace("//", "/")
 }
 
 fn get_string_from_map(map: &serde_json::Map<String, Value>, key: &str) -> String {

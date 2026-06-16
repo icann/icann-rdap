@@ -1,6 +1,6 @@
 //! Simplify redaction of names
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
+use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
@@ -17,10 +17,10 @@ pub(crate) fn simplify_registrant_name(
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     // Skip redaction if full name is already present and non-empty
-                    let has_non_empty_name = contact.full_name().map_or(false, |s| !s.is_empty())
+                    let has_non_empty_name = contact.full_name().is_some_and(|s| !s.is_empty())
                         || contact
                             .localizations_iter()
-                            .any(|(_, loc)| loc.full_name().map_or(false, |s| !s.is_empty()));
+                            .any(|(_, loc)| loc.full_name().is_some_and(|s| !s.is_empty()));
 
                     if has_non_empty_name {
                         return domain;
@@ -59,10 +59,10 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
                 let contact = entity.contact();
                 if let Some(mut contact) = contact {
                     // Skip redaction if full name is already present and non-empty
-                    let has_non_empty_name = contact.full_name().map_or(false, |s| !s.is_empty())
+                    let has_non_empty_name = contact.full_name().is_some_and(|s| !s.is_empty())
                         || contact
                             .localizations_iter()
-                            .any(|(_, loc)| loc.full_name().map_or(false, |s| !s.is_empty()));
+                            .any(|(_, loc)| loc.full_name().is_some_and(|s| !s.is_empty()));
 
                     if has_non_empty_name {
                         return domain;
@@ -96,8 +96,8 @@ pub(crate) fn simplify_tech_name(mut domain: Box<Domain>, redaction: &Redacted) 
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::Remark;
+    use icann_rdap_common::prelude::redacted::Name;
     use icann_rdap_common::prelude::{Contact, Entity};
     use icann_rdap_common::response::ObjectCommonFields;
 
@@ -975,7 +975,7 @@ mod tests {
 
         let registrant = &entities[0];
         if let Some(contact) = registrant.contact() {
-            assert!(contact.full_name().map_or(true, |s| s.is_empty()));
+            assert!(contact.full_name().is_none_or(|s| s.is_empty()));
             if let Some(fr_local) = contact.localization("fr") {
                 assert_eq!(fr_local.full_name(), Some("Jean Dupont"));
             } else {
@@ -1088,7 +1088,7 @@ mod tests {
 
         let tech = &entities[0];
         if let Some(contact) = tech.contact() {
-            assert!(contact.full_name().map_or(true, |s| s.is_empty()));
+            assert!(contact.full_name().is_none_or(|s| s.is_empty()));
             if let Some(fr_local) = contact.localization("fr") {
                 assert_eq!(fr_local.full_name(), Some("Jean Technique"));
             } else {

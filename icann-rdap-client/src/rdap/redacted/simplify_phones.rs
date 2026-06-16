@@ -2,7 +2,7 @@
 
 use std::sync::LazyLock;
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
+use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 use regex::Regex;
 
 use crate::rdap::redacted::add_remark;
@@ -68,16 +68,16 @@ fn simplify_phone(
                     if !phones.is_empty() {
                         let mut phones = phones;
                         for phone in phones.iter_mut() {
-                            if phone.features().contains(&feature.to_string()) {
-                                if phone.phone.is_empty() {
-                                    phone.phone = redaction_key.to_string();
-                                    entity.object_common.remarks = add_remark(
-                                        redaction_key,
-                                        redaction_desc,
-                                        redaction,
-                                        entity.object_common.remarks.clone(),
-                                    );
-                                }
+                            if phone.features().contains(&feature.to_string())
+                                && phone.phone.is_empty()
+                            {
+                                phone.phone = redaction_key.to_string();
+                                entity.object_common.remarks = add_remark(
+                                    redaction_key,
+                                    redaction_desc,
+                                    redaction,
+                                    entity.object_common.remarks.clone(),
+                                );
                             }
                         }
                         contact = contact.with_phones(phones);
@@ -147,13 +147,13 @@ fn simplify_phone_ext(
 #[cfg(test)]
 mod tests {
     use crate::rdap::redacted::simplify_phones::{
-        simplify_registrant_fax, simplify_registrant_fax_ext, simplify_registrant_phone,
-        simplify_registrant_phone_ext, simplify_tech_phone, simplify_tech_phone_ext, REDACTED_FAX,
-        REDACTED_PHONE,
+        REDACTED_FAX, REDACTED_PHONE, simplify_registrant_fax, simplify_registrant_fax_ext,
+        simplify_registrant_phone, simplify_registrant_phone_ext, simplify_tech_phone,
+        simplify_tech_phone_ext,
     };
     use icann_rdap_common::prelude::{
-        redacted::{Name, Redacted},
         Contact, Domain, Entity, Phone,
+        redacted::{Name, Redacted},
     };
 
     fn get_test_redacted() -> Redacted {
@@ -514,8 +514,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_empty_voice_phone_when_simplify_registrant_phone_then_phone_is_redacted(
-    ) {
+    fn given_registrant_with_empty_voice_phone_when_simplify_registrant_phone_then_phone_is_redacted()
+     {
         // GIVEN a domain with a registrant entity having an empty voice phone
         let domain = given_domain_with_empty_phone_contact("registrant", "voice");
 
@@ -565,15 +565,17 @@ mod tests {
 
         assert!(!remarks.is_empty());
         let remark = &remarks[0];
-        assert!(remark
-            .description()
-            .iter()
-            .any(|desc| desc.contains("redacted")));
+        assert!(
+            remark
+                .description()
+                .iter()
+                .any(|desc| desc.contains("redacted"))
+        );
     }
 
     #[test]
-    fn given_multiple_entities_with_empty_when_simplify_registrant_phone_then_only_registrant_is_redacted(
-    ) {
+    fn given_multiple_entities_with_empty_when_simplify_registrant_phone_then_only_registrant_is_redacted()
+     {
         // GIVEN a domain with both registrant and administrative entities with empty phones
         let registrant_phone = Phone::builder()
             .phone("".to_string())
@@ -666,8 +668,8 @@ mod tests {
 
     // Tests for simplify_phone_ext function
     #[test]
-    fn given_registrant_with_voice_phone_ext_when_simplify_registrant_phone_ext_then_extension_is_redacted(
-    ) {
+    fn given_registrant_with_voice_phone_ext_when_simplify_registrant_phone_ext_then_extension_is_redacted()
+     {
         // GIVEN a domain with a registrant entity having a voice phone with extension
         let domain =
             given_domain_with_phone_extension("registrant", "+1-555-123-4567;ext=123", "voice");
@@ -689,8 +691,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_fax_phone_ext_when_simplify_registrant_fax_ext_then_extension_is_redacted(
-    ) {
+    fn given_registrant_with_fax_phone_ext_when_simplify_registrant_fax_ext_then_extension_is_redacted()
+     {
         // GIVEN a domain with a registrant entity having a fax phone with extension
         let domain =
             given_domain_with_phone_extension("registrant", "+1-555-123-4568;ext=456", "fax");
@@ -712,8 +714,8 @@ mod tests {
     }
 
     #[test]
-    fn given_technical_with_voice_phone_ext_when_simplify_tech_phone_ext_then_extension_is_redacted(
-    ) {
+    fn given_technical_with_voice_phone_ext_when_simplify_tech_phone_ext_then_extension_is_redacted()
+     {
         // GIVEN a domain with a technical entity having a voice phone with extension
         let domain =
             given_domain_with_phone_extension("technical", "+1-555-987-6543;ext=789", "voice");
@@ -735,8 +737,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_voice_phone_no_ext_when_simplify_registrant_phone_ext_then_redaction_appended(
-    ) {
+    fn given_registrant_with_voice_phone_no_ext_when_simplify_registrant_phone_ext_then_redaction_appended()
+     {
         // GIVEN a domain with a registrant entity having a voice phone without extension
         let domain = given_domain_with_phone_extension("registrant", "+1-555-123-4567", "voice");
 
@@ -777,8 +779,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_sms_phone_when_simplify_registrant_phone_ext_then_extension_not_redacted(
-    ) {
+    fn given_registrant_with_sms_phone_when_simplify_registrant_phone_ext_then_extension_not_redacted()
+     {
         // GIVEN a domain with a registrant entity having an SMS phone with extension
         let domain =
             given_domain_with_phone_extension("registrant", "+1-555-123-4567;ext=123", "sms");
@@ -797,8 +799,8 @@ mod tests {
     }
 
     #[test]
-    fn given_multiple_phones_with_ext_when_simplify_registrant_phone_ext_then_only_matching_phones_modified(
-    ) {
+    fn given_multiple_phones_with_ext_when_simplify_registrant_phone_ext_then_only_matching_phones_modified()
+     {
         // GIVEN a domain with multiple phones, some with extensions
         let domain = given_domain_with_multiple_phones_with_extensions("registrant");
 
@@ -844,8 +846,8 @@ mod tests {
     }
 
     #[test]
-    fn given_registrant_with_fax_phone_ext_when_simplify_registrant_phone_ext_then_extension_not_redacted(
-    ) {
+    fn given_registrant_with_fax_phone_ext_when_simplify_registrant_phone_ext_then_extension_not_redacted()
+     {
         // GIVEN a domain with a registrant entity having a fax phone with extension
         let domain =
             given_domain_with_phone_extension("registrant", "+1-555-123-4568;ext=456", "fax");
@@ -879,10 +881,12 @@ mod tests {
 
         assert!(!remarks.is_empty());
         let remark = &remarks[0];
-        assert!(remark
-            .description()
-            .iter()
-            .any(|desc| desc.contains("extension redacted")));
+        assert!(
+            remark
+                .description()
+                .iter()
+                .any(|desc| desc.contains("extension redacted"))
+        );
     }
 
     #[test]
@@ -927,8 +931,8 @@ mod tests {
     }
 
     #[test]
-    fn given_multiple_entities_with_extensions_when_simplify_registrant_phone_ext_then_only_registrant_is_redacted(
-    ) {
+    fn given_multiple_entities_with_extensions_when_simplify_registrant_phone_ext_then_only_registrant_is_redacted()
+     {
         // GIVEN a domain with both registrant and administrative entities with phone extensions
         let registrant_phone = Phone::builder()
             .phone("+1-555-111-1111;ext=123".to_string())

@@ -100,16 +100,15 @@ impl<T: Clone> SearchLabels<T> {
             ));
         }
 
-        if let Some(trie) = self.label_suffixes.get(parts.1.trim_start_matches('.')) {
-            if let Some(entries) = trie.get_suffixes_values(parts.0) {
-                if !entries.is_empty() {
-                    let values = entries
-                        .iter()
-                        .filter_map(|e| e.val.clone())
-                        .collect::<Vec<T>>();
-                    return Ok(values);
-                }
-            }
+        if let Some(trie) = self.label_suffixes.get(parts.1.trim_start_matches('.'))
+            && let Some(entries) = trie.get_suffixes_values(parts.0)
+            && !entries.is_empty()
+        {
+            let values = entries
+                .iter()
+                .filter_map(|e| e.val.clone())
+                .collect::<Vec<T>>();
+            return Ok(values);
         }
 
         Ok(vec![])
