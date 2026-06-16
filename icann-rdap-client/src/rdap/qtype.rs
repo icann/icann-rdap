@@ -23,159 +23,211 @@ use crate::RdapClientError;
 #[derive(EnumDisplay, Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
 pub enum QueryType {
+    /// Standard IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Lookup")]
     IpV4Addr(Ipv4Addr),
 
+    /// Standard IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Lookup")]
     IpV6Addr(Ipv6Addr),
 
+    /// IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Lookup")]
     IpV4Cidr(Ipv4Cidr),
 
+    /// IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Lookup")]
     IpV6Cidr(Ipv6Cidr),
 
+    /// RDAP-UP IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Up Lookup")]
     IpV4AddrUp(Ipv4Addr),
 
+    /// RDAP-UP IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Up Lookup")]
     IpV6AddrUp(Ipv6Addr),
 
+    /// RDAP-UP IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Up Lookup")]
     IpV4CidrUp(Ipv4Cidr),
 
+    /// RDAP-UP IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Rdap-Up Lookup")]
     IpV6CidrUp(Ipv6Cidr),
 
+    /// RDAP-DOWN IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Down Lookup")]
     IpV4AddrDown(Ipv4Addr),
 
+    /// RDAP-DOWN IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Down Lookup")]
     IpV6AddrDown(Ipv6Addr),
 
+    /// RDAP-DOWN IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Down Lookup")]
     IpV4CidrDown(Ipv4Cidr),
 
+    /// RDAP-DOWN IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Rdap-Down Lookup")]
     IpV6CidrDown(Ipv6Cidr),
 
+    /// RDAP-TOP IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Top Lookup")]
     IpV4AddrTop(Ipv4Addr),
 
+    /// RDAP-TOP IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Top Lookup")]
     IpV6AddrTop(Ipv6Addr),
 
+    /// RDAP-TOP IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Top Lookup")]
     IpV4CidrTop(Ipv4Cidr),
 
+    /// RDAP-TOP IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Rdap-Top Lookup")]
     IpV6CidrTop(Ipv6Cidr),
 
+    /// RDAP-BOTTOM IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Bottom Search")]
     IpV4AddrBottom(Ipv4Addr),
 
+    /// RDAP-BOTTOM IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Bottom Search")]
     IpV6AddrBottom(Ipv6Addr),
 
+    /// RDAP-BOTTOM IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Bottom Search")]
     IpV4CidrBottom(Ipv4Cidr),
 
-    #[strum(serialize = "IpV6 CIDR Rdap-Bottom Search")]
+    /// RDAP-BOTTOM IPv6 CIDR block lookup.
+    #[strum(serialize = "IpV6 Address Rdap-Bottom Search")]
     IpV6CidrBottom(Ipv6Cidr),
 
+    /// Autonomous System Number lookup.
     #[strum(serialize = "Autonomous System Number Lookup")]
     AsNumber(u32),
 
+    /// RDAP-UP ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Up Lookup")]
     AsNumberUp(u32),
 
+    /// RDAP-DOWN ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Down Lookup")]
     AsNumberDown(u32),
 
+    /// RDAP-TOP ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Top Search")]
     AsNumberTop(u32),
 
+    /// RDAP-BOTTOM ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Bottom Search")]
     AsNumberBottom(u32),
 
+    /// Domain name lookup.
     #[strum(serialize = "Domain Lookup")]
     Domain(DomainName),
 
+    /// A-label (punycode/ACE) domain name lookup.
     #[strum(serialize = "A-Label Domain Lookup")]
     ALabel(DomainName),
 
+    /// Reverse DNS IPv4 lookup.
     #[strum(serialize = "Reverse DNS IPv4 Lookup")]
     RdnsIpv4(Ipv4Net),
 
+    /// Reverse DNS IPv6 lookup.
     #[strum(serialize = "Reverse DNS IPv6 Lookup")]
     RdnsIpv6(Ipv6Net),
 
+    /// RDAP-UP reverse DNS IPv4 lookup.
     #[strum(serialize = "Reverse DNS IPv4 Rdap-Up Lookup")]
     RdnsIpv4Up(Ipv4Net),
 
+    /// RDAP-UP reverse DNS IPv6 lookup.
     #[strum(serialize = "Reverse DNS IPv6 Rdap-Up Lookup")]
     RdnsIpv6Up(Ipv6Net),
 
+    /// RDAP-DOWN reverse DNS IPv4 lookup.
     #[strum(serialize = "Reverse DNS IPv4 Rdap-Down Lookup")]
     RdnsIpv4Down(Ipv4Net),
 
+    /// RDAP-DOWN reverse DNS IPv6 lookup.
     #[strum(serialize = "Reverse DNS IPv6 Rdap-Down Lookup")]
     RdnsIpv6Down(Ipv6Net),
 
+    /// RDAP-TOP reverse DNS IPv4 lookup.
     #[strum(serialize = "Reverse DNS IPv4 Rdap-Top Lookup")]
     RdnsIpv4Top(Ipv4Net),
 
+    /// RDAP-TOP reverse DNS IPv6 lookup.
     #[strum(serialize = "Reverse DNS IPv6 Rdap-Top Lookup")]
     RdnsIpv6Top(Ipv6Net),
 
+    /// RDAP-BOTTOM reverse DNS IPv4 lookup.
     #[strum(serialize = "Reverse DNS IPv4 Rdap-Bottom Lookup")]
     RdnsIpv4Bottom(Ipv4Net),
 
+    /// RDAP-BOTTOM reverse DNS IPv6 lookup.
     #[strum(serialize = "Reverse DNS IPv6 Rdap-Bottom Lookup")]
     RdnsIpv6Bottom(Ipv6Net),
 
+    /// Entity lookup by handle.
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
 
+    /// Nameserver lookup by domain name.
     #[strum(serialize = "Nameserver Lookup")]
     Nameserver(DomainName),
 
+    /// Search entities by name (RDAP `fn` parameter).
     #[strum(serialize = "Entity Name Search")]
     EntityNameSearch(String),
 
+    /// Search entities by handle (RDAP `handle` parameter).
     #[strum(serialize = "Entity Handle Search")]
     EntityHandleSearch(String),
 
+    /// Search network handles (RDAP `ips?handle` parameter).
     #[strum(serialize = "Network Handle Search")]
     NetworkHandleSearch(String),
 
+    /// Search network names (RDAP `ips?name` parameter).
     #[strum(serialize = "Network Name Search")]
     NetworkNameSearch(String),
 
+    /// Search domain names (RDAP `domains?name` parameter).
     #[strum(serialize = "Domain Name Search")]
     DomainNameSearch(String),
 
+    /// Search domains by nameserver LDH name (RDAP `domains?nsLdhName` parameter).
     #[strum(serialize = "Domain Nameserver Name Search")]
     DomainNsNameSearch(String),
 
+    /// Search domains by nameserver IP address (RDAP `domains?nsIp` parameter).
     #[strum(serialize = "Domain Nameserver IP Address Search")]
     DomainNsIpSearch(IpAddr),
 
+    /// Search nameservers by name (RDAP `nameservers?name` parameter).
     #[strum(serialize = "Nameserver Name Search")]
     NameserverNameSearch(String),
 
+    /// Search nameservers by IP address (RDAP `nameservers?ip` parameter).
     #[strum(serialize = "Nameserver IP Address Search")]
     NameserverIpSearch(IpAddr),
 
+    /// Search autonomous system numbers by handle (RDAP `autnums?handle` parameter).
     #[strum(serialize = "Autnum Handle Search")]
     AutnumHandleSearch(String),
 
+    /// Search autonomous system numbers by name (RDAP `autnums?name` parameter).
     #[strum(serialize = "Autnum Name Search")]
     AutnumNameSearch(String),
 
+    /// Server help endpoint lookup.
     #[strum(serialize = "Server Help Lookup")]
     Help,
 
+    /// Explicit URL passthrough. The string is used as-is without modification.
     #[strum(serialize = "Explicit URL")]
     Url(String),
 }
