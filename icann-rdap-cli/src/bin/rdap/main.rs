@@ -601,17 +601,20 @@ impl From<&LogLevel> for LevelFilter {
 
 #[tokio::main]
 pub async fn main() -> RdapCliError {
-    if let Err(e) = wrapped_main().await {
-        let ec = e.exit_code();
-        match ec {
-            // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
-            205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
-            206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
-            _ => eprintln!("\n{e}\n"),
-        };
-        return e;
-    } else {
-        return RdapCliError::Success;
+    match wrapped_main().await {
+        Err(e) => {
+            let ec = e.exit_code();
+            match ec {
+                // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
+                205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
+                206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
+                _ => eprintln!("\n{e}\n"),
+            };
+            return e;
+        }
+        _ => {
+            return RdapCliError::Success;
+        }
     }
 }
 

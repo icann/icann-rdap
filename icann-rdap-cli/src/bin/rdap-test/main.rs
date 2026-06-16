@@ -412,24 +412,27 @@ impl From<&LogLevel> for LevelFilter {
 
 #[tokio::main]
 pub async fn main() -> RdapTestError {
-    if let Err(e) = wrapped_main().await {
-        eprintln!("\n{e}");
-        match e {
-            RdapTestError::TestsCompletedExecutionErrors
-            | RdapTestError::TestsCompletedWarningsFound
-            | RdapTestError::TestsCompletedErrorsFound
-            | RdapTestError::RdapClient(_)
-            | RdapTestError::IoError(_)
-            | RdapTestError::Json(_) => {
-                eprintln!("Service issues may be reported to globalsupport@icann.org.\n")
+    match wrapped_main().await {
+        Err(e) => {
+            eprintln!("\n{e}");
+            match e {
+                RdapTestError::TestsCompletedExecutionErrors
+                | RdapTestError::TestsCompletedWarningsFound
+                | RdapTestError::TestsCompletedErrorsFound
+                | RdapTestError::RdapClient(_)
+                | RdapTestError::IoError(_)
+                | RdapTestError::Json(_) => {
+                    eprintln!("Service issues may be reported to globalsupport@icann.org.\n")
+                }
+                _ => {
+                    eprintln!()
+                }
             }
-            _ => {
-                eprintln!()
-            }
+            return e;
         }
-        return e;
-    } else {
-        return RdapTestError::Success;
+        _ => {
+            return RdapTestError::Success;
+        }
     }
 }
 
