@@ -293,6 +293,12 @@ pub enum QueryTypeVariant {
 impl QueryTypeVariant {
     /// Returns the [`IanaRegistryType`] this variant maps to for bootstrapping,
     /// or `None` if the variant does not use bootstrap lookups.
+    ///
+    /// IPv4 variants map to [`IanaRegistryType::RdapBootstrapIpv4`], IPv6
+    /// variants map to [`IanaRegistryType::RdapBootstrapIpv6`], ASN variants
+    /// map to [`IanaRegistryType::RdapBootstrapAsn`], domain/ALabel/nameserver
+    /// variants map to [`IanaRegistryType::RdapBootstrapDns`], and entity
+    /// variants map to [`IanaRegistryType::RdapObjectTags`].
     pub fn bootstrap_registry(&self) -> Option<IanaRegistryType> {
         match self {
             Self::IpV4Addr
@@ -340,6 +346,9 @@ impl QueryTypeVariant {
 
     /// Constructs a concrete [`QueryType`] value suitable for passing to
     /// [`crate::iana::bootstrap::qtype_to_bootstrap_url`].
+    ///
+    /// Uses sample/fake data for each variant (e.g. `192.0.2.1` for IPv4,
+    /// `2001:db8::1` for IPv6, `as64512` for ASN, `example.org` for domain).
     pub fn to_query_type(&self) -> QueryType {
         match self {
             Self::IpV4Addr => QueryType::ipv4("192.0.2.1").unwrap(),
@@ -418,6 +427,11 @@ impl QueryTypeVariant {
 }
 
 impl QueryType {
+    /// Builds the full RDAP query URL from a `base_url` and `self`.
+    ///
+    /// The base URL is trimmed of trailing slashes, and path segments are
+    /// percent-encoded using [`PctString`] with [`UriReserved::Path`]. Search
+    /// queries use [`UriReserved::Any`].
     pub fn query_url(&self, base_url: &str) -> Result<String, RdapClientError> {
         let base_url = base_url.trim_end_matches('/');
         match self {
@@ -667,14 +681,27 @@ impl QueryType {
         }
     }
 
+    /// Parses a domain name into a [`QueryType::Domain`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the domain name is
+    /// not valid according to [`DomainName::from_str`].
     pub fn domain(domain_name: &str) -> Result<Self, RdapClientError> {
         Ok(Self::Domain(DomainName::from_str(domain_name)?))
     }
 
+    /// Parses an A-label (punycode/ACE) domain name into a [`QueryType::ALabel`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the domain name is
+    /// not valid according to [`DomainName::from_str`].
     pub fn alabel(alabel: &str) -> Result<Self, RdapClientError> {
         Ok(Self::ALabel(DomainName::from_str(alabel)?))
     }
 
+    /// Parses an rDNS IPv4 domain name (e.g. `4.3.2.1.in-addr.arpa`) into a
+    /// [`QueryType::RdnsIpv4`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
     pub fn rdns_ipv4(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -683,6 +710,11 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv6 domain name (e.g. `1.0.0.0...ip6.arpa`) into a
+    /// [`QueryType::RdnsIpv6`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
     pub fn rdns_ipv6(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -691,6 +723,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Up`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
     pub fn rdns_ipv4_up(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -699,6 +735,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Up`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
     pub fn rdns_ipv6_up(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -707,6 +747,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Down`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
     pub fn rdns_ipv4_down(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -715,6 +759,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Down`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
     pub fn rdns_ipv6_down(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -723,6 +771,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Top`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
     pub fn rdns_ipv4_top(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -731,6 +783,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Top`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
     pub fn rdns_ipv6_top(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -739,6 +795,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Bottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
     pub fn rdns_ipv4_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -747,6 +807,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Bottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
     pub fn rdns_ipv6_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
         match ipnet {
@@ -755,6 +819,13 @@ impl QueryType {
         }
     }
 
+    /// Parses an IP address or CIDR block into an rDNS query type.
+    ///
+    /// If the input is a CIDR block, returns [`QueryType::RdnsIpv4`] or
+    /// [`QueryType::RdnsIpv6`]. If it is a plain IP address, it is treated
+    /// as a /32 (IPv4) or /128 (IPv6) prefix.
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
         if let Ok(ip_cidr) = parse_cidr(ip_address) {
             return Ok(match ip_cidr {
@@ -792,45 +863,76 @@ impl QueryType {
         })
     }
 
+    /// Parses a nameserver domain name into a [`QueryType::Nameserver`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the domain name is
+    /// not valid according to [`DomainName::from_str`].
     pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
         Ok(Self::Nameserver(DomainName::from_str(nameserver)?))
     }
 
+    /// Parses an autonomous system number string into a [`QueryType::AsNumber`].
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"` (case-insensitive
+    /// prefix stripping). Returns [`RdapClientError::InvalidQueryValue`] for
+    /// invalid input.
     pub fn autnum(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumber(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberUp`] (RDAP-UP scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_up(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberUp(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberDown`] (RDAP-DOWN scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_down(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberDown(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberTop`] (RDAP-TOP scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_top(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberTop(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_bottom(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberBottom(value))
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4Addr`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4Addr(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6Addr`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6Addr(value))
     }
 
+    /// Parses an IPv4 CIDR block string (e.g. `"192.0.2.0/24"`) into a [`QueryType::IpV4Cidr`].
+    ///
+    /// Host bits are ignored during parsing. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is an IPv6 CIDR.
     pub fn ipv4cidr(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -844,6 +946,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block string (e.g. `"2001:db8::/32"`) into a [`QueryType::IpV6Cidr`].
+    ///
+    /// Host bits are ignored during parsing. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is an IPv4 CIDR.
     pub fn ipv6cidr(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -857,16 +963,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrUp`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_up(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrUp(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrUp`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_up(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrUp(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrUp`] (RDAP-UP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_up(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -880,6 +996,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrUp`] (RDAP-UP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_up(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -893,16 +1013,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrDown`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_down(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrDown(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrDown`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_down(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrDown(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrDown`] (RDAP-DOWN scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_down(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -916,6 +1046,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrDown`] (RDAP-DOWN scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_down(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -929,16 +1063,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrTop`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_top(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrTop(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrTop`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_top(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrTop(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrTop`] (RDAP-TOP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_top(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -952,6 +1096,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrTop`] (RDAP-TOP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_top(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -965,16 +1113,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_bottom(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrBottom(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_bottom(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrBottom(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_bottom(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -988,6 +1146,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_bottom(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -1001,17 +1163,27 @@ impl QueryType {
         }
     }
 
+    /// Searches domains by nameserver IP address into a [`QueryType::DomainNsIpSearch`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid IP input.
     pub fn domain_ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::DomainNsIpSearch(value))
     }
 
+    /// Searches nameservers by IP address into a [`QueryType::NameserverIpSearch`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid IP input.
     pub fn ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::NameserverIpSearch(value))
     }
 }
 
+/// Builds a search query URL with a percent-encoded value.
+///
+/// The `value` is encoded using [`UriReserved::Any`]. The `path_query`
+/// parameter includes both the path and query key (e.g. `"entities?fn"`).
 fn search_query(value: &str, path_query: &str, base_url: &str) -> Result<String, RdapClientError> {
     Ok(format!(
         "{base_url}/{path_query}={}",
@@ -1019,6 +1191,22 @@ fn search_query(value: &str, path_query: &str, base_url: &str) -> Result<String,
     ))
 }
 
+/// Parses a string into a [`QueryType`] using the following precedence:
+///
+/// 1. URL (`http://` or `https://`) → [`QueryType::Url`]
+/// 2. `up:` prefix → RDAP-UP query (IP, CIDR, ASN, or rDNS)
+/// 3. `down:` prefix → RDAP-DOWN query
+/// 4. `top:` prefix → RDAP-TOP query
+/// 5. `bottom:` prefix → RDAP-BOTTOM query
+/// 6. AS number pattern (digits, optionally prefixed with `as`) → [`QueryType::AsNumber`]
+/// 7. IP address → [`QueryType::IpV4Addr`] or [`QueryType::IpV6Addr`]
+/// 8. CIDR notation → [`QueryType::IpV4Cidr`] or [`QueryType::IpV6Cidr`]
+/// 9. Domain name (contains `.`, is unicode domain name):
+///    - Matches `ns*` pattern → [`QueryType::Nameserver`]
+///    - Matches rDNS pattern → [`QueryType::RdnsIpv4`]/[`QueryType::RdnsIpv6`]
+///    - Otherwise → [`QueryType::Domain`]
+/// 10. Single word (no whitespace/dots/commas) → [`QueryType::Entity`]
+/// 11. Otherwise → [`RdapClientError::AmbiguousQueryType`]
 impl FromStr for QueryType {
     type Err = RdapClientError;
 
@@ -1182,6 +1370,9 @@ impl FromStr for QueryType {
     }
 }
 
+/// Parses an autonomous system number string, stripping an optional `as`/`AS`/`As`/`aS` prefix.
+///
+/// Returns [`RdapClientError::InvalidQueryValue`] if the remaining text is not a valid u32.
 fn parse_autnum(s: &str) -> Result<u32, RdapClientError> {
     let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
     autnum
@@ -1189,6 +1380,10 @@ fn parse_autnum(s: &str) -> Result<u32, RdapClientError> {
         .map_err(|_e| RdapClientError::InvalidQueryValue)
 }
 
+/// Parses a CIDR notation string, supporting short-form prefixes (e.g. `"10/8"` → `"10.0.0.0/8"`).
+///
+/// Returns [`RdapClientError::InvalidQueryValue`] if the input lacks a `/` prefix length
+/// or cannot be parsed as a valid CIDR.
 fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
     let Some((prefix, suffix)) = s.split_once('/') else {
         return Err(RdapClientError::InvalidQueryValue);
@@ -1209,16 +1404,19 @@ fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
     }
 }
 
+/// Checks if `text` matches an LDH (letters, digits, hyphens) domain name pattern.
 fn is_ldh_domain(text: &str) -> bool {
     static LDH_DOMAIN_RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap());
     LDH_DOMAIN_RE.is_match(text)
 }
 
+/// Checks if `text` is a valid domain name (contains `.` and is a unicode domain name).
 fn is_domain_name(text: &str) -> bool {
     text.contains('.') && text.is_unicode_domain_name()
 }
 
+/// Checks if `text` matches a nameserver pattern (starts with `ns`).
 fn is_nameserver(text: &str) -> bool {
     static NS_RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"^(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.?$").unwrap()
