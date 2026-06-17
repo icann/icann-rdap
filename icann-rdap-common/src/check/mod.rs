@@ -621,6 +621,14 @@ pub enum Check {
     // Entities 2400 - 2499
     #[strum(message = "entity array is empty")]
     EntityArrayIsEmpty = 2400,
+
+    // Error 2500 - 2599
+    #[strum(message = "errorCode is a string not a number")]
+    ErrorCodeIsString = 2500,
+    #[strum(message = "title is not a string")]
+    TitleIsNotString = 2501,
+    #[strum(message = "description is a string not an array")]
+    DescriptionIsString = 2502,
 }
 
 impl Check {
@@ -739,6 +747,10 @@ impl Check {
             Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
 
             Self::EntityArrayIsEmpty => CheckClass::Std95Warning,
+
+            Self::ErrorCodeIsString | Self::TitleIsNotString | Self::DescriptionIsString => {
+                CheckClass::Std95Error
+            }
         };
         CheckItem {
             check_class,
