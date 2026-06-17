@@ -62,7 +62,7 @@ async fn lookup_not_found() {
     let RdapResponse::ErrorResponse(error) = actual else {
         panic!()
     };
-    assert_eq!(error.error_code, 404)
+    assert_eq!(error.error_code(), 404)
 }
 
 #[rstest]
@@ -287,5 +287,5 @@ async fn lookup_not_found_by_cidr() {
     let RdapResponse::ErrorResponse(error) = actual else {
         panic!()
     };
-    assert_eq!(error.error_code, 404)
+    assert_eq!(error.error_code(), 404)
 }

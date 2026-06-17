@@ -52,7 +52,7 @@ pub(crate) trait ResponseUtil {
 impl ResponseUtil for RdapResponse {
     fn status_code(&self) -> StatusCode {
         if let Self::ErrorResponse(rdap_error) = self {
-            StatusCode::from_u16(rdap_error.error_code).unwrap()
+            StatusCode::from_u16(rdap_error.error_code()).unwrap()
         } else {
             StatusCode::OK
         }
