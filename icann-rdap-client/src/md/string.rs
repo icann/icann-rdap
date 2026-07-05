@@ -23,6 +23,7 @@ pub trait StringUtil {
     fn to_words_title_case(self) -> String;
     fn to_cap_acronyms(self) -> String;
     fn format_date_time(self, params: MdParams) -> Option<String>;
+    fn to_list_item(self, indent: &str) -> String;
 }
 
 impl<T: ToString> StringUtil for T {
@@ -34,7 +35,8 @@ impl<T: ToString> StringUtil for T {
             .replace("* ", " ")
             .chars()
             .map(|c| match c {
-                '*' | '|' | '#' => format!("\\{c}"),
+                '*' | '|' => format!("\\{c}"),
+                '#' => format!("`{}`", c),
                 _ => c.to_string(),
             })
             .collect()
@@ -197,6 +199,16 @@ impl<T: ToString> StringUtil for T {
             .replace("nro", "NRO")
             .replace("ietf", "IETF")
     }
+
+    fn to_list_item(self, indent: &str) -> String {
+        let mut s = self.to_string();
+        let trimmed = s.trim_start();
+        let leading = &s[..s.len() - trimmed.len()];
+        if let Some(first) = trimmed.chars().next() && first == '>' {
+            s = format!("{}`{}`{}", leading, first, &trimmed[1..]);
+        }
+        format!("{}* {}", indent, s)
+    }
 }
 
 pub(crate) trait StringListUtil {
@@ -282,6 +294,19 @@ mod tests {
         let actual = s.replace_md_chars();
 
         // THEN
-        assert_eq!(r#"The \*brown \| fox \#  jumped over the fence."#, &actual);
+        assert_eq!(r#"The \*brown \| fox `#`  jumped over the fence."#, &actual);
+    }
+
+    #[rstest]
+    #[case("normal item", "", "* normal item")]
+    #[case("> quoted text", "", "* `>` quoted text")]
+    #[case("+ plus sign", "", "* + plus sign")]
+    #[case("- dash item", "", "* - dash item")]
+    #[case("  > indented quoted", "", "*   `>` indented quoted")]
+    #[case("nested item", "  ", "  * nested item")]
+    #[case("hash text", "", "* hash text")]
+    fn test_to_list_item(#[case] input: &str, #[case] indent: &str, #[case] expected: &str) {
+        let actual = input.to_list_item(indent);
+        assert_eq!(actual, expected);
     }
 }
