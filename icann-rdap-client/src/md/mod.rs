@@ -38,6 +38,9 @@ pub struct MdOptions {
 
     /// If true, the text_style_char will appear in a justified text.
     pub style_in_justify: bool,
+
+    /// The character used for unordered list bullets.
+    pub bullet_char: char,
 }
 
 impl Default for MdOptions {
@@ -47,6 +50,7 @@ impl Default for MdOptions {
             text_style_char: '*',
             hash_headers: true,
             style_in_justify: false,
+            bullet_char: '-',
         }
     }
 }
@@ -59,6 +63,7 @@ impl MdOptions {
             text_style_char: '_',
             hash_headers: false,
             style_in_justify: true,
+            bullet_char: '*',
         }
     }
 }

@@ -264,7 +264,7 @@ impl ToMpTable for ObjectCommon {
             // Status
             if let Some(status) = &self.status {
                 let values = status.vec();
-                table = table.nv_ul(&"Status", values.make_list_all_title_case());
+                table = table.nv_ul(&"Status", values.make_list_all_title_case(), params.options);
             }
 
             // Port 43
@@ -333,6 +333,7 @@ pub(crate) fn events_to_table(
                 .to_owned()
                 .to_words_title_case(),
             ul,
+            params.options,
         );
     }
     table

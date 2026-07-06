@@ -95,17 +95,17 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list.
-    pub fn nv_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
+    pub fn nv_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>, options: &MdOptions) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    v.to_string().replace_md_chars().to_unordered_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0, options),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    v.to_string().replace_md_chars().to_unordered_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0, options),
                 )))
             }
         });
@@ -113,17 +113,17 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list.
-    pub fn nv_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
+    pub fn nv_ul(mut self, name: &impl ToString, value: Vec<impl ToString>, options: &MdOptions) -> Self {
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    v.to_string().replace_md_chars().to_unordered_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0, options),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    v.to_string().replace_md_chars().to_unordered_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0, options),
                 )))
             }
         });
@@ -153,18 +153,18 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list if the value is Some.
-    pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
+    pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>, options: &MdOptions) -> Self {
         if let Some(value) = value {
-            self.nv_ul_ref(name, value)
+            self.nv_ul_ref(name, value, options)
         } else {
             self
         }
     }
 
     /// Add a name/value row with unordered list if the value is Some.
-    pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
+    pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>, options: &MdOptions) -> Self {
         if let Some(value) = value {
-            self.nv_ul(name, value)
+            self.nv_ul(name, value, options)
         } else {
             self
         }
@@ -172,7 +172,7 @@ impl MultiPartTable {
 
     /// A summary row is a special type of name/value row that has an unordered (bulleted) list
     /// that is output in a tree structure (max 3 levels).
-    pub fn summary(mut self, header_text: MdHeaderText) -> Self {
+    pub fn summary(mut self, header_text: MdHeaderText, options: &MdOptions) -> Self {
         self.rows.push(Row::NameValue((
             "Summary".to_string(),
             header_text.to_string().replace_md_chars().to_string(),
@@ -182,12 +182,12 @@ impl MultiPartTable {
         for level1 in header_text.children {
             self.rows.push(Row::NameValue((
                 "".to_string(),
-                level1.to_string().replace_md_chars().to_unordered_item(0),
+                level1.to_string().replace_md_chars().to_unordered_item(0, options),
             )));
             for level2 in level1.children {
                 self.rows.push(Row::NameValue((
                     "".to_string(),
-                    level2.to_string().replace_md_chars().to_unordered_item(1),
+                    level2.to_string().replace_md_chars().to_unordered_item(1, options),
                 )));
             }
         }

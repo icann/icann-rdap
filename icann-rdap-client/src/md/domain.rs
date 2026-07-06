@@ -32,7 +32,7 @@ impl ToMd for Domain {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         //

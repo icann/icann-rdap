@@ -23,7 +23,7 @@ pub trait StringUtil {
     fn to_words_title_case(self) -> String;
     fn to_cap_acronyms(self) -> String;
     fn format_date_time(self, params: MdParams) -> Option<String>;
-    fn to_unordered_item(self, indent_level: usize) -> String;
+    fn to_unordered_item(self, indent_level: usize, options: &MdOptions) -> String;
 }
 
 impl<T: ToString> StringUtil for T {
@@ -200,7 +200,7 @@ impl<T: ToString> StringUtil for T {
             .replace("ietf", "IETF")
     }
 
-    fn to_unordered_item(self, indent_level: usize) -> String {
+    fn to_unordered_item(self, indent_level: usize, options: &MdOptions) -> String {
         let mut s = self.to_string();
         let trimmed = s.trim_start();
         let leading = &s[..s.len() - trimmed.len()];
@@ -208,7 +208,7 @@ impl<T: ToString> StringUtil for T {
             s = format!("{}`{}`{}", leading, first, &trimmed[1..]);
         }
         let indent = "  ".repeat(indent_level);
-        format!("{}* {}", indent, s)
+        format!("{}{} {}", indent, options.bullet_char, s)
     }
 }
 
@@ -299,6 +299,20 @@ mod tests {
     }
 
     #[rstest]
+    #[case("normal item", 0, "- normal item")]
+    #[case("> quoted text", 0, "- `>` quoted text")]
+    #[case("+ plus sign", 0, "- + plus sign")]
+    #[case("- dash item", 0, "- - dash item")]
+    #[case("  > indented quoted", 0, "-   `>` indented quoted")]
+    #[case("nested item", 1, "  - nested item")]
+    #[case("hash text", 0, "- hash text")]
+    fn test_to_unordered_item(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
+        let options = crate::md::MdOptions::default();
+        let actual = input.to_unordered_item(indent, &options);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
     #[case("normal item", 0, "* normal item")]
     #[case("> quoted text", 0, "* `>` quoted text")]
     #[case("+ plus sign", 0, "* + plus sign")]
@@ -306,8 +320,9 @@ mod tests {
     #[case("  > indented quoted", 0, "*   `>` indented quoted")]
     #[case("nested item", 1, "  * nested item")]
     #[case("hash text", 0, "* hash text")]
-    fn test_to_unordered_item(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
-        let actual = input.to_unordered_item(indent);
+    fn test_to_unordered_item_plain_text(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
+        let options = crate::md::MdOptions::plain_text();
+        let actual = input.to_unordered_item(indent, &options);
         assert_eq!(actual, expected);
     }
 }

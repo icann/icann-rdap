@@ -27,7 +27,7 @@ impl ToMd for Autnum {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         table = table
