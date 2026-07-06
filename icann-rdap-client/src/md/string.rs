@@ -23,7 +23,7 @@ pub trait StringUtil {
     fn to_words_title_case(self) -> String;
     fn to_cap_acronyms(self) -> String;
     fn format_date_time(self, params: MdParams) -> Option<String>;
-    fn to_list_item(self, indent_level: usize) -> String;
+    fn to_unordered_item(self, indent_level: usize) -> String;
 }
 
 impl<T: ToString> StringUtil for T {
@@ -200,7 +200,7 @@ impl<T: ToString> StringUtil for T {
             .replace("ietf", "IETF")
     }
 
-    fn to_list_item(self, indent_level: usize) -> String {
+    fn to_unordered_item(self, indent_level: usize) -> String {
         let mut s = self.to_string();
         let trimmed = s.trim_start();
         let leading = &s[..s.len() - trimmed.len()];
@@ -306,8 +306,8 @@ mod tests {
     #[case("  > indented quoted", 0, "*   `>` indented quoted")]
     #[case("nested item", 1, "  * nested item")]
     #[case("hash text", 0, "* hash text")]
-    fn test_to_list_item(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
-        let actual = input.to_list_item(indent);
+    fn test_to_unordered_item(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
+        let actual = input.to_unordered_item(indent);
         assert_eq!(actual, expected);
     }
 }

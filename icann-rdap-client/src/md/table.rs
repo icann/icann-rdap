@@ -100,12 +100,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    v.to_string().replace_md_chars().to_list_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    v.to_string().replace_md_chars().to_list_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0),
                 )))
             }
         });
@@ -118,12 +118,12 @@ impl MultiPartTable {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    v.to_string().replace_md_chars().to_list_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    v.to_string().replace_md_chars().to_list_item(0),
+                    v.to_string().replace_md_chars().to_unordered_item(0),
                 )))
             }
         });
@@ -182,12 +182,12 @@ impl MultiPartTable {
         for level1 in header_text.children {
             self.rows.push(Row::NameValue((
                 "".to_string(),
-                level1.to_string().replace_md_chars().to_list_item(0),
+                level1.to_string().replace_md_chars().to_unordered_item(0),
             )));
             for level2 in level1.children {
                 self.rows.push(Row::NameValue((
                     "".to_string(),
-                    level2.to_string().replace_md_chars().to_list_item(1),
+                    level2.to_string().replace_md_chars().to_unordered_item(1),
                 )));
             }
         }
