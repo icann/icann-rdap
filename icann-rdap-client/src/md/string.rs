@@ -207,8 +207,14 @@ impl<T: ToString> StringUtil for T {
         if let Some(first) = trimmed.chars().next() && first == '>' {
             s = format!("{}`{}`{}", leading, first, &trimmed[1..]);
         }
-        let indent = "  ".repeat(indent_level);
-        format!("{}{} {}", indent, options.bullet_char, s)
+        if options.indent_simulate_bullet {
+            let bullet = format!("{} ", options.bullet_char);
+            let prefix = bullet.repeat(indent_level.saturating_sub(1));
+            format!("{prefix}{} {}", options.bullet_char, s)
+        } else {
+            let indent = "  ".repeat(indent_level);
+            format!("{}{} {}", indent, options.bullet_char, s)
+        }
     }
 }
 
@@ -322,6 +328,17 @@ mod tests {
     #[case("hash text", 0, "* hash text")]
     fn test_to_unordered_item_plain_text(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
         let options = crate::md::MdOptions::plain_text();
+        let actual = input.to_unordered_item(indent, &options);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("nested item", 1, "- nested item")]
+    #[case("nested item", 2, "- - nested item")]
+    #[case("nested item", 3, "- - - nested item")]
+    fn test_to_unordered_item_indent_simulate_bullet(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
+        let mut options = crate::md::MdOptions::default();
+        options.indent_simulate_bullet = true;
         let actual = input.to_unordered_item(indent, &options);
         assert_eq!(actual, expected);
     }

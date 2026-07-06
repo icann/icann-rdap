@@ -41,6 +41,11 @@ pub struct MdOptions {
 
     /// The character used for unordered list bullets.
     pub bullet_char: char,
+
+    /// If true, simulate the indent with bullet characters for markdown renderers
+    /// that don't recognize indented lists. For example, indent level 2 with "-"
+    /// produces "- - " instead of "  ".
+    pub indent_simulate_bullet: bool,
 }
 
 impl Default for MdOptions {
@@ -51,6 +56,7 @@ impl Default for MdOptions {
             hash_headers: true,
             style_in_justify: false,
             bullet_char: '-',
+            indent_simulate_bullet: false,
         }
     }
 }
@@ -64,6 +70,7 @@ impl MdOptions {
             hash_headers: false,
             style_in_justify: true,
             bullet_char: '*',
+            indent_simulate_bullet: false,
         }
     }
 }
