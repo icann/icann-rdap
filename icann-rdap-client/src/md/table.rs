@@ -95,17 +95,23 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list.
-    pub fn nv_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>, options: &MdOptions) -> Self {
+    pub fn nv_ul_ref(
+        mut self,
+        name: &impl ToString,
+        value: Vec<&impl ToString>,
+        options: &MdOptions,
+    ) -> Self {
+        let opts = *options;
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    v.to_string().replace_md_chars().to_unordered_item(0, options),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    v.to_string().replace_md_chars().to_unordered_item(0, options),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             }
         });
@@ -113,17 +119,23 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list.
-    pub fn nv_ul(mut self, name: &impl ToString, value: Vec<impl ToString>, options: &MdOptions) -> Self {
+    pub fn nv_ul(
+        mut self,
+        name: &impl ToString,
+        value: Vec<impl ToString>,
+        options: &MdOptions,
+    ) -> Self {
+        let opts = *options;
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    v.to_string().replace_md_chars().to_unordered_item(0, options),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    v.to_string().replace_md_chars().to_unordered_item(0, options),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             }
         });
@@ -153,7 +165,12 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list if the value is Some.
-    pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>, options: &MdOptions) -> Self {
+    pub fn and_nv_ul_ref(
+        self,
+        name: &impl ToString,
+        value: Option<Vec<&impl ToString>>,
+        options: &MdOptions,
+    ) -> Self {
         if let Some(value) = value {
             self.nv_ul_ref(name, value, options)
         } else {
@@ -162,7 +179,12 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list if the value is Some.
-    pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>, options: &MdOptions) -> Self {
+    pub fn and_nv_ul(
+        self,
+        name: &impl ToString,
+        value: Option<Vec<impl ToString>>,
+        options: &MdOptions,
+    ) -> Self {
         if let Some(value) = value {
             self.nv_ul(name, value, options)
         } else {
@@ -182,12 +204,18 @@ impl MultiPartTable {
         for level1 in header_text.children {
             self.rows.push(Row::NameValue((
                 "".to_string(),
-                level1.to_string().replace_md_chars().to_unordered_item(0, options),
+                level1
+                    .to_string()
+                    .replace_md_chars()
+                    .to_unordered_item(1, options),
             )));
             for level2 in level1.children {
                 self.rows.push(Row::NameValue((
                     "".to_string(),
-                    level2.to_string().replace_md_chars().to_unordered_item(1, options),
+                    level2
+                        .to_string()
+                        .replace_md_chars()
+                        .to_unordered_item(2, options),
                 )));
             }
         }

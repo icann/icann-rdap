@@ -26,6 +26,7 @@ pub(crate) const _CODE_INDENT: &str = "    ";
 pub(crate) const HR: &str = "----------------------------------------\n";
 
 /// Specifies options for generating markdown.
+#[derive(Clone, Copy)]
 pub struct MdOptions {
     /// If true, do not use Unicode characters.
     pub no_unicode_chars: bool,

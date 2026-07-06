@@ -60,13 +60,21 @@ impl ToMd for Entity {
                 .nv_ul(&"Titles", contact.titles().to_vec(), params.options)
                 .nv_ul(&"Org Roles", contact.roles().to_vec(), params.options)
                 .nv_ul(&"Nicknames", contact.nick_names().to_vec(), params.options);
-            table = table.nv_ul(&"Organization Names", contact.organization_names().to_vec(), params.options);
+            table = table.nv_ul(
+                &"Organization Names",
+                contact.organization_names().to_vec(),
+                params.options,
+            );
             table = table.nv_ul(&"Organization Names", local_ons, params.options);
             table = table.nv_ul(&"Languages", contact.langs().to_vec(), params.options);
             table = table.nv_ul(&"Phones", contact.phones().to_vec(), params.options);
             table = table.nv_ul(&"Emails", contact.emails().to_vec(), params.options);
             table = table
-                .nv_ul(&"Web Contact", contact.contact_uris().to_vec(), params.options)
+                .nv_ul(
+                    &"Web Contact",
+                    contact.contact_uris().to_vec(),
+                    params.options,
+                )
                 .nv_ul(&"URLs", contact.urls().to_vec(), params.options);
             table = contact.postal_addresses().add_to_mptable(table, params);
             let local_pas = contact
@@ -181,7 +189,11 @@ impl ToMpTable for Option<&NameParts> {
                 table = table.nv_ul(&"Given Names", parts.given_names().to_vec(), params.options);
             }
             if !parts.middle_names().is_empty() {
-                table = table.nv_ul(&"Middle Names", parts.middle_names().to_vec(), params.options);
+                table = table.nv_ul(
+                    &"Middle Names",
+                    parts.middle_names().to_vec(),
+                    params.options,
+                );
             }
             if !parts.surnames().is_empty() {
                 table = table.nv_ul(&"Surnames", parts.surnames().to_vec(), params.options);
