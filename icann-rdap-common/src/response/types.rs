@@ -549,7 +549,12 @@ impl NoticeOrRemark {
                     merged_line_count = 0;
                 }
                 let cleaned = trimmed.trim_start_matches('|').trim_end_matches('|').trim();
-                pgs.push(cleaned.to_string());
+                if cleaned.chars().all(|c| matches!(c, '+' | '-' | '=')) && cleaned.len() >= 10 {
+                    let first_char = cleaned.chars().next().unwrap();
+                    pgs.push(format!("{0}{0}{0}...", first_char));
+                } else {
+                    pgs.push(cleaned.to_string());
+                }
                 continue;
             }
 
@@ -1317,16 +1322,10 @@ mod tests {
 
         // THEN
         assert_eq!(actual[0], "Peering info:");
-        assert_eq!(
-            actual[1],
-            "++++++++++++++++++++++++++++++++++++++++++++++++"
-        );
+        assert_eq!(actual[1], "+++...");
         assert_eq!(actual[2], "AS3333 RIPE-NCC-AS");
         assert_eq!(actual[3], "RIPE NCC");
-        assert_eq!(
-            actual[4],
-            "++++++++++++++++++++++++++++++++++++++++++++++++"
-        );
+        assert_eq!(actual[4], "+++...");
         assert_eq!(actual[5], "Contact us at peering@ripe.net.");
     }
 
@@ -1420,11 +1419,7 @@ mod tests {
             actual[0],
             "Reseaux IP Europeens Network Coordination Centre (RIPE NCC)"
         );
-        assert!(
-            actual
-                .iter()
-                .any(|p| p.starts_with("++++++++++++++++++++++++++++++++"))
-        );
+        assert!(actual.iter().any(|p| p == "+++..."));
         assert!(actual.iter().any(|p| p.contains("AS3333")));
     }
 
@@ -1456,19 +1451,10 @@ mod tests {
 
         // THEN
         assert_eq!(actual.len(), 5);
-        assert_eq!(
-            actual[0],
-            "++++++++++++++++++++++++++++++++++++++++++++++++"
-        );
+        assert_eq!(actual[0], "+++...");
         assert_eq!(actual[1], "Header 1 | Header 2");
-        assert_eq!(
-            actual[2],
-            "++++++++++++++++++++++++++++++++++++++++++++++++"
-        );
+        assert_eq!(actual[2], "+++...");
         assert_eq!(actual[3], "Data 1 | Data 2");
-        assert_eq!(
-            actual[4],
-            "++++++++++++++++++++++++++++++++++++++++++++++++"
-        );
+        assert_eq!(actual[4], "+++...");
     }
 }
