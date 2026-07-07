@@ -211,10 +211,10 @@ impl MdUtil for Entity {
         let role = self
             .roles()
             .first()
-            .map(|s| s.replace_md_chars().to_title_case());
+            .map(|s| s.to_title_case());
         let header_text = if let Some(handle) = &self.object_common.handle {
             if let Some(role) = role {
-                format!("{} ({})", handle.replace_md_chars(), role)
+                format!("{} ({})", handle, role)
             } else {
                 format!("Entity {}", handle)
             }

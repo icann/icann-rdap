@@ -72,15 +72,15 @@ impl MdUtil for Network {
         {
             format!(
                 "IP Network {} - {}",
-                start_address.replace_md_chars(),
-                end_address.replace_md_chars()
+                start_address,
+                end_address
             )
         } else if let Some(start_address) = &self.start_address {
-            format!("IP Network {}", start_address.replace_md_chars())
+            format!("IP Network {}", start_address)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("IP Network {}", handle.replace_md_chars())
+            format!("IP Network {}", handle)
         } else if let Some(name) = &self.name {
-            format!("IP Network {}", name.replace_md_chars())
+            format!("IP Network {}", name)
         } else {
             "IP Network".to_string()
         };

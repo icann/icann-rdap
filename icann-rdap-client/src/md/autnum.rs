@@ -76,15 +76,15 @@ impl MdUtil for Autnum {
         {
             format!(
                 "Autonomous Systems {} - {}",
-                start_autnum.replace_md_chars(),
-                &end_autnum.replace_md_chars()
+                start_autnum,
+                &end_autnum
             )
         } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {}", start_autnum.replace_md_chars())
+            format!("Autonomous System {}", start_autnum)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {}", handle.replace_md_chars())
+            format!("Autonomous System {}", handle)
         } else if let Some(name) = &self.name {
-            format!("Autonomous System {}", name.replace_md_chars())
+            format!("Autonomous System {}", name)
         } else {
             "Autonomous System".to_string()
         };
