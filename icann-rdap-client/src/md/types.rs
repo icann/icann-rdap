@@ -154,14 +154,9 @@ impl ToMpTable for &[Remark] {
         if !self.is_empty() {
             for (i, remark) in self.iter().enumerate() {
                 table = table.header_ref(&format!("Remark {}", i + 1));
-                table =
-                    table.and_nv_ref_maybe(&"Title", &remark.title());
-                table = table.and_nv_ref_maybe(
-                    &"Type",
-                    &remark
-                        .nr_type()
-                        .map(|s| s.to_words_title_case()),
-                );
+                table = table.and_nv_ref_maybe(&"Title", &remark.title());
+                table = table
+                    .and_nv_ref_maybe(&"Type", &remark.nr_type().map(|s| s.to_words_title_case()));
                 for (i, pg) in remark.description_as_pgs().iter().enumerate() {
                     table = table.nv_ref(&(i + 1).to_string(), pg);
                 }

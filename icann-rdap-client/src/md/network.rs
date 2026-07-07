@@ -70,11 +70,7 @@ impl MdUtil for Network {
         let header_text = if let (Some(start_address), Some(end_address)) =
             (&self.start_address, &self.end_address)
         {
-            format!(
-                "IP Network {} - {}",
-                start_address,
-                end_address
-            )
+            format!("IP Network {} - {}", start_address, end_address)
         } else if let Some(start_address) = &self.start_address {
             format!("IP Network {}", start_address)
         } else if let Some(handle) = &self.object_common.handle {

@@ -208,10 +208,7 @@ impl ToMpTable for Option<&NameParts> {
 
 impl MdUtil for Entity {
     fn get_header_text(&self) -> MdHeaderText {
-        let role = self
-            .roles()
-            .first()
-            .map(|s| s.to_title_case());
+        let role = self.roles().first().map(|s| s.to_title_case());
         let header_text = if let Some(handle) = &self.object_common.handle {
             if let Some(role) = role {
                 format!("{} ({})", handle, role)

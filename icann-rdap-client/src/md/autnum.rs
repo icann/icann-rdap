@@ -74,11 +74,7 @@ impl MdUtil for Autnum {
         let header_text = if let (Some(start_autnum), Some(end_autnum)) =
             (&self.start_autnum, &self.end_autnum)
         {
-            format!(
-                "Autonomous Systems {} - {}",
-                start_autnum,
-                &end_autnum
-            )
+            format!("Autonomous Systems {} - {}", start_autnum, &end_autnum)
         } else if let Some(start_autnum) = &self.start_autnum {
             format!("Autonomous System {}", start_autnum)
         } else if let Some(handle) = &self.object_common.handle {
