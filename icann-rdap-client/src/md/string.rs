@@ -35,7 +35,7 @@ impl<T: ToString> StringUtil for T {
             .replace("* ", " ")
             .chars()
             .scan(false, |escaped, c| {
-                let result = if *escaped {
+                if *escaped {
                     *escaped = false;
                     Some(c.to_string())
                 } else {
@@ -61,8 +61,7 @@ impl<T: ToString> StringUtil for T {
                             Some(c.to_string())
                         }
                     }
-                };
-                result
+                }
             })
             .collect()
     }
@@ -384,7 +383,8 @@ mod tests {
         #[case] indent: usize,
         #[case] expected: &str,
     ) {
-        let mut options = crate::md::MdOptions::default();
+        let var_name = crate::md::MdOptions::default();
+        let mut options = var_name;
         options.indent_simulate_bullet = true;
         let actual = input.to_unordered_item(indent, &options);
         assert_eq!(actual, expected);

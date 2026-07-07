@@ -370,7 +370,12 @@ async fn test_autnum_as3333_rendered_markdown_panic() {
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rendered-markdown output type
-    let assert = test_jig.cmd.arg("3333").arg("-O").arg("rendered-markdown").assert();
+    let assert = test_jig
+        .cmd
+        .arg("3333")
+        .arg("-O")
+        .arg("rendered-markdown")
+        .assert();
     let output = &assert.get_output().stdout;
     let rendered = String::from_utf8_lossy(output);
 

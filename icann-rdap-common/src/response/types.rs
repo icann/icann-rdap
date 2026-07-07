@@ -548,7 +548,8 @@ impl NoticeOrRemark {
                     acc_line.clear();
                     merged_line_count = 0;
                 }
-                pgs.push(trimmed.to_string());
+                let cleaned = trimmed.trim_start_matches('|').trim_end_matches('|').trim();
+                pgs.push(cleaned.to_string());
                 continue;
             }
 
@@ -905,7 +906,6 @@ impl PublicId {
 #[cfg(test)]
 mod tests {
     use crate::{
-        check::StringCheck,
         prelude::ObjectCommon,
         response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks},
     };
@@ -1321,8 +1321,8 @@ mod tests {
             actual[1],
             "++++++++++++++++++++++++++++++++++++++++++++++++"
         );
-        assert_eq!(actual[2], "| AS3333 RIPE-NCC-AS |");
-        assert_eq!(actual[3], "| RIPE NCC |");
+        assert_eq!(actual[2], "AS3333 RIPE-NCC-AS");
+        assert_eq!(actual[3], "RIPE NCC");
         assert_eq!(
             actual[4],
             "++++++++++++++++++++++++++++++++++++++++++++++++"
@@ -1456,12 +1456,19 @@ mod tests {
 
         // THEN
         assert_eq!(actual.len(), 5);
-        for (i, pg) in actual.iter().enumerate() {
-            assert!(
-                pg.is_ascii_table_line(),
-                "Paragraph {} should be a table line",
-                i
-            );
-        }
+        assert_eq!(
+            actual[0],
+            "++++++++++++++++++++++++++++++++++++++++++++++++"
+        );
+        assert_eq!(actual[1], "Header 1 | Header 2");
+        assert_eq!(
+            actual[2],
+            "++++++++++++++++++++++++++++++++++++++++++++++++"
+        );
+        assert_eq!(actual[3], "Data 1 | Data 2");
+        assert_eq!(
+            actual[4],
+            "++++++++++++++++++++++++++++++++++++++++++++++++"
+        );
     }
 }

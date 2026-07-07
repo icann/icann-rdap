@@ -16,16 +16,16 @@ impl GetChecks for Rfc9083Error {
             items.push(Check::ErrorCodeIsString.check_item());
         }
 
-        if let Some(title) = &self.title {
-            if title.is_number() || title.is_bool() {
-                items.push(Check::TitleIsNotString.check_item());
-            }
+        if let Some(title) = &self.title
+            && (title.is_number() || title.is_bool())
+        {
+            items.push(Check::TitleIsNotString.check_item());
         }
 
-        if let Some(desc) = &self.description {
-            if desc.is_string() {
-                items.push(Check::DescriptionIsString.check_item());
-            }
+        if let Some(desc) = &self.description
+            && desc.is_string()
+        {
+            items.push(Check::DescriptionIsString.check_item());
         }
 
         Checks {
