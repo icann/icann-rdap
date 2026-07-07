@@ -14,6 +14,10 @@ clean_test:
     cargo clean \
     && cargo test
 
+[doc('Check IANA RDAP registries.')]
+iana_tests:
+    cargo test -p icann-rdap-common --features iana_registry_tests
+
 [doc('Run tests then build docs.')]
 test_n_doc:
     cargo test \

@@ -134,9 +134,29 @@ impl ToMd for NoticeOrRemark {
         if let Some(nr_type) = &self.nr_type {
             md.push_str(&format!("Type: {}\n", nr_type.to_words_title_case()));
         };
-        for line in self.description_as_pgs() {
-            if !line.is_whitespace_or_empty() {
-                md.push_str(&format!("> {}\n\n", line.replace_md_chars()))
+        let paragraphs = self.description_as_pgs();
+        let mut i = 0;
+        while i < paragraphs.len() {
+            let line = &paragraphs[i];
+            if line.is_whitespace_or_empty() {
+                i += 1;
+                continue;
+            }
+            if line.is_ascii_table_line() {
+                // Collect consecutive table lines into a code block
+                let mut table_lines = Vec::new();
+                while i < paragraphs.len() && paragraphs[i].is_ascii_table_line() {
+                    table_lines.push(paragraphs[i].clone());
+                    i += 1;
+                }
+                md.push_str("```\n");
+                for tl in &table_lines {
+                    md.push_str(&format!("{}\n", tl.replace_md_chars()));
+                }
+                md.push_str("```\n\n");
+            } else {
+                md.push_str(&format!("> {}\n\n", line.replace_md_chars()));
+                i += 1;
             }
         }
         if let Some(links) = &self.links {
@@ -154,19 +174,11 @@ impl ToMpTable for &[Remark] {
         if !self.is_empty() {
             for (i, remark) in self.iter().enumerate() {
                 table = table.header_ref(&format!("Remark {}", i + 1));
-                table =
-                    table.and_nv_ref_maybe(&"Title", &remark.title().map(|s| s.replace_md_chars()));
-                table = table.and_nv_ref_maybe(
-                    &"Type",
-                    &remark
-                        .nr_type()
-                        .map(|s| s.replace_md_chars().to_words_title_case()),
-                );
+                table = table.and_nv_ref_maybe(&"Title", &remark.title());
+                table = table
+                    .and_nv_ref_maybe(&"Type", &remark.nr_type().map(|s| s.to_words_title_case()));
                 for (i, pg) in remark.description_as_pgs().iter().enumerate() {
-                    table = table.nv_ref(
-                        &(i + 1).to_string(),
-                        &format!("> {}", pg.replace_md_chars()),
-                    );
+                    table = table.nv_ref(&(i + 1).to_string(), pg);
                 }
                 table = links_to_table(remark.links(), table, &format!("Remark Links {}", i + 1));
             }
@@ -267,7 +279,7 @@ impl ToMpTable for ObjectCommon {
             // Status
             if let Some(status) = &self.status {
                 let values = status.vec();
-                table = table.nv_ul(&"Status", values.make_list_all_title_case());
+                table = table.nv_ul(&"Status", values.make_list_all_title_case(), params.options);
             }
 
             // Port 43
@@ -336,6 +348,7 @@ pub(crate) fn events_to_table(
                 .to_owned()
                 .to_words_title_case(),
             ul,
+            params.options,
         );
     }
     table

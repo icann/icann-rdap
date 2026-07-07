@@ -313,13 +313,18 @@ fn output_immediately<W: std::io::Write>(
                 skin.table.align = Alignment::Center;
                 skin.horizontal_rule.set_fg(DarkGreen);
                 skin.inline_code.set_fgbg(Cyan, Reset);
+                let options = MdOptions {
+                    bullet_char: '-',
+                    indent_simulate_bullet: true,
+                    ..MdOptions::default()
+                };
                 skin.write_text_on(
                     write,
                     &response.rdap.to_md(MdParams {
                         heading_level: 1,
                         root: &response.rdap,
                         http_data: &response.http_data,
-                        options: &MdOptions::default(),
+                        options: &options,
                         req_data,
                         show_rfc9537_redactions: processing_params
                             .redaction_flags

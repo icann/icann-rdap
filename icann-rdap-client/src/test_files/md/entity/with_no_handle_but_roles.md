@@ -5,7 +5,7 @@
 |:-:|
 |**Identifiers**|
 |-:|:-|
-|      Roles|* registrar|
+|      Roles|- registrar|
 |
 
 

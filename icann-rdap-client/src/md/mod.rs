@@ -26,6 +26,7 @@ pub(crate) const _CODE_INDENT: &str = "    ";
 pub(crate) const HR: &str = "----------------------------------------\n";
 
 /// Specifies options for generating markdown.
+#[derive(Clone, Copy)]
 pub struct MdOptions {
     /// If true, do not use Unicode characters.
     pub no_unicode_chars: bool,
@@ -38,6 +39,14 @@ pub struct MdOptions {
 
     /// If true, the text_style_char will appear in a justified text.
     pub style_in_justify: bool,
+
+    /// The character used for unordered list bullets.
+    pub bullet_char: char,
+
+    /// If true, simulate the indent with bullet characters for markdown renderers
+    /// that don't recognize indented lists. For example, indent level 2 with "-"
+    /// produces "- - " instead of "  ".
+    pub indent_simulate_bullet: bool,
 }
 
 impl Default for MdOptions {
@@ -47,6 +56,8 @@ impl Default for MdOptions {
             text_style_char: '*',
             hash_headers: true,
             style_in_justify: false,
+            bullet_char: '-',
+            indent_simulate_bullet: false,
         }
     }
 }
@@ -59,6 +70,8 @@ impl MdOptions {
             text_style_char: '_',
             hash_headers: false,
             style_in_justify: true,
+            bullet_char: '*',
+            indent_simulate_bullet: false,
         }
     }
 }

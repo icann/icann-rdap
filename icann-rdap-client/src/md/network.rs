@@ -26,7 +26,7 @@ impl ToMd for Network {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         table = table
@@ -34,7 +34,7 @@ impl ToMd for Network {
             .and_nv_ref_maybe(&"Start Address", &self.start_address)
             .and_nv_ref_maybe(&"End Address", &self.end_address)
             .and_nv_ref_maybe(&"IP Version", &self.ip_version)
-            .and_nv_ul(&"CIDR", self.cidr0_cidrs.clone())
+            .and_nv_ul(&"CIDR", self.cidr0_cidrs.clone(), params.options)
             .and_nv_ref_maybe(&"Handle", &self.object_common.handle)
             .and_nv_ref_maybe(&"Parent Handle", &self.parent_handle)
             .and_nv_ref_maybe(&"Network Type", &self.network_type)
@@ -70,17 +70,13 @@ impl MdUtil for Network {
         let header_text = if let (Some(start_address), Some(end_address)) =
             (&self.start_address, &self.end_address)
         {
-            format!(
-                "IP Network {} - {}",
-                start_address.replace_md_chars(),
-                end_address.replace_md_chars()
-            )
+            format!("IP Network {} - {}", start_address, end_address)
         } else if let Some(start_address) = &self.start_address {
-            format!("IP Network {}", start_address.replace_md_chars())
+            format!("IP Network {}", start_address)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("IP Network {}", handle.replace_md_chars())
+            format!("IP Network {}", handle)
         } else if let Some(name) = &self.name {
-            format!("IP Network {}", name.replace_md_chars())
+            format!("IP Network {}", name)
         } else {
             "IP Network".to_string()
         };

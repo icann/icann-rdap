@@ -30,7 +30,7 @@ impl ToMd for Nameserver {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         //
@@ -43,10 +43,10 @@ impl ToMd for Nameserver {
             .and_nv_ref_maybe(&"Handle", &self.object_common.handle);
         if let Some(addresses) = &self.ip_addresses {
             if let Some(v4) = &addresses.v4 {
-                table = table.nv_ul_ref(&"Ipv4", v4.vec().iter().collect());
+                table = table.nv_ul_ref(&"Ipv4", v4.vec().iter().collect(), params.options);
             }
             if let Some(v6) = &addresses.v6 {
-                table = table.nv_ul_ref(&"Ipv6", v6.vec().iter().collect());
+                table = table.nv_ul_ref(&"Ipv6", v6.vec().iter().collect(), params.options);
             }
         }
 
@@ -82,11 +82,11 @@ impl ToMd for Nameserver {
 impl MdUtil for Nameserver {
     fn get_header_text(&self) -> MdHeaderText {
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Nameserver {}", unicode_name.replace_md_chars())
+            format!("Nameserver {}", unicode_name)
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Nameserver {}", ldh_name.replace_md_chars())
+            format!("Nameserver {}", ldh_name)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Nameserver {}", handle.replace_md_chars())
+            format!("Nameserver {}", handle)
         } else {
             "Domain".to_string()
         };

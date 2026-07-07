@@ -32,13 +32,13 @@ impl ToMd for Entity {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         table = table
             .header_ref(&"Identifiers")
             .and_nv_ref_maybe(&"Handle", &self.handle())
-            .and_nv_ul(&"Roles", Some(self.roles().to_vec()));
+            .and_nv_ul(&"Roles", Some(self.roles().to_vec()), params.options);
         if let Some(public_ids) = &self.public_ids {
             table = public_ids_to_table(public_ids, table);
         }
@@ -56,18 +56,26 @@ impl ToMd for Entity {
                 .header_ref(&"Contact")
                 .and_nv_ref_maybe(&"Kind", &contact.kind())
                 .and_nv_ref_maybe(&"Full Name", &contact.full_name())
-                .nv_ul(&"Full Names", local_fns)
-                .nv_ul(&"Titles", contact.titles().to_vec())
-                .nv_ul(&"Org Roles", contact.roles().to_vec())
-                .nv_ul(&"Nicknames", contact.nick_names().to_vec());
-            table = table.nv_ul(&"Organization Names", contact.organization_names().to_vec());
-            table = table.nv_ul(&"Organization Names", local_ons);
-            table = table.nv_ul(&"Languages", contact.langs().to_vec());
-            table = table.nv_ul(&"Phones", contact.phones().to_vec());
-            table = table.nv_ul(&"Emails", contact.emails().to_vec());
+                .nv_ul(&"Full Names", local_fns, params.options)
+                .nv_ul(&"Titles", contact.titles().to_vec(), params.options)
+                .nv_ul(&"Org Roles", contact.roles().to_vec(), params.options)
+                .nv_ul(&"Nicknames", contact.nick_names().to_vec(), params.options);
+            table = table.nv_ul(
+                &"Organization Names",
+                contact.organization_names().to_vec(),
+                params.options,
+            );
+            table = table.nv_ul(&"Organization Names", local_ons, params.options);
+            table = table.nv_ul(&"Languages", contact.langs().to_vec(), params.options);
+            table = table.nv_ul(&"Phones", contact.phones().to_vec(), params.options);
+            table = table.nv_ul(&"Emails", contact.emails().to_vec(), params.options);
             table = table
-                .nv_ul(&"Web Contact", contact.contact_uris().to_vec())
-                .nv_ul(&"URLs", contact.urls().to_vec());
+                .nv_ul(
+                    &"Web Contact",
+                    contact.contact_uris().to_vec(),
+                    params.options,
+                )
+                .nv_ul(&"URLs", contact.urls().to_vec(), params.options);
             table = contact.postal_addresses().add_to_mptable(table, params);
             let local_pas = contact
                 .localizations_iter()
@@ -125,7 +133,7 @@ impl ToMpTable for &[PostalAddress] {
 }
 
 impl ToMpTable for PostalAddress {
-    fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
+    fn add_to_mptable(&self, mut table: MultiPartTable, params: MdParams) -> MultiPartTable {
         if let (Some(contexts), Some(preference)) = (&self.contexts, &self.preference) {
             table = table.nv(
                 &"Address",
@@ -139,7 +147,7 @@ impl ToMpTable for PostalAddress {
             table = table.nv(&"Address", "");
         }
         if let Some(street_parts) = &self.street_parts {
-            table = table.nv_ul_ref(&"Street", street_parts.iter().collect());
+            table = table.nv_ul_ref(&"Street", street_parts.iter().collect(), params.options);
         }
         if let Some(locality) = &self.locality {
             table = table.nv_ref(&"Locality", locality);
@@ -172,19 +180,23 @@ impl ToMpTable for PostalAddress {
 }
 
 impl ToMpTable for Option<&NameParts> {
-    fn add_to_mptable(&self, mut table: MultiPartTable, _params: MdParams) -> MultiPartTable {
+    fn add_to_mptable(&self, mut table: MultiPartTable, params: MdParams) -> MultiPartTable {
         if let Some(parts) = *self {
             if !parts.prefixes().is_empty() {
                 table = table.nv(&"Honorifics", parts.prefixes().join(", "));
             }
             if !parts.given_names().is_empty() {
-                table = table.nv_ul(&"Given Names", parts.given_names().to_vec());
+                table = table.nv_ul(&"Given Names", parts.given_names().to_vec(), params.options);
             }
             if !parts.middle_names().is_empty() {
-                table = table.nv_ul(&"Middle Names", parts.middle_names().to_vec());
+                table = table.nv_ul(
+                    &"Middle Names",
+                    parts.middle_names().to_vec(),
+                    params.options,
+                );
             }
             if !parts.surnames().is_empty() {
-                table = table.nv_ul(&"Surnames", parts.surnames().to_vec());
+                table = table.nv_ul(&"Surnames", parts.surnames().to_vec(), params.options);
             }
             if !parts.suffixes().is_empty() {
                 table = table.nv(&"Suffixes", parts.suffixes().join(", "));
@@ -196,13 +208,10 @@ impl ToMpTable for Option<&NameParts> {
 
 impl MdUtil for Entity {
     fn get_header_text(&self) -> MdHeaderText {
-        let role = self
-            .roles()
-            .first()
-            .map(|s| s.replace_md_chars().to_title_case());
+        let role = self.roles().first().map(|s| s.to_title_case());
         let header_text = if let Some(handle) = &self.object_common.handle {
             if let Some(role) = role {
-                format!("{} ({})", handle.replace_md_chars(), role)
+                format!("{} ({})", handle, role)
             } else {
                 format!("Entity {}", handle)
             }

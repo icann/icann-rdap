@@ -27,7 +27,7 @@ impl ToMd for Autnum {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         table = table
@@ -74,17 +74,13 @@ impl MdUtil for Autnum {
         let header_text = if let (Some(start_autnum), Some(end_autnum)) =
             (&self.start_autnum, &self.end_autnum)
         {
-            format!(
-                "Autonomous Systems {} - {}",
-                start_autnum.replace_md_chars(),
-                &end_autnum.replace_md_chars()
-            )
+            format!("Autonomous Systems {} - {}", start_autnum, &end_autnum)
         } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {}", start_autnum.replace_md_chars())
+            format!("Autonomous System {}", start_autnum)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {}", handle.replace_md_chars())
+            format!("Autonomous System {}", handle)
         } else if let Some(name) = &self.name {
-            format!("Autonomous System {}", name.replace_md_chars())
+            format!("Autonomous System {}", name)
         } else {
             "Autonomous System".to_string()
         };
