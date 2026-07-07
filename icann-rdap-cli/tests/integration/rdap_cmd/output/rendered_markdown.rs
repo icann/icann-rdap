@@ -372,6 +372,6 @@ async fn test_autnum_as3333_rendered_markdown_panic() {
     // WHEN query with rendered-markdown output type
     test_jig.cmd.arg("3333").arg("-O").arg("rendered-markdown");
 
-    // THEN this should panic (the panic is expected and will be caught by the test framework)
-    test_jig.cmd.assert().failure();
+    // THEN this should succeed without panicking
+    test_jig.cmd.assert().success();
 }
