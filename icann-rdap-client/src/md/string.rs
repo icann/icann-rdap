@@ -34,10 +34,35 @@ impl<T: ToString> StringUtil for T {
             .replace("** ", " ")
             .replace("* ", " ")
             .chars()
-            .map(|c| match c {
-                '*' | '|' => format!("\\{c}"),
-                '#' => format!("`{}`", c),
-                _ => c.to_string(),
+            .scan(false, |escaped, c| {
+                let result = if *escaped {
+                    *escaped = false;
+                    Some(c.to_string())
+                } else {
+                    match c {
+                        '\\' => {
+                            *escaped = true;
+                            Some(c.to_string())
+                        }
+                        '`' => {
+                            *escaped = true;
+                            Some(c.to_string())
+                        }
+                        '*' | '|' => {
+                            *escaped = false;
+                            Some(format!("\\{c}"))
+                        }
+                        '#' => {
+                            *escaped = false;
+                            Some(format!("`{}`", c))
+                        }
+                        _ => {
+                            *escaped = false;
+                            Some(c.to_string())
+                        }
+                    }
+                };
+                result
             })
             .collect()
     }
@@ -304,6 +329,18 @@ mod tests {
 
         // THEN
         assert_eq!(r#"The \*brown \| fox `#`  jumped over the fence."#, &actual);
+    }
+
+    #[test]
+    fn test_replace_md_chars_idempotent() {
+        // GIVEN an already-escaped string
+        let s = r#"The \*brown \| fox `#` jumped over the fence."#;
+
+        // WHEN apply replace_md_chars again
+        let actual = s.replace_md_chars();
+
+        // THEN it should be unchanged (idempotent)
+        assert_eq!(s, actual);
     }
 
     #[rstest]
