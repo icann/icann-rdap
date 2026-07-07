@@ -160,7 +160,7 @@ termimad = "0.34"
 test_dir = "0.2.0"
 
 # error macros
-thiserror = "1.0"
+thiserror = "2.0"
 
 # tokio async runtime
 tokio = { version = "1.52", features = [ "full" ] }

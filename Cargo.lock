@@ -1570,7 +1570,7 @@ dependencies = [
  "tempfile",
  "termimad",
  "test_dir",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1598,7 +1598,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tokio",
  "tracing",
 ]
@@ -1620,7 +1620,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -1658,7 +1658,7 @@ dependencies = [
  "sqlx",
  "strum",
  "test_dir",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "tokio",
  "tower",
  "tower-http 0.7.0",
