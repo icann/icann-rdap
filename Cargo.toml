@@ -31,7 +31,7 @@ async-trait = "0.1"
 
 # axum (web server)
 axum = { version = "0.8" }
-axum-extra = { version = "0.10", features = [ "typed-header" ] }
+axum-extra = { version = "0.12", features = [ "typed-header" ] }
 axum-macros = "0.5"
 
 # client IP address extractor
