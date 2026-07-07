@@ -22,7 +22,10 @@ impl GetChecks for HttpData {
             items.push(Check::CorsAllowCredentialsNotRecommended.check_item())
         }
         if let Some(content_type) = &self.content_type {
-            if !content_type.starts_with(RDAP_MEDIA_TYPE) {
+            if !content_type
+                .to_lowercase()
+                .starts_with(&RDAP_MEDIA_TYPE.to_lowercase())
+            {
                 items.push(Check::ContentTypeIsNotRdap.check_item());
             }
         } else {
@@ -167,6 +170,41 @@ mod tests {
         let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN incorrect media type check is not found
+        assert!(
+            !checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::ContentTypeIsNotRdap)
+        );
+    }
+
+    #[test]
+    fn check_rdap_media_type_case_insensitive() {
+        // GIVEN
+        let domain = Domain {
+            common: Common::level0()
+                .extension(ExtensionId::IcannRdapTechnicalImplementationGuide0.to_extension())
+                .build(),
+            object_common: ObjectCommon::domain().build(),
+            ldh_name: Some("foo.example".to_string()),
+            unicode_name: None,
+            variants: None,
+            secure_dns: None,
+            nameservers: None,
+            public_ids: None,
+            network: None,
+            ttl0_data: None,
+        };
+        let rdap = domain.to_response();
+
+        let http_data = HttpData::example()
+            .content_type("APPLICATION/RDAP+JSON")
+            .build();
+
+        // WHEN
+        let checks = http_data.get_checks(None, CheckParams::for_rdap(&rdap));
+
+        // THEN
         assert!(
             !checks
                 .items
