@@ -382,23 +382,17 @@ dependencies = [
 
 [[package]]
 name = "cidr"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bdf600c45bd958cf2945c445264471cca8b6c8e67bc87b71affd6d7e5682621"
-
-[[package]]
-name = "cidr"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "579504560394e388085d0c080ea587dfa5c15f7e251b4d5247d1e1a61d1d6928"
 
 [[package]]
 name = "cidr-utils"
-version = "0.6.2"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c494106d7fef49cfc120713ff18ddb52ed7fc65b19a60e1cf2104073a8ef4c7"
+checksum = "1f59aae4103f56b79b449c67bde6d1e96aa9f617d95af57ed1d72d6f948fe597"
 dependencies = [
- "cidr 0.2.3",
+ "cidr",
  "num-bigint",
  "num-traits",
 ]
@@ -1565,7 +1559,7 @@ version = "0.0.29"
 dependencies = [
  "buildstructor",
  "chrono",
- "cidr 0.3.2",
+ "cidr",
  "const_format",
  "goldenfile",
  "icann-rdap-common",
@@ -1591,7 +1585,7 @@ version = "0.0.29"
 dependencies = [
  "buildstructor",
  "chrono",
- "cidr 0.3.2",
+ "cidr",
  "const_format",
  "idna",
  "indoc",
@@ -1618,7 +1612,7 @@ dependencies = [
  "axum-macros",
  "buildstructor",
  "chrono",
- "cidr 0.3.2",
+ "cidr",
  "clap",
  "dotenvy",
  "envmnt",
