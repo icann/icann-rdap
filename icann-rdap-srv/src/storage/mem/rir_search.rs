@@ -31,7 +31,7 @@ pub enum U32OrRange {
     Range(Range<u32>),
 }
 
-fn get_ip_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
+fn get_ip_rdap_down<P: RdapPrefix + Copy + PartialEq, T: Clone>(
     map: &PrefixMap<P, T>,
     query: &P,
 ) -> Vec<T> {
@@ -39,31 +39,31 @@ fn get_ip_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
     let mut current_cover: Option<P> = None;
 
     for (prefix, value) in map.children(query) {
-        if *prefix == *query {
+        if prefix == *query {
             continue; // Skip the exact match of the query itself
         }
 
         if let Some(cover) = current_cover
-            && cover.contains(prefix)
+            && cover.contains(&prefix)
         {
             continue;
         }
 
         immediate_children.push(value.clone());
-        current_cover = Some(*prefix);
+        current_cover = Some(prefix);
     }
 
     immediate_children
 }
 
-fn get_ip_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
+fn get_ip_rdap_bottom<P: RdapPrefix + Copy + PartialEq, T: Clone>(
     map: &PrefixMap<P, T>,
     query: &P,
 ) -> Vec<T> {
     let children: Vec<(P, T)> = map
         .children(query)
-        .filter(|(p, _)| **p != *query)
-        .map(|(p, v)| (*p, v.clone()))
+        .filter(|(p, _)| *p != *query)
+        .map(|(p, v)| (p, v.clone()))
         .collect();
 
     if children.is_empty() {
@@ -87,7 +87,7 @@ fn get_ip_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
     leaves
 }
 
-fn get_domain_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
+fn get_domain_rdap_down<P: RdapPrefix + Copy + PartialEq, T: Clone>(
     map: &PrefixMap<P, T>,
     query: &P,
 ) -> Vec<T> {
@@ -95,31 +95,31 @@ fn get_domain_rdap_down<P: RdapPrefix + PartialEq, T: Clone>(
     let mut current_cover: Option<P> = None;
 
     for (prefix, value) in map.children(query) {
-        if *prefix == *query {
+        if prefix == *query {
             continue;
         }
 
         if let Some(cover) = current_cover
-            && cover.contains(prefix)
+            && cover.contains(&prefix)
         {
             continue;
         }
 
         immediate_children.push(value.clone());
-        current_cover = Some(*prefix);
+        current_cover = Some(prefix);
     }
 
     immediate_children
 }
 
-fn get_domain_rdap_bottom<P: RdapPrefix + PartialEq, T: Clone>(
+fn get_domain_rdap_bottom<P: RdapPrefix + Copy + PartialEq, T: Clone>(
     map: &PrefixMap<P, T>,
     query: &P,
 ) -> Vec<T> {
     let children: Vec<(P, T)> = map
         .children(query)
-        .filter(|(p, _)| **p != *query)
-        .map(|(p, v)| (*p, v.clone()))
+        .filter(|(p, _)| *p != *query)
+        .map(|(p, v)| (p, v.clone()))
         .collect();
 
     if children.is_empty() {
@@ -310,7 +310,7 @@ impl Mem {
                 IpNet::V4(v4net) => {
                     let guard = self.domains_by_ipv4.read().await;
                     if let Some((container_prefix, _)) = guard.get_lpm(&v4net) {
-                        get_domain_rdap_down(&*guard, container_prefix)
+                        get_domain_rdap_down(&*guard, &container_prefix)
                     } else {
                         Vec::new()
                     }
@@ -318,7 +318,7 @@ impl Mem {
                 IpNet::V6(v6net) => {
                     let guard = self.domains_by_ipv6.read().await;
                     if let Some((container_prefix, _)) = guard.get_lpm(&v6net) {
-                        get_domain_rdap_down(&*guard, container_prefix)
+                        get_domain_rdap_down(&*guard, &container_prefix)
                     } else {
                         Vec::new()
                     }
