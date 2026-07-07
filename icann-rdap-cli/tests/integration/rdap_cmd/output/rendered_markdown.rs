@@ -370,8 +370,19 @@ async fn test_autnum_as3333_rendered_markdown_panic() {
     tx.commit().await.expect("tx commit");
 
     // WHEN query with rendered-markdown output type
-    test_jig.cmd.arg("3333").arg("-O").arg("rendered-markdown");
+    let assert = test_jig.cmd.arg("3333").arg("-O").arg("rendered-markdown").assert();
+    let output = &assert.get_output().stdout;
+    let rendered = String::from_utf8_lossy(output);
 
-    // THEN this should succeed without panicking
-    test_jig.cmd.assert().success();
+    // THEN this should succeed without panicking and the peering table
+    // should be rendered with multiple paragraphs, not one giant block
+    assert!(
+        rendered.contains("AS3333"),
+        "Output should contain the AS3333 table content. Raw output length: {}",
+        rendered.len()
+    );
+    assert!(
+        rendered.contains("peering"),
+        "Output should contain the peering contact email"
+    );
 }

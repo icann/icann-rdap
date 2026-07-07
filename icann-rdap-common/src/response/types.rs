@@ -3,6 +3,7 @@ use std::{collections::HashSet, ops::DerefMut};
 
 use serde::{Deserialize, Serialize};
 
+use crate::check::StringCheck;
 use crate::prelude::ContentExtensions;
 
 use super::lenient::{Stringish, VectorStringish};
@@ -507,19 +508,91 @@ impl NoticeOrRemark {
 
     /// Returns the description where lines that are
     /// not sentences are consolidated into paragraphs.
+    ///
+    /// Paragraph boundaries are created by:
+    /// - Lines ending with a period (complete sentences)
+    /// - Lines that are entirely uppercase (headers/acronyms)
+    /// - Empty or whitespace-only lines (explicit breaks)
+    /// - ASCII table lines (pipe-delimited or border lines) — each gets its own paragraph
+    /// - Merge limits: paragraphs exceeding 500 characters or 10 merged lines are split
     pub fn description_as_pgs(&self) -> Vec<String> {
+        const MAX_PG_LEN: usize = 500;
+        const MAX_MERGED_LINES: usize = 10;
+
         let mut pgs = vec![];
         let mut acc_line = String::new();
+        let mut merged_line_count: usize = 0;
+
         for line in self.description() {
-            acc_line.push_str(line.trim());
-            if acc_line.ends_with('.') || acc_line.to_ascii_uppercase().eq(&acc_line) {
-                pgs.push(acc_line);
-                acc_line = String::new();
-            } else {
+            let trimmed = line.trim();
+
+            // Empty/whitespace-only lines act as explicit paragraph breaks
+            if trimmed.is_empty() {
+                if !acc_line.is_empty() {
+                    if !acc_line.is_whitespace_or_empty() {
+                        pgs.push(acc_line.clone());
+                    }
+                    acc_line.clear();
+                    merged_line_count = 0;
+                }
+                continue;
+            }
+
+            // ASCII table lines get their own paragraph
+            if trimmed.is_ascii_table_line() {
+                // Flush any accumulated text first
+                if !acc_line.is_empty() {
+                    if !acc_line.is_whitespace_or_empty() {
+                        pgs.push(acc_line.clone());
+                    }
+                    acc_line.clear();
+                    merged_line_count = 0;
+                }
+                pgs.push(trimmed.to_string());
+                continue;
+            }
+
+            // Check if we need to split due to merge limits before adding
+            if !acc_line.is_empty() {
+                let new_len = acc_line.len() + trimmed.len();
+                if new_len > MAX_PG_LEN || merged_line_count >= MAX_MERGED_LINES {
+                    // Try to split at the last period
+                    if let Some(split_pos) = acc_line.rfind('.') {
+                        let before = acc_line[..=split_pos].to_string();
+                        let after = acc_line[split_pos + 1..].trim().to_string();
+                        if !before.is_whitespace_or_empty() {
+                            pgs.push(before);
+                        }
+                        acc_line = after;
+                        merged_line_count = 1;
+                    } else {
+                        // No period found, truncate at max length
+                        if !acc_line.is_whitespace_or_empty() {
+                            pgs.push(acc_line.clone());
+                        }
+                        acc_line.clear();
+                        merged_line_count = 0;
+                    }
+                }
+            }
+
+            // Accumulate the line
+            if !acc_line.is_empty() {
                 acc_line.push(' ');
             }
+            acc_line.push_str(trimmed);
+            merged_line_count += 1;
+
+            // Check for sentence boundary
+            if trimmed.ends_with('.') || trimmed.to_ascii_uppercase().eq(trimmed) {
+                if !acc_line.is_whitespace_or_empty() {
+                    pgs.push(acc_line.clone());
+                }
+                acc_line.clear();
+                merged_line_count = 0;
+            }
         }
-        if !acc_line.is_empty() {
+        if !acc_line.is_empty() && !acc_line.is_whitespace_or_empty() {
             pgs.push(acc_line);
         }
         pgs
@@ -832,6 +905,7 @@ impl PublicId {
 #[cfg(test)]
 mod tests {
     use crate::{
+        check::StringCheck,
         prelude::ObjectCommon,
         response::types::{Extension, Notice, Notices, RdapConformance, Remark, Remarks},
     };
@@ -1206,5 +1280,188 @@ mod tests {
         );
         assert_eq!(actual.get(1).unwrap(), "SEPARATE LINE");
         assert_eq!(actual.get(2).unwrap(), "Another line.");
+    }
+
+    #[test]
+    fn test_description_as_pgs_empty_line_breaks() {
+        // GIVEN
+        let notice = Notice::builder()
+            .description_entry("First paragraph.")
+            .description_entry("")
+            .description_entry("Second paragraph.")
+            .build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert_eq!(actual.len(), 2);
+        assert_eq!(actual[0], "First paragraph.");
+        assert_eq!(actual[1], "Second paragraph.");
+    }
+
+    #[test]
+    fn test_description_as_pgs_ascii_table_lines() {
+        // GIVEN
+        let notice = Notice::builder()
+            .description_entry("Peering info:")
+            .description_entry("++++++++++++++++++++++++++++++++++++++++++++++++")
+            .description_entry("| AS3333 RIPE-NCC-AS |")
+            .description_entry("| RIPE NCC |")
+            .description_entry("++++++++++++++++++++++++++++++++++++++++++++++++")
+            .description_entry("Contact us at peering@ripe.net.")
+            .build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert_eq!(actual[0], "Peering info:");
+        assert_eq!(
+            actual[1],
+            "++++++++++++++++++++++++++++++++++++++++++++++++"
+        );
+        assert_eq!(actual[2], "| AS3333 RIPE-NCC-AS |");
+        assert_eq!(actual[3], "| RIPE NCC |");
+        assert_eq!(
+            actual[4],
+            "++++++++++++++++++++++++++++++++++++++++++++++++"
+        );
+        assert_eq!(actual[5], "Contact us at peering@ripe.net.");
+    }
+
+    #[test]
+    fn test_description_as_pgs_merge_limit_by_length() {
+        // GIVEN
+        let notice = Notice::builder()
+            .description_entry("short line one")
+            .description_entry("short line two")
+            .description_entry("short line three")
+            .description_entry("short line four")
+            .description_entry("short line five")
+            .description_entry("short line six")
+            .description_entry("short line seven")
+            .description_entry("short line eight")
+            .description_entry("short line nine")
+            .description_entry("short line ten")
+            .description_entry("short line eleven")
+            .description_entry("that ends with a period.")
+            .build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert!(
+            actual.len() >= 2,
+            "Should split into at least 2 paragraphs, got {}",
+            actual.len()
+        );
+        let first_pg = &actual[0];
+        assert!(
+            first_pg.len() <= 500 || first_pg.ends_with('.'),
+            "First paragraph should be <= 500 chars or end with period, got len={}",
+            first_pg.len()
+        );
+    }
+
+    #[test]
+    fn test_description_as_pgs_merge_limit_by_line_count() {
+        // GIVEN
+        let mut builder = Notice::builder();
+        for i in 0..15 {
+            builder = builder.description_entry(format!("line number {}", i));
+        }
+        builder = builder.description_entry("final line with period.");
+        let notice = builder.build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert!(
+            actual.len() >= 2,
+            "Should split into at least 2 paragraphs after 10 merged lines, got {}",
+            actual.len()
+        );
+    }
+
+    #[test]
+    fn test_description_as_pgs_ripe_peering_style() {
+        // GIVEN
+        let mut builder = Notice::builder();
+        builder = builder
+            .description_entry("Reseaux IP Europeens Network Coordination Centre (RIPE NCC)");
+        builder = builder.description_entry("");
+        builder =
+            builder.description_entry("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        builder = builder.description_entry("| AS3333 RIPE-NCC-AS |");
+        builder = builder.description_entry("| RIPE NCC (Network Coordination Centre) |");
+        builder = builder.description_entry("| |");
+        builder =
+            builder.description_entry("| RIPE NCC (AS3333) operates an open peering policy: |");
+        builder =
+            builder.description_entry("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        builder = builder.description_entry("| PRIVATE-TRANSIT-V4 |");
+        builder = builder.description_entry("| Private transit peering |");
+        builder = builder.description_entry("| TeliaSonera |");
+        let notice = builder.build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert!(
+            actual.len() >= 3,
+            "Should produce multiple paragraphs, got {}",
+            actual.len()
+        );
+        assert_eq!(
+            actual[0],
+            "Reseaux IP Europeens Network Coordination Centre (RIPE NCC)"
+        );
+        assert!(
+            actual
+                .iter()
+                .any(|p| p.starts_with("++++++++++++++++++++++++++++++++"))
+        );
+        assert!(actual.iter().any(|p| p.contains("AS3333")));
+    }
+
+    #[test]
+    fn test_description_as_pgs_no_description() {
+        // GIVEN
+        let notice = Notice::builder().build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert!(actual.is_empty());
+    }
+
+    #[test]
+    fn test_description_as_pgs_all_table_lines() {
+        // GIVEN
+        let notice = Notice::builder()
+            .description_entry("++++++++++++++++++++++++++++++++++++++++++++++++")
+            .description_entry("| Header 1 | Header 2 |")
+            .description_entry("++++++++++++++++++++++++++++++++++++++++++++++++")
+            .description_entry("| Data 1 | Data 2 |")
+            .description_entry("++++++++++++++++++++++++++++++++++++++++++++++++")
+            .build();
+
+        // WHEN
+        let actual = notice.description_as_pgs();
+
+        // THEN
+        assert_eq!(actual.len(), 5);
+        for (i, pg) in actual.iter().enumerate() {
+            assert!(
+                pg.is_ascii_table_line(),
+                "Paragraph {} should be a table line",
+                i
+            );
+        }
     }
 }
