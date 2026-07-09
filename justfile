@@ -136,7 +136,7 @@ srv_lookup_domain:
 
 [doc('Lookup the entity in localhost.')]
 srv_lookup_entity:
-    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap foo1234
+    cargo run --bin rdap -- --log-level debug -N -T -B http://localhost:3000/rdap foo1234-oid
 
 [doc('Lookup the non-existent domain in localhost.')]
 srv_lookup_nxdomain:
