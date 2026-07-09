@@ -1,5 +1,5 @@
 use crate::prelude::{
-    has_rdap_path, Event, EventActionValue, ExtensionId, Notice, NrType, Remark, StatusValue,
+    Event, EventActionValue, ExtensionId, Notice, NrType, Remark, StatusValue, has_rdap_path,
 };
 
 use {
@@ -24,8 +24,8 @@ use {
 };
 
 use super::{
-    string::{StringCheck, StringListCheck},
     Check, CheckItem, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
+    string::{StringCheck, StringListCheck},
 };
 
 impl GetChecks for RdapConformance {
@@ -79,12 +79,11 @@ impl GetChecks for Link {
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
                         items.push(Check::LinkRelatedIsNotRdap.check_item())
-                    } else if media_type.eq(RDAP_MEDIA_TYPE) {
-                        if let Some(ref href) = self.href {
-                            if !has_rdap_path(href) {
-                                items.push(Check::LinkRelatedNotToRdap.check_item())
-                            }
-                        }
+                    } else if media_type.eq(RDAP_MEDIA_TYPE)
+                        && let Some(ref href) = self.href
+                        && !has_rdap_path(href)
+                    {
+                        items.push(Check::LinkRelatedNotToRdap.check_item())
                     }
                 } else {
                     items.push(Check::LinkRelatedHasNoType.check_item())
@@ -364,15 +363,15 @@ impl GetGroupChecks for ObjectCommon {
         }
 
         // Port 43
-        if let Some(port43) = &self.port_43 {
-            if port43.is_whitespace_or_empty() {
-                sub_checks.push(Checks {
-                    rdap_struct: super::RdapStructure::Port43,
-                    index: None,
-                    items: vec![Check::Port43IsEmpty.check_item()],
-                    sub_checks: vec![],
-                })
-            }
+        if let Some(port43) = &self.port_43
+            && port43.is_whitespace_or_empty()
+        {
+            sub_checks.push(Checks {
+                rdap_struct: super::RdapStructure::Port43,
+                index: None,
+                items: vec![Check::Port43IsEmpty.check_item()],
+                sub_checks: vec![],
+            })
         }
 
         sub_checks
@@ -428,14 +427,14 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        check::{contains_check, Checks},
+        check::{Checks, contains_check},
         media_types::RDAP_MEDIA_TYPE,
         prelude::{ToResponse, VectorStringish},
         response::{
+            RdapResponse,
             domain::Domain,
             nameserver::Nameserver,
             types::{Event, Link, Notice, NoticeOrRemark, PublicId, Remark},
-            RdapResponse,
         },
     };
 
@@ -703,12 +702,14 @@ mod tests {
             .remark(Remark(
                 NoticeOrRemark::builder()
                     .description_entry("a notice")
-                    .links(vec![Link::builder()
-                        .href("https://tos")
-                        .value("https://tos")
-                        .rel("terms-of-service")
-                        .media_type("text/html")
-                        .build()])
+                    .links(vec![
+                        Link::builder()
+                            .href("https://tos")
+                            .value("https://tos")
+                            .rel("terms-of-service")
+                            .media_type("text/html")
+                            .build(),
+                    ])
                     .build(),
             ))
             .link(
@@ -922,12 +923,14 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .sub(crate::check::RdapStructure::PublicIds)
-            .expect("public ids not found")
-            .items
-            .iter()
-            .any(|c| c.check == Check::PublicIdTypeIsNotString));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::PublicIds)
+                .expect("public ids not found")
+                .items
+                .iter()
+                .any(|c| c.check == Check::PublicIdTypeIsNotString)
+        );
     }
 
     #[test]
@@ -952,12 +955,14 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .sub(crate::check::RdapStructure::PublicIds)
-            .expect("Public Ids not found")
-            .items
-            .iter()
-            .any(|c| c.check == Check::PublicIdIdentifierIsNotString));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::PublicIds)
+                .expect("Public Ids not found")
+                .items
+                .iter()
+                .any(|c| c.check == Check::PublicIdIdentifierIsNotString)
+        );
     }
 
     #[test]
@@ -1150,12 +1155,14 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .sub(crate::check::RdapStructure::Status)
-            .expect("status not found")
-            .items
-            .iter()
-            .any(|c| c.check == Check::StatusIsEmpty));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Status)
+                .expect("status not found")
+                .items
+                .iter()
+                .any(|c| c.check == Check::StatusIsEmpty)
+        );
     }
 
     #[test]
@@ -1191,12 +1198,14 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .sub(crate::check::RdapStructure::Handle)
-            .expect("handle not found")
-            .items
-            .iter()
-            .any(|c| c.check == Check::HandleIsEmpty));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Handle)
+                .expect("handle not found")
+                .items
+                .iter()
+                .any(|c| c.check == Check::HandleIsEmpty)
+        );
     }
 
     #[test]
@@ -1215,12 +1224,14 @@ mod tests {
         let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
 
         // THEN
-        assert!(checks
-            .sub(crate::check::RdapStructure::Handle)
-            .expect("handle not found")
-            .items
-            .iter()
-            .any(|c| c.check == Check::HandleIsNotString));
+        assert!(
+            checks
+                .sub(crate::check::RdapStructure::Handle)
+                .expect("handle not found")
+                .items
+                .iter()
+                .any(|c| c.check == Check::HandleIsNotString)
+        );
     }
 
     #[test]

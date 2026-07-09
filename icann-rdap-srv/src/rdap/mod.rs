@@ -1,6 +1,6 @@
 use icann_rdap_common::{
     prelude::{ExtensionId, ToResponse},
-    response::{jscontact::JsContactConvert, RdapResponse, Rfc9083Error},
+    response::{RdapResponse, Rfc9083Error, jscontact::JsContactConvert},
 };
 
 use crate::config::JsContactConversion;

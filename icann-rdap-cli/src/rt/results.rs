@@ -3,14 +3,14 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 /// Contains the results of test execution.
 use chrono::{DateTime, Utc};
 use icann_rdap_common::check::{
-    process::{do_check_processing, get_summaries},
     CheckSummary,
+    process::{do_check_processing, get_summaries},
 };
 use {
     icann_rdap_client::{
-        md::{string::StringUtil, table::MultiPartTable, MdOptions},
-        rdap::ResponseData,
         RdapClientError,
+        md::{MdOptions, string::StringUtil, table::MultiPartTable},
+        rdap::ResponseData,
     },
     icann_rdap_common::{
         check::{Check, CheckClass, CheckItem, Checks},
@@ -18,8 +18,9 @@ use {
     },
     reqwest::StatusCode,
     serde::Serialize,
-    strum_macros::Display,
 };
+
+use strum::Display as EnumDisplay;
 
 use super::exec::TestOptions;
 
@@ -346,7 +347,7 @@ pub struct DnsData {
     pub v6_addrs: Vec<Ipv6Addr>,
 }
 
-#[derive(Debug, Serialize, Display, Clone)]
+#[derive(Debug, Serialize, EnumDisplay, Clone)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 pub enum RunOutcome {
     Tested,
@@ -367,7 +368,7 @@ pub enum RunOutcome {
     Skipped,
 }
 
-#[derive(Debug, Serialize, Display, Clone)]
+#[derive(Debug, Serialize, EnumDisplay, Clone)]
 #[strum(serialize_all = "snake_case")]
 pub enum RunFeature {
     OriginHeader,

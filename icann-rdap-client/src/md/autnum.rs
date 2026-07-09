@@ -2,9 +2,9 @@ use icann_rdap_common::{prelude::ObjectCommonFields, response::Autnum};
 
 use super::MdHeaderText;
 use super::{
+    MdParams, MdUtil, ToMd,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Autnum {
@@ -27,7 +27,7 @@ impl ToMd for Autnum {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         table = table
@@ -58,10 +58,10 @@ impl ToMd for Autnum {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if params.show_rfc9537_redactions {
-            if let Some(redacted) = &self.object_common.redacted {
-                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
-            }
+        if params.show_rfc9537_redactions
+            && let Some(redacted) = &self.object_common.redacted
+        {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -74,17 +74,13 @@ impl MdUtil for Autnum {
         let header_text = if let (Some(start_autnum), Some(end_autnum)) =
             (&self.start_autnum, &self.end_autnum)
         {
-            format!(
-                "Autonomous Systems {} - {}",
-                start_autnum.replace_md_chars(),
-                &end_autnum.replace_md_chars()
-            )
+            format!("Autonomous Systems {} - {}", start_autnum, &end_autnum)
         } else if let Some(start_autnum) = &self.start_autnum {
-            format!("Autonomous System {}", start_autnum.replace_md_chars())
+            format!("Autonomous System {}", start_autnum)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Autonomous System {}", handle.replace_md_chars())
+            format!("Autonomous System {}", handle)
         } else if let Some(name) = &self.name {
-            format!("Autonomous System {}", name.replace_md_chars())
+            format!("Autonomous System {}", name)
         } else {
             "Autonomous System".to_string()
         };
@@ -106,8 +102,8 @@ mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
         prelude::{
-            redacted::{Method, Name, Redacted},
             Autnum, Remark, ToResponse,
+            redacted::{Method, Name, Redacted},
         },
     };
 

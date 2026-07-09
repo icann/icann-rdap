@@ -1,10 +1,10 @@
 use icann_rdap_common::prelude::{CommonFields, Domain, Nameserver, ObjectCommonFields};
 
-use crate::rpsl::{ttl::push_ttl0, AttrName, RpslParams, ToRpsl};
+use crate::rpsl::{AttrName, RpslParams, ToRpsl, ttl::push_ttl0};
 
 use super::{
-    push_entities, push_mandatory_attribute, push_notices, push_obj_common,
-    push_optional_attribute, push_public_ids, KeyRef,
+    KeyRef, push_entities, push_mandatory_attribute, push_notices, push_obj_common,
+    push_optional_attribute, push_public_ids,
 };
 
 impl ToRpsl for Domain {

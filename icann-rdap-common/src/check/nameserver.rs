@@ -3,8 +3,8 @@ use std::{any::TypeId, net::IpAddr, str::FromStr};
 use crate::response::nameserver::Nameserver;
 
 use super::{
-    string::{StringCheck, StringListCheck},
     Check, CheckParams, Checks, GetChecks, GetGroupChecks,
+    string::{StringCheck, StringListCheck},
 };
 
 impl GetChecks for Nameserver {
@@ -26,10 +26,10 @@ impl GetChecks for Nameserver {
         let mut items = vec![];
 
         // check ldh
-        if let Some(ldh) = &self.ldh_name {
-            if !ldh.is_ldh_domain_name() {
-                items.push(Check::LdhNameInvalid.check_item());
-            }
+        if let Some(ldh) = &self.ldh_name
+            && !ldh.is_ldh_domain_name()
+        {
+            items.push(Check::LdhNameInvalid.check_item());
         }
 
         if let Some(ip_addresses) = &self.ip_addresses {
@@ -78,7 +78,7 @@ impl GetChecks for Nameserver {
 mod tests {
     use {crate::prelude::*, rstest::rstest};
 
-    use crate::check::{contains_check, Check, CheckParams, GetChecks};
+    use crate::check::{Check, CheckParams, GetChecks, contains_check};
 
     #[rstest]
     #[case("")]
@@ -97,10 +97,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::LdhNameInvalid));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::LdhNameInvalid)
+        );
     }
 
     #[test]
@@ -117,10 +119,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressListIsEmpty));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressListIsEmpty)
+        );
     }
 
     #[test]
@@ -137,10 +141,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressListIsEmpty));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressListIsEmpty)
+        );
     }
 
     #[test]
@@ -157,10 +163,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMalformed));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMalformed)
+        );
     }
 
     #[test]
@@ -177,10 +185,12 @@ mod tests {
 
         // THEN
         dbg!(&checks);
-        assert!(checks
-            .items
-            .iter()
-            .any(|c| c.check == Check::IpAddressMalformed));
+        assert!(
+            checks
+                .items
+                .iter()
+                .any(|c| c.check == Check::IpAddressMalformed)
+        );
     }
 
     #[test]

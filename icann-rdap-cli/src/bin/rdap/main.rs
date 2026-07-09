@@ -1,17 +1,17 @@
 use std::collections::HashSet;
 
 use enumflags2::BitFlags;
-use icann_rdap_cli::args::target::{params_from_args, LinkTargetArgs};
+use icann_rdap_cli::args::target::{LinkTargetArgs, params_from_args};
 use icann_rdap_client::http::default_exts_list;
 use icann_rdap_common::check::StringCheck;
 #[cfg(debug_assertions)]
 use tracing::warn;
 use {
     bootstrap::BootstrapType,
-    clap::builder::{styling::AnsiColor, Styles},
+    clap::builder::{Styles, styling::AnsiColor},
     error::RdapCliError,
     icann_rdap_cli::dirs,
-    icann_rdap_client::http::{create_client, Client, ClientConfig},
+    icann_rdap_client::http::{Client, ClientConfig, create_client},
     query::{InrBackupBootstrap, ProcessingParams, TldLookup},
     std::{io::IsTerminal, str::FromStr},
     tracing::{error, info},
@@ -27,7 +27,7 @@ use {
     tokio::{join, task::spawn_blocking},
 };
 
-use crate::query::{exec_queries, RedactionFlag};
+use crate::query::{RedactionFlag, exec_queries};
 
 pub mod bootstrap;
 pub mod error;
@@ -341,8 +341,11 @@ enum QtypeArg {
     /// A-Label Domain Lookup
     ALabel,
 
-    /// Reverse Domain Lookup
-    Rdns,
+    /// Reverse DNS IPv4 Lookup
+    RdnsIpv4,
+
+    /// Reverse DNS IPv6 Lookup
+    RdnsIpv6,
 
     /// Entity Lookup
     Entity,
@@ -422,17 +425,29 @@ enum QtypeArg {
     /// Ipv6 CIDR Rdap-Bottom Search
     V6CidrBottom,
 
-    /// Reverse DNS Rdap-Up Lookup
-    RdnsUp,
+    /// Reverse DNS IPv4 Rdap-Up Lookup
+    RdnsIpv4Up,
 
-    /// Reverse DNS Rdap-Down Search
-    RdnsDown,
+    /// Reverse DNS IPv6 Rdap-Up Lookup
+    RdnsIpv6Up,
 
-    /// Reverse DNS Rdap-Top Search
-    RdnsTop,
+    /// Reverse DNS IPv4 Rdap-Down Search
+    RdnsIpv4Down,
 
-    /// Reverse DNS Rdap-Bottom Search
-    RdnsBottom,
+    /// Reverse DNS IPv6 Rdap-Down Search
+    RdnsIpv6Down,
+
+    /// Reverse DNS IPv4 Rdap-Top Search
+    RdnsIpv4Top,
+
+    /// Reverse DNS IPv6 Rdap-Top Search
+    RdnsIpv6Top,
+
+    /// Reverse DNS IPv4 Rdap-Bottom Search
+    RdnsIpv4Bottom,
+
+    /// Reverse DNS IPv6 Rdap-Bottom Search
+    RdnsIpv6Bottom,
 
     /// Autonomous System Number Rdap-Up Lookup
     AutnumUp,
@@ -586,17 +601,20 @@ impl From<&LogLevel> for LevelFilter {
 
 #[tokio::main]
 pub async fn main() -> RdapCliError {
-    if let Err(e) = wrapped_main().await {
-        let ec = e.exit_code();
-        match ec {
-            // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
-            205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
-            206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
-            _ => eprintln!("\n{e}\n"),
-        };
-        return e;
-    } else {
-        return RdapCliError::Success;
+    match wrapped_main().await {
+        Err(e) => {
+            let ec = e.exit_code();
+            match ec {
+                // we use eprintln! because when this is thrown, the tracing subscriber is not yet instantiated.
+                205 => eprintln!("\n{e}\nRPSL format maybe more appropriate. Try: --rpsl.\n"),
+                206 => eprintln!("Use -T or --allow-http to allow insecure HTTP connections."),
+                _ => eprintln!("\n{e}\n"),
+            };
+            return e;
+        }
+        _ => {
+            return RdapCliError::Success;
+        }
     }
 }
 
@@ -833,11 +851,16 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::AutnumBottom => QueryType::autnum_bottom(&query_value)?,
         QtypeArg::Domain => QueryType::domain(&query_value)?,
         QtypeArg::ALabel => QueryType::alabel(&query_value)?,
-        QtypeArg::Rdns => QueryType::rdns_ipstr(&query_value)?,
-        QtypeArg::RdnsUp => QueryType::rdns_up(&query_value)?,
-        QtypeArg::RdnsDown => QueryType::rdns_down(&query_value)?,
-        QtypeArg::RdnsTop => QueryType::rdns_top(&query_value)?,
-        QtypeArg::RdnsBottom => QueryType::rdns_bottom(&query_value)?,
+        QtypeArg::RdnsIpv4 => QueryType::rdns_ipstr(&query_value)?,
+        QtypeArg::RdnsIpv6 => QueryType::rdns_ipstr(&query_value)?,
+        QtypeArg::RdnsIpv4Up => QueryType::rdns_ipv4_up(&query_value)?,
+        QtypeArg::RdnsIpv6Up => QueryType::rdns_ipv6_up(&query_value)?,
+        QtypeArg::RdnsIpv4Down => QueryType::rdns_ipv4_down(&query_value)?,
+        QtypeArg::RdnsIpv6Down => QueryType::rdns_ipv6_down(&query_value)?,
+        QtypeArg::RdnsIpv4Top => QueryType::rdns_ipv4_top(&query_value)?,
+        QtypeArg::RdnsIpv6Top => QueryType::rdns_ipv6_top(&query_value)?,
+        QtypeArg::RdnsIpv4Bottom => QueryType::rdns_ipv4_bottom(&query_value)?,
+        QtypeArg::RdnsIpv6Bottom => QueryType::rdns_ipv6_bottom(&query_value)?,
         QtypeArg::Entity => QueryType::Entity(query_value),
         QtypeArg::Ns => QueryType::ns(&query_value)?,
         QtypeArg::EntityName => QueryType::EntityNameSearch(query_value),
@@ -870,7 +893,7 @@ mod tests {
     use rstest::rstest;
     use std::collections::HashSet;
 
-    use crate::{hostname_to_baseurl, Cli};
+    use crate::{Cli, hostname_to_baseurl};
 
     #[test]
     fn cli_debug_assert_test() {

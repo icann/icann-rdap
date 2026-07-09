@@ -10,160 +10,428 @@ use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 
 use {
     cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr},
-    icann_rdap_common::{check::StringCheck, dns_types::DomainName},
+    icann_rdap_common::{check::StringCheck, dns_types::DomainName, iana::IanaRegistryType},
     pct_str::{PctString, UriReserved},
     regex::Regex,
-    strum_macros::Display,
 };
+
+use strum::{Display as EnumDisplay, VariantArray};
 
 use crate::RdapClientError;
 
 /// Defines the various types of RDAP lookups and searches.
-#[derive(Display, Debug, Clone)]
+#[derive(EnumDisplay, Debug, Clone)]
+#[allow(clippy::enum_variant_names)]
 pub enum QueryType {
+    /// Standard IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Lookup")]
     IpV4Addr(Ipv4Addr),
 
+    /// Standard IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Lookup")]
     IpV6Addr(Ipv6Addr),
 
+    /// IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Lookup")]
     IpV4Cidr(Ipv4Cidr),
 
+    /// IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Lookup")]
     IpV6Cidr(Ipv6Cidr),
 
+    /// RDAP-UP IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Up Lookup")]
     IpV4AddrUp(Ipv4Addr),
 
+    /// RDAP-UP IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Up Lookup")]
     IpV6AddrUp(Ipv6Addr),
 
+    /// RDAP-UP IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Up Lookup")]
     IpV4CidrUp(Ipv4Cidr),
 
+    /// RDAP-UP IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Rdap-Up Lookup")]
     IpV6CidrUp(Ipv6Cidr),
 
+    /// RDAP-DOWN IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Down Lookup")]
     IpV4AddrDown(Ipv4Addr),
 
+    /// RDAP-DOWN IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Down Lookup")]
     IpV6AddrDown(Ipv6Addr),
 
+    /// RDAP-DOWN IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Down Lookup")]
     IpV4CidrDown(Ipv4Cidr),
 
+    /// RDAP-DOWN IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Rdap-Down Lookup")]
     IpV6CidrDown(Ipv6Cidr),
 
+    /// RDAP-TOP IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Top Lookup")]
     IpV4AddrTop(Ipv4Addr),
 
+    /// RDAP-TOP IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Top Lookup")]
     IpV6AddrTop(Ipv6Addr),
 
+    /// RDAP-TOP IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Top Lookup")]
     IpV4CidrTop(Ipv4Cidr),
 
+    /// RDAP-TOP IPv6 CIDR block lookup.
     #[strum(serialize = "IpV6 CIDR Rdap-Top Lookup")]
     IpV6CidrTop(Ipv6Cidr),
 
+    /// RDAP-BOTTOM IPv4 address lookup.
     #[strum(serialize = "IpV4 Address Rdap-Bottom Search")]
     IpV4AddrBottom(Ipv4Addr),
 
+    /// RDAP-BOTTOM IPv6 address lookup.
     #[strum(serialize = "IpV6 Address Rdap-Bottom Search")]
     IpV6AddrBottom(Ipv6Addr),
 
+    /// RDAP-BOTTOM IPv4 CIDR block lookup.
     #[strum(serialize = "IpV4 CIDR Rdap-Bottom Search")]
     IpV4CidrBottom(Ipv4Cidr),
 
-    #[strum(serialize = "IpV6 CIDR Rdap-Bottom Search")]
+    /// RDAP-BOTTOM IPv6 CIDR block lookup.
+    #[strum(serialize = "IpV6 Address Rdap-Bottom Search")]
     IpV6CidrBottom(Ipv6Cidr),
 
+    /// Autonomous System Number lookup.
     #[strum(serialize = "Autonomous System Number Lookup")]
     AsNumber(u32),
 
+    /// RDAP-UP ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Up Lookup")]
     AsNumberUp(u32),
 
+    /// RDAP-DOWN ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Down Lookup")]
     AsNumberDown(u32),
 
+    /// RDAP-TOP ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Top Search")]
     AsNumberTop(u32),
 
+    /// RDAP-BOTTOM ASN lookup.
     #[strum(serialize = "Autonomous System Number Rdap-Bottom Search")]
     AsNumberBottom(u32),
 
+    /// Domain name lookup.
     #[strum(serialize = "Domain Lookup")]
     Domain(DomainName),
 
+    /// A-label (punycode/ACE) domain name lookup.
     #[strum(serialize = "A-Label Domain Lookup")]
     ALabel(DomainName),
 
-    #[strum(serialize = "Reverse DNS Domain Lookup")]
-    ReverseDns(IpNet),
+    /// Reverse DNS IPv4 lookup.
+    #[strum(serialize = "Reverse DNS IPv4 Lookup")]
+    RdnsIpv4(Ipv4Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Up Lookup")]
-    ReverseDnsUp(IpNet),
+    /// Reverse DNS IPv6 lookup.
+    #[strum(serialize = "Reverse DNS IPv6 Lookup")]
+    RdnsIpv6(Ipv6Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Down Lookup")]
-    ReverseDnsDown(IpNet),
+    /// RDAP-UP reverse DNS IPv4 lookup.
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Up Lookup")]
+    RdnsIpv4Up(Ipv4Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Top Lookup")]
-    ReverseDnsTop(IpNet),
+    /// RDAP-UP reverse DNS IPv6 lookup.
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Up Lookup")]
+    RdnsIpv6Up(Ipv6Net),
 
-    #[strum(serialize = "Reverse DNS Domain Rdap-Bottom Lookup")]
-    ReverseDnsBottom(IpNet),
+    /// RDAP-DOWN reverse DNS IPv4 lookup.
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Down Lookup")]
+    RdnsIpv4Down(Ipv4Net),
 
+    /// RDAP-DOWN reverse DNS IPv6 lookup.
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Down Lookup")]
+    RdnsIpv6Down(Ipv6Net),
+
+    /// RDAP-TOP reverse DNS IPv4 lookup.
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Top Lookup")]
+    RdnsIpv4Top(Ipv4Net),
+
+    /// RDAP-TOP reverse DNS IPv6 lookup.
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Top Lookup")]
+    RdnsIpv6Top(Ipv6Net),
+
+    /// RDAP-BOTTOM reverse DNS IPv4 lookup.
+    #[strum(serialize = "Reverse DNS IPv4 Rdap-Bottom Lookup")]
+    RdnsIpv4Bottom(Ipv4Net),
+
+    /// RDAP-BOTTOM reverse DNS IPv6 lookup.
+    #[strum(serialize = "Reverse DNS IPv6 Rdap-Bottom Lookup")]
+    RdnsIpv6Bottom(Ipv6Net),
+
+    /// Entity lookup by handle.
     #[strum(serialize = "Entity Lookup")]
     Entity(String),
 
+    /// Nameserver lookup by domain name.
     #[strum(serialize = "Nameserver Lookup")]
     Nameserver(DomainName),
 
+    /// Search entities by name (RDAP `fn` parameter).
     #[strum(serialize = "Entity Name Search")]
     EntityNameSearch(String),
 
+    /// Search entities by handle (RDAP `handle` parameter).
     #[strum(serialize = "Entity Handle Search")]
     EntityHandleSearch(String),
 
+    /// Search network handles (RDAP `ips?handle` parameter).
     #[strum(serialize = "Network Handle Search")]
     NetworkHandleSearch(String),
 
+    /// Search network names (RDAP `ips?name` parameter).
     #[strum(serialize = "Network Name Search")]
     NetworkNameSearch(String),
 
+    /// Search domain names (RDAP `domains?name` parameter).
     #[strum(serialize = "Domain Name Search")]
     DomainNameSearch(String),
 
+    /// Search domains by nameserver LDH name (RDAP `domains?nsLdhName` parameter).
     #[strum(serialize = "Domain Nameserver Name Search")]
     DomainNsNameSearch(String),
 
+    /// Search domains by nameserver IP address (RDAP `domains?nsIp` parameter).
     #[strum(serialize = "Domain Nameserver IP Address Search")]
     DomainNsIpSearch(IpAddr),
 
+    /// Search nameservers by name (RDAP `nameservers?name` parameter).
     #[strum(serialize = "Nameserver Name Search")]
     NameserverNameSearch(String),
 
+    /// Search nameservers by IP address (RDAP `nameservers?ip` parameter).
     #[strum(serialize = "Nameserver IP Address Search")]
     NameserverIpSearch(IpAddr),
 
+    /// Search autonomous system numbers by handle (RDAP `autnums?handle` parameter).
     #[strum(serialize = "Autnum Handle Search")]
     AutnumHandleSearch(String),
 
+    /// Search autonomous system numbers by name (RDAP `autnums?name` parameter).
     #[strum(serialize = "Autnum Name Search")]
     AutnumNameSearch(String),
 
+    /// Server help endpoint lookup.
     #[strum(serialize = "Server Help Lookup")]
     Help,
 
+    /// Explicit URL passthrough. The string is used as-is without modification.
     #[strum(serialize = "Explicit URL")]
     Url(String),
 }
 
+/// Unit-only discriminants for [`QueryType`], enabling iteration over all
+/// query type variants without needing to construct values with associated data.
+#[derive(Debug, Clone, Copy, VariantArray)]
+pub enum QueryTypeVariant {
+    IpV4Addr,
+    IpV6Addr,
+    IpV4Cidr,
+    IpV6Cidr,
+    IpV4AddrUp,
+    IpV6AddrUp,
+    IpV4CidrUp,
+    IpV6CidrUp,
+    IpV4AddrDown,
+    IpV6AddrDown,
+    IpV4CidrDown,
+    IpV6CidrDown,
+    IpV4AddrTop,
+    IpV6AddrTop,
+    IpV4CidrTop,
+    IpV6CidrTop,
+    IpV4AddrBottom,
+    IpV6AddrBottom,
+    IpV4CidrBottom,
+    IpV6CidrBottom,
+    AsNumber,
+    AsNumberUp,
+    AsNumberDown,
+    AsNumberTop,
+    AsNumberBottom,
+    Domain,
+    ALabel,
+    RdnsIpv4,
+    RdnsIpv6,
+    RdnsIpv4Up,
+    RdnsIpv6Up,
+    RdnsIpv4Down,
+    RdnsIpv6Down,
+    RdnsIpv4Top,
+    RdnsIpv6Top,
+    RdnsIpv4Bottom,
+    RdnsIpv6Bottom,
+    Entity,
+    Nameserver,
+    EntityNameSearch,
+    EntityHandleSearch,
+    NetworkHandleSearch,
+    NetworkNameSearch,
+    DomainNameSearch,
+    DomainNsNameSearch,
+    DomainNsIpSearch,
+    NameserverNameSearch,
+    NameserverIpSearch,
+    AutnumHandleSearch,
+    AutnumNameSearch,
+    Help,
+    Url,
+}
+
+impl QueryTypeVariant {
+    /// Returns the [`IanaRegistryType`] this variant maps to for bootstrapping,
+    /// or `None` if the variant does not use bootstrap lookups.
+    ///
+    /// IPv4 variants map to [`IanaRegistryType::RdapBootstrapIpv4`], IPv6
+    /// variants map to [`IanaRegistryType::RdapBootstrapIpv6`], ASN variants
+    /// map to [`IanaRegistryType::RdapBootstrapAsn`], domain/ALabel/nameserver
+    /// variants map to [`IanaRegistryType::RdapBootstrapDns`], and entity
+    /// variants map to [`IanaRegistryType::RdapObjectTags`].
+    pub fn bootstrap_registry(&self) -> Option<IanaRegistryType> {
+        match self {
+            Self::IpV4Addr
+            | Self::IpV4Cidr
+            | Self::IpV4AddrUp
+            | Self::IpV4CidrUp
+            | Self::IpV4AddrDown
+            | Self::IpV4CidrDown
+            | Self::IpV4AddrTop
+            | Self::IpV4CidrTop
+            | Self::IpV4AddrBottom
+            | Self::IpV4CidrBottom
+            | Self::RdnsIpv4
+            | Self::RdnsIpv4Up
+            | Self::RdnsIpv4Down
+            | Self::RdnsIpv4Top
+            | Self::RdnsIpv4Bottom => Some(IanaRegistryType::RdapBootstrapIpv4),
+            Self::IpV6Addr
+            | Self::IpV6Cidr
+            | Self::IpV6AddrUp
+            | Self::IpV6CidrUp
+            | Self::IpV6AddrDown
+            | Self::IpV6CidrDown
+            | Self::IpV6AddrTop
+            | Self::IpV6CidrTop
+            | Self::IpV6AddrBottom
+            | Self::IpV6CidrBottom
+            | Self::RdnsIpv6
+            | Self::RdnsIpv6Up
+            | Self::RdnsIpv6Down
+            | Self::RdnsIpv6Top
+            | Self::RdnsIpv6Bottom => Some(IanaRegistryType::RdapBootstrapIpv6),
+            Self::AsNumber
+            | Self::AsNumberUp
+            | Self::AsNumberDown
+            | Self::AsNumberTop
+            | Self::AsNumberBottom => Some(IanaRegistryType::RdapBootstrapAsn),
+            Self::Domain | Self::ALabel | Self::Nameserver => {
+                Some(IanaRegistryType::RdapBootstrapDns)
+            }
+            Self::Entity => Some(IanaRegistryType::RdapObjectTags),
+            _ => None,
+        }
+    }
+
+    /// Constructs a concrete [`QueryType`] value suitable for passing to
+    /// [`crate::iana::bootstrap::qtype_to_bootstrap_url`].
+    ///
+    /// Uses sample/fake data for each variant (e.g. `192.0.2.1` for IPv4,
+    /// `2001:db8::1` for IPv6, `as64512` for ASN, `example.org` for domain).
+    pub fn to_query_type(&self) -> QueryType {
+        match self {
+            Self::IpV4Addr => QueryType::ipv4("192.0.2.1").unwrap(),
+            Self::IpV6Addr => QueryType::ipv6("2001:db8::1").unwrap(),
+            Self::IpV4Cidr => QueryType::ipv4cidr("192.0.2.0/24").unwrap(),
+            Self::IpV6Cidr => QueryType::ipv6cidr("2001:db8::/32").unwrap(),
+            Self::IpV4AddrUp => QueryType::ipv4_up("192.0.2.1").unwrap(),
+            Self::IpV6AddrUp => QueryType::ipv6_up("2001:db8::1").unwrap(),
+            Self::IpV4CidrUp => QueryType::ipv4cidr_up("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrUp => QueryType::ipv6cidr_up("2001:db8::/32").unwrap(),
+            Self::IpV4AddrDown => QueryType::ipv4_down("192.0.2.1").unwrap(),
+            Self::IpV6AddrDown => QueryType::ipv6_down("2001:db8::1").unwrap(),
+            Self::IpV4CidrDown => QueryType::ipv4cidr_down("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrDown => QueryType::ipv6cidr_down("2001:db8::/32").unwrap(),
+            Self::IpV4AddrTop => QueryType::ipv4_top("192.0.2.1").unwrap(),
+            Self::IpV6AddrTop => QueryType::ipv6_top("2001:db8::1").unwrap(),
+            Self::IpV4CidrTop => QueryType::ipv4cidr_top("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrTop => QueryType::ipv6cidr_top("2001:db8::/32").unwrap(),
+            Self::IpV4AddrBottom => QueryType::ipv4_bottom("192.0.2.1").unwrap(),
+            Self::IpV6AddrBottom => QueryType::ipv6_bottom("2001:db8::1").unwrap(),
+            Self::IpV4CidrBottom => QueryType::ipv4cidr_bottom("192.0.2.0/24").unwrap(),
+            Self::IpV6CidrBottom => QueryType::ipv6cidr_bottom("2001:db8::/32").unwrap(),
+            Self::AsNumber => QueryType::autnum("as64512").unwrap(),
+            Self::AsNumberUp => QueryType::autnum_up("as64512").unwrap(),
+            Self::AsNumberDown => QueryType::autnum_down("as64512").unwrap(),
+            Self::AsNumberTop => QueryType::autnum_top("as64512").unwrap(),
+            Self::AsNumberBottom => QueryType::autnum_bottom("as64512").unwrap(),
+            Self::Domain => QueryType::domain("example.org").unwrap(),
+            Self::ALabel => QueryType::alabel("xn--fsq.org").unwrap(),
+            Self::RdnsIpv4 => QueryType::rdns_ipv4("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6 => QueryType::rdns_ipv6(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Up => QueryType::rdns_ipv4_up("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Up => QueryType::rdns_ipv6_up(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Down => QueryType::rdns_ipv4_down("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Down => QueryType::rdns_ipv6_down(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Top => QueryType::rdns_ipv4_top("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Top => QueryType::rdns_ipv6_top(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::RdnsIpv4Bottom => QueryType::rdns_ipv4_bottom("2.0.0.192.in-addr.arpa").unwrap(),
+            Self::RdnsIpv6Bottom => QueryType::rdns_ipv6_bottom(
+                "b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+            )
+            .unwrap(),
+            Self::Entity => QueryType::Entity("X".to_string()),
+            Self::Nameserver => QueryType::ns("ns.example.org").unwrap(),
+            Self::EntityNameSearch => QueryType::EntityNameSearch("test".to_string()),
+            Self::EntityHandleSearch => QueryType::EntityHandleSearch("X".to_string()),
+            Self::NetworkHandleSearch => QueryType::NetworkHandleSearch("test".to_string()),
+            Self::NetworkNameSearch => QueryType::NetworkNameSearch("test".to_string()),
+            Self::DomainNameSearch => QueryType::DomainNameSearch("example".to_string()),
+            Self::DomainNsNameSearch => QueryType::DomainNsNameSearch("ns".to_string()),
+            Self::DomainNsIpSearch => {
+                QueryType::DomainNsIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)))
+            }
+            Self::NameserverNameSearch => QueryType::NameserverNameSearch("ns".to_string()),
+            Self::NameserverIpSearch => {
+                QueryType::NameserverIpSearch(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)))
+            }
+            Self::AutnumHandleSearch => QueryType::AutnumHandleSearch("AS64512".to_string()),
+            Self::AutnumNameSearch => QueryType::AutnumNameSearch("test".to_string()),
+            Self::Help => QueryType::Help,
+            Self::Url => QueryType::Url("https://example.com".to_string()),
+        }
+    }
+}
+
 impl QueryType {
+    /// Builds the full RDAP query URL from a `base_url` and `self`.
+    ///
+    /// The base URL is trimmed of trailing slashes, and path segments are
+    /// percent-encoded using [`PctString`] with [`UriReserved::Path`]. Search
+    /// queries use [`UriReserved::Any`].
     pub fn query_url(&self, base_url: &str) -> Result<String, RdapClientError> {
         let base_url = base_url.trim_end_matches('/');
         match self {
@@ -311,38 +579,73 @@ impl QueryType {
                 "{base_url}/domain/{}",
                 PctString::encode(value.trim_leading_dot().chars(), UriReserved::Path)
             )),
-            Self::ReverseDns(value) => Ok(format!(
+            Self::RdnsIpv4(value) => Ok(format!(
                 "{base_url}/domain/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsUp(value) => Ok(format!(
+            Self::RdnsIpv6(value) => Ok(format!(
+                "{base_url}/domain/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Up(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-up/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsDown(value) => Ok(format!(
+            Self::RdnsIpv6Up(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-up/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Down(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-down/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsTop(value) => Ok(format!(
+            Self::RdnsIpv6Down(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-down/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Top(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-top/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
-            Self::ReverseDnsBottom(value) => Ok(format!(
+            Self::RdnsIpv6Top(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-top/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv4Bottom(value) => Ok(format!(
                 "{base_url}/domains/rirSearch1/rdap-bottom/{}",
                 PctString::encode(
-                    ip_to_reverse_dns(&value.network()).chars(),
+                    ip_to_reverse_dns(&IpAddr::V4(value.network())).chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::RdnsIpv6Bottom(value) => Ok(format!(
+                "{base_url}/domains/rirSearch1/rdap-bottom/{}",
+                PctString::encode(
+                    ip_to_reverse_dns(&IpAddr::V6(value.network())).chars(),
                     UriReserved::Path
                 )
             )),
@@ -378,57 +681,169 @@ impl QueryType {
         }
     }
 
+    /// Parses a domain name into a [`QueryType::Domain`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the domain name is
+    /// not valid according to [`DomainName::from_str`].
     pub fn domain(domain_name: &str) -> Result<Self, RdapClientError> {
         Ok(Self::Domain(DomainName::from_str(domain_name)?))
     }
 
+    /// Parses an A-label (punycode/ACE) domain name into a [`QueryType::ALabel`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the domain name is
+    /// not valid according to [`DomainName::from_str`].
     pub fn alabel(alabel: &str) -> Result<Self, RdapClientError> {
         Ok(Self::ALabel(DomainName::from_str(alabel)?))
     }
 
-    pub fn rdns(domain_name: &str) -> Result<Self, RdapClientError> {
+    /// Parses an rDNS IPv4 domain name (e.g. `4.3.2.1.in-addr.arpa`) into a
+    /// [`QueryType::RdnsIpv4`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
+    pub fn rdns_ipv4(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDns(ipnet))
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_up(domain_name: &str) -> Result<Self, RdapClientError> {
+    /// Parses an rDNS IPv6 domain name (e.g. `1.0.0.0...ip6.arpa`) into a
+    /// [`QueryType::RdnsIpv6`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
+    pub fn rdns_ipv6(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsUp(ipnet))
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_down(domain_name: &str) -> Result<Self, RdapClientError> {
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Up`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
+    pub fn rdns_ipv4_up(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsDown(ipnet))
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Up(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_top(domain_name: &str) -> Result<Self, RdapClientError> {
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Up`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
+    pub fn rdns_ipv6_up(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsTop(ipnet))
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Up(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
-    pub fn rdns_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Down`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
+    pub fn rdns_ipv4_down(domain_name: &str) -> Result<Self, RdapClientError> {
         let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
-        Ok(Self::ReverseDnsBottom(ipnet))
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Down(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
     }
 
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Down`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
+    pub fn rdns_ipv6_down(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Down(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Top`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
+    pub fn rdns_ipv4_top(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Top(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Top`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
+    pub fn rdns_ipv6_top(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Top(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    /// Parses an rDNS IPv4 domain name into a [`QueryType::RdnsIpv4Bottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv6 address.
+    pub fn rdns_ipv4_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V4(v4) => Ok(Self::RdnsIpv4Bottom(v4)),
+            IpNet::V6(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    /// Parses an rDNS IPv6 domain name into a [`QueryType::RdnsIpv6Bottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the input is not a
+    /// valid rDNS domain or if it resolves to an IPv4 address.
+    pub fn rdns_ipv6_bottom(domain_name: &str) -> Result<Self, RdapClientError> {
+        let ipnet = reverse_dns_to_ipnet(domain_name).ok_or(RdapClientError::InvalidQueryValue)?;
+        match ipnet {
+            IpNet::V6(v6) => Ok(Self::RdnsIpv6Bottom(v6)),
+            IpNet::V4(_) => Err(RdapClientError::InvalidQueryValue),
+        }
+    }
+
+    /// Parses an IP address or CIDR block into an rDNS query type.
+    ///
+    /// If the input is a CIDR block, returns [`QueryType::RdnsIpv4`] or
+    /// [`QueryType::RdnsIpv6`]. If it is a plain IP address, it is treated
+    /// as a /32 (IPv4) or /128 (IPv6) prefix.
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn rdns_ipstr(ip_address: &str) -> Result<Self, RdapClientError> {
         if let Ok(ip_cidr) = parse_cidr(ip_address) {
             return Ok(match ip_cidr {
                 IpCidr::V4(cidr) => {
                     let first = cidr.first_address();
                     let prefix = cidr.network_length();
-                    Self::ReverseDns(IpNet::V4(
+                    Self::RdnsIpv4(
                         Ipv4Net::new(first, prefix)
                             .map_err(|_e| RdapClientError::InvalidQueryValue)?,
-                    ))
+                    )
                 }
                 IpCidr::V6(cidr) => {
                     let first = cidr.first_address();
                     let prefix = cidr.network_length();
-                    Self::ReverseDns(IpNet::V6(
+                    Self::RdnsIpv6(
                         Ipv6Net::new(first, prefix)
                             .map_err(|_e| RdapClientError::InvalidQueryValue)?,
-                    ))
+                    )
                 }
             });
         }
@@ -442,48 +857,82 @@ impl QueryType {
                 IpNet::V6(Ipv6Net::new(ipv6, 128).map_err(|_e| RdapClientError::InvalidQueryValue)?)
             }
         };
-        Ok(Self::ReverseDns(ipnet))
+        Ok(match ipnet {
+            IpNet::V4(v4) => Self::RdnsIpv4(v4),
+            IpNet::V6(v6) => Self::RdnsIpv6(v6),
+        })
     }
 
+    /// Parses a nameserver domain name into a [`QueryType::Nameserver`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] if the domain name is
+    /// not valid according to [`DomainName::from_str`].
     pub fn ns(nameserver: &str) -> Result<Self, RdapClientError> {
         Ok(Self::Nameserver(DomainName::from_str(nameserver)?))
     }
 
+    /// Parses an autonomous system number string into a [`QueryType::AsNumber`].
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"` (case-insensitive
+    /// prefix stripping). Returns [`RdapClientError::InvalidQueryValue`] for
+    /// invalid input.
     pub fn autnum(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumber(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberUp`] (RDAP-UP scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_up(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberUp(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberDown`] (RDAP-DOWN scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_down(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberDown(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberTop`] (RDAP-TOP scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_top(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberTop(value))
     }
 
+    /// Parses an ASN string into a [`QueryType::AsNumberBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Accepts formats like `"16509"`, `"as16509"`, or `"AS16509"`.
     pub fn autnum_bottom(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberBottom(value))
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4Addr`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4Addr(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6Addr`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6Addr(value))
     }
 
+    /// Parses an IPv4 CIDR block string (e.g. `"192.0.2.0/24"`) into a [`QueryType::IpV4Cidr`].
+    ///
+    /// Host bits are ignored during parsing. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is an IPv6 CIDR.
     pub fn ipv4cidr(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -497,6 +946,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block string (e.g. `"2001:db8::/32"`) into a [`QueryType::IpV6Cidr`].
+    ///
+    /// Host bits are ignored during parsing. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is an IPv4 CIDR.
     pub fn ipv6cidr(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -510,16 +963,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrUp`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_up(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrUp(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrUp`] (RDAP-UP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_up(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrUp(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrUp`] (RDAP-UP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_up(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -533,6 +996,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrUp`] (RDAP-UP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_up(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -546,16 +1013,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrDown`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_down(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrDown(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrDown`] (RDAP-DOWN scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_down(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrDown(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrDown`] (RDAP-DOWN scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_down(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -569,6 +1046,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrDown`] (RDAP-DOWN scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_down(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -582,16 +1063,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrTop`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_top(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrTop(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrTop`] (RDAP-TOP scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_top(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrTop(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrTop`] (RDAP-TOP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_top(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -605,6 +1096,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrTop`] (RDAP-TOP scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_top(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -618,16 +1113,26 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv4 address string into a [`QueryType::IpV4AddrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv4_bottom(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv4Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV4AddrBottom(value))
     }
 
+    /// Parses an IPv6 address string into a [`QueryType::IpV6AddrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid input.
     pub fn ipv6_bottom(ip: &str) -> Result<Self, RdapClientError> {
         let value = Ipv6Addr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::IpV6AddrBottom(value))
     }
 
+    /// Parses an IPv4 CIDR block into a [`QueryType::IpV4CidrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv6.
     pub fn ipv4cidr_bottom(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -641,6 +1146,10 @@ impl QueryType {
         }
     }
 
+    /// Parses an IPv6 CIDR block into a [`QueryType::IpV6CidrBottom`] (RDAP-BOTTOM scope).
+    ///
+    /// Host bits are ignored. Returns
+    /// [`RdapClientError::AmbiguousQueryType`] if the input is IPv4.
     pub fn ipv6cidr_bottom(cidr: &str) -> Result<Self, RdapClientError> {
         let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
             cidr,
@@ -654,17 +1163,27 @@ impl QueryType {
         }
     }
 
+    /// Searches domains by nameserver IP address into a [`QueryType::DomainNsIpSearch`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid IP input.
     pub fn domain_ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::DomainNsIpSearch(value))
     }
 
+    /// Searches nameservers by IP address into a [`QueryType::NameserverIpSearch`].
+    ///
+    /// Returns [`RdapClientError::InvalidQueryValue`] for invalid IP input.
     pub fn ns_ip_search(ip: &str) -> Result<Self, RdapClientError> {
         let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
         Ok(Self::NameserverIpSearch(value))
     }
 }
 
+/// Builds a search query URL with a percent-encoded value.
+///
+/// The `value` is encoded using [`UriReserved::Any`]. The `path_query`
+/// parameter includes both the path and query key (e.g. `"entities?fn"`).
 fn search_query(value: &str, path_query: &str, base_url: &str) -> Result<String, RdapClientError> {
     Ok(format!(
         "{base_url}/{path_query}={}",
@@ -672,6 +1191,22 @@ fn search_query(value: &str, path_query: &str, base_url: &str) -> Result<String,
     ))
 }
 
+/// Parses a string into a [`QueryType`] using the following precedence:
+///
+/// 1. URL (`http://` or `https://`) → [`QueryType::Url`]
+/// 2. `up:` prefix → RDAP-UP query (IP, CIDR, ASN, or rDNS)
+/// 3. `down:` prefix → RDAP-DOWN query
+/// 4. `top:` prefix → RDAP-TOP query
+/// 5. `bottom:` prefix → RDAP-BOTTOM query
+/// 6. AS number pattern (digits, optionally prefixed with `as`) → [`QueryType::AsNumber`]
+/// 7. IP address → [`QueryType::IpV4Addr`] or [`QueryType::IpV6Addr`]
+/// 8. CIDR notation → [`QueryType::IpV4Cidr`] or [`QueryType::IpV6Cidr`]
+/// 9. Domain name (contains `.`, is unicode domain name):
+///    - Matches `ns*` pattern → [`QueryType::Nameserver`]
+///    - Matches rDNS pattern → [`QueryType::RdnsIpv4`]/[`QueryType::RdnsIpv6`]
+///    - Otherwise → [`QueryType::Domain`]
+/// 10. Single word (no whitespace/dots/commas) → [`QueryType::Entity`]
+/// 11. Otherwise → [`RdapClientError::AmbiguousQueryType`]
 impl FromStr for QueryType {
     type Err = RdapClientError;
 
@@ -700,7 +1235,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberUp(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsUp(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Up(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Up(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -724,7 +1262,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberDown(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsDown(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Down(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Down(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -748,7 +1289,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberTop(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsTop(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Top(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Top(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -772,7 +1316,10 @@ impl FromStr for QueryType {
                 return Ok(Self::AsNumberBottom(asn));
             }
             if let Some(ipnet) = reverse_dns_to_ipnet(rest) {
-                return Ok(Self::ReverseDnsBottom(ipnet));
+                return Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4Bottom(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6Bottom(v6),
+                });
             }
             return Err(RdapClientError::InvalidQueryValue);
         }
@@ -804,7 +1351,10 @@ impl FromStr for QueryType {
             return if is_nameserver(s) {
                 Self::ns(s)
             } else if let Some(ipnet) = reverse_dns_to_ipnet(s) {
-                Ok(Self::ReverseDns(ipnet))
+                Ok(match ipnet {
+                    IpNet::V4(v4) => Self::RdnsIpv4(v4),
+                    IpNet::V6(v6) => Self::RdnsIpv6(v6),
+                })
             } else {
                 Self::domain(s)
             };
@@ -820,6 +1370,9 @@ impl FromStr for QueryType {
     }
 }
 
+/// Parses an autonomous system number string, stripping an optional `as`/`AS`/`As`/`aS` prefix.
+///
+/// Returns [`RdapClientError::InvalidQueryValue`] if the remaining text is not a valid u32.
 fn parse_autnum(s: &str) -> Result<u32, RdapClientError> {
     let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
     autnum
@@ -827,6 +1380,10 @@ fn parse_autnum(s: &str) -> Result<u32, RdapClientError> {
         .map_err(|_e| RdapClientError::InvalidQueryValue)
 }
 
+/// Parses a CIDR notation string, supporting short-form prefixes (e.g. `"10/8"` → `"10.0.0.0/8"`).
+///
+/// Returns [`RdapClientError::InvalidQueryValue`] if the input lacks a `/` prefix length
+/// or cannot be parsed as a valid CIDR.
 fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
     let Some((prefix, suffix)) = s.split_once('/') else {
         return Err(RdapClientError::InvalidQueryValue);
@@ -847,16 +1404,19 @@ fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
     }
 }
 
+/// Checks if `text` matches an LDH (letters, digits, hyphens) domain name pattern.
 fn is_ldh_domain(text: &str) -> bool {
     static LDH_DOMAIN_RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap());
     LDH_DOMAIN_RE.is_match(text)
 }
 
+/// Checks if `text` is a valid domain name (contains `.` and is a unicode domain name).
 fn is_domain_name(text: &str) -> bool {
     text.contains('.') && text.is_unicode_domain_name()
 }
 
+/// Checks if `text` matches a nameserver pattern (starts with `ns`).
 fn is_nameserver(text: &str) -> bool {
     static NS_RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"^(?i)(ns)[a-zA-Z0-9-]*\.[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.?$").unwrap()
@@ -1671,7 +2231,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_up_query_url() {
+    fn test_rdns_ipv4_up_query_url() {
         // GIVEN
         let q = QueryType::from_str("up:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1686,7 +2246,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_down_query_url() {
+    fn test_rdns_ipv6_up_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "up:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-up/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_down_query_url() {
         // GIVEN
         let q = QueryType::from_str("down:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1701,7 +2279,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_top_query_url() {
+    fn test_rdns_ipv6_down_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "down:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-down/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_top_query_url() {
         // GIVEN
         let q = QueryType::from_str("top:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1716,7 +2312,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_bottom_query_url() {
+    fn test_rdns_ipv6_top_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "top:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-top/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_bottom_query_url() {
         // GIVEN
         let q = QueryType::from_str("bottom:2.0.192.in-addr.arpa").expect("query type");
 
@@ -1731,7 +2345,25 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_up_from_str() {
+    fn test_rdns_ipv6_bottom_query_url() {
+        // GIVEN
+        let q = QueryType::from_str(
+            "bottom:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+        )
+        .expect("query type");
+
+        // WHEN
+        let actual = q.query_url("https://example.com").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/domains/rirSearch1/rdap-bottom/b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa"
+        )
+    }
+
+    #[test]
+    fn test_rdns_ipv4_up_from_str() {
         // GIVEN
         let s = "up:2.0.192.in-addr.arpa";
 
@@ -1739,11 +2371,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsUp(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Up(_)))
     }
 
     #[test]
-    fn test_rdns_down_from_str() {
+    fn test_rdns_ipv6_up_from_str() {
+        // GIVEN
+        let s = "up:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Up(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_down_from_str() {
         // GIVEN
         let s = "down:2.0.192.in-addr.arpa";
 
@@ -1751,11 +2395,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsDown(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Down(_)))
     }
 
     #[test]
-    fn test_rdns_top_from_str() {
+    fn test_rdns_ipv6_down_from_str() {
+        // GIVEN
+        let s = "down:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Down(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_top_from_str() {
         // GIVEN
         let s = "top:2.0.192.in-addr.arpa";
 
@@ -1763,11 +2419,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsTop(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Top(_)))
     }
 
     #[test]
-    fn test_rdns_bottom_from_str() {
+    fn test_rdns_ipv6_top_from_str() {
+        // GIVEN
+        let s = "top:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Top(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_bottom_from_str() {
         // GIVEN
         let s = "bottom:2.0.192.in-addr.arpa";
 
@@ -1775,11 +2443,23 @@ mod tests {
         let q = QueryType::from_str(s);
 
         // THEN
-        assert!(matches!(q.unwrap(), QueryType::ReverseDnsBottom(_)))
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4Bottom(_)))
     }
 
     #[test]
-    fn test_rdns_up_prefix_invalid_input() {
+    fn test_rdns_ipv6_bottom_from_str() {
+        // GIVEN
+        let s = "bottom:b.a.9.8.7.6.5.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6Bottom(_)))
+    }
+
+    #[test]
+    fn test_rdns_ipv4_up_prefix_invalid_input() {
         // GIVEN
         let s = "up:foo";
 
@@ -1791,7 +2471,19 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_down_prefix_invalid_input() {
+    fn test_rdns_ipv6_up_prefix_invalid_input() {
+        // GIVEN
+        let s = "up:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv4_down_prefix_invalid_input() {
         // GIVEN
         let s = "down:foo";
 
@@ -1803,7 +2495,19 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_top_prefix_invalid_input() {
+    fn test_rdns_ipv6_down_prefix_invalid_input() {
+        // GIVEN
+        let s = "down:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv4_top_prefix_invalid_input() {
         // GIVEN
         let s = "top:foo";
 
@@ -1815,7 +2519,31 @@ mod tests {
     }
 
     #[test]
-    fn test_rdns_bottom_prefix_invalid_input() {
+    fn test_rdns_ipv6_top_prefix_invalid_input() {
+        // GIVEN
+        let s = "top:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv4_bottom_prefix_invalid_input() {
+        // GIVEN
+        let s = "bottom:foo";
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rdns_ipv6_bottom_prefix_invalid_input() {
         // GIVEN
         let s = "bottom:foo";
 

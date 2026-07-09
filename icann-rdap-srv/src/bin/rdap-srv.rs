@@ -2,16 +2,16 @@ use {
     envmnt::{get_or, get_parse_or, get_u16},
     icann_rdap_srv::{
         config::{
-            data_dir, debug_config_vars, JsContactConversion, ListenConfig, ServiceConfig,
-            StorageType, AUTO_RELOAD, BOOTSTRAP, JSCONTACT_CONVERSION, LISTEN_ADDR, LISTEN_PORT,
-            LOG, UPDATE_ON_BOOTSTRAP,
+            AUTO_RELOAD, BOOTSTRAP, JSCONTACT_CONVERSION, JsContactConversion, LISTEN_ADDR,
+            LISTEN_PORT, LOG, ListenConfig, ServiceConfig, StorageType, UPDATE_ON_BOOTSTRAP,
+            data_dir, debug_config_vars,
         },
         error::RdapServerError,
         server::Listener,
     },
     std::{path::Path, str::FromStr},
     tracing_subscriber::{
-        fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, EnvFilter,
+        EnvFilter, fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
     },
 };
 

@@ -101,10 +101,10 @@ fn format_domain_info(status: &Option<Vec<String>>, port_43: &Option<String>) ->
             info.push_str(&format!("Domain Status: {}\n", *value));
         }
     }
-    if let Some(port_43) = port_43 {
-        if !port_43.is_empty() {
-            info.push_str(&format!("Registrar Whois Server: {}\n", port_43));
-        }
+    if let Some(port_43) = port_43
+        && !port_43.is_empty()
+    {
+        info.push_str(&format!("Registrar Whois Server: {}\n", port_43));
     }
 
     info
@@ -133,27 +133,26 @@ fn format_nameservers_and_network(
 fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
     let mut dnssec_info = String::new();
 
-    if let Some(secure_dns) = secure_dns {
-        if secure_dns
+    if let Some(secure_dns) = secure_dns
+        && secure_dns
             .delegation_signed
             .as_ref()
             .unwrap_or(&Boolish::from(false))
             .into_bool()
-        {
-            dnssec_info.push_str("DNSSEC: signedDelegation\n");
-            if let Some(ds_data) = &secure_dns.ds_data {
-                for ds in ds_data {
-                    if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) = (
-                        ds.key_tag.as_ref(),
-                        ds.algorithm.as_ref(),
-                        ds.digest_type.as_ref(),
-                        ds.digest.as_ref(),
-                    ) {
-                        dnssec_info.push_str(&format!(
-                            "DNSSEC DS Data: {} {} {} {}\n",
-                            key_tag, algorithm, digest_type, digest
-                        ));
-                    }
+    {
+        dnssec_info.push_str("DNSSEC: signedDelegation\n");
+        if let Some(ds_data) = &secure_dns.ds_data {
+            for ds in ds_data {
+                if let (Some(key_tag), Some(algorithm), Some(digest_type), Some(digest)) = (
+                    ds.key_tag.as_ref(),
+                    ds.algorithm.as_ref(),
+                    ds.digest_type.as_ref(),
+                    ds.digest.as_ref(),
+                ) {
+                    dnssec_info.push_str(&format!(
+                        "DNSSEC DS Data: {} {} {} {}\n",
+                        key_tag, algorithm, digest_type, digest
+                    ));
                 }
             }
         }
@@ -165,16 +164,16 @@ fn format_dnssec_info(secure_dns: &Option<SecureDns>) -> String {
 fn format_last_update_info(events: &Option<Vec<Event>>, gtld: &mut String) {
     if let Some(events) = events {
         for event in events {
-            if let Some(event_action) = &event.event_action {
-                if event_action == "last update of RDAP database" {
-                    if let Some(event_date) = &event.event_date {
-                        gtld.push_str(&format!(
-                            ">>> Last update of RDAP database: {} <<<\n",
-                            event_date
-                        ));
-                    }
-                    break;
+            if let Some(event_action) = &event.event_action
+                && event_action == "last update of RDAP database"
+            {
+                if let Some(event_date) = &event.event_date {
+                    gtld.push_str(&format!(
+                        ">>> Last update of RDAP database: {} <<<\n",
+                        event_date
+                    ));
                 }
+                break;
             }
         }
     }

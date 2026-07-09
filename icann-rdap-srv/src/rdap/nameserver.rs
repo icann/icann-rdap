@@ -16,7 +16,7 @@ use crate::{
     server::DynServiceState,
 };
 
-use super::{response::BAD_REQUEST, ToBootStrap};
+use super::{ToBootStrap, response::BAD_REQUEST};
 
 /// Gets a nameserver object by the name path.
 #[axum_macros::debug_handler]

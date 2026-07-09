@@ -3,8 +3,8 @@ use icann_rdap_common::prelude::{CommonFields, Network, ObjectCommonFields};
 use crate::rpsl::{RpslParams, ToRpsl};
 
 use super::{
-    push_entities, push_mandatory_attribute, push_notices, push_obj_common,
-    push_optional_attribute, AttrName, KeyRef,
+    AttrName, KeyRef, push_entities, push_mandatory_attribute, push_notices, push_obj_common,
+    push_optional_attribute,
 };
 
 impl ToRpsl for Network {
@@ -49,10 +49,10 @@ impl ToRpsl for Network {
 impl KeyRef for Network {
     fn key_ref(&self, _params: RpslParams) -> (super::AttrName, String) {
         let mut name = AttrName::Inetnum;
-        if let Some(ip_version) = self.ip_version() {
-            if ip_version.eq_ignore_ascii_case("v6") {
-                name = AttrName::Inet6num;
-            }
+        if let Some(ip_version) = self.ip_version()
+            && ip_version.eq_ignore_ascii_case("v6")
+        {
+            name = AttrName::Inet6num;
         }
         let value = format!(
             "{} - {}",

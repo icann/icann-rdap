@@ -1,0 +1,10 @@
+[package]
+name = "downstream_compat"
+version = "0.1.1"
+edition = "2021"
+publish = false
+
+[dependencies]
+icann-rdap-common = { path = "../../icann-rdap-common" }
+
+strum = { version = "0.28", features = [ "derive" ] }

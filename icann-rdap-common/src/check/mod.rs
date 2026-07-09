@@ -5,13 +5,14 @@ use std::{any::TypeId, sync::LazyLock};
 use {
     crate::response::RdapResponse,
     serde::{Deserialize, Serialize},
-    strum::{EnumMessage, IntoEnumIterator},
-    strum_macros::{Display, EnumIter, EnumMessage, EnumString, FromRepr, VariantArray},
+    strum::IntoEnumIterator,
+    strum::{EnumIter, EnumMessage, EnumString, FromRepr, VariantArray},
 };
+
+use strum::Display as EnumDisplay;
 
 #[doc(inline)]
 pub use string::*;
-use strum::VariantArray;
 
 mod autnum;
 mod domain;
@@ -38,7 +39,7 @@ pub static CHECK_CLASS_LEN: LazyLock<usize> = LazyLock::new(|| {
     EnumIter,
     EnumString,
     Debug,
-    Display,
+    EnumDisplay,
     PartialEq,
     Eq,
     PartialOrd,
@@ -113,7 +114,17 @@ pub static ERROR_CHECK_CLASSES: &[CheckClass] = &[
 /// data structures may consist of arrays and sometimes structured data
 /// within a string.
 #[derive(
-    Debug, Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Display, EnumString,
+    Debug,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Ord,
+    EnumDisplay,
+    EnumString,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
@@ -330,7 +341,7 @@ pub fn is_checked_item(check: Check, checks: &Checks) -> bool {
     Debug,
     EnumMessage,
     EnumString,
-    Display,
+    EnumDisplay,
     Serialize,
     Deserialize,
     PartialEq,
@@ -610,6 +621,14 @@ pub enum Check {
     // Entities 2400 - 2499
     #[strum(message = "entity array is empty")]
     EntityArrayIsEmpty = 2400,
+
+    // Error 2500 - 2599
+    #[strum(message = "errorCode is a string not a number")]
+    ErrorCodeIsString = 2500,
+    #[strum(message = "title is not a string")]
+    TitleIsNotString = 2501,
+    #[strum(message = "description is a string not an array")]
+    DescriptionIsString = 2502,
 }
 
 impl Check {
@@ -728,6 +747,10 @@ impl Check {
             Self::NetworkOrAutnumCountryIsNotString => CheckClass::Std95Error,
 
             Self::EntityArrayIsEmpty => CheckClass::Std95Warning,
+
+            Self::ErrorCodeIsString | Self::TitleIsNotString | Self::DescriptionIsString => {
+                CheckClass::Std95Error
+            }
         };
         CheckItem {
             check_class,
@@ -740,7 +763,7 @@ impl Check {
 mod tests {
     use crate::check::RdapStructure;
 
-    use super::{contains_check, traverse_checks, Check, CheckClass, CheckItem, Checks};
+    use super::{Check, CheckClass, CheckItem, Checks, contains_check, traverse_checks};
 
     #[test]
     fn test_traverse_info_checks() {

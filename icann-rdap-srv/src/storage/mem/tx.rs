@@ -16,8 +16,8 @@ use {
 use crate::{
     error::RdapServerError,
     storage::{
-        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
         TxHandle,
+        data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
     },
 };
 
@@ -87,12 +87,12 @@ impl MemTx {
         // only load up domain search by ns ldh name if supported
         if mem.config.common_config.domain_search_by_ns_ldh_name_enable {
             for (_name, value) in domains.iter() {
-                if let RdapResponse::Domain(domain) = value.as_ref() {
-                    if let Some(nameservers) = domain.nameservers.as_ref() {
-                        for ns in nameservers {
-                            if let Some(ns_ldh_name) = ns.ldh_name.as_ref() {
-                                domains_by_ns_ldh_name.insert(ns_ldh_name, value.clone());
-                            }
+                if let RdapResponse::Domain(domain) = value.as_ref()
+                    && let Some(nameservers) = domain.nameservers.as_ref()
+                {
+                    for ns in nameservers {
+                        if let Some(ns_ldh_name) = ns.ldh_name.as_ref() {
+                            domains_by_ns_ldh_name.insert(ns_ldh_name, value.clone());
                         }
                     }
                 }
@@ -108,46 +108,45 @@ impl MemTx {
 
         if mem.config.common_config.entity_search_by_full_name_enable {
             for (_handle, value) in entities.iter() {
-                if let RdapResponse::Entity(entity) = value.as_ref() {
-                    if let Some(contact) = entity.contact() {
-                        if let Some(full_name) = contact.full_name() {
-                            entities_by_full_name.insert(full_name, value.clone());
-                        }
-                    }
+                if let RdapResponse::Entity(entity) = value.as_ref()
+                    && let Some(contact) = entity.contact()
+                    && let Some(full_name) = contact.full_name()
+                {
+                    entities_by_full_name.insert(full_name, value.clone());
                 }
             }
         }
 
         if mem.config.common_config.network_search_by_handle_enable {
             for (_net, value) in ip4.iter() {
-                if let RdapResponse::Network(network) = value.as_ref() {
-                    if let Some(handle) = network.handle() {
-                        networks_by_handle.insert(handle, value.clone());
-                    }
+                if let RdapResponse::Network(network) = value.as_ref()
+                    && let Some(handle) = network.handle()
+                {
+                    networks_by_handle.insert(handle, value.clone());
                 }
             }
             for (_net, value) in ip6.iter() {
-                if let RdapResponse::Network(network) = value.as_ref() {
-                    if let Some(handle) = network.handle() {
-                        networks_by_handle.insert(handle, value.clone());
-                    }
+                if let RdapResponse::Network(network) = value.as_ref()
+                    && let Some(handle) = network.handle()
+                {
+                    networks_by_handle.insert(handle, value.clone());
                 }
             }
         }
 
         if mem.config.common_config.network_search_by_name_enable {
             for (_net, value) in ip4.iter() {
-                if let RdapResponse::Network(network) = value.as_ref() {
-                    if let Some(name) = network.name() {
-                        networks_by_name.insert(name, value.clone());
-                    }
+                if let RdapResponse::Network(network) = value.as_ref()
+                    && let Some(name) = network.name()
+                {
+                    networks_by_name.insert(name, value.clone());
                 }
             }
             for (_net, value) in ip6.iter() {
-                if let RdapResponse::Network(network) = value.as_ref() {
-                    if let Some(name) = network.name() {
-                        networks_by_name.insert(name, value.clone());
-                    }
+                if let RdapResponse::Network(network) = value.as_ref()
+                    && let Some(name) = network.name()
+                {
+                    networks_by_name.insert(name, value.clone());
                 }
             }
         }
@@ -155,10 +154,10 @@ impl MemTx {
         if mem.config.common_config.autnum_search_by_handle_enable {
             let autnums = mem.autnums.read().await;
             for (_range, value) in autnums.iter() {
-                if let RdapResponse::Autnum(autnum) = value.as_ref() {
-                    if let Some(handle) = autnum.handle() {
-                        autnums_by_handle.insert(handle, value.clone());
-                    }
+                if let RdapResponse::Autnum(autnum) = value.as_ref()
+                    && let Some(handle) = autnum.handle()
+                {
+                    autnums_by_handle.insert(handle, value.clone());
                 }
             }
         }
@@ -166,10 +165,10 @@ impl MemTx {
         if mem.config.common_config.autnum_search_by_name_enable {
             let autnums = mem.autnums.read().await;
             for (_range, value) in autnums.iter() {
-                if let RdapResponse::Autnum(autnum) = value.as_ref() {
-                    if let Some(name) = autnum.name() {
-                        autnums_by_name.insert(name, value.clone());
-                    }
+                if let RdapResponse::Autnum(autnum) = value.as_ref()
+                    && let Some(name) = autnum.name()
+                {
+                    autnums_by_name.insert(name, value.clone());
                 }
             }
         }
@@ -248,13 +247,11 @@ impl TxHandle for MemTx {
             .config
             .common_config
             .entity_search_by_full_name_enable
+            && let Some(contact) = entity.contact()
+            && let Some(full_name) = contact.full_name()
         {
-            if let Some(contact) = entity.contact() {
-                if let Some(full_name) = contact.full_name() {
-                    self.entities_by_full_name
-                        .insert(full_name, entity_response.clone());
-                }
-            }
+            self.entities_by_full_name
+                .insert(full_name, entity_response.clone());
         }
         Ok(())
     }
@@ -293,25 +290,25 @@ impl TxHandle for MemTx {
                 .insert(ldh_name, domain_response.clone());
         }
 
-        if self.mem.config.common_config.domain_search_by_ns_ip_enable {
-            if let Some(nameservers) = domain.nameservers.as_ref() {
-                for nameserver in nameservers {
-                    if let Some(ip_addresses) = nameserver.ip_addresses() {
-                        for ip_str in ip_addresses.v4s() {
-                            if let Ok(ip) = ip_str.parse::<IpAddr>() {
-                                self.domains_by_ns_ip
-                                    .entry(ip)
-                                    .or_default()
-                                    .push(domain_response.clone());
-                            }
+        if self.mem.config.common_config.domain_search_by_ns_ip_enable
+            && let Some(nameservers) = domain.nameservers.as_ref()
+        {
+            for nameserver in nameservers {
+                if let Some(ip_addresses) = nameserver.ip_addresses() {
+                    for ip_str in ip_addresses.v4s() {
+                        if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                            self.domains_by_ns_ip
+                                .entry(ip)
+                                .or_default()
+                                .push(domain_response.clone());
                         }
-                        for ip_str in ip_addresses.v6s() {
-                            if let Ok(ip) = ip_str.parse::<IpAddr>() {
-                                self.domains_by_ns_ip
-                                    .entry(ip)
-                                    .or_default()
-                                    .push(domain_response.clone());
-                            }
+                    }
+                    for ip_str in ip_addresses.v6s() {
+                        if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                            self.domains_by_ns_ip
+                                .entry(ip)
+                                .or_default()
+                                .push(domain_response.clone());
                         }
                     }
                 }
@@ -323,39 +320,31 @@ impl TxHandle for MemTx {
             .config
             .common_config
             .domain_search_by_ns_ldh_name_enable
+            && let Some(nameservers) = domain.nameservers.as_ref()
         {
-            if let Some(nameservers) = domain.nameservers.as_ref() {
-                for nameserver in nameservers {
-                    if let Some(ldh_name) = nameserver.ldh_name.as_ref() {
-                        self.domains_by_ns_ldh_name
-                            .insert(ldh_name, domain_response.clone());
-                    }
+            for nameserver in nameservers {
+                if let Some(ldh_name) = nameserver.ldh_name.as_ref() {
+                    self.domains_by_ns_ldh_name
+                        .insert(ldh_name, domain_response.clone());
                 }
             }
         }
 
         // Index reverse DNS domains by their embedded network IP prefix
-        if let Some(network) = domain.network() {
-            if let Some(cidrs) = network.cidr0_cidrs().first() {
-                if let Some(prefix) = cidrs.prefix() {
-                    if let Some(length) = cidrs.length() {
-                        if let Some(ip_version) = network.ip_version() {
-                            if ip_version.eq_ignore_ascii_case("v4") {
-                                if let Ok(ipnet) =
-                                    format!("{}/{}", prefix, length).parse::<Ipv4Net>()
-                                {
-                                    self.domains_by_ipv4.insert(ipnet, domain_response.clone());
-                                }
-                            } else if ip_version.eq_ignore_ascii_case("v6") {
-                                if let Ok(ipnet) =
-                                    format!("{}/{}", prefix, length).parse::<Ipv6Net>()
-                                {
-                                    self.domains_by_ipv6.insert(ipnet, domain_response.clone());
-                                }
-                            }
-                        }
-                    }
+        if let Some(network) = domain.network()
+            && let Some(cidrs) = network.cidr0_cidrs().first()
+            && let Some(prefix) = cidrs.prefix()
+            && let Some(length) = cidrs.length()
+            && let Some(ip_version) = network.ip_version()
+        {
+            if ip_version.eq_ignore_ascii_case("v4") {
+                if let Ok(ipnet) = format!("{}/{}", prefix, length).parse::<Ipv4Net>() {
+                    self.domains_by_ipv4.insert(ipnet, domain_response.clone());
                 }
+            } else if ip_version.eq_ignore_ascii_case("v6")
+                && let Ok(ipnet) = format!("{}/{}", prefix, length).parse::<Ipv6Net>()
+            {
+                self.domains_by_ipv6.insert(ipnet, domain_response.clone());
             }
         }
 
@@ -393,23 +382,23 @@ impl TxHandle for MemTx {
                 .insert(ldh_name, nameserver_response.clone());
         }
 
-        if self.mem.config.common_config.nameserver_search_by_ip_enable {
-            if let Some(ip_addresses) = nameserver.ip_addresses() {
-                for ip_str in ip_addresses.v4s() {
-                    if let Ok(ip) = ip_str.parse::<IpAddr>() {
-                        self.nameservers_by_ip
-                            .entry(ip)
-                            .or_default()
-                            .push(nameserver_response.clone());
-                    }
+        if self.mem.config.common_config.nameserver_search_by_ip_enable
+            && let Some(ip_addresses) = nameserver.ip_addresses()
+        {
+            for ip_str in ip_addresses.v4s() {
+                if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                    self.nameservers_by_ip
+                        .entry(ip)
+                        .or_default()
+                        .push(nameserver_response.clone());
                 }
-                for ip_str in ip_addresses.v6s() {
-                    if let Ok(ip) = ip_str.parse::<IpAddr>() {
-                        self.nameservers_by_ip
-                            .entry(ip)
-                            .or_default()
-                            .push(nameserver_response.clone());
-                    }
+            }
+            for ip_str in ip_addresses.v6s() {
+                if let Ok(ip) = ip_str.parse::<IpAddr>() {
+                    self.nameservers_by_ip
+                        .entry(ip)
+                        .or_default()
+                        .push(nameserver_response.clone());
                 }
             }
         }
@@ -443,16 +432,16 @@ impl TxHandle for MemTx {
         let autnum_response = Arc::new(autnum.clone().to_response());
         self.autnums
             .insert((start_num)..=(end_num), autnum_response.clone());
-        if self.mem.config.common_config.autnum_search_by_handle_enable {
-            if let Some(handle) = autnum.handle() {
-                self.autnums_by_handle
-                    .insert(handle, autnum_response.clone());
-            }
+        if self.mem.config.common_config.autnum_search_by_handle_enable
+            && let Some(handle) = autnum.handle()
+        {
+            self.autnums_by_handle
+                .insert(handle, autnum_response.clone());
         }
-        if self.mem.config.common_config.autnum_search_by_name_enable {
-            if let Some(name) = autnum.name() {
-                self.autnums_by_name.insert(name, autnum_response);
-            }
+        if self.mem.config.common_config.autnum_search_by_name_enable
+            && let Some(name) = autnum.name()
+        {
+            self.autnums_by_name.insert(name, autnum_response);
         }
         Ok(())
     }
@@ -478,11 +467,10 @@ impl TxHandle for MemTx {
             .config
             .common_config
             .network_search_by_handle_enable
+            && let Some(ref handle_str) = handle
         {
-            if let Some(ref handle_str) = handle {
-                self.networks_by_handle
-                    .insert(handle_str, network_response.clone());
-            }
+            self.networks_by_handle
+                .insert(handle_str, network_response.clone());
         }
 
         let start_addr = network
@@ -515,17 +503,16 @@ impl TxHandle for MemTx {
             .config
             .common_config
             .network_search_by_handle_enable
+            && let Some(ref handle_str) = handle
         {
-            if let Some(ref handle_str) = handle {
-                self.networks_by_handle
-                    .insert(handle_str, network_response.clone());
-            }
+            self.networks_by_handle
+                .insert(handle_str, network_response.clone());
         }
 
-        if self.mem.config.common_config.network_search_by_name_enable {
-            if let Some(ref name) = network.name {
-                self.networks_by_name.insert(name, network_response.clone());
-            }
+        if self.mem.config.common_config.network_search_by_name_enable
+            && let Some(ref name) = network.name
+        {
+            self.networks_by_name.insert(name, network_response.clone());
         }
 
         Ok(())

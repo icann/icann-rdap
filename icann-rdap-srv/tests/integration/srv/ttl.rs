@@ -1,10 +1,10 @@
 use {
     icann_rdap_client::{
-        http::{create_client, ClientConfig},
-        rdap::{rdap_request, QueryType},
+        http::{ClientConfig, create_client},
+        rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::{
-        prelude::{ttl::Ttl0Data, RdapResponse},
+        prelude::{RdapResponse, ttl::Ttl0Data},
         response::Domain,
     },
     icann_rdap_srv::storage::StoreOps,

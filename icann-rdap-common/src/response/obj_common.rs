@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::prelude::ContentExtensions;
 
 use super::{
-    redacted::Redacted, to_opt_vectorstringish, Entity, Event, Events, Link, Links, Port43, Remark,
-    Remarks, Stringish, VectorStringish,
+    Entity, Event, Events, Link, Links, Port43, Remark, Remarks, Stringish, VectorStringish,
+    redacted::Redacted, to_opt_vectorstringish,
 };
 
 /// Holds those types that are common in all object classes.

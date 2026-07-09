@@ -1,9 +1,9 @@
 use icann_rdap_common::{prelude::ObjectCommonFields, response::Network};
 
 use super::{
+    MdHeaderText, MdParams, MdUtil, ToMd,
     string::StringUtil,
     table::{MultiPartTable, ToMpTable},
-    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Network {
@@ -26,7 +26,7 @@ impl ToMd for Network {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         table = table
@@ -34,7 +34,7 @@ impl ToMd for Network {
             .and_nv_ref_maybe(&"Start Address", &self.start_address)
             .and_nv_ref_maybe(&"End Address", &self.end_address)
             .and_nv_ref_maybe(&"IP Version", &self.ip_version)
-            .and_nv_ul(&"CIDR", self.cidr0_cidrs.clone())
+            .and_nv_ul(&"CIDR", self.cidr0_cidrs.clone(), params.options)
             .and_nv_ref_maybe(&"Handle", &self.object_common.handle)
             .and_nv_ref_maybe(&"Parent Handle", &self.parent_handle)
             .and_nv_ref_maybe(&"Network Type", &self.network_type)
@@ -54,10 +54,10 @@ impl ToMd for Network {
         md.push_str(&self.object_common.entities.to_md(params.from_parent()));
 
         // redacted
-        if params.show_rfc9537_redactions {
-            if let Some(redacted) = &self.object_common.redacted {
-                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
-            }
+        if params.show_rfc9537_redactions
+            && let Some(redacted) = &self.object_common.redacted
+        {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -70,17 +70,13 @@ impl MdUtil for Network {
         let header_text = if let (Some(start_address), Some(end_address)) =
             (&self.start_address, &self.end_address)
         {
-            format!(
-                "IP Network {} - {}",
-                start_address.replace_md_chars(),
-                end_address.replace_md_chars()
-            )
+            format!("IP Network {} - {}", start_address, end_address)
         } else if let Some(start_address) = &self.start_address {
-            format!("IP Network {}", start_address.replace_md_chars())
+            format!("IP Network {}", start_address)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("IP Network {}", handle.replace_md_chars())
+            format!("IP Network {}", handle)
         } else if let Some(name) = &self.name {
-            format!("IP Network {}", name.replace_md_chars())
+            format!("IP Network {}", name)
         } else {
             "IP Network".to_string()
         };
@@ -102,8 +98,8 @@ mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
         prelude::{
-            redacted::{Method, Name, Redacted},
             Network, Remark, ToResponse,
+            redacted::{Method, Name, Redacted},
         },
     };
 

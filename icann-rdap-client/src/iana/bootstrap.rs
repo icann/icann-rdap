@@ -5,12 +5,12 @@ use std::sync::{Arc, RwLock};
 use icann_rdap_common::{
     httpdata::HttpData,
     iana::{
-        get_preferred_url, BootstrapRegistry, BootstrapRegistryError, IanaRegistry,
-        IanaRegistryType,
+        BootstrapRegistry, BootstrapRegistryError, IanaRegistry, IanaRegistryType,
+        get_preferred_url,
     },
 };
 
-use crate::{http::Client, iana::iana_request::iana_request, rdap::QueryType, RdapClientError};
+use crate::{RdapClientError, http::Client, iana::iana_request::iana_request, rdap::QueryType};
 
 const SECONDS_IN_WEEK: i64 = 604800;
 
@@ -40,10 +40,12 @@ pub trait BootstrapStore: Send + Sync {
     ) -> Result<Option<Vec<String>>, RdapClientError> {
         let domain_name = match query_type {
             QueryType::Domain(domain) => domain.to_ascii(),
+            QueryType::ALabel(domain) => domain.to_ascii(),
             QueryType::Nameserver(ns) => ns.to_ascii(),
             _ => panic!("invalid domain query type"),
         };
-        self.get_dns_urls(domain_name)
+        let domain_name = domain_name.trim_end_matches('.').to_string();
+        self.get_dns_urls(&domain_name)
     }
 
     /// Get the urls for an autnum query type.
@@ -53,10 +55,15 @@ pub trait BootstrapStore: Send + Sync {
         &self,
         query_type: &QueryType,
     ) -> Result<Option<Vec<String>>, RdapClientError> {
-        let QueryType::AsNumber(asn) = query_type else {
-            panic!("invalid query type")
+        let asn = match query_type {
+            QueryType::AsNumber(asn)
+            | QueryType::AsNumberUp(asn)
+            | QueryType::AsNumberDown(asn)
+            | QueryType::AsNumberTop(asn)
+            | QueryType::AsNumberBottom(asn) => asn.to_string(),
+            _ => panic!("invalid query type"),
         };
-        self.get_asn_urls(asn.to_string().as_str())
+        self.get_asn_urls(asn.as_str())
     }
 
     /// Get the urls for an IPv4 query type.
@@ -67,8 +74,16 @@ pub trait BootstrapStore: Send + Sync {
         query_type: &QueryType,
     ) -> Result<Option<Vec<String>>, RdapClientError> {
         let ip = match query_type {
-            QueryType::IpV4Addr(addr) => format!("{addr}/32"),
-            QueryType::IpV4Cidr(cidr) => cidr.to_string(),
+            QueryType::IpV4Addr(addr)
+            | QueryType::IpV4AddrUp(addr)
+            | QueryType::IpV4AddrDown(addr)
+            | QueryType::IpV4AddrTop(addr)
+            | QueryType::IpV4AddrBottom(addr) => format!("{addr}/32"),
+            QueryType::IpV4Cidr(cidr)
+            | QueryType::IpV4CidrUp(cidr)
+            | QueryType::IpV4CidrDown(cidr)
+            | QueryType::IpV4CidrTop(cidr)
+            | QueryType::IpV4CidrBottom(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv4_urls(&ip)
@@ -82,8 +97,16 @@ pub trait BootstrapStore: Send + Sync {
         query_type: &QueryType,
     ) -> Result<Option<Vec<String>>, RdapClientError> {
         let ip = match query_type {
-            QueryType::IpV6Addr(addr) => format!("{addr}/128"),
-            QueryType::IpV6Cidr(cidr) => cidr.to_string(),
+            QueryType::IpV6Addr(addr)
+            | QueryType::IpV6AddrUp(addr)
+            | QueryType::IpV6AddrDown(addr)
+            | QueryType::IpV6AddrTop(addr)
+            | QueryType::IpV6AddrBottom(addr) => format!("{addr}/128"),
+            QueryType::IpV6Cidr(cidr)
+            | QueryType::IpV6CidrUp(cidr)
+            | QueryType::IpV6CidrDown(cidr)
+            | QueryType::IpV6CidrTop(cidr)
+            | QueryType::IpV6CidrBottom(cidr) => cidr.to_string(),
             _ => panic!("non ip query for ip bootstrap"),
         };
         self.get_ipv6_urls(&ip)
@@ -139,6 +162,41 @@ pub trait BootstrapStore: Send + Sync {
     /// Implementations should implement the logic to pull the [icann_rdap_common::iana::IanaRegistry]
     /// and ultimately call its [icann_rdap_common::iana::IanaRegistry::get_ipv6_bootstrap_urls] method.
     fn get_ipv6_urls(&self, ipv6: &str) -> Result<Option<Vec<String>>, RdapClientError>;
+
+    /// Get the URLs for an RDNS query type.
+    ///
+    /// The default method should be good enough for most trait implementations.
+    fn get_rdns_query_urls(
+        &self,
+        query_type: &QueryType,
+    ) -> Result<Option<Vec<String>>, RdapClientError> {
+        let ipnet = match query_type {
+            QueryType::RdnsIpv4(cidr)
+            | QueryType::RdnsIpv4Up(cidr)
+            | QueryType::RdnsIpv4Down(cidr)
+            | QueryType::RdnsIpv4Top(cidr)
+            | QueryType::RdnsIpv4Bottom(cidr) => cidr.to_string(),
+            QueryType::RdnsIpv6(cidr)
+            | QueryType::RdnsIpv6Up(cidr)
+            | QueryType::RdnsIpv6Down(cidr)
+            | QueryType::RdnsIpv6Top(cidr)
+            | QueryType::RdnsIpv6Bottom(cidr) => cidr.to_string(),
+            _ => panic!("non rdns query for rdns bootstrap"),
+        };
+        match query_type {
+            QueryType::RdnsIpv4(_)
+            | QueryType::RdnsIpv4Up(_)
+            | QueryType::RdnsIpv4Down(_)
+            | QueryType::RdnsIpv4Top(_)
+            | QueryType::RdnsIpv4Bottom(_) => self.get_ipv4_urls(&ipnet),
+            QueryType::RdnsIpv6(_)
+            | QueryType::RdnsIpv6Up(_)
+            | QueryType::RdnsIpv6Down(_)
+            | QueryType::RdnsIpv6Top(_)
+            | QueryType::RdnsIpv6Bottom(_) => self.get_ipv6_urls(&ipnet),
+            _ => panic!("non rdns query for rdns bootstrap"),
+        }
+    }
 
     /// Get the URLs associated with the IANA RDAP Object Tags bootstrap.
     ///
@@ -313,7 +371,16 @@ where
     F: FnOnce(&IanaRegistryType),
 {
     match query_type {
-        QueryType::IpV4Addr(_) | QueryType::IpV4Cidr(_) => {
+        QueryType::IpV4Addr(_)
+        | QueryType::IpV4Cidr(_)
+        | QueryType::IpV4AddrUp(_)
+        | QueryType::IpV4CidrUp(_)
+        | QueryType::IpV4AddrDown(_)
+        | QueryType::IpV4CidrDown(_)
+        | QueryType::IpV4AddrTop(_)
+        | QueryType::IpV4CidrTop(_)
+        | QueryType::IpV4AddrBottom(_)
+        | QueryType::IpV4CidrBottom(_) => {
             fetch_bootstrap(
                 &IanaRegistryType::RdapBootstrapIpv4,
                 client,
@@ -323,7 +390,16 @@ where
             .await?;
             Ok(store.get_ipv4_query_urls(query_type)?.preferred_url()?)
         }
-        QueryType::IpV6Addr(_) | QueryType::IpV6Cidr(_) => {
+        QueryType::IpV6Addr(_)
+        | QueryType::IpV6Cidr(_)
+        | QueryType::IpV6AddrUp(_)
+        | QueryType::IpV6CidrUp(_)
+        | QueryType::IpV6AddrDown(_)
+        | QueryType::IpV6CidrDown(_)
+        | QueryType::IpV6AddrTop(_)
+        | QueryType::IpV6CidrTop(_)
+        | QueryType::IpV6AddrBottom(_)
+        | QueryType::IpV6CidrBottom(_) => {
             fetch_bootstrap(
                 &IanaRegistryType::RdapBootstrapIpv6,
                 client,
@@ -333,13 +409,45 @@ where
             .await?;
             Ok(store.get_ipv6_query_urls(query_type)?.preferred_url()?)
         }
-        QueryType::AsNumber(_) => {
+        QueryType::AsNumber(_)
+        | QueryType::AsNumberUp(_)
+        | QueryType::AsNumberDown(_)
+        | QueryType::AsNumberTop(_)
+        | QueryType::AsNumberBottom(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapBootstrapAsn, client, store, callback).await?;
             Ok(store.get_autnum_query_urls(query_type)?.preferred_url()?)
         }
-        QueryType::Domain(_) => {
+        QueryType::Domain(_) | QueryType::ALabel(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapBootstrapDns, client, store, callback).await?;
             Ok(store.get_domain_query_urls(query_type)?.preferred_url()?)
+        }
+        QueryType::RdnsIpv4(_)
+        | QueryType::RdnsIpv4Up(_)
+        | QueryType::RdnsIpv4Down(_)
+        | QueryType::RdnsIpv4Top(_)
+        | QueryType::RdnsIpv4Bottom(_) => {
+            fetch_bootstrap(
+                &IanaRegistryType::RdapBootstrapIpv4,
+                client,
+                store,
+                callback,
+            )
+            .await?;
+            Ok(store.get_rdns_query_urls(query_type)?.preferred_url()?)
+        }
+        QueryType::RdnsIpv6(_)
+        | QueryType::RdnsIpv6Up(_)
+        | QueryType::RdnsIpv6Down(_)
+        | QueryType::RdnsIpv6Top(_)
+        | QueryType::RdnsIpv6Bottom(_) => {
+            fetch_bootstrap(
+                &IanaRegistryType::RdapBootstrapIpv6,
+                client,
+                store,
+                callback,
+            )
+            .await?;
+            Ok(store.get_rdns_query_urls(query_type)?.preferred_url()?)
         }
         QueryType::Entity(_) => {
             fetch_bootstrap(&IanaRegistryType::RdapObjectTags, client, store, callback).await?;
@@ -374,19 +482,98 @@ where
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod test {
     use icann_rdap_common::{
         httpdata::HttpData,
         iana::{IanaRegistry, IanaRegistryType},
     };
+    use rstest::rstest;
 
-    use crate::{iana::bootstrap::PreferredUrl, rdap::QueryType};
+    use crate::{
+        RdapClientError,
+        http::Client,
+        iana::bootstrap::{PreferredUrl, qtype_to_bootstrap_url},
+        rdap::{QueryType, qtype::QueryTypeVariant},
+    };
 
     use super::{BootstrapStore, MemoryBootstrapStore};
 
+    fn make_client() -> Client {
+        Client::new(
+            reqwest::Client::new(),
+            crate::http::RequestOptions::default(),
+        )
+    }
+
+    fn make_store() -> MemoryBootstrapStore {
+        MemoryBootstrapStore::new()
+    }
+
+    fn bootstrap_url(
+        client: &Client,
+        store: &MemoryBootstrapStore,
+        variant: QueryTypeVariant,
+    ) -> Result<String, RdapClientError> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("build tokio runtime");
+        let result = rt.block_on(qtype_to_bootstrap_url(
+            client,
+            store,
+            &variant.to_query_type(),
+            |_| {},
+        ));
+        rt.shutdown_timeout(std::time::Duration::from_millis(100));
+        result
+    }
+
+    fn bootstrap_url_with_callback(
+        client: &Client,
+        store: &MemoryBootstrapStore,
+        variant: QueryTypeVariant,
+    ) -> (Result<String, RdapClientError>, bool) {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("build tokio runtime");
+        let mut callback_called = false;
+        let result = rt.block_on(qtype_to_bootstrap_url(
+            client,
+            store,
+            &variant.to_query_type(),
+            |_| {
+                callback_called = true;
+            },
+        ));
+        rt.shutdown_timeout(std::time::Duration::from_millis(100));
+        (result, callback_called)
+    }
+
+    fn registry_matches(actual: Option<&IanaRegistryType>, expected: &IanaRegistryType) -> bool {
+        matches!(
+            (actual, expected),
+            (
+                Some(IanaRegistryType::RdapBootstrapDns),
+                IanaRegistryType::RdapBootstrapDns
+            ) | (
+                Some(IanaRegistryType::RdapBootstrapAsn),
+                IanaRegistryType::RdapBootstrapAsn
+            ) | (
+                Some(IanaRegistryType::RdapBootstrapIpv4),
+                IanaRegistryType::RdapBootstrapIpv4
+            ) | (
+                Some(IanaRegistryType::RdapBootstrapIpv6),
+                IanaRegistryType::RdapBootstrapIpv6
+            ) | (
+                Some(IanaRegistryType::RdapObjectTags),
+                IanaRegistryType::RdapObjectTags
+            )
+        )
+    }
+
     #[test]
-    fn GIVEN_membootstrap_with_dns_WHEN_get_domain_query_url_THEN_correct_url() {
+    fn test_membootstrap_with_dns() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -431,7 +618,52 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_autnum_WHEN_get_autnum_query_url_THEN_correct_url() {
+    fn test_membootstrap_with_dns_trailing_dot() {
+        // GIVEN
+        let mem = MemoryBootstrapStore::new();
+        let bootstrap = r#"
+            {
+                "version": "1.0",
+                "publication": "2024-01-07T10:11:12Z",
+                "description": "Some text",
+                "services": [
+                  [
+                    ["net", "com"],
+                    [
+                      "https://registry.example.com/myrdap/"
+                    ]
+                  ],
+                  [
+                    ["org", "mytld"],
+                    [
+                      "https://example.org/"
+                    ]
+                  ]
+                ]
+            }
+        "#;
+        let iana =
+            serde_json::from_str::<IanaRegistry>(bootstrap).expect("cannot parse domain bootstrap");
+        mem.put_bootstrap_registry(
+            &IanaRegistryType::RdapBootstrapDns,
+            iana,
+            HttpData::example().build(),
+        )
+        .expect("put iana registry");
+
+        // WHEN
+        let actual = mem
+            .get_domain_query_urls(&QueryType::domain("example.org.").expect("invalid domain name"))
+            .expect("get bootstrap url")
+            .preferred_url()
+            .expect("preferred url");
+
+        // THEN
+        assert_eq!(actual, "https://example.org/")
+    }
+
+    #[test]
+    fn test_membootstrap_with_autnum() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -483,7 +715,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_ipv4_THEN_get_ipv4_query_urls_THEN_correct_url() {
+    fn test_membootstrap_with_ipv4() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -535,7 +767,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_ipv6_THEN_get_ipv6_query_urls_THEN_correct_url() {
+    fn test_membootstrap_with_ipv6() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -587,7 +819,7 @@ mod test {
     }
 
     #[test]
-    fn GIVEN_membootstrap_with_tag_THEN_get_tag_query_urls_THEN_correct_url() {
+    fn test_membootstrap_with_tag() {
         // GIVEN
         let mem = MemoryBootstrapStore::new();
         let bootstrap = r#"
@@ -639,5 +871,125 @@ mod test {
 
         // THEN
         assert_eq!(actual, "https://example.com/rdap/");
+    }
+
+    // Non-bootstrap variants: must return BootstrapUnavailable from the catch-all `_` arm.
+    #[rstest]
+    #[case(QueryTypeVariant::EntityNameSearch)]
+    #[case(QueryTypeVariant::EntityHandleSearch)]
+    #[case(QueryTypeVariant::NetworkHandleSearch)]
+    #[case(QueryTypeVariant::NetworkNameSearch)]
+    #[case(QueryTypeVariant::DomainNameSearch)]
+    #[case(QueryTypeVariant::DomainNsNameSearch)]
+    #[case(QueryTypeVariant::DomainNsIpSearch)]
+    #[case(QueryTypeVariant::NameserverNameSearch)]
+    #[case(QueryTypeVariant::NameserverIpSearch)]
+    #[case(QueryTypeVariant::AutnumHandleSearch)]
+    #[case(QueryTypeVariant::AutnumNameSearch)]
+    #[case(QueryTypeVariant::Help)]
+    #[case(QueryTypeVariant::Url)]
+    fn test_non_bootstrap_returns_unavailable(#[case] variant: QueryTypeVariant) {
+        // GIVEN
+        let client = make_client();
+        let store = make_store();
+
+        // WHEN
+        let result = bootstrap_url(&client, &store, variant);
+
+        // THEN — non-bootstrap variants hit the `_ => Err(...)` catch-all arm
+        assert!(
+            matches!(result, Err(RdapClientError::BootstrapUnavailable)),
+            "Variant {:?} is not a bootstrap variant but did not return BootstrapUnavailable",
+            variant
+        );
+    }
+
+    // Bootstrap variants: dispatch to the correct match arm (callback called),
+    // and return Ok or a non-BootstrapUnavailable error.
+    #[rstest]
+    #[case(QueryTypeVariant::IpV4Addr, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6Addr, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4Cidr, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6Cidr, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4AddrUp, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6AddrUp, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4CidrUp, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6CidrUp, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4AddrDown, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6AddrDown, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4CidrDown, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6CidrDown, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4AddrTop, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6AddrTop, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4CidrTop, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6CidrTop, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4AddrBottom, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6AddrBottom, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::IpV4CidrBottom, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::IpV6CidrBottom, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::AsNumber, IanaRegistryType::RdapBootstrapAsn)]
+    #[case(QueryTypeVariant::AsNumberUp, IanaRegistryType::RdapBootstrapAsn)]
+    #[case(QueryTypeVariant::AsNumberDown, IanaRegistryType::RdapBootstrapAsn)]
+    #[case(QueryTypeVariant::AsNumberTop, IanaRegistryType::RdapBootstrapAsn)]
+    #[case(QueryTypeVariant::AsNumberBottom, IanaRegistryType::RdapBootstrapAsn)]
+    #[case(QueryTypeVariant::Domain, IanaRegistryType::RdapBootstrapDns)]
+    #[case(QueryTypeVariant::ALabel, IanaRegistryType::RdapBootstrapDns)]
+    #[case(QueryTypeVariant::Nameserver, IanaRegistryType::RdapBootstrapDns)]
+    #[case(QueryTypeVariant::Entity, IanaRegistryType::RdapObjectTags)]
+    #[case(QueryTypeVariant::RdnsIpv4, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Up, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Up, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Down, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Down, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Top, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Top, IanaRegistryType::RdapBootstrapIpv6)]
+    #[case(QueryTypeVariant::RdnsIpv4Bottom, IanaRegistryType::RdapBootstrapIpv4)]
+    #[case(QueryTypeVariant::RdnsIpv6Bottom, IanaRegistryType::RdapBootstrapIpv6)]
+    fn test_bootstrap_variant_dispatches_correctly(
+        #[case] variant: QueryTypeVariant,
+        #[case] expected_registry: IanaRegistryType,
+    ) {
+        // GIVEN
+        let client = make_client();
+        let store = make_store();
+
+        // Verify the variant maps to the expected registry type
+        let actual = variant.bootstrap_registry();
+        assert!(
+            registry_matches(actual.as_ref(), &expected_registry),
+            "Variant {:?} should map to {:?}, got {:?}",
+            variant,
+            expected_registry,
+            actual
+        );
+
+        // WHEN
+        let (result, callback_called) = bootstrap_url_with_callback(&client, &store, variant);
+
+        // THEN — bootstrap variants dispatch correctly (not the catch-all `_` arm).
+        // The callback being called proves the correct match arm was reached.
+        assert!(
+            callback_called,
+            "Bootstrap variant {:?} (expected registry {:?}) did not reach the correct match arm",
+            variant, expected_registry
+        );
+
+        // The result may succeed (Ok), fail with a network error (Client), fail at
+        // the store query (BootstrapError/BootstrapUnavailable from store getters), etc.
+        // The key assertion above (callback_called) proves the correct match arm was reached.
+        assert!(
+            matches!(
+                &result,
+                Ok(_)
+                    | Err(RdapClientError::Client(_)
+                        | RdapClientError::BootstrapError(_)
+                        | RdapClientError::BootstrapUnavailable)
+            ),
+            "Bootstrap variant {:?} (expected registry {:?}) unexpected result: {:?}",
+            variant,
+            expected_registry,
+            result
+        );
     }
 }

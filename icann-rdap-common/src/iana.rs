@@ -247,7 +247,7 @@ pub fn get_preferred_url(urls: Vec<String>) -> Result<String, BootstrapRegistryE
 mod tests {
     use rstest::rstest;
 
-    use crate::iana::{get_preferred_url, BootstrapRegistry};
+    use crate::iana::{BootstrapRegistry, get_preferred_url};
 
     use super::{IanaRegistry, IanaRegistryType};
 

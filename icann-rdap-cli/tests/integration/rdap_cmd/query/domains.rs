@@ -122,11 +122,11 @@ async fn test_domain_rdns_up_query() {
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN query with rdns-up type - query the /24 to get its parent (/16)
+    // WHEN query with rdns-ipv4-up type - query the /24 to get its parent (/16)
     test_jig
         .cmd
         .arg("-t")
-        .arg("rdns-up")
+        .arg("rdns-ipv4-up")
         .arg("0.0.10.in-addr.arpa");
 
     // THEN success
@@ -167,11 +167,11 @@ async fn test_domain_rdns_down_query() {
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN query with rdns-down type - query the /16 to get its children (/24)
+    // WHEN query with rdns-ipv4-down type - query the /16 to get its children (/24)
     test_jig
         .cmd
         .arg("-t")
-        .arg("rdns-down")
+        .arg("rdns-ipv4-down")
         .arg("0.10.in-addr.arpa");
 
     // THEN success
@@ -212,11 +212,11 @@ async fn test_domain_rdns_top_query() {
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN query with rdns-top type - query the /24 to get the topmost (/16)
+    // WHEN query with rdns-ipv4-top type - query the /24 to get the topmost (/16)
     test_jig
         .cmd
         .arg("-t")
-        .arg("rdns-top")
+        .arg("rdns-ipv4-top")
         .arg("0.0.10.in-addr.arpa");
 
     // THEN success
@@ -257,11 +257,11 @@ async fn test_domain_rdns_bottom_query() {
     .expect("add domain in tx");
     tx.commit().await.expect("tx commit");
 
-    // WHEN query with rdns-bottom type - query the /16 to get bottom-most networks
+    // WHEN query with rdns-ipv4-bottom type - query the /16 to get bottom-most networks
     test_jig
         .cmd
         .arg("-t")
-        .arg("rdns-bottom")
+        .arg("rdns-ipv4-bottom")
         .arg("0.10.in-addr.arpa");
 
     // THEN success

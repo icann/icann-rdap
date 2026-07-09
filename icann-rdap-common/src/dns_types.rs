@@ -308,6 +308,7 @@ impl FromStr for DomainName {
 
     /// Create a new DomainName from a string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim_end_matches('.');
         if !s.is_unicode_domain_name() {
             return Err(DomainNameError::InvalidDomainName);
         }
@@ -316,5 +317,58 @@ impl FromStr for DomainName {
             domain_name: s.to_string(),
             ascii,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn domain_with_trailing_dot() {
+        // GIVEN
+        let input = "icann.org.";
+
+        // WHEN
+        let domain = DomainName::from_str(input).expect("domain_name");
+
+        // THEN
+        assert_eq!(domain.domain_name, "icann.org");
+    }
+
+    #[test]
+    fn domain_without_trailing_dot() {
+        // GIVEN
+        let input = "icann.org";
+
+        // WHEN
+        let domain = DomainName::from_str(input).expect("domain_name");
+
+        // THEN
+        assert_eq!(domain.domain_name, "icann.org");
+    }
+
+    #[test]
+    fn idn_with_trailing_dot() {
+        // GIVEN
+        let input = "example.com.";
+
+        // WHEN
+        let domain = DomainName::from_str(input).expect("domain_name");
+
+        // THEN
+        assert_eq!(domain.to_ascii(), "example.com");
+    }
+
+    #[test]
+    fn root_dot() {
+        // GIVEN
+        let input = ".";
+
+        // WHEN
+        let result = DomainName::from_str(input);
+
+        // THEN
+        assert!(result.is_err());
     }
 }

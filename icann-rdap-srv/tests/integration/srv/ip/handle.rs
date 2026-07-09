@@ -1,7 +1,7 @@
 use {
     icann_rdap_client::{
-        http::{create_client, ClientConfig},
-        rdap::{rdap_request, QueryType},
+        http::{ClientConfig, create_client},
+        rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::{
         prelude::{ObjectCommonFields, RdapResponse::IpSearchResults},

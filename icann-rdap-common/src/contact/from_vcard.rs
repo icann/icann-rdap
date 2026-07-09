@@ -362,86 +362,80 @@ impl<'a> GetPostalAddresses<'a> for &'a [&'a Vec<Value>] {
                 let mut region_name: Option<String> = None;
                 let mut locality: Option<String> = None;
                 let mut street_parts: Vec<String> = vec![];
-                if let Some(fourth) = prop.get(3) {
-                    if let Some(addr) = fourth.as_array() {
-                        // the jcard address fields are in a different index of the array.
-                        //
-                        //   [
-                        //     "adr",
-                        //     {},
-                        //     "text",
-                        //     [
-                        //       "Mail Stop 3",   // post office box (not recommended for use)
-                        //       "Suite 3000",    // apartment or suite (not recommended for use)
-                        //       "123 Maple Ave", // street address
-                        //       "Quebec",        // locality or city name
-                        //       "QC",            // region (can be either a code or full name)
-                        //       "G1V 2M2",       // postal code
-                        //       "Canada"         // full country name
-                        //     ]
-                        //   ],
-                        if let Some(pobox) = addr.first() {
-                            if let Some(s) = pobox.as_str() {
-                                if !s.is_empty() {
-                                    street_parts.push(s.to_string())
-                                }
+                if let Some(fourth) = prop.get(3)
+                    && let Some(addr) = fourth.as_array()
+                {
+                    // the jcard address fields are in a different index of the array.
+                    //
+                    //   [
+                    //     "adr",
+                    //     {},
+                    //     "text",
+                    //     [
+                    //       "Mail Stop 3",   // post office box (not recommended for use)
+                    //       "Suite 3000",    // apartment or suite (not recommended for use)
+                    //       "123 Maple Ave", // street address
+                    //       "Quebec",        // locality or city name
+                    //       "QC",            // region (can be either a code or full name)
+                    //       "G1V 2M2",       // postal code
+                    //       "Canada"         // full country name
+                    //     ]
+                    //   ],
+                    if let Some(pobox) = addr.first()
+                        && let Some(s) = pobox.as_str()
+                        && !s.is_empty()
+                    {
+                        street_parts.push(s.to_string())
+                    }
+                    if let Some(appt) = addr.get(1)
+                        && let Some(s) = appt.as_str()
+                        && !s.is_empty()
+                    {
+                        street_parts.push(s.to_string())
+                    }
+                    if let Some(street) = addr.get(2) {
+                        if let Some(s) = street.as_str() {
+                            if !s.is_empty() {
+                                street_parts.push(s.to_string())
                             }
+                        } else if let Some(arry_s) = street.as_array() {
+                            arry_s
+                                .iter()
+                                .filter_map(|v| v.as_str())
+                                .filter(|s| !s.is_empty())
+                                .for_each(|s| street_parts.push(s.to_string()))
                         }
-                        if let Some(appt) = addr.get(1) {
-                            if let Some(s) = appt.as_str() {
-                                if !s.is_empty() {
-                                    street_parts.push(s.to_string())
-                                }
-                            }
+                    }
+                    if let Some(city) = addr.get(3)
+                        && let Some(s) = city.as_str()
+                        && !s.is_empty()
+                    {
+                        locality = Some(s.to_string());
+                    }
+                    if let Some(region) = addr.get(4)
+                        && let Some(s) = region.as_str()
+                        && !s.is_empty()
+                    {
+                        if s.len() == 2 && s.to_uppercase() == s {
+                            region_code = Some(s.to_string())
+                        } else {
+                            region_name = Some(s.to_string())
                         }
-                        if let Some(street) = addr.get(2) {
-                            if let Some(s) = street.as_str() {
-                                if !s.is_empty() {
-                                    street_parts.push(s.to_string())
-                                }
-                            } else if let Some(arry_s) = street.as_array() {
-                                arry_s
-                                    .iter()
-                                    .filter_map(|v| v.as_str())
-                                    .filter(|s| !s.is_empty())
-                                    .for_each(|s| street_parts.push(s.to_string()))
-                            }
-                        }
-                        if let Some(city) = addr.get(3) {
-                            if let Some(s) = city.as_str() {
-                                if !s.is_empty() {
-                                    locality = Some(s.to_string());
-                                }
-                            }
-                        }
-                        if let Some(region) = addr.get(4) {
-                            if let Some(s) = region.as_str() {
-                                if !s.is_empty() {
-                                    if s.len() == 2 && s.to_uppercase() == s {
-                                        region_code = Some(s.to_string())
-                                    } else {
-                                        region_name = Some(s.to_string())
-                                    }
-                                }
-                            }
-                        }
-                        if let Some(pc) = addr.get(5) {
-                            if let Some(s) = pc.as_str() {
-                                if !s.is_empty() {
-                                    postal_code = Some(s.to_string());
-                                }
-                            }
-                        }
-                        if let Some(country) = addr.get(6) {
-                            if let Some(s) = country.as_str() {
-                                if !s.is_empty() {
-                                    if s.len() == 2 && s.to_uppercase() == s {
-                                        country_code = Some(s.to_string())
-                                    } else {
-                                        country_name = Some(s.to_string())
-                                    }
-                                }
-                            }
+                    }
+                    if let Some(pc) = addr.get(5)
+                        && let Some(s) = pc.as_str()
+                        && !s.is_empty()
+                    {
+                        postal_code = Some(s.to_string());
+                    }
+                    if let Some(country) = addr.get(6)
+                        && let Some(s) = country.as_str()
+                        && !s.is_empty()
+                    {
+                        if s.len() == 2 && s.to_uppercase() == s {
+                            country_code = Some(s.to_string())
+                        } else {
+                            country_name = Some(s.to_string())
                         }
                     }
                 };
@@ -680,51 +674,62 @@ mod tests {
             panic!("no email found")
         };
         assert_eq!(email.email, "joe.user@example.com");
-        assert!(email
-            .contexts
-            .as_ref()
-            .expect("contexts not found")
-            .contains(&"work".to_string()));
+        assert!(
+            email
+                .contexts
+                .as_ref()
+                .expect("contexts not found")
+                .contains(&"work".to_string())
+        );
 
         // phones
         let Some(phone) = actual.phone() else {
             panic!("no first phone")
         };
         assert_eq!(phone.phone, "tel:+1-555-555-1234;ext=102");
-        assert!(phone
-            .contexts
-            .as_ref()
-            .expect("no contexts")
-            .contains(&"work".to_string()));
-        assert!(phone
-            .features
-            .as_ref()
-            .expect("no features")
-            .contains(&"voice".to_string()));
+        assert!(
+            phone
+                .contexts
+                .as_ref()
+                .expect("no contexts")
+                .contains(&"work".to_string())
+        );
+        assert!(
+            phone
+                .features
+                .as_ref()
+                .expect("no features")
+                .contains(&"voice".to_string())
+        );
         let Some(phone) = actual.phones().last() else {
             panic!("no last phone")
         };
         assert_eq!(phone.phone, "tel:+1-555-555-4321");
-        assert!(phone
-            .contexts
-            .as_ref()
-            .expect("no contexts")
-            .contains(&"cell".to_string()));
-        assert!(phone
-            .features
-            .as_ref()
-            .expect("no features")
-            .contains(&"video".to_string()));
+        assert!(
+            phone
+                .contexts
+                .as_ref()
+                .expect("no contexts")
+                .contains(&"cell".to_string())
+        );
+        assert!(
+            phone
+                .features
+                .as_ref()
+                .expect("no features")
+                .contains(&"video".to_string())
+        );
 
         // postal addresses
         let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
-        assert!(addr
-            .contexts
-            .as_ref()
-            .expect("no contexts")
-            .contains(&"work".to_string()));
+        assert!(
+            addr.contexts
+                .as_ref()
+                .expect("no contexts")
+                .contains(&"work".to_string())
+        );
         let Some(street_parts) = &addr.street_parts else {
             panic!("no street parts")
         };
@@ -741,11 +746,12 @@ mod tests {
         let Some(addr) = actual.postal_addresses().last() else {
             panic!("last address not found")
         };
-        assert!(addr
-            .contexts
-            .as_ref()
-            .expect("no contexts")
-            .contains(&"home".to_string()));
+        assert!(
+            addr.contexts
+                .as_ref()
+                .expect("no contexts")
+                .contains(&"home".to_string())
+        );
         assert_eq!(
             addr.full_address.as_ref().expect("full address not found"),
             "123 Maple Ave\nSuite 90001\nVancouver\nBC\n1239\n"
@@ -823,11 +829,12 @@ mod tests {
         let Some(addr) = actual.postal_address() else {
             panic!("first address not found")
         };
-        assert!(addr
-            .contexts
-            .as_ref()
-            .expect("no contexts")
-            .contains(&"work".to_string()));
+        assert!(
+            addr.contexts
+                .as_ref()
+                .expect("no contexts")
+                .contains(&"work".to_string())
+        );
         let Some(street_parts) = &addr.street_parts else {
             panic!("no street parts")
         };
@@ -979,11 +986,12 @@ mod tests {
         };
 
         // THEN context is work
-        assert!(addr
-            .contexts
-            .as_ref()
-            .expect("no contexts")
-            .contains(&"work".to_string()));
+        assert!(
+            addr.contexts
+                .as_ref()
+                .expect("no contexts")
+                .contains(&"work".to_string())
+        );
 
         // THEN there is a country name
         assert_eq!(

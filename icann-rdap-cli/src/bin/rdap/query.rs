@@ -9,18 +9,18 @@ use {
         md::{MdOptions, MdParams, ToMd},
         rdap::{QueryType, RequestData, RequestResponse, ResponseData},
     },
-    termimad::{crossterm::style::Color::*, Alignment, MadSkin},
+    termimad::{Alignment, MadSkin, crossterm::style::Color::*},
 };
 
 use chrono::DateTime;
-use enumflags2::{bitflags, BitFlags};
+use enumflags2::{BitFlags, bitflags};
 use icann_rdap_cli::args::target::LinkParams;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
 use icann_rdap_common::{
     check::{
-        process::do_check_processing, traverse_checks, ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES,
+        ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES, process::do_check_processing, traverse_checks,
     },
-    prelude::{get_relationship_links, Event, RdapResponse},
+    prelude::{Event, RdapResponse, get_relationship_links},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
@@ -29,7 +29,7 @@ use serde_json::Serializer;
 use tracing::warn;
 
 use crate::{
-    bootstrap::{get_base_url, BootstrapType},
+    bootstrap::{BootstrapType, get_base_url},
     error::RdapCliError,
     request::request_and_process,
 };
@@ -215,13 +215,44 @@ async fn determine_base_url(
     processing_params: &ProcessingParams,
     client: &Client,
 ) -> Result<String, RdapCliError> {
+    // for number based lookups, if a base URL cannot be made from the bootstrap
+    // then use the INR backup if configured to do so.
     match query_type {
         QueryType::IpV4Addr(_)
         | QueryType::IpV6Addr(_)
         | QueryType::IpV4Cidr(_)
         | QueryType::IpV6Cidr(_)
-        | QueryType::ReverseDns(_)
-        | QueryType::AsNumber(_) => {
+        | QueryType::IpV4AddrUp(_)
+        | QueryType::IpV6AddrUp(_)
+        | QueryType::IpV4CidrUp(_)
+        | QueryType::IpV6CidrUp(_)
+        | QueryType::IpV4AddrDown(_)
+        | QueryType::IpV6AddrDown(_)
+        | QueryType::IpV4CidrDown(_)
+        | QueryType::IpV6CidrDown(_)
+        | QueryType::IpV4AddrTop(_)
+        | QueryType::IpV6AddrTop(_)
+        | QueryType::IpV4CidrTop(_)
+        | QueryType::IpV6CidrTop(_)
+        | QueryType::IpV4AddrBottom(_)
+        | QueryType::IpV6AddrBottom(_)
+        | QueryType::IpV4CidrBottom(_)
+        | QueryType::IpV6CidrBottom(_)
+        | QueryType::AsNumber(_)
+        | QueryType::AsNumberUp(_)
+        | QueryType::AsNumberDown(_)
+        | QueryType::AsNumberTop(_)
+        | QueryType::AsNumberBottom(_)
+        | QueryType::RdnsIpv4(_)
+        | QueryType::RdnsIpv6(_)
+        | QueryType::RdnsIpv4Up(_)
+        | QueryType::RdnsIpv6Up(_)
+        | QueryType::RdnsIpv4Down(_)
+        | QueryType::RdnsIpv6Down(_)
+        | QueryType::RdnsIpv4Top(_)
+        | QueryType::RdnsIpv6Top(_)
+        | QueryType::RdnsIpv4Bottom(_)
+        | QueryType::RdnsIpv6Bottom(_) => {
             let mut base_url =
                 get_base_url(&processing_params.bootstrap_type, client, query_type).await;
             if base_url.is_err()
@@ -234,9 +265,16 @@ async fn determine_base_url(
             };
             base_url
         }
-        QueryType::Domain(_) | QueryType::DomainNameSearch(_) => {
+
+        // for domain based lookups, check to see if they are asking for a TLD.
+        QueryType::Domain(_) | QueryType::ALabel(_) => {
+            let domain = match query_type {
+                QueryType::Domain(d) => Some(d),
+                QueryType::ALabel(a) => Some(a),
+                _ => None,
+            };
             // special processing for TLD Lookups
-            if let QueryType::Domain(ref domain) = query_type {
+            if let Some(domain) = domain {
                 if domain.is_tld() && matches!(processing_params.tld_lookup, TldLookup::Iana) {
                     Ok("https://rdap.iana.org".to_string())
                 } else {
@@ -275,13 +313,18 @@ fn output_immediately<W: std::io::Write>(
                 skin.table.align = Alignment::Center;
                 skin.horizontal_rule.set_fg(DarkGreen);
                 skin.inline_code.set_fgbg(Cyan, Reset);
+                let options = MdOptions {
+                    bullet_char: '-',
+                    indent_simulate_bullet: true,
+                    ..MdOptions::default()
+                };
                 skin.write_text_on(
                     write,
                     &response.rdap.to_md(MdParams {
                         heading_level: 1,
                         root: &response.rdap,
                         http_data: &response.http_data,
-                        options: &MdOptions::default(),
+                        options: &options,
                         req_data,
                         show_rfc9537_redactions: processing_params
                             .redaction_flags
@@ -360,19 +403,19 @@ fn output_immediately<W: std::io::Write>(
                 };
                 if let Some(events) = events {
                     for event in events {
-                        if let Some(event_action) = &event.event_action {
-                            if let Some(date) = &event.event_date {
-                                let date = DateTime::parse_from_rfc3339(date).ok();
-                                if let Some(date) = date {
-                                    writeln!(
-                                        write,
-                                        "{} = {}",
-                                        event_action,
-                                        date.format("%a, %v %X %Z")
-                                    )?;
-                                } else {
-                                    writeln!(write, "{} = BAD DATE", event_action,)?;
-                                }
+                        if let Some(event_action) = &event.event_action
+                            && let Some(date) = &event.event_date
+                        {
+                            let date = DateTime::parse_from_rfc3339(date).ok();
+                            if let Some(date) = date {
+                                writeln!(
+                                    write,
+                                    "{} = {}",
+                                    event_action,
+                                    date.format("%a, %v %X %Z")
+                                )?;
+                            } else {
+                                writeln!(write, "{} = BAD DATE", event_action,)?;
                             }
                         }
                     }

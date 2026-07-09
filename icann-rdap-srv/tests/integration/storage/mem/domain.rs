@@ -3,8 +3,8 @@ use {
     icann_rdap_srv::{
         config::CommonConfig,
         storage::{
-            mem::{config::MemConfig, ops::Mem},
             StoreOps,
+            mem::{config::MemConfig, ops::Mem},
         },
     },
 };
@@ -31,7 +31,7 @@ async fn truncate_removes_domain() {
     let RdapResponse::ErrorResponse(error) = actual else {
         panic!()
     };
-    assert_eq!(error.error_code, 404)
+    assert_eq!(error.error_code(), 404)
 }
 
 #[tokio::test]
@@ -185,5 +185,5 @@ async fn lookup_not_found() {
     let RdapResponse::ErrorResponse(error) = actual else {
         panic!()
     };
-    assert_eq!(error.error_code, 404)
+    assert_eq!(error.error_code(), 404)
 }

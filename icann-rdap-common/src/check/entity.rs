@@ -3,8 +3,8 @@ use std::{any::TypeId, str::FromStr};
 use crate::{contact::Contact, prelude::EntityRole, response::entity::Entity};
 
 use super::{
-    string::{StringCheck, StringListCheck},
     Check, CheckParams, Checks, GetChecks, GetGroupChecks, RdapStructure,
+    string::{StringCheck, StringListCheck},
 };
 
 impl GetChecks for Entity {
@@ -82,7 +82,7 @@ impl GetChecks for Entity {
 #[cfg(test)]
 mod tests {
     use crate::{
-        check::{contains_check, Check, CheckParams, GetChecks},
+        check::{Check, CheckParams, GetChecks, contains_check},
         prelude::{Autnum, Entity, Network, ToResponse},
     };
 

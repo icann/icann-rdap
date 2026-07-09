@@ -1,7 +1,7 @@
 //! RDAP Domain Object Class
 use std::collections::HashSet;
 
-use crate::prelude::{ttl::Ttl0Data, ContentExtensions};
+use crate::prelude::{ContentExtensions, ttl::Ttl0Data};
 
 use {
     crate::prelude::{Common, Extension, ObjectCommon},
@@ -10,13 +10,13 @@ use {
 };
 
 use super::{
+    CommonFields, Entity, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
+    SelfLink, ToChild, ToResponse, VectorStringish,
     lenient::{Boolish, Numberish},
     nameserver::Nameserver,
     network::Network,
     to_opt_vec, to_opt_vectorstringish,
     types::{Events, Link, Links, PublicIds},
-    CommonFields, Entity, Event, GetSelfLink, Notice, ObjectCommonFields, Port43, PublicId, Remark,
-    SelfLink, ToChild, ToResponse, VectorStringish,
 };
 
 /// Represents an RDAP variant name.
@@ -830,7 +830,7 @@ impl ContentExtensions for Domain {
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
-    use crate::response::{types::Link, SelfLink};
+    use crate::response::{SelfLink, types::Link};
 
     use super::Domain;
 

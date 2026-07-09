@@ -23,6 +23,7 @@ pub trait StringUtil {
     fn to_words_title_case(self) -> String;
     fn to_cap_acronyms(self) -> String;
     fn format_date_time(self, params: MdParams) -> Option<String>;
+    fn to_unordered_item(self, indent_level: usize, options: &MdOptions) -> String;
 }
 
 impl<T: ToString> StringUtil for T {
@@ -33,9 +34,34 @@ impl<T: ToString> StringUtil for T {
             .replace("** ", " ")
             .replace("* ", " ")
             .chars()
-            .map(|c| match c {
-                '*' | '|' | '#' => format!("\\{c}"),
-                _ => c.to_string(),
+            .scan(false, |escaped, c| {
+                if *escaped {
+                    *escaped = false;
+                    Some(c.to_string())
+                } else {
+                    match c {
+                        '\\' => {
+                            *escaped = true;
+                            Some(c.to_string())
+                        }
+                        '`' => {
+                            *escaped = true;
+                            Some(c.to_string())
+                        }
+                        '*' | '|' => {
+                            *escaped = false;
+                            Some(format!("\\{c}"))
+                        }
+                        '#' => {
+                            *escaped = false;
+                            Some(format!("`{}`", c))
+                        }
+                        _ => {
+                            *escaped = false;
+                            Some(c.to_string())
+                        }
+                    }
+                }
             })
             .collect()
     }
@@ -197,6 +223,25 @@ impl<T: ToString> StringUtil for T {
             .replace("nro", "NRO")
             .replace("ietf", "IETF")
     }
+
+    fn to_unordered_item(self, indent_level: usize, options: &MdOptions) -> String {
+        let mut s = self.to_string();
+        let trimmed = s.trim_start();
+        let leading = &s[..s.len() - trimmed.len()];
+        if let Some(first) = trimmed.chars().next()
+            && first == '>'
+        {
+            s = format!("{}`{}`{}", leading, first, &trimmed[1..]);
+        }
+        if options.indent_simulate_bullet {
+            let bullet = format!("{} ", options.bullet_char);
+            let prefix = bullet.repeat(indent_level.saturating_sub(1));
+            format!("{prefix}{} {}", options.bullet_char, s)
+        } else {
+            let indent = "  ".repeat(indent_level);
+            format!("{}{} {}", indent, options.bullet_char, s)
+        }
+    }
 }
 
 pub(crate) trait StringListUtil {
@@ -282,6 +327,66 @@ mod tests {
         let actual = s.replace_md_chars();
 
         // THEN
-        assert_eq!(r#"The \*brown \| fox \#  jumped over the fence."#, &actual);
+        assert_eq!(r#"The \*brown \| fox `#`  jumped over the fence."#, &actual);
+    }
+
+    #[test]
+    fn test_replace_md_chars_idempotent() {
+        // GIVEN an already-escaped string
+        let s = r#"The \*brown \| fox `#` jumped over the fence."#;
+
+        // WHEN apply replace_md_chars again
+        let actual = s.replace_md_chars();
+
+        // THEN it should be unchanged (idempotent)
+        assert_eq!(s, actual);
+    }
+
+    #[rstest]
+    #[case("normal item", 0, "- normal item")]
+    #[case("> quoted text", 0, "- `>` quoted text")]
+    #[case("+ plus sign", 0, "- + plus sign")]
+    #[case("- dash item", 0, "- - dash item")]
+    #[case("  > indented quoted", 0, "-   `>` indented quoted")]
+    #[case("nested item", 1, "  - nested item")]
+    #[case("hash text", 0, "- hash text")]
+    fn test_to_unordered_item(#[case] input: &str, #[case] indent: usize, #[case] expected: &str) {
+        let options = crate::md::MdOptions::default();
+        let actual = input.to_unordered_item(indent, &options);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("normal item", 0, "* normal item")]
+    #[case("> quoted text", 0, "* `>` quoted text")]
+    #[case("+ plus sign", 0, "* + plus sign")]
+    #[case("- dash item", 0, "* - dash item")]
+    #[case("  > indented quoted", 0, "*   `>` indented quoted")]
+    #[case("nested item", 1, "  * nested item")]
+    #[case("hash text", 0, "* hash text")]
+    fn test_to_unordered_item_plain_text(
+        #[case] input: &str,
+        #[case] indent: usize,
+        #[case] expected: &str,
+    ) {
+        let options = crate::md::MdOptions::plain_text();
+        let actual = input.to_unordered_item(indent, &options);
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("nested item", 1, "- nested item")]
+    #[case("nested item", 2, "- - nested item")]
+    #[case("nested item", 3, "- - - nested item")]
+    fn test_to_unordered_item_indent_simulate_bullet(
+        #[case] input: &str,
+        #[case] indent: usize,
+        #[case] expected: &str,
+    ) {
+        let var_name = crate::md::MdOptions::default();
+        let mut options = var_name;
+        options.indent_simulate_bullet = true;
+        let actual = input.to_unordered_item(indent, &options);
+        assert_eq!(actual, expected);
     }
 }

@@ -24,6 +24,9 @@ pub trait StringCheck {
     /// Tests if a string begins with a period and only has one label.
     fn is_tld(&self) -> bool;
 
+    /// Tests if a string looks like an ASCII table line (pipe-delimited or border).
+    fn is_ascii_table_line(&self) -> bool;
+
     /// Tests if a string is an ldh host name (i.e., at least to labels)
     fn is_ldh_hostname(&self) -> bool;
 }
@@ -63,6 +66,23 @@ impl<T: ToString> StringCheck for T {
                 s.chars()
                     .all(|c| !c.is_ascii_punctuation() && !c.is_whitespace())
             })
+    }
+
+    fn is_ascii_table_line(&self) -> bool {
+        let s = self.to_string();
+        let trimmed = s.trim();
+        if trimmed.is_empty() {
+            return false;
+        }
+        // Pipe-delimited table row: starts or ends with |
+        if trimmed.starts_with('|') || trimmed.ends_with('|') {
+            return true;
+        }
+        // Table border: only +, -, =, and spaces
+        if trimmed.chars().all(|c| matches!(c, '+' | '-' | '=' | ' ')) {
+            return true;
+        }
+        false
     }
 
     fn is_ldh_hostname(&self) -> bool {
@@ -310,6 +330,31 @@ mod tests {
 
         // WHEN
         let actual = test_string.is_ldh_hostname();
+
+        // THEN
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("| AS3333 RIPE-NCC-AS |", true)]
+    #[case("| RIPE NCC |", true)]
+    #[case("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++", true)]
+    #[case(
+        "====================================================================",
+        true
+    )]
+    #[case("--------", true)]
+    #[case("+++ === +++", true)]
+    #[case("normal text", false)]
+    #[case("", false)]
+    #[case("   ", false)]
+    #[case("Some text | in middle", false)]
+    #[case("Text with + plus", false)]
+    fn test_is_ascii_table_line(#[case] test_string: &str, #[case] expected: bool) {
+        // GIVEN in parameters
+
+        // WHEN
+        let actual = test_string.is_ascii_table_line();
 
         // THEN
         assert_eq!(actual, expected);

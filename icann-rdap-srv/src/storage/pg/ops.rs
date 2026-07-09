@@ -4,7 +4,7 @@ use std::net::IpAddr;
 use {
     async_trait::async_trait,
     icann_rdap_common::response::RdapResponse,
-    sqlx::{query, PgPool},
+    sqlx::{PgPool, query},
     tracing::{debug, info},
 };
 

@@ -3,13 +3,14 @@ members = [
   "icann-rdap-cli",
   "icann-rdap-client",
   "icann-rdap-common",
-  "icann-rdap-srv"
+  "icann-rdap-srv",
+  "tests/downstream_compat"
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.0.29"
-edition = "2021"
+version = "0.0.30"
+edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
 keywords = ["whois", "rdap"]
@@ -30,11 +31,11 @@ async-trait = "0.1"
 
 # axum (web server)
 axum = { version = "0.8" }
-axum-extra = { version = "0.10", features = [ "typed-header" ] }
+axum-extra = { version = "0.12", features = [ "typed-header" ] }
 axum-macros = "0.5"
 
 # client IP address extractor
-axum-client-ip = "0.7"
+axum-client-ip = "1.3"
 
 # macros for the builder pattern
 buildstructor = "0.6"
@@ -49,7 +50,7 @@ clap = { version = "4.6", features = [ "std", "derive", "env", "unstable-styles"
 chrono = { version = "0.4", features = ["alloc", "std", "clock", "serde"], default-features = false }
 
 # CIDR utilities
-cidr-utils = "0.6"
+cidr-utils = "0.7"
 
 # compile time constants formatting
 const_format = "0.2"
@@ -113,7 +114,7 @@ minus = {version = "5.6", features = ["dynamic_output", "search"] }
 pct-str = "3.0"
 
 # ip address trie
-prefix-trie = "0.8.1"
+prefix-trie = "0.9"
 
 # flexible range map
 rangemap = "1.7.1"
@@ -137,8 +138,9 @@ serde_json = "1.0"
 serial_test = "3.4"
 
 # sqlx (async db)
-sqlx = { version = "0.8", features = [
-    "runtime-tokio-rustls",
+sqlx = { version = "0.9", features = [
+    "runtime-tokio",
+    "tls-rustls",
     "postgres",
     "chrono",
     "macros",
@@ -146,8 +148,7 @@ sqlx = { version = "0.8", features = [
 ] }
 
 # enum utilities
-strum = "0.28"
-strum_macros = "0.28"
+strum = { version = "0.28", features = [ "derive" ] }
 
 # temp files
 tempfile = "3.27"
@@ -159,14 +160,14 @@ termimad = "0.34"
 test_dir = "0.2.0"
 
 # error macros
-thiserror = "1.0"
+thiserror = "2.0"
 
 # tokio async runtime
 tokio = { version = "1.52", features = [ "full" ] }
 
 # tower (tokio/axum middleware)
 tower = { version = "0.5", features = ["timeout", "util"] }
-tower-http = { version = "0.6", features = [
+tower-http = { version = "0.7", features = [
     "add-extension",
     "trace",
     "cors",

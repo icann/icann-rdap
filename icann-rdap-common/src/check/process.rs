@@ -4,7 +4,7 @@ use strum::{EnumMessage, VariantArray};
 
 use crate::{httpdata::HttpData, prelude::RdapResponse};
 
-use super::{traverse_checks, Check, CheckClass, CheckParams, CheckSummary, Checks, GetChecks};
+use super::{Check, CheckClass, CheckParams, CheckSummary, Checks, GetChecks, traverse_checks};
 
 pub fn do_check_processing(
     rdap: &RdapResponse,

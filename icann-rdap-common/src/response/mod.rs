@@ -5,9 +5,10 @@ use {
     cidr,
     serde::{Deserialize, Serialize},
     serde_json::Value,
-    strum_macros::Display,
     thiserror::Error,
 };
+
+use strum::Display as EnumDisplay;
 
 use crate::media_types::RDAP_MEDIA_TYPE;
 
@@ -128,7 +129,7 @@ pub enum RdapResponseError {
 /// let rdap: RdapResponse = serde_json::from_str(json).unwrap();
 /// assert!(matches!(rdap, RdapResponse::Network(_)));
 /// ```
-#[derive(Serialize, Deserialize, Clone, Display, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, EnumDisplay, PartialEq, Debug)]
 #[serde(untagged, try_from = "Value")]
 pub enum RdapResponse {
     // Object Classes
@@ -603,10 +604,10 @@ mod tests {
 
     use crate::{
         media_types::RDAP_MEDIA_TYPE,
-        prelude::{get_relationship_links, ExtensionId},
+        prelude::{ExtensionId, get_relationship_links},
     };
 
-    use super::{get_related_links, Domain, Link, RdapResponse, ToResponse};
+    use super::{Domain, Link, RdapResponse, ToResponse, get_related_links};
 
     #[test]
     fn test_redaction_response_gets_object() {

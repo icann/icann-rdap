@@ -1,6 +1,6 @@
 //! Redaction of IDs (handles).
 
-use icann_rdap_common::prelude::{redacted::Redacted, Domain, EntityRole};
+use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
@@ -11,10 +11,10 @@ pub(crate) fn simplify_registry_domain_id(
     mut domain: Box<Domain>,
     redaction: &Redacted,
 ) -> Box<Domain> {
-    if let Some(ref h) = domain.object_common.handle {
-        if !h.is_empty() {
-            return domain;
-        }
+    if let Some(ref h) = domain.object_common.handle
+        && !h.is_empty()
+    {
+        return domain;
     }
 
     domain.object_common.handle = Some(REDACTED_ID.into());
@@ -46,10 +46,10 @@ fn simplify_registry_entity_id(
     if let Some(entities) = &mut domain.object_common.entities {
         for entity in entities.iter_mut() {
             if entity.is_entity_role(&role.to_string()) {
-                if let Some(ref h) = entity.object_common.handle {
-                    if !h.is_empty() {
-                        return domain;
-                    }
+                if let Some(ref h) = entity.object_common.handle
+                    && !h.is_empty()
+                {
+                    return domain;
                 }
                 entity.object_common.handle = Some(REDACTED_ID.into());
                 entity.object_common.remarks = add_remark(
@@ -73,7 +73,7 @@ mod tests {
     use icann_rdap_common::response::ObjectCommonFields;
 
     use crate::rdap::redacted::simplify_ids::{
-        simplify_registry_domain_id, simplify_registry_registrant_id, REDACTED_ID, REDACTED_ID_DESC,
+        REDACTED_ID, REDACTED_ID_DESC, simplify_registry_domain_id, simplify_registry_registrant_id,
     };
 
     fn get_test_redacted() -> Redacted {

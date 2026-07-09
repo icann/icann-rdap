@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use icann_rdap_common::prelude::Remark;
 
-use super::{string::StringUtil, MdHeaderText, MdOptions, MdParams, ToMd};
+use super::{MdHeaderText, MdOptions, MdParams, ToMd, string::StringUtil};
 
 pub(crate) trait ToMpTable {
     fn add_to_mptable(&self, table: MultiPartTable, params: MdParams) -> MultiPartTable;
@@ -95,17 +95,23 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list.
-    pub fn nv_ul_ref(mut self, name: &impl ToString, value: Vec<&impl ToString>) -> Self {
+    pub fn nv_ul_ref(
+        mut self,
+        name: &impl ToString,
+        value: Vec<&impl ToString>,
+        options: &MdOptions,
+    ) -> Self {
+        let opts = *options;
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    format!("* {}", v.to_string().replace_md_chars()),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    format!("* {}", v.to_string().replace_md_chars()),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             }
         });
@@ -113,17 +119,23 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list.
-    pub fn nv_ul(mut self, name: &impl ToString, value: Vec<impl ToString>) -> Self {
+    pub fn nv_ul(
+        mut self,
+        name: &impl ToString,
+        value: Vec<impl ToString>,
+        options: &MdOptions,
+    ) -> Self {
+        let opts = *options;
         value.iter().enumerate().for_each(|(i, v)| {
             if i == 0 {
                 self.rows.push(Row::NameValue((
                     name.to_string(),
-                    format!("* {}", v.to_string().replace_md_chars()),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             } else {
                 self.rows.push(Row::NameValue((
                     String::default(),
-                    format!("* {}", v.to_string().replace_md_chars()),
+                    v.to_string().replace_md_chars().to_unordered_item(0, &opts),
                 )))
             }
         });
@@ -153,42 +165,87 @@ impl MultiPartTable {
     }
 
     /// Add a name/value row with unordered list if the value is Some.
-    pub fn and_nv_ul_ref(self, name: &impl ToString, value: Option<Vec<&impl ToString>>) -> Self {
+    pub fn and_nv_ul_ref(
+        self,
+        name: &impl ToString,
+        value: Option<Vec<&impl ToString>>,
+        options: &MdOptions,
+    ) -> Self {
         if let Some(value) = value {
-            self.nv_ul_ref(name, value)
+            self.nv_ul_ref(name, value, options)
         } else {
             self
         }
     }
 
     /// Add a name/value row with unordered list if the value is Some.
-    pub fn and_nv_ul(self, name: &impl ToString, value: Option<Vec<impl ToString>>) -> Self {
+    pub fn and_nv_ul(
+        self,
+        name: &impl ToString,
+        value: Option<Vec<impl ToString>>,
+        options: &MdOptions,
+    ) -> Self {
         if let Some(value) = value {
-            self.nv_ul(name, value)
+            self.nv_ul(name, value, options)
         } else {
             self
         }
     }
 
     /// A summary row is a special type of name/value row that has an unordered (bulleted) list
-    /// that is output in a tree structure (max 3 levels).
-    pub fn summary(mut self, header_text: MdHeaderText) -> Self {
+    /// that is output in a tree structure.
+    pub fn summary(mut self, header_text: MdHeaderText, options: &MdOptions) -> Self {
         self.rows.push(Row::NameValue((
             "Summary".to_string(),
             header_text.to_string().replace_md_chars().to_string(),
         )));
         // note that termimad has limits on list depth, so we can't go too crazy.
-        // however, this seems perfectly reasonable for must RDAP use cases.
+        // if indent_simulate_bullet is true, we support up to 5 levels of nesting.
         for level1 in header_text.children {
             self.rows.push(Row::NameValue((
                 "".to_string(),
-                format!("* {}", level1.to_string().replace_md_chars()),
+                level1
+                    .to_string()
+                    .replace_md_chars()
+                    .to_unordered_item(1, options),
             )));
             for level2 in level1.children {
                 self.rows.push(Row::NameValue((
                     "".to_string(),
-                    format!("  * {}", level2.to_string().replace_md_chars()),
+                    level2
+                        .to_string()
+                        .replace_md_chars()
+                        .to_unordered_item(2, options),
                 )));
+                if options.indent_simulate_bullet {
+                    for level3 in level2.children {
+                        self.rows.push(Row::NameValue((
+                            "".to_string(),
+                            level3
+                                .to_string()
+                                .replace_md_chars()
+                                .to_unordered_item(3, options),
+                        )));
+                        for level4 in level3.children {
+                            self.rows.push(Row::NameValue((
+                                "".to_string(),
+                                level4
+                                    .to_string()
+                                    .replace_md_chars()
+                                    .to_unordered_item(4, options),
+                            )));
+                            for level5 in level4.children {
+                                self.rows.push(Row::NameValue((
+                                    "".to_string(),
+                                    level5
+                                        .to_string()
+                                        .replace_md_chars()
+                                        .to_unordered_item(5, options),
+                                )));
+                            }
+                        }
+                    }
+                }
             }
         }
         self
@@ -323,7 +380,6 @@ pub(crate) fn get_value_highlights(remarks: &[Remark]) -> Vec<String> {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::{httpdata::HttpData, prelude::ToResponse, response::Rfc9083Error};
 
@@ -332,7 +388,7 @@ mod tests {
     use super::MultiPartTable;
 
     #[test]
-    fn GIVEN_header_WHEN_to_md_THEN_header_format_and_header() {
+    fn test_header_to_md() {
         // GIVEN
         let table = MultiPartTable::new().header_ref(&"foo");
 
@@ -355,11 +411,12 @@ mod tests {
             highlight_simple_redactions: false,
         });
 
+        // THEN
         assert_eq!(actual, "|:-:|\n|__foo__|\n|\n\n")
     }
 
     #[test]
-    fn GIVEN_header_and_data_ref_WHEN_to_md_THEN_header_format_and_header() {
+    fn test_header_and_data_ref_to_md() {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
@@ -384,11 +441,12 @@ mod tests {
             highlight_simple_redactions: false,
         });
 
+        // THEN
         assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
     }
 
     #[test]
-    fn GIVEN_header_and_2_data_ref_WHEN_to_md_THEN_header_format_and_header() {
+    fn test_header_and_2_data_ref_to_md() {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
@@ -414,6 +472,7 @@ mod tests {
             highlight_simple_redactions: false,
         });
 
+        // THEN
         assert_eq!(
             actual,
             "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n| bar|baz|\n|\n\n"
@@ -421,7 +480,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_header_and_data_WHEN_to_md_THEN_header_format_and_header() {
+    fn test_header_and_data_to_md() {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
@@ -446,11 +505,12 @@ mod tests {
             highlight_simple_redactions: false,
         });
 
+        // THEN
         assert_eq!(actual, "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n|\n\n")
     }
 
     #[test]
-    fn GIVEN_header_and_2_data_WHEN_to_md_THEN_header_format_and_header() {
+    fn test_header_and_2_data_to_md() {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
@@ -476,6 +536,7 @@ mod tests {
             highlight_simple_redactions: false,
         });
 
+        // THEN
         assert_eq!(
             actual,
             "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n| bar|baz|\n|\n\n"
@@ -483,7 +544,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_header_and_2_data_ref_twice_WHEN_to_md_THEN_header_format_and_header() {
+    fn test_header_and_2_data_ref_twice_to_md() {
         // GIVEN
         let table = MultiPartTable::new()
             .header_ref(&"foo")
@@ -512,6 +573,7 @@ mod tests {
             highlight_simple_redactions: false,
         });
 
+        // THEN
         assert_eq!(
             actual,
             "|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n| bar|baz|\n|:-:|\n|__foo__|\n|-:|:-|\n|bizz|buzz|\n| bar|baz|\n|\n\n"

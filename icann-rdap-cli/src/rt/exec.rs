@@ -9,28 +9,28 @@ use std::{
 use icann_rdap_client::rdap::ResponseData;
 use icann_rdap_common::{
     httpdata::HttpData,
-    prelude::{get_relationship_links, RdapResponse},
+    prelude::{RdapResponse, get_relationship_links},
 };
 
 use {
     hickory_client::{
+        ClientError,
         client::{Client, ClientHandle},
         proto::{
+            ProtoError,
             rr::{DNSClass, Name, RecordType},
             runtime::TokioRuntimeProvider,
             udp::UdpClientStream,
-            ProtoError,
         },
-        ClientError,
     },
     icann_rdap_client::{
-        http::{create_client, create_client_with_addr, ClientConfig},
-        iana::{qtype_to_bootstrap_url, BootstrapStore},
-        rdap::{rdap_url_request, QueryType},
         RdapClientError,
+        http::{ClientConfig, create_client, create_client_with_addr},
+        iana::{BootstrapStore, qtype_to_bootstrap_url},
+        rdap::{QueryType, rdap_url_request},
     },
     icann_rdap_common::response::ExtensionId,
-    reqwest::{header::HeaderValue, Url},
+    reqwest::{Url, header::HeaderValue},
     thiserror::Error,
     tracing::{debug, info},
     url::ParseError,

@@ -3,7 +3,7 @@
 use std::{borrow::Borrow, fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
 
 use {
-    serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer},
+    serde::{Deserialize, Deserializer, Serialize, Serializer, de::Visitor},
     serde_json::Number,
 };
 

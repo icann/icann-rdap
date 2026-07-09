@@ -1,6 +1,6 @@
 use {
     icann_rdap_common::response::{Entity, RdapResponse},
-    icann_rdap_srv::storage::{mem::ops::Mem, StoreOps},
+    icann_rdap_srv::storage::{StoreOps, mem::ops::Mem},
 };
 
 #[tokio::test]
@@ -49,5 +49,5 @@ async fn lookup_not_found() {
     let RdapResponse::ErrorResponse(error) = actual else {
         panic!()
     };
-    assert_eq!(error.error_code, 404)
+    assert_eq!(error.error_code(), 404)
 }

@@ -25,20 +25,24 @@ fn GIVEN_data_dir_WHEN_invoked_THEN_data_stored_in_data_dir() {
     // THEN
     let assert = test_jig.cmd.assert();
     assert.success();
-    assert!(test_jig
-        .source_dir
-        .root()
-        .read_dir()
-        .expect("source directory does not exist")
-        .next()
-        .is_some());
-    assert!(test_jig
-        .data_dir
-        .root()
-        .read_dir()
-        .expect("data directory does not exist")
-        .next()
-        .is_none());
+    assert!(
+        test_jig
+            .source_dir
+            .root()
+            .read_dir()
+            .expect("source directory does not exist")
+            .next()
+            .is_some()
+    );
+    assert!(
+        test_jig
+            .data_dir
+            .root()
+            .read_dir()
+            .expect("data directory does not exist")
+            .next()
+            .is_none()
+    );
 }
 
 #[test]
@@ -60,20 +64,24 @@ fn GIVEN_no_data_dir_WHEN_invoked_THEN_data_stored_in_data_dir() {
     // THEN
     let assert = test_jig.cmd.assert();
     assert.success();
-    assert!(test_jig
-        .source_dir
-        .root()
-        .read_dir()
-        .expect("source directory does not exist")
-        .next()
-        .is_none());
-    assert!(test_jig
-        .data_dir
-        .root()
-        .read_dir()
-        .expect("data directory does not exist")
-        .next()
-        .is_some());
+    assert!(
+        test_jig
+            .source_dir
+            .root()
+            .read_dir()
+            .expect("source directory does not exist")
+            .next()
+            .is_none()
+    );
+    assert!(
+        test_jig
+            .data_dir
+            .root()
+            .read_dir()
+            .expect("data directory does not exist")
+            .next()
+            .is_some()
+    );
 }
 
 #[test]

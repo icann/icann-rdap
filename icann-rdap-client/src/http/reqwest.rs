@@ -7,8 +7,8 @@
 use std::collections::HashSet;
 
 pub use reqwest::{
-    header::{self, HeaderValue},
     Client as ReqwestClient, Error as ReqwestError,
+    header::{self, HeaderValue},
 };
 
 use icann_rdap_common::{

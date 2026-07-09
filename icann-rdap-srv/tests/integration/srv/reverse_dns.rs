@@ -3,13 +3,13 @@ use std::net::IpAddr;
 use std::str::FromStr;
 use {
     icann_rdap_client::{
-        http::{create_client, ClientConfig},
-        rdap::{rdap_request, QueryType},
+        http::{ClientConfig, create_client},
+        rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::prelude::*,
     icann_rdap_srv::storage::{
-        data::{NetworkId, NetworkIdType},
         StoreOps,
+        data::{NetworkId, NetworkIdType},
     },
 };
 
@@ -41,7 +41,7 @@ async fn ipv4_reverse_domain_200() {
         .follow_redirects(true)
         .build();
     let client = create_client(&client_config).expect("creating client");
-    let query = QueryType::rdns("4.3.2.1.in-addr.arpa").expect("invalid reverse DNS");
+    let query = QueryType::rdns_ipv4("4.3.2.1.in-addr.arpa").expect("invalid reverse DNS");
     let response = rdap_request(&test_srv.rdap_base, &query, &client)
         .await
         .expect("querying server");

@@ -5,10 +5,10 @@ use icann_rdap_common::{
 };
 
 use super::{
+    MdHeaderText, MdParams, MdUtil, ToMd,
     string::{StringListUtil, StringUtil},
     table::{MultiPartTable, ToMpTable},
     types::{events_to_table, links_to_table, public_ids_to_table},
-    MdHeaderText, MdParams, MdUtil, ToMd,
 };
 
 impl ToMd for Domain {
@@ -32,7 +32,7 @@ impl ToMd for Domain {
         };
 
         // summary
-        table = table.summary(header_text);
+        table = table.summary(header_text, params.options);
 
         // identifiers
         //
@@ -85,10 +85,10 @@ impl ToMd for Domain {
         }
 
         // redacted
-        if params.show_rfc9537_redactions {
-            if let Some(redacted) = &self.object_common.redacted {
-                md.push_str(&redacted.as_slice().to_md(params.from_parent()));
-            }
+        if params.show_rfc9537_redactions
+            && let Some(redacted) = &self.object_common.redacted
+        {
+            md.push_str(&redacted.as_slice().to_md(params.from_parent()));
         }
 
         md.push('\n');
@@ -220,11 +220,11 @@ fn dns_digest_type(dt: &Option<u8>) -> Option<String> {
 impl MdUtil for Domain {
     fn get_header_text(&self) -> MdHeaderText {
         let header_text = if let Some(unicode_name) = &self.unicode_name {
-            format!("Domain {}", unicode_name.replace_md_chars())
+            format!("Domain {}", unicode_name)
         } else if let Some(ldh_name) = &self.ldh_name {
-            format!("Domain {}", ldh_name.replace_md_chars())
+            format!("Domain {}", ldh_name)
         } else if let Some(handle) = &self.object_common.handle {
-            format!("Domain {}", handle.replace_md_chars())
+            format!("Domain {}", handle)
         } else {
             "Domain".to_string()
         };
@@ -254,8 +254,8 @@ mod tests {
     use icann_rdap_common::{
         httpdata::HttpData,
         prelude::{
-            redacted::{Method, Name, Redacted},
             Domain, DsDatum, Event, Link, SecureDns, ToResponse, Variant, VariantName,
+            redacted::{Method, Name, Redacted},
         },
     };
 

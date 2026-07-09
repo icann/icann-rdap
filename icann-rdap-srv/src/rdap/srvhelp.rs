@@ -1,4 +1,4 @@
-use icann_rdap_common::prelude::{normalize_extensions, normalize_extensions_with, ExtensionId};
+use icann_rdap_common::prelude::{ExtensionId, normalize_extensions, normalize_extensions_with};
 
 use {
     axum::{extract::State, response::Response},

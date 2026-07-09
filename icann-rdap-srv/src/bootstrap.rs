@@ -2,7 +2,7 @@ use std::{path::PathBuf, time::Duration};
 
 use {
     icann_rdap_client::{
-        http::{create_client, Client, ClientConfig},
+        http::{Client, ClientConfig, create_client},
         iana::iana_request,
     },
     icann_rdap_common::{
@@ -22,8 +22,8 @@ use crate::{
     config::ServiceConfig,
     error::RdapServerError,
     storage::data::{
-        trigger_reload, trigger_update, AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId,
-        EntityOrError, NetworkId, NetworkIdType, NetworkOrError, Template,
+        AutnumId, AutnumOrError, DomainId, DomainOrError, EntityId, EntityOrError, NetworkId,
+        NetworkIdType, NetworkOrError, Template, trigger_reload, trigger_update,
     },
 };
 
@@ -371,9 +371,9 @@ mod tests {
     use crate::{
         config::{CommonConfig, ServiceConfig, StorageType},
         storage::{
+            StoreOps,
             data::load_data,
             mem::{config::MemConfig, ops::Mem},
-            StoreOps,
         },
     };
 
@@ -423,7 +423,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(
             get_redirect_link(*error),
             "https://registry.example.com/myrdap/"
@@ -433,7 +433,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(
             get_redirect_link(*error),
             "https://registry.example.com/myrdap/"
@@ -443,7 +443,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://example.org/");
         // mytld
         let response = mem
@@ -453,7 +453,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://example.org/");
     }
 
@@ -508,7 +508,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(
             get_redirect_link(*error),
             "https://rir3.example.com/myrdap/"
@@ -518,21 +518,21 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://example.net/rdaprir2/");
         // 64497-64510
         let response = mem.get_autnum_by_num(64510).await.expect("lookup of 64510");
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://example.org/");
         // 65536-65551
         let response = mem.get_autnum_by_num(65551).await.expect("lookup of 65551");
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://example.org/");
     }
 
@@ -590,7 +590,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(
             get_redirect_link(*error),
             "https://rir1.example.com/myrdap/"
@@ -603,7 +603,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(
             get_redirect_link(*error),
             "https://rir1.example.com/myrdap/"
@@ -616,7 +616,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://example.org/");
     }
 
@@ -761,7 +761,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(get_redirect_link(*error), "https://rdap.arin.net/registry/",);
         // GLAUCA
         let response = mem
@@ -771,7 +771,7 @@ mod tests {
         let RdapResponse::ErrorResponse(error) = response else {
             panic!("not an error response")
         };
-        assert_eq!(307, error.error_code);
+        assert_eq!(307, error.error_code());
         assert_eq!(
             get_redirect_link(*error),
             "https://whois-web.as207960.net/rdap/"

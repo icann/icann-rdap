@@ -60,11 +60,13 @@ async fn test_domain_search_by_nameserver_ip() {
     tx.add_domain(
         &Domain::builder()
             .ldh_name("foo.example")
-            .nameservers(vec![Nameserver::builder()
-                .ldh_name("ns.foo.example")
-                .addresses(vec!["192.0.2.1".to_string()])
-                .build()
-                .unwrap()])
+            .nameservers(vec![
+                Nameserver::builder()
+                    .ldh_name("ns.foo.example")
+                    .addresses(vec!["192.0.2.1".to_string()])
+                    .build()
+                    .unwrap(),
+            ])
             .build(),
     )
     .await

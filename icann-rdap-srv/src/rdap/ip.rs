@@ -15,9 +15,8 @@ use {
 use crate::{
     error::RdapServerError,
     rdap::{
-        jscontact_conversion, parse_extensions,
-        response::{ResponseUtil, BAD_REQUEST},
-        ToBootStrap,
+        ToBootStrap, jscontact_conversion, parse_extensions,
+        response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
 };
