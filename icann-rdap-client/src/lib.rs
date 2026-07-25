@@ -1,4 +1,3 @@
-#![allow(dead_code)] // TODO remove this at some point
 #![allow(rustdoc::bare_urls)]
 #![doc = include_str!("../README.md")]
 use std::{fmt::Display, sync::PoisonError};

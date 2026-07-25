@@ -1404,13 +1404,6 @@ fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
     }
 }
 
-/// Checks if `text` matches an LDH (letters, digits, hyphens) domain name pattern.
-fn is_ldh_domain(text: &str) -> bool {
-    static LDH_DOMAIN_RE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap());
-    LDH_DOMAIN_RE.is_match(text)
-}
-
 /// Checks if `text` is a valid domain name (contains `.` and is a unicode domain name).
 fn is_domain_name(text: &str) -> bool {
     text.contains('.') && text.is_unicode_domain_name()
