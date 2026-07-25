@@ -155,7 +155,7 @@ impl GetChecks for Network {
                         items.push(Check::IpAddressLinkLocal.check_item())
                     }
                     let uniquelocal =
-                        IpCidr::from_str("fe80::/10").expect("incorrect unique local cidr");
+                        IpCidr::from_str("fc00::/7").expect("incorrect unique local cidr");
                     if uniquelocal.contains(&start_addr) && uniquelocal.contains(&end_addr) {
                         items.push(Check::IpAddressUniqueLocal.check_item())
                     }
