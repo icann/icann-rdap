@@ -8,21 +8,11 @@ use prefix_trie::{Prefix, PrefixMap};
 
 use crate::storage::mem::ops::Mem;
 
-pub trait RdapPrefix: Prefix + Copy {
-    fn contains_prefix(&self, other: &Self) -> bool;
-}
+pub trait RdapPrefix: Prefix + Copy {}
 
-impl RdapPrefix for Ipv4Net {
-    fn contains_prefix(&self, other: &Self) -> bool {
-        self.contains(other)
-    }
-}
+impl RdapPrefix for Ipv4Net {}
 
-impl RdapPrefix for Ipv6Net {
-    fn contains_prefix(&self, other: &Self) -> bool {
-        self.contains(other)
-    }
-}
+impl RdapPrefix for Ipv6Net {}
 
 // Define an enum that holds either a single u32 or a Range<u32>
 #[derive(Debug, Clone, PartialEq)]
