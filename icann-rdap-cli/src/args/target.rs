@@ -63,6 +63,17 @@ pub struct LinkParams {
     pub max_link_depth: usize,
 }
 
+impl Default for LinkParams {
+    fn default() -> Self {
+        Self {
+            link_targets: vec![],
+            only_show_target: false,
+            min_link_depth: 1,
+            max_link_depth: 1,
+        }
+    }
+}
+
 pub fn default_link_params(query_type: &QueryType) -> LinkParams {
     match query_type {
         QueryType::IpV4Addr(_)
@@ -81,23 +92,13 @@ pub fn default_link_params(query_type: &QueryType) -> LinkParams {
             min_link_depth: 1,
             max_link_depth: 3,
         },
-        _ => LinkParams {
-            link_targets: vec![],
-            only_show_target: false,
-            min_link_depth: 1,
-            max_link_depth: 1,
-        },
+        _ => LinkParams::default(),
     }
 }
 
 pub fn params_from_args(query_type: &QueryType, args: LinkTargetArgs) -> LinkParams {
     if args.registry {
-        LinkParams {
-            link_targets: vec![],
-            only_show_target: false,
-            min_link_depth: 1,
-            max_link_depth: 1,
-        }
+        LinkParams::default()
     } else if args.registrar {
         LinkParams {
             link_targets: vec!["related".to_string()],
