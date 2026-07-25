@@ -173,7 +173,7 @@ impl GetChecks for Network {
                     let reserved =
                         IpCidr::from_str("240.0.0.0/4").expect("incorrect reserved cidr");
                     if reserved.contains(&start_addr) && reserved.contains(&end_addr) {
-                        items.push(Check::IpAddressLinkLocal.check_item())
+                        items.push(Check::IpAddressReservedNet.check_item())
                     }
                 }
             }
