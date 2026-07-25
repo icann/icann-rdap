@@ -843,7 +843,7 @@ fn events(args: &ObjectArgs) -> Option<Events> {
         .event_action("registration".to_string())
         .build();
     events.push(created);
-    let updated_at = if let Some(dt) = args.created {
+    let updated_at = if let Some(dt) = args.updated {
         dt
     } else {
         Utc::now().into()
