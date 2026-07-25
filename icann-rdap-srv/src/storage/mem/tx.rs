@@ -498,17 +498,6 @@ impl TxHandle for MemTx {
             }
         };
 
-        if self
-            .mem
-            .config
-            .common_config
-            .network_search_by_handle_enable
-            && let Some(ref handle_str) = handle
-        {
-            self.networks_by_handle
-                .insert(handle_str, network_response.clone());
-        }
-
         if self.mem.config.common_config.network_search_by_name_enable
             && let Some(ref name) = network.name
         {
