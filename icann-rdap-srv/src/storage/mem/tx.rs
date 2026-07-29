@@ -487,14 +487,42 @@ impl TxHandle for MemTx {
             .ok_or_else(|| RdapServerError::EmptyIndexData("ipVersion".to_string()))?;
         let is_v4 = ip_type.eq_ignore_ascii_case("v4");
         if is_v4 {
-            let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
-            for net in subnets {
-                self.ip4.insert(net, network_response.clone());
+            if let Some(cidr0_cidrs) = &network.cidr0_cidrs {
+                for cidr in cidr0_cidrs {
+                    let prefix = cidr
+                        .prefix()
+                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0prefix".to_string()))?;
+                    let length = cidr
+                        .length()
+                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0length".to_string()))?;
+                    let cidr_str = format!("{}/{}", prefix, length);
+                    let ipnet: Ipv4Net = cidr_str.parse()?;
+                    self.ip4.insert(ipnet, network_response.clone());
+                }
+            } else {
+                let subnets = Ipv4Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
+                for net in subnets {
+                    self.ip4.insert(net, network_response.clone());
+                }
             }
         } else {
-            let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
-            for net in subnets {
-                self.ip6.insert(net, network_response.clone());
+            if let Some(cidr0_cidrs) = &network.cidr0_cidrs {
+                for cidr in cidr0_cidrs {
+                    let prefix = cidr
+                        .prefix()
+                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0prefix".to_string()))?;
+                    let length = cidr
+                        .length()
+                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0length".to_string()))?;
+                    let cidr_str = format!("{}/{}", prefix, length);
+                    let ipnet: Ipv6Net = cidr_str.parse()?;
+                    self.ip6.insert(ipnet, network_response.clone());
+                }
+            } else {
+                let subnets = Ipv6Subnets::new(start_addr.parse()?, end_addr.parse()?, 0);
+                for net in subnets {
+                    self.ip6.insert(net, network_response.clone());
+                }
             }
         };
 
@@ -673,6 +701,7 @@ impl TxHandle for MemTx {
 mod tests {
     use super::*;
     use std::net::{Ipv4Addr, Ipv6Addr};
+    use crate::storage::StoreOps;
 
     #[test]
     fn ipv4_subnets_min_prefix_len_0_produces_larger_networks() {
@@ -728,5 +757,239 @@ mod tests {
             subnets.iter().any(|net| net.prefix_len() < 128),
             "At least one subnet should be larger than /128"
         );
+    }
+
+    #[tokio::test]
+    async fn add_network_uses_cidr0_for_ipv4() {
+        // GIVEN a network with CIDR0 extension
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let network = Network::builder()
+            .cidr("10.0.0.0/24")
+            .handle("TEST-NET-4")
+            .build()
+            .expect("network build");
+
+        // WHEN
+        tx.add_network(&network).await.expect("add network");
+        tx.commit().await.expect("commit");
+
+        // THEN the CIDR0 prefix/length is used - only 10.0.0.0/24 is indexed
+        let ip4 = mem.ip4.read().await;
+        let count = ip4.iter().count();
+        assert_eq!(count, 1, "expected exactly 1 subnet from CIDR0");
+        let (entry, _) = ip4.iter().next().expect("should have entry");
+        assert_eq!(entry.to_string(), "10.0.0.0/24");
+    }
+
+    #[tokio::test]
+    async fn add_network_uses_cidr0_for_ipv6() {
+        // GIVEN a network with CIDR0 extension
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let network = Network::builder()
+            .cidr("2620:1ec::/36")
+            .handle("TEST-NET-V6")
+            .build()
+            .expect("network build");
+
+        // WHEN
+        tx.add_network(&network).await.expect("add network");
+        tx.commit().await.expect("commit");
+
+        // THEN the CIDR0 prefix/length is used - only 2620:1ec::/36 is indexed
+        let ip6 = mem.ip6.read().await;
+        let count = ip6.iter().count();
+        assert_eq!(count, 1, "expected exactly 1 subnet from CIDR0");
+        let (entry, _) = ip6.iter().next().expect("should have entry");
+        assert_eq!(entry.to_string(), "2620:1ec::/36");
+    }
+
+    #[tokio::test]
+    async fn add_network_cidr0_absent_ipv4_fallback() {
+        // GIVEN a network with cidr0_cidrs = None (no CIDR0 extension)
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let network = Network {
+            common: icann_rdap_common::response::Common {
+                rdap_conformance: None,
+                notices: None,
+            },
+            object_common: icann_rdap_common::response::ObjectCommon {
+                object_class_name: "ip network".to_string(),
+                handle: Some("TEST-FALLBACK".into()),
+                remarks: None,
+                links: None,
+                events: None,
+                status: None,
+                port_43: None,
+                entities: None,
+                redacted: None,
+            },
+            start_address: Some("10.0.0.0".to_string()),
+            end_address: Some("10.0.0.255".to_string()),
+            ip_version: Some("v4".to_string().into()),
+            name: None,
+            network_type: None,
+            parent_handle: None,
+            country: None,
+            cidr0_cidrs: None,
+        };
+
+        // WHEN
+        tx.add_network(&network).await.expect("add network");
+        tx.commit().await.expect("commit");
+
+        // THEN falls back to Ipv4Subnets::new - generates subnets from range
+        let ip4 = mem.ip4.read().await;
+        let count = ip4.iter().count();
+        assert!(
+            count > 0,
+            "expected at least 1 subnet from Ipv4Subnets fallback, got {}",
+            count
+        );
+    }
+
+    #[tokio::test]
+    async fn add_network_cidr0_absent_ipv6_fallback() {
+        // GIVEN a network with cidr0_cidrs = None (no CIDR0 extension)
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let network = Network {
+            common: icann_rdap_common::response::Common {
+                rdap_conformance: None,
+                notices: None,
+            },
+            object_common: icann_rdap_common::response::ObjectCommon {
+                object_class_name: "ip network".to_string(),
+                handle: Some("TEST-FALLBACK-V6".into()),
+                remarks: None,
+                links: None,
+                events: None,
+                status: None,
+                port_43: None,
+                entities: None,
+                redacted: None,
+            },
+            start_address: Some("2001:db8::".to_string()),
+            end_address: Some("2001:db8::ffff".to_string()),
+            ip_version: Some("v6".to_string().into()),
+            name: None,
+            network_type: None,
+            parent_handle: None,
+            country: None,
+            cidr0_cidrs: None,
+        };
+
+        // WHEN
+        tx.add_network(&network).await.expect("add network");
+        tx.commit().await.expect("commit");
+
+        // THEN falls back to Ipv6Subnets::new - generates subnets from range
+        let ip6 = mem.ip6.read().await;
+        let count = ip6.iter().count();
+        assert!(
+            count > 0,
+            "expected at least 1 subnet from Ipv6Subnets fallback, got {}",
+            count
+        );
+    }
+
+    #[tokio::test]
+    async fn add_network_cidr0_missing_prefix_returns_error() {
+        // GIVEN a network with CIDR0 entry that has no prefix
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let network = Network {
+            common: icann_rdap_common::response::Common {
+                rdap_conformance: None,
+                notices: None,
+            },
+            object_common: icann_rdap_common::response::ObjectCommon {
+                object_class_name: "ip network".to_string(),
+                handle: Some("TEST-BAD-CIDR".into()),
+                remarks: None,
+                links: None,
+                events: None,
+                status: None,
+                port_43: None,
+                entities: None,
+                redacted: None,
+            },
+            start_address: Some("10.0.0.0".to_string()),
+            end_address: Some("10.0.0.255".to_string()),
+            ip_version: Some("v4".to_string().into()),
+            name: None,
+            network_type: None,
+            parent_handle: None,
+            country: None,
+            cidr0_cidrs: Some(vec![
+                icann_rdap_common::prelude::Cidr0Cidr {
+                    prefix: None,
+                    length: Some(icann_rdap_common::response::Numberish::from(24u8)),
+                },
+            ]),
+        };
+
+        // WHEN
+        let result = tx.add_network(&network).await;
+
+        // THEN returns EmptyIndexData error for missing prefix
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            RdapServerError::EmptyIndexData(field) => assert_eq!(field, "cidr0prefix"),
+            other => panic!("expected EmptyIndexData, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn add_network_cidr0_missing_length_returns_error() {
+        // GIVEN a network with CIDR0 entry that has no length
+        let mem = Mem::default();
+        let mut tx = mem.new_tx().await.expect("new transaction");
+        let network = Network {
+            common: icann_rdap_common::response::Common {
+                rdap_conformance: None,
+                notices: None,
+            },
+            object_common: icann_rdap_common::response::ObjectCommon {
+                object_class_name: "ip network".to_string(),
+                handle: Some("TEST-BAD-CIDR2".into()),
+                remarks: None,
+                links: None,
+                events: None,
+                status: None,
+                port_43: None,
+                entities: None,
+                redacted: None,
+            },
+            start_address: Some("10.0.0.0".to_string()),
+            end_address: Some("10.0.0.255".to_string()),
+            ip_version: Some("v4".to_string().into()),
+            name: None,
+            network_type: None,
+            parent_handle: None,
+            country: None,
+            cidr0_cidrs: Some(vec![
+                icann_rdap_common::prelude::Cidr0Cidr {
+                    prefix: Some(
+                        icann_rdap_common::prelude::Cidr0CidrPrefix::V4Prefix(
+                            "10.0.0.0".to_string(),
+                        ),
+                    ),
+                    length: None,
+                },
+            ]),
+        };
+
+        // WHEN
+        let result = tx.add_network(&network).await;
+
+        // THEN returns EmptyIndexData error for missing length
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            RdapServerError::EmptyIndexData(field) => assert_eq!(field, "cidr0length"),
+            other => panic!("expected EmptyIndexData, got {:?}", other),
+        }
     }
 }
