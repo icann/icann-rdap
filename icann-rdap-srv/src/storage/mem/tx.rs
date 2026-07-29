@@ -489,12 +489,12 @@ impl TxHandle for MemTx {
         if is_v4 {
             if let Some(cidr0_cidrs) = &network.cidr0_cidrs {
                 for cidr in cidr0_cidrs {
-                    let prefix = cidr
-                        .prefix()
-                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0prefix".to_string()))?;
-                    let length = cidr
-                        .length()
-                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0length".to_string()))?;
+                    let prefix = cidr.prefix().ok_or_else(|| {
+                        RdapServerError::EmptyIndexData("cidr0prefix".to_string())
+                    })?;
+                    let length = cidr.length().ok_or_else(|| {
+                        RdapServerError::EmptyIndexData("cidr0length".to_string())
+                    })?;
                     let cidr_str = format!("{}/{}", prefix, length);
                     let ipnet: Ipv4Net = cidr_str.parse()?;
                     self.ip4.insert(ipnet, network_response.clone());
@@ -508,12 +508,12 @@ impl TxHandle for MemTx {
         } else {
             if let Some(cidr0_cidrs) = &network.cidr0_cidrs {
                 for cidr in cidr0_cidrs {
-                    let prefix = cidr
-                        .prefix()
-                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0prefix".to_string()))?;
-                    let length = cidr
-                        .length()
-                        .ok_or_else(|| RdapServerError::EmptyIndexData("cidr0length".to_string()))?;
+                    let prefix = cidr.prefix().ok_or_else(|| {
+                        RdapServerError::EmptyIndexData("cidr0prefix".to_string())
+                    })?;
+                    let length = cidr.length().ok_or_else(|| {
+                        RdapServerError::EmptyIndexData("cidr0length".to_string())
+                    })?;
                     let cidr_str = format!("{}/{}", prefix, length);
                     let ipnet: Ipv6Net = cidr_str.parse()?;
                     self.ip6.insert(ipnet, network_response.clone());
@@ -700,8 +700,8 @@ impl TxHandle for MemTx {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::{Ipv4Addr, Ipv6Addr};
     use crate::storage::StoreOps;
+    use std::net::{Ipv4Addr, Ipv6Addr};
 
     #[test]
     fn ipv4_subnets_min_prefix_len_0_produces_larger_networks() {
@@ -923,12 +923,10 @@ mod tests {
             network_type: None,
             parent_handle: None,
             country: None,
-            cidr0_cidrs: Some(vec![
-                icann_rdap_common::prelude::Cidr0Cidr {
-                    prefix: None,
-                    length: Some(icann_rdap_common::response::Numberish::from(24u8)),
-                },
-            ]),
+            cidr0_cidrs: Some(vec![icann_rdap_common::prelude::Cidr0Cidr {
+                prefix: None,
+                length: Some(icann_rdap_common::response::Numberish::from(24u8)),
+            }]),
         };
 
         // WHEN
@@ -970,16 +968,12 @@ mod tests {
             network_type: None,
             parent_handle: None,
             country: None,
-            cidr0_cidrs: Some(vec![
-                icann_rdap_common::prelude::Cidr0Cidr {
-                    prefix: Some(
-                        icann_rdap_common::prelude::Cidr0CidrPrefix::V4Prefix(
-                            "10.0.0.0".to_string(),
-                        ),
-                    ),
-                    length: None,
-                },
-            ]),
+            cidr0_cidrs: Some(vec![icann_rdap_common::prelude::Cidr0Cidr {
+                prefix: Some(icann_rdap_common::prelude::Cidr0CidrPrefix::V4Prefix(
+                    "10.0.0.0".to_string(),
+                )),
+                length: None,
+            }]),
         };
 
         // WHEN
