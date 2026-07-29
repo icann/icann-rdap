@@ -2,7 +2,6 @@ use http::HeaderMap;
 use icann_rdap_common::prelude::normalize_extensions;
 use serde::Deserialize;
 use std::net::IpAddr;
-use tracing::debug;
 
 use axum::{
     extract::{Query, State},
@@ -12,7 +11,7 @@ use axum::{
 use crate::{
     error::RdapServerError,
     rdap::{
-        jscontact_conversion, parse_extensions,
+        jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -32,8 +31,7 @@ pub(crate) async fn nameservers(
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
     Ok(if let Some(name) = params.name {
-        let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-        debug!("exts_list = \'{}\'", exts_list.join(" "));
+        let exts_list = super::parse_exts_list_from_headers(&headers);
 
         let storage = state.get_storage().await?;
         let results = storage.search_nameservers_by_name(&name).await?;
@@ -45,8 +43,7 @@ pub(crate) async fn nameservers(
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(ip_str) = params.ip {
-        let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-        debug!("exts_list = \'{}\'", exts_list.join(" "));
+        let exts_list = super::parse_exts_list_from_headers(&headers);
 
         let ip: IpAddr = match ip_str.parse() {
             Ok(ip) => ip,

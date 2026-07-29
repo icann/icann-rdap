@@ -14,7 +14,7 @@ use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    rdap::{ToBootStrap, jscontact_conversion, parse_extensions, response::ResponseUtil},
+    rdap::{ToBootStrap, jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -47,8 +47,7 @@ pub(crate) async fn domains(
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
     Ok(if let Some(name) = params.name {
-        let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-        debug!("exts_list = \'{}\'", exts_list.join(" "));
+        let exts_list = super::parse_exts_list_from_headers(&headers);
 
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_name(&name).await?;
@@ -60,8 +59,7 @@ pub(crate) async fn domains(
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(ns_ldh_name) = params.ns_ldh_name {
-        let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-        debug!("exts_list = \'{}\'", exts_list.join(" "));
+        let exts_list = super::parse_exts_list_from_headers(&headers);
 
         let storage = state.get_storage().await?;
         let results = storage.search_domains_by_ns_ldh_name(&ns_ldh_name).await?;
@@ -73,8 +71,7 @@ pub(crate) async fn domains(
         let results = normalize_extensions(results);
         results.response()
     } else if let Some(ip_str) = params.ns_ip {
-        let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-        debug!("exts_list = \'{}\'", exts_list.join(" "));
+        let exts_list = super::parse_exts_list_from_headers(&headers);
 
         let ip: IpAddr = match ip_str.parse() {
             Ok(ip) => ip,
@@ -102,8 +99,7 @@ pub(crate) async fn domain_rdap_up(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
 
@@ -131,8 +127,7 @@ pub(crate) async fn domain_rdap_top(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
 
@@ -160,8 +155,7 @@ pub(crate) async fn domain_rdap_down(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
 
@@ -185,8 +179,7 @@ pub(crate) async fn domain_rdap_bottom(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
 
