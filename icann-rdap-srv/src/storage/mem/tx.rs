@@ -18,6 +18,7 @@ use crate::{
     storage::{
         TxHandle,
         data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId},
+        mem::DEFAULT_HELPFILE_NAME,
     },
 };
 
@@ -591,7 +592,7 @@ impl TxHandle for MemTx {
         help: &Help,
         host: Option<&str>,
     ) -> Result<(), RdapServerError> {
-        let host = host.unwrap_or("..default");
+        let host = host.unwrap_or(DEFAULT_HELPFILE_NAME);
         self.srvhelps
             .insert(host.to_string(), Arc::new(help.clone().to_response()));
         Ok(())
