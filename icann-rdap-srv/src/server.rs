@@ -83,6 +83,8 @@ impl Listener {
         } else if let StorageType::Postgres(config) = &service_config.storage_type {
             let app_state = AppState::new_pg(config.clone(), service_config).await?;
             self.start_with_state(app_state).await?;
+        } else {
+            return Err(RdapServerError::Config("Invalid storage type.".to_string()));
         };
         Ok(())
     }

@@ -30,7 +30,7 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                         // Now use role_info to append to formatted_data
                         if !role_info.name.is_empty() {
                             if ["registrar", "reseller", "sponsor", "proxy"]
-                                .contains(&role.as_str())
+                                .contains(&role.to_ascii_lowercase().as_str())
                             {
                                 formatted_data +=
                                     &format!("{}: {}\n", params.label, role_info.name);
@@ -59,7 +59,7 @@ impl ToGtldWhois for Option<Vec<Entity>> {
                         }
 
                         // Special Sauce for Registrar IANA ID and Abuse Contact
-                        if role.as_str() == "registrar" {
+                        if role.to_ascii_lowercase().as_str() == "registrar" {
                             if let Some(public_ids) = &entity.public_ids {
                                 for public_id in public_ids {
                                     if let Some(id_type) = &public_id.id_type

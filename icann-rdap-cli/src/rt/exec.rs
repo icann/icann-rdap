@@ -464,14 +464,9 @@ fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestExe
     for group in &options.expect_groups {
         match group {
             ExtensionGroup::Gtld => {
+                retval.push(format!("{}", ExtensionId::IcannRdapResponseProfile1));
                 retval.push(format!(
-                    "{}|{}",
-                    ExtensionId::IcannRdapResponseProfile0,
-                    ExtensionId::IcannRdapResponseProfile1
-                ));
-                retval.push(format!(
-                    "{}|{}",
-                    ExtensionId::IcannRdapTechnicalImplementationGuide0,
+                    "{}",
                     ExtensionId::IcannRdapTechnicalImplementationGuide1
                 ));
             }
@@ -493,7 +488,6 @@ fn normalize_extension_ids(options: &TestOptions) -> Result<Vec<String>, TestExe
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::response::ExtensionId;
 
@@ -502,7 +496,7 @@ mod tests {
     use super::normalize_extension_ids;
 
     #[test]
-    fn GIVEN_gtld_WHEN_normalize_extensions_THEN_list_contains_gtld_ids() {
+    fn test_gtld_normalize_extensions() {
         // GIVEN
         let given = vec![ExtensionGroup::Gtld];
 
@@ -514,23 +508,15 @@ mod tests {
         let actual = normalize_extension_ids(&options).unwrap();
 
         // THEN
-        let expected1 = format!(
-            "{}|{}",
-            ExtensionId::IcannRdapResponseProfile0,
-            ExtensionId::IcannRdapResponseProfile1
-        );
+        let expected1 = format!("{}", ExtensionId::IcannRdapResponseProfile1);
         assert!(actual.contains(&expected1));
 
-        let expected2 = format!(
-            "{}|{}",
-            ExtensionId::IcannRdapTechnicalImplementationGuide0,
-            ExtensionId::IcannRdapTechnicalImplementationGuide1
-        );
+        let expected2 = format!("{}", ExtensionId::IcannRdapTechnicalImplementationGuide1);
         assert!(actual.contains(&expected2));
     }
 
     #[test]
-    fn GIVEN_nro_and_foo_WHEN_normalize_extensions_THEN_list_contains_nro_ids_and_foo() {
+    fn test_nro_and_foo_normalize_extensions() {
         // GIVEN
         let groups = vec![ExtensionGroup::Nro];
         let exts = vec!["foo1".to_string()];
@@ -552,7 +538,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_nro_and_foo_WHEN_unreg_disallowed_THEN_err() {
+    fn test_nro_and_foo_unreg_disallowed() {
         // GIVEN
         let groups = vec![ExtensionGroup::Nro];
         let exts = vec!["foo1".to_string()];
@@ -570,7 +556,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_unregistered_ext_WHEN_normalize_extensions_THEN_error() {
+    fn test_unregistered_ext_normalize_extensions() {
         // GIVEN
         let given = vec!["foo".to_string()];
 
@@ -586,7 +572,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_unregistered_ext_WHEN_allowed_THEN_no_error() {
+    fn test_unregistered_ext() {
         // GIVEN
         let given = vec!["foo".to_string()];
 

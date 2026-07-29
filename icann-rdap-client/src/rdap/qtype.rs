@@ -1374,7 +1374,11 @@ impl FromStr for QueryType {
 ///
 /// Returns [`RdapClientError::InvalidQueryValue`] if the remaining text is not a valid u32.
 fn parse_autnum(s: &str) -> Result<u32, RdapClientError> {
-    let autnum = s.trim_start_matches(|c| -> bool { matches!(c, 'a' | 'A' | 's' | 'S') });
+    let autnum = s
+        .trim_start_matches("as")
+        .trim_start_matches("aS")
+        .trim_start_matches("As")
+        .trim_start_matches("AS");
     autnum
         .parse::<u32>()
         .map_err(|_e| RdapClientError::InvalidQueryValue)
@@ -1402,13 +1406,6 @@ fn parse_cidr(s: &str) -> Result<IpCidr, RdapClientError> {
         cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(s, cidr::parsers::parse_loose_ip)
             .map_err(|_e| RdapClientError::InvalidQueryValue)
     }
-}
-
-/// Checks if `text` matches an LDH (letters, digits, hyphens) domain name pattern.
-fn is_ldh_domain(text: &str) -> bool {
-    static LDH_DOMAIN_RE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^(?i)(\.?[a-zA-Z0-9-]+)*\.[a-zA-Z0-9-]+\.?$").unwrap());
-    LDH_DOMAIN_RE.is_match(text)
 }
 
 /// Checks if `text` is a valid domain name (contains `.` and is a unicode domain name).
@@ -2552,5 +2549,37 @@ mod tests {
 
         // THEN
         assert!(q.is_err());
+    }
+
+    #[rstest]
+    #[case("as701", 701)]
+    #[case("aS701", 701)]
+    #[case("As701", 701)]
+    #[case("AS701", 701)]
+    #[case("701", 701)]
+    #[case("000", 0)]
+    #[case("AS0", 0)]
+    fn test_good_parse_autnum(#[case] actual: &str, #[case] expected: u32) {
+        // GIVEN
+        // in params
+
+        // WHEN
+        let result = parse_autnum(actual);
+
+        // THEN
+        let result = result.unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_bad_parse_autnum() {
+        // GIVEN
+        let autnum = "aa701";
+
+        // WHEN
+        let actual = parse_autnum(autnum);
+
+        // THEN
+        assert!(actual.is_err());
     }
 }

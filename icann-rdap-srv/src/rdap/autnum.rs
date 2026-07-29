@@ -4,11 +4,10 @@ use axum::{
 };
 use http::HeaderMap;
 use icann_rdap_common::prelude::normalize_extensions;
-use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil},
+    rdap::{jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -22,8 +21,7 @@ pub(crate) async fn autnum_by_num(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
     let autnum = storage.get_autnum_by_num(as_num).await?;

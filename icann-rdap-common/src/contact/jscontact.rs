@@ -516,7 +516,7 @@ fn phone_to_jscontact(phone: &super::Phone) -> Phone {
 }
 
 fn links_to_jscontact(contact: &Contact) -> Option<Links> {
-    if contact.urls().is_empty() || contact.contact_uris().is_empty() {
+    if contact.urls().is_empty() && contact.contact_uris().is_empty() {
         return None;
     }
     //else
@@ -1116,7 +1116,7 @@ mod test {
         let result = links_to_jscontact(&contact);
 
         // THEN
-        assert!(result.is_none());
+        assert!(result.is_some());
     }
 
     #[test]
@@ -1130,7 +1130,7 @@ mod test {
         let result = links_to_jscontact(&contact);
 
         // THEN
-        assert!(result.is_none());
+        assert!(result.is_some());
     }
 
     #[test]

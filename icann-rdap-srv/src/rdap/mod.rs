@@ -1,7 +1,10 @@
+use http::{HeaderMap, HeaderValue};
 use icann_rdap_common::{
+    media_types::RDAP_MEDIA_TYPE,
     prelude::{ExtensionId, ToResponse},
     response::{RdapResponse, Rfc9083Error, jscontact::JsContactConvert},
 };
+use tracing::debug;
 
 use crate::config::JsContactConversion;
 
@@ -89,7 +92,7 @@ fn parse_extensions(accept_header: &str) -> Vec<String> {
     accept_header
         .split(',')
         .map(|media_type| media_type.trim())
-        .find(|media_type| media_type.starts_with("application/rdap+json"))
+        .find(|media_type| media_type.starts_with(RDAP_MEDIA_TYPE))
         .unwrap_or_default()
         .split(';')
         .map(|s| s.trim())
@@ -101,6 +104,18 @@ fn parse_extensions(accept_header: &str) -> Vec<String> {
         .split_terminator(' ')
         .map(String::from)
         .collect::<Vec<String>>()
+}
+
+pub(crate) fn parse_exts_list_from_headers(headers: &HeaderMap) -> Vec<String> {
+    let exts_list = parse_extensions(
+        headers
+            .get("accept")
+            .unwrap_or(&HeaderValue::from_static(RDAP_MEDIA_TYPE))
+            .to_str()
+            .unwrap(),
+    );
+    debug!("exts_list = '{}'", exts_list.join(" "));
+    exts_list
 }
 
 fn jscontact_conversion(

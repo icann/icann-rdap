@@ -1,6 +1,5 @@
 use http::HeaderMap;
 use icann_rdap_common::prelude::normalize_extensions;
-use tracing::debug;
 
 use {
     axum::{
@@ -12,7 +11,7 @@ use {
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil},
+    rdap::{jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -26,8 +25,7 @@ pub(crate) async fn entity_by_handle(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
     let entity = storage.get_entity_by_handle(&handle).await?;
