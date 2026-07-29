@@ -668,3 +668,65 @@ impl TxHandle for MemTx {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{Ipv4Addr, Ipv6Addr};
+
+    #[test]
+    fn ipv4_subnets_min_prefix_len_0_produces_larger_networks() {
+        // GIVEN
+        // Range: 10.0.0.0 to 10.0.255.0 (256 addresses)
+        // With min_prefix_len=0, Ipv4Subnets::new creates the largest possible networks
+        // If all subnets were /32 (smallest), we'd get 256 subnets
+        let start: Ipv4Addr = "10.0.0.0".parse().unwrap();
+        let end: Ipv4Addr = "10.0.255.0".parse().unwrap();
+
+        // WHEN
+        let subnets: Vec<_> = Ipv4Subnets::new(start, end, 0).collect();
+
+        // THEN
+        // Should be far fewer than 256 because some are larger than /32
+        dbg!(&subnets);
+        assert!(
+            subnets.len() < 256,
+            "Expected fewer than 256 subnets (all /32), got {} - proving largest networks are used",
+            subnets.len()
+        );
+
+        // Verify at least one subnet is larger than /32
+        assert!(
+            subnets.iter().any(|net| net.prefix_len() < 32),
+            "At least one subnet should be larger than /32"
+        );
+    }
+
+    #[test]
+    fn ipv6_subnets_min_prefix_len_0_produces_larger_networks() {
+        // GIVEN
+        // Range: ::1 to ::100 (256 addresses)
+        // With min_prefix_len=0, Ipv6Subnets::new creates the largest possible networks
+        let start: Ipv6Addr = "::1".parse().unwrap();
+        let end: Ipv6Addr = "::100".parse().unwrap();
+
+        // WHEN
+        let subnets: Vec<_> = Ipv6Subnets::new(start, end, 0).collect();
+
+        // THEN
+        // If all subnets were /128 (smallest), we'd get 256 subnets
+        // Should be fewer because some are larger
+        dbg!(&subnets);
+        assert!(
+            subnets.len() < 256,
+            "Expected fewer than 256 subnets, got {} - proving largest networks are used",
+            subnets.len()
+        );
+
+        // Verify at least one subnet is larger than /128
+        assert!(
+            subnets.iter().any(|net| net.prefix_len() < 128),
+            "At least one subnet should be larger than /128"
+        );
+    }
+}
