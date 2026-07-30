@@ -35,6 +35,12 @@ use crate::{
     request::request_and_process,
 };
 
+#[cfg(target_os = "windows")]
+const LINE_ENDING: &str = "\r\n";
+
+#[cfg(not(target_os = "windows"))]
+const LINE_ENDING: &str = "\n";
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OutputType {
     /// Results are rendered as Markdown in the terminal using ANSI terminal capabilities.
@@ -671,6 +677,8 @@ fn extract_geofeed_links(rdap_response: &RdapResponse) -> Vec<String> {
 ///
 /// If the path is a directory, the filename is derived from the URL.
 /// If the path is a file, it is written directly to that location.
+/// If the file already exists, the new content is appended with proper
+/// line ending separation.
 async fn download_geofeed(
     url: &str,
     output_path: &std::path::Path,
@@ -701,8 +709,25 @@ async fn download_geofeed(
         .await
         .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to read response: {}", e)))?;
 
-    // Write to file
-    std::fs::write(&file_path, &bytes)?;
+    // Append to file, ensuring proper line ending separation
+    use std::io::{Read, Write};
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&file_path)?;
+    if file_path.exists() {
+        let metadata = std::fs::metadata(&file_path)?;
+        let len = metadata.len();
+        if len > 0 {
+            // Read the last byte to check if file ends with a line ending
+            let mut last_byte = [0u8; 1];
+            std::fs::File::open(&file_path)?.read_exact(&mut last_byte)?;
+            if last_byte[0] != LINE_ENDING.as_bytes()[0] {
+                file.write_all(LINE_ENDING.as_bytes())?;
+            }
+        }
+    }
+    file.write_all(&bytes)?;
 
     Ok(file_path)
 }
