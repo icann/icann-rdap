@@ -129,6 +129,7 @@ pub(crate) struct ProcessingParams {
     pub link_params: LinkParams,
     pub to_jscontact: bool,
     pub self_link_caching: bool,
+    pub geofeed_file: Option<std::path::PathBuf>,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -208,8 +209,18 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
 
     // Handle geofeed output type - download geofeed files
     if processing_params.output_type == OutputType::Geofeed {
-        let download_dir = dirs::geofeed_download_path()?;
-        
+        let geofeed_path = if let Some(ref path) = processing_params.geofeed_file {
+            // Create the parent directory if it doesn't exist
+            if let Some(parent) = path.parent()
+                && !parent.exists()
+            {
+                std::fs::create_dir_all(parent)?;
+            }
+            path.clone()
+        } else {
+            dirs::geofeed_download_path()?
+        };
+
         // Collect all geofeed links from all transactions
         let mut all_urls = Vec::new();
         for tx in &transactions {
@@ -218,11 +229,11 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
                 all_urls.extend(urls);
             }
         }
-        
+
         // Download each geofeed URL
         for url in all_urls {
             info!("Downloading geofeed from: {}", url);
-            match download_geofeed(&url, &download_dir).await {
+            match download_geofeed(&url, &geofeed_path).await {
                 Ok(file_path) => {
                     info!("Geofeed downloaded to: {}", file_path.display());
                 }
@@ -595,17 +606,20 @@ fn write_json<W: std::io::Write, T: Serialize>(
 /// links, these point to external resources (typically CSV files), not RDAP JSON.
 fn extract_geofeed_links(rdap_response: &RdapResponse) -> Vec<String> {
     let mut urls = Vec::new();
-    
-    fn collect_geofeed_links<'a>(links: &'a [Link], urls: &mut Vec<String>) {
+
+    fn collect_geofeed_links(links: &[Link], urls: &mut Vec<String>) {
         for link in links {
-            if link.rel.as_ref().is_some_and(|r| r.eq_ignore_ascii_case("geofeed")) {
-                if let Some(href) = &link.href {
-                    urls.push(href.clone());
-                }
+            if link
+                .rel
+                .as_ref()
+                .is_some_and(|r| r.eq_ignore_ascii_case("geofeed"))
+                && let Some(href) = &link.href
+            {
+                urls.push(href.clone());
             }
         }
     }
-    
+
     match rdap_response {
         RdapResponse::Domain(d) => {
             collect_geofeed_links(d.links(), &mut urls);
@@ -649,23 +663,31 @@ fn extract_geofeed_links(rdap_response: &RdapResponse) -> Vec<String> {
         }
         _ => {}
     }
-    
+
     urls
 }
 
-/// Downloads a geofeed URL to the geofeed download directory.
+/// Downloads a geofeed URL to the specified file path.
 ///
-/// Returns the path to the downloaded file.
+/// If the path is a directory, the filename is derived from the URL.
+/// If the path is a file, it is written directly to that location.
 async fn download_geofeed(
     url: &str,
-    download_dir: &std::path::Path,
+    output_path: &std::path::Path,
 ) -> Result<std::path::PathBuf, RdapCliError> {
-    // Derive filename from URL
-    let filename = url.split('/').last().unwrap_or("geofeed.csv");
-    let filename = if filename.is_empty() { "geofeed.csv" } else { filename };
-    
-    let file_path = download_dir.join(filename);
-    
+    let file_path = if output_path.is_dir() {
+        // Derive filename from URL
+        let filename = url.split('/').next_back().unwrap_or("geofeed.csv");
+        let filename = if filename.is_empty() {
+            "geofeed.csv"
+        } else {
+            filename
+        };
+        output_path.join(filename)
+    } else {
+        output_path.to_path_buf()
+    };
+
     // Download the file
     let client = reqwest::Client::new();
     let response = client
@@ -673,14 +695,14 @@ async fn download_geofeed(
         .send()
         .await
         .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to send request: {}", e)))?;
-    
+
     let bytes = response
         .bytes()
         .await
         .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to read response: {}", e)))?;
-    
+
     // Write to file
     std::fs::write(&file_path, &bytes)?;
-    
+
     Ok(file_path)
 }
