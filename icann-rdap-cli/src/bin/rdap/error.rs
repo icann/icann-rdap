@@ -34,6 +34,8 @@ pub enum RdapCliError {
     GtldWhoisOutputNotImplemented,
     #[error("Received Non-200(OK) Response")]
     ResponseWasNot200Ok,
+    #[error("Geofeed download failed: {0}")]
+    GeofeedDownload(String),
 }
 
 impl RdapCliError {
@@ -57,6 +59,7 @@ impl RdapCliError {
             Self::LinkTargetNotFound(_) => 104,
             // 105 unused
             Self::ResponseWasNot200Ok => 106,
+            Self::GeofeedDownload(_) => 107,
 
             // User Errors
             Self::UnknownOutputType => 200,

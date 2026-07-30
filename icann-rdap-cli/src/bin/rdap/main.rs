@@ -516,6 +516,9 @@ enum OtypeArg {
     /// Only print primary object's events as JSON.
     EventJson,
 
+    /// Download geofeed files from RDAP response (RFC 9877).
+    Geofeed,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -664,6 +667,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             OtypeArg::StatusJson => OutputType::StatusJson,
             OtypeArg::EventText => OutputType::EventText,
             OtypeArg::EventJson => OutputType::EventJson,
+            OtypeArg::Geofeed => OutputType::Geofeed,
         }
     };
 
