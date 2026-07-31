@@ -57,6 +57,8 @@ pub enum Filter {
     Role,
     Email,
     FullName,
+    VoicePhone,
+    FaxPhone,
 
     // Autnum-specific
     StartAutnum,

@@ -90,6 +90,26 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
+                Filter::VoicePhone => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .filter_map(|c| c.voice_phone().map(|p| p.phone().to_string()))
+                            .collect(),
+                    ),
+                },
+                Filter::FaxPhone => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .filter_map(|c| c.fax_phone().map(|p| p.phone().to_string()))
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

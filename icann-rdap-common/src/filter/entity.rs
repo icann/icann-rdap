@@ -91,6 +91,26 @@ impl Filterable for Entity {
                             .collect(),
                     ),
                 },
+                Filter::VoicePhone => FilterOutput {
+                    filter: *f,
+                    value: self
+                        .contact()
+                        .and_then(|c| {
+                            c.voice_phone()
+                                .map(|p| FilterValue::StringVal(p.phone().to_string()))
+                        })
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::FaxPhone => FilterOutput {
+                    filter: *f,
+                    value: self
+                        .contact()
+                        .and_then(|c| {
+                            c.fax_phone()
+                                .map(|p| FilterValue::StringVal(p.phone().to_string()))
+                        })
+                        .unwrap_or(FilterValue::Null),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,
