@@ -19,6 +19,15 @@
 //! let results = extract(&domain, &filters);
 //! ```
 
+pub mod autnum;
+pub mod domain;
+pub mod domain_search_results;
+pub mod entity;
+pub mod entity_search_results;
+pub mod nameserver;
+pub mod nameserver_search_results;
+pub mod network;
+
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
