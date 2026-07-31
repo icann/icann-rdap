@@ -110,6 +110,56 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
+                Filter::ContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .flat_map(|c| {
+                                let uris: Vec<String> =
+                                    c.contact_uris().iter().map(|u| u.to_string()).collect();
+                                uris
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::CountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .flat_map(|c| {
+                                let names: Vec<String> = c
+                                    .postal_addresses()
+                                    .iter()
+                                    .filter_map(|a| a.country_name())
+                                    .map(|n| n.to_string())
+                                    .collect();
+                                names
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::CountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .flat_map(|c| {
+                                let codes: Vec<String> = c
+                                    .postal_addresses()
+                                    .iter()
+                                    .filter_map(|a| a.country_code())
+                                    .map(|c| c.to_string())
+                                    .collect();
+                                codes
+                            })
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

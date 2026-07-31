@@ -59,6 +59,9 @@ pub enum Filter {
     FullName,
     VoicePhone,
     FaxPhone,
+    ContactUri,
+    CountryName,
+    CountryCode,
 
     // Autnum-specific
     StartAutnum,

@@ -111,6 +111,42 @@ impl Filterable for Entity {
                         })
                         .unwrap_or(FilterValue::Null),
                 },
+                Filter::ContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.contact()
+                            .map(|c| c.contact_uris().iter().map(|u| u.to_string()).collect())
+                            .unwrap_or_default(),
+                    ),
+                },
+                Filter::CountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.contact()
+                            .map(|c| {
+                                c.postal_addresses()
+                                    .iter()
+                                    .filter_map(|a| a.country_name())
+                                    .map(|n| n.to_string())
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
+                    ),
+                },
+                Filter::CountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.contact()
+                            .map(|c| {
+                                c.postal_addresses()
+                                    .iter()
+                                    .filter_map(|a| a.country_code())
+                                    .map(|c| c.to_string())
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,
