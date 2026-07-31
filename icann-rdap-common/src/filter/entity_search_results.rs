@@ -73,6 +73,23 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
+                Filter::PublicId => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::NameValueArray(
+                        self.results()
+                            .iter()
+                            .flat_map(|e| e.public_ids())
+                            .filter_map(|p| {
+                                let id_type = p.id_type()?;
+                                let identifier = p.identifier()?;
+                                Some(NameValue {
+                                    name: id_type.to_string(),
+                                    value: FilterValue::StringVal(identifier.to_string()),
+                                })
+                            })
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,
