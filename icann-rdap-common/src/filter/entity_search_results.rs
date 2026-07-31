@@ -37,15 +37,17 @@ impl Filterable for EntitySearchResults {
                 },
                 Filter::Event => FilterOutput {
                     filter: *f,
-                    value: FilterValue::StringArray(
+                    value: FilterValue::NameValueArray(
                         self.results()
                             .iter()
                             .flat_map(|e| e.events())
-                            .map(|ev| {
-                                let action = ev.event_action().unwrap_or("");
-                                let actor = ev.event_actor().unwrap_or("");
-                                let date = ev.event_date().unwrap_or("");
-                                format!("{}:{}:{}", action, actor, date)
+                            .filter_map(|e| {
+                                let action = e.event_action()?;
+                                let date = e.event_date()?;
+                                Some(NameValue {
+                                    name: action.to_string(),
+                                    value: FilterValue::StringVal(date.to_string()),
+                                })
                             })
                             .collect(),
                     ),

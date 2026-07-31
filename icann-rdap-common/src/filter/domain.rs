@@ -25,14 +25,16 @@ impl Filterable for Domain {
                 },
                 Filter::Event => FilterOutput {
                     filter: *f,
-                    value: FilterValue::StringArray(
+                    value: FilterValue::NameValueArray(
                         self.events()
                             .iter()
-                            .map(|e| {
-                                let action = e.event_action().unwrap_or("");
-                                let actor = e.event_actor().unwrap_or("");
-                                let date = e.event_date().unwrap_or("");
-                                format!("{}:{}:{}", action, actor, date)
+                            .filter_map(|e| {
+                                let action = e.event_action()?;
+                                let date = e.event_date()?;
+                                Some(NameValue {
+                                    name: action.to_string(),
+                                    value: FilterValue::StringVal(date.to_string()),
+                                })
                             })
                             .collect(),
                     ),
