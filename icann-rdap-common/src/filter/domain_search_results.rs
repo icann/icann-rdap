@@ -96,12 +96,18 @@ impl Filterable for DomainSearchResults {
                 },
                 Filter::PublicId => FilterOutput {
                     filter: *f,
-                    value: FilterValue::StringArray(
+                    value: FilterValue::NameValueArray(
                         self.results()
                             .iter()
                             .flat_map(|d| d.public_ids())
-                            .filter_map(|p| p.identifier())
-                            .map(|p| p.to_string())
+                            .filter_map(|p| {
+                                let id_type = p.id_type()?;
+                                let identifier = p.identifier()?;
+                                Some(NameValue {
+                                    name: id_type.to_string(),
+                                    value: FilterValue::StringVal(identifier.to_string()),
+                                })
+                            })
                             .collect(),
                     ),
                 },
