@@ -311,6 +311,15 @@ struct Cli {
     #[arg(long, required = false, env = "RDAP_NO_EXTS_LIST")]
     no_exts_list: bool,
 
+    /// Specify a file path for geofeed downloads.
+    ///
+    /// When using `-O geofeed`, this option specifies the file path where
+    /// geofeed files will be downloaded. The file's parent directory is
+    /// created if it does not exist. Falls back to the system download
+    /// directory, then the current directory.
+    #[arg(short = 'G', long, required = false, env = "RDAP_DOWNLOAD_DIR")]
+    geofeed_file: Option<String>,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -516,6 +525,9 @@ enum OtypeArg {
     /// Only print primary object's events as JSON.
     EventJson,
 
+    /// Download geofeed files from RDAP response (RFC 9877).
+    Geofeed,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -664,6 +676,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             OtypeArg::StatusJson => OutputType::StatusJson,
             OtypeArg::EventText => OutputType::EventText,
             OtypeArg::EventJson => OutputType::EventJson,
+            OtypeArg::Geofeed => OutputType::Geofeed,
         }
     };
 
@@ -719,6 +732,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         link_params,
         to_jscontact: cli.to_jscontact,
         self_link_caching: cli.self_link_caching,
+        geofeed_file: cli.geofeed_file.map(std::path::PathBuf::from),
     };
 
     let exts_list = if cli.no_exts_list {

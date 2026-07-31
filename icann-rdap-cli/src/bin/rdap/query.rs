@@ -20,7 +20,7 @@ use icann_rdap_common::{
     check::{
         ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES, process::do_check_processing, traverse_checks,
     },
-    prelude::{Event, RdapResponse, get_relationship_links},
+    prelude::{Event, Link, RdapResponse, get_relationship_links},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
@@ -30,9 +30,16 @@ use tracing::warn;
 
 use crate::{
     bootstrap::{BootstrapType, get_base_url},
+    dirs,
     error::RdapCliError,
     request::request_and_process,
 };
+
+#[cfg(target_os = "windows")]
+const LINE_ENDING: &str = "\r\n";
+
+#[cfg(not(target_os = "windows"))]
+const LINE_ENDING: &str = "\n";
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OutputType {
@@ -74,6 +81,9 @@ pub(crate) enum OutputType {
 
     /// Only print primary object's events as JSON.
     EventJson,
+
+    /// Download geofeed files from RDAP response (RFC 9877).
+    Geofeed,
 }
 
 /// Used for doing TLD Lookups.
@@ -125,6 +135,7 @@ pub(crate) struct ProcessingParams {
     pub link_params: LinkParams,
     pub to_jscontact: bool,
     pub self_link_caching: bool,
+    pub geofeed_file: Option<std::path::PathBuf>,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -201,6 +212,44 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
             break;
         }
     }
+
+    // Handle geofeed output type - download geofeed files
+    if processing_params.output_type == OutputType::Geofeed {
+        let geofeed_path = if let Some(ref path) = processing_params.geofeed_file {
+            // Create the parent directory if it doesn't exist
+            if let Some(parent) = path.parent()
+                && !parent.exists()
+            {
+                std::fs::create_dir_all(parent)?;
+            }
+            path.clone()
+        } else {
+            dirs::geofeed_download_path()?
+        };
+
+        // Collect all geofeed links from all transactions
+        let mut all_urls = Vec::new();
+        for tx in &transactions {
+            if tx.req_data.req_target {
+                let urls = extract_geofeed_links(&tx.res_data.rdap);
+                all_urls.extend(urls);
+            }
+        }
+
+        // Download each geofeed URL
+        for url in all_urls {
+            info!("Downloading geofeed from: {}", url);
+            match download_geofeed(&url, &geofeed_path).await {
+                Ok(file_path) => {
+                    info!("Geofeed downloaded to: {}", file_path.display());
+                }
+                Err(e) => {
+                    warn!("Failed to download geofeed from {}: {}", url, e);
+                }
+            }
+        }
+    }
+
     final_output(processing_params, write, transactions)?;
 
     if received_non_200 {
@@ -555,4 +604,130 @@ fn write_json<W: std::io::Write, T: Serialize>(
         }
     };
     Ok(())
+}
+
+/// Extracts geofeed links from an RDAP response.
+///
+/// Per RFC 9877, geofeed links have rel="geofeed". Unlike other relationship
+/// links, these point to external resources (typically CSV files), not RDAP JSON.
+fn extract_geofeed_links(rdap_response: &RdapResponse) -> Vec<String> {
+    let mut urls = Vec::new();
+
+    fn collect_geofeed_links(links: &[Link], urls: &mut Vec<String>) {
+        for link in links {
+            if link
+                .rel
+                .as_ref()
+                .is_some_and(|r| r.eq_ignore_ascii_case("geofeed"))
+                && let Some(href) = &link.href
+            {
+                urls.push(href.clone());
+            }
+        }
+    }
+
+    match rdap_response {
+        RdapResponse::Domain(d) => {
+            collect_geofeed_links(d.links(), &mut urls);
+        }
+        RdapResponse::Entity(e) => {
+            collect_geofeed_links(e.links(), &mut urls);
+        }
+        RdapResponse::Nameserver(n) => {
+            collect_geofeed_links(n.links(), &mut urls);
+        }
+        RdapResponse::Autnum(a) => {
+            collect_geofeed_links(a.links(), &mut urls);
+        }
+        RdapResponse::Network(n) => {
+            collect_geofeed_links(n.links(), &mut urls);
+        }
+        RdapResponse::DomainSearchResults(s) => {
+            for domain in &s.results {
+                collect_geofeed_links(domain.links(), &mut urls);
+            }
+        }
+        RdapResponse::EntitySearchResults(s) => {
+            for entity in &s.results {
+                collect_geofeed_links(entity.links(), &mut urls);
+            }
+        }
+        RdapResponse::NameserverSearchResults(s) => {
+            for ns in &s.results {
+                collect_geofeed_links(ns.links(), &mut urls);
+            }
+        }
+        RdapResponse::IpSearchResults(s) => {
+            for network in &s.results {
+                collect_geofeed_links(network.links(), &mut urls);
+            }
+        }
+        RdapResponse::AutnumSearchResults(s) => {
+            for autnum in &s.results {
+                collect_geofeed_links(autnum.links(), &mut urls);
+            }
+        }
+        _ => {}
+    }
+
+    urls
+}
+
+/// Downloads a geofeed URL to the specified file path.
+///
+/// If the path is a directory, the filename is derived from the URL.
+/// If the path is a file, it is written directly to that location.
+/// If the file already exists, the new content is appended with proper
+/// line ending separation.
+async fn download_geofeed(
+    url: &str,
+    output_path: &std::path::Path,
+) -> Result<std::path::PathBuf, RdapCliError> {
+    let file_path = if output_path.is_dir() {
+        // Derive filename from URL
+        let filename = url.split('/').next_back().unwrap_or("geofeed.csv");
+        let filename = if filename.is_empty() {
+            "geofeed.csv"
+        } else {
+            filename
+        };
+        output_path.join(filename)
+    } else {
+        output_path.to_path_buf()
+    };
+
+    // Download the file
+    let client = reqwest::Client::new();
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to send request: {}", e)))?;
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to read response: {}", e)))?;
+
+    // Append to file, ensuring proper line ending separation
+    use std::io::{Read, Write};
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&file_path)?;
+    if file_path.exists() {
+        let metadata = std::fs::metadata(&file_path)?;
+        let len = metadata.len();
+        if len > 0 {
+            // Read the last byte to check if file ends with a line ending
+            let mut last_byte = [0u8; 1];
+            std::fs::File::open(&file_path)?.read_exact(&mut last_byte)?;
+            if last_byte[0] != LINE_ENDING.as_bytes()[0] {
+                file.write_all(LINE_ENDING.as_bytes())?;
+            }
+        }
+    }
+    file.write_all(&bytes)?;
+
+    Ok(file_path)
 }
