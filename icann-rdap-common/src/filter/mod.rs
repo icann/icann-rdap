@@ -20,10 +20,12 @@
 //! ```
 
 pub mod autnum;
+pub mod autnum_search_results;
 pub mod domain;
 pub mod domain_search_results;
 pub mod entity;
 pub mod entity_search_results;
+pub mod ip_search_results;
 pub mod nameserver;
 pub mod nameserver_search_results;
 pub mod network;
