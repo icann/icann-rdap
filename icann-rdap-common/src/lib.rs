@@ -3,6 +3,7 @@
 pub mod check;
 pub mod contact;
 pub mod dns_types;
+pub mod filter;
 pub mod httpdata;
 pub mod iana;
 pub mod media_types;
