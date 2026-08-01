@@ -93,6 +93,19 @@ impl Filterable for Network {
                         .map(|p| FilterValue::StringVal(p.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
+                Filter::Cidr => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.cidr0_cidrs()
+                            .iter()
+                            .filter_map(|c| {
+                                let prefix = c.prefix()?;
+                                let length = c.length()?;
+                                Some(format!("{}/{}", prefix, length))
+                            })
+                            .collect(),
+                    ),
+                },
                 Filter::RegistrantEmail => FilterOutput {
                     filter: *f,
                     value: find_entity_email_by_role(self.entities(), EntityRole::Registrant)

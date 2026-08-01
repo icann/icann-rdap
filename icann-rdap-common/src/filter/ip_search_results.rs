@@ -152,6 +152,21 @@ impl Filterable for IpSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::Cidr => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .flat_map(|n| {
+                                n.cidr0_cidrs().iter().filter_map(|c| {
+                                    let prefix = c.prefix()?;
+                                    let length = c.length()?;
+                                    Some(format!("{}/{}", prefix, length))
+                                })
+                            })
+                            .collect(),
+                    ),
+                },
                 Filter::AbuseEmail => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(

@@ -75,6 +75,7 @@ pub enum Filter {
     StartIpAddress,
     EndIpAddress,
     IpVersion,
+    Cidr,
 
     // Generic
     Name,
