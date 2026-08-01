@@ -133,7 +133,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrantVoicePhone => FilterOutput {
+                Filter::RegistrantVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -147,7 +147,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrantFaxPhone => FilterOutput {
+                Filter::RegistrantFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -222,7 +222,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::AbuseVoicePhone => FilterOutput {
+                Filter::AbuseVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -233,7 +233,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::AbuseFaxPhone => FilterOutput {
+                Filter::AbuseFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -299,7 +299,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::TechnicalVoicePhone => FilterOutput {
+                Filter::TechnicalVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -310,7 +310,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::TechnicalFaxPhone => FilterOutput {
+                Filter::TechnicalFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -385,7 +385,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrarVoicePhone => FilterOutput {
+                Filter::RegistrarVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -396,7 +396,7 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrarFaxPhone => FilterOutput {
+                Filter::RegistrarFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()

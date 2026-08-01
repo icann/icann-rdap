@@ -90,7 +90,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::VoicePhone => FilterOutput {
+                Filter::Voice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -100,7 +100,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::FaxPhone => FilterOutput {
+                Filter::Fax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -182,7 +182,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrantVoicePhone => FilterOutput {
+                Filter::RegistrantVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -196,7 +196,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrantFaxPhone => FilterOutput {
+                Filter::RegistrantFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -271,7 +271,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::AbuseVoicePhone => FilterOutput {
+                Filter::AbuseVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -282,7 +282,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::AbuseFaxPhone => FilterOutput {
+                Filter::AbuseFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -348,7 +348,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::TechnicalVoicePhone => FilterOutput {
+                Filter::TechnicalVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -359,7 +359,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::TechnicalFaxPhone => FilterOutput {
+                Filter::TechnicalFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -434,7 +434,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrarVoicePhone => FilterOutput {
+                Filter::RegistrarVoice => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()
@@ -445,7 +445,7 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
-                Filter::RegistrarFaxPhone => FilterOutput {
+                Filter::RegistrarFax => FilterOutput {
                     filter: *f,
                     value: FilterValue::StringArray(
                         self.results()

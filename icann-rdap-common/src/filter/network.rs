@@ -105,13 +105,13 @@ impl Filterable for Network {
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::RegistrantVoicePhone => FilterOutput {
+                Filter::RegistrantVoice => FilterOutput {
                     filter: *f,
                     value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Registrant)
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::RegistrantFaxPhone => FilterOutput {
+                Filter::RegistrantFax => FilterOutput {
                     filter: *f,
                     value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Registrant)
                         .map(|e| FilterValue::StringVal(e.to_string()))
@@ -150,13 +150,13 @@ impl Filterable for Network {
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::AbuseVoicePhone => FilterOutput {
+                Filter::AbuseVoice => FilterOutput {
                     filter: *f,
                     value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Abuse)
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::AbuseFaxPhone => FilterOutput {
+                Filter::AbuseFax => FilterOutput {
                     filter: *f,
                     value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Abuse)
                         .map(|e| FilterValue::StringVal(e.to_string()))
@@ -195,13 +195,13 @@ impl Filterable for Network {
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::TechnicalVoicePhone => FilterOutput {
+                Filter::TechnicalVoice => FilterOutput {
                     filter: *f,
                     value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Technical)
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::TechnicalFaxPhone => FilterOutput {
+                Filter::TechnicalFax => FilterOutput {
                     filter: *f,
                     value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Technical)
                         .map(|e| FilterValue::StringVal(e.to_string()))
@@ -240,13 +240,13 @@ impl Filterable for Network {
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::RegistrarVoicePhone => FilterOutput {
+                Filter::RegistrarVoice => FilterOutput {
                     filter: *f,
                     value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Registrar)
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
-                Filter::RegistrarFaxPhone => FilterOutput {
+                Filter::RegistrarFax => FilterOutput {
                     filter: *f,
                     value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Registrar)
                         .map(|e| FilterValue::StringVal(e.to_string()))
