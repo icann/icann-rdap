@@ -48,6 +48,7 @@ pub enum Filter {
     Event,
     RdapConformance,
     RegistrantEmail,
+    RegistrantFullName,
 
     // Domain-specific
     LdhName,
@@ -130,6 +131,24 @@ pub(crate) fn find_entity_email_by_role(entities: &[Entity], role: EntityRole) -
             if let Some(contact) = entity.contact() {
                 if let Some(email) = contact.email().map(|e| e.email().to_string()) {
                     return Some(email);
+                }
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    None
+}
+
+pub(crate) fn find_entity_full_name_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Option<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            if let Some(contact) = entity.contact() {
+                if let Some(name) = contact.full_name().map(|n| n.to_string()) {
+                    return Some(name);
                 }
             }
         }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::response::{CommonFields, EntitySearchResults, ObjectCommonFields, EntityRole};
+use crate::response::{CommonFields, EntityRole, EntitySearchResults, ObjectCommonFields};
 
 impl Filterable for EntitySearchResults {
     fn filter(&self, filters: &[Filter]) -> FilterResult {
@@ -165,7 +165,20 @@ impl Filterable for EntitySearchResults {
                     value: FilterValue::StringArray(
                         self.results()
                             .iter()
-                            .filter_map(|e| find_entity_email_by_role(e.entities(), EntityRole::Registrant))
+                            .filter_map(|e| {
+                                find_entity_email_by_role(e.entities(), EntityRole::Registrant)
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::RegistrantFullName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|r| {
+                                find_entity_full_name_by_role(r.entities(), EntityRole::Registrant)
+                            })
                             .collect(),
                     ),
                 },
