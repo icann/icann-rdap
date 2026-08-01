@@ -1,5 +1,5 @@
 use super::*;
-use crate::response::{AutnumSearchResults, CommonFields, ObjectCommonFields};
+use crate::response::{AutnumSearchResults, CommonFields, ObjectCommonFields, EntityRole};
 
 impl Filterable for AutnumSearchResults {
     fn filter(&self, filters: &[Filter]) -> FilterResult {
@@ -68,7 +68,7 @@ impl Filterable for AutnumSearchResults {
                     value: FilterValue::StringArray(
                         self.results()
                             .iter()
-                            .filter_map(|a| find_registrant_email(a.entities()))
+                            .filter_map(|a| find_entity_email_by_role(a.entities(), EntityRole::Registrant))
                             .collect(),
                     ),
                 },

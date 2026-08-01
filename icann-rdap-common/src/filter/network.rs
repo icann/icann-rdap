@@ -1,5 +1,5 @@
 use super::*;
-use crate::response::{CommonFields, Network, ObjectCommonFields};
+use crate::response::{CommonFields, Network, ObjectCommonFields, EntityRole};
 
 impl Filterable for Network {
     fn filter(&self, filters: &[Filter]) -> FilterResult {
@@ -95,7 +95,7 @@ impl Filterable for Network {
                 },
                 Filter::RegistrantEmail => FilterOutput {
                     filter: *f,
-                    value: find_registrant_email(self.entities())
+                    value: find_entity_email_by_role(self.entities(), EntityRole::Registrant)
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },

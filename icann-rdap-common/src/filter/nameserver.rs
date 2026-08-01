@@ -1,5 +1,5 @@
 use super::*;
-use crate::response::{CommonFields, Nameserver, ObjectCommonFields};
+use crate::response::{CommonFields, Nameserver, ObjectCommonFields, EntityRole};
 
 impl Filterable for Nameserver {
     fn filter(&self, filters: &[Filter]) -> FilterResult {
@@ -64,7 +64,7 @@ impl Filterable for Nameserver {
                 },
                 Filter::RegistrantEmail => FilterOutput {
                     filter: *f,
-                    value: find_registrant_email(self.entities())
+                    value: find_entity_email_by_role(self.entities(), EntityRole::Registrant)
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },

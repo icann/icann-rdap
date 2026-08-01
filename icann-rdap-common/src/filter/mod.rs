@@ -35,7 +35,7 @@ use std::collections::VecDeque;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
-use crate::response::{Entity, ObjectCommonFields};
+use crate::response::{Entity, EntityRole, ObjectCommonFields};
 
 /// Represents a filterable field on an RDAP response.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Display, EnumString)]
@@ -123,10 +123,10 @@ pub fn extract<T: Filterable>(response: &T, filters: &[Filter]) -> FilterResult 
     response.filter(filters)
 }
 
-pub(crate) fn find_registrant_email(entities: &[Entity]) -> Option<String> {
+pub(crate) fn find_entity_email_by_role(entities: &[Entity], role: EntityRole) -> Option<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role("registrant") {
+        if entity.is_entity_role(&role.to_string()) {
             if let Some(contact) = entity.contact() {
                 if let Some(email) = contact.email().map(|e| e.email().to_string()) {
                     return Some(email);
