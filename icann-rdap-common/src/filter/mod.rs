@@ -160,7 +160,7 @@ pub(crate) fn find_entity_email_by_role(entities: &[Entity], role: EntityRole) -
         {
             return Some(email);
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     None
 }
@@ -177,7 +177,7 @@ pub(crate) fn find_entity_full_name_by_role(
         {
             return Some(name);
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     None
 }
@@ -194,7 +194,7 @@ pub(crate) fn find_entity_voice_phone_by_role(
         {
             return Some(phone);
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     None
 }
@@ -211,7 +211,7 @@ pub(crate) fn find_entity_fax_phone_by_role(
         {
             return Some(phone);
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     None
 }
@@ -231,7 +231,7 @@ pub(crate) fn find_entity_contact_uris_by_role(
                 .map(|u| u.to_string())
                 .collect();
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     Vec::new()
 }
@@ -252,7 +252,7 @@ pub(crate) fn find_entity_country_names_by_role(
                 .map(|n| n.to_string())
                 .collect();
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     Vec::new()
 }
@@ -273,9 +273,231 @@ pub(crate) fn find_entity_country_codes_by_role(
                 .map(|c| c.to_string())
                 .collect();
         }
-        queue.extend(entity.entities());
+        queue.extend(ObjectCommonFields::entities(entity));
     }
     Vec::new()
+}
+
+/// Handles all entity role filter arms (Registrant*, Abuse*, Technical*, Registrar*).
+/// Returns Some(FilterOutput) if the filter is an entity role filter, None otherwise.
+pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Option<FilterOutput> {
+    let role = match f {
+        Filter::RegistrantEmail
+        | Filter::RegistrantFullName
+        | Filter::RegistrantVoice
+        | Filter::RegistrantFax
+        | Filter::RegistrantContactUri
+        | Filter::RegistrantCountryName
+        | Filter::RegistrantCountryCode => EntityRole::Registrant,
+        Filter::AbuseEmail
+        | Filter::AbuseFullName
+        | Filter::AbuseVoice
+        | Filter::AbuseFax
+        | Filter::AbuseContactUri
+        | Filter::AbuseCountryName
+        | Filter::AbuseCountryCode => EntityRole::Abuse,
+        Filter::TechnicalEmail
+        | Filter::TechnicalFullName
+        | Filter::TechnicalVoice
+        | Filter::TechnicalFax
+        | Filter::TechnicalContactUri
+        | Filter::TechnicalCountryName
+        | Filter::TechnicalCountryCode => EntityRole::Technical,
+        Filter::RegistrarEmail
+        | Filter::RegistrarFullName
+        | Filter::RegistrarVoice
+        | Filter::RegistrarFax
+        | Filter::RegistrarContactUri
+        | Filter::RegistrarCountryName
+        | Filter::RegistrarCountryCode => EntityRole::Registrar,
+        _ => return None,
+    };
+
+    let value = match f {
+        Filter::RegistrantEmail
+        | Filter::AbuseEmail
+        | Filter::TechnicalEmail
+        | Filter::RegistrarEmail => find_entity_email_by_role(entities, role)
+            .map(|e| FilterValue::StringVal(e.to_string()))
+            .unwrap_or(FilterValue::Null),
+        Filter::RegistrantFullName
+        | Filter::AbuseFullName
+        | Filter::TechnicalFullName
+        | Filter::RegistrarFullName => find_entity_full_name_by_role(entities, role)
+            .map(|e| FilterValue::StringVal(e.to_string()))
+            .unwrap_or(FilterValue::Null),
+        Filter::RegistrantVoice
+        | Filter::AbuseVoice
+        | Filter::TechnicalVoice
+        | Filter::RegistrarVoice => find_entity_voice_phone_by_role(entities, role)
+            .map(|e| FilterValue::StringVal(e.to_string()))
+            .unwrap_or(FilterValue::Null),
+        Filter::RegistrantFax | Filter::AbuseFax | Filter::TechnicalFax | Filter::RegistrarFax => {
+            find_entity_fax_phone_by_role(entities, role)
+                .map(|e| FilterValue::StringVal(e.to_string()))
+                .unwrap_or(FilterValue::Null)
+        }
+        Filter::RegistrantContactUri
+        | Filter::AbuseContactUri
+        | Filter::TechnicalContactUri
+        | Filter::RegistrarContactUri => {
+            FilterValue::StringArray(find_entity_contact_uris_by_role(entities, role))
+        }
+        Filter::RegistrantCountryName
+        | Filter::AbuseCountryName
+        | Filter::TechnicalCountryName
+        | Filter::RegistrarCountryName => {
+            FilterValue::StringArray(find_entity_country_names_by_role(entities, role))
+        }
+        Filter::RegistrantCountryCode
+        | Filter::AbuseCountryCode
+        | Filter::TechnicalCountryCode
+        | Filter::RegistrarCountryCode => {
+            FilterValue::StringArray(find_entity_country_codes_by_role(entities, role))
+        }
+        _ => return None,
+    };
+
+    Some(FilterOutput { filter: f, value })
+}
+
+/// Handles entity role filters for search results (returns arrays).
+pub(crate) fn entity_role_filter_output_search<'a, T, I>(results: I, f: Filter) -> FilterOutput
+where
+    T: EntityRoleProvider + 'a,
+    I: Iterator<Item = &'a T> + 'a,
+{
+    let role = match f {
+        Filter::RegistrantEmail
+        | Filter::RegistrantFullName
+        | Filter::RegistrantVoice
+        | Filter::RegistrantFax
+        | Filter::RegistrantContactUri
+        | Filter::RegistrantCountryName
+        | Filter::RegistrantCountryCode => EntityRole::Registrant,
+        Filter::AbuseEmail
+        | Filter::AbuseFullName
+        | Filter::AbuseVoice
+        | Filter::AbuseFax
+        | Filter::AbuseContactUri
+        | Filter::AbuseCountryName
+        | Filter::AbuseCountryCode => EntityRole::Abuse,
+        Filter::TechnicalEmail
+        | Filter::TechnicalFullName
+        | Filter::TechnicalVoice
+        | Filter::TechnicalFax
+        | Filter::TechnicalContactUri
+        | Filter::TechnicalCountryName
+        | Filter::TechnicalCountryCode => EntityRole::Technical,
+        Filter::RegistrarEmail
+        | Filter::RegistrarFullName
+        | Filter::RegistrarVoice
+        | Filter::RegistrarFax
+        | Filter::RegistrarContactUri
+        | Filter::RegistrarCountryName
+        | Filter::RegistrarCountryCode => EntityRole::Registrar,
+        _ => {
+            return FilterOutput {
+                filter: f,
+                value: FilterValue::Null,
+            };
+        }
+    };
+
+    let value = match f {
+        Filter::RegistrantEmail
+        | Filter::AbuseEmail
+        | Filter::TechnicalEmail
+        | Filter::RegistrarEmail => FilterValue::StringArray(
+            results
+                .filter_map(|r| find_entity_email_by_role(r.entities(), role))
+                .collect(),
+        ),
+        Filter::RegistrantFullName
+        | Filter::AbuseFullName
+        | Filter::TechnicalFullName
+        | Filter::RegistrarFullName => FilterValue::StringArray(
+            results
+                .filter_map(|r| find_entity_full_name_by_role(r.entities(), role))
+                .collect(),
+        ),
+        Filter::RegistrantVoice
+        | Filter::AbuseVoice
+        | Filter::TechnicalVoice
+        | Filter::RegistrarVoice => FilterValue::StringArray(
+            results
+                .filter_map(|r| find_entity_voice_phone_by_role(r.entities(), role))
+                .collect(),
+        ),
+        Filter::RegistrantFax | Filter::AbuseFax | Filter::TechnicalFax | Filter::RegistrarFax => {
+            FilterValue::StringArray(
+                results
+                    .filter_map(|r| find_entity_fax_phone_by_role(r.entities(), role))
+                    .collect(),
+            )
+        }
+        Filter::RegistrantContactUri
+        | Filter::AbuseContactUri
+        | Filter::TechnicalContactUri
+        | Filter::RegistrarContactUri => FilterValue::StringArray(
+            results
+                .flat_map(|r| find_entity_contact_uris_by_role(r.entities(), role))
+                .collect(),
+        ),
+        Filter::RegistrantCountryName
+        | Filter::AbuseCountryName
+        | Filter::TechnicalCountryName
+        | Filter::RegistrarCountryName => FilterValue::StringArray(
+            results
+                .flat_map(|r| find_entity_country_names_by_role(r.entities(), role))
+                .collect(),
+        ),
+        Filter::RegistrantCountryCode
+        | Filter::AbuseCountryCode
+        | Filter::TechnicalCountryCode
+        | Filter::RegistrarCountryCode => FilterValue::StringArray(
+            results
+                .flat_map(|r| find_entity_country_codes_by_role(r.entities(), role))
+                .collect(),
+        ),
+        _ => FilterValue::Null,
+    };
+
+    FilterOutput { filter: f, value }
+}
+
+pub(crate) trait EntityRoleProvider {
+    fn entities(&self) -> &[Entity];
+}
+
+impl EntityRoleProvider for crate::response::Autnum {
+    fn entities(&self) -> &[Entity] {
+        ObjectCommonFields::entities(self)
+    }
+}
+
+impl EntityRoleProvider for crate::response::Domain {
+    fn entities(&self) -> &[Entity] {
+        ObjectCommonFields::entities(self)
+    }
+}
+
+impl EntityRoleProvider for crate::response::Entity {
+    fn entities(&self) -> &[Entity] {
+        ObjectCommonFields::entities(self)
+    }
+}
+
+impl EntityRoleProvider for crate::response::Network {
+    fn entities(&self) -> &[Entity] {
+        ObjectCommonFields::entities(self)
+    }
+}
+
+impl EntityRoleProvider for crate::response::Nameserver {
+    fn entities(&self) -> &[Entity] {
+        ObjectCommonFields::entities(self)
+    }
 }
 
 impl Filterable for crate::response::RdapResponse {

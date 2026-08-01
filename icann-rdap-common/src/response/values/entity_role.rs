@@ -4,7 +4,7 @@ use super::EnumDisplay;
 use strum::{EnumIter, EnumString};
 
 /// Entity Roles registered with IANA.
-#[derive(PartialEq, Eq, Debug, EnumString, EnumDisplay, EnumIter)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, EnumString, EnumDisplay, EnumIter)]
 #[strum(serialize_all = "lowercase")]
 pub enum EntityRole {
     Registrant,
