@@ -74,6 +74,39 @@ impl Filterable for Nameserver {
                         .map(|e| FilterValue::StringVal(e.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
+                Filter::RegistrantVoicePhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Registrant)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::RegistrantFaxPhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Registrant)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::RegistrantContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_contact_uris_by_role(
+                        self.entities(),
+                        EntityRole::Registrant,
+                    )),
+                },
+                Filter::RegistrantCountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_names_by_role(
+                        self.entities(),
+                        EntityRole::Registrant,
+                    )),
+                },
+                Filter::RegistrantCountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_codes_by_role(
+                        self.entities(),
+                        EntityRole::Registrant,
+                    )),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

@@ -85,6 +85,73 @@ impl Filterable for AutnumSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::RegistrantVoicePhone => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|r| {
+                                find_entity_voice_phone_by_role(
+                                    r.entities(),
+                                    EntityRole::Registrant,
+                                )
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::RegistrantFaxPhone => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|r| {
+                                find_entity_fax_phone_by_role(r.entities(), EntityRole::Registrant)
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::RegistrantContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .flat_map(|r| {
+                                find_entity_contact_uris_by_role(
+                                    r.entities(),
+                                    EntityRole::Registrant,
+                                )
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::RegistrantCountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .flat_map(|r| {
+                                find_entity_country_names_by_role(
+                                    r.entities(),
+                                    EntityRole::Registrant,
+                                )
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::RegistrantCountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .flat_map(|r| {
+                                find_entity_country_codes_by_role(
+                                    r.entities(),
+                                    EntityRole::Registrant,
+                                )
+                            })
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

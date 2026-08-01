@@ -49,6 +49,11 @@ pub enum Filter {
     RdapConformance,
     RegistrantEmail,
     RegistrantFullName,
+    RegistrantVoicePhone,
+    RegistrantFaxPhone,
+    RegistrantContactUri,
+    RegistrantCountryName,
+    RegistrantCountryCode,
 
     // Domain-specific
     LdhName,
@@ -155,4 +160,102 @@ pub(crate) fn find_entity_full_name_by_role(
         queue.extend(entity.entities());
     }
     None
+}
+
+pub(crate) fn find_entity_voice_phone_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Option<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            if let Some(contact) = entity.contact() {
+                if let Some(phone) = contact.voice_phone().map(|p| p.phone().to_string()) {
+                    return Some(phone);
+                }
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    None
+}
+
+pub(crate) fn find_entity_fax_phone_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Option<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            if let Some(contact) = entity.contact() {
+                if let Some(phone) = contact.fax_phone().map(|p| p.phone().to_string()) {
+                    return Some(phone);
+                }
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    None
+}
+
+pub(crate) fn find_entity_contact_uris_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Vec<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            if let Some(contact) = entity.contact() {
+                return contact
+                    .contact_uris()
+                    .iter()
+                    .map(|u| u.to_string())
+                    .collect();
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    Vec::new()
+}
+
+pub(crate) fn find_entity_country_names_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Vec<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            if let Some(contact) = entity.contact() {
+                return contact
+                    .postal_addresses()
+                    .iter()
+                    .filter_map(|a| a.country_name())
+                    .map(|n| n.to_string())
+                    .collect();
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    Vec::new()
+}
+
+pub(crate) fn find_entity_country_codes_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Vec<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            if let Some(contact) = entity.contact() {
+                return contact
+                    .postal_addresses()
+                    .iter()
+                    .filter_map(|a| a.country_code())
+                    .map(|c| c.to_string())
+                    .collect();
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    Vec::new()
 }
