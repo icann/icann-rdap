@@ -91,6 +91,12 @@ impl Filterable for Domain {
                             .collect(),
                     ),
                 },
+                Filter::RegistrantEmail => FilterOutput {
+                    filter: *f,
+                    value: find_registrant_email(self.entities())
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

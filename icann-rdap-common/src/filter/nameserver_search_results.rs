@@ -80,6 +80,15 @@ impl Filterable for NameserverSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::RegistrantEmail => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| find_registrant_email(n.entities()))
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

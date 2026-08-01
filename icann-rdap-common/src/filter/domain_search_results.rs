@@ -111,6 +111,15 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::RegistrantEmail => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|d| find_registrant_email(d.entities()))
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

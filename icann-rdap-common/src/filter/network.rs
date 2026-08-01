@@ -93,6 +93,12 @@ impl Filterable for Network {
                         .map(|p| FilterValue::StringVal(p.to_string()))
                         .unwrap_or(FilterValue::Null),
                 },
+                Filter::RegistrantEmail => FilterOutput {
+                    filter: *f,
+                    value: find_registrant_email(self.entities())
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

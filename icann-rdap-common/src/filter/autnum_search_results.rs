@@ -63,6 +63,15 @@ impl Filterable for AutnumSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::RegistrantEmail => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|a| find_registrant_email(a.entities()))
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

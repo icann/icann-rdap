@@ -30,8 +30,12 @@ pub mod nameserver;
 pub mod nameserver_search_results;
 pub mod network;
 
+use std::collections::VecDeque;
+
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
+
+use crate::response::{Entity, ObjectCommonFields};
 
 /// Represents a filterable field on an RDAP response.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Display, EnumString)]
@@ -43,6 +47,7 @@ pub enum Filter {
     ObjectClassName,
     Event,
     RdapConformance,
+    RegistrantEmail,
 
     // Domain-specific
     LdhName,
@@ -116,4 +121,19 @@ pub trait Filterable {
 /// Convenience function to extract filters from any filterable type.
 pub fn extract<T: Filterable>(response: &T, filters: &[Filter]) -> FilterResult {
     response.filter(filters)
+}
+
+pub(crate) fn find_registrant_email(entities: &[Entity]) -> Option<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role("registrant") {
+            if let Some(contact) = entity.contact() {
+                if let Some(email) = contact.email().map(|e| e.email().to_string()) {
+                    return Some(email);
+                }
+            }
+        }
+        queue.extend(entity.entities());
+    }
+    None
 }

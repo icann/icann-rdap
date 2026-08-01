@@ -160,6 +160,15 @@ impl Filterable for EntitySearchResults {
                             .collect(),
                     ),
                 },
+                Filter::RegistrantEmail => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| find_registrant_email(e.entities()))
+                            .collect(),
+                    ),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,
