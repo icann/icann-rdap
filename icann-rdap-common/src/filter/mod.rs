@@ -277,3 +277,27 @@ pub(crate) fn find_entity_country_codes_by_role(
     }
     Vec::new()
 }
+
+impl Filterable for crate::response::RdapResponse {
+    fn filter(&self, filters: &[Filter]) -> FilterResult {
+        match self {
+            crate::response::RdapResponse::Domain(d) => d.filter(filters),
+            crate::response::RdapResponse::Autnum(a) => a.filter(filters),
+            crate::response::RdapResponse::Entity(e) => e.filter(filters),
+            crate::response::RdapResponse::Nameserver(n) => n.filter(filters),
+            crate::response::RdapResponse::Network(n) => n.filter(filters),
+            crate::response::RdapResponse::DomainSearchResults(d) => d.filter(filters),
+            crate::response::RdapResponse::AutnumSearchResults(a) => a.filter(filters),
+            crate::response::RdapResponse::EntitySearchResults(e) => e.filter(filters),
+            crate::response::RdapResponse::NameserverSearchResults(n) => n.filter(filters),
+            crate::response::RdapResponse::IpSearchResults(i) => i.filter(filters),
+            _ => filters
+                .iter()
+                .map(|f| FilterOutput {
+                    filter: *f,
+                    value: FilterValue::Null,
+                })
+                .collect(),
+        }
+    }
+}
