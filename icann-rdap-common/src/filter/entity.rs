@@ -192,6 +192,142 @@ impl Filterable for Entity {
                         EntityRole::Registrant,
                     )),
                 },
+
+                Filter::AbuseEmail => FilterOutput {
+                    filter: *f,
+                    value: find_entity_email_by_role(self.entities(), EntityRole::Abuse)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::AbuseFullName => FilterOutput {
+                    filter: *f,
+                    value: find_entity_full_name_by_role(self.entities(), EntityRole::Abuse)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::AbuseVoicePhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Abuse)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::AbuseFaxPhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Abuse)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::AbuseContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_contact_uris_by_role(
+                        self.entities(),
+                        EntityRole::Abuse,
+                    )),
+                },
+                Filter::AbuseCountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_names_by_role(
+                        self.entities(),
+                        EntityRole::Abuse,
+                    )),
+                },
+                Filter::AbuseCountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_codes_by_role(
+                        self.entities(),
+                        EntityRole::Abuse,
+                    )),
+                },
+                Filter::TechnicalEmail => FilterOutput {
+                    filter: *f,
+                    value: find_entity_email_by_role(self.entities(), EntityRole::Technical)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::TechnicalFullName => FilterOutput {
+                    filter: *f,
+                    value: find_entity_full_name_by_role(self.entities(), EntityRole::Technical)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::TechnicalVoicePhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Technical)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::TechnicalFaxPhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Technical)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::TechnicalContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_contact_uris_by_role(
+                        self.entities(),
+                        EntityRole::Technical,
+                    )),
+                },
+                Filter::TechnicalCountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_names_by_role(
+                        self.entities(),
+                        EntityRole::Technical,
+                    )),
+                },
+                Filter::TechnicalCountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_codes_by_role(
+                        self.entities(),
+                        EntityRole::Technical,
+                    )),
+                },
+                Filter::RegistrarEmail => FilterOutput {
+                    filter: *f,
+                    value: find_entity_email_by_role(self.entities(), EntityRole::Registrar)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::RegistrarFullName => FilterOutput {
+                    filter: *f,
+                    value: find_entity_full_name_by_role(self.entities(), EntityRole::Registrar)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::RegistrarVoicePhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_voice_phone_by_role(self.entities(), EntityRole::Registrar)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::RegistrarFaxPhone => FilterOutput {
+                    filter: *f,
+                    value: find_entity_fax_phone_by_role(self.entities(), EntityRole::Registrar)
+                        .map(|e| FilterValue::StringVal(e.to_string()))
+                        .unwrap_or(FilterValue::Null),
+                },
+                Filter::RegistrarContactUri => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_contact_uris_by_role(
+                        self.entities(),
+                        EntityRole::Registrar,
+                    )),
+                },
+                Filter::RegistrarCountryName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_names_by_role(
+                        self.entities(),
+                        EntityRole::Registrar,
+                    )),
+                },
+                Filter::RegistrarCountryCode => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(find_entity_country_codes_by_role(
+                        self.entities(),
+                        EntityRole::Registrar,
+                    )),
+                },
                 _ => FilterOutput {
                     filter: *f,
                     value: FilterValue::Null,

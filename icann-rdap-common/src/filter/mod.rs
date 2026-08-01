@@ -54,6 +54,27 @@ pub enum Filter {
     RegistrantContactUri,
     RegistrantCountryName,
     RegistrantCountryCode,
+    AbuseEmail,
+    AbuseFullName,
+    AbuseVoicePhone,
+    AbuseFaxPhone,
+    AbuseContactUri,
+    AbuseCountryName,
+    AbuseCountryCode,
+    TechnicalEmail,
+    TechnicalFullName,
+    TechnicalVoicePhone,
+    TechnicalFaxPhone,
+    TechnicalContactUri,
+    TechnicalCountryName,
+    TechnicalCountryCode,
+    RegistrarEmail,
+    RegistrarFullName,
+    RegistrarVoicePhone,
+    RegistrarFaxPhone,
+    RegistrarContactUri,
+    RegistrarCountryName,
+    RegistrarCountryCode,
 
     // Domain-specific
     LdhName,
@@ -132,12 +153,11 @@ pub fn extract<T: Filterable>(response: &T, filters: &[Filter]) -> FilterResult 
 pub(crate) fn find_entity_email_by_role(entities: &[Entity], role: EntityRole) -> Option<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                if let Some(email) = contact.email().map(|e| e.email().to_string()) {
-                    return Some(email);
-                }
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+            && let Some(email) = contact.email().map(|e| e.email().to_string())
+        {
+            return Some(email);
         }
         queue.extend(entity.entities());
     }
@@ -150,12 +170,11 @@ pub(crate) fn find_entity_full_name_by_role(
 ) -> Option<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                if let Some(name) = contact.full_name().map(|n| n.to_string()) {
-                    return Some(name);
-                }
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+            && let Some(name) = contact.full_name().map(|n| n.to_string())
+        {
+            return Some(name);
         }
         queue.extend(entity.entities());
     }
@@ -168,12 +187,11 @@ pub(crate) fn find_entity_voice_phone_by_role(
 ) -> Option<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                if let Some(phone) = contact.voice_phone().map(|p| p.phone().to_string()) {
-                    return Some(phone);
-                }
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+            && let Some(phone) = contact.voice_phone().map(|p| p.phone().to_string())
+        {
+            return Some(phone);
         }
         queue.extend(entity.entities());
     }
@@ -186,12 +204,11 @@ pub(crate) fn find_entity_fax_phone_by_role(
 ) -> Option<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                if let Some(phone) = contact.fax_phone().map(|p| p.phone().to_string()) {
-                    return Some(phone);
-                }
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+            && let Some(phone) = contact.fax_phone().map(|p| p.phone().to_string())
+        {
+            return Some(phone);
         }
         queue.extend(entity.entities());
     }
@@ -204,14 +221,14 @@ pub(crate) fn find_entity_contact_uris_by_role(
 ) -> Vec<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                return contact
-                    .contact_uris()
-                    .iter()
-                    .map(|u| u.to_string())
-                    .collect();
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+        {
+            return contact
+                .contact_uris()
+                .iter()
+                .map(|u| u.to_string())
+                .collect();
         }
         queue.extend(entity.entities());
     }
@@ -224,15 +241,15 @@ pub(crate) fn find_entity_country_names_by_role(
 ) -> Vec<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                return contact
-                    .postal_addresses()
-                    .iter()
-                    .filter_map(|a| a.country_name())
-                    .map(|n| n.to_string())
-                    .collect();
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+        {
+            return contact
+                .postal_addresses()
+                .iter()
+                .filter_map(|a| a.country_name())
+                .map(|n| n.to_string())
+                .collect();
         }
         queue.extend(entity.entities());
     }
@@ -245,15 +262,15 @@ pub(crate) fn find_entity_country_codes_by_role(
 ) -> Vec<String> {
     let mut queue: VecDeque<&Entity> = entities.iter().collect();
     while let Some(entity) = queue.pop_front() {
-        if entity.is_entity_role(&role.to_string()) {
-            if let Some(contact) = entity.contact() {
-                return contact
-                    .postal_addresses()
-                    .iter()
-                    .filter_map(|a| a.country_code())
-                    .map(|c| c.to_string())
-                    .collect();
-            }
+        if entity.is_entity_role(&role.to_string())
+            && let Some(contact) = entity.contact()
+        {
+            return contact
+                .postal_addresses()
+                .iter()
+                .filter_map(|a| a.country_code())
+                .map(|c| c.to_string())
+                .collect();
         }
         queue.extend(entity.entities());
     }
