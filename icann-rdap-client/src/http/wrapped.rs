@@ -4,15 +4,12 @@
 
 use std::collections::HashSet;
 
-use icann_rdap_common::prelude::ExtensionId;
-pub use reqwest::{Client as ReqwestClient, Error as ReqwestError, header::HeaderValue};
-use {
-    icann_rdap_common::httpdata::HttpData,
-    reqwest::header::{
-        ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION, RETRY_AFTER,
-        STRICT_TRANSPORT_SECURITY,
-    },
+use icann_rdap_common::{httpdata::HttpData, prelude::ExtensionId, sanitize_rfc9839};
+use reqwest::header::{
+    ACCESS_CONTROL_ALLOW_ORIGIN, CACHE_CONTROL, CONTENT_TYPE, EXPIRES, LOCATION, RETRY_AFTER,
+    STRICT_TRANSPORT_SECURITY,
 };
+pub use reqwest::{Client as ReqwestClient, Error as ReqwestError, header::HeaderValue};
 
 use {
     super::{ReqwestClientConfig, create_reqwest_client},
@@ -306,7 +303,7 @@ pub(crate) async fn wrapped_request(
     let content_length = response.content_length();
     let status_code = response.status().as_u16();
     let url = response.url().to_owned();
-    let text = response.text().await?;
+    let text = sanitize_rfc9839(&response.text().await?);
 
     let http_data = HttpData::now()
         .status_code(status_code)

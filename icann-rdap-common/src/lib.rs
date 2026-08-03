@@ -9,6 +9,9 @@ pub mod iana;
 pub mod media_types;
 pub mod rdns;
 pub mod response;
+pub mod rfc9839;
+
+pub use rfc9839::sanitize_rfc9839;
 
 /// Basics RDAP structures.
 pub mod prelude {
