@@ -113,6 +113,7 @@ pub enum Filter {
 
 /// The extracted value from a filter operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum FilterValue {
     StringVal(String),
     StringArray(Vec<String>),

@@ -497,28 +497,6 @@ fn output_immediately<W: std::io::Write>(
         }
     }
 
-    // // Output filtered results as CSV when filters are specified
-    // if !processing_params.filters.is_empty() && req_data.req_target {
-    //     use icann_rdap_common::filter::{FilterOutput, extract};
-
-    //     let results = extract(&response.rdap, &processing_params.filters);
-
-    //     // Print header row
-    //     let headers: Vec<String> = processing_params
-    //         .filters
-    //         .iter()
-    //         .map(|f| f.to_string())
-    //         .collect();
-    //     writeln!(write, "{}", headers.join(","))?;
-
-    //     // Print data row
-    //     let values: Vec<String> = results
-    //         .iter()
-    //         .map(|FilterOutput { value, .. }| filter_value_to_string(value))
-    //         .collect();
-    //     writeln!(write, "{}", values.join(","))?;
-    // }
-
     Ok(())
 }
 
@@ -536,17 +514,32 @@ fn final_output<W: std::io::Write>(
             if output_count == 1 {
                 for req_res in &transactions {
                     if req_res.req_data.req_target {
-                        write_json(processing_params, write, &req_res.res_data.rdap)?;
+                        if !processing_params.filters.is_empty() {
+                            let results =
+                                extract(&req_res.res_data.rdap, &processing_params.filters);
+                            write_json(processing_params, write, &results)?;
+                        } else {
+                            write_json(processing_params, write, &req_res.res_data.rdap)?;
+                        }
                         break;
                     }
                 }
             } else {
-                let output_vec = transactions
-                    .iter()
-                    .filter(|t| t.req_data.req_target)
-                    .map(|t| &t.res_data.rdap)
-                    .collect::<Vec<&RdapResponse>>();
-                write_json(processing_params, write, &output_vec)?;
+                if !processing_params.filters.is_empty() {
+                    let output_vec = transactions
+                        .iter()
+                        .filter(|t| t.req_data.req_target)
+                        .map(|t| extract(&t.res_data.rdap, &processing_params.filters))
+                        .collect::<Vec<Vec<FilterOutput>>>();
+                    write_json(processing_params, write, &output_vec)?;
+                } else {
+                    let output_vec = transactions
+                        .iter()
+                        .filter(|t| t.req_data.req_target)
+                        .map(|t| &t.res_data.rdap)
+                        .collect::<Vec<&RdapResponse>>();
+                    write_json(processing_params, write, &output_vec)?;
+                }
             }
         }
         OutputType::JsonExtra => {
@@ -659,7 +652,7 @@ fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> Str
         FilterValue::StringVal(s) => csv_escape(s),
         FilterValue::StringArray(arr) => {
             let escaped: Vec<String> = arr.iter().map(|s| csv_escape(s)).collect();
-            format!("[{}]", escaped.join(", "))
+            escaped.join("|").to_string()
         }
         FilterValue::HashMapVal(hm) => {
             let items: Vec<String> = hm
@@ -675,13 +668,12 @@ fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> Str
             items.join("|")
         }
         FilterValue::IntVal(i) => format!("{}", i),
-        FilterValue::IntArray(arr) => format!(
-            "[{}]",
-            arr.iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        ),
+        FilterValue::IntArray(arr) => arr
+            .iter()
+            .map(|i| i.to_string())
+            .collect::<Vec<_>>()
+            .join("|")
+            .to_string(),
         FilterValue::BoolVal(b) => format!("{}", b),
         FilterValue::Null => String::new(),
     }
