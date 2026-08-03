@@ -58,6 +58,12 @@ pub(crate) enum OutputType {
     /// JSON output that is compact and pretty.
     PrettyCompactJson,
 
+    /// Newline Delimited JSON
+    NDJson,
+
+    /// JSON Text Sequences (RFC7464)
+    JsonSeq,
+
     /// Global Top Level Domain Output
     GtldWhois,
 
@@ -415,6 +421,19 @@ fn output_immediately<W: std::io::Write>(
                 if let Some(url) = response.http_data.request_uri() {
                     writeln!(write, "{url}")?;
                 }
+            }
+            OutputType::NDJson | OutputType::JsonSeq => {
+                let json_string = if !processing_params.filters.is_empty() {
+                    let results = extract(&response.rdap, &processing_params.filters);
+                    serde_json::to_string(&results)?
+                } else {
+                    serde_json::to_string(&response.rdap)?
+                };
+                if matches!(processing_params.output_type, OutputType::NDJson) {
+                    writeln!(write, "{}", json_string)?;
+                } else {
+                    writeln!(write, "\x1e{}", json_string)?;
+                };
             }
             OutputType::Csv => {
                 let results = extract(&response.rdap, &processing_params.filters);

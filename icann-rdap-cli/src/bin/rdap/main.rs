@@ -511,6 +511,12 @@ enum OtypeArg {
     /// RDAP JSON with extra information.
     JsonExtra,
 
+    /// Newline Delimited JSON
+    NDJson,
+
+    /// JSON Text Sequences (RFC7464)
+    JsonSeq,
+
     /// Global Top Level Domain Output
     GtldWhois,
 
@@ -806,6 +812,8 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             OtypeArg::PrettyJson => OutputType::PrettyJson,
             OtypeArg::PrettyCompactJson => OutputType::PrettyCompactJson,
             OtypeArg::JsonExtra => OutputType::JsonExtra,
+            OtypeArg::NDJson => OutputType::NDJson,
+            OtypeArg::JsonSeq => OutputType::JsonSeq,
             OtypeArg::GtldWhois => OutputType::GtldWhois,
             OtypeArg::Rpsl => OutputType::Rpsl,
             OtypeArg::Url => OutputType::Url,
