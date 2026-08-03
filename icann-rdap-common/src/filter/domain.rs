@@ -80,7 +80,10 @@ impl Filterable for Domain {
                             .filter_map(|p| {
                                 let id_type = p.id_type()?;
                                 let identifier = p.identifier()?;
-                                Some((id_type.to_string(), FilterValue::StringVal(identifier.to_string())))
+                                Some((
+                                    id_type.to_string(),
+                                    FilterValue::StringVal(identifier.to_string()),
+                                ))
                             })
                             .collect(),
                     ),
