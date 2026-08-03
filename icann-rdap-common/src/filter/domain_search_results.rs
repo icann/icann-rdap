@@ -100,7 +100,10 @@ impl Filterable for DomainSearchResults {
                             .filter_map(|p| {
                                 let id_type = p.id_type()?;
                                 let identifier = p.identifier()?;
-                                Some((id_type.to_string(), FilterValue::StringVal(identifier.to_string())))
+                                Some((
+                                    id_type.to_string(),
+                                    FilterValue::StringVal(identifier.to_string()),
+                                ))
                             })
                             .collect(),
                     ),
@@ -670,7 +673,7 @@ mod tests {
         assert_eq!(results[0].filter, Filter::PublicId);
         match &results[0].value {
             FilterValue::HashMapVal(hm) => {
-                assert!(hm.len() >= 1);
+                assert!(!hm.is_empty());
                 assert!(hm.contains_key("IANA Registrar ID"));
             }
             _ => panic!("Expected HashMapVal"),
