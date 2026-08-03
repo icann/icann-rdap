@@ -115,31 +115,6 @@ struct Cli {
     #[arg(short = 'B', long, required = false, env = "RDAP_BASE_URL")]
     base_url: Option<String>,
 
-    /// Specify where to send TLD queries.
-    ///
-    /// Defaults to IANA.
-    #[arg(
-        long,
-        required = false,
-        env = "RDAP_TLD_LOOKUP",
-        value_enum,
-        default_value_t = TldLookupArg::Iana,
-    )]
-    tld_lookup: TldLookupArg,
-
-    /// Specify a backup INR bootstrap.
-    ///
-    /// This is used as a backup when the bootstrapping process cannot find an authoritative
-    /// server for IP addresses and Autonomous System Numbers. Defaults to ARIN.
-    #[arg(
-        long,
-        required = false,
-        env = "RDAP_INR_BACKUP_BOOTSTRAP",
-        value_enum,
-        default_value_t = InrBackupBootstrapArg::Arin,
-    )]
-    inr_backup_bootstrap: InrBackupBootstrapArg,
-
     /// Output format.
     ///
     /// This option determines the format of the result.
@@ -161,24 +136,21 @@ struct Cli {
     #[arg(long, required = false, conflicts_with = "output_type")]
     rpsl: bool,
 
-    /// Convert vCard (jCard) to JSContact
-    #[arg(long, required = false)]
-    to_jscontact: bool,
-
-    #[clap(flatten)]
-    link_target_args: LinkTargetArgs,
-
-    /// Redaction flags.
+    /// Specify a file path for geofeed downloads.
     ///
-    /// Control the processing and display of redactions.
-    #[arg(
-        long,
-        required = false,
-        env = "RDAP_REDACTION_FLAGS",
-        value_delimiter = ',',
-        value_enum
-    )]
-    redaction_flag: Vec<RedactionFlagArg>,
+    /// When using `-O geofeed`, this option specifies the file path where
+    /// geofeed files will be downloaded. The file's parent directory is
+    /// created if it does not exist. Falls back to the system download
+    /// directory, then the current directory.
+    #[arg(short = 'G', long, required = false, env = "RDAP_DOWNLOAD_DIR")]
+    geofeed_file: Option<String>,
+
+    /// Filter fields to extract from RDAP responses.
+    ///
+    /// Can be specified multiple times or as comma-separated values.
+    /// Each filter becomes a column in the output.
+    #[arg(long, required = false, value_delimiter = ',')]
+    filter: Vec<FilterArg>,
 
     /// Pager Usage.
     ///
@@ -207,6 +179,50 @@ struct Cli {
         default_value_t = LogLevel::Info
     )]
     log_level: LogLevel,
+
+    #[clap(flatten)]
+    link_target_args: LinkTargetArgs,
+
+    /// Specify where to send TLD queries.
+    ///
+    /// Defaults to IANA.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_TLD_LOOKUP",
+        value_enum,
+        default_value_t = TldLookupArg::Iana,
+    )]
+    tld_lookup: TldLookupArg,
+
+    /// Specify a backup INR bootstrap.
+    ///
+    /// This is used as a backup when the bootstrapping process cannot find an authoritative
+    /// server for IP addresses and Autonomous System Numbers. Defaults to ARIN.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_INR_BACKUP_BOOTSTRAP",
+        value_enum,
+        default_value_t = InrBackupBootstrapArg::Arin,
+    )]
+    inr_backup_bootstrap: InrBackupBootstrapArg,
+
+    /// Convert vCard (jCard) to JSContact
+    #[arg(long, required = false)]
+    to_jscontact: bool,
+
+    /// Redaction flags.
+    ///
+    /// Control the processing and display of redactions.
+    #[arg(
+        long,
+        required = false,
+        env = "RDAP_REDACTION_FLAGS",
+        value_delimiter = ',',
+        value_enum
+    )]
+    redaction_flag: Vec<RedactionFlagArg>,
 
     /// Do not use the cache.
     ///
@@ -310,22 +326,6 @@ struct Cli {
     /// Do not send an exts_list media type parameter.
     #[arg(long, required = false, env = "RDAP_NO_EXTS_LIST")]
     no_exts_list: bool,
-
-    /// Specify a file path for geofeed downloads.
-    ///
-    /// When using `-O geofeed`, this option specifies the file path where
-    /// geofeed files will be downloaded. The file's parent directory is
-    /// created if it does not exist. Falls back to the system download
-    /// directory, then the current directory.
-    #[arg(short = 'G', long, required = false, env = "RDAP_DOWNLOAD_DIR")]
-    geofeed_file: Option<String>,
-
-    /// Filter fields to extract from RDAP responses.
-    ///
-    /// Can be specified multiple times or as comma-separated values.
-    /// Each filter becomes a column in the output.
-    #[arg(long, required = false, value_delimiter = ',')]
-    filter: Vec<FilterArg>,
 
     /// Reset.
     ///
@@ -519,18 +519,6 @@ enum OtypeArg {
 
     /// URL of RDAP servers.
     Url,
-
-    /// Only print primary object's status, one per line.
-    StatusText,
-
-    /// Only print primary object's status as JSON.
-    StatusJson,
-
-    /// Only print primary object's events, one per line.
-    EventText,
-
-    /// Only print primary object's events as JSON.
-    EventJson,
 
     /// Download geofeed files from RDAP response (RFC 9877).
     Geofeed,
@@ -821,10 +809,6 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             OtypeArg::GtldWhois => OutputType::GtldWhois,
             OtypeArg::Rpsl => OutputType::Rpsl,
             OtypeArg::Url => OutputType::Url,
-            OtypeArg::StatusText => OutputType::StatusText,
-            OtypeArg::StatusJson => OutputType::StatusJson,
-            OtypeArg::EventText => OutputType::EventText,
-            OtypeArg::EventJson => OutputType::EventJson,
             OtypeArg::Geofeed => OutputType::Geofeed,
             OtypeArg::Csv => OutputType::Csv,
         }
