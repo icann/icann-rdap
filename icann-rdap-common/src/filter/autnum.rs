@@ -25,16 +25,13 @@ impl Filterable for Autnum {
                 },
                 Filter::Event => FilterOutput {
                     filter: *f,
-                    value: FilterValue::NameValueArray(
+                    value: FilterValue::HashMapVal(
                         self.events()
                             .iter()
                             .filter_map(|e| {
                                 let action = e.event_action()?;
                                 let date = e.event_date()?;
-                                Some(NameValue {
-                                    name: action.to_string(),
-                                    value: FilterValue::StringVal(date.to_string()),
-                                })
+                                Some((action.to_string(), FilterValue::StringVal(date.to_string())))
                             })
                             .collect(),
                     ),

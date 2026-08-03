@@ -37,17 +37,14 @@ impl Filterable for AutnumSearchResults {
                 },
                 Filter::Event => FilterOutput {
                     filter: *f,
-                    value: FilterValue::NameValueArray(
+                    value: FilterValue::HashMapVal(
                         self.results()
                             .iter()
                             .flat_map(|a| a.events())
                             .filter_map(|e| {
                                 let action = e.event_action()?;
                                 let date = e.event_date()?;
-                                Some(NameValue {
-                                    name: action.to_string(),
-                                    value: FilterValue::StringVal(date.to_string()),
-                                })
+                                Some((action.to_string(), FilterValue::StringVal(date.to_string())))
                             })
                             .collect(),
                     ),
@@ -296,13 +293,12 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].filter, Filter::Event);
         match &results[0].value {
-            FilterValue::NameValueArray(nva) => {
-                assert_eq!(nva.len(), 2);
-                let actions: Vec<&str> = nva.iter().map(|nv| nv.name.as_str()).collect();
-                assert!(actions.contains(&"registration"));
-                assert!(actions.contains(&"last changed"));
+            FilterValue::HashMapVal(hm) => {
+                assert_eq!(hm.len(), 2);
+                assert!(hm.contains_key("registration"));
+                assert!(hm.contains_key("last changed"));
             }
-            _ => panic!("Expected NameValueArray"),
+            _ => panic!("Expected HashMapVal"),
         }
     }
 

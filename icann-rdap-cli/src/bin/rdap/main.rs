@@ -320,6 +320,13 @@ struct Cli {
     #[arg(short = 'G', long, required = false, env = "RDAP_DOWNLOAD_DIR")]
     geofeed_file: Option<String>,
 
+    /// Filter fields to extract from RDAP responses.
+    ///
+    /// Can be specified multiple times or as comma-separated values.
+    /// Each filter becomes a column in the output.
+    #[arg(long, required = false, value_delimiter = ',')]
+    filter: Vec<FilterArg>,
+
     /// Reset.
     ///
     /// Removes the cache files and resets the config file.
@@ -528,6 +535,9 @@ enum OtypeArg {
     /// Download geofeed files from RDAP response (RFC 9877).
     Geofeed,
 
+    /// Comma-separated Values (CSV)
+    Csv,
+
     /// Automatically determine the output type.
     Auto,
 }
@@ -598,6 +608,140 @@ enum RedactionFlagArg {
     DoRfc9537Redactions,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum FilterArg {
+    // Object class common (all types)
+    Handle,
+    Status,
+    ObjectClassName,
+    Event,
+    RdapConformance,
+
+    // Domain-specific
+    LdhName,
+    UnicodeName,
+    Nameserver,
+    PublicId,
+
+    // Nameservers
+    IpAddress,
+
+    // Entity-specific
+    Role,
+    Email,
+    FullName,
+    Voice,
+    Fax,
+    ContactUri,
+    CountryName,
+    CountryCode,
+
+    // Autnum-specific
+    StartAutnum,
+    EndAutnum,
+
+    // Network-specific
+    StartIpAddress,
+    EndIpAddress,
+    IpVersion,
+    Cidr,
+
+    // Generic
+    Name,
+    Type,
+    ParentHandle,
+    RegistrantEmail,
+    RegistrantFullName,
+    RegistrantVoice,
+    RegistrantFax,
+    RegistrantContactUri,
+    RegistrantCountryName,
+    RegistrantCountryCode,
+    AbuseEmail,
+    AbuseFullName,
+    AbuseVoice,
+    AbuseFax,
+    AbuseContactUri,
+    AbuseCountryName,
+    AbuseCountryCode,
+    TechnicalEmail,
+    TechnicalFullName,
+    TechnicalVoice,
+    TechnicalFax,
+    TechnicalContactUri,
+    TechnicalCountryName,
+    TechnicalCountryCode,
+    RegistrarEmail,
+    RegistrarFullName,
+    RegistrarVoice,
+    RegistrarFax,
+    RegistrarContactUri,
+    RegistrarCountryName,
+    RegistrarCountryCode,
+}
+
+impl From<FilterArg> for icann_rdap_common::filter::Filter {
+    fn from(arg: FilterArg) -> Self {
+        match arg {
+            FilterArg::Handle => Self::Handle,
+            FilterArg::Status => Self::Status,
+            FilterArg::ObjectClassName => Self::ObjectClassName,
+            FilterArg::Event => Self::Event,
+            FilterArg::RdapConformance => Self::RdapConformance,
+            FilterArg::LdhName => Self::LdhName,
+            FilterArg::UnicodeName => Self::UnicodeName,
+            FilterArg::Nameserver => Self::Nameserver,
+            FilterArg::PublicId => Self::PublicId,
+            FilterArg::IpAddress => Self::IpAddress,
+            FilterArg::Role => Self::Role,
+            FilterArg::Email => Self::Email,
+            FilterArg::FullName => Self::FullName,
+            FilterArg::Voice => Self::Voice,
+            FilterArg::Fax => Self::Fax,
+            FilterArg::ContactUri => Self::ContactUri,
+            FilterArg::CountryName => Self::CountryName,
+            FilterArg::CountryCode => Self::CountryCode,
+            FilterArg::StartAutnum => Self::StartAutnum,
+            FilterArg::EndAutnum => Self::EndAutnum,
+            FilterArg::StartIpAddress => Self::StartIpAddress,
+            FilterArg::EndIpAddress => Self::EndIpAddress,
+            FilterArg::IpVersion => Self::IpVersion,
+            FilterArg::Cidr => Self::Cidr,
+            FilterArg::Name => Self::Name,
+            FilterArg::Type => Self::Type,
+            FilterArg::ParentHandle => Self::ParentHandle,
+            FilterArg::RegistrantEmail => Self::RegistrantEmail,
+            FilterArg::RegistrantFullName => Self::RegistrantFullName,
+            FilterArg::RegistrantVoice => Self::RegistrantVoice,
+            FilterArg::RegistrantFax => Self::RegistrantFax,
+            FilterArg::RegistrantContactUri => Self::RegistrantContactUri,
+            FilterArg::RegistrantCountryName => Self::RegistrantCountryName,
+            FilterArg::RegistrantCountryCode => Self::RegistrantCountryCode,
+            FilterArg::AbuseEmail => Self::AbuseEmail,
+            FilterArg::AbuseFullName => Self::AbuseFullName,
+            FilterArg::AbuseVoice => Self::AbuseVoice,
+            FilterArg::AbuseFax => Self::AbuseFax,
+            FilterArg::AbuseContactUri => Self::AbuseContactUri,
+            FilterArg::AbuseCountryName => Self::AbuseCountryName,
+            FilterArg::AbuseCountryCode => Self::AbuseCountryCode,
+            FilterArg::TechnicalEmail => Self::TechnicalEmail,
+            FilterArg::TechnicalFullName => Self::TechnicalFullName,
+            FilterArg::TechnicalVoice => Self::TechnicalVoice,
+            FilterArg::TechnicalFax => Self::TechnicalFax,
+            FilterArg::TechnicalContactUri => Self::TechnicalContactUri,
+            FilterArg::TechnicalCountryName => Self::TechnicalCountryName,
+            FilterArg::TechnicalCountryCode => Self::TechnicalCountryCode,
+            FilterArg::RegistrarEmail => Self::RegistrarEmail,
+            FilterArg::RegistrarFullName => Self::RegistrarFullName,
+            FilterArg::RegistrarVoice => Self::RegistrarVoice,
+            FilterArg::RegistrarFax => Self::RegistrarFax,
+            FilterArg::RegistrarContactUri => Self::RegistrarContactUri,
+            FilterArg::RegistrarCountryName => Self::RegistrarCountryName,
+            FilterArg::RegistrarCountryCode => Self::RegistrarCountryCode,
+        }
+    }
+}
+
 impl From<&LogLevel> for LevelFilter {
     fn from(log_level: &LogLevel) -> Self {
         match log_level {
@@ -650,6 +794,9 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         PagerType::Auto => std::io::stdout().is_terminal(),
     };
 
+    let filters: Vec<icann_rdap_common::filter::Filter> =
+        cli.filter.into_iter().map(|f| f.into()).collect();
+
     let output_type = if cli.json {
         OutputType::PrettyCompactJson
     } else if cli.rpsl {
@@ -657,7 +804,9 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
     } else {
         match cli.output_type {
             OtypeArg::Auto => {
-                if std::io::stdout().is_terminal() {
+                if !filters.is_empty() {
+                    OutputType::Csv
+                } else if std::io::stdout().is_terminal() {
                     OutputType::RenderedMarkdown
                 } else {
                     OutputType::Json
@@ -677,8 +826,27 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
             OtypeArg::EventText => OutputType::EventText,
             OtypeArg::EventJson => OutputType::EventJson,
             OtypeArg::Geofeed => OutputType::Geofeed,
+            OtypeArg::Csv => OutputType::Csv,
         }
     };
+
+    // throw error for output types not appropriate for filtering
+    if !filters.is_empty()
+        && (matches!(output_type, OutputType::RenderedMarkdown)
+            || matches!(output_type, OutputType::Markdown)
+            || matches!(output_type, OutputType::JsonExtra)
+            || matches!(output_type, OutputType::GtldWhois)
+            || matches!(output_type, OutputType::Rpsl)
+            || matches!(output_type, OutputType::Url)
+            || matches!(output_type, OutputType::Geofeed))
+    {
+        return Err(RdapCliError::InvalidFilterOutputType);
+    }
+
+    // throw error if filters are required for output type
+    if filters.is_empty() && matches!(output_type, OutputType::Csv) {
+        return Err(RdapCliError::FiltersRequired);
+    }
 
     // throw error if output type is inappropriate
     if matches!(output_type, OutputType::GtldWhois) && !matches!(query_type, QueryType::Domain(_)) {
@@ -733,6 +901,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         to_jscontact: cli.to_jscontact,
         self_link_caching: cli.self_link_caching,
         geofeed_file: cli.geofeed_file.map(std::path::PathBuf::from),
+        filters,
     };
 
     let exts_list = if cli.no_exts_list {

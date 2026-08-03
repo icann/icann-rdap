@@ -37,17 +37,14 @@ impl Filterable for NameserverSearchResults {
                 },
                 Filter::Event => FilterOutput {
                     filter: *f,
-                    value: FilterValue::NameValueArray(
+                    value: FilterValue::HashMapVal(
                         self.results()
                             .iter()
                             .flat_map(|n| n.events())
                             .filter_map(|e| {
                                 let action = e.event_action()?;
                                 let date = e.event_date()?;
-                                Some(NameValue {
-                                    name: action.to_string(),
-                                    value: FilterValue::StringVal(date.to_string()),
-                                })
+                                Some((action.to_string(), FilterValue::StringVal(date.to_string())))
                             })
                             .collect(),
                     ),

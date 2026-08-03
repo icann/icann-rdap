@@ -20,6 +20,7 @@ use icann_rdap_common::{
     check::{
         ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES, process::do_check_processing, traverse_checks,
     },
+    filter::{FilterOutput, extract},
     prelude::{Event, Link, RdapResponse, get_relationship_links},
     response::ObjectCommonFields,
 };
@@ -84,6 +85,9 @@ pub(crate) enum OutputType {
 
     /// Download geofeed files from RDAP response (RFC 9877).
     Geofeed,
+
+    /// Comma-separated Values (CSV)
+    Csv,
 }
 
 /// Used for doing TLD Lookups.
@@ -136,6 +140,7 @@ pub(crate) struct ProcessingParams {
     pub to_jscontact: bool,
     pub self_link_caching: bool,
     pub geofeed_file: Option<std::path::PathBuf>,
+    pub filters: Vec<icann_rdap_common::filter::Filter>,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -470,9 +475,50 @@ fn output_immediately<W: std::io::Write>(
                     }
                 }
             }
+            OutputType::Csv => {
+                let results = extract(&response.rdap, &processing_params.filters);
+                if req_data.req_number == 1 {
+                    // Print header row
+                    let headers: Vec<String> = processing_params
+                        .filters
+                        .iter()
+                        .map(|f| f.to_string())
+                        .collect();
+                    writeln!(write, "{}", headers.join(","))?;
+                }
+                // Print data row
+                let values: Vec<String> = results
+                    .iter()
+                    .map(|FilterOutput { value, .. }| filter_value_to_string(value))
+                    .collect();
+                writeln!(write, "{}", values.join(","))?;
+            }
             _ => {} // do nothing for JSON types, handled in final output
         }
     }
+
+    // // Output filtered results as CSV when filters are specified
+    // if !processing_params.filters.is_empty() && req_data.req_target {
+    //     use icann_rdap_common::filter::{FilterOutput, extract};
+
+    //     let results = extract(&response.rdap, &processing_params.filters);
+
+    //     // Print header row
+    //     let headers: Vec<String> = processing_params
+    //         .filters
+    //         .iter()
+    //         .map(|f| f.to_string())
+    //         .collect();
+    //     writeln!(write, "{}", headers.join(","))?;
+
+    //     // Print data row
+    //     let values: Vec<String> = results
+    //         .iter()
+    //         .map(|FilterOutput { value, .. }| filter_value_to_string(value))
+    //         .collect();
+    //     writeln!(write, "{}", values.join(","))?;
+    // }
+
     Ok(())
 }
 
@@ -604,6 +650,53 @@ fn write_json<W: std::io::Write, T: Serialize>(
         }
     };
     Ok(())
+}
+
+fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> String {
+    use icann_rdap_common::filter::FilterValue;
+
+    match value {
+        FilterValue::StringVal(s) => csv_escape(s),
+        FilterValue::StringArray(arr) => {
+            let escaped: Vec<String> = arr.iter().map(|s| csv_escape(s)).collect();
+            format!("[{}]", escaped.join(", "))
+        }
+        FilterValue::HashMapVal(hm) => {
+            let items: Vec<String> = hm
+                .iter()
+                .map(|(k, v)| {
+                    format!(
+                        "{}={}",
+                        map_csv_escape(k),
+                        map_csv_escape(&filter_value_to_string(v)),
+                    )
+                })
+                .collect();
+            items.join("|")
+        }
+        FilterValue::IntVal(i) => format!("{}", i),
+        FilterValue::IntArray(arr) => format!(
+            "[{}]",
+            arr.iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
+        FilterValue::BoolVal(b) => format!("{}", b),
+        FilterValue::Null => String::new(),
+    }
+}
+
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+fn map_csv_escape(s: &str) -> String {
+    csv_escape(&s.replace('|', "%7C").replace('=', "%3D"))
 }
 
 /// Extracts geofeed links from an RDAP response.

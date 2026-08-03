@@ -25,16 +25,13 @@ impl Filterable for Entity {
                 },
                 Filter::Event => FilterOutput {
                     filter: *f,
-                    value: FilterValue::NameValueArray(
+                    value: FilterValue::HashMapVal(
                         self.events()
                             .iter()
                             .filter_map(|e| {
                                 let action = e.event_action()?;
                                 let date = e.event_date()?;
-                                Some(NameValue {
-                                    name: action.to_string(),
-                                    value: FilterValue::StringVal(date.to_string()),
-                                })
+                                Some((action.to_string(), FilterValue::StringVal(date.to_string())))
                             })
                             .collect(),
                     ),
@@ -81,16 +78,13 @@ impl Filterable for Entity {
                 },
                 Filter::PublicId => FilterOutput {
                     filter: *f,
-                    value: FilterValue::NameValueArray(
+                    value: FilterValue::HashMapVal(
                         self.public_ids()
                             .iter()
                             .filter_map(|p| {
                                 let id_type = p.id_type()?;
                                 let identifier = p.identifier()?;
-                                Some(NameValue {
-                                    name: id_type.to_string(),
-                                    value: FilterValue::StringVal(identifier.to_string()),
-                                })
+                                Some((id_type.to_string(), FilterValue::StringVal(identifier.to_string())))
                             })
                             .collect(),
                     ),
@@ -343,15 +337,14 @@ mod tests {
 
         // THEN
         match &results[0].value {
-            FilterValue::NameValueArray(nva) => {
-                assert_eq!(nva.len(), 1);
-                assert_eq!(nva[0].name, "last changed");
+            FilterValue::HashMapVal(hm) => {
+                assert_eq!(hm.len(), 1);
                 assert_eq!(
-                    nva[0].value,
-                    FilterValue::StringVal("2021-06-15T00:00:00Z".to_string())
+                    hm.get("last changed"),
+                    Some(&FilterValue::StringVal("2021-06-15T00:00:00Z".to_string()))
                 );
             }
-            _ => panic!("Expected NameValueArray"),
+            _ => panic!("Expected HashMapVal"),
         }
     }
 }

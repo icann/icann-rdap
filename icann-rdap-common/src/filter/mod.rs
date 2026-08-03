@@ -30,7 +30,7 @@ pub mod nameserver;
 pub mod nameserver_search_results;
 pub mod network;
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
@@ -111,19 +111,12 @@ pub enum Filter {
     RegistrarCountryCode,
 }
 
-/// Name/value pair
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct NameValue {
-    name: String,
-    value: FilterValue,
-}
-
 /// The extracted value from a filter operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FilterValue {
     StringVal(String),
     StringArray(Vec<String>),
-    NameValueArray(Vec<NameValue>),
+    HashMapVal(HashMap<String, FilterValue>),
     IntVal(i64),
     IntArray(Vec<i64>),
     BoolVal(bool),
