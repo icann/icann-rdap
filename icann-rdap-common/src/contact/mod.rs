@@ -945,7 +945,7 @@ impl Display for Email {
         if qualifiers.is_empty() {
             f.write_str(&self.email)
         } else {
-            write!(f, "{} {}", &self.email, qualifiers)
+            write!(f, "{} {}", self.email, qualifiers)
         }
     }
 }
@@ -1020,7 +1020,7 @@ impl Display for Phone {
         if qualifiers.is_empty() {
             f.write_str(&self.phone)
         } else {
-            write!(f, "{} {}", &self.phone, qualifiers)
+            write!(f, "{} {}", self.phone, qualifiers)
         }
     }
 }

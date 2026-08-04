@@ -3,11 +3,15 @@
 pub mod check;
 pub mod contact;
 pub mod dns_types;
+pub mod filter;
 pub mod httpdata;
 pub mod iana;
 pub mod media_types;
 pub mod rdns;
 pub mod response;
+pub mod rfc9839;
+
+pub use rfc9839::sanitize_rfc9839;
 
 /// Basics RDAP structures.
 pub mod prelude {

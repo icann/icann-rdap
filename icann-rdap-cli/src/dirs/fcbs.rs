@@ -95,25 +95,23 @@ impl FileCacheBootstrapStore {
         let config_bootstrap_path = config_dir().join(file_name);
         if config_bootstrap_path.exists() {
             let iana = read_bootstrap_config_file(config_bootstrap_path, |s| debug!("Reading {s}"));
-            match iana {
-                Ok(iana) => {
-                    let urls = match reg_type {
-                        IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
-                        IanaRegistryType::RdapBootstrapAsn => iana.get_asn_bootstrap_urls(key),
-                        IanaRegistryType::RdapBootstrapIpv4 => iana.get_ipv4_bootstrap_urls(key),
-                        IanaRegistryType::RdapBootstrapIpv6 => iana.get_ipv6_bootstrap_urls(key),
-                        IanaRegistryType::RdapObjectTags => iana.get_tag_bootstrap_urls(key),
-                    };
-                    match urls {
-                        Ok(Some(urls)) => {
-                            debug!("Bootstrap URLs found in configured bootstrap override.");
-                            return Ok(Some(urls));
-                        }
-                        Ok(None) => {}
-                        Err(e) => return Err(e.into()),
+            {
+                let iana = iana?;
+                let urls = match reg_type {
+                    IanaRegistryType::RdapBootstrapDns => iana.get_dns_bootstrap_urls(key),
+                    IanaRegistryType::RdapBootstrapAsn => iana.get_asn_bootstrap_urls(key),
+                    IanaRegistryType::RdapBootstrapIpv4 => iana.get_ipv4_bootstrap_urls(key),
+                    IanaRegistryType::RdapBootstrapIpv6 => iana.get_ipv6_bootstrap_urls(key),
+                    IanaRegistryType::RdapObjectTags => iana.get_tag_bootstrap_urls(key),
+                };
+                match urls {
+                    Ok(Some(urls)) => {
+                        debug!("Bootstrap URLs found in configured bootstrap override.");
+                        return Ok(Some(urls));
                     }
+                    Ok(None) => {}
+                    Err(e) => return Err(e.into()),
                 }
-                Err(err) => return Err(err),
             }
         }
 

@@ -87,7 +87,7 @@ impl MemTx {
 
         // only load up domain search by ns ldh name if supported
         if mem.config.common_config.domain_search_by_ns_ldh_name_enable {
-            for (_name, value) in domains.iter() {
+            for value in domains.values() {
                 if let RdapResponse::Domain(domain) = value.as_ref()
                     && let Some(nameservers) = domain.nameservers.as_ref()
                 {
@@ -108,7 +108,7 @@ impl MemTx {
         }
 
         if mem.config.common_config.entity_search_by_full_name_enable {
-            for (_handle, value) in entities.iter() {
+            for value in entities.values() {
                 if let RdapResponse::Entity(entity) = value.as_ref()
                     && let Some(contact) = entity.contact()
                     && let Some(full_name) = contact.full_name()
