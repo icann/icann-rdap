@@ -155,7 +155,7 @@ strum = { version = "0.28", features = [ "derive" ] }
 tempfile = "3.27"
 
 # terminal markdown generator
-termimad = "0.34"
+termimad = "0.35"
 
 # test directories
 test_dir = "0.2.0"
