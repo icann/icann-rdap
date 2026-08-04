@@ -115,7 +115,7 @@ minus = {version = "5.6", features = ["dynamic_output", "search"] }
 pct-str = "3.0"
 
 # ip address trie
-prefix-trie = "0.9"
+prefix-trie = "0.10"
 
 # flexible range map
 rangemap = "1.7.1"
@@ -136,7 +136,7 @@ serde = { version = "1.0", features = [ "derive" ] }
 serde_json = "1.0"
 
 # serial testings
-serial_test = "3.4"
+serial_test = "4.0"
 
 # sqlx (async db)
 sqlx = { version = "0.9", features = [
@@ -155,7 +155,7 @@ strum = { version = "0.28", features = [ "derive" ] }
 tempfile = "3.27"
 
 # terminal markdown generator
-termimad = "0.34"
+termimad = "0.35"
 
 # test directories
 test_dir = "0.2.0"
