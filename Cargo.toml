@@ -115,7 +115,7 @@ minus = {version = "5.6", features = ["dynamic_output", "search"] }
 pct-str = "3.0"
 
 # ip address trie
-prefix-trie = "0.9"
+prefix-trie = "0.10"
 
 # flexible range map
 rangemap = "1.7.1"

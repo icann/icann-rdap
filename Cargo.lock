@@ -2394,9 +2394,9 @@ dependencies = [
 
 [[package]]
 name = "prefix-trie"
-version = "0.9.4"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be1ea03ff63e842fa707c9cffedc9ff9fa4a0ab540af1a7693d2ff15fa03c65"
+checksum = "6369af434551b9bf8be05ab871ac1263687d6f0c9485e6d781f904f3e06d7d03"
 dependencies = [
  "array-const-fn-init",
  "either",
