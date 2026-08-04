@@ -14,6 +14,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
 keywords = ["whois", "rdap"]
+rust-version = "1.97.1"
 
 [workspace.dependencies]
 

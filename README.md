@@ -13,6 +13,39 @@ About, Usage, and Installation
 Please see the [online user's manual](https://icann.github.io/icann-rdap/) for general information,
 installation, and usage of this software.
 
+SemVer Policy
+-------------
+
+This project uses [Semantic Versioning (SemVer 2.0.0)](https://semver.org/).
+
+---
+
+### Versioning Guidelines
+
+* **`MAJOR` (`X.0.0`):** Contains breaking public API changes, breaking CLI parameter changes, and increases to the Minimum Supported Rust Version (MSRV).
+* **`MINOR` (`0.Y.0`):** Adds new backwards-compatible features, deprecations, or non-breaking improvements.
+* **`PATCH` (`0.0.Z`):** Contains backwards-compatible fixes, internal code refactoring, documentation updates, and backwards-compatible updates to dependencies.
+
+---
+
+### Changes Outside Backwards-Compatibility Scope
+
+Some changes that are not backwards-compatible (i.e., breaking changes) are not considered in the versioning guidelines.
+Such changes relate to _experimental_ features and certain aspects of the user interface.
+
+#### Experimental Features
+
+The following are considered experimental features:
+
+* Non-stable RDAP extensions (i.e., those still being standardized). Examples as of this writing are Exts, JSContact, and SimpleRedaction.
+* The SQLx server backend.
+
+#### User Interface
+
+Non-parsable output of the user interface is subject to change. These outputs are the Markdown and gTLD Whois output formats for `rdap` and the text
+output for `rdap-test`.
+
+
 License
 -------
 

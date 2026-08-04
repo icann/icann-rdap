@@ -318,7 +318,7 @@ impl MultiPartTable {
                         };
                         md.push_str(&format!(
                             "|{}|{}|\n",
-                            &name.to_right(col_type_width, options),
+                            name.to_right(col_type_width, options),
                             highlight_value(value, &self.value_highlights, options)
                         ));
                         false
