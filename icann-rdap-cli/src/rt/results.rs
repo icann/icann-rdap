@@ -38,6 +38,13 @@ impl TestResults {
         }
     }
 
+    pub fn to_text(&self) -> String {
+        match self {
+            TestResults::Http(http_results) => http_results.to_text(),
+            TestResults::String(string_result) => string_result.to_text(),
+        }
+    }
+
     pub fn execution_errors(&self) -> bool {
         match self {
             TestResults::Http(http_results) => http_results.execution_errors(),
@@ -219,6 +226,107 @@ impl HttpResults {
         md
     }
 
+    pub fn to_text(&self) -> String {
+        let mut txt = String::new();
+
+        // header
+        txt.push_str(&format!("\n{}\n", self.query_url));
+        txt.push_str(&"=".repeat(self.query_url.len()));
+        txt.push('\n');
+
+        // summary
+        txt.push_str("Summary\n");
+        txt.push_str("---\n");
+        let (end_time_s, duration_s) = if let Some(end_time) = self.end_time {
+            (
+                format_date_time(end_time),
+                format!("{} s", (end_time - self.start_time).num_seconds()),
+            )
+        } else {
+            ("FATAL".to_string(), "N/A".to_string())
+        };
+        let tested = self
+            .test_runs
+            .iter()
+            .filter(|r| matches!(r.outcome, RunOutcome::Tested))
+            .count();
+        txt.push_str(&format!(
+            "  {:<14} {}\n",
+            "Start Time:",
+            format_date_time(self.start_time)
+        ));
+        txt.push_str(&format!("  {:<14} {}\n", "End Time:", end_time_s));
+        txt.push_str(&format!("  {:<14} {}\n", "Duration:", duration_s));
+        txt.push_str(&format!(
+            "  {:<14} {tested} of {}\n",
+            "Tested:",
+            self.test_runs.len()
+        ));
+
+        // dns data
+        txt.push_str("\nDNS Data\n");
+        txt.push_str("---\n");
+        let v4_cname = if let Some(ref cname) = self.dns_data.v4_cname {
+            cname.to_owned()
+        } else {
+            format!("{} A records", self.dns_data.v4_addrs.len())
+        };
+        let v6_cname = if let Some(ref cname) = self.dns_data.v6_cname {
+            cname.to_owned()
+        } else {
+            format!("{} AAAA records", self.dns_data.v6_addrs.len())
+        };
+        txt.push_str(&format!("  {:<10} {}\n", "A (v4):", v4_cname));
+        txt.push_str(&format!("  {:<10} {}\n", "AAAA (v6):", v6_cname));
+
+        // test runs summary
+        txt.push_str("\nTest Runs\n");
+        txt.push_str("---\n");
+
+        // column headers
+        txt.push_str(&format!(
+            "  {:<36} {:<24} {:<10} {:<16}\n",
+            "Address", "Attributes", "Duration", "Outcome"
+        ));
+        for test_run in &self.test_runs {
+            let duration_s = if let Some(end_time) = test_run.end_time {
+                format!("{} ms", (end_time - test_run.start_time).num_milliseconds())
+            } else {
+                "n/a".to_string()
+            };
+            txt.push_str(&format!(
+                "  {:<36} {:<24} {:<10} {}\n",
+                socket_addr_string(test_run.socket_addr),
+                test_run.attribute_set(),
+                duration_s,
+                test_run.outcome.to_text()
+            ));
+        }
+
+        // service checks
+        if !self.service_checks.is_empty() {
+            txt.push_str("\nService Checks\n");
+            txt.push_str("---\n");
+            for c in &self.service_checks {
+                let msg = if !matches!(
+                    c.check_class,
+                    CheckClass::Informational | CheckClass::SpecificationNote
+                ) {
+                    format!("{}", c)
+                } else {
+                    c.to_string()
+                };
+                txt.push_str(&format!("  {msg}\n"));
+            }
+        }
+
+        // each run in detail
+        for run in &self.test_runs {
+            txt.push_str(&run.to_text());
+        }
+        txt
+    }
+
     pub fn execution_errors(&self) -> bool {
         self.test_runs
             .iter()
@@ -293,6 +401,15 @@ impl StringResult {
             md.push_str(&test_run.to_md(options));
         }
         md
+    }
+
+    pub fn to_text(&self) -> String {
+        let mut txt = String::new();
+
+        if let Some(test_run) = &self.test_run {
+            txt.push_str(&test_run.to_text());
+        }
+        txt
     }
 
     pub fn execution_errors(&self) -> bool {
@@ -382,6 +499,10 @@ impl RunOutcome {
             Self::Skipped => self.to_string(),
             _ => self.to_em(options),
         }
+    }
+
+    pub fn to_text(&self) -> String {
+        format!("{}", self)
     }
 }
 
@@ -542,6 +663,46 @@ impl TestRun {
         }
 
         md
+    }
+
+    fn to_text(&self) -> String {
+        let mut txt = String::new();
+
+        // header
+        let header_value = format!(
+            "{} - {}",
+            socket_addr_string(self.socket_addr),
+            self.attribute_set()
+        );
+        txt.push_str(&format!(
+            "\n{header_value}\n{}\n",
+            "-".repeat(header_value.len())
+        ));
+
+        // if outcome is tested
+        if matches!(self.outcome, RunOutcome::Tested) {
+            if self.summaries.as_deref().unwrap_or_default().is_empty() {
+                txt.push_str("  No issues or errors.\n");
+            } else {
+                for summary in self.summaries.as_deref().unwrap_or_default() {
+                    let structure = &summary.structure;
+                    let msg = &summary.item;
+                    let msg_str = if !matches!(
+                        msg.check_class,
+                        CheckClass::Informational | CheckClass::SpecificationNote
+                    ) {
+                        format!("{}", msg)
+                    } else {
+                        msg.to_string()
+                    };
+                    txt.push_str(&format!("  {structure:<40}: {msg_str}\n"));
+                }
+            }
+        } else {
+            txt.push_str(&format!("  {}\n", self.outcome.to_text()));
+        }
+
+        txt
     }
 
     fn attribute_set(&self) -> String {

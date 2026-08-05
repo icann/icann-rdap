@@ -20,7 +20,7 @@ use crate::{
     config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{StoreOps, TxHandle},
+    storage::{StoreOps, TxHandle, mem::DEFAULT_HELPFILE_NAME},
 };
 
 use super::{config::MemConfig, label_search::SearchLabels, rir_search::U32OrRange, tx::MemTx};
@@ -196,7 +196,7 @@ impl StoreOps for Mem {
     }
 
     async fn get_srv_help(&self, host: Option<&str>) -> Result<RdapResponse, RdapServerError> {
-        let host = host.unwrap_or("..default");
+        let host = host.unwrap_or(DEFAULT_HELPFILE_NAME);
         let srvhelps = self.srvhelps.read().await;
         let result = srvhelps.get(host);
         match result {

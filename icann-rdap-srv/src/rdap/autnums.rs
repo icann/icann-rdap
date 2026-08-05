@@ -15,7 +15,7 @@ use tracing::debug;
 use crate::{
     error::RdapServerError,
     rdap::{
-        ToBootStrap, jscontact_conversion, parse_extensions,
+        ToBootStrap, jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -59,7 +59,7 @@ pub(crate) async fn autnums(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = '{}'", exts_list.join(" "));
 
     let storage = state.get_storage().await?;
@@ -87,7 +87,7 @@ pub(crate) async fn autnum_rdap_up(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
 
     let storage = state.get_storage().await?;
@@ -124,7 +124,7 @@ pub(crate) async fn autnum_rdap_top(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
 
     let storage = state.get_storage().await?;
@@ -161,7 +161,7 @@ pub(crate) async fn autnum_rdap_down(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
+    let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
 
     let storage = state.get_storage().await?;
@@ -194,8 +194,7 @@ pub(crate) async fn autnum_rdap_bottom(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
 

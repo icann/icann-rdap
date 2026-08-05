@@ -395,6 +395,10 @@ fn parse_ds_datum(arg: &str) -> Result<DsDatum, RdapServerError> {
             "not enough DS data".to_string(),
         ));
     }
+    let digest = strings[3].to_owned();
+    if digest.chars().any(|c| !c.is_ascii_hexdigit()) {
+        return Err(RdapServerError::InvalidArg("invalid DS digest".to_string()));
+    }
     let key_tag: u32 = strings[0]
         .parse()
         .map_err(|_e| RdapServerError::InvalidArg("cannot parse keyTag".to_string()))?;
@@ -408,7 +412,7 @@ fn parse_ds_datum(arg: &str) -> Result<DsDatum, RdapServerError> {
         .key_tag(key_tag)
         .algorithm(algorithm)
         .digest_type(digest_type)
-        .digest(strings[3].to_owned())
+        .digest(digest)
         .build();
     Ok(ds_datum)
 }
@@ -843,7 +847,7 @@ fn events(args: &ObjectArgs) -> Option<Events> {
         .event_action("registration".to_string())
         .build();
     events.push(created);
-    let updated_at = if let Some(dt) = args.created {
+    let updated_at = if let Some(dt) = args.updated {
         dt
     } else {
         Utc::now().into()
@@ -1140,7 +1144,6 @@ fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
 }
 
 #[cfg(test)]
-#[allow(non_snake_case)]
 mod tests {
     use icann_rdap_common::response::DsDatum;
 
@@ -1153,7 +1156,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_notice_arg_WHEN_parse_THEN_correct() {
+    fn test_parse_notice_arg() {
         // GIVEN
         let arg = "This is a notice.";
 
@@ -1168,7 +1171,7 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_notice_with_link_arg_WHEN_parse_THEN_correct() {
+    fn test_parse_notice_with_link_arg() {
         // GIVEN
         let description = "This is a notice.";
         let media_type = "text/html";
@@ -1202,9 +1205,9 @@ mod tests {
     }
 
     #[test]
-    fn GIVEN_ds_data_WHEN_parse_THEN_correct() {
+    fn test_parse_ds_data() {
         // GIVEN
-        let data = "123456 1 2 THISISADIGEST";
+        let data = "123456 1 2 0123456789ABCDEF";
 
         // WHEN
         let actual = parse_ds_datum(data).expect("parsing ds datum");
@@ -1214,8 +1217,20 @@ mod tests {
             .key_tag(123456)
             .algorithm(1)
             .digest_type(2)
-            .digest("THISISADIGEST".to_string())
+            .digest("0123456789ABCDEF".to_string())
             .build();
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_bad_ds_digest() {
+        // GIVEN
+        let data = "123456 1 2 THISISNOTAVALIDDIGEST";
+
+        // WHEN
+        let actual = parse_ds_datum(data);
+
+        // THEN
+        assert!(actual.is_err());
     }
 }

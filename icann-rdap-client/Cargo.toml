@@ -7,10 +7,11 @@ repository.workspace = true
 description = """
 An RDAP client library.
 """
+rust-version.workspace = true
 
 [dependencies]
 
-icann-rdap-common = { version = "0.0.30", path = "../icann-rdap-common" }
+icann-rdap-common = { version = "0.0.31", path = "../icann-rdap-common" }
 
 buildstructor.workspace = true
 cidr.workspace = true

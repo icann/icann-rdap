@@ -1,8 +1,9 @@
 [package]
 name = "downstream_compat"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 publish = false
+rust-version.workspace = true
 
 [dependencies]
 icann-rdap-common = { path = "../../icann-rdap-common" }

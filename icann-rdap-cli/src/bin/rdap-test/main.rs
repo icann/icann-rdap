@@ -74,7 +74,7 @@ struct Cli {
         required = false,
         env = "RDAP_TEST_OUTPUT",
         value_enum,
-        default_value_t = OtypeArg::RenderedMarkdown,
+        default_value_t = OtypeArg::Text,
     )]
     output_type: OtypeArg,
 
@@ -335,6 +335,9 @@ enum OtypeArg {
 
     /// Results are output as Pretty Compact JSON.
     PrettyCompactJson,
+
+    /// Results are output as plain text.
+    Text,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -581,6 +584,9 @@ pub async fn wrapped_main() -> Result<(), RdapTestError> {
             let formatter = PrettyCompactFormatter::new();
             let mut serializer = Serializer::with_formatter(stdout(), formatter);
             test_results.serialize(&mut serializer)?;
+        }
+        OtypeArg::Text => {
+            println!("{}", test_results.to_text());
         }
     }
 

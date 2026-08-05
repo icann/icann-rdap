@@ -52,7 +52,8 @@ pub(crate) trait ResponseUtil {
 impl ResponseUtil for RdapResponse {
     fn status_code(&self) -> StatusCode {
         if let Self::ErrorResponse(rdap_error) = self {
-            StatusCode::from_u16(rdap_error.error_code()).unwrap()
+            StatusCode::from_u16(rdap_error.error_code())
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
         } else {
             StatusCode::OK
         }
@@ -171,5 +172,23 @@ mod tests {
 
         // THEN
         assert_eq!(actual.expect("no href"), "https://other.example.com");
+    }
+
+    #[test]
+    fn test_error_response_with_invalid_status_code_does_not_panic() {
+        // GIVEN an error response whose code is not a valid HTTP status code
+        let given = Rfc9083Error::response_obj()
+            .error_code(1000)
+            .build()
+            .to_response();
+
+        // WHEN the response is built
+        let actual = given.response();
+
+        // THEN the status falls back to 500 instead of panicking
+        assert_eq!(
+            actual.into_response().status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
     }
 }

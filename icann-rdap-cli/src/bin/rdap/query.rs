@@ -12,7 +12,6 @@ use {
     termimad::{Alignment, MadSkin, crossterm::style::Color::*},
 };
 
-use chrono::DateTime;
 use enumflags2::{BitFlags, bitflags};
 use icann_rdap_cli::args::target::LinkParams;
 use icann_rdap_client::rpsl::{RpslParams, ToRpsl};
@@ -20,7 +19,8 @@ use icann_rdap_common::{
     check::{
         ALL_CHECK_CLASSES, WARNING_CHECK_CLASSES, process::do_check_processing, traverse_checks,
     },
-    prelude::{Event, RdapResponse, get_relationship_links},
+    filter::{FilterOutput, extract},
+    prelude::{Link, RdapResponse, get_relationship_links},
     response::ObjectCommonFields,
 };
 use json_pretty_compact::PrettyCompactFormatter;
@@ -30,9 +30,16 @@ use tracing::warn;
 
 use crate::{
     bootstrap::{BootstrapType, get_base_url},
+    dirs,
     error::RdapCliError,
     request::request_and_process,
 };
+
+#[cfg(target_os = "windows")]
+const LINE_ENDING: &str = "\r\n";
+
+#[cfg(not(target_os = "windows"))]
+const LINE_ENDING: &str = "\n";
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum OutputType {
@@ -51,6 +58,12 @@ pub(crate) enum OutputType {
     /// JSON output that is compact and pretty.
     PrettyCompactJson,
 
+    /// Newline Delimited JSON
+    NDJson,
+
+    /// JSON Text Sequences (RFC7464)
+    JsonSeq,
+
     /// Global Top Level Domain Output
     GtldWhois,
 
@@ -63,17 +76,11 @@ pub(crate) enum OutputType {
     /// URL
     Url,
 
-    /// Only print primary object's status, one per line.
-    StatusText,
+    /// Download geofeed files from RDAP response (RFC 9877).
+    Geofeed,
 
-    /// Only print primary object's status as JSON.
-    StatusJson,
-
-    /// Only print primary object's events, one per line.
-    EventText,
-
-    /// Only print primary object's events as JSON.
-    EventJson,
+    /// Comma-separated Values (CSV)
+    Csv,
 }
 
 /// Used for doing TLD Lookups.
@@ -125,6 +132,8 @@ pub(crate) struct ProcessingParams {
     pub link_params: LinkParams,
     pub to_jscontact: bool,
     pub self_link_caching: bool,
+    pub geofeed_file: Option<std::path::PathBuf>,
+    pub filters: Vec<icann_rdap_common::filter::Filter>,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -201,6 +210,44 @@ pub(crate) async fn exec_queries<W: std::io::Write>(
             break;
         }
     }
+
+    // Handle geofeed output type - download geofeed files
+    if processing_params.output_type == OutputType::Geofeed {
+        let geofeed_path = if let Some(ref path) = processing_params.geofeed_file {
+            // Create the parent directory if it doesn't exist
+            if let Some(parent) = path.parent()
+                && !parent.exists()
+            {
+                std::fs::create_dir_all(parent)?;
+            }
+            path.clone()
+        } else {
+            dirs::geofeed_download_path()?
+        };
+
+        // Collect all geofeed links from all transactions
+        let mut all_urls = Vec::new();
+        for tx in &transactions {
+            if tx.req_data.req_target {
+                let urls = extract_geofeed_links(&tx.res_data.rdap);
+                all_urls.extend(urls);
+            }
+        }
+
+        // Download each geofeed URL
+        for url in all_urls {
+            info!("Downloading geofeed from: {}", url);
+            match download_geofeed(&url, &geofeed_path).await {
+                Ok(file_path) => {
+                    info!("Geofeed downloaded to: {}", file_path.display());
+                }
+                Err(e) => {
+                    warn!("Failed to download geofeed from {}: {}", url, e);
+                }
+            }
+        }
+    }
+
     final_output(processing_params, write, transactions)?;
 
     if received_non_200 {
@@ -375,55 +422,41 @@ fn output_immediately<W: std::io::Write>(
                     writeln!(write, "{url}")?;
                 }
             }
-            OutputType::StatusText => {
-                use icann_rdap_common::response::RdapResponse as RR;
-                let statuses: Option<&[String]> = match &response.rdap {
-                    RR::Entity(e) => Some(e.status()),
-                    RR::Domain(d) => Some(d.status()),
-                    RR::Nameserver(n) => Some(n.status()),
-                    RR::Autnum(a) => Some(a.status()),
-                    RR::Network(n) => Some(n.status()),
-                    _ => None,
+            OutputType::NDJson | OutputType::JsonSeq => {
+                let json_string = if !processing_params.filters.is_empty() {
+                    let results = extract(&response.rdap, &processing_params.filters);
+                    serde_json::to_string(&results)?
+                } else {
+                    serde_json::to_string(&response.rdap)?
                 };
-                if let Some(list) = statuses {
-                    for s in list {
-                        writeln!(write, "{}", s)?;
-                    }
-                }
+                if matches!(processing_params.output_type, OutputType::NDJson) {
+                    writeln!(write, "{}", json_string)?;
+                } else {
+                    writeln!(write, "\x1e{}", json_string)?;
+                };
             }
-            OutputType::EventText => {
-                use icann_rdap_common::response::RdapResponse as RR;
-                let events: Option<&[Event]> = match &response.rdap {
-                    RR::Entity(e) => Some(e.events()),
-                    RR::Domain(d) => Some(d.events()),
-                    RR::Nameserver(n) => Some(n.events()),
-                    RR::Autnum(a) => Some(a.events()),
-                    RR::Network(n) => Some(n.events()),
-                    _ => None,
-                };
-                if let Some(events) = events {
-                    for event in events {
-                        if let Some(event_action) = &event.event_action
-                            && let Some(date) = &event.event_date
-                        {
-                            let date = DateTime::parse_from_rfc3339(date).ok();
-                            if let Some(date) = date {
-                                writeln!(
-                                    write,
-                                    "{} = {}",
-                                    event_action,
-                                    date.format("%a, %v %X %Z")
-                                )?;
-                            } else {
-                                writeln!(write, "{} = BAD DATE", event_action,)?;
-                            }
-                        }
-                    }
+            OutputType::Csv => {
+                let results = extract(&response.rdap, &processing_params.filters);
+                if req_data.req_number == 1 {
+                    // Print header row
+                    let headers: Vec<String> = processing_params
+                        .filters
+                        .iter()
+                        .map(|f| f.to_string())
+                        .collect();
+                    writeln!(write, "{}", headers.join(","))?;
                 }
+                // Print data row
+                let values: Vec<String> = results
+                    .iter()
+                    .map(|FilterOutput { value, .. }| filter_value_to_string(value))
+                    .collect();
+                writeln!(write, "{}", values.join(","))?;
             }
             _ => {} // do nothing for JSON types, handled in final output
         }
     }
+
     Ok(())
 }
 
@@ -441,68 +474,36 @@ fn final_output<W: std::io::Write>(
             if output_count == 1 {
                 for req_res in &transactions {
                     if req_res.req_data.req_target {
-                        write_json(processing_params, write, &req_res.res_data.rdap)?;
+                        if !processing_params.filters.is_empty() {
+                            let results =
+                                extract(&req_res.res_data.rdap, &processing_params.filters);
+                            write_json(processing_params, write, &results)?;
+                        } else {
+                            write_json(processing_params, write, &req_res.res_data.rdap)?;
+                        }
                         break;
                     }
                 }
             } else {
-                let output_vec = transactions
-                    .iter()
-                    .filter(|t| t.req_data.req_target)
-                    .map(|t| &t.res_data.rdap)
-                    .collect::<Vec<&RdapResponse>>();
-                write_json(processing_params, write, &output_vec)?;
+                if !processing_params.filters.is_empty() {
+                    let output_vec = transactions
+                        .iter()
+                        .filter(|t| t.req_data.req_target)
+                        .map(|t| extract(&t.res_data.rdap, &processing_params.filters))
+                        .collect::<Vec<Vec<FilterOutput>>>();
+                    write_json(processing_params, write, &output_vec)?;
+                } else {
+                    let output_vec = transactions
+                        .iter()
+                        .filter(|t| t.req_data.req_target)
+                        .map(|t| &t.res_data.rdap)
+                        .collect::<Vec<&RdapResponse>>();
+                    write_json(processing_params, write, &output_vec)?;
+                }
             }
         }
         OutputType::JsonExtra => {
             writeln!(write, "{}", serde_json::to_string(&transactions).unwrap())?
-        }
-        OutputType::StatusJson => {
-            use icann_rdap_common::response::RdapResponse as RR;
-            let mut statuses = vec![];
-            for rr in &transactions {
-                if rr.req_data.req_target {
-                    let obj_status = match &rr.res_data.rdap {
-                        RR::Entity(e) => e.status(),
-                        RR::Domain(d) => d.status(),
-                        RR::Nameserver(n) => n.status(),
-                        RR::Autnum(a) => a.status(),
-                        RR::Network(n) => n.status(),
-                        _ => &[],
-                    };
-                    obj_status.iter().for_each(|s| statuses.push(s.clone()));
-                }
-            }
-            let obj = serde_json::json!({"status": statuses});
-            writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
-        }
-        OutputType::EventJson => {
-            use icann_rdap_common::response::RdapResponse as RR;
-            let mut events = vec![];
-            for rr in &transactions {
-                if rr.req_data.req_target {
-                    let obj_event: Option<&[Event]> = match &rr.res_data.rdap {
-                        RR::Entity(e) => Some(e.events()),
-                        RR::Domain(d) => Some(d.events()),
-                        RR::Nameserver(n) => Some(n.events()),
-                        RR::Autnum(a) => Some(a.events()),
-                        RR::Network(n) => Some(n.events()),
-                        _ => None,
-                    };
-                    obj_event.iter().for_each(|evs| {
-                        evs.iter()
-                            .filter(|e| e.event_action.as_ref().is_some())
-                            .filter(|e| {
-                                e.event_date
-                                    .as_ref()
-                                    .is_some_and(|ed| DateTime::parse_from_rfc3339(ed).is_ok())
-                            })
-                            .for_each(|e| events.push(e.clone()))
-                    });
-                }
-            }
-            let obj = serde_json::json!({"events": events});
-            writeln!(write, "{}", serde_json::to_string(&obj).unwrap())?;
         }
         _ => {} // do nothing, already handled in immediate output
     };
@@ -555,4 +556,176 @@ fn write_json<W: std::io::Write, T: Serialize>(
         }
     };
     Ok(())
+}
+
+fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> String {
+    use icann_rdap_common::filter::FilterValue;
+
+    match value {
+        FilterValue::StringVal(s) => csv_escape(s),
+        FilterValue::StringArray(arr) => {
+            let escaped: Vec<String> = arr.iter().map(|s| csv_escape(s)).collect();
+            escaped.join("|").to_string()
+        }
+        FilterValue::HashMapVal(hm) => {
+            let items: Vec<String> = hm
+                .iter()
+                .map(|(k, v)| {
+                    format!(
+                        "{}={}",
+                        map_csv_escape(k),
+                        map_csv_escape(&filter_value_to_string(v)),
+                    )
+                })
+                .collect();
+            items.join("|")
+        }
+        FilterValue::IntVal(i) => format!("{}", i),
+        FilterValue::IntArray(arr) => arr
+            .iter()
+            .map(|i| i.to_string())
+            .collect::<Vec<_>>()
+            .join("|")
+            .to_string(),
+        FilterValue::BoolVal(b) => format!("{}", b),
+        FilterValue::Null => String::new(),
+    }
+}
+
+fn csv_escape(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
+}
+
+fn map_csv_escape(s: &str) -> String {
+    csv_escape(&s.replace('|', "%7C").replace('=', "%3D"))
+}
+
+/// Extracts geofeed links from an RDAP response.
+///
+/// Per RFC 9877, geofeed links have rel="geofeed". Unlike other relationship
+/// links, these point to external resources (typically CSV files), not RDAP JSON.
+fn extract_geofeed_links(rdap_response: &RdapResponse) -> Vec<String> {
+    let mut urls = Vec::new();
+
+    fn collect_geofeed_links(links: &[Link], urls: &mut Vec<String>) {
+        for link in links {
+            if link
+                .rel
+                .as_ref()
+                .is_some_and(|r| r.eq_ignore_ascii_case("geofeed"))
+                && let Some(href) = &link.href
+            {
+                urls.push(href.clone());
+            }
+        }
+    }
+
+    match rdap_response {
+        RdapResponse::Domain(d) => {
+            collect_geofeed_links(d.links(), &mut urls);
+        }
+        RdapResponse::Entity(e) => {
+            collect_geofeed_links(e.links(), &mut urls);
+        }
+        RdapResponse::Nameserver(n) => {
+            collect_geofeed_links(n.links(), &mut urls);
+        }
+        RdapResponse::Autnum(a) => {
+            collect_geofeed_links(a.links(), &mut urls);
+        }
+        RdapResponse::Network(n) => {
+            collect_geofeed_links(n.links(), &mut urls);
+        }
+        RdapResponse::DomainSearchResults(s) => {
+            for domain in &s.results {
+                collect_geofeed_links(domain.links(), &mut urls);
+            }
+        }
+        RdapResponse::EntitySearchResults(s) => {
+            for entity in &s.results {
+                collect_geofeed_links(entity.links(), &mut urls);
+            }
+        }
+        RdapResponse::NameserverSearchResults(s) => {
+            for ns in &s.results {
+                collect_geofeed_links(ns.links(), &mut urls);
+            }
+        }
+        RdapResponse::IpSearchResults(s) => {
+            for network in &s.results {
+                collect_geofeed_links(network.links(), &mut urls);
+            }
+        }
+        RdapResponse::AutnumSearchResults(s) => {
+            for autnum in &s.results {
+                collect_geofeed_links(autnum.links(), &mut urls);
+            }
+        }
+        _ => {}
+    }
+
+    urls
+}
+
+/// Downloads a geofeed URL to the specified file path.
+///
+/// If the path is a directory, the filename is derived from the URL.
+/// If the path is a file, it is written directly to that location.
+/// If the file already exists, the new content is appended with proper
+/// line ending separation.
+async fn download_geofeed(
+    url: &str,
+    output_path: &std::path::Path,
+) -> Result<std::path::PathBuf, RdapCliError> {
+    let file_path = if output_path.is_dir() {
+        // Derive filename from URL
+        let filename = url.split('/').next_back().unwrap_or("geofeed.csv");
+        let filename = if filename.is_empty() {
+            "geofeed.csv"
+        } else {
+            filename
+        };
+        output_path.join(filename)
+    } else {
+        output_path.to_path_buf()
+    };
+
+    // Download the file
+    let client = reqwest::Client::new();
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to send request: {}", e)))?;
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| RdapCliError::GeofeedDownload(format!("failed to read response: {}", e)))?;
+
+    // Append to file, ensuring proper line ending separation
+    use std::io::{Read, Write};
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&file_path)?;
+    if file_path.exists() {
+        let metadata = std::fs::metadata(&file_path)?;
+        let len = metadata.len();
+        if len > 0 {
+            // Read the last byte to check if file ends with a line ending
+            let mut last_byte = [0u8; 1];
+            std::fs::File::open(&file_path)?.read_exact(&mut last_byte)?;
+            if last_byte[0] != LINE_ENDING.as_bytes()[0] {
+                file.write_all(LINE_ENDING.as_bytes())?;
+            }
+        }
+    }
+    file.write_all(&bytes)?;
+
+    Ok(file_path)
 }

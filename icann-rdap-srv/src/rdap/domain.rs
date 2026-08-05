@@ -1,6 +1,5 @@
 use http::HeaderMap;
 use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ipnet};
-use tracing::debug;
 
 use {
     axum::{
@@ -12,7 +11,7 @@ use {
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, parse_extensions, response::ResponseUtil},
+    rdap::{jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -27,8 +26,7 @@ pub(crate) async fn domain_by_name(
     headers: HeaderMap,
     state: State<DynServiceState>,
 ) -> Result<Response, RdapServerError> {
-    let exts_list = parse_extensions(headers.get("accept").unwrap().to_str().unwrap());
-    debug!("exts_list = \'{}\'", exts_list.join(" "));
+    let exts_list = super::parse_exts_list_from_headers(&headers);
 
     // canonicalize the domain name by removing a trailing ".", trimming any whitespace,
     // and lower casing any ASCII characters.

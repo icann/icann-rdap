@@ -1,5 +1,6 @@
 use std::{
     fs::{create_dir_all, remove_dir_all, write},
+    io::Error,
     path::PathBuf,
     sync::LazyLock,
 };
@@ -19,8 +20,13 @@ pub(crate) static PROJECT_DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
         .expect("unable to formulate project directories")
 });
 
+/// Returns the user's download directory, or a fallback path.
+fn get_download_dir() -> Option<PathBuf> {
+    directories::UserDirs::new().and_then(|dirs| dirs.download_dir().map(|p| p.to_path_buf()))
+}
+
 /// Initializes the directories to be used.
-pub fn init() -> Result<(), std::io::Error> {
+pub fn init() -> Result<(), Error> {
     create_dir_all(PROJECT_DIRS.config_dir())?;
     create_dir_all(PROJECT_DIRS.cache_dir())?;
     create_dir_all(rdap_cache_path())?;
@@ -35,7 +41,7 @@ pub fn init() -> Result<(), std::io::Error> {
 }
 
 /// Reset the directories.
-pub fn reset() -> Result<(), std::io::Error> {
+pub fn reset() -> Result<(), Error> {
     remove_dir_all(PROJECT_DIRS.config_dir())?;
     remove_dir_all(PROJECT_DIRS.cache_dir())?;
     init()
@@ -67,4 +73,20 @@ pub fn bootstrap_cache_path() -> PathBuf {
     } else {
         PROJECT_DIRS.cache_dir().join(BOOTSTRAP_CACHE_NAME)
     }
+}
+
+/// Returns a [PathBuf] to the geofeed download directory.
+///
+/// Uses the user's system download directory (from the directories crate) with a
+/// 'geofeed' subdirectory. Creates the directory if it doesn't exist.
+pub fn geofeed_download_path() -> Result<PathBuf, Error> {
+    let base = std::env::var("RDAP_DOWNLOAD_DIR")
+        .map(PathBuf::from)
+        .ok()
+        .or_else(get_download_dir)
+        .or_else(|| std::env::current_dir().ok())
+        .ok_or_else(|| Error::other("unable to determine download directory"))?;
+    let geofeed_dir = base.join("geofeed");
+    create_dir_all(&geofeed_dir)?;
+    Ok(geofeed_dir)
 }

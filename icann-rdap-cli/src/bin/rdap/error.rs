@@ -34,6 +34,12 @@ pub enum RdapCliError {
     GtldWhoisOutputNotImplemented,
     #[error("Received Non-200(OK) Response")]
     ResponseWasNot200Ok,
+    #[error("Geofeed download failed: {0}")]
+    GeofeedDownload(String),
+    #[error("Invalid output type for filters.")]
+    InvalidFilterOutputType,
+    #[error("Filters are required for this output type.")]
+    FiltersRequired,
 }
 
 impl RdapCliError {
@@ -57,11 +63,14 @@ impl RdapCliError {
             Self::LinkTargetNotFound(_) => 104,
             // 105 unused
             Self::ResponseWasNot200Ok => 106,
+            Self::GeofeedDownload(_) => 107,
 
             // User Errors
             Self::UnknownOutputType => 200,
             // 201 unused
             Self::GtldWhoisOutputNotImplemented => 205,
+            Self::InvalidFilterOutputType => 207,
+            Self::FiltersRequired => 208,
 
             // RDAP Client Errors
             Self::RdapClient(e) => match e {

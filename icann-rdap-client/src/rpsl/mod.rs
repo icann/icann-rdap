@@ -5,7 +5,7 @@ use std::{str::FromStr, sync::LazyLock};
 use chrono::DateTime;
 use icann_rdap_common::{
     httpdata::HttpData,
-    prelude::{Entity, Event, Notice, ObjectCommonFields, PublicId, RdapResponse, Remark},
+    prelude::{Entity, Event, Link, Notice, ObjectCommonFields, PublicId, RdapResponse, Remark},
 };
 use strum::IntoEnumIterator;
 use strum::{EnumIter, EnumString};
@@ -128,6 +128,8 @@ pub enum AttrName {
     LastModified,
     #[strum(serialize = "locked")]
     Locked,
+    #[strum(serialize = "link")]
+    Link,
     #[strum(serialize = "max-siglife")]
     MaxSigLife,
     #[strum(serialize = "mnt-by")]
@@ -261,6 +263,9 @@ pub fn push_obj_common<T: ObjectCommonFields>(
     // push remarks
     rpsl = push_remarks(rpsl, obj.remarks());
 
+    // push links
+    rpsl = push_links(rpsl, obj.links());
+
     //end
     rpsl = push_source(rpsl, params);
     rpsl
@@ -321,9 +326,18 @@ pub fn push_notices(mut rpsl: String, notices: &[Notice]) -> String {
             rpsl.push_str(&format!("# {line}\n"));
         }
         for link in notice.links() {
-            if let Some(href) = link.href() {
-                rpsl.push_str(&format!("# {href}\n"));
+            let mut link_str = String::from("# Link: ");
+            if let Some(title) = link.title() {
+                link_str.push_str(&format!("{title} -"));
             }
+            if let Some(rel) = link.rel() {
+                link_str.push_str(&format!("({rel}) "));
+            }
+            if let Some(href) = link.href() {
+                link_str.push_str(href);
+            }
+            rpsl.push_str(&link_str);
+            rpsl.push('\n');
         }
         rpsl.push('\n');
     }
@@ -339,9 +353,18 @@ pub fn push_remarks(mut rpsl: String, remarks: &[Remark]) -> String {
             rpsl = push_mandatory_attribute(rpsl, AttrName::Remarks, &format!("{idx}. {line}"));
         }
         for link in remark.links() {
-            if let Some(href) = link.href() {
-                rpsl = push_mandatory_attribute(rpsl, AttrName::Remarks, href);
+            let mut link_str = String::from("Link: ");
+            if let Some(title) = link.title() {
+                link_str.push_str(title);
+                link_str.push_str(" - ");
             }
+            if let Some(href) = link.href() {
+                link_str.push_str(href);
+            }
+            if let Some(rel) = link.rel() {
+                link_str.push_str(&format!(" ({rel})"));
+            }
+            rpsl = push_mandatory_attribute(rpsl, AttrName::Remarks, &link_str);
         }
     }
     rpsl
@@ -375,6 +398,7 @@ pub fn push_events(mut rpsl: String, events: &[Event]) -> String {
                 rpsl = push_mandatory_attribute(rpsl, AttrName::OtherEvent, &date_str);
             }
         }
+        rpsl = push_links(rpsl, event.links());
     }
     rpsl
 }
@@ -404,6 +428,23 @@ pub fn push_public_ids(mut rpsl: String, public_ids: &[PublicId]) -> String {
             AttrName::PublicId,
             &format!("{identifier} ({id_type})"),
         );
+    }
+    rpsl
+}
+
+pub fn push_links(mut rpsl: String, links: &[Link]) -> String {
+    for link in links {
+        let mut link_str = String::new();
+        if let Some(title) = link.title() {
+            link_str.push_str(&format!("{title} -"));
+        }
+        if let Some(rel) = link.rel() {
+            link_str.push_str(&format!("({rel}) "));
+        }
+        if let Some(href) = link.href() {
+            link_str.push_str(href);
+        }
+        rpsl = push_mandatory_attribute(rpsl, AttrName::Link, &link_str);
     }
     rpsl
 }
