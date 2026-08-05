@@ -14,12 +14,11 @@ to RDAP are a current work activity of the IETF's [REGEXT working group](https:/
 Read about [ICANN's role in RDAP](https://www.icann.org/rdap).
 See [general information on RDAP](https://rdap.rcode3.com/).
 
-Installation and Usage
-----------------------
+About, Usage, and Installation
+------------------------------
 
-See the [project wiki](https://github.com/icann/icann-rdap/wiki) for information on installation
-and usage of this software.
-
+Please see the [online user's manual](https://icann.github.io/icann-rdap/) for general information,
+installation, and usage of this software.
 
 License
 -------
