@@ -6,7 +6,9 @@
 * [TLD](domain_queries.md#tld-queries): `rdap .com`
 * [IP Address](ip_queries.md): `rdap 192.0.2.1`
 * [CIDR](ip_queries.md#cidr-block-queries): `rdap 10/8`
+* [RIR Search](rir_searches.md): `rdap up:192.0.2.1`
 * [ASN](autnum_queries.md): `rdap as64496`
+* [GeoFeed](geofeeds.md): `rdap -O geofeed 81.93.181.144`
 * URL: `rdap https://rdap.iana.org/domain/com`
 
 ## Command Help
