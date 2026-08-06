@@ -6,6 +6,21 @@ This page provides detailed information about controlling the output format of R
 
 The RDAP client supports multiple output formats to accommodate different use cases, from human-readable terminal output to machine-readable formats for automation. You can control the output format using command-line options or environment variables.
 
+| Type                | Works with Filters | Shortcut |
+| -----------------   | ------------------ | -------- |
+| Rendered Markdown   | No                 |          |
+| Plain Markdown      | No                 |          |
+| RPSL                | No                 | `--rpsl` |
+| gTLD Whois          | No                 |          |
+| Compact JSON        | Yes                |          |
+| Pretty JSON         | Yes                |          |
+| Pretty Compact JSON | Yes                | `--json` |
+| JSON Extra          | Yes                |          |
+| ND-JSON             | Yes                |          |
+| JSON Sequences      | Yes                |          |
+| GeoFeed             | No                 |          |
+| CSV                 | Yes                |          |
+
 ## Output Format Options
 
 ### Auto Detection (Default)

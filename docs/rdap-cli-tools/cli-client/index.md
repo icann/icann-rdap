@@ -41,10 +41,14 @@ The following extensions:
 * SimpleRedaction
 * Ttl0
 
+### Example Rendered Markdown Output
+
 <figure markdown="span">
   <img src="../../images/rdap_cmd_example_com_md.png"/>
   <figcaption>Example Rendered Markdown Output</figcaption>
 </figure>
+
+### Example RPSL Output
 
 <figure markdown="span">
   <img src="../../images/rdap_cmd_example_com_rpsl.png"/>

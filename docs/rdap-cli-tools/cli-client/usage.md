@@ -1,4 +1,4 @@
-# Usage
+# Other Usage
 
 ## Help
 
@@ -22,34 +22,6 @@ By default, the client will not use a pager.
 When set to "auto", the client determines if a pager is appropriate.
 This is done by attempting to determine if the terminal is interactive or not. If the terminal
 is not interactive, paging will be turned off otherwise it will be on.
-
-## Output Format
-
-By default, the client will attempt to determine the output format of the information. If it determines the shell
-is interactive and no filters are given, output will be in `rendered-markdown`. If filters are are given, the default
-output will be `csv`. Otherwise, the output will be JSON.
-
-You can explicitly control this behavior using the `-O` command argument or the `RDAP_OUTPUT` environment variable
-(see below). The following output types are supported:
-
-* `rendered-markdown` - colorized and formatted output using Markdown
-* `markdown` - raw Markdown output
-* `json` - a single JSON document
-* `pretty-json` - a single JSON document rendered with whitespace
-* `pretty-compact-json` - a single JSON document rendered with whitespace in compact format
-* `json-extra` - a single JSON document with additional meta-data about the requests and responses.
-* `nd-json` - Newline Delimited JSON (i.e., JSONLines or jsonl)
-* `json-seq` - JSON Text Sequences (RFC 7464)
-* `gtld-whois` - gTLD Whois text output
-* `rpsl` - Routing Policy Specification Language (RPSL) text
-* `url` - just the query URLs
-* `geofeed` - GeoFeed Downloads (RFC 9877)
-* `csv` - Comma-Separated Values
-* `auto` - see above.
-
-The `--json` parameter is equivalent to `-O pretty-compact-json`.
-
-The `--rpsl` parameter is equivalent to `-O rpsl`.
 
 ## JSContact
 
@@ -107,8 +79,24 @@ The `--max-cache-age` argument controls the maximum amount of time items are lef
 
 ## Logging
 
-The client logs errors, warning, and other information on its processing. This can be controlled with the
-`--log-level` command argument or the `RDAP_LOG` environment variable.
+The client logs errors, warnings, and other information on its processing to stderr (i.e., the content of the results
+are sent to stdout). Therefore, if you are using this with scripts, the log messages will not show up in the standard output
+piped or redirected to other processes or files.
+
+The amount of information can be controlled with the
+`--log-level` or `-L` command arguments or the `RDAP_LOG` environment variable.
+
+```bash
+rdap -L off example.com
+```
+
+Possible values:
+- off:   No logging
+- error: Log errors
+- warn:  Log errors and warnings
+- info:  Log informational messages, errors, and warnings
+- debug: Log debug messages, informational messages, errors and warnings
+- trace: Log messages appropriate for software development
 
 ## Secure Connections
 

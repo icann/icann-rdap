@@ -28,6 +28,8 @@ rdap --json example.com
 
 This is equivalent to `-O pretty-compact-json`.
 
+Content is sent to stdout while [log messages](usage.md#logging) are sent to stderr, so log messages will not interfere with piping or redirecting.
+
 ## Some Scripting Examples
 
 ### Extract specific fields with jq
@@ -42,6 +44,8 @@ rdap --registrar --json icann.org | jq -r '.entities[0].vcardArray[1][] | select
 ```
 
 ### Use the built-in filters
+
+The built-in [filters](filters.md) make many simple tasks easier.
 
 ```bash
 rdap --registrar --filter ldh-name,registrant-full-name,status icann.org

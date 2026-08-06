@@ -76,7 +76,7 @@ rdap 2001:db8/32
 Query reverse DNS information for an IP address:
 
 ```bash
-rdap -t rdns 192.0.2.1
+rdap -t rdns-ipv4 192.0.2.1
 ```
 
 This performs a reverse DNS lookup and returns the corresponding RDAP information.
@@ -86,7 +86,7 @@ This performs a reverse DNS lookup and returns the corresponding RDAP informatio
 You can also perform reverse DNS queries on network blocks:
 
 ```bash
-rdap -t rdns 192.0.2.0/24
+rdap -t rdns-ipv6 192.0.2.0/24
 ```
 
 ## Server Targeting Options
