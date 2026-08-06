@@ -1,37 +1,5 @@
 # Usage
 
-## Exit Codes
-
-Here's a summary of the `rdap` command exit codes, based on [`error.rs`](https://github.com/icann/icann-rdap/blob/main/icann-rdap-cli/src/bin/rdap/error.rs):
-
-| Exit Code | Description | Category |
-|---|---|---|
-| 0 | Success | Success |
-| 10 | `termimad` error | Internal Error |
-| 11 | `minus` error | Internal Error |
-| 40 | I/O error | I/O Error |
-| 42 | Client error (within `RdapClient`) | I/O Error (rdap client) |
-| 43 | I/O error (within `RdapClient`) | I/O Error (rdap client) |
-| 60 | Response error (within `RdapClient`) | RDAP Server Error |
-| 62 | Parsing error (within `RdapClient`) | RDAP Server Error |
-| 63 | JSON error (within `RdapClient`) | RDAP Server Error |
-| 70 | Bootstrap unavailable (within `RdapClient`) | Bootstrap Error |
-| 71 | Bootstrap error (within `RdapClient`) | Bootstrap Error |
-| 72 | IANA response error (within `RdapClient`) | Bootstrap Error |
-| 100 | JSON error | RDAP Error |
-| 101 | IANA error | RDAP Error |
-| 102 | Invalid bootstrap file | RDAP Error |
-| 103 | Bootstrap not found | RDAP Error |
-| 104 | No registrar found | RDAP Error |
-| 105 | Unused | Unused |
-| 106 | Response was not 200 OK | RDAP Error |
-| 200 | Unknown output type | User Error |
-| 201 | Unused | Unused |
-| 202 | Invalid query value (within `RdapClient`) | User Error |
-| 203 | Ambiguous query type (within `RdapClient`) | User Error |
-| 204 | Domain name error (within `RdapClient`) | User Error |
-| 250 | Poison error (internal to rdap client) | Internal Error |
-
 ## Help
 
 Use `--help` to see all the command line parameters and their values.
@@ -58,10 +26,26 @@ is not interactive, paging will be turned off otherwise it will be on.
 ## Output Format
 
 By default, the client will attempt to determine the output format of the information. If it determines the shell
-is interactive, output will be in `rendered-markdown`. Otherwise, the output will be JSON.
+is interactive and no filters are given, output will be in `rendered-markdown`. If filters are are given, the default
+output will be `csv`. Otherwise, the output will be JSON.
 
 You can explicitly control this behavior using the `-O` command argument or the `RDAP_OUTPUT` environment variable
-(see below).
+(see below). The following output types are supported:
+
+* `rendered-markdown` - colorized and formatted output using Markdown
+* `markdown` - raw Markdown output
+* `json` - a single JSON document
+* `pretty-json` - a single JSON document rendered with whitespace
+* `pretty-compact-json` - a single JSON document rendered with whitespace in compact format
+* `json-extra` - a single JSON document with additional meta-data about the requests and responses.
+* `nd-json` - Newline Delimited JSON (i.e., JSONLines or jsonl)
+* `json-seq` - JSON Text Sequences (RFC 7464)
+* `gtld-whois` - gTLD Whois text output
+* `rpsl` - Routing Policy Specification Language (RPSL) text
+* `url` - just the query URLs
+* `geofeed` - GeoFeed Downloads (RFC 9877)
+* `csv` - Comma-Separated Values
+* `auto` - see above.
 
 The `--json` parameter is equivalent to `-O pretty-compact-json`.
 
@@ -169,4 +153,40 @@ On Windows, this file is located at
 
 Use the `--reset` argument to reset all client state. This will remove the RDAP and IANA caches and
 reset the `rdap.env` file (see above) to the default.
+
+## Exit Codes
+
+Here's a summary of the `rdap` command exit codes, based on [`error.rs`](https://github.com/icann/icann-rdap/blob/main/icann-rdap-cli/src/bin/rdap/error.rs):
+
+| Exit Code | Description | Category |
+|---|---|---|
+| 0 | Success | Success |
+| 10 | `termimad` error | Internal Error |
+| 11 | `minus` error | Internal Error |
+| 40 | I/O error | I/O Error |
+| 42 | Client error (within `RdapClient`) | I/O Error (rdap client) |
+| 43 | I/O error (within `RdapClient`) | I/O Error (rdap client) |
+| 60 | Response error (within `RdapClient`) | RDAP Server Error |
+| 62 | Parsing error (within `RdapClient`) | RDAP Server Error |
+| 63 | JSON error (within `RdapClient`) | RDAP Server Error |
+| 70 | Bootstrap unavailable (within `RdapClient`) | Bootstrap Error |
+| 71 | Bootstrap error (within `RdapClient`) | Bootstrap Error |
+| 72 | IANA response error (within `RdapClient`) | Bootstrap Error |
+| 100 | JSON error | RDAP Error |
+| 101 | IANA error | RDAP Error |
+| 102 | Invalid bootstrap file | RDAP Error |
+| 103 | Bootstrap not found | RDAP Error |
+| 104 | No registrar found | RDAP Error |
+| 105 | Unused | Unused |
+| 106 | Response was not 200 OK | RDAP Error |
+| 200 | Unknown output type | User Error |
+| 201 | Unused | Unused |
+| 202 | Invalid query value (within `RdapClient`) | User Error |
+| 203 | Ambiguous query type (within `RdapClient`) | User Error |
+| 204 | Domain name error (within `RdapClient`) | User Error |
+| 205 | GTLD WHOIS Output Not Implemented | User Error |
+| 206 | HTTP Scheme Inappropriate (within `RdapClient`) | User Error |
+| 207 | Invalid Filter Output Type | User Error |
+| 208 | Filters Required | User Error |
+| 250 | Poison error (internal to rdap client) | Internal Error |
 

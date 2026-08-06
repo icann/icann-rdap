@@ -1,35 +1,5 @@
 # Usage
 
-## Exit Codes
-
-| Exit Code | Description                                       | Category          |
-| --------- | ------------------------------------------------- | ---------------- |
-| 0         | Success                                          | Success          |
-| 1         | Tests completed with execution errors.          | Test Failure     |
-| 2         | Tests completed, warning checks found.           | Test Warning     |
-| 3         | Tests completed, error checks found.             | Test Failure     |
-| 10        | Internal error related to terminal display (termimad) | Internal Error   |
-| 40        | I/O Error or Test Execution Error                  | I/O Error        |
-| 42        | RDAP Client Error - Client                      | RDAP Client Error |
-| 43        | RDAP Client Error - I/O                          | RDAP Client Error |
-| 60        | RDAP Client Error - Response                     | RDAP Client Error |
-| 62        | RDAP Client Error - Parsing Error                 | RDAP Client Error |
-| 63        | RDAP Client Error - JSON                         | RDAP Client Error |
-| 70        | RDAP Client Error - Bootstrap Unavailable        | RDAP Client Error |
-| 71        | RDAP Client Error - Bootstrap Error              | RDAP Client Error |
-| 72        | RDAP Client Error - IANA Response                | RDAP Client Error |
-| 100       | JSON error                                        | RDAP Error       |
-| 101       | IANA error                                        | RDAP Error       |
-| 102       | Invalid IANA bootstrap file                      | RDAP Error       |
-| 103       | Bootstrap not found                               | RDAP Error       |
-| 104       | No registrar found                                | RDAP Error       |
-| 105       | No registry found                                 | RDAP Error       |
-| 200       | Unknown output type                               | User Error       |
-| 202       | RDAP Client Error - Invalid Query Value           | RDAP Client Error |
-| 203       | RDAP Client Error - Ambiguous Query Type         | RDAP Client Error |
-| 204       | RDAP Client Error - Domain Name Error             | RDAP Client Error |
-| 250       | RDAP Client Error - Internal Poison Error        | RDAP Client Error |
-
 ## Test Controls
 
 The following arguments may be used to control the behavior of tests:
@@ -108,12 +78,12 @@ Some specification conformance checks are done by this client. Each conformance 
 may be found [here](https://docs.rs/icann-rdap-common/0.0.20/icann_rdap_common/check/enum.Check.html). Additionally, each check is
 classified into one of the following classes:
 
-* Informational
-* Specification Note
-* Standards Warning
-* Standards Error
-* Cidr0 Extension Error
-* ICANN Extension Error
+* Informational - This class represents informational items.
+* Specification Note - This class represents notes about the RDAP response with respect to the various RDAP and RDAP related specifications.
+* Standards Warning - This class represents warnings that may cause some clients to be unable to conduct some operations.
+* Standards Error - This class represents errors in the RDAP response with respect to STD 95.
+* Cidr0 Extension Error - This class represents errors with respect to CIDR0.
+* ICANN Extension Error - This class represents errors with respect to the gTLD RDAP profile.
 
 The `--check-type` argument may be used to specify which types of checks will be used in reporting errors.
 
@@ -135,7 +105,15 @@ Unlike the `rdap` command, the `rdap-test` command does not page output.
 ## Output Format
 
 By default, this command will attempt to determine the output format of the information. If it determines the shell
-is interactive, output will be in `rendered-markdown`. Otherwise, the output will be JSON.
+is interactive, output will be in `text`. Otherwise, the output will be JSON.
+
+The other output formats are:
+
+* `rendered-markdown` - colorized and formatted output using Markdown
+* `markdown` - raw Markdown output
+* `json` - a single JSON document
+* `pretty-json` - a single JSON document rendered with whitespace
+* `pretty-compact-json` - a single JSON document rendered with whitespace in compact format
 
 You can explicitly control this behavior using the `-O` command argument or the `RDAP_TEST_OUTPUT` environment variable
 (see below).
@@ -192,3 +170,34 @@ environment variables are `RDAP_TEST_XXXX` instead of `RDAP_XXXX` (where XXXX is
 
 Use the [`rdap`](../cli-client/usage.md#resetting) command `--reset` argument to reset all configuration and state. This will remove the IANA caches and
 reset the `rdap.env` file (see above) to the default.
+
+## Exit Codes
+
+| Exit Code | Description                                       | Category          |
+| --------- | ------------------------------------------------- | ---------------- |
+| 0         | Success                                          | Success          |
+| 1         | Tests completed with execution errors.          | Test Failure     |
+| 2         | Tests completed, warning checks found.           | Test Warning     |
+| 3         | Tests completed, error checks found.             | Test Failure     |
+| 10        | Internal error related to terminal display (termimad) | Internal Error   |
+| 40        | I/O Error or Test Execution Error                  | I/O Error        |
+| 42        | RDAP Client Error - Client                      | RDAP Client Error |
+| 43        | RDAP Client Error - I/O                          | RDAP Client Error |
+| 60        | RDAP Client Error - Response                     | RDAP Client Error |
+| 62        | RDAP Client Error - Parsing Error                 | RDAP Client Error |
+| 63        | RDAP Client Error - JSON                         | RDAP Client Error |
+| 70        | RDAP Client Error - Bootstrap Unavailable        | RDAP Client Error |
+| 71        | RDAP Client Error - Bootstrap Error              | RDAP Client Error |
+| 72        | RDAP Client Error - IANA Response                | RDAP Client Error |
+| 100       | JSON error                                        | RDAP Error       |
+| 101       | IANA error                                        | RDAP Error       |
+| 102       | Invalid IANA bootstrap file                      | RDAP Error       |
+| 103       | Bootstrap not found                               | RDAP Error       |
+| 104       | No registrar found                                | RDAP Error       |
+| 105       | No registry found                                 | RDAP Error       |
+| 200       | Unknown output type                               | User Error       |
+| 202       | RDAP Client Error - Invalid Query Value           | RDAP Client Error |
+| 203       | RDAP Client Error - Ambiguous Query Type         | RDAP Client Error |
+| 204       | RDAP Client Error - Domain Name Error             | RDAP Client Error |
+| 250       | RDAP Client Error - Internal Poison Error        | RDAP Client Error |
+

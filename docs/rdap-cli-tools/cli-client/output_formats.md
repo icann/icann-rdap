@@ -93,19 +93,23 @@ Includes additional metadata such as:
 - Internal state information
 - Request/response correlation data
 
-### Specialized Formats
-
-#### gTLD WHOIS Format
+#### Newline Delimited JSON
+Otherwise called ND-JSON, JSONL, or JSON Lines.
 ```bash
-rdap -O gtld-whois example.com
+rdap -O nd-json example.com
 ```
 
-Traditional WHOIS-style format for gTLD domains, featuring:
-- WHOIS-compatible output
-- Line-based formatting
-- Legacy system compatibility
+For append-only file writing.
 
-*Note: Only available for domain queries.*
+#### JSON Text Sequences
+Similar to ND-JSON. See RFC 7464.
+```bash
+rdap -O json-seq example.com
+```
+
+For append-only file writing.
+
+### Specialized Formats
 
 #### Routing Policy Specification Language (RPSL)
 ```bash
@@ -119,45 +123,29 @@ RPSL format for network routing information, ideal for:
 - Routing policy databases
 - ISP automation
 
-### Status and Event Formats
-
-#### Status Text
+#### GeoFeed
+See RFC 9877.
 ```bash
-rdap -O status-text example.com
+rdap -O geofeed 192.0.2.1
 ```
 
-Outputs only the primary object's status, one status per line.
-
-#### Status JSON
+#### CSV
+See RFC 9877.
 ```bash
-rdap -O status-json example.com
+rdap -O csv --filter registrant-email icann.org
 ```
 
-Outputs only the primary object's status in JSON format.
-
-#### Event Text
+#### gTLD WHOIS Format
 ```bash
-rdap -O event-text example.com
+rdap -O gtld-whois example.com
 ```
 
-Outputs only the primary object's events (creation, expiration, etc.), one per line.
+Traditional WHOIS-style format for gTLD domains, featuring:
+- WHOIS-compatible output
+- Line-based formatting
+- Legacy system compatibility
 
-#### Event JSON
-```bash
-rdap -O event-json example.com
-```
-
-Outputs only the primary object's events in JSON format.
-
-### URL Output
-```bash
-rdap -O url example.com
-```
-
-Outputs only the RDAP server URL for the query, useful for:
-- Debugging
-- URL extraction
-- Server verification
+*Note: Only available for domain queries.*
 
 ## Environment Variable Configuration
 

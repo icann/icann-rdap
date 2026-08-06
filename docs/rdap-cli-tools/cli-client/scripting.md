@@ -12,11 +12,10 @@ The CLI provides multiple output formats via the `-O` (or `--output-type`) argum
 | `pretty-json` | | Pretty-printed JSON output |
 | `pretty-compact-json` | `--json` | Compact but readable JSON (best for scripts) |
 | `json-extra` | | RDAP JSON with additional processing information |
+| `nd-json` | | Newline Delimited JSON for append-only purposes |
+| `json-seq` | | JSON Text Sequences (RFC7464) for append-only purposes |
+| `csv` | | For filtering and output for spreadsheets |
 | `url` | | Just the RDAP server URL (useful for bootstrapping) |
-| `status-text` | | Only the object status, one per line |
-| `status-json` | | Object status as JSON |
-| `event-text` | | Only the events, one per line |
-| `event-json` | | Events as JSON |
 | `rpsl` | `--rpsl` | Routing Policy Specification Language |
 
 ## Quick JSON Output
@@ -28,6 +27,25 @@ rdap --json example.com
 ```
 
 This is equivalent to `-O pretty-compact-json`.
+
+## Some Scripting Examples
+
+### Extract specific fields with jq
+
+```bash
+rdap --json example.com | jq -r '.entities[0].vcardArray[1][] | select(.[0] == "fn").[3]'
+```
+
+### Target the registrar
+```bash
+rdap --registrar --json icann.org | jq -r '.entities[0].vcardArray[1][] | select(.[0] == "fn").[3]'
+```
+
+### Use the built-in filters
+
+```bash
+rdap --registrar --filter ldh-name,registrant-full-name,status icann.org
+```
 
 ## JSContact Output
 
@@ -45,47 +63,6 @@ rdap --json --to-jscontact example.com | jq -r '.entities[0].contact.name.fullNa
 
 # Get entity email
 rdap --json --to-jscontact example.com | jq -r '.entities[0].contact.email[0].address'
-```
-
-## Common Scripting Examples
-
-### Extract specific fields with jq
-
-```bash
-rdap --json example.com | jq -r '.entities[0].vcardArray[1][] | select(.[0] == "fn").[3]'
-```
-
-### Get the RDAP server URL for bootstrapping
-
-```bash
-rdap -O url example.com
-```
-
-
-## Redaction Flags
-
-When querying RDAP data, some information may be redacted. The CLI provides flags to control how redactions are handled:
-
-```bash
-rdap --redaction-flag show-rfc9537 --json example.com
-```
-
-Available flags:
-- `highlight-simple-redactions` - Highlights simple redactions in output
-- `show-rfc9537` - Shows RFC 9537 redaction directives
-- `do-not-simplify-rfc9537` - Preserves RFC 9537 redaction format
-- `do-rfc9537-redactions` - Processes RFC 9537 redactions
-
-Multiple flags can be combined with commas:
-
-```bash
-rdap --redaction-flag highlight-simple-redactions,show-rfc9537 --json example.com
-```
-
-Or via environment variable:
-
-```bash
-RDAP_REDACTION_FLAGS=highlight-simple-redactions,show-rfc9537 rdap --json example.com
 ```
 
 ## Environment Variables for Scripts
@@ -122,5 +99,5 @@ The CLI returns specific exit codes that scripts can use for error handling:
 | 100-106 | RDAP-specific errors |
 | 200+ | User error (invalid query, etc.) |
 
-See the [Usage](./usage.md) documentation for the complete exit code table.
+See the [Usage](./usage.md#exit-codes) documentation for the complete exit code table.
 

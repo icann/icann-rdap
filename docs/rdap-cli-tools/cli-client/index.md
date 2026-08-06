@@ -5,6 +5,7 @@ It supports RDAP bootstrapping, caching, different output formats, link followin
 
 * Cidr0
 * Exts
+* Geofeed
 * JSContact
 * Redacted
 * RirSearch1
