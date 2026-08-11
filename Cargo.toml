@@ -9,7 +9,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.30"
+version = "0.0.31"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/icann/icann-rdap"
