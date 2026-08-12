@@ -19,6 +19,7 @@ pub mod error;
 pub mod help;
 pub mod nameserver;
 pub mod network;
+pub mod rpki;
 pub mod search;
 pub mod ttl;
 
@@ -57,7 +58,12 @@ impl ToRpsl for RdapResponse {
             Self::AutnumSearchResults(results) => results.to_rpsl(params),
             Self::ErrorResponse(error) => error.to_rpsl(params),
             Self::Help(help) => help.to_rpsl(params),
-            _ => todo!(),
+            Self::Rpki1Roa(rpki) => rpki.to_rpsl(params),
+            Self::Rpki1Aspa(rpki) => rpki.to_rpsl(params),
+            Self::Rpki1X509ResourceCert(rpki) => rpki.to_rpsl(params),
+            Self::Rpki1RoaSearchResults(results) => results.to_rpsl(params),
+            Self::Rpki1AspaSearchResults(results) => results.to_rpsl(params),
+            Self::Rpki1X509ResourceCertSearchResults(results) => results.to_rpsl(params),
         };
         rpsl.push_str(&variant_rpsl);
         rpsl
@@ -87,18 +93,26 @@ pub enum AttrName {
     Autnum,
     #[strum(serialize = "autnum-range")]
     AutnumRange,
+    #[strum(serialize = "autnums")]
+    Autnums,
     #[strum(serialize = "billing-c")]
     BillingC,
     #[strum(serialize = "cidr")]
     Cidr,
     #[strum(serialize = "created")]
     Created,
+    #[strum(serialize = "customer-autnum")]
+    CustomerAutnum,
     #[strum(serialize = "deleg-signed")]
     DelegationSigned,
     #[strum(serialize = "deletion")]
     Deletion,
     #[strum(serialize = "domain")]
     Domain,
+    #[strum(serialize = "digest-alg")]
+    DigestAlgorithm,
+    #[strum(serialize = "digests")]
+    Digests,
     #[strum(serialize = "ds-rdata")]
     DsRdata,
     #[strum(serialize = "e-mail")]
@@ -121,6 +135,8 @@ pub enum AttrName {
     Inetnum,
     #[strum(serialize = "inet6num")]
     Inet6num,
+    #[strum(serialize = "issuer")]
+    Issuer,
     #[strum(serialize = "key-rdata")]
     KeyData,
     #[strum(serialize = "last-dbupdate")]
@@ -153,10 +169,26 @@ pub enum AttrName {
     OrgName,
     #[strum(serialize = "other-c")]
     OtherC,
+    #[strum(serialize = "not-valid-after")]
+    NotValidAfter,
+    #[strum(serialize = "not-valid-before")]
+    NotValidBefore,
+    #[strum(serialize = "notification-uri")]
+    NotificationUri,
     #[strum(serialize = "other-event")]
     OtherEvent,
+    #[strum(serialize = "origin-autnum")]
+    OriginAutnum,
     #[strum(serialize = "parent-hdl")]
     ParentHandle,
+    #[strum(serialize = "public-key")]
+    PublicKey,
+    #[strum(serialize = "public-key-alg")]
+    PublicKeyAlgorithm,
+    #[strum(serialize = "publication-uri")]
+    PublicationUri,
+    #[strum(serialize = "provider-autnums")]
+    ProviderAutnums,
     #[strum(serialize = "phone")]
     Phone,
     #[strum(serialize = "person")]
@@ -179,6 +211,18 @@ pub enum AttrName {
     Status,
     #[strum(serialize = "source")]
     Source,
+    #[strum(serialize = "roa-ips")]
+    RoaIps,
+    #[strum(serialize = "rpki-type")]
+    Rpkitype,
+    #[strum(serialize = "serial-number")]
+    SerialNumber,
+    #[strum(serialize = "signature-alg")]
+    SignatureAlgorithm,
+    #[strum(serialize = "subject")]
+    Subject,
+    #[strum(serialize = "subject-key-id")]
+    SubjectKeyIdentifier,
     #[strum(serialize = "tech-c")]
     TechC,
     #[strum(serialize = "transfer")]
