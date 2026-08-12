@@ -57,6 +57,7 @@ impl ToRpsl for RdapResponse {
             Self::AutnumSearchResults(results) => results.to_rpsl(params),
             Self::ErrorResponse(error) => error.to_rpsl(params),
             Self::Help(help) => help.to_rpsl(params),
+            _ => todo!(),
         };
         rpsl.push_str(&variant_rpsl);
         rpsl

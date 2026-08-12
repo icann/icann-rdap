@@ -129,6 +129,7 @@ impl ToMd for RdapResponse {
             Self::AutnumSearchResults(results) => results.to_md(params),
             Self::ErrorResponse(error) => error.to_md(params),
             Self::Help(help) => help.to_md(params),
+            _ => todo!(),
         };
         md.push_str(&variant_md);
         md
@@ -167,6 +168,7 @@ impl MdUtil for RdapResponse {
             Self::AutnumSearchResults(results) => results.get_header_text(),
             Self::ErrorResponse(error) => error.get_header_text(),
             Self::Help(help) => help.get_header_text(),
+            _ => todo!(),
         }
     }
 }
