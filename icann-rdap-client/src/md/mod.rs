@@ -15,6 +15,7 @@ pub mod help;
 pub mod nameserver;
 pub mod network;
 pub mod redacted;
+pub mod rpki;
 pub mod search;
 pub mod string;
 pub mod table;
@@ -129,7 +130,12 @@ impl ToMd for RdapResponse {
             Self::AutnumSearchResults(results) => results.to_md(params),
             Self::ErrorResponse(error) => error.to_md(params),
             Self::Help(help) => help.to_md(params),
-            _ => todo!(),
+            Self::Rpki1Roa(rpki) => rpki.to_md(params),
+            Self::Rpki1Aspa(rpki) => rpki.to_md(params),
+            Self::Rpki1X509ResourceCert(rpki) => rpki.to_md(params),
+            Self::Rpki1RoaSearchResults(results) => results.to_md(params),
+            Self::Rpki1AspaSearchResults(results) => results.to_md(params),
+            Self::Rpki1X509ResourceCertSearchResults(results) => results.to_md(params),
         };
         md.push_str(&variant_md);
         md
@@ -168,7 +174,12 @@ impl MdUtil for RdapResponse {
             Self::AutnumSearchResults(results) => results.get_header_text(),
             Self::ErrorResponse(error) => error.get_header_text(),
             Self::Help(help) => help.get_header_text(),
-            _ => todo!(),
+            Self::Rpki1Roa(rpki) => rpki.get_header_text(),
+            Self::Rpki1Aspa(rpki) => rpki.get_header_text(),
+            Self::Rpki1X509ResourceCert(rpki) => rpki.get_header_text(),
+            Self::Rpki1RoaSearchResults(results) => results.get_header_text(),
+            Self::Rpki1AspaSearchResults(results) => results.get_header_text(),
+            Self::Rpki1X509ResourceCertSearchResults(results) => results.get_header_text(),
         }
     }
 }
