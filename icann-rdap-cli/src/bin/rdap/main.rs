@@ -663,72 +663,127 @@ enum RedactionFlagArg {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum FilterArg {
     // Object class common (all types)
+    /// Handle
     Handle,
+    /// Status
     Status,
+    /// Object Class Name
     ObjectClassName,
+    /// Event
     Event,
+    /// RDAP Conformance
     RdapConformance,
 
     // Domain-specific
+    /// LDH Name
     LdhName,
+    /// Unicode Name
     UnicodeName,
+    /// Nameserver
     Nameserver,
+    /// Public ID
     PublicId,
 
     // Nameservers
+    /// IP Address
     IpAddress,
 
     // Entity-specific
+    /// Role
     Role,
+    /// Email
     Email,
+    /// Full Name
     FullName,
+    /// Voice Phone
     Voice,
+    /// Fax Phone
     Fax,
+    /// Contact URI
     ContactUri,
+    /// Country Name
     CountryName,
+    /// Country Code
     CountryCode,
 
     // Autnum-specific
+    /// Start Autnum
     StartAutnum,
+    /// End Autnum
     EndAutnum,
 
     // Network-specific
+    /// Start IP Address
     StartIpAddress,
+    /// End IP Address
     EndIpAddress,
+    /// IP Version
     IpVersion,
+    /// CIDR
     Cidr,
 
     // Generic
+    /// Name
     Name,
+    /// TYPE
     Type,
+    /// ParentHandle
     ParentHandle,
+    /// Registrant Email
     RegistrantEmail,
+    /// Registrant Full Name
     RegistrantFullName,
+    /// Registrant Voice Phone
     RegistrantVoice,
+    /// Registrant Fax Phone
     RegistrantFax,
+    /// Registrant Contact URI
     RegistrantContactUri,
+    /// Registrant Country Name
     RegistrantCountryName,
+    /// Registrant Country Code
     RegistrantCountryCode,
+    /// Abuse Email
     AbuseEmail,
+    /// Abuse Full Name
     AbuseFullName,
+    /// Abuse Voide Phone
     AbuseVoice,
+    /// Abuse Fax Phone
     AbuseFax,
+    /// Abuse Contact URI
     AbuseContactUri,
+    /// Abuse Country Name
     AbuseCountryName,
+    /// Abuse Country Code
     AbuseCountryCode,
+    /// Technical Email
     TechnicalEmail,
+    /// Technical Full Name
     TechnicalFullName,
+    /// Technical Voice Phone
     TechnicalVoice,
+    /// Technical Fax Phone
     TechnicalFax,
+    /// Technical Contact URI
     TechnicalContactUri,
+    /// Technical Country Name
     TechnicalCountryName,
+    /// Technical Country Code
     TechnicalCountryCode,
+    /// Registrar Email
     RegistrarEmail,
+    /// Registrar Full Name
     RegistrarFullName,
+    /// Registrar Voice Phone
     RegistrarVoice,
+    /// Registrar Fax Phone
     RegistrarFax,
+    /// Registrar Contact URI
     RegistrarContactUri,
+    /// Registrar Country Name
     RegistrarCountryName,
+    /// Registrar Country Code
     RegistrarCountryCode,
 }
 
