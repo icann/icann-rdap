@@ -1,0 +1,13 @@
+aut-num:           rpki1_roa/ROA-1
+roa-ips:           2001:db8::/48/64
+origin-autnum:     AS65536
+nic-hdl:           ROA-1
+source:            example.com
+
+aut-num:           rpki1_roa/ROA-2
+roa-ips:           192.0.2.0/24/28
+origin-autnum:     AS65536
+nic-hdl:           ROA-2
+source:            example.com
+
+

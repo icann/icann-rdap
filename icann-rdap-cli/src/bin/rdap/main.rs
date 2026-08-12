@@ -28,6 +28,7 @@ use {
 };
 
 use crate::query::{RedactionFlag, exec_queries};
+use icann_rdap_client::RdapClientError;
 
 pub mod bootstrap;
 pub mod error;
@@ -488,6 +489,63 @@ enum QtypeArg {
 
     /// Autonomous System Number Name Search
     AutnumName,
+
+    /// ROA Handle Lookup
+    RoaHandle,
+
+    /// ROA IP Lookup
+    RoaIp,
+
+    /// ROA CIDR Lookup
+    RoaCidr,
+
+    /// ROA Digest Lookup
+    RoaDigest,
+
+    /// ROA Name Search
+    RoaName,
+
+    /// ROA Origin AS Search
+    RoaOriginAs,
+
+    /// ASPA Handle Lookup
+    AspaHandle,
+
+    /// ASPA Customer AS Lookup
+    AspaAutnum,
+
+    /// ASPA Digest Lookup
+    AspaDigest,
+
+    /// ASPA Name Search
+    AspaName,
+
+    /// ASPA Provider AS Search
+    AspaProviderAs,
+
+    /// X.509 Resource Cert Handle Lookup
+    X509Handle,
+
+    /// X.509 Resource Cert Digest Lookup
+    X509Digest,
+
+    /// X.509 Resource Cert Issuer Search
+    X509Issuer,
+
+    /// X.509 Resource Cert Subject Search
+    X509Subject,
+
+    /// X.509 Resource Cert SKI Search
+    X509Ski,
+
+    /// X.509 Resource Cert IP Search
+    X509Ip,
+
+    /// X.509 Resource Cert CIDR Search
+    X509Cidr,
+
+    /// X.509 Resource Cert AS Search
+    X509Autnum,
 }
 
 /// Represents the output type possibilities.
@@ -605,72 +663,127 @@ enum RedactionFlagArg {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum FilterArg {
     // Object class common (all types)
+    /// Handle
     Handle,
+    /// Status
     Status,
+    /// Object Class Name
     ObjectClassName,
+    /// Event
     Event,
+    /// RDAP Conformance
     RdapConformance,
 
     // Domain-specific
+    /// LDH Name
     LdhName,
+    /// Unicode Name
     UnicodeName,
+    /// Nameserver
     Nameserver,
+    /// Public ID
     PublicId,
 
     // Nameservers
+    /// IP Address
     IpAddress,
 
     // Entity-specific
+    /// Role
     Role,
+    /// Email
     Email,
+    /// Full Name
     FullName,
+    /// Voice Phone
     Voice,
+    /// Fax Phone
     Fax,
+    /// Contact URI
     ContactUri,
+    /// Country Name
     CountryName,
+    /// Country Code
     CountryCode,
 
     // Autnum-specific
+    /// Start Autnum
     StartAutnum,
+    /// End Autnum
     EndAutnum,
 
     // Network-specific
+    /// Start IP Address
     StartIpAddress,
+    /// End IP Address
     EndIpAddress,
+    /// IP Version
     IpVersion,
+    /// CIDR
     Cidr,
 
     // Generic
+    /// Name
     Name,
+    /// TYPE
     Type,
+    /// ParentHandle
     ParentHandle,
+    /// Registrant Email
     RegistrantEmail,
+    /// Registrant Full Name
     RegistrantFullName,
+    /// Registrant Voice Phone
     RegistrantVoice,
+    /// Registrant Fax Phone
     RegistrantFax,
+    /// Registrant Contact URI
     RegistrantContactUri,
+    /// Registrant Country Name
     RegistrantCountryName,
+    /// Registrant Country Code
     RegistrantCountryCode,
+    /// Abuse Email
     AbuseEmail,
+    /// Abuse Full Name
     AbuseFullName,
+    /// Abuse Voide Phone
     AbuseVoice,
+    /// Abuse Fax Phone
     AbuseFax,
+    /// Abuse Contact URI
     AbuseContactUri,
+    /// Abuse Country Name
     AbuseCountryName,
+    /// Abuse Country Code
     AbuseCountryCode,
+    /// Technical Email
     TechnicalEmail,
+    /// Technical Full Name
     TechnicalFullName,
+    /// Technical Voice Phone
     TechnicalVoice,
+    /// Technical Fax Phone
     TechnicalFax,
+    /// Technical Contact URI
     TechnicalContactUri,
+    /// Technical Country Name
     TechnicalCountryName,
+    /// Technical Country Code
     TechnicalCountryCode,
+    /// Registrar Email
     RegistrarEmail,
+    /// Registrar Full Name
     RegistrarFullName,
+    /// Registrar Voice Phone
     RegistrarVoice,
+    /// Registrar Fax Phone
     RegistrarFax,
+    /// Registrar Contact URI
     RegistrarContactUri,
+    /// Registrar Country Name
     RegistrarCountryName,
+    /// Registrar Country Code
     RegistrarCountryCode,
 }
 
@@ -1050,6 +1163,40 @@ fn query_type_from_cli(cli: &Cli) -> Result<QueryType, RdapCliError> {
         QtypeArg::NsName => QueryType::NameserverNameSearch(query_value),
         QtypeArg::NsIp => QueryType::ns_ip_search(&query_value)?,
         QtypeArg::Url => QueryType::Url(query_value),
+        QtypeArg::RoaHandle => QueryType::Rpki1RoaHandle(query_value),
+        QtypeArg::RoaIp => QueryType::rpki1_roa_ip(&query_value)?,
+        QtypeArg::RoaCidr => QueryType::rpki1_roa_cidr(&query_value)?,
+        QtypeArg::RoaDigest => {
+            let (algo, digest) = query_value
+                .split_once(':')
+                .ok_or(RdapClientError::InvalidQueryValue)?;
+            QueryType::rpki1_roa_digest(algo, digest)
+        }
+        QtypeArg::RoaName => QueryType::rpki1_roa_name_search(&query_value),
+        QtypeArg::RoaOriginAs => QueryType::rpki1_roa_origin_autnum_search(&query_value)?,
+        QtypeArg::AspaHandle => QueryType::rpki1_aspa_handle(&query_value),
+        QtypeArg::AspaAutnum => QueryType::rpki1_aspa_autnum(&query_value)?,
+        QtypeArg::AspaDigest => {
+            let (algo, digest) = query_value
+                .split_once(':')
+                .ok_or(RdapClientError::InvalidQueryValue)?;
+            QueryType::rpki1_aspa_digest(algo, digest)
+        }
+        QtypeArg::AspaName => QueryType::rpki1_aspa_name_search(&query_value),
+        QtypeArg::AspaProviderAs => QueryType::rpki1_aspa_provider_autnum_search(&query_value)?,
+        QtypeArg::X509Handle => QueryType::rpki1_x509_handle(&query_value),
+        QtypeArg::X509Digest => {
+            let (algo, digest) = query_value
+                .split_once(':')
+                .ok_or(RdapClientError::InvalidQueryValue)?;
+            QueryType::rpki1_x509_digest(algo, digest)
+        }
+        QtypeArg::X509Issuer => QueryType::rpki1_x509_issuer_search(&query_value),
+        QtypeArg::X509Subject => QueryType::rpki1_x509_subject_search(&query_value),
+        QtypeArg::X509Ski => QueryType::rpki1_x509_ski_search(&query_value),
+        QtypeArg::X509Ip => QueryType::rpki1_x509_ip_search(&query_value)?,
+        QtypeArg::X509Cidr => QueryType::rpki1_x509_cidr_search(&query_value)?,
+        QtypeArg::X509Autnum => QueryType::rpki1_x509_autnum_search(&query_value)?,
     };
     Ok(q)
 }

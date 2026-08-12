@@ -111,6 +111,8 @@ pub enum ExtensionId {
     ReverseSearch,
     #[strum(serialize = "rirSearch1")]
     RirSearch1,
+    #[strum(serialize = "rpki1")]
+    Rpki1,
     #[strum(serialize = "simpleRedaction")]
     SimpleRedaction,
     #[strum(serialize = "sorting")]

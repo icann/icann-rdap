@@ -1,0 +1,6 @@
+aut-num:           rpki1_roa/ROA-3
+roa-ips:           10.0.0.0/8/16
+origin-autnum:     AS65538
+nic-hdl:           ROA-3
+source:            example.com
+

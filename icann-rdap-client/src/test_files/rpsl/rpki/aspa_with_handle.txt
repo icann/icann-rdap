@@ -1,0 +1,11 @@
+aut-num:           rpki1_aspa/ASPA-1
+netname:           ASPA-1 Example
+customer-autnum:   AS65536
+provider-autnums:  AS65542
+provider-autnums:  AS65543
+not-valid-before:  2024-02-01T00:00:00Z
+not-valid-after:   2025-02-01T00:00:00Z
+rpki-type:         Delegated
+nic-hdl:           ASPA-1
+source:            example.com
+

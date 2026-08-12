@@ -17,6 +17,16 @@ use {
 
 use strum::{Display as EnumDisplay, VariantArray};
 
+/// Represents a digest for RPKI objects (ROA, ASPA, X.509 Resource Certificate).
+///
+/// Per draft-ietf-regext-rdap-rpki-04, the digest algorithm must be "SHA-256"
+/// or "SHA-512" and the digest is a hexadecimal string.
+#[derive(Debug, Clone)]
+pub struct Rpki1Digest {
+    pub algorithm: String,
+    pub digest: String,
+}
+
 use crate::RdapClientError;
 
 /// Defines the various types of RDAP lookups and searches.
@@ -223,6 +233,85 @@ pub enum QueryType {
     #[strum(serialize = "Autnum Name Search")]
     AutnumNameSearch(String),
 
+    // RPKI queries per draft-ietf-regext-rdap-rpki-04
+    /// ROA lookup by handle (rpki1_roa/handle).
+    #[strum(serialize = "ROA Handle Lookup")]
+    Rpki1RoaHandle(String),
+
+    /// ROA lookup by IP address (rpki1_roa/ip).
+    #[strum(serialize = "ROA IP Lookup")]
+    Rpki1RoaIp(IpAddr),
+
+    /// ROA lookup by CIDR block (rpki1_roa/ip/prefix/length).
+    #[strum(serialize = "ROA CIDR Lookup")]
+    Rpki1RoaCidr(IpCidr),
+
+    /// ROA lookup by digest (rpki1_roa/digest/algorithm/hex).
+    #[strum(serialize = "ROA Digest Lookup")]
+    Rpki1RoaDigest(Rpki1Digest),
+
+    /// ROA search by name (rpki1_roas?name).
+    #[strum(serialize = "ROA Name Search")]
+    Rpki1RoaNameSearch(String),
+
+    /// ROA search by origin autonomous system number (rpki1_roas?originAutnum).
+    #[strum(serialize = "ROA Origin AS Search")]
+    Rpki1RoaOriginAutnumSearch(u32),
+
+    /// ASPA lookup by handle (rpki1_aspa/handle).
+    #[strum(serialize = "ASPA Handle Lookup")]
+    Rpki1AspaHandle(String),
+
+    /// ASPA lookup by customer autonomous system number (rpki1_aspa/autnum).
+    #[strum(serialize = "ASPA Customer AS Lookup")]
+    Rpki1AspaAutnum(u32),
+
+    /// ASPA lookup by digest (rpki1_aspa/digest/algorithm/hex).
+    #[strum(serialize = "ASPA Digest Lookup")]
+    Rpki1AspaDigest(Rpki1Digest),
+
+    /// ASPA search by name (rpki1_aspas?name).
+    #[strum(serialize = "ASPA Name Search")]
+    Rpki1AspaNameSearch(String),
+
+    /// ASPA search by provider autonomous system number (rpki1_aspas?providerAutnum).
+    #[strum(serialize = "ASPA Provider AS Search")]
+    Rpki1AspaProviderAutnumSearch(u32),
+
+    /// X.509 Resource Certificate lookup by handle (rpki1_x509ResourceCert/handle).
+    #[strum(serialize = "X.509 Resource Cert Handle Lookup")]
+    Rpki1X509ResourceCertHandle(String),
+
+    /// X.509 Resource Certificate lookup by digest (rpki1_x509ResourceCert/digest/algorithm/hex).
+    #[strum(serialize = "X.509 Resource Cert Digest Lookup")]
+    Rpki1X509ResourceCertDigest(Rpki1Digest),
+
+    /// X.509 Resource Certificate search by issuer (rpki1_x509ResourceCerts?issuer).
+    #[strum(serialize = "X.509 Resource Cert Issuer Search")]
+    Rpki1X509ResourceCertIssuerSearch(String),
+
+    /// X.509 Resource Certificate search by subject (rpki1_x509ResourceCerts?subject).
+    #[strum(serialize = "X.509 Resource Cert Subject Search")]
+    Rpki1X509ResourceCertSubjectSearch(String),
+
+    /// X.509 Resource Certificate search by subject key identifier
+    /// (rpki1_x509ResourceCerts?subjectKeyIdentifier).
+    #[strum(serialize = "X.509 Resource Cert SKI Search")]
+    Rpki1X509ResourceCertSkiSearch(String),
+
+    /// X.509 Resource Certificate search by IP address (rpki1_x509ResourceCerts?ip).
+    #[strum(serialize = "X.509 Resource Cert IP Search")]
+    Rpki1X509ResourceCertIpSearch(IpAddr),
+
+    /// X.509 Resource Certificate search by CIDR block (rpki1_x509ResourceCerts?cidr).
+    #[strum(serialize = "X.509 Resource Cert CIDR Search")]
+    Rpki1X509ResourceCertCidrSearch(IpCidr),
+
+    /// X.509 Resource Certificate search by autonomous system number
+    /// (rpki1_x509ResourceCerts?autnum).
+    #[strum(serialize = "X.509 Resource Cert AS Search")]
+    Rpki1X509ResourceCertAutnumSearch(u32),
+
     /// Server help endpoint lookup.
     #[strum(serialize = "Server Help Lookup")]
     Help,
@@ -286,6 +375,25 @@ pub enum QueryTypeVariant {
     NameserverIpSearch,
     AutnumHandleSearch,
     AutnumNameSearch,
+    Rpki1RoaHandle,
+    Rpki1RoaIp,
+    Rpki1RoaCidr,
+    Rpki1RoaDigest,
+    Rpki1RoaNameSearch,
+    Rpki1RoaOriginAutnumSearch,
+    Rpki1AspaHandle,
+    Rpki1AspaAutnum,
+    Rpki1AspaDigest,
+    Rpki1AspaNameSearch,
+    Rpki1AspaProviderAutnumSearch,
+    Rpki1X509ResourceCertHandle,
+    Rpki1X509ResourceCertDigest,
+    Rpki1X509ResourceCertIssuerSearch,
+    Rpki1X509ResourceCertSubjectSearch,
+    Rpki1X509ResourceCertSkiSearch,
+    Rpki1X509ResourceCertIpSearch,
+    Rpki1X509ResourceCertCidrSearch,
+    Rpki1X509ResourceCertAutnumSearch,
     Help,
     Url,
 }
@@ -420,6 +528,60 @@ impl QueryTypeVariant {
             }
             Self::AutnumHandleSearch => QueryType::AutnumHandleSearch("AS64512".to_string()),
             Self::AutnumNameSearch => QueryType::AutnumNameSearch("test".to_string()),
+            Self::Rpki1RoaHandle => QueryType::Rpki1RoaHandle("XXXX".to_string()),
+            Self::Rpki1RoaIp => QueryType::Rpki1RoaIp(IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1))),
+            Self::Rpki1RoaCidr => QueryType::Rpki1RoaCidr(
+                cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+                    "192.0.2.0/24",
+                    cidr::parsers::parse_loose_ip,
+                )
+                .unwrap(),
+            ),
+            Self::Rpki1RoaDigest => QueryType::Rpki1RoaDigest(Rpki1Digest {
+                algorithm: "SHA-256".to_string(),
+                digest: "0123456789abcdef".to_string(),
+            }),
+            Self::Rpki1RoaNameSearch => QueryType::Rpki1RoaNameSearch("ROA-1".to_string()),
+            Self::Rpki1RoaOriginAutnumSearch => QueryType::Rpki1RoaOriginAutnumSearch(65536),
+            Self::Rpki1AspaHandle => QueryType::Rpki1AspaHandle("XXXX".to_string()),
+            Self::Rpki1AspaAutnum => QueryType::Rpki1AspaAutnum(65536),
+            Self::Rpki1AspaDigest => QueryType::Rpki1AspaDigest(Rpki1Digest {
+                algorithm: "SHA-256".to_string(),
+                digest: "abcdef0123456789".to_string(),
+            }),
+            Self::Rpki1AspaNameSearch => QueryType::Rpki1AspaNameSearch("ASPA-1".to_string()),
+            Self::Rpki1AspaProviderAutnumSearch => QueryType::Rpki1AspaProviderAutnumSearch(65542),
+            Self::Rpki1X509ResourceCertHandle => {
+                QueryType::Rpki1X509ResourceCertHandle("ABCD".to_string())
+            }
+            Self::Rpki1X509ResourceCertDigest => {
+                QueryType::Rpki1X509ResourceCertDigest(Rpki1Digest {
+                    algorithm: "SHA-256".to_string(),
+                    digest: "fedcba9876543210".to_string(),
+                })
+            }
+            Self::Rpki1X509ResourceCertIssuerSearch => {
+                QueryType::Rpki1X509ResourceCertIssuerSearch("CN=RIR-CA".to_string())
+            }
+            Self::Rpki1X509ResourceCertSubjectSearch => {
+                QueryType::Rpki1X509ResourceCertSubjectSearch("CN=ISP-CA".to_string())
+            }
+            Self::Rpki1X509ResourceCertSkiSearch => QueryType::Rpki1X509ResourceCertSkiSearch(
+                "hOcGgxqXDa7mYv78fR+sGBKMtWJqItSLfaIYJDKYi8A=".to_string(),
+            ),
+            Self::Rpki1X509ResourceCertIpSearch => {
+                QueryType::Rpki1X509ResourceCertIpSearch(IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1)))
+            }
+            Self::Rpki1X509ResourceCertCidrSearch => QueryType::Rpki1X509ResourceCertCidrSearch(
+                cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+                    "192.0.2.0/24",
+                    cidr::parsers::parse_loose_ip,
+                )
+                .unwrap(),
+            ),
+            Self::Rpki1X509ResourceCertAutnumSearch => {
+                QueryType::Rpki1X509ResourceCertAutnumSearch(65536)
+            }
             Self::Help => QueryType::Help,
             Self::Url => QueryType::Url("https://example.com".to_string()),
         }
@@ -676,6 +838,74 @@ impl QueryType {
             }
             Self::AutnumHandleSearch(value) => search_query(value, "autnums?handle", base_url),
             Self::AutnumNameSearch(value) => search_query(value, "autnums?name", base_url),
+            Self::Rpki1RoaHandle(value) => Ok(format!(
+                "{base_url}/rpki1_roa/handle/{}",
+                PctString::encode(value.chars(), UriReserved::Path)
+            )),
+            Self::Rpki1RoaIp(value) => Ok(format!(
+                "{base_url}/rpki1_roa/ip/{}",
+                PctString::encode(value.to_string().chars(), UriReserved::Path)
+            )),
+            Self::Rpki1RoaCidr(value) => Ok(format!(
+                "{base_url}/rpki1_roa/ip/{}/{}",
+                PctString::encode(value.first_address().to_string().chars(), UriReserved::Path),
+                PctString::encode(
+                    value.network_length().to_string().chars(),
+                    UriReserved::Path
+                )
+            )),
+            Self::Rpki1RoaDigest(value) => Ok(format!(
+                "{base_url}/rpki1_roa/digest/{}/{}",
+                PctString::encode(value.algorithm.chars(), UriReserved::Path),
+                PctString::encode(value.digest.chars(), UriReserved::Path)
+            )),
+            Self::Rpki1RoaNameSearch(value) => search_query(value, "rpki1_roas?name", base_url),
+            Self::Rpki1RoaOriginAutnumSearch(value) => {
+                Ok(format!("{base_url}/rpki1_roas?originAutnum={value}"))
+            }
+            Self::Rpki1AspaHandle(value) => Ok(format!(
+                "{base_url}/rpki1_aspa/handle/{}",
+                PctString::encode(value.chars(), UriReserved::Path)
+            )),
+            Self::Rpki1AspaAutnum(value) => Ok(format!("{base_url}/rpki1_aspa/autnum/{value}")),
+            Self::Rpki1AspaDigest(value) => Ok(format!(
+                "{base_url}/rpki1_aspa/digest/{}/{}",
+                PctString::encode(value.algorithm.chars(), UriReserved::Path),
+                PctString::encode(value.digest.chars(), UriReserved::Path)
+            )),
+            Self::Rpki1AspaNameSearch(value) => search_query(value, "rpki1_aspas?name", base_url),
+            Self::Rpki1AspaProviderAutnumSearch(value) => {
+                Ok(format!("{base_url}/rpki1_aspas?providerAutnum={value}"))
+            }
+            Self::Rpki1X509ResourceCertHandle(value) => Ok(format!(
+                "{base_url}/rpki1_x509ResourceCert/handle/{}",
+                PctString::encode(value.chars(), UriReserved::Path)
+            )),
+            Self::Rpki1X509ResourceCertDigest(value) => Ok(format!(
+                "{base_url}/rpki1_x509ResourceCert/digest/{}/{}",
+                PctString::encode(value.algorithm.chars(), UriReserved::Path),
+                PctString::encode(value.digest.chars(), UriReserved::Path)
+            )),
+            Self::Rpki1X509ResourceCertIssuerSearch(value) => {
+                search_query(value, "rpki1_x509ResourceCerts?issuer", base_url)
+            }
+            Self::Rpki1X509ResourceCertSubjectSearch(value) => {
+                search_query(value, "rpki1_x509ResourceCerts?subject", base_url)
+            }
+            Self::Rpki1X509ResourceCertSkiSearch(value) => search_query(
+                value,
+                "rpki1_x509ResourceCerts?subjectKeyIdentifier",
+                base_url,
+            ),
+            Self::Rpki1X509ResourceCertIpSearch(value) => {
+                search_query(&value.to_string(), "rpki1_x509ResourceCerts?ip", base_url)
+            }
+            Self::Rpki1X509ResourceCertCidrSearch(value) => {
+                search_query(&value.to_string(), "rpki1_x509ResourceCerts?cidr", base_url)
+            }
+            Self::Rpki1X509ResourceCertAutnumSearch(value) => {
+                Ok(format!("{base_url}/rpki1_x509ResourceCerts?autnum={value}"))
+            }
             Self::Help => Ok(format!("{base_url}/help")),
             Self::Url(url) => Ok(url.to_owned()),
         }
@@ -911,6 +1141,133 @@ impl QueryType {
     pub fn autnum_bottom(autnum: &str) -> Result<Self, RdapClientError> {
         let value = parse_autnum(autnum)?;
         Ok(Self::AsNumberBottom(value))
+    }
+
+    // RPKI constructor helpers per draft-ietf-regext-rdap-rpki-04
+
+    /// Parses a ROA handle string into a [`QueryType::Rpki1RoaHandle`].
+    pub fn rpki1_roa_handle(handle: &str) -> Self {
+        Self::Rpki1RoaHandle(handle.to_string())
+    }
+
+    /// Parses an IP address string into a [`QueryType::Rpki1RoaIp`].
+    pub fn rpki1_roa_ip(ip: &str) -> Result<Self, RdapClientError> {
+        let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::Rpki1RoaIp(value))
+    }
+
+    /// Parses a CIDR block string into a [`QueryType::Rpki1RoaCidr`].
+    pub fn rpki1_roa_cidr(cidr: &str) -> Result<Self, RdapClientError> {
+        let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+            cidr,
+            cidr::parsers::parse_loose_ip,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::Rpki1RoaCidr(value))
+    }
+
+    /// Creates a [`QueryType::Rpki1RoaDigest`] from a digest algorithm and hex digest string.
+    pub fn rpki1_roa_digest(algorithm: &str, digest: &str) -> Self {
+        Self::Rpki1RoaDigest(Rpki1Digest {
+            algorithm: algorithm.to_string(),
+            digest: digest.to_string(),
+        })
+    }
+
+    /// Searches ROAs by origin autonomous system number.
+    pub fn rpki1_roa_origin_autnum_search(asn: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(asn)?;
+        Ok(Self::Rpki1RoaOriginAutnumSearch(value))
+    }
+
+    /// Parses a ROA name search pattern into a [`QueryType::Rpki1RoaNameSearch`].
+    pub fn rpki1_roa_name_search(name: &str) -> Self {
+        Self::Rpki1RoaNameSearch(name.to_string())
+    }
+
+    /// Parses an ASPA handle string into a [`QueryType::Rpki1AspaHandle`].
+    pub fn rpki1_aspa_handle(handle: &str) -> Self {
+        Self::Rpki1AspaHandle(handle.to_string())
+    }
+
+    /// Parses an ASPA customer ASN string into a [`QueryType::Rpki1AspaAutnum`].
+    pub fn rpki1_aspa_autnum(asn: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(asn)?;
+        Ok(Self::Rpki1AspaAutnum(value))
+    }
+
+    /// Creates a [`QueryType::Rpki1AspaDigest`] from a digest algorithm and hex digest string.
+    pub fn rpki1_aspa_digest(algorithm: &str, digest: &str) -> Self {
+        Self::Rpki1AspaDigest(Rpki1Digest {
+            algorithm: algorithm.to_string(),
+            digest: digest.to_string(),
+        })
+    }
+
+    /// Parses an ASPA name search pattern into a [`QueryType::Rpki1AspaNameSearch`].
+    pub fn rpki1_aspa_name_search(name: &str) -> Self {
+        Self::Rpki1AspaNameSearch(name.to_string())
+    }
+
+    /// Searches ASPAs by provider autonomous system number.
+    pub fn rpki1_aspa_provider_autnum_search(asn: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(asn)?;
+        Ok(Self::Rpki1AspaProviderAutnumSearch(value))
+    }
+
+    /// Parses an X.509 Resource Certificate handle string into a
+    /// [`QueryType::Rpki1X509ResourceCertHandle`].
+    pub fn rpki1_x509_handle(handle: &str) -> Self {
+        Self::Rpki1X509ResourceCertHandle(handle.to_string())
+    }
+
+    /// Creates a [`QueryType::Rpki1X509ResourceCertDigest`] from a digest algorithm and hex
+    /// digest string.
+    pub fn rpki1_x509_digest(algorithm: &str, digest: &str) -> Self {
+        Self::Rpki1X509ResourceCertDigest(Rpki1Digest {
+            algorithm: algorithm.to_string(),
+            digest: digest.to_string(),
+        })
+    }
+
+    /// Parses an X.509 Resource Certificate issuer search pattern into a
+    /// [`QueryType::Rpki1X509ResourceCertIssuerSearch`].
+    pub fn rpki1_x509_issuer_search(issuer: &str) -> Self {
+        Self::Rpki1X509ResourceCertIssuerSearch(issuer.to_string())
+    }
+
+    /// Parses an X.509 Resource Certificate subject search pattern into a
+    /// [`QueryType::Rpki1X509ResourceCertSubjectSearch`].
+    pub fn rpki1_x509_subject_search(subject: &str) -> Self {
+        Self::Rpki1X509ResourceCertSubjectSearch(subject.to_string())
+    }
+
+    /// Parses an X.509 Resource Certificate subject key identifier into a
+    /// [`QueryType::Rpki1X509ResourceCertSkiSearch`].
+    pub fn rpki1_x509_ski_search(ski: &str) -> Self {
+        Self::Rpki1X509ResourceCertSkiSearch(ski.to_string())
+    }
+
+    /// Parses an IP address string into a [`QueryType::Rpki1X509ResourceCertIpSearch`].
+    pub fn rpki1_x509_ip_search(ip: &str) -> Result<Self, RdapClientError> {
+        let value = IpAddr::from_str(ip).map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::Rpki1X509ResourceCertIpSearch(value))
+    }
+
+    /// Parses a CIDR block string into a [`QueryType::Rpki1X509ResourceCertCidrSearch`].
+    pub fn rpki1_x509_cidr_search(cidr: &str) -> Result<Self, RdapClientError> {
+        let value = cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+            cidr,
+            cidr::parsers::parse_loose_ip,
+        )
+        .map_err(|_e| RdapClientError::InvalidQueryValue)?;
+        Ok(Self::Rpki1X509ResourceCertCidrSearch(value))
+    }
+
+    /// Searches X.509 Resource Certificates by autonomous system number.
+    pub fn rpki1_x509_autnum_search(asn: &str) -> Result<Self, RdapClientError> {
+        let value = parse_autnum(asn)?;
+        Ok(Self::Rpki1X509ResourceCertAutnumSearch(value))
     }
 
     /// Parses an IPv4 address string into a [`QueryType::IpV4Addr`].
@@ -2581,5 +2938,588 @@ mod tests {
 
         // THEN
         assert!(actual.is_err());
+    }
+
+    // RPKI query type tests per draft-ietf-regext-rdap-rpki-04
+
+    #[test]
+    fn test_rpki1_roa_handle_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaHandle("XXXX".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_roa/handle/XXXX");
+    }
+
+    #[test]
+    fn test_rpki1_roa_ip_v4_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaIp(IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1)));
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_roa/ip/192.0.2.1");
+    }
+
+    #[test]
+    fn test_rpki1_roa_ip_v6_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaIp(IpAddr::V6(Ipv6Addr::from_str("2001:db8::1").unwrap()));
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_roa/ip/2001%3Adb8%3A%3A1"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_roa_cidr_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaCidr(
+            cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+                "192.0.2.0/24",
+                cidr::parsers::parse_loose_ip,
+            )
+            .unwrap(),
+        );
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_roa/ip/192.0.2.0/24");
+    }
+
+    #[test]
+    fn test_rpki1_roa_digest_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaDigest(Rpki1Digest {
+            algorithm: "SHA-256".to_string(),
+            digest: "0123456789abcdef".to_string(),
+        });
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_roa/digest/SHA-256/0123456789abcdef"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_roa_name_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaNameSearch("ROA-*".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_roas?name=ROA-%2A");
+    }
+
+    #[test]
+    fn test_rpki1_roa_origin_autnum_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1RoaOriginAutnumSearch(65536);
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_roas?originAutnum=65536"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_aspa_handle_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1AspaHandle("XXXX".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_aspa/handle/XXXX");
+    }
+
+    #[test]
+    fn test_rpki1_aspa_autnum_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1AspaAutnum(65536);
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_aspa/autnum/65536");
+    }
+
+    #[test]
+    fn test_rpki1_aspa_digest_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1AspaDigest(Rpki1Digest {
+            algorithm: "SHA-256".to_string(),
+            digest: "abcdef0123456789".to_string(),
+        });
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_aspa/digest/SHA-256/abcdef0123456789"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_aspa_name_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1AspaNameSearch("ASPA-*".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(actual, "https://example.com/rdap/rpki1_aspas?name=ASPA-%2A");
+    }
+
+    #[test]
+    fn test_rpki1_aspa_provider_autnum_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1AspaProviderAutnumSearch(65542);
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_aspas?providerAutnum=65542"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_handle_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertHandle("ABCD".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCert/handle/ABCD"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_digest_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertDigest(Rpki1Digest {
+            algorithm: "SHA-256".to_string(),
+            digest: "fedcba9876543210".to_string(),
+        });
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCert/digest/SHA-256/fedcba9876543210"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_issuer_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertIssuerSearch("CN=RIR-*".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?issuer=CN%3DRIR-%2A"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_subject_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertSubjectSearch("CN=ISP-*".to_string());
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?subject=CN%3DISP-%2A"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_ski_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertSkiSearch(
+            "hOcGgxqXDa7mYv78fR+sGBKMtWJqItSLfaIYJDKYi8A=".to_string(),
+        );
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?subjectKeyIdentifier=hOcGgxqXDa7mYv78fR%2BsGBKMtWJqItSLfaIYJDKYi8A%3D"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_ip_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertIpSearch(IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1)));
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?ip=192.0.2.1"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_ip_search_v6_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertIpSearch(IpAddr::V6(
+            Ipv6Addr::from_str("2001:db8::1").unwrap(),
+        ));
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?ip=2001%3Adb8%3A%3A1"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_cidr_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertCidrSearch(
+            cidr::parsers::parse_cidr_ignore_hostbits::<IpCidr, _>(
+                "192.0.2.0/24",
+                cidr::parsers::parse_loose_ip,
+            )
+            .unwrap(),
+        );
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?cidr=192.0.2.0%2F24"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_autnum_search_query_url() {
+        // GIVEN
+        let q = QueryType::Rpki1X509ResourceCertAutnumSearch(65536);
+
+        // WHEN
+        let actual = q.query_url("https://example.com/rdap").expect("query url");
+
+        // THEN
+        assert_eq!(
+            actual,
+            "https://example.com/rdap/rpki1_x509ResourceCerts?autnum=65536"
+        );
+    }
+
+    #[test]
+    fn test_rpki1_roa_handle_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_roa_handle("XXXX");
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1RoaHandle(ref h) if h == "XXXX"));
+    }
+
+    #[test]
+    fn test_rpki1_roa_ip_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_roa_ip("192.0.2.1").unwrap();
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1RoaIp(IpAddr::V4(v)) if v == Ipv4Addr::new(192, 0, 2, 1))
+        );
+    }
+
+    #[test]
+    fn test_rpki1_roa_ip_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_roa_ip("not-an-ip");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_roa_cidr_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_roa_cidr("192.0.2.0/24").unwrap();
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1RoaCidr(_)));
+    }
+
+    #[test]
+    fn test_rpki1_roa_cidr_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_roa_cidr("not-a-cidr");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_roa_digest_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_roa_digest("SHA-256", "0123456789abcdef");
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1RoaDigest(ref d) if d.algorithm == "SHA-256" && d.digest == "0123456789abcdef")
+        );
+    }
+
+    #[test]
+    fn test_rpki1_roa_origin_autnum_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_roa_origin_autnum_search("as65536").unwrap();
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1RoaOriginAutnumSearch(65536)));
+    }
+
+    #[test]
+    fn test_rpki1_roa_origin_autnum_search_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_roa_origin_autnum_search("not-an-asn");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_roa_name_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_roa_name_search("ROA-*");
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1RoaNameSearch(ref n) if n == "ROA-*"));
+    }
+
+    #[test]
+    fn test_rpki1_aspa_handle_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_handle("XXXX");
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1AspaHandle(ref h) if h == "XXXX"));
+    }
+
+    #[test]
+    fn test_rpki1_aspa_autnum_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_autnum("as65536").unwrap();
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1AspaAutnum(65536)));
+    }
+
+    #[test]
+    fn test_rpki1_aspa_autnum_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_autnum("not-an-asn");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_aspa_digest_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_digest("SHA-512", "abcdef0123456789");
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1AspaDigest(ref d) if d.algorithm == "SHA-512" && d.digest == "abcdef0123456789")
+        );
+    }
+
+    #[test]
+    fn test_rpki1_aspa_name_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_name_search("ASPA-*");
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1AspaNameSearch(ref n) if n == "ASPA-*"));
+    }
+
+    #[test]
+    fn test_rpki1_aspa_provider_autnum_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_provider_autnum_search("65542").unwrap();
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1AspaProviderAutnumSearch(65542)));
+    }
+
+    #[test]
+    fn test_rpki1_aspa_provider_autnum_search_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_aspa_provider_autnum_search("bad");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_x509_handle_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_handle("ABCD");
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1X509ResourceCertHandle(ref h) if h == "ABCD"));
+    }
+
+    #[test]
+    fn test_rpki1_x509_digest_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_digest("SHA-256", "fedcba9876543210");
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1X509ResourceCertDigest(ref d) if d.algorithm == "SHA-256" && d.digest == "fedcba9876543210")
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_issuer_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_issuer_search("CN=RIR-*");
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1X509ResourceCertIssuerSearch(ref i) if i == "CN=RIR-*")
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_subject_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_subject_search("CN=ISP-*");
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1X509ResourceCertSubjectSearch(ref s) if s == "CN=ISP-*")
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_ski_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_ski_search("hOcGgxqXDa7mYv78fR+sGBKMtWJqItSLfaIYJDKYi8A=");
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1X509ResourceCertSkiSearch(ref s) if s == "hOcGgxqXDa7mYv78fR+sGBKMtWJqItSLfaIYJDKYi8A=")
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_ip_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_ip_search("192.0.2.1").unwrap();
+
+        // THEN
+        assert!(
+            matches!(q, QueryType::Rpki1X509ResourceCertIpSearch(IpAddr::V4(v)) if v == Ipv4Addr::new(192, 0, 2, 1))
+        );
+    }
+
+    #[test]
+    fn test_rpki1_x509_ip_search_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_x509_ip_search("not-an-ip");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_x509_cidr_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_cidr_search("192.0.2.0/24").unwrap();
+
+        // THEN
+        assert!(matches!(q, QueryType::Rpki1X509ResourceCertCidrSearch(_)));
+    }
+
+    #[test]
+    fn test_rpki1_x509_cidr_search_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_x509_cidr_search("bad");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[test]
+    fn test_rpki1_x509_autnum_search_constructor() {
+        // WHEN
+        let q = QueryType::rpki1_x509_autnum_search("AS65536").unwrap();
+
+        // THEN
+        assert!(matches!(
+            q,
+            QueryType::Rpki1X509ResourceCertAutnumSearch(65536)
+        ));
+    }
+
+    #[test]
+    fn test_rpki1_x509_autnum_search_constructor_invalid() {
+        // WHEN
+        let q = QueryType::rpki1_x509_autnum_search("bad");
+
+        // THEN
+        assert!(q.is_err());
     }
 }
