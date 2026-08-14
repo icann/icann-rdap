@@ -30,7 +30,10 @@ pub mod nameserver;
 pub mod nameserver_search_results;
 pub mod network;
 
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::LazyLock,
+};
 
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
@@ -124,11 +127,152 @@ pub enum FilterValue {
     Null,
 }
 
+static EMPTY_HASHMAP: LazyLock<HashMap<String, FilterValue>> = LazyLock::new(HashMap::new);
+
+impl FilterValue {
+    /// Returns a reference to the string if this is `StringVal`, otherwise `None`.
+    pub fn string_value(&self) -> Option<&str> {
+        match self {
+            FilterValue::StringVal(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Returns the owned string if this is `StringVal`, otherwise `None`.
+    pub fn into_string_value(self) -> Option<String> {
+        match self {
+            FilterValue::StringVal(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the string array if this is `StringArray`, otherwise an empty slice.
+    pub fn string_values(&self) -> &[String] {
+        match self {
+            FilterValue::StringArray(v) => v,
+            _ => &[],
+        }
+    }
+
+    /// Returns the owned string array if this is `StringArray`, otherwise an empty vec.
+    pub fn into_string_values(self) -> Vec<String> {
+        match self {
+            FilterValue::StringArray(v) => v,
+            _ => Vec::new(),
+        }
+    }
+
+    /// Returns the int value if this is `IntVal`, otherwise `None`.
+    pub fn int_value(&self) -> Option<i64> {
+        match self {
+            FilterValue::IntVal(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the int array if this is `IntArray`, otherwise an empty slice.
+    pub fn int_values(&self) -> &[i64] {
+        match self {
+            FilterValue::IntArray(v) => v,
+            _ => &[],
+        }
+    }
+
+    /// Returns the owned int array if this is `IntArray`, otherwise an empty vec.
+    pub fn into_int_values(self) -> Vec<i64> {
+        match self {
+            FilterValue::IntArray(v) => v,
+            _ => Vec::new(),
+        }
+    }
+
+    /// Returns the bool value if this is `BoolVal`, otherwise `None`.
+    pub fn bool_value(&self) -> Option<bool> {
+        match self {
+            FilterValue::BoolVal(v) => Some(*v),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the HashMap if this is `HashMapVal`, otherwise an empty map.
+    pub fn hash_map(&self) -> &HashMap<String, FilterValue> {
+        match self {
+            FilterValue::HashMapVal(m) => m,
+            _ => &EMPTY_HASHMAP,
+        }
+    }
+
+    /// Returns the owned HashMap if this is `HashMapVal`, otherwise an empty map.
+    pub fn into_hash_map(self) -> HashMap<String, FilterValue> {
+        match self {
+            FilterValue::HashMapVal(m) => m,
+            _ => HashMap::new(),
+        }
+    }
+
+    /// Returns `true` if this is `Null`.
+    pub fn is_null(&self) -> bool {
+        matches!(self, FilterValue::Null)
+    }
+
+    /// Returns `true` if this is `Null` or an empty collection.
+    pub fn is_empty(&self) -> bool {
+        match self {
+            FilterValue::Null => true,
+            FilterValue::StringArray(v) => v.is_empty(),
+            FilterValue::IntArray(v) => v.is_empty(),
+            FilterValue::HashMapVal(m) => m.is_empty(),
+            _ => false,
+        }
+    }
+
+    /// Converts this value to a display-friendly string, suitable for CSV or console output.
+    ///
+    /// - `StringVal` -> the string itself
+    /// - `StringArray` -> values joined by `|`
+    /// - `HashMapVal` -> `key=value` pairs joined by `|`
+    /// - `IntVal` -> integer as string
+    /// - `IntArray` -> values joined by `|`
+    /// - `BoolVal` -> "true" or "false"
+    /// - `Null` -> empty string
+    pub fn to_display_string(&self) -> String {
+        match self {
+            FilterValue::StringVal(s) => s.clone(),
+            FilterValue::StringArray(arr) => arr.join("|"),
+            FilterValue::HashMapVal(hm) => hm
+                .iter()
+                .map(|(k, v)| format!("{}={}", k, v.to_display_string()))
+                .collect::<Vec<_>>()
+                .join("|"),
+            FilterValue::IntVal(i) => i.to_string(),
+            FilterValue::IntArray(arr) => arr
+                .iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join("|"),
+            FilterValue::BoolVal(b) => b.to_string(),
+            FilterValue::Null => String::new(),
+        }
+    }
+}
+
 /// A single filter output with a filter identifier and extracted value.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilterOutput {
     pub filter: Filter,
     pub value: FilterValue,
+}
+
+impl FilterOutput {
+    /// Returns the string value if the inner `FilterValue` is `StringVal`, otherwise `None`.
+    pub fn string_value(&self) -> Option<&str> {
+        self.value.string_value()
+    }
+
+    /// Returns `true` if the inner `FilterValue` is `Null`.
+    pub fn is_null(&self) -> bool {
+        self.value.is_null()
+    }
 }
 
 /// The result type for filter operations — a vector of filter outputs.
@@ -143,6 +287,29 @@ pub trait Filterable {
 /// Convenience function to extract filters from any filterable type.
 pub fn extract<T: Filterable>(response: &T, filters: &[Filter]) -> FilterResult {
     response.filter(filters)
+}
+
+/// Convert an `Option<T>` (where T: Display) into a `FilterValue::StringVal` or `Null`.
+///
+/// This eliminates the common pattern:
+/// ```ignore
+/// self.handle()
+///     .map(|h| FilterValue::StringVal(h.to_string()))
+///     .unwrap_or(FilterValue::Null)
+/// ```
+/// in favor of:
+/// ```ignore
+/// opt_to_string(self.handle())
+/// ```
+pub fn opt_to_string<T: std::fmt::Display>(opt: Option<T>) -> FilterValue {
+    opt.map(|v| FilterValue::StringVal(v.to_string()))
+        .unwrap_or(FilterValue::Null)
+}
+
+/// Convert an `Option<u32>` into a `FilterValue::IntVal` or `Null`.
+pub fn opt_to_i64(opt: Option<u32>) -> FilterValue {
+    opt.map(|v| FilterValue::IntVal(v as i64))
+        .unwrap_or(FilterValue::Null)
 }
 
 pub(crate) fn find_entity_email_by_role(entities: &[Entity], role: EntityRole) -> Option<String> {

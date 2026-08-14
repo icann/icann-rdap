@@ -8,10 +8,7 @@ impl Filterable for Autnum {
             .map(|f| match f {
                 Filter::Handle => FilterOutput {
                     filter: *f,
-                    value: self
-                        .handle()
-                        .map(|h| FilterValue::StringVal(h.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.handle()),
                 },
                 Filter::Status => FilterOutput {
                     filter: *f,
@@ -50,31 +47,19 @@ impl Filterable for Autnum {
                 },
                 Filter::StartAutnum => FilterOutput {
                     filter: *f,
-                    value: self
-                        .start_autnum()
-                        .map(|v| FilterValue::IntVal(v as i64))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_i64(self.start_autnum()),
                 },
                 Filter::EndAutnum => FilterOutput {
                     filter: *f,
-                    value: self
-                        .end_autnum()
-                        .map(|v| FilterValue::IntVal(v as i64))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_i64(self.end_autnum()),
                 },
                 Filter::Name => FilterOutput {
                     filter: *f,
-                    value: self
-                        .name()
-                        .map(|n| FilterValue::StringVal(n.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.name()),
                 },
                 Filter::Type => FilterOutput {
                     filter: *f,
-                    value: self
-                        .autnum_type()
-                        .map(|t| FilterValue::StringVal(t.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.autnum_type()),
                 },
                 _ => entity_role_filter_output(ObjectCommonFields::entities(self), *f).unwrap_or(
                     FilterOutput {

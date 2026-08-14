@@ -562,11 +562,6 @@ fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> Str
     use icann_rdap_common::filter::FilterValue;
 
     match value {
-        FilterValue::StringVal(s) => csv_escape(s),
-        FilterValue::StringArray(arr) => {
-            let escaped: Vec<String> = arr.iter().map(|s| csv_escape(s)).collect();
-            escaped.join("|").to_string()
-        }
         FilterValue::HashMapVal(hm) => {
             let items: Vec<String> = hm
                 .iter()
@@ -578,17 +573,9 @@ fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> Str
                     )
                 })
                 .collect();
-            items.join("|")
+            csv_escape(&items.join("|"))
         }
-        FilterValue::IntVal(i) => format!("{}", i),
-        FilterValue::IntArray(arr) => arr
-            .iter()
-            .map(|i| i.to_string())
-            .collect::<Vec<_>>()
-            .join("|")
-            .to_string(),
-        FilterValue::BoolVal(b) => format!("{}", b),
-        FilterValue::Null => String::new(),
+        _ => csv_escape(&value.to_display_string()),
     }
 }
 

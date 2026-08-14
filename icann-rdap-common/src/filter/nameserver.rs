@@ -8,10 +8,7 @@ impl Filterable for Nameserver {
             .map(|f| match f {
                 Filter::Handle => FilterOutput {
                     filter: *f,
-                    value: self
-                        .handle()
-                        .map(|h| FilterValue::StringVal(h.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.handle()),
                 },
                 Filter::Status => FilterOutput {
                     filter: *f,
