@@ -681,6 +681,8 @@ enum FilterArg {
     UnicodeName,
     /// Nameserver
     Nameserver,
+    /// Nameserver IP Address
+    NameserverIpAddress,
     /// Public ID
     PublicId,
 
@@ -798,6 +800,7 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::LdhName => Self::LdhName,
             FilterArg::UnicodeName => Self::UnicodeName,
             FilterArg::Nameserver => Self::Nameserver,
+            FilterArg::NameserverIpAddress => Self::NameserverIpAddress,
             FilterArg::PublicId => Self::PublicId,
             FilterArg::IpAddress => Self::IpAddress,
             FilterArg::Role => Self::Role,
