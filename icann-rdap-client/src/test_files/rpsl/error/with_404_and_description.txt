@@ -1,3 +1,6 @@
+# Supported extensions:
+#  - rdap_level_0
+
 error-code:        404
 error-desc:        Resource not found.
 

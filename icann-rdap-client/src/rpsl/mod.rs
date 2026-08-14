@@ -5,7 +5,9 @@ use std::{str::FromStr, sync::LazyLock};
 use chrono::DateTime;
 use icann_rdap_common::{
     httpdata::HttpData,
-    prelude::{Entity, Event, Link, Notice, ObjectCommonFields, PublicId, RdapResponse, Remark},
+    prelude::{
+        Entity, Event, Extension, Link, Notice, ObjectCommonFields, PublicId, RdapResponse, Remark,
+    },
 };
 use strum::IntoEnumIterator;
 use strum::{EnumIter, EnumString};
@@ -360,6 +362,17 @@ pub fn entity_value(entity: &Entity) -> String {
         .or_else(|| contact.as_ref().and_then(|c| c.full_name()))
         .unwrap_or("NAME/HANDLE UNAVAILABLE")
         .to_string()
+}
+
+pub fn push_extensions(mut rpsl: String, extensions: &[Extension]) -> String {
+    if !extensions.is_empty() {
+        rpsl.push_str("# Supported extensions:\n");
+        for extension in extensions {
+            rpsl.push_str(&format!("#  - {}\n", extension.0));
+        }
+        rpsl.push('\n');
+    }
+    rpsl
 }
 
 pub fn push_notices(mut rpsl: String, notices: &[Notice]) -> String {

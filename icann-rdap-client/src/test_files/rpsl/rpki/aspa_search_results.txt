@@ -1,3 +1,6 @@
+# Supported extensions:
+#  - rdap_level_0
+
 aut-num:           rpki1_aspa/ASPA-1
 customer-autnum:   AS65536
 provider-autnums:  AS65542
