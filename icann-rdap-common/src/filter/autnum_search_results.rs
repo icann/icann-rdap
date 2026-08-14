@@ -1,3 +1,19 @@
+//! Autnum search results filter implementation.
+//!
+//! Extracts fields from [`crate::response::AutnumSearchResults`] RDAP objects.
+//! Values are aggregated across all search results into arrays.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringArray` | Handles from all results |
+//! | `Status` | `StringArray` | Statuses from all results |
+//! | `ObjectClassName` | `StringArray` | Object class names from all results |
+//! | `Event` | `HashMapVal` | Events aggregated from all results |
+//! | `RdapConformance` | `StringArray` | Conformance URIs from all results |
+//! | Entity roles | `StringArray` | Role-based fields aggregated from all results |
+
 use super::*;
 use crate::response::{AutnumSearchResults, CommonFields, ObjectCommonFields};
 

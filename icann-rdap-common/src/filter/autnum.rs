@@ -1,3 +1,22 @@
+//! Autnum filter implementation.
+//!
+//! Extracts fields from [`crate::response::Autnum`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Autonomous system handle |
+//! | `Status` | `StringArray` | Status list |
+//! | `ObjectClassName` | `StringVal` | Always `"autnum"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `StartAutnum` | `IntVal` | Starting AS number |
+//! | `EndAutnum` | `IntVal` | Ending AS number |
+//! | `Name` | `StringVal` | AS name |
+//! | `Type` | `StringVal` | AS type (e.g., `"DIRECT ALLOCATION"`) |
+//! | Entity roles | Various | Extract from nested entities |
+
 use super::*;
 use crate::response::{Autnum, CommonFields, ObjectCommonFields};
 

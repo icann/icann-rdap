@@ -1,3 +1,25 @@
+//! Network filter implementation.
+//!
+//! Extracts fields from [`crate::response::Network`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Network handle |
+//! | `Status` | `StringArray` | Status list |
+//! | `ObjectClassName` | `StringVal` | Always `"network"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `StartIpAddress` | `StringVal` | First IP in the range |
+//! | `EndIpAddress` | `StringVal` | Last IP in the range |
+//! | `IpVersion` | `StringVal` | `"v4"` or `"v6"` |
+//! | `Name` | `StringVal` | Network name |
+//! | `Type` | `StringVal` | Network type (e.g., `"ASSIGNED PORTABLE PREFIX"`) |
+//! | `ParentHandle` | `StringVal` | Parent network handle |
+//! | `Cidr` | `StringArray` | CIDR notation entries |
+//! | Entity roles | Various | Extract from nested entities |
+
 use super::*;
 use crate::response::{CommonFields, Network, ObjectCommonFields};
 

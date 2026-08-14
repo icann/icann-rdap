@@ -1,3 +1,27 @@
+//! Entity filter implementation.
+//!
+//! Extracts fields from [`crate::response::Entity`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Entity handle |
+//! | `Status` | `StringArray` | Status list |
+//! | `ObjectClassName` | `StringVal` | Always `"entity"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `Role` | `StringArray` | Entity role(s) (e.g., `"registrant"`, `"admin"`) |
+//! | `Email` | `StringArray` | Email addresses from contact |
+//! | `FullName` | `StringVal` | Full name from contact |
+//! | `PublicId` | `HashMapVal` | Public identifiers |
+//! | `Voice` | `StringVal` | Phone number from contact |
+//! | `Fax` | `StringVal` | Fax number from contact |
+//! | `ContactUri` | `StringArray` | Contact URIs from contact |
+//! | `CountryName` | `StringArray` | Country names from postal addresses |
+//! | `CountryCode` | `StringArray` | Country codes from postal addresses |
+//! | Entity roles | Various | Extract from nested child entities |
+
 use super::*;
 use crate::response::{CommonFields, Entity, ObjectCommonFields};
 

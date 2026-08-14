@@ -1,3 +1,22 @@
+//! Domain filter implementation.
+//!
+//! Extracts fields from [`crate::response::Domain`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Domain handle |
+//! | `Status` | `StringArray` | Status list (e.g., `"active"`, `"clientTransferProhibited"`) |
+//! | `ObjectClassName` | `StringVal` | Always `"domain"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `LdhName` | `StringVal` | ASCII domain name |
+//! | `UnicodeName` | `StringVal` | Internationalized domain name |
+//! | `Nameserver` | `StringArray` | Nameserver domain names |
+//! | `PublicId` | `HashMapVal` | Public identifiers (e.g., IANA Registrar ID) |
+//! | Entity roles | Various | Extract from nested entities |
+
 use super::*;
 use crate::response::{CommonFields, Domain, ObjectCommonFields};
 
