@@ -18,7 +18,7 @@
 //!
 //! | Object Type | Key Filters |
 //! |---|---|
-//! | [`crate::response::Domain`] | `ldh_name`, `unicode_name`, `handle`, `status`, `nameserver`, `public_id`, entity roles |
+//! | [`crate::response::Domain`] | `ldh_name`, `unicode_name`, `handle`, `status`, `nameserver`, `nameserver_ip_address`, `public_id`, entity roles |
 //! | [`crate::response::DomainSearchResults`] | Same as Domain, aggregated across search results |
 //! | [`crate::response::Autnum`] | `start_autnum`, `end_autnum`, `handle`, `status`, `name`, `type`, entity roles |
 //! | [`crate::response::AutnumSearchResults`] | Same as Autnum, aggregated across search results |
@@ -211,6 +211,9 @@ pub enum Filter {
     UnicodeName,
     /// The list of nameserver domain names associated with this domain.
     Nameserver,
+    /// IP addresses from all nameservers associated with this domain as a map of
+    /// nameserver ldh_name → IP address list (both IPv4 and IPv6 combined).
+    NameserverIpAddress,
     /// Public identifiers as key-value pairs (e.g., `{"IANA Registrar ID": "1234"}`).
     PublicId,
 

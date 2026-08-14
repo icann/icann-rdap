@@ -14,6 +14,7 @@
 //! | `LdhName` | `StringVal` | ASCII domain name |
 //! | `UnicodeName` | `StringVal` | Internationalized domain name |
 //! | `Nameserver` | `StringArray` | Nameserver domain names |
+//! | `NameserverIpAddress` | `HashMapVal` | Nameserver ldh_name → IP address list |
 //! | `PublicId` | `HashMapVal` | Public identifiers (e.g., IANA Registrar ID) |
 //! | Entity roles | Various | Extract from nested entities |
 
@@ -82,6 +83,25 @@ impl Filterable for Domain {
                             .collect(),
                     ),
                 },
+                Filter::NameserverIpAddress => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::HashMapVal(
+                        self.nameservers()
+                            .iter()
+                            .filter_map(|n| n.ldh_name().map(|name| (name.to_string(), n)))
+                            .map(|(name, ns)| {
+                                let ips: Vec<String> = ns
+                                    .ip_addresses()
+                                    .iter()
+                                    .flat_map(|ip| ip.v4s())
+                                    .chain(ns.ip_addresses().iter().flat_map(|ip| ip.v6s()))
+                                    .map(|ip| ip.to_string())
+                                    .collect();
+                                (name, FilterValue::StringArray(ips))
+                            })
+                            .collect(),
+                    ),
+                },
                 Filter::PublicId => FilterOutput {
                     filter: *f,
                     value: FilterValue::HashMapVal(
@@ -114,8 +134,8 @@ mod tests {
     use super::*;
     use crate::contact::Contact;
     use crate::prelude::Email;
-    use crate::prelude::{ExtensionId, Nameserver, PublicId};
-    use crate::response::{Event, Notice};
+    use crate::prelude::{Entity, Event, ExtensionId, Nameserver, PublicId};
+    use crate::response::Notice;
 
     fn make_test_domain() -> Domain {
         let registrant_email = Email::builder().email("registrant@example.com").build();
@@ -167,12 +187,15 @@ mod tests {
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns1.example.com")
+                    .address("192.0.2.1".to_string())
+                    .address("2001:db8::1".to_string())
                     .build()
                     .unwrap(),
             )
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns2.example.com")
+                    .address("198.51.100.1".to_string())
                     .build()
                     .unwrap(),
             )
@@ -346,6 +369,39 @@ mod tests {
                 assert!(s.contains(&"ns2.example.com".to_string()));
             }
             _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_nameserver_ip_address() {
+        // GIVEN
+        let domain = make_test_domain();
+        let filters = vec![Filter::NameserverIpAddress];
+
+        // WHEN
+        let results = extract(&domain, &filters);
+
+        // THEN
+        match &results[0].value {
+            FilterValue::HashMapVal(hm) => {
+                assert_eq!(hm.len(), 2);
+                match hm.get("ns1.example.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 2);
+                        assert!(ips.contains(&"192.0.2.1".to_string()));
+                        assert!(ips.contains(&"2001:db8::1".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns1.example.com"),
+                }
+                match hm.get("ns2.example.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 1);
+                        assert!(ips.contains(&"198.51.100.1".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns2.example.com"),
+                }
+            }
+            _ => panic!("Expected HashMapVal"),
         }
     }
 
