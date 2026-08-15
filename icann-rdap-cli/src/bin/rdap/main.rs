@@ -747,6 +747,8 @@ enum FilterArg {
     RegistrantCountryCode,
     /// Registrant Public ID
     RegistrantPublicId,
+    /// Registrant Handle
+    RegistrantHandle,
     /// Abuse Email
     AbuseEmail,
     /// Abuse Full Name
@@ -763,6 +765,8 @@ enum FilterArg {
     AbuseCountryCode,
     /// Abuse Public ID
     AbusePublicId,
+    /// Abuse Handle
+    AbuseHandle,
     /// Technical Email
     TechnicalEmail,
     /// Technical Full Name
@@ -779,6 +783,8 @@ enum FilterArg {
     TechnicalCountryCode,
     /// Technical Public ID
     TechnicalPublicId,
+    /// Technical Handle
+    TechnicalHandle,
     /// Registrar Email
     RegistrarEmail,
     /// Registrar Full Name
@@ -795,6 +801,8 @@ enum FilterArg {
     RegistrarCountryCode,
     /// Registrar Public ID
     RegistrarPublicId,
+    /// Registrar Handle
+    RegistrarHandle,
 }
 
 impl From<FilterArg> for icann_rdap_common::filter::Filter {
@@ -836,6 +844,7 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::RegistrantCountryName => Self::RegistrantCountryName,
             FilterArg::RegistrantCountryCode => Self::RegistrantCountryCode,
             FilterArg::RegistrantPublicId => Self::RegistrantPublicId,
+            FilterArg::RegistrantHandle => Self::RegistrantHandle,
             FilterArg::AbuseEmail => Self::AbuseEmail,
             FilterArg::AbuseFullName => Self::AbuseFullName,
             FilterArg::AbuseVoice => Self::AbuseVoice,
@@ -844,6 +853,7 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::AbuseCountryName => Self::AbuseCountryName,
             FilterArg::AbuseCountryCode => Self::AbuseCountryCode,
             FilterArg::AbusePublicId => Self::AbusePublicId,
+            FilterArg::AbuseHandle => Self::AbuseHandle,
             FilterArg::TechnicalEmail => Self::TechnicalEmail,
             FilterArg::TechnicalFullName => Self::TechnicalFullName,
             FilterArg::TechnicalVoice => Self::TechnicalVoice,
@@ -852,6 +862,7 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::TechnicalCountryName => Self::TechnicalCountryName,
             FilterArg::TechnicalCountryCode => Self::TechnicalCountryCode,
             FilterArg::TechnicalPublicId => Self::TechnicalPublicId,
+            FilterArg::TechnicalHandle => Self::TechnicalHandle,
             FilterArg::RegistrarEmail => Self::RegistrarEmail,
             FilterArg::RegistrarFullName => Self::RegistrarFullName,
             FilterArg::RegistrarVoice => Self::RegistrarVoice,
@@ -860,6 +871,7 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::RegistrarCountryName => Self::RegistrarCountryName,
             FilterArg::RegistrarCountryCode => Self::RegistrarCountryCode,
             FilterArg::RegistrarPublicId => Self::RegistrarPublicId,
+            FilterArg::RegistrarHandle => Self::RegistrarHandle,
         }
     }
 }

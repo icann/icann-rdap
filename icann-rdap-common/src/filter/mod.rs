@@ -279,6 +279,8 @@ pub enum Filter {
     RegistrantCountryCode,
     /// Registrant public identifiers as key-value pairs (extracted from nested entities with role `registrant`).
     RegistrantPublicId,
+    /// Registrant handle (extracted from nested entities with role `registrant`).
+    RegistrantHandle,
 
     /// Abuse contact email (extracted from nested entities with role `abuse`).
     AbuseEmail,
@@ -296,6 +298,8 @@ pub enum Filter {
     AbuseCountryCode,
     /// Abuse contact public identifiers as key-value pairs (extracted from nested entities with role `abuse`).
     AbusePublicId,
+    /// Abuse contact handle (extracted from nested entities with role `abuse`).
+    AbuseHandle,
 
     /// Technical contact email (extracted from nested entities with role `technical`).
     TechnicalEmail,
@@ -313,6 +317,8 @@ pub enum Filter {
     TechnicalCountryCode,
     /// Technical contact public identifiers as key-value pairs (extracted from nested entities with role `technical`).
     TechnicalPublicId,
+    /// Technical contact handle (extracted from nested entities with role `technical`).
+    TechnicalHandle,
 
     /// Registrar email (extracted from nested entities with role `registrar`).
     RegistrarEmail,
@@ -330,6 +336,8 @@ pub enum Filter {
     RegistrarCountryCode,
     /// Registrar public identifiers as key-value pairs (extracted from nested entities with role `registrar`).
     RegistrarPublicId,
+    /// Registrar handle (extracted from nested entities with role `registrar`).
+    RegistrarHandle,
 }
 
 /// The extracted value from a filter operation.
@@ -973,6 +981,17 @@ pub(crate) fn find_entity_public_ids_by_role(
     None
 }
 
+pub(crate) fn find_entity_handle_by_role(entities: &[Entity], role: EntityRole) -> Option<String> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            return entity.handle().map(|h| h.to_string());
+        }
+        queue.extend(ObjectCommonFields::entities(entity));
+    }
+    None
+}
+
 /// Handles all entity role filter arms (Registrant*, Abuse*, Technical*, Registrar*).
 /// Returns Some(FilterOutput) if the filter is an entity role filter, None otherwise.
 pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Option<FilterOutput> {
@@ -984,7 +1003,8 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::RegistrantContactUri
         | Filter::RegistrantCountryName
         | Filter::RegistrantCountryCode
-        | Filter::RegistrantPublicId => EntityRole::Registrant,
+        | Filter::RegistrantPublicId
+        | Filter::RegistrantHandle => EntityRole::Registrant,
         Filter::AbuseEmail
         | Filter::AbuseFullName
         | Filter::AbuseVoice
@@ -992,7 +1012,8 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::AbuseContactUri
         | Filter::AbuseCountryName
         | Filter::AbuseCountryCode
-        | Filter::AbusePublicId => EntityRole::Abuse,
+        | Filter::AbusePublicId
+        | Filter::AbuseHandle => EntityRole::Abuse,
         Filter::TechnicalEmail
         | Filter::TechnicalFullName
         | Filter::TechnicalVoice
@@ -1000,7 +1021,8 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::TechnicalContactUri
         | Filter::TechnicalCountryName
         | Filter::TechnicalCountryCode
-        | Filter::TechnicalPublicId => EntityRole::Technical,
+        | Filter::TechnicalPublicId
+        | Filter::TechnicalHandle => EntityRole::Technical,
         Filter::RegistrarEmail
         | Filter::RegistrarFullName
         | Filter::RegistrarVoice
@@ -1008,7 +1030,8 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::RegistrarContactUri
         | Filter::RegistrarCountryName
         | Filter::RegistrarCountryCode
-        | Filter::RegistrarPublicId => EntityRole::Registrar,
+        | Filter::RegistrarPublicId
+        | Filter::RegistrarHandle => EntityRole::Registrar,
         _ => return None,
     };
 
@@ -1060,6 +1083,12 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::RegistrarPublicId => FilterValue::HashMapVal(
             find_entity_public_ids_by_role(entities, role).unwrap_or_default(),
         ),
+        Filter::RegistrantHandle
+        | Filter::AbuseHandle
+        | Filter::TechnicalHandle
+        | Filter::RegistrarHandle => find_entity_handle_by_role(entities, role)
+            .map(|e| FilterValue::StringVal(e.to_string()))
+            .unwrap_or(FilterValue::Null),
         _ => return None,
     };
 
@@ -1080,7 +1109,8 @@ where
         | Filter::RegistrantContactUri
         | Filter::RegistrantCountryName
         | Filter::RegistrantCountryCode
-        | Filter::RegistrantPublicId => EntityRole::Registrant,
+        | Filter::RegistrantPublicId
+        | Filter::RegistrantHandle => EntityRole::Registrant,
         Filter::AbuseEmail
         | Filter::AbuseFullName
         | Filter::AbuseVoice
@@ -1088,7 +1118,8 @@ where
         | Filter::AbuseContactUri
         | Filter::AbuseCountryName
         | Filter::AbuseCountryCode
-        | Filter::AbusePublicId => EntityRole::Abuse,
+        | Filter::AbusePublicId
+        | Filter::AbuseHandle => EntityRole::Abuse,
         Filter::TechnicalEmail
         | Filter::TechnicalFullName
         | Filter::TechnicalVoice
@@ -1096,7 +1127,8 @@ where
         | Filter::TechnicalContactUri
         | Filter::TechnicalCountryName
         | Filter::TechnicalCountryCode
-        | Filter::TechnicalPublicId => EntityRole::Technical,
+        | Filter::TechnicalPublicId
+        | Filter::TechnicalHandle => EntityRole::Technical,
         Filter::RegistrarEmail
         | Filter::RegistrarFullName
         | Filter::RegistrarVoice
@@ -1104,7 +1136,8 @@ where
         | Filter::RegistrarContactUri
         | Filter::RegistrarCountryName
         | Filter::RegistrarCountryCode
-        | Filter::RegistrarPublicId => EntityRole::Registrar,
+        | Filter::RegistrarPublicId
+        | Filter::RegistrarHandle => EntityRole::Registrar,
         _ => {
             return FilterOutput {
                 filter: f,
@@ -1181,6 +1214,14 @@ where
             }
             FilterValue::HashMapVal(public_ids)
         }
+        Filter::RegistrantHandle
+        | Filter::AbuseHandle
+        | Filter::TechnicalHandle
+        | Filter::RegistrarHandle => FilterValue::StringArray(
+            results
+                .filter_map(|r| find_entity_handle_by_role(r.entities(), role))
+                .collect(),
+        ),
         _ => FilterValue::Null,
     };
 
