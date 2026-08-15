@@ -277,6 +277,8 @@ pub enum Filter {
     RegistrantCountryName,
     /// Registrant country code(s) (extracted from nested entities with role `registrant`).
     RegistrantCountryCode,
+    /// Registrant public identifiers as key-value pairs (extracted from nested entities with role `registrant`).
+    RegistrantPublicId,
 
     /// Abuse contact email (extracted from nested entities with role `abuse`).
     AbuseEmail,
@@ -292,6 +294,8 @@ pub enum Filter {
     AbuseCountryName,
     /// Abuse contact country code(s) (extracted from nested entities with role `abuse`).
     AbuseCountryCode,
+    /// Abuse contact public identifiers as key-value pairs (extracted from nested entities with role `abuse`).
+    AbusePublicId,
 
     /// Technical contact email (extracted from nested entities with role `technical`).
     TechnicalEmail,
@@ -307,6 +311,8 @@ pub enum Filter {
     TechnicalCountryName,
     /// Technical contact country code(s) (extracted from nested entities with role `technical`).
     TechnicalCountryCode,
+    /// Technical contact public identifiers as key-value pairs (extracted from nested entities with role `technical`).
+    TechnicalPublicId,
 
     /// Registrar email (extracted from nested entities with role `registrar`).
     RegistrarEmail,
@@ -322,6 +328,8 @@ pub enum Filter {
     RegistrarCountryName,
     /// Registrar country code(s) (extracted from nested entities with role `registrar`).
     RegistrarCountryCode,
+    /// Registrar public identifiers as key-value pairs (extracted from nested entities with role `registrar`).
+    RegistrarPublicId,
 }
 
 /// The extracted value from a filter operation.
@@ -937,6 +945,34 @@ pub(crate) fn find_entity_country_codes_by_role(
     Vec::new()
 }
 
+pub(crate) fn find_entity_public_ids_by_role(
+    entities: &[Entity],
+    role: EntityRole,
+) -> Option<HashMap<String, FilterValue>> {
+    let mut queue: VecDeque<&Entity> = entities.iter().collect();
+    while let Some(entity) = queue.pop_front() {
+        if entity.is_entity_role(&role.to_string()) {
+            let public_ids: HashMap<String, FilterValue> = entity
+                .public_ids()
+                .iter()
+                .filter_map(|p| {
+                    let id_type = p.id_type()?;
+                    let identifier = p.identifier()?;
+                    Some((
+                        id_type.to_string(),
+                        FilterValue::StringVal(identifier.to_string()),
+                    ))
+                })
+                .collect();
+            if !public_ids.is_empty() {
+                return Some(public_ids);
+            }
+        }
+        queue.extend(ObjectCommonFields::entities(entity));
+    }
+    None
+}
+
 /// Handles all entity role filter arms (Registrant*, Abuse*, Technical*, Registrar*).
 /// Returns Some(FilterOutput) if the filter is an entity role filter, None otherwise.
 pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Option<FilterOutput> {
@@ -947,28 +983,32 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::RegistrantFax
         | Filter::RegistrantContactUri
         | Filter::RegistrantCountryName
-        | Filter::RegistrantCountryCode => EntityRole::Registrant,
+        | Filter::RegistrantCountryCode
+        | Filter::RegistrantPublicId => EntityRole::Registrant,
         Filter::AbuseEmail
         | Filter::AbuseFullName
         | Filter::AbuseVoice
         | Filter::AbuseFax
         | Filter::AbuseContactUri
         | Filter::AbuseCountryName
-        | Filter::AbuseCountryCode => EntityRole::Abuse,
+        | Filter::AbuseCountryCode
+        | Filter::AbusePublicId => EntityRole::Abuse,
         Filter::TechnicalEmail
         | Filter::TechnicalFullName
         | Filter::TechnicalVoice
         | Filter::TechnicalFax
         | Filter::TechnicalContactUri
         | Filter::TechnicalCountryName
-        | Filter::TechnicalCountryCode => EntityRole::Technical,
+        | Filter::TechnicalCountryCode
+        | Filter::TechnicalPublicId => EntityRole::Technical,
         Filter::RegistrarEmail
         | Filter::RegistrarFullName
         | Filter::RegistrarVoice
         | Filter::RegistrarFax
         | Filter::RegistrarContactUri
         | Filter::RegistrarCountryName
-        | Filter::RegistrarCountryCode => EntityRole::Registrar,
+        | Filter::RegistrarCountryCode
+        | Filter::RegistrarPublicId => EntityRole::Registrar,
         _ => return None,
     };
 
@@ -1014,6 +1054,12 @@ pub(crate) fn entity_role_filter_output(entities: &[Entity], f: Filter) -> Optio
         | Filter::RegistrarCountryCode => {
             FilterValue::StringArray(find_entity_country_codes_by_role(entities, role))
         }
+        Filter::RegistrantPublicId
+        | Filter::AbusePublicId
+        | Filter::TechnicalPublicId
+        | Filter::RegistrarPublicId => FilterValue::HashMapVal(
+            find_entity_public_ids_by_role(entities, role).unwrap_or_default(),
+        ),
         _ => return None,
     };
 
@@ -1033,28 +1079,32 @@ where
         | Filter::RegistrantFax
         | Filter::RegistrantContactUri
         | Filter::RegistrantCountryName
-        | Filter::RegistrantCountryCode => EntityRole::Registrant,
+        | Filter::RegistrantCountryCode
+        | Filter::RegistrantPublicId => EntityRole::Registrant,
         Filter::AbuseEmail
         | Filter::AbuseFullName
         | Filter::AbuseVoice
         | Filter::AbuseFax
         | Filter::AbuseContactUri
         | Filter::AbuseCountryName
-        | Filter::AbuseCountryCode => EntityRole::Abuse,
+        | Filter::AbuseCountryCode
+        | Filter::AbusePublicId => EntityRole::Abuse,
         Filter::TechnicalEmail
         | Filter::TechnicalFullName
         | Filter::TechnicalVoice
         | Filter::TechnicalFax
         | Filter::TechnicalContactUri
         | Filter::TechnicalCountryName
-        | Filter::TechnicalCountryCode => EntityRole::Technical,
+        | Filter::TechnicalCountryCode
+        | Filter::TechnicalPublicId => EntityRole::Technical,
         Filter::RegistrarEmail
         | Filter::RegistrarFullName
         | Filter::RegistrarVoice
         | Filter::RegistrarFax
         | Filter::RegistrarContactUri
         | Filter::RegistrarCountryName
-        | Filter::RegistrarCountryCode => EntityRole::Registrar,
+        | Filter::RegistrarCountryCode
+        | Filter::RegistrarPublicId => EntityRole::Registrar,
         _ => {
             return FilterOutput {
                 filter: f,
@@ -1119,6 +1169,18 @@ where
                 .flat_map(|r| find_entity_country_codes_by_role(r.entities(), role))
                 .collect(),
         ),
+        Filter::RegistrantPublicId
+        | Filter::AbusePublicId
+        | Filter::TechnicalPublicId
+        | Filter::RegistrarPublicId => {
+            let mut public_ids: HashMap<String, FilterValue> = HashMap::new();
+            for r in results {
+                if let Some(pid) = find_entity_public_ids_by_role(r.entities(), role) {
+                    public_ids.extend(pid);
+                }
+            }
+            FilterValue::HashMapVal(public_ids)
+        }
         _ => FilterValue::Null,
     };
 
