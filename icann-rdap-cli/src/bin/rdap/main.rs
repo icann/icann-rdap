@@ -153,6 +153,12 @@ struct Cli {
     #[arg(long, required = false, value_delimiter = ',')]
     filter: Vec<FilterArg>,
 
+    /// Show CSV header row in output.
+    ///
+    /// By default, CSV output does not include a header row.
+    #[arg(long, required = false)]
+    csv_headers: bool,
+
     /// Pager Usage.
     ///
     /// Determines how to handle paging output.
@@ -1034,6 +1040,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         self_link_caching: cli.self_link_caching,
         geofeed_file: cli.geofeed_file.map(std::path::PathBuf::from),
         filters,
+        csv_headers: cli.csv_headers,
     };
 
     let exts_list = if cli.no_exts_list {

@@ -134,6 +134,7 @@ pub(crate) struct ProcessingParams {
     pub self_link_caching: bool,
     pub geofeed_file: Option<std::path::PathBuf>,
     pub filters: Vec<icann_rdap_common::filter::Filter>,
+    pub csv_headers: bool,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -437,7 +438,7 @@ fn output_immediately<W: std::io::Write>(
             }
             OutputType::Csv => {
                 let results = extract(&response.rdap, &processing_params.filters);
-                if req_data.req_number == 1 {
+                if req_data.req_number == 1 && processing_params.csv_headers {
                     // Print header row
                     let headers: Vec<String> = processing_params
                         .filters
