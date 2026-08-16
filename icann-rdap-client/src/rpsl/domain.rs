@@ -3,13 +3,16 @@ use icann_rdap_common::prelude::{CommonFields, Domain, Nameserver, ObjectCommonF
 use crate::rpsl::{AttrName, RpslParams, ToRpsl, ttl::push_ttl0};
 
 use super::{
-    KeyRef, push_entities, push_mandatory_attribute, push_notices, push_obj_common,
-    push_optional_attribute, push_public_ids,
+    KeyRef, push_entities, push_extensions, push_mandatory_attribute, push_notices,
+    push_obj_common, push_optional_attribute, push_public_ids,
 };
 
 impl ToRpsl for Domain {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());

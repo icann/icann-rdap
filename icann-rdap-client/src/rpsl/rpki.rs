@@ -7,13 +7,16 @@ use icann_rdap_common::response::{
 use crate::rpsl::{RpslParams, ToRpsl};
 
 use super::{
-    AttrName, KeyRef, push_entities, push_mandatory_attribute, push_notices, push_obj_common,
-    push_optional_attribute,
+    AttrName, KeyRef, push_entities, push_extensions, push_mandatory_attribute, push_notices,
+    push_obj_common, push_optional_attribute,
 };
 
 impl ToRpsl for Rpk1Roa {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
@@ -118,6 +121,9 @@ impl ToRpsl for Rpk1Aspa {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
 
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
+
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
 
@@ -220,6 +226,9 @@ impl KeyRef for Rpk1Aspa {
 impl ToRpsl for Rpk1X509ResourceCert {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
@@ -351,6 +360,9 @@ impl ToRpsl for Rpk1RoaSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
 
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
+
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
 
@@ -369,6 +381,9 @@ impl ToRpsl for Rpk1AspaSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
 
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
+
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
 
@@ -386,6 +401,9 @@ impl ToRpsl for Rpk1AspaSearchResults {
 impl ToRpsl for Rpk1X509ResourceCertSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());

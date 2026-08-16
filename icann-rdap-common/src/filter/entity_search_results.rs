@@ -1,3 +1,26 @@
+//! Entity search results filter implementation.
+//!
+//! Extracts fields from [`crate::response::EntitySearchResults`] RDAP objects.
+//! Values are aggregated across all search results into arrays.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringArray` | Handles from all results |
+//! | `Status` | `StringArray` | Statuses from all results |
+//! | `ObjectClassName` | `StringArray` | Object class names from all results |
+//! | `Event` | `HashMapVal` | Events aggregated from all results |
+//! | `RdapConformance` | `StringArray` | Conformance URIs from all results |
+//! | `Role` | `StringArray` | Roles from all results |
+//! | `PublicId` | `HashMapVal` | Public IDs aggregated from all results |
+//! | `Voice` | `StringArray` | Phone numbers from all results |
+//! | `Fax` | `StringArray` | Fax numbers from all results |
+//! | `ContactUri` | `StringArray` | Contact URIs from all results |
+//! | `CountryName` | `StringArray` | Country names from all results |
+//! | `CountryCode` | `StringArray` | Country codes from all results |
+//! | Entity roles | `StringArray` | Role-based fields aggregated from all results |
+
 use super::*;
 use crate::response::{CommonFields, EntitySearchResults, ObjectCommonFields};
 

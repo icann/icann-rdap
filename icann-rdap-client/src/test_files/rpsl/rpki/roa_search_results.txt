@@ -1,3 +1,6 @@
+# Supported extensions:
+#  - rdap_level_0
+
 aut-num:           rpki1_roa/ROA-1
 roa-ips:           2001:db8::/48/64
 origin-autnum:     AS65536

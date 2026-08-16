@@ -1573,6 +1573,33 @@ impl FromStr for QueryType {
             return Ok(Self::Url(s.to_owned()));
         }
 
+        // if it is an rdns query
+        if let Some(rest) = s.strip_prefix("rdns:") {
+            if let Ok(ip_cidr) = parse_cidr(rest) {
+                return Ok(match ip_cidr {
+                    IpCidr::V4(cidr) => Self::RdnsIpv4(
+                        Ipv4Net::new(cidr.first_address(), cidr.network_length())
+                            .map_err(|_e| RdapClientError::InvalidQueryValue)?,
+                    ),
+                    IpCidr::V6(cidr) => Self::RdnsIpv6(
+                        Ipv6Net::new(cidr.first_address(), cidr.network_length())
+                            .map_err(|_e| RdapClientError::InvalidQueryValue)?,
+                    ),
+                });
+            }
+            if let Ok(ip_addr) = IpAddr::from_str(rest) {
+                return Ok(match ip_addr {
+                    IpAddr::V4(v4) => Self::RdnsIpv4(
+                        Ipv4Net::new(v4, 32).map_err(|_e| RdapClientError::InvalidQueryValue)?,
+                    ),
+                    IpAddr::V6(v6) => Self::RdnsIpv6(
+                        Ipv6Net::new(v6, 128).map_err(|_e| RdapClientError::InvalidQueryValue)?,
+                    ),
+                });
+            }
+            return Err(RdapClientError::InvalidQueryValue);
+        }
+
         // if it is an rdap-up query
         if let Some(rest) = s.strip_prefix("up:") {
             if let Ok(ip_addr) = IpAddr::from_str(rest) {
@@ -3518,6 +3545,48 @@ mod tests {
     fn test_rpki1_x509_autnum_search_constructor_invalid() {
         // WHEN
         let q = QueryType::rpki1_x509_autnum_search("bad");
+
+        // THEN
+        assert!(q.is_err());
+    }
+
+    #[rstest]
+    #[case("rdns:10.0.1.0")]
+    #[case("rdns:10.0.1.0/24")]
+    #[case("rdns:10/8")]
+    fn test_rdns_ipv4_prefix(#[case] input: &str) {
+        // GIVEN
+        let s = input;
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv4(_)))
+    }
+
+    #[rstest]
+    #[case("rdns:2001:db8::1")]
+    #[case("rdns:2001:db8::/32")]
+    #[case("rdns:2001::1/32")]
+    fn test_rdns_ipv6_prefix(#[case] input: &str) {
+        // GIVEN
+        let s = input;
+
+        // WHEN
+        let q = QueryType::from_str(s);
+
+        // THEN
+        assert!(matches!(q.unwrap(), QueryType::RdnsIpv6(_)))
+    }
+
+    #[test]
+    fn test_rdns_prefix_invalid_input() {
+        // GIVEN
+        let s = "rdns:bad";
+
+        // WHEN
+        let q = QueryType::from_str(s);
 
         // THEN
         assert!(q.is_err());

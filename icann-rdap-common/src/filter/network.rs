@@ -1,3 +1,25 @@
+//! Network filter implementation.
+//!
+//! Extracts fields from [`crate::response::Network`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Network handle |
+//! | `Status` | `StringArray` | Status list |
+//! | `ObjectClassName` | `StringVal` | Always `"network"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `StartIpAddress` | `StringVal` | First IP in the range |
+//! | `EndIpAddress` | `StringVal` | Last IP in the range |
+//! | `IpVersion` | `StringVal` | `"v4"` or `"v6"` |
+//! | `Name` | `StringVal` | Network name |
+//! | `Type` | `StringVal` | Network type (e.g., `"ASSIGNED PORTABLE PREFIX"`) |
+//! | `ParentHandle` | `StringVal` | Parent network handle |
+//! | `Cidr` | `StringArray` | CIDR notation entries |
+//! | Entity roles | Various | Extract from nested entities |
+
 use super::*;
 use crate::response::{CommonFields, Network, ObjectCommonFields};
 
@@ -8,10 +30,7 @@ impl Filterable for Network {
             .map(|f| match f {
                 Filter::Handle => FilterOutput {
                     filter: *f,
-                    value: self
-                        .handle()
-                        .map(|h| FilterValue::StringVal(h.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.handle()),
                 },
                 Filter::Status => FilterOutput {
                     filter: *f,
@@ -50,45 +69,27 @@ impl Filterable for Network {
                 },
                 Filter::StartIpAddress => FilterOutput {
                     filter: *f,
-                    value: self
-                        .start_address()
-                        .map(|s| FilterValue::StringVal(s.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.start_address()),
                 },
                 Filter::EndIpAddress => FilterOutput {
                     filter: *f,
-                    value: self
-                        .end_address()
-                        .map(|s| FilterValue::StringVal(s.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.end_address()),
                 },
                 Filter::IpVersion => FilterOutput {
                     filter: *f,
-                    value: self
-                        .ip_version()
-                        .map(|v| FilterValue::StringVal(v.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.ip_version()),
                 },
                 Filter::Name => FilterOutput {
                     filter: *f,
-                    value: self
-                        .name()
-                        .map(|n| FilterValue::StringVal(n.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.name()),
                 },
                 Filter::Type => FilterOutput {
                     filter: *f,
-                    value: self
-                        .network_type()
-                        .map(|t| FilterValue::StringVal(t.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.network_type()),
                 },
                 Filter::ParentHandle => FilterOutput {
                     filter: *f,
-                    value: self
-                        .parent_handle()
-                        .map(|p| FilterValue::StringVal(p.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.parent_handle()),
                 },
                 Filter::Cidr => FilterOutput {
                     filter: *f,

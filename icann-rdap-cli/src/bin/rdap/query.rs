@@ -134,6 +134,7 @@ pub(crate) struct ProcessingParams {
     pub self_link_caching: bool,
     pub geofeed_file: Option<std::path::PathBuf>,
     pub filters: Vec<icann_rdap_common::filter::Filter>,
+    pub csv_headers: bool,
 }
 
 pub(crate) async fn exec_queries<W: std::io::Write>(
@@ -437,7 +438,7 @@ fn output_immediately<W: std::io::Write>(
             }
             OutputType::Csv => {
                 let results = extract(&response.rdap, &processing_params.filters);
-                if req_data.req_number == 1 {
+                if req_data.req_number == 1 && processing_params.csv_headers {
                     // Print header row
                     let headers: Vec<String> = processing_params
                         .filters
@@ -562,11 +563,6 @@ fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> Str
     use icann_rdap_common::filter::FilterValue;
 
     match value {
-        FilterValue::StringVal(s) => csv_escape(s),
-        FilterValue::StringArray(arr) => {
-            let escaped: Vec<String> = arr.iter().map(|s| csv_escape(s)).collect();
-            escaped.join("|").to_string()
-        }
         FilterValue::HashMapVal(hm) => {
             let items: Vec<String> = hm
                 .iter()
@@ -578,17 +574,9 @@ fn filter_value_to_string(value: &icann_rdap_common::filter::FilterValue) -> Str
                     )
                 })
                 .collect();
-            items.join("|")
+            csv_escape(&items.join("|"))
         }
-        FilterValue::IntVal(i) => format!("{}", i),
-        FilterValue::IntArray(arr) => arr
-            .iter()
-            .map(|i| i.to_string())
-            .collect::<Vec<_>>()
-            .join("|")
-            .to_string(),
-        FilterValue::BoolVal(b) => format!("{}", b),
-        FilterValue::Null => String::new(),
+        _ => csv_escape(&value.to_display_string()),
     }
 }
 

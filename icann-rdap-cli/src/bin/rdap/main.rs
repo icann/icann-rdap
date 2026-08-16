@@ -153,6 +153,12 @@ struct Cli {
     #[arg(long, required = false, value_delimiter = ',')]
     filter: Vec<FilterArg>,
 
+    /// Show CSV header row in output.
+    ///
+    /// By default, CSV output does not include a header row.
+    #[arg(long, required = false)]
+    csv_headers: bool,
+
     /// Pager Usage.
     ///
     /// Determines how to handle paging output.
@@ -681,6 +687,8 @@ enum FilterArg {
     UnicodeName,
     /// Nameserver
     Nameserver,
+    /// Nameserver IP Address
+    NameserverIpAddress,
     /// Public ID
     PublicId,
 
@@ -743,6 +751,10 @@ enum FilterArg {
     RegistrantCountryName,
     /// Registrant Country Code
     RegistrantCountryCode,
+    /// Registrant Public ID
+    RegistrantPublicId,
+    /// Registrant Handle
+    RegistrantHandle,
     /// Abuse Email
     AbuseEmail,
     /// Abuse Full Name
@@ -757,6 +769,10 @@ enum FilterArg {
     AbuseCountryName,
     /// Abuse Country Code
     AbuseCountryCode,
+    /// Abuse Public ID
+    AbusePublicId,
+    /// Abuse Handle
+    AbuseHandle,
     /// Technical Email
     TechnicalEmail,
     /// Technical Full Name
@@ -771,6 +787,10 @@ enum FilterArg {
     TechnicalCountryName,
     /// Technical Country Code
     TechnicalCountryCode,
+    /// Technical Public ID
+    TechnicalPublicId,
+    /// Technical Handle
+    TechnicalHandle,
     /// Registrar Email
     RegistrarEmail,
     /// Registrar Full Name
@@ -785,6 +805,10 @@ enum FilterArg {
     RegistrarCountryName,
     /// Registrar Country Code
     RegistrarCountryCode,
+    /// Registrar Public ID
+    RegistrarPublicId,
+    /// Registrar Handle
+    RegistrarHandle,
 }
 
 impl From<FilterArg> for icann_rdap_common::filter::Filter {
@@ -798,6 +822,7 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::LdhName => Self::LdhName,
             FilterArg::UnicodeName => Self::UnicodeName,
             FilterArg::Nameserver => Self::Nameserver,
+            FilterArg::NameserverIpAddress => Self::NameserverIpAddress,
             FilterArg::PublicId => Self::PublicId,
             FilterArg::IpAddress => Self::IpAddress,
             FilterArg::Role => Self::Role,
@@ -824,6 +849,8 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::RegistrantContactUri => Self::RegistrantContactUri,
             FilterArg::RegistrantCountryName => Self::RegistrantCountryName,
             FilterArg::RegistrantCountryCode => Self::RegistrantCountryCode,
+            FilterArg::RegistrantPublicId => Self::RegistrantPublicId,
+            FilterArg::RegistrantHandle => Self::RegistrantHandle,
             FilterArg::AbuseEmail => Self::AbuseEmail,
             FilterArg::AbuseFullName => Self::AbuseFullName,
             FilterArg::AbuseVoice => Self::AbuseVoice,
@@ -831,6 +858,8 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::AbuseContactUri => Self::AbuseContactUri,
             FilterArg::AbuseCountryName => Self::AbuseCountryName,
             FilterArg::AbuseCountryCode => Self::AbuseCountryCode,
+            FilterArg::AbusePublicId => Self::AbusePublicId,
+            FilterArg::AbuseHandle => Self::AbuseHandle,
             FilterArg::TechnicalEmail => Self::TechnicalEmail,
             FilterArg::TechnicalFullName => Self::TechnicalFullName,
             FilterArg::TechnicalVoice => Self::TechnicalVoice,
@@ -838,6 +867,8 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::TechnicalContactUri => Self::TechnicalContactUri,
             FilterArg::TechnicalCountryName => Self::TechnicalCountryName,
             FilterArg::TechnicalCountryCode => Self::TechnicalCountryCode,
+            FilterArg::TechnicalPublicId => Self::TechnicalPublicId,
+            FilterArg::TechnicalHandle => Self::TechnicalHandle,
             FilterArg::RegistrarEmail => Self::RegistrarEmail,
             FilterArg::RegistrarFullName => Self::RegistrarFullName,
             FilterArg::RegistrarVoice => Self::RegistrarVoice,
@@ -845,6 +876,8 @@ impl From<FilterArg> for icann_rdap_common::filter::Filter {
             FilterArg::RegistrarContactUri => Self::RegistrarContactUri,
             FilterArg::RegistrarCountryName => Self::RegistrarCountryName,
             FilterArg::RegistrarCountryCode => Self::RegistrarCountryCode,
+            FilterArg::RegistrarPublicId => Self::RegistrarPublicId,
+            FilterArg::RegistrarHandle => Self::RegistrarHandle,
         }
     }
 }
@@ -1007,6 +1040,7 @@ pub async fn wrapped_main() -> Result<(), RdapCliError> {
         self_link_caching: cli.self_link_caching,
         geofeed_file: cli.geofeed_file.map(std::path::PathBuf::from),
         filters,
+        csv_headers: cli.csv_headers,
     };
 
     let exts_list = if cli.no_exts_list {
