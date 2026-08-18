@@ -235,7 +235,6 @@ pub static NAME_LEN: LazyLock<usize> = LazyLock::new(|| {
 impl ToMd for HttpData {
     fn to_md(&self, _params: MdParams) -> String {
         let mut md = HR.to_string();
-        md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, self.host));
         if let Some(request_uri) = &self.request_uri {
             md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", REQUEST_URI, request_uri));
         }
@@ -267,6 +266,7 @@ impl ToMd for HttpData {
             ));
         }
         md.push_str(&format!(" * {RECEIVED:<NAME_LEN$}: {}\n", self.received));
+        md.push_str(&format!(" * {:<NAME_LEN$}: {}\n", HOST, self.host));
         md
     }
 }
