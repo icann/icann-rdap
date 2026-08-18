@@ -4,7 +4,7 @@ use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
-static REDACTED_ID: &str = "////REDACTED_ID////";
+static REDACTED_ID: &str = "----REDACTED_ID----";
 static REDACTED_ID_DESC: &str = "ID redacted.";
 
 pub(crate) fn simplify_registry_domain_id(
