@@ -10,7 +10,18 @@ See [general information on RDAP](https://rdap.rcode3.com/).
 About, Usage, and Installation
 ------------------------------
 
-Please see the [online user's manual](https://icann.github.io/icann-rdap/) for general information,
+Basic Queries
+
+* [Domain](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/domain_queries/): rdap example.com
+* [TLD](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/domain_queries/#tld-queries): rdap .com
+* [IP Address](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/ip_queries/): rdap 192.0.2.1
+* [CIDR](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/ip_queries/#cidr-block-queries): rdap 10/8
+* [RIR Search](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/rir_searches/): rdap up:192.0.2.1
+* [ASN](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/autnum_queries/): rdap as64496
+* [GeoFeed](https://icann.github.io/icann-rdap/rdap-cli-tools/cli-client/geofeeds/): rdap -O geofeed 81.93.181.144
+* URL: rdap https://rdap.iana.org/domain/com
+
+See the [online user's manual](https://icann.github.io/icann-rdap/) for general information,
 installation, and usage of this software.
 
 SemVer Policy
