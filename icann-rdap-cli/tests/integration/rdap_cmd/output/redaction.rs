@@ -132,11 +132,11 @@ async fn test_domain_with_simple_redaction_flags() {
     let expected_json = json!({
         "rdapConformance":["redacted"],
         "objectClassName": "domain",
-        "handle": "////REDACTED_ID////",
+        "handle": "----REDACTED_ID----",
         "remarks": [{
             "title": "RFC9537 to Simple Redactions",
             "description": ["ID redacted."],
-            "simpleRedaction_keys": ["////REDACTED_ID////"]
+            "simpleRedaction_keys": ["----REDACTED_ID----"]
         }],
         "redacted": [{
             "name": {"type": "Registry Domain ID"},

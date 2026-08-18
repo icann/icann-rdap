@@ -15,7 +15,7 @@ jobs:
     - name: Build
       run: cargo build --release --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --all-features --verbose
     - name: Install WASM32
       run: rustup target add wasm32-unknown-unknown
     - name: Check wasm32

@@ -11,6 +11,7 @@ use self::data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId};
 
 pub mod data;
 pub mod mem;
+#[cfg(feature = "postgres")]
 pub mod pg;
 
 pub type DynStoreOps = dyn StoreOps + Send + Sync;

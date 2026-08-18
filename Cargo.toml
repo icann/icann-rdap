@@ -142,7 +142,6 @@ serial_test = "4.0"
 sqlx = { version = "0.9", features = [
     "runtime-tokio",
     "tls-rustls",
-    "postgres",
     "chrono",
     "macros",
     "json",
