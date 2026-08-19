@@ -33,9 +33,20 @@ This project uses [Semantic Versioning (SemVer 2.0.0)](https://semver.org/).
 
 ### Versioning Guidelines
 
-* **`MAJOR` (`X.0.0`):** Contains breaking public API changes, breaking CLI parameter changes, and increases to the Minimum Supported Rust Version (MSRV).
-* **`MINOR` (`0.Y.0`):** Adds new backwards-compatible features, deprecations, or non-breaking improvements.
-* **`PATCH` (`0.0.Z`):** Contains backwards-compatible fixes, internal code refactoring, documentation updates, and backwards-compatible updates to dependencies.
+* **`MAJOR` (`X.0.0`):**
+  * Breaking public API changes
+  * Breaking CLI parameter changes
+  * Increases to the Minimum Supported Rust Version (MSRV)
+* **`MINOR` (`0.Y.0`):**
+  * New backwards-compatible features
+  * Non-breaking deprecations
+  * Non-breaking improvements
+* **`PATCH` (`0.0.Z`):**
+  * Backwards-compatible fixes
+  * Internal code refactoring
+  * Documentation updates
+  * Backwards-compatible updates to dependencies in the client and common packages
+  * Updates to any dependencies in the cli and srv packages
 
 ---
 
