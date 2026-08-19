@@ -128,8 +128,10 @@ mod tests {
         // GIVEN
 
         // WHEN
-        let parts = DbUrlParts::from_url("postgresql://postgres:MySecurePass123@localhost:5432/my_database")
-            .expect("parse url");
+        let parts = DbUrlParts::from_url(
+            "postgresql://postgres:MySecurePass123@localhost:5432/my_database",
+        )
+        .expect("parse url");
 
         // THEN
         assert_eq!(parts.host, "localhost");

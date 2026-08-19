@@ -33,12 +33,26 @@ enum DbCommand {
     /// Create the database user and database
     Create(CreateArgs),
 
+    /// Destroy (drop) the database and user
+    Destroy(DestroyArgs),
+
     /// Run database migrations
     Migrate(MigrateArgs),
 }
 
 #[derive(clap::Args, Debug)]
 struct CreateArgs {
+    /// The admin user.
+    #[arg(long)]
+    admin_user: String,
+
+    /// Password for the admin user.
+    #[arg(long)]
+    admin_password: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
+struct DestroyArgs {
     /// The admin user.
     #[arg(long)]
     admin_user: String,
@@ -68,6 +82,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Some(DbCommand::Create(args)) => {
             run_create(
+                &cli.db_url,
+                &args.admin_user,
+                args.admin_password.as_deref(),
+            )
+            .await?;
+        }
+        Some(DbCommand::Destroy(args)) => {
+            run_destroy(
                 &cli.db_url,
                 &args.admin_user,
                 args.admin_password.as_deref(),
@@ -135,6 +157,46 @@ $$;"#,
     info!(
         "Successfully created role '{}' and database '{}'",
         parts.user, parts.database
+    );
+
+    Ok(())
+}
+
+async fn run_destroy(
+    db_url: &str,
+    admin_user: &str,
+    admin_password: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let parts = DbUrlParts::from_url(db_url)?;
+    let superuser_url = parts.to_superuser_url(admin_user, admin_password);
+
+    info!("Connecting to PostgreSQL as superuser...");
+    let superuser_pool = PgPool::connect(&superuser_url).await?;
+
+    info!("Terminating existing connections to {}...", parts.database);
+    let terminate_sql = format!(
+        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{}'",
+        parts.database
+    );
+    sqlx::query(AssertSqlSafe(terminate_sql))
+        .execute(&superuser_pool)
+        .await?;
+
+    info!("Dropping database {}...", parts.database);
+    let drop_db_sql = format!("DROP DATABASE IF EXISTS {}", parts.database);
+    sqlx::query(AssertSqlSafe(drop_db_sql))
+        .execute(&superuser_pool)
+        .await?;
+
+    info!("Dropping role {}...", parts.user);
+    let drop_role_sql = format!("DROP ROLE IF EXISTS {}", parts.user);
+    sqlx::query(AssertSqlSafe(drop_role_sql))
+        .execute(&superuser_pool)
+        .await?;
+
+    info!(
+        "Successfully dropped database '{}' and role '{}'",
+        parts.database, parts.user
     );
 
     Ok(())
