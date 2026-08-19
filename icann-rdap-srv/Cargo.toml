@@ -53,6 +53,11 @@ memory = []
 postgres = ["sqlx/postgres"]
 sqlx = ["dep:sqlx"]
 
+[[bin]]
+name = "rdap-srv-pg"
+path = "src/bin/rdap-srv-pg.rs"
+required-features = ["postgres"]
+
 [dev-dependencies]
 
 assert_cmd.workspace = true
