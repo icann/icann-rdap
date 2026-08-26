@@ -1,6 +1,5 @@
 CREATE TABLE entity (
-    id      TEXT PRIMARY KEY, -- application generated
-    handle  TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
+    handle  TEXT GENERATED ALWAYS AS (content->>'handle') STORED PRIMARY KEY,
     content JSONB NOT NULL
 );
 
