@@ -8,6 +8,15 @@ on:
     tags:
       - 'v*.*.*'
 
+env:
+  # Rust features enabled during CI tests (comma-separated package/feature).
+  # Keep in sync with build-test-rust.yml. A new feature is NOT tested in CI
+  # until added here.
+  TEST_FEATURES: "icann-rdap-srv/postgres,icann-rdap-srv/sqlx"
+  # Rust features enabled in published release binaries.
+  # A new feature is NOT shipped until added here.
+  RELEASE_FEATURES: ""
+
 jobs:
   test-build:
     runs-on: ubuntu-latest
@@ -16,9 +25,14 @@ jobs:
     - name: Check format
       run: cargo fmt --check
     - name: Build
-      run: cargo build --release --verbose
+      run: |
+        if [ -n "${RELEASE_FEATURES}" ]; then
+          cargo build --release --features "${RELEASE_FEATURES}" --verbose
+        else
+          cargo build --release --verbose
+        fi
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --features "${TEST_FEATURES}" --verbose
     - name: Install WASM32
       run: rustup target add wasm32-unknown-unknown
     - name: Check wasm32
@@ -56,7 +70,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --release --target ${{ matrix.target }}
+          args: --release --target ${{ matrix.target }} ${{ env.RELEASE_FEATURES != '' && format('--features {0}', env.RELEASE_FEATURES) || '' }}
 
       - name: Package
         shell: bash
