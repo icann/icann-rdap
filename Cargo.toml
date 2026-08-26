@@ -83,8 +83,8 @@ goldenfile = "1.11"
 # headers (http headers)
 headers = "0.4"
 
-# Hickory DNS client
-hickory-client = "0.25"
+# Hickory DNS net client
+hickory-net = "0.26"
 
 # http constructs
 http = "1.4"
