@@ -34,8 +34,13 @@ impl PgTx<'_> {
 
 #[async_trait]
 impl TxHandle for PgTx<'_> {
-    async fn add_entity(&mut self, _entity: &Entity) -> Result<(), RdapServerError> {
-        todo!()
+    async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError> {
+        let content = serde_json::to_value(entity)?;
+        sqlx::query("INSERT INTO entity (content) VALUES ($1) ON CONFLICT (handle) DO NOTHING")
+            .bind(content)
+            .execute(&mut *self.db_tx)
+            .await?;
+        Ok(())
     }
 
     async fn add_entity_err(
@@ -46,10 +51,10 @@ impl TxHandle for PgTx<'_> {
         todo!()
     }
 
-    async fn add_domain(&mut self, _domain: &Domain) -> Result<(), RdapServerError> {
-        // TODO actually complete this
-        // this is just here to make sure something will compile
-        sqlx::query("insert domain")
+    async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
+        let content = serde_json::to_value(domain)?;
+        sqlx::query("INSERT INTO domain (content) VALUES ($1) ON CONFLICT (ldh_name) DO NOTHING")
+            .bind(content)
             .execute(&mut *self.db_tx)
             .await?;
         Ok(())
@@ -63,8 +68,15 @@ impl TxHandle for PgTx<'_> {
         todo!()
     }
 
-    async fn add_nameserver(&mut self, _nameserver: &Nameserver) -> Result<(), RdapServerError> {
-        todo!()
+    async fn add_nameserver(&mut self, nameserver: &Nameserver) -> Result<(), RdapServerError> {
+        let content = serde_json::to_value(nameserver)?;
+        sqlx::query(
+            "INSERT INTO nameserver (content) VALUES ($1) ON CONFLICT (ldh_name) DO NOTHING",
+        )
+        .bind(content)
+        .execute(&mut *self.db_tx)
+        .await?;
+        Ok(())
     }
 
     async fn add_nameserver_err(
@@ -75,8 +87,16 @@ impl TxHandle for PgTx<'_> {
         todo!()
     }
 
-    async fn add_autnum(&mut self, _autnum: &Autnum) -> Result<(), RdapServerError> {
-        todo!()
+    async fn add_autnum(&mut self, autnum: &Autnum) -> Result<(), RdapServerError> {
+        let content = serde_json::to_value(autnum)?;
+        sqlx::query(
+            "INSERT INTO autnum (content) VALUES ($1) \
+             ON CONFLICT (start_autnum, end_autnum) DO NOTHING",
+        )
+        .bind(content)
+        .execute(&mut *self.db_tx)
+        .await?;
+        Ok(())
     }
 
     async fn add_autnum_err(
@@ -87,8 +107,16 @@ impl TxHandle for PgTx<'_> {
         todo!()
     }
 
-    async fn add_network(&mut self, _network: &Network) -> Result<(), RdapServerError> {
-        todo!()
+    async fn add_network(&mut self, network: &Network) -> Result<(), RdapServerError> {
+        let content = serde_json::to_value(network)?;
+        sqlx::query(
+            "INSERT INTO network (content) VALUES ($1) \
+             ON CONFLICT (start_address, end_address) DO NOTHING",
+        )
+        .bind(content)
+        .execute(&mut *self.db_tx)
+        .await?;
+        Ok(())
     }
 
     async fn add_network_err(
@@ -101,10 +129,19 @@ impl TxHandle for PgTx<'_> {
 
     async fn add_srv_help(
         &mut self,
-        _help: &icann_rdap_common::response::Help,
-        _host: Option<&str>,
+        help: &icann_rdap_common::response::Help,
+        host: Option<&str>,
     ) -> Result<(), RdapServerError> {
-        todo!()
+        let content = serde_json::to_value(help)?;
+        let host = host.unwrap_or("default");
+        sqlx::query(
+            "INSERT INTO srv_help (host, content) VALUES ($1, $2) ON CONFLICT (host) DO NOTHING",
+        )
+        .bind(host)
+        .bind(content)
+        .execute(&mut *self.db_tx)
+        .await?;
+        Ok(())
     }
 
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
