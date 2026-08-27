@@ -1,10 +1,30 @@
+-- entity (rdap)
+
 CREATE TABLE entity (
-    handle  TEXT GENERATED ALWAYS AS (content->>'handle') STORED PRIMARY KEY,
+    handle  TEXT PRIMARY KEY,
     content JSONB NOT NULL
 );
 
+CREATE OR REPLACE FUNCTION set_entity_pk_from_json()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.handle IS NULL THEN
+        NEW.handle := NEW.content->>'handle';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_entity_pk_from_json
+BEFORE INSERT ON entity
+FOR EACH ROW
+EXECUTE FUNCTION set_entity_pk_from_json();
+
+-- domain
+
 CREATE TABLE domain (
-    ldh_name     TEXT GENERATED ALWAYS AS (content->>'ldhName') STORED PRIMARY KEY,
+    ldh_name     TEXT PRIMARY KEY,
     unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
     content      JSONB NOT NULL
@@ -12,8 +32,26 @@ CREATE TABLE domain (
 
 CREATE UNIQUE INDEX domain_ldh_name_lower_idx ON domain (LOWER(ldh_name));
 
+CREATE OR REPLACE FUNCTION set_domain_pk_from_json()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.ldh_name IS NULL THEN
+        NEW.ldh_name := NEW.content->>'ldhName';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_domain_pk_from_json
+BEFORE INSERT ON domain
+FOR EACH ROW
+EXECUTE FUNCTION set_domain_pk_from_json();
+
+-- nameserver
+
 CREATE TABLE nameserver (
-    ldh_name     TEXT GENERATED ALWAYS AS (content->>'ldhName') STORED PRIMARY KEY,
+    ldh_name     TEXT PRIMARY KEY,
     unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
     content      JSONB NOT NULL
@@ -21,21 +59,81 @@ CREATE TABLE nameserver (
 
 CREATE UNIQUE INDEX nameserver_ldh_name_lower_idx ON nameserver (LOWER(ldh_name));
 
+CREATE OR REPLACE FUNCTION set_nameserver_pk_from_json()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.ldh_name IS NULL THEN
+        NEW.ldh_name := NEW.content->>'ldhName';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_nameserver_pk_from_json
+BEFORE INSERT ON nameserver
+FOR EACH ROW
+EXECUTE FUNCTION set_nameserver_pk_from_json();
+
+-- autnum
+
 CREATE TABLE autnum (
-    start_autnum BIGINT GENERATED ALWAYS AS ((content->>'startAutnum')::bigint) STORED NOT NULL,
-    end_autnum   BIGINT GENERATED ALWAYS AS ((content->>'endAutnum')::bigint) STORED NOT NULL,
+    start_autnum BIGINT NOT NULL,
+    end_autnum   BIGINT NOT NULL,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
     content      JSONB NOT NULL,
     PRIMARY KEY (start_autnum, end_autnum)
 );
 
+CREATE OR REPLACE FUNCTION set_autnum_pk_from_json()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.start_autnum IS NULL THEN
+        NEW.start_autnum := (NEW.content->>'startAutnum')::bigint;
+    END IF;
+    IF NEW.end_autnum IS NULL THEN
+        NEW.end_autnum := (NEW.content->>'endAutnum')::bigint;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_autnum_pk_from_json
+BEFORE INSERT ON autnum
+FOR EACH ROW
+EXECUTE FUNCTION set_autnum_pk_from_json();
+
+-- network
+
 CREATE TABLE network (
-    start_address INET GENERATED ALWAYS AS ((content->>'startAddress')::inet) STORED NOT NULL,
-    end_address   INET GENERATED ALWAYS AS ((content->>'endAddress')::inet) STORED NOT NULL,
+    start_address INET NOT NULL,
+    end_address   INET NOT NULL,
     handle        TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
     content       JSONB NOT NULL,
     PRIMARY KEY (start_address, end_address)
 );
+
+CREATE OR REPLACE FUNCTION set_network_pk_from_json()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.start_address IS NULL THEN
+        NEW.start_address := (NEW.content->>'startAddress')::inet;
+    END IF;
+    IF NEW.end_address IS NULL THEN
+        NEW.end_address := (NEW.content->>'endAddress')::inet;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_set_network_pk_from_json
+BEFORE INSERT ON network
+FOR EACH ROW
+EXECUTE FUNCTION set_network_pk_from_json();
+
+-- srv
 
 CREATE TABLE srv_help (
     host    TEXT PRIMARY KEY,
