@@ -50,7 +50,7 @@ tracing-subscriber.workspace = true
 [features]
 default = ["memory"]
 memory = []
-postgres = ["sqlx/postgres"]
+postgres = ["sqlx/postgres", "sqlx/migrate"]
 sqlx = ["dep:sqlx"]
 
 [[bin]]
@@ -61,5 +61,8 @@ required-features = ["postgres"]
 [dev-dependencies]
 
 assert_cmd.workspace = true
+ctor.workspace = true
 rstest.workspace = true
 test_dir.workspace = true
+testcontainers.workspace = true
+testcontainers-modules.workspace = true
