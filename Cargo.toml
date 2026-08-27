@@ -145,6 +145,7 @@ sqlx = { version = "0.9", features = [
     "chrono",
     "macros",
     "json",
+    "ipnet",
 ] }
 
 # enum utilities
