@@ -7,7 +7,7 @@ use {
         prelude::ToResponse,
         response::{
             Autnum, AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
-            IpSearchResults, Network, RdapResponse,
+            IpSearchResults, Nameserver, NameserverSearchResults, Network, RdapResponse,
         },
     },
     ipnet::IpNet,
@@ -229,9 +229,27 @@ impl StoreOps for Pg {
 
     async fn search_nameservers_by_name(
         &self,
-        _name: &str,
+        name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+        let pattern = wildcard_to_domain_regex(name)?;
+        let rows: Vec<Json<RdapResponse>> =
+            sqlx::query_scalar("SELECT content FROM nameserver WHERE ldh_name ~* $1")
+                .bind(pattern)
+                .fetch_all(&self.pg_pool)
+                .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Nameserver(ns) => Some(*ns),
+                _ => None,
+            })
+            .collect::<Vec<Nameserver>>();
+        let response = NameserverSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_nameservers_by_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {

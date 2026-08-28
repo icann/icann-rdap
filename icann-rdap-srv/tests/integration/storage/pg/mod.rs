@@ -14,6 +14,7 @@ mod network;
 mod search_autnum;
 mod search_domain;
 mod search_entity;
+mod search_nameserver;
 mod search_network;
 mod truncate;
 
