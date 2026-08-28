@@ -11,6 +11,7 @@ mod entity;
 mod lookups;
 mod nameserver;
 mod network;
+mod search_autnum;
 mod search_entity;
 mod search_network;
 mod truncate;
