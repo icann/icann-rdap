@@ -3,7 +3,10 @@ use std::{net::IpAddr, str::FromStr};
 
 use {
     async_trait::async_trait,
-    icann_rdap_common::response::RdapResponse,
+    icann_rdap_common::{
+        prelude::ToResponse,
+        response::{Entity, EntitySearchResults, RdapResponse},
+    },
     ipnet::IpNet,
     sqlx::types::Json,
     sqlx::{PgPool, query},
@@ -198,9 +201,40 @@ impl StoreOps for Pg {
 
     async fn search_entities_by_full_name(
         &self,
-        _full_name: &str,
+        full_name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+        if full_name.chars().filter(|c| *c == '*').count() != 1 {
+            return Err(RdapServerError::InvalidArg(
+                "Search string must contain one and only one asterisk ('*')".to_string(),
+            ));
+        }
+        let star = full_name.find('*').expect("validated above");
+        if star != full_name.chars().count() - 1
+            && full_name.chars().nth(star + 1).expect("short circuited") != '.'
+        {
+            return Err(RdapServerError::InvalidArg(
+                "Search string asterisk ('*') must terminate domain label".to_string(),
+            ));
+        }
+        let pattern = full_name.replace('*', "%");
+        let rows: Vec<Json<RdapResponse>> =
+            sqlx::query_scalar("SELECT content FROM entity WHERE fn ILIKE $1")
+                .bind(pattern)
+                .fetch_all(&self.pg_pool)
+                .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Entity(ent) => Some(*ent),
+                _ => None,
+            })
+            .collect::<Vec<Entity>>();
+        let response = EntitySearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_networks_by_handle(
