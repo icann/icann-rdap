@@ -11,6 +11,7 @@ mod entity;
 mod lookups;
 mod nameserver;
 mod network;
+mod search_entity;
 mod truncate;
 
 pub(crate) async fn pg_store() -> icann_rdap_srv::storage::pg::ops::Pg {
