@@ -287,8 +287,26 @@ impl StoreOps for Pg {
         Ok(response)
     }
 
-    async fn search_networks_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    async fn search_networks_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        let pattern = wildcard_to_pattern(name)?;
+        let rows: Vec<Json<RdapResponse>> =
+            sqlx::query_scalar("SELECT content FROM network WHERE name ILIKE $1")
+                .bind(pattern)
+                .fetch_all(&self.pg_pool)
+                .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Network(net) => Some(*net),
+                _ => None,
+            })
+            .collect::<Vec<Network>>();
+        let response = IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_ip_rdap_up_by_ipaddr(
