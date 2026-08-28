@@ -64,3 +64,61 @@ async fn search_autnums_by_handle_no_match() {
     };
     assert!(results.results().is_empty());
 }
+
+#[tokio::test]
+async fn search_autnums_by_name_finds_match() {
+    // GIVEN
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_autnum(
+        &Autnum::builder()
+            .autnum_range(3000..3010)
+            .name("Example Network A")
+            .build(),
+    )
+    .await
+    .expect("adding autnum A");
+    tx.add_autnum(
+        &Autnum::builder()
+            .autnum_range(4000..4010)
+            .name("Example Network B")
+            .build(),
+    )
+    .await
+    .expect("adding autnum B");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN
+    let actual = store
+        .search_autnums_by_name("Example Network A*")
+        .await
+        .expect("searching autnums by name");
+
+    // THEN
+    let RdapResponse::AutnumSearchResults(results) = actual else {
+        panic!("expected autnum search results, got {actual:?}");
+    };
+    assert_eq!(results.results().len(), 1);
+    assert_eq!(
+        results.results()[0].name.as_ref().map(|n| n.to_string()),
+        Some("Example Network A".to_string())
+    );
+}
+
+#[tokio::test]
+async fn search_autnums_by_name_no_match() {
+    // GIVEN
+    let store = pg_store().await;
+
+    // WHEN
+    let actual = store
+        .search_autnums_by_name("No Such Network*")
+        .await
+        .expect("searching autnums by name");
+
+    // THEN
+    let RdapResponse::AutnumSearchResults(results) = actual else {
+        panic!("expected autnum search results, got {actual:?}");
+    };
+    assert!(results.results().is_empty());
+}
