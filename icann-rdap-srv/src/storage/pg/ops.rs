@@ -5,7 +5,7 @@ use {
     async_trait::async_trait,
     icann_rdap_common::{
         prelude::ToResponse,
-        response::{Entity, EntitySearchResults, RdapResponse},
+        response::{Entity, EntitySearchResults, IpSearchResults, Network, RdapResponse},
     },
     ipnet::IpNet,
     sqlx::types::Json,
@@ -194,9 +194,40 @@ impl StoreOps for Pg {
 
     async fn search_entities_by_handle(
         &self,
-        _handle: &str,
+        handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+        if handle.chars().filter(|c| *c == '*').count() != 1 {
+            return Err(RdapServerError::InvalidArg(
+                "Search string must contain one and only one asterisk ('*')".to_string(),
+            ));
+        }
+        let star = handle.find('*').expect("validated above");
+        if star != handle.chars().count() - 1
+            && handle.chars().nth(star + 1).expect("short circuited") != '.'
+        {
+            return Err(RdapServerError::InvalidArg(
+                "Search string asterisk ('*') must terminate domain label".to_string(),
+            ));
+        }
+        let pattern = handle.replace('*', "%");
+        let rows: Vec<Json<RdapResponse>> =
+            sqlx::query_scalar("SELECT content FROM entity WHERE handle ILIKE $1")
+                .bind(pattern)
+                .fetch_all(&self.pg_pool)
+                .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Entity(ent) => Some(*ent),
+                _ => None,
+            })
+            .collect::<Vec<Entity>>();
+        let response = EntitySearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_entities_by_full_name(
@@ -239,9 +270,40 @@ impl StoreOps for Pg {
 
     async fn search_networks_by_handle(
         &self,
-        _handle: &str,
+        handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+        if handle.chars().filter(|c| *c == '*').count() != 1 {
+            return Err(RdapServerError::InvalidArg(
+                "Search string must contain one and only one asterisk ('*')".to_string(),
+            ));
+        }
+        let star = handle.find('*').expect("validated above");
+        if star != handle.chars().count() - 1
+            && handle.chars().nth(star + 1).expect("short circuited") != '.'
+        {
+            return Err(RdapServerError::InvalidArg(
+                "Search string asterisk ('*') must terminate domain label".to_string(),
+            ));
+        }
+        let pattern = handle.replace('*', "%");
+        let rows: Vec<Json<RdapResponse>> =
+            sqlx::query_scalar("SELECT content FROM network WHERE handle ILIKE $1")
+                .bind(pattern)
+                .fetch_all(&self.pg_pool)
+                .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Network(net) => Some(*net),
+                _ => None,
+            })
+            .collect::<Vec<Network>>();
+        let response = IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_networks_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
