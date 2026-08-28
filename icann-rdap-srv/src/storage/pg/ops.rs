@@ -21,6 +21,23 @@ use crate::{
 
 use super::{config::PgConfig, tx::PgTx};
 
+fn wildcard_to_pattern(input: &str) -> Result<String, RdapServerError> {
+    if input.chars().filter(|c| *c == '*').count() != 1 {
+        return Err(RdapServerError::InvalidArg(
+            "Search string must contain one and only one asterisk ('*')".to_string(),
+        ));
+    }
+    let star = input.find('*').expect("validated above");
+    if star != input.chars().count() - 1
+        && input.chars().nth(star + 1).expect("short circuited") != '.'
+    {
+        return Err(RdapServerError::InvalidArg(
+            "Search string asterisk ('*') must terminate domain label".to_string(),
+        ));
+    }
+    Ok(input.replace('*', "%"))
+}
+
 #[derive(Clone)]
 pub struct Pg {
     pg_pool: PgPool,
@@ -196,20 +213,7 @@ impl StoreOps for Pg {
         &self,
         handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        if handle.chars().filter(|c| *c == '*').count() != 1 {
-            return Err(RdapServerError::InvalidArg(
-                "Search string must contain one and only one asterisk ('*')".to_string(),
-            ));
-        }
-        let star = handle.find('*').expect("validated above");
-        if star != handle.chars().count() - 1
-            && handle.chars().nth(star + 1).expect("short circuited") != '.'
-        {
-            return Err(RdapServerError::InvalidArg(
-                "Search string asterisk ('*') must terminate domain label".to_string(),
-            ));
-        }
-        let pattern = handle.replace('*', "%");
+        let pattern = wildcard_to_pattern(handle)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM entity WHERE handle ILIKE $1")
                 .bind(pattern)
@@ -234,20 +238,7 @@ impl StoreOps for Pg {
         &self,
         full_name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        if full_name.chars().filter(|c| *c == '*').count() != 1 {
-            return Err(RdapServerError::InvalidArg(
-                "Search string must contain one and only one asterisk ('*')".to_string(),
-            ));
-        }
-        let star = full_name.find('*').expect("validated above");
-        if star != full_name.chars().count() - 1
-            && full_name.chars().nth(star + 1).expect("short circuited") != '.'
-        {
-            return Err(RdapServerError::InvalidArg(
-                "Search string asterisk ('*') must terminate domain label".to_string(),
-            ));
-        }
-        let pattern = full_name.replace('*', "%");
+        let pattern = wildcard_to_pattern(full_name)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM entity WHERE fn ILIKE $1")
                 .bind(pattern)
@@ -272,20 +263,7 @@ impl StoreOps for Pg {
         &self,
         handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        if handle.chars().filter(|c| *c == '*').count() != 1 {
-            return Err(RdapServerError::InvalidArg(
-                "Search string must contain one and only one asterisk ('*')".to_string(),
-            ));
-        }
-        let star = handle.find('*').expect("validated above");
-        if star != handle.chars().count() - 1
-            && handle.chars().nth(star + 1).expect("short circuited") != '.'
-        {
-            return Err(RdapServerError::InvalidArg(
-                "Search string asterisk ('*') must terminate domain label".to_string(),
-            ));
-        }
-        let pattern = handle.replace('*', "%");
+        let pattern = wildcard_to_pattern(handle)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM network WHERE handle ILIKE $1")
                 .bind(pattern)
