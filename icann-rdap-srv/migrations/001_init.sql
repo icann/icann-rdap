@@ -2,8 +2,11 @@
 
 CREATE TABLE entity (
     handle  TEXT PRIMARY KEY,
+    fn      TEXT,
     content JSONB NOT NULL
 );
+
+CREATE INDEX entity_fn_idx ON entity(fn);
 
 CREATE OR REPLACE FUNCTION set_entity_pk_from_json()
 RETURNS TRIGGER AS $$
