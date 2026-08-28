@@ -41,10 +41,14 @@ impl PgTx<'_> {
 impl TxHandle for PgTx<'_> {
     async fn add_entity(&mut self, entity: &Entity) -> Result<(), RdapServerError> {
         let content = serde_json::to_value(entity)?;
-        sqlx::query("INSERT INTO entity (content) VALUES ($1) ON CONFLICT (handle) DO NOTHING")
-            .bind(content)
-            .execute(&mut *self.db_tx)
-            .await?;
+        let full_name = entity.contact().and_then(|c| c.full_name().map(String::from));
+        sqlx::query(
+            "INSERT INTO entity (fn, content) VALUES ($1, $2) ON CONFLICT (handle) DO NOTHING",
+        )
+        .bind(full_name)
+        .bind(content)
+        .execute(&mut *self.db_tx)
+        .await?;
         Ok(())
     }
 
