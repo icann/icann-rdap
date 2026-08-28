@@ -6,8 +6,8 @@ use {
     icann_rdap_common::{
         prelude::ToResponse,
         response::{
-            Autnum, AutnumSearchResults, Entity, EntitySearchResults, IpSearchResults, Network,
-            RdapResponse,
+            Autnum, AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
+            IpSearchResults, Network, RdapResponse,
         },
     },
     ipnet::IpNet,
@@ -39,6 +39,25 @@ fn wildcard_to_pattern(input: &str) -> Result<String, RdapServerError> {
         ));
     }
     Ok(input.replace('*', "%"))
+}
+
+fn wildcard_to_domain_regex(input: &str) -> Result<String, RdapServerError> {
+    if input.chars().filter(|c| *c == '*').count() != 1 {
+        return Err(RdapServerError::InvalidArg(
+            "Search string must contain one and only one asterisk ('*')".to_string(),
+        ));
+    }
+    let star = input.find('*').expect("validated above");
+    if star != input.chars().count() - 1
+        && input.chars().nth(star + 1).expect("short circuited") != '.'
+    {
+        return Err(RdapServerError::InvalidArg(
+            "Search string asterisk ('*') must terminate domain label".to_string(),
+        ));
+    }
+    let at_end = star == input.chars().count() - 1;
+    let replacement = if at_end { ".*" } else { "[^.]*" };
+    Ok(format!("^{}$", input.replace('*', replacement)))
 }
 
 #[derive(Clone)]
@@ -186,8 +205,26 @@ impl StoreOps for Pg {
         }
     }
 
-    async fn search_domains_by_name(&self, _name: &str) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+    async fn search_domains_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        let pattern = wildcard_to_domain_regex(name)?;
+        let rows: Vec<Json<RdapResponse>> =
+            sqlx::query_scalar("SELECT content FROM domain WHERE ldh_name ~* $1")
+                .bind(pattern)
+                .fetch_all(&self.pg_pool)
+                .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect::<Vec<Domain>>();
+        let response = DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_nameservers_by_name(
