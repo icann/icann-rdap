@@ -92,11 +92,14 @@ CREATE TABLE autnum (
     start_autnum BIGINT NOT NULL,
     end_autnum   BIGINT NOT NULL,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
+    name          TEXT GENERATED ALWAYS AS (content->>'name') STORED,
     content      JSONB NOT NULL,
     PRIMARY KEY (start_autnum, end_autnum)
 );
 
 CREATE INDEX autnum_handle_idx ON autnum(handle);
+
+CREATE INDEX autnum_name_idx ON autnum(name);
 
 CREATE OR REPLACE FUNCTION set_autnum_pk_from_json()
 RETURNS TRIGGER AS $$
@@ -123,11 +126,14 @@ CREATE TABLE network (
     start_address INET NOT NULL,
     end_address   INET NOT NULL,
     handle        TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
+    name          TEXT GENERATED ALWAYS AS (content->>'name') STORED,
     content       JSONB NOT NULL,
     PRIMARY KEY (start_address, end_address)
 );
 
 CREATE INDEX network_handle_idx ON network(handle);
+
+CREATE INDEX network_name_idx ON network(name);
 
 CREATE OR REPLACE FUNCTION set_network_pk_from_json()
 RETURNS TRIGGER AS $$
