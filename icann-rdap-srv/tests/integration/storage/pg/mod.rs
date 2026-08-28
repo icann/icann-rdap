@@ -8,9 +8,32 @@ use testcontainers_modules::postgres::Postgres as PostgresContainer;
 mod autnum;
 mod domain;
 mod entity;
-mod help;
+mod lookups;
 mod nameserver;
 mod network;
+
+pub(crate) async fn pg_store() -> icann_rdap_srv::storage::pg::ops::Pg {
+    use icann_rdap_srv::{
+        config::CommonConfig,
+        storage::pg::{config::PgConfig, ops::Pg},
+    };
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
+    let pool: sqlx::PgPool = sqlx::Pool::connect(&db_url)
+        .await
+        .expect("connecting to postgres");
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("running migrations");
+    Pg::new(
+        PgConfig::builder()
+            .db_url(db_url)
+            .common_config(CommonConfig::default())
+            .build(),
+    )
+    .await
+    .expect("creating pg store")
+}
 
 static _CONTAINER: OnceLock<ContainerAsync<PostgresContainer>> = OnceLock::new();
 

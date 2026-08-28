@@ -32,6 +32,10 @@ CREATE TABLE domain (
 
 CREATE UNIQUE INDEX domain_ldh_name_lower_idx ON domain (LOWER(ldh_name));
 
+CREATE INDEX domain_unicode_name_idx ON domain(unicode_name);
+
+CREATE INDEX domain_handle_idx ON domain(handle);
+
 CREATE OR REPLACE FUNCTION set_domain_pk_from_json()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -59,6 +63,10 @@ CREATE TABLE nameserver (
 
 CREATE UNIQUE INDEX nameserver_ldh_name_lower_idx ON nameserver (LOWER(ldh_name));
 
+CREATE INDEX nameserver_unicode_name_idx ON nameserver(unicode_name);
+
+CREATE INDEX nameserver_handle_idx ON nameserver(handle);
+
 CREATE OR REPLACE FUNCTION set_nameserver_pk_from_json()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -84,6 +92,8 @@ CREATE TABLE autnum (
     content      JSONB NOT NULL,
     PRIMARY KEY (start_autnum, end_autnum)
 );
+
+CREATE INDEX autnum_handle_idx ON autnum(handle);
 
 CREATE OR REPLACE FUNCTION set_autnum_pk_from_json()
 RETURNS TRIGGER AS $$
@@ -113,6 +123,8 @@ CREATE TABLE network (
     content       JSONB NOT NULL,
     PRIMARY KEY (start_address, end_address)
 );
+
+CREATE INDEX network_handle_idx ON network(handle);
 
 CREATE OR REPLACE FUNCTION set_network_pk_from_json()
 RETURNS TRIGGER AS $$
