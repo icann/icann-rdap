@@ -57,10 +57,22 @@ EXECUTE FUNCTION set_domain_pk_from_json();
 
 -- nameserver
 
+-- Helper function to convert a JSON array of IP strings to inet[]
+CREATE OR REPLACE FUNCTION jsonb_to_inet_array(arr jsonb)
+RETURNS inet[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
+  SELECT CASE 
+    WHEN jsonb_typeof(arr) = 'array' 
+    THEN ARRAY(SELECT elem::inet FROM jsonb_array_elements_text(arr) AS elem)
+    ELSE NULL
+  END;
+$$;
+
 CREATE TABLE nameserver (
     ldh_name     TEXT PRIMARY KEY,
     unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
+    v4           INET[] GENERATED ALWAYS AS (jsonb_to_inet_array(content::jsonb -> 'ipAddresses' -> 'v4')) STORED,
+    v6           INET[] GENERATED ALWAYS AS (jsonb_to_inet_array(content::jsonb -> 'ipAddresses' -> 'v6')) STORED,
     content      JSONB NOT NULL
 );
 
@@ -92,7 +104,7 @@ CREATE TABLE autnum (
     start_autnum BIGINT NOT NULL,
     end_autnum   BIGINT NOT NULL,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
-    name          TEXT GENERATED ALWAYS AS (content->>'name') STORED,
+    name         TEXT GENERATED ALWAYS AS (content->>'name') STORED,
     content      JSONB NOT NULL,
     PRIMARY KEY (start_autnum, end_autnum)
 );
