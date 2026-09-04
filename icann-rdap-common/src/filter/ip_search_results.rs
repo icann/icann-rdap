@@ -13,6 +13,12 @@
 //! | `Event` | `HashMapVal` | Events aggregated from all results |
 //! | `RdapConformance` | `StringArray` | Conformance URIs from all results |
 //! | `Cidr` | `StringArray` | CIDR entries from all results |
+//! | `StartIpAddress` | `StringArray` | Start IP addresses from all results |
+//! | `EndIpAddress` | `StringArray` | End IP addresses from all results |
+//! | `IpVersion` | `StringArray` | IP versions from all results |
+//! | `Name` | `StringArray` | Network names from all results |
+//! | `Type` | `StringArray` | Network types from all results |
+//! | `ParentHandle` | `StringArray` | Parent handles from all results |
 //! | Entity roles | `StringArray` | Role-based fields aggregated from all results |
 
 use super::*;
@@ -92,6 +98,66 @@ impl Filterable for IpSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::StartIpAddress => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| n.start_address())
+                            .map(|a| a.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::EndIpAddress => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| n.end_address())
+                            .map(|a| a.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::IpVersion => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| n.ip_version())
+                            .map(|v| v.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::Name => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| n.name())
+                            .map(|n| n.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::Type => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| n.network_type())
+                            .map(|t| t.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::ParentHandle => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|n| n.parent_handle())
+                            .map(|h| h.to_string())
+                            .collect(),
+                    ),
+                },
                 _ => entity_role_filter_output_search(self.results().iter(), *f),
             })
             .collect()
@@ -108,9 +174,9 @@ mod tests {
     fn make_test_network_1() -> Network {
         let registrant_contact = Contact::builder()
             .full_name("Network Registrant One")
-            .emails(vec![
-                Email::builder().email("registrant1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrant1@example.com")
+                .build()])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Network Abuse One")
@@ -122,9 +188,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Network Registrar One")
-            .emails(vec![
-                Email::builder().email("registrar1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrar1@example.com")
+                .build()])
             .build();
 
         Network::builder()
@@ -175,9 +241,9 @@ mod tests {
     fn make_test_network_2() -> Network {
         let registrant_contact = Contact::builder()
             .full_name("Network Registrant Two")
-            .emails(vec![
-                Email::builder().email("registrant2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrant2@example.com")
+                .build()])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Network Abuse Two")
@@ -189,9 +255,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Network Registrar Two")
-            .emails(vec![
-                Email::builder().email("registrar2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrar2@example.com")
+                .build()])
             .build();
 
         Network::builder()
@@ -376,6 +442,134 @@ mod tests {
                 assert_eq!(s.len(), 2);
                 assert!(s.contains(&"192.0.2.0/24".to_string()));
                 assert!(s.contains(&"198.51.100.0/24".to_string()));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_start_ip_address() {
+        // GIVEN
+        let search_results = make_test_ip_search_results();
+        let filters = vec![Filter::StartIpAddress];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::StartIpAddress);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"192.0.2.0".to_string()));
+                assert!(s.contains(&"198.51.100.0".to_string()));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_end_ip_address() {
+        // GIVEN
+        let search_results = make_test_ip_search_results();
+        let filters = vec![Filter::EndIpAddress];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::EndIpAddress);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"192.0.2.255".to_string()));
+                assert!(s.contains(&"198.51.100.255".to_string()));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_ip_version() {
+        // GIVEN
+        let search_results = make_test_ip_search_results();
+        let filters = vec![Filter::IpVersion];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::IpVersion);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s, &vec!["v4".to_string(), "v4".to_string()]);
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_name() {
+        // GIVEN
+        let search_results = make_test_ip_search_results();
+        let filters = vec![Filter::Name];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::Name);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"EXAMPLE-NET-1".to_string()));
+                assert!(s.contains(&"EXAMPLE-NET-2".to_string()));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_type() {
+        // GIVEN
+        let search_results = make_test_ip_search_results();
+        let filters = vec![Filter::Type];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::Type);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.iter().all(|t| t == "ASSIGNED PORTABLE PREFIX"));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_parent_handle() {
+        // GIVEN
+        let search_results = make_test_ip_search_results();
+        let filters = vec![Filter::ParentHandle];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::ParentHandle);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.iter().all(|h| h == "TOP-LEVEL-NET"));
             }
             _ => panic!("Expected StringArray"),
         }

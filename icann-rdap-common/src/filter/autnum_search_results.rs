@@ -12,6 +12,10 @@
 //! | `ObjectClassName` | `StringArray` | Object class names from all results |
 //! | `Event` | `HashMapVal` | Events aggregated from all results |
 //! | `RdapConformance` | `StringArray` | Conformance URIs from all results |
+//! | `StartAutnum` | `IntArray` | Starting AS numbers from all results |
+//! | `EndAutnum` | `IntArray` | Ending AS numbers from all results |
+//! | `Name` | `StringArray` | AS names from all results |
+//! | `Type` | `StringArray` | AS types from all results |
 //! | Entity roles | `StringArray` | Role-based fields aggregated from all results |
 
 use super::*;
@@ -76,6 +80,46 @@ impl Filterable for AutnumSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::StartAutnum => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::IntArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|a| a.start_autnum())
+                            .map(|v| v as i64)
+                            .collect(),
+                    ),
+                },
+                Filter::EndAutnum => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::IntArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|a| a.end_autnum())
+                            .map(|v| v as i64)
+                            .collect(),
+                    ),
+                },
+                Filter::Name => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|a| a.name())
+                            .map(|n| n.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::Type => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|a| a.autnum_type())
+                            .map(|t| t.to_string())
+                            .collect(),
+                    ),
+                },
                 _ => entity_role_filter_output_search(self.results().iter(), *f),
             })
             .collect()
@@ -92,9 +136,9 @@ mod tests {
     fn make_test_autnum_1() -> Autnum {
         let registrant_contact = Contact::builder()
             .full_name("Autnum Registrant Owner")
-            .emails(vec![
-                Email::builder().email("registrant1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrant1@example.com")
+                .build()])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Autnum Abuse Contact")
@@ -106,9 +150,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Autnum Registrar Inc")
-            .emails(vec![
-                Email::builder().email("registrar1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrar1@example.com")
+                .build()])
             .build();
 
         Autnum::builder()
@@ -158,9 +202,9 @@ mod tests {
     fn make_test_autnum_2() -> Autnum {
         let registrant_contact = Contact::builder()
             .full_name("Autnum Registrant Two")
-            .emails(vec![
-                Email::builder().email("registrant2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrant2@example.com")
+                .build()])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Autnum Abuse Two")
@@ -172,9 +216,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Autnum Registrar Two")
-            .emails(vec![
-                Email::builder().email("registrar2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("registrar2@example.com")
+                .build()])
             .build();
 
         Autnum::builder()
@@ -336,6 +380,90 @@ mod tests {
             FilterValue::StringArray(s) => {
                 // Empty because Autnum::builder() doesn't set rdap_conformance
                 assert_eq!(s.len(), 0);
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_start_autnum() {
+        // GIVEN
+        let search_results = make_test_autnum_search_results();
+        let filters = vec![Filter::StartAutnum];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::StartAutnum);
+        match &results[0].value {
+            FilterValue::IntArray(s) => {
+                assert_eq!(s, &vec![12345, 54321]);
+            }
+            _ => panic!("Expected IntArray"),
+        }
+    }
+
+    #[test]
+    fn filter_end_autnum() {
+        // GIVEN
+        let search_results = make_test_autnum_search_results();
+        let filters = vec![Filter::EndAutnum];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::EndAutnum);
+        match &results[0].value {
+            FilterValue::IntArray(s) => {
+                assert_eq!(s, &vec![12350, 54330]);
+            }
+            _ => panic!("Expected IntArray"),
+        }
+    }
+
+    #[test]
+    fn filter_name() {
+        // GIVEN
+        let search_results = make_test_autnum_search_results();
+        let filters = vec![Filter::Name];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::Name);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"EXAMPLE-AS-1".to_string()));
+                assert!(s.contains(&"EXAMPLE-AS-2".to_string()));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_type() {
+        // GIVEN
+        let search_results = make_test_autnum_search_results();
+        let filters = vec![Filter::Type];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::Type);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"DIRECT ALLOCATION".to_string()));
+                assert!(s.contains(&"RESOURCE PORTABLE".to_string()));
             }
             _ => panic!("Expected StringArray"),
         }

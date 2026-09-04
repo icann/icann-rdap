@@ -13,6 +13,8 @@
 //! | `Event` | `HashMapVal` | Events aggregated from all results |
 //! | `RdapConformance` | `StringArray` | Conformance URIs from all results |
 //! | `Role` | `StringArray` | Roles from all results |
+//! | `Email` | `StringArray` | Email addresses from all results |
+//! | `FullName` | `StringArray` | Full names from all results |
 //! | `PublicId` | `HashMapVal` | Public IDs aggregated from all results |
 //! | `Voice` | `StringArray` | Phone numbers from all results |
 //! | `Fax` | `StringArray` | Fax numbers from all results |
@@ -90,6 +92,30 @@ impl Filterable for EntitySearchResults {
                             .iter()
                             .flat_map(|e| e.roles())
                             .map(|r| r.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::Email => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .flat_map(|c| {
+                                let emails: Vec<String> =
+                                    c.emails().iter().map(|e| e.email().to_string()).collect();
+                                emails
+                            })
+                            .collect(),
+                    ),
+                },
+                Filter::FullName => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::StringArray(
+                        self.results()
+                            .iter()
+                            .filter_map(|e| e.contact())
+                            .filter_map(|c| c.full_name().map(|n| n.to_string()))
                             .collect(),
                     ),
                 },
@@ -201,27 +227,27 @@ mod tests {
 
         let child_registrant_contact = Contact::builder()
             .full_name("Child Registrant One")
-            .emails(vec![
-                Email::builder().email("child-reg1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-reg1@example.com")
+                .build()])
             .build();
         let child_abuse_contact = Contact::builder()
             .full_name("Child Abuse One")
-            .emails(vec![
-                Email::builder().email("child-abuse1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-abuse1@example.com")
+                .build()])
             .build();
         let child_tech_contact = Contact::builder()
             .full_name("Child Tech One")
-            .emails(vec![
-                Email::builder().email("child-tech1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-tech1@example.com")
+                .build()])
             .build();
         let child_registrar_contact = Contact::builder()
             .full_name("Child Registrar One")
-            .emails(vec![
-                Email::builder().email("child-reg1@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-reg1@example.com")
+                .build()])
             .build();
 
         let child_registrant = EntityType::response_obj()
@@ -271,27 +297,27 @@ mod tests {
 
         let child_registrant_contact = Contact::builder()
             .full_name("Child Registrant Two")
-            .emails(vec![
-                Email::builder().email("child-reg2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-reg2@example.com")
+                .build()])
             .build();
         let child_abuse_contact = Contact::builder()
             .full_name("Child Abuse Two")
-            .emails(vec![
-                Email::builder().email("child-abuse2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-abuse2@example.com")
+                .build()])
             .build();
         let child_tech_contact = Contact::builder()
             .full_name("Child Tech Two")
-            .emails(vec![
-                Email::builder().email("child-tech2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-tech2@example.com")
+                .build()])
             .build();
         let child_registrar_contact = Contact::builder()
             .full_name("Child Registrar Two")
-            .emails(vec![
-                Email::builder().email("child-reg2@example.com").build(),
-            ])
+            .emails(vec![Email::builder()
+                .email("child-reg2@example.com")
+                .build()])
             .build();
 
         let child_registrant = EntityType::response_obj()
@@ -576,6 +602,50 @@ mod tests {
         match &results[0].value {
             FilterValue::StringArray(s) => {
                 assert_eq!(s.len(), 0);
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_email() {
+        // GIVEN
+        let search_results = make_test_entity_search_results();
+        let filters = vec![Filter::Email];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::Email);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"entity1@example.com".to_string()));
+                assert!(s.contains(&"entity2@example.com".to_string()));
+            }
+            _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_full_name() {
+        // GIVEN
+        let search_results = make_test_entity_search_results();
+        let filters = vec![Filter::FullName];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].filter, Filter::FullName);
+        match &results[0].value {
+            FilterValue::StringArray(s) => {
+                assert_eq!(s.len(), 2);
+                assert!(s.contains(&"Entity One".to_string()));
+                assert!(s.contains(&"Entity Two".to_string()));
             }
             _ => panic!("Expected StringArray"),
         }
