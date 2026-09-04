@@ -252,8 +252,28 @@ impl StoreOps for Pg {
         Ok(response)
     }
 
-    async fn search_nameservers_by_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+    async fn search_nameservers_by_ip(&self, ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        let query = match ip {
+            IpAddr::V4(_) => "SELECT content FROM nameserver WHERE $1::inet = ANY(v4)",
+            IpAddr::V6(_) => "SELECT content FROM nameserver WHERE $1::inet = ANY(v6)",
+        };
+        let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(query)
+            .bind(ip)
+            .fetch_all(&self.pg_pool)
+            .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Nameserver(ns) => Some(*ns),
+                _ => None,
+            })
+            .collect::<Vec<Nameserver>>();
+        let response = NameserverSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_domains_by_ns_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {

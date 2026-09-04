@@ -82,6 +82,10 @@ CREATE INDEX nameserver_unicode_name_idx ON nameserver(unicode_name);
 
 CREATE INDEX nameserver_handle_idx ON nameserver(handle);
 
+CREATE INDEX nameserver_v4 ON nameserver(v4);
+
+CREATE INDEX nameserver_v6 on nameserver(v6);
+
 CREATE OR REPLACE FUNCTION set_nameserver_pk_from_json()
 RETURNS TRIGGER AS $$
 BEGIN
