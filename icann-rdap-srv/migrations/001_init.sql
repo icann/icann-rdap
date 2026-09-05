@@ -48,12 +48,24 @@ RETURNS inet[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
   );
 $$;
 
+-- Helper function to get nameserver ldhNames to text[]
+CREATE OR REPLACE FUNCTION extract_nested_ns_ldh_names(data jsonb)
+RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
+  SELECT COALESCE(
+    ARRAY(
+      SELECT ((jsonb_path_query(data, '$.nameservers[*].ldhName')) #>> '{}')::text
+    ),
+    '{}'::text[]
+  );
+$$;
+
 CREATE TABLE domain (
     ldh_name     TEXT PRIMARY KEY,
     unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
     ns_v4        INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content)) STORED,
     ns_v6        INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content)) STORED,
+    ns_ldh_name  TEXT[] GENERATED ALWAYS AS (extract_nested_ns_ldh_names(content)) STORED,
     content      JSONB NOT NULL
 );
 

@@ -302,9 +302,29 @@ impl StoreOps for Pg {
 
     async fn search_domains_by_ns_ldh_name(
         &self,
-        _name: &str,
+        name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+        let pattern = wildcard_to_domain_regex(name)?;
+        let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(
+            "SELECT content FROM domain \
+             WHERE EXISTS (SELECT 1 FROM unnest(ns_ldh_name) AS ns WHERE ns ~* $1)",
+        )
+        .bind(pattern)
+        .fetch_all(&self.pg_pool)
+        .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect::<Vec<Domain>>();
+        let response = DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_entities_by_handle(

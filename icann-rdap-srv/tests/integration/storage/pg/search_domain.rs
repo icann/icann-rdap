@@ -208,3 +208,75 @@ async fn search_domains_by_ns_ip_no_match() {
     };
     assert!(results.results().is_empty());
 }
+
+#[tokio::test]
+async fn search_domains_by_ns_ldh_name_wildcard_finds_match() {
+    // GIVEN — domain A has two nameservers (only one matches); domain B's does not
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("dbyns-a.example.com")
+            .nameservers(vec![
+                Nameserver::builder()
+                    .ldh_name("alpha.other.net")
+                    .build()
+                    .expect("building nameserver A1"),
+                Nameserver::builder()
+                    .ldh_name("ns1.dbyns-a.example.com")
+                    .build()
+                    .expect("building nameserver A2"),
+            ])
+            .build(),
+    )
+    .await
+    .expect("adding domain A");
+    tx.add_domain(
+        &Domain::builder()
+            .ldh_name("dbyns-b.example.com")
+            .nameservers(vec![
+                Nameserver::builder()
+                    .ldh_name("ns1.dbyns-b.example.com")
+                    .build()
+                    .expect("building nameserver B"),
+            ])
+            .build(),
+    )
+    .await
+    .expect("adding domain B");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — wildcard pattern matching only domain A's second nameserver
+    let actual = store
+        .search_domains_by_ns_ldh_name("ns1.dbyns-a.*")
+        .await
+        .expect("searching domains by ns ldh name");
+
+    // THEN — matches only dbyns-a.example.com, not dbyns-b.example.com
+    let RdapResponse::DomainSearchResults(results) = actual else {
+        panic!("expected domain search results, got {actual:?}");
+    };
+    assert_eq!(results.results().len(), 1);
+    assert_eq!(
+        results.results()[0].ldh_name.as_deref(),
+        Some("dbyns-a.example.com")
+    );
+}
+
+#[tokio::test]
+async fn search_domains_by_ns_ldh_name_no_match() {
+    // GIVEN
+    let store = pg_store().await;
+
+    // WHEN — wildcard pattern matching no domain's nameserver
+    let actual = store
+        .search_domains_by_ns_ldh_name("zzz-nonexistent.*")
+        .await
+        .expect("searching domains by ns ldh name");
+
+    // THEN
+    let RdapResponse::DomainSearchResults(results) = actual else {
+        panic!("expected domain search results, got {actual:?}");
+    };
+    assert!(results.results().is_empty());
+}
