@@ -52,8 +52,8 @@ CREATE TABLE domain (
     ldh_name     TEXT PRIMARY KEY,
     unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
-    ns_v4        INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content::jsonb -> 'ipAddresses' -> 'v4')) STORED,
-    ns_v6        INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content::jsonb -> 'ipAddresses' -> 'v6')) STORED,
+    ns_v4        INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content)) STORED,
+    ns_v6        INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content)) STORED,
     content      JSONB NOT NULL
 );
 

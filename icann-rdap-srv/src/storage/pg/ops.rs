@@ -276,8 +276,28 @@ impl StoreOps for Pg {
         Ok(response)
     }
 
-    async fn search_domains_by_ns_ip(&self, _ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+    async fn search_domains_by_ns_ip(&self, ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        let query = match ip {
+            IpAddr::V4(_) => "SELECT content FROM domain WHERE $1::inet = ANY(ns_v4)",
+            IpAddr::V6(_) => "SELECT content FROM domain WHERE $1::inet = ANY(ns_v6)",
+        };
+        let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(query)
+            .bind(ip)
+            .fetch_all(&self.pg_pool)
+            .await?;
+        let results = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect::<Vec<Domain>>();
+        let response = DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response();
+        Ok(response)
     }
 
     async fn search_domains_by_ns_ldh_name(
