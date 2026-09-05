@@ -26,10 +26,34 @@ EXECUTE FUNCTION set_entity_pk_from_json();
 
 -- domain
 
+-- Helper function to get nameserver v4s to inet[]
+CREATE OR REPLACE FUNCTION extract_nested_v4_ips(data jsonb)
+RETURNS inet[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
+  SELECT COALESCE(
+    ARRAY(
+      SELECT ((jsonb_path_query(data, '$.nameservers[*].ipAddresses.v4[*]')) #>> '{}')::inet
+    ),
+    '{}'::inet[]
+  );
+$$;
+
+-- Helper function to get nameserver v6s to inet[]
+CREATE OR REPLACE FUNCTION extract_nested_v6_ips(data jsonb)
+RETURNS inet[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
+  SELECT COALESCE(
+    ARRAY(
+      SELECT ((jsonb_path_query(data, '$.nameservers[*].ipAddresses.v6[*]')) #>> '{}')::inet
+    ),
+    '{}'::inet[]
+  );
+$$;
+
 CREATE TABLE domain (
     ldh_name     TEXT PRIMARY KEY,
     unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
     handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
+    ns_v4        INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content::jsonb -> 'ipAddresses' -> 'v4')) STORED,
+    ns_v6        INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content::jsonb -> 'ipAddresses' -> 'v6')) STORED,
     content      JSONB NOT NULL
 );
 
