@@ -126,3 +126,70 @@ async fn search_networks_by_name_no_match() {
     };
     assert!(results.results().is_empty());
 }
+
+#[tokio::test]
+async fn search_ip_rdap_up_by_ipaddr_finds_supernet() {
+    // GIVEN — a /24 (the top for the queried IP) and its parent /23, both stored
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("10.1.2.0/24")
+            .handle("NSUP-24")
+            .build()
+            .expect("building /24 network"),
+    )
+    .await
+    .expect("adding /24 network");
+    tx.add_network(
+        &Network::builder()
+            .cidr("10.1.2.0/23")
+            .handle("NSUP-23")
+            .build()
+            .expect("building /23 network"),
+    )
+    .await
+    .expect("adding /23 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-up for an IP inside the /24
+    let actual = store
+        .search_ip_rdap_up_by_ipaddr("10.1.2.3")
+        .await
+        .expect("searching ip rdap up by ipaddr");
+
+    // THEN — returns the immediate supernet (/23), not the /24
+    let RdapResponse::Network(net) = actual else {
+        panic!("expected network, got {actual:?}");
+    };
+    assert_eq!(
+        net.object_common.handle.as_ref().map(|h| h.to_string()),
+        Some("NSUP-23".to_string())
+    );
+}
+
+#[tokio::test]
+async fn search_ip_rdap_up_by_ipaddr_supernet_not_stored() {
+    // GIVEN — a /24 whose parent /23 is NOT stored
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("10.9.0.0/24")
+            .handle("NSUP-LONELY")
+            .build()
+            .expect("building lonely /24"),
+    )
+    .await
+    .expect("adding lonely /24");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-up for an IP inside the lonely /24
+    let actual = store
+        .search_ip_rdap_up_by_ipaddr("10.9.0.5")
+        .await
+        .expect("searching ip rdap up by ipaddr");
+
+    // THEN — no stored supernet → not a network (404)
+    assert!(!matches!(actual, RdapResponse::Network(_)));
+}

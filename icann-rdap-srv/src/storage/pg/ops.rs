@@ -1,5 +1,8 @@
 #![allow(clippy::diverging_sub_expression)]
-use std::{net::IpAddr, str::FromStr};
+use std::{
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
 
 use {
     async_trait::async_trait,
@@ -58,6 +61,63 @@ fn wildcard_to_domain_regex(input: &str) -> Result<String, RdapServerError> {
     let at_end = star == input.chars().count() - 1;
     let replacement = if at_end { ".*" } else { "[^.]*" };
     Ok(format!("^{}$", input.replace('*', replacement)))
+}
+
+/// The `[start, end]` range of the immediate supernet of the IPv4 block `[s, e]`,
+/// or `None` if the block is `/0` (which has no supernet) or is not a valid block.
+fn supernet_v4(s: Ipv4Addr, e: Ipv4Addr) -> Option<(IpAddr, IpAddr)> {
+    let (s, e) = (u64::from(u32::from(s)), u64::from(u32::from(e)));
+    if e < s {
+        return None;
+    }
+    let size = e - s + 1; // block size (a power of two), at most 2^32
+    if size >= 1 << 32 {
+        return None; // /0 has no supernet
+    }
+    let super_size = size * 2;
+    let base = s / super_size * super_size;
+    Some((
+        IpAddr::V4(Ipv4Addr::from(base as u32)),
+        IpAddr::V4(Ipv4Addr::from((base + super_size - 1) as u32)),
+    ))
+}
+
+/// The `[start, end]` range of the immediate supernet of the IPv6 block `[s, e]`,
+/// or `None` if the block is `/0` (which has no supernet) or is not a valid block.
+fn supernet_v6(s: Ipv6Addr, e: Ipv6Addr) -> Option<(IpAddr, IpAddr)> {
+    let (s, e) = (u128::from(s), u128::from(e));
+    if e < s || (s == 0 && e == u128::MAX) {
+        return None; // invalid block, or /0 which has no supernet
+    }
+    let size = e - s + 1; // at most 2^127 here (/0 excluded)
+    if size >= 1 << 127 {
+        // top is /1; its only supernet is /0
+        return Some((
+            IpAddr::V6(Ipv6Addr::from(0u128)),
+            IpAddr::V6(Ipv6Addr::from(u128::MAX)),
+        ));
+    }
+    let super_size = size * 2;
+    let base = s / super_size * super_size;
+    Some((
+        IpAddr::V6(Ipv6Addr::from(base)),
+        IpAddr::V6(Ipv6Addr::from(base + super_size - 1)),
+    ))
+}
+
+/// The number of addresses in the block `[s, e]`, used to order networks by specificity.
+fn ip_block_size(s: IpAddr, e: IpAddr) -> u128 {
+    match (s, e) {
+        (IpAddr::V4(a), IpAddr::V4(b)) => {
+            let (a, b) = (u64::from(u32::from(a)), u64::from(u32::from(b)));
+            (b.saturating_sub(a) + 1) as u128
+        }
+        (IpAddr::V6(a), IpAddr::V6(b)) => {
+            let (a, b) = (u128::from(a), u128::from(b));
+            b.saturating_sub(a) + 1
+        }
+        _ => u128::MAX, // mismatched families should not occur for a single IP query
+    }
 }
 
 #[derive(Clone)]
@@ -426,9 +486,54 @@ impl StoreOps for Pg {
 
     async fn search_ip_rdap_up_by_ipaddr(
         &self,
-        _ipaddr: &str,
+        ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let ip = ipaddr.parse::<IpAddr>()?;
+
+        // Step 1 — the top: the most-specific stored network whose range contains the IP.
+        let containing: Vec<(IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT start_address, end_address FROM network \
+             WHERE start_address <= $1::inet AND end_address >= $1::inet",
+        )
+        .bind(ip)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let Some((start, end)) = containing
+            .into_iter()
+            .min_by_key(|(s, e)| ip_block_size(*s, *e))
+        else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        // Step 2 — the immediate supernet of that block, if it is itself a stored network.
+        let supernet = match start {
+            IpAddr::V4(s) => match end {
+                IpAddr::V4(e) => supernet_v4(s, e),
+                _ => None,
+            },
+            IpAddr::V6(s) => match end {
+                IpAddr::V6(e) => supernet_v6(s, e),
+                _ => None,
+            },
+        };
+        let Some((sup_start, sup_end)) = supernet else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        let row: Option<Json<RdapResponse>> = sqlx::query_scalar(
+            "SELECT content FROM network \
+             WHERE start_address = $1::inet AND end_address = $2::inet LIMIT 1",
+        )
+        .bind(sup_start)
+        .bind(sup_end)
+        .fetch_optional(&self.pg_pool)
+        .await?;
+
+        match row {
+            Some(Json(content)) => Ok(content),
+            None => Ok(NOT_FOUND.clone()),
+        }
     }
 
     async fn search_ip_rdap_up_by_cidr(
