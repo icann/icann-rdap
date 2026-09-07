@@ -536,11 +536,62 @@ impl StoreOps for Pg {
         }
     }
 
-    async fn search_ip_rdap_up_by_cidr(
-        &self,
-        _cidr: &str,
-    ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+    async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        let net = IpNet::from_str(cidr)?;
+        let (first, last): (IpAddr, IpAddr) = match &net {
+            IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
+            IpNet::V6(v6) => (v6.network().into(), v6.broadcast().into()),
+        };
+
+        // Step 1 — the most-specific stored network whose range contains the entire block.
+        let containing: Vec<(IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT start_address, end_address FROM network \
+             WHERE start_address <= $1::inet AND end_address >= $2::inet",
+        )
+        .bind(first)
+        .bind(last)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let Some((start, end)) = containing
+            .into_iter()
+            .min_by_key(|(s, e)| ip_block_size(*s, *e))
+        else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        // Step 2 — the immediate supernet of that block; find the most-specific stored network containing it.
+        let supernet = match start {
+            IpAddr::V4(s) => match end {
+                IpAddr::V4(e) => supernet_v4(s, e),
+                _ => None,
+            },
+            IpAddr::V6(s) => match end {
+                IpAddr::V6(e) => supernet_v6(s, e),
+                _ => None,
+            },
+        };
+        let Some((sup_start, sup_end)) = supernet else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        let rows: Vec<(Json<RdapResponse>, IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT content, start_address, end_address FROM network \
+             WHERE start_address <= $1::inet AND end_address >= $2::inet",
+        )
+        .bind(sup_start)
+        .bind(sup_end)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let best = rows
+            .into_iter()
+            .min_by_key(|(_, s, e)| ip_block_size(*s, *e));
+
+        match best {
+            Some((Json(content), _, _)) => Ok(content),
+            None => Ok(NOT_FOUND.clone()),
+        }
     }
 
     async fn search_ip_rdap_top_by_ipaddr(
