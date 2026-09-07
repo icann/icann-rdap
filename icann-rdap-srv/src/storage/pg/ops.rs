@@ -556,16 +556,44 @@ impl StoreOps for Pg {
 
     async fn search_ip_rdap_top_by_ipaddr(
         &self,
-        _ipaddr: &str,
+        ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let ip = ipaddr.parse::<IpAddr>()?;
+        let cidr = match ip {
+            IpAddr::V4(_) => format!("{}/32", ip),
+            IpAddr::V6(_) => format!("{}/128", ip),
+        };
+        self.search_ip_rdap_top_by_cidr(&cidr).await
     }
 
     async fn search_ip_rdap_top_by_cidr(
         &self,
-        _cidr: &str,
+        cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let net = IpNet::from_str(cidr)?;
+        let (first, last): (IpAddr, IpAddr) = match &net {
+            IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
+            IpNet::V6(v6) => (v6.network().into(), v6.broadcast().into()),
+        };
+
+        // The topmost stored network is the widest one whose range contains the entire block.
+        let rows: Vec<(Json<RdapResponse>, IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT content, start_address, end_address FROM network \
+             WHERE start_address <= $1::inet AND end_address >= $2::inet",
+        )
+        .bind(first)
+        .bind(last)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let best = rows
+            .into_iter()
+            .max_by_key(|(_, s, e)| ip_block_size(*s, *e));
+
+        match best {
+            Some((Json(content), _, _)) => Ok(content),
+            None => Ok(NOT_FOUND.clone()),
+        }
     }
 
     async fn search_ip_rdap_down_by_ipaddr(

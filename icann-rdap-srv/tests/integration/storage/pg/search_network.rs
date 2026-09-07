@@ -260,3 +260,201 @@ async fn search_ip_rdap_up_by_cidr_supernet_not_stored() {
     // THEN — no stored supernet → not a network (404)
     assert!(!matches!(actual, RdapResponse::Network(_)));
 }
+
+#[tokio::test]
+async fn search_ip_rdap_top_by_cidr_returns_widest_containing() {
+    // GIVEN — a /16 and a narrower /24 inside it, both stored
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("196.0.0.0/16")
+            .handle("TOP-CIDR-WIDE")
+            .build()
+            .expect("building wide /16 network"),
+    )
+    .await
+    .expect("adding wide /16 network");
+    tx.add_network(
+        &Network::builder()
+            .cidr("196.0.8.0/24")
+            .handle("TOP-CIDR-NARROW")
+            .build()
+            .expect("building narrow /24 network"),
+    )
+    .await
+    .expect("adding narrow /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-top for the stored /24
+    let actual = store
+        .search_ip_rdap_top_by_cidr("196.0.8.0/24")
+        .await
+        .expect("searching ip rdap top by cidr");
+
+    // THEN — returns the widest containing network (/16), not the /24
+    let RdapResponse::Network(net) = actual else {
+        panic!("expected network, got {actual:?}");
+    };
+    assert_eq!(
+        net.object_common.handle.as_ref().map(|h| h.to_string()),
+        Some("TOP-CIDR-WIDE".to_string())
+    );
+}
+
+#[tokio::test]
+async fn search_ip_rdap_top_by_cidr_returns_self_when_only_match() {
+    // GIVEN — a /24 with no wider stored ancestor
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("197.0.0.0/24")
+            .handle("TOP-CIDR-SELF")
+            .build()
+            .expect("building /24 network"),
+    )
+    .await
+    .expect("adding /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-top for the stored /24
+    let actual = store
+        .search_ip_rdap_top_by_cidr("197.0.0.0/24")
+        .await
+        .expect("searching ip rdap top by cidr");
+
+    // THEN — no wider ancestor, so the network is its own top
+    let RdapResponse::Network(net) = actual else {
+        panic!("expected network, got {actual:?}");
+    };
+    assert_eq!(
+        net.object_common.handle.as_ref().map(|h| h.to_string()),
+        Some("TOP-CIDR-SELF".to_string())
+    );
+}
+
+#[tokio::test]
+async fn search_ip_rdap_top_by_cidr_not_found_when_no_containing() {
+    // GIVEN — a /24 that does not contain the queried block
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("202.0.0.0/24")
+            .handle("TOP-CIDR-NF")
+            .build()
+            .expect("building /24 network"),
+    )
+    .await
+    .expect("adding /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-top for a block nothing stored contains
+    let actual = store
+        .search_ip_rdap_top_by_cidr("202.1.0.0/24")
+        .await
+        .expect("searching ip rdap top by cidr");
+
+    // THEN — no containing network → not a network (404)
+    assert!(!matches!(actual, RdapResponse::Network(_)));
+}
+
+#[tokio::test]
+async fn search_ip_rdap_top_by_ipaddr_returns_widest_containing() {
+    // GIVEN — a /16 and a narrower /24 inside it, both stored
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("204.0.0.0/16")
+            .handle("TOP-IP-WIDE")
+            .build()
+            .expect("building wide /16 network"),
+    )
+    .await
+    .expect("adding wide /16 network");
+    tx.add_network(
+        &Network::builder()
+            .cidr("204.0.8.0/24")
+            .handle("TOP-IP-NARROW")
+            .build()
+            .expect("building narrow /24 network"),
+    )
+    .await
+    .expect("adding narrow /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-top for an IP inside the stored /24
+    let actual = store
+        .search_ip_rdap_top_by_ipaddr("204.0.8.5")
+        .await
+        .expect("searching ip rdap top by ipaddr");
+
+    // THEN — returns the widest containing network (/16), not the /24
+    let RdapResponse::Network(net) = actual else {
+        panic!("expected network, got {actual:?}");
+    };
+    assert_eq!(
+        net.object_common.handle.as_ref().map(|h| h.to_string()),
+        Some("TOP-IP-WIDE".to_string())
+    );
+}
+
+#[tokio::test]
+async fn search_ip_rdap_top_by_ipaddr_returns_self_when_only_match() {
+    // GIVEN — a /24 with no wider stored ancestor
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("205.0.0.0/24")
+            .handle("TOP-IP-SELF")
+            .build()
+            .expect("building /24 network"),
+    )
+    .await
+    .expect("adding /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-top for an IP inside the stored /24
+    let actual = store
+        .search_ip_rdap_top_by_ipaddr("205.0.0.9")
+        .await
+        .expect("searching ip rdap top by ipaddr");
+
+    // THEN — no wider ancestor, so the network is its own top
+    let RdapResponse::Network(net) = actual else {
+        panic!("expected network, got {actual:?}");
+    };
+    assert_eq!(
+        net.object_common.handle.as_ref().map(|h| h.to_string()),
+        Some("TOP-IP-SELF".to_string())
+    );
+}
+
+#[tokio::test]
+async fn search_ip_rdap_top_by_ipaddr_not_found_when_no_containing() {
+    // GIVEN — a /24 that does not contain the queried IP
+    let store = pg_store().await;
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("206.0.0.0/24")
+            .handle("TOP-IP-NF")
+            .build()
+            .expect("building /24 network"),
+    )
+    .await
+    .expect("adding /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-top for an IP nothing stored contains
+    let actual = store
+        .search_ip_rdap_top_by_ipaddr("206.1.0.7")
+        .await
+        .expect("searching ip rdap top by ipaddr");
+
+    // THEN — no containing network → not a network (404)
+    assert!(!matches!(actual, RdapResponse::Network(_)));
+}
