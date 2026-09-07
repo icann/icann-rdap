@@ -1,12 +1,13 @@
 use icann_rdap_common::response::{Domain, Nameserver, RdapResponse};
 use icann_rdap_srv::storage::StoreOps;
 
-use super::pg_store;
+use icann_rdap_srv::storage::pg::ops::Pg;
+use sqlx::{Pool, postgres::Postgres};
 
-#[tokio::test]
-async fn search_domains_by_name_finds_match() {
+#[sqlx::test]
+async fn search_domains_by_name_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(&Domain::builder().ldh_name("example-a.com").build())
         .await
@@ -33,10 +34,10 @@ async fn search_domains_by_name_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_domains_by_name_no_match() {
+#[sqlx::test]
+async fn search_domains_by_name_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -51,10 +52,10 @@ async fn search_domains_by_name_no_match() {
     assert!(results.results().is_empty());
 }
 
-#[tokio::test]
-async fn search_domains_by_name_label_boundary() {
+#[sqlx::test]
+async fn search_domains_by_name_label_boundary(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(&Domain::builder().ldh_name("boundary-foo.com").build())
         .await
@@ -87,10 +88,10 @@ async fn search_domains_by_name_label_boundary() {
     assert!(names.contains(&"boundary-bar.com"));
 }
 
-#[tokio::test]
-async fn search_domains_by_ns_ip_v4_finds_match() {
+#[sqlx::test]
+async fn search_domains_by_ns_ip_v4_finds_match(db: Pool<Postgres>) {
     // GIVEN — two domains, each with a nameserver holding a distinct IPv4 address
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(
         &Domain::builder()
@@ -139,10 +140,10 @@ async fn search_domains_by_ns_ip_v4_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_domains_by_ns_ip_v6_finds_match() {
+#[sqlx::test]
+async fn search_domains_by_ns_ip_v6_finds_match(db: Pool<Postgres>) {
     // GIVEN — two domains, each with a nameserver holding a distinct IPv6 address
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(
         &Domain::builder()
@@ -191,10 +192,10 @@ async fn search_domains_by_ns_ip_v6_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_domains_by_ns_ip_no_match() {
+#[sqlx::test]
+async fn search_domains_by_ns_ip_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN — an IPv4 address no domain's nameserver holds
     let actual = store
@@ -209,10 +210,10 @@ async fn search_domains_by_ns_ip_no_match() {
     assert!(results.results().is_empty());
 }
 
-#[tokio::test]
-async fn search_domains_by_ns_ldh_name_wildcard_finds_match() {
+#[sqlx::test]
+async fn search_domains_by_ns_ldh_name_wildcard_finds_match(db: Pool<Postgres>) {
     // GIVEN — domain A has two nameservers (only one matches); domain B's does not
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(
         &Domain::builder()
@@ -263,10 +264,10 @@ async fn search_domains_by_ns_ldh_name_wildcard_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_domains_by_ns_ldh_name_no_match() {
+#[sqlx::test]
+async fn search_domains_by_ns_ldh_name_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN — wildcard pattern matching no domain's nameserver
     let actual = store

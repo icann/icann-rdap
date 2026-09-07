@@ -3,7 +3,8 @@ use icann_rdap_common::response::{
 };
 use icann_rdap_srv::storage::StoreOps;
 
-use super::pg_store;
+use icann_rdap_srv::storage::pg::ops::Pg;
+use sqlx::{Pool, postgres::Postgres};
 
 fn help_with_notice() -> Help {
     Help::response()
@@ -15,10 +16,10 @@ fn help_with_notice() -> Help {
         .build()
 }
 
-#[tokio::test]
-async fn get_domain_by_ldh_returns_stored_domain() {
+#[sqlx::test]
+async fn get_domain_by_ldh_returns_stored_domain(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(&Domain::builder().ldh_name("ldh-lookup.example").build())
         .await
@@ -38,10 +39,10 @@ async fn get_domain_by_ldh_returns_stored_domain() {
     assert_eq!(domain.ldh_name.as_deref(), Some("ldh-lookup.example"));
 }
 
-#[tokio::test]
-async fn get_domain_by_ldh_not_found() {
+#[sqlx::test]
+async fn get_domain_by_ldh_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -56,10 +57,10 @@ async fn get_domain_by_ldh_not_found() {
     assert_eq!(error.error_code(), 404);
 }
 
-#[tokio::test]
-async fn get_domain_by_unicode_returns_stored_domain() {
+#[sqlx::test]
+async fn get_domain_by_unicode_returns_stored_domain(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_domain(
         &Domain::builder()
@@ -84,10 +85,10 @@ async fn get_domain_by_unicode_returns_stored_domain() {
     assert_eq!(domain.ldh_name.as_deref(), Some("unicode-lookup.example"));
 }
 
-#[tokio::test]
-async fn get_entity_by_handle_returns_stored_entity() {
+#[sqlx::test]
+async fn get_entity_by_handle_returns_stored_entity(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_entity(&Entity::builder().handle("ENTITY-LOOKUP").build())
         .await
@@ -115,10 +116,10 @@ async fn get_entity_by_handle_returns_stored_entity() {
     );
 }
 
-#[tokio::test]
-async fn get_entity_by_handle_not_found() {
+#[sqlx::test]
+async fn get_entity_by_handle_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -133,10 +134,10 @@ async fn get_entity_by_handle_not_found() {
     assert_eq!(error.error_code(), 404);
 }
 
-#[tokio::test]
-async fn get_nameserver_by_ldh_returns_stored_nameserver() {
+#[sqlx::test]
+async fn get_nameserver_by_ldh_returns_stored_nameserver(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_nameserver(
         &Nameserver::builder()
@@ -162,10 +163,10 @@ async fn get_nameserver_by_ldh_returns_stored_nameserver() {
     assert_eq!(nameserver.ldh_name.as_deref(), Some("ns-lookup.example"));
 }
 
-#[tokio::test]
-async fn get_nameserver_by_ldh_not_found() {
+#[sqlx::test]
+async fn get_nameserver_by_ldh_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -180,10 +181,10 @@ async fn get_nameserver_by_ldh_not_found() {
     assert_eq!(error.error_code(), 404);
 }
 
-#[tokio::test]
-async fn get_autnum_by_num_returns_stored_autnum() {
+#[sqlx::test]
+async fn get_autnum_by_num_returns_stored_autnum(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_autnum(&Autnum::builder().autnum_range(700..710).build())
         .await
@@ -203,10 +204,10 @@ async fn get_autnum_by_num_returns_stored_autnum() {
     assert_eq!(autnum.start_autnum(), Some(700));
 }
 
-#[tokio::test]
-async fn get_autnum_by_num_not_found() {
+#[sqlx::test]
+async fn get_autnum_by_num_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -221,10 +222,10 @@ async fn get_autnum_by_num_not_found() {
     assert_eq!(error.error_code(), 404);
 }
 
-#[tokio::test]
-async fn get_network_by_ipaddr_returns_most_specific_network() {
+#[sqlx::test]
+async fn get_network_by_ipaddr_returns_most_specific_network(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -262,10 +263,10 @@ async fn get_network_by_ipaddr_returns_most_specific_network() {
     );
 }
 
-#[tokio::test]
-async fn get_network_by_ipaddr_falls_back_to_wider_network() {
+#[sqlx::test]
+async fn get_network_by_ipaddr_falls_back_to_wider_network(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -294,10 +295,10 @@ async fn get_network_by_ipaddr_falls_back_to_wider_network() {
     );
 }
 
-#[tokio::test]
-async fn get_network_by_ipaddr_not_found() {
+#[sqlx::test]
+async fn get_network_by_ipaddr_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -312,10 +313,10 @@ async fn get_network_by_ipaddr_not_found() {
     assert_eq!(error.error_code(), 404);
 }
 
-#[tokio::test]
-async fn get_network_by_cidr_returns_containing_network() {
+#[sqlx::test]
+async fn get_network_by_cidr_returns_containing_network(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -344,10 +345,10 @@ async fn get_network_by_cidr_returns_containing_network() {
     );
 }
 
-#[tokio::test]
-async fn get_network_by_cidr_not_found() {
+#[sqlx::test]
+async fn get_network_by_cidr_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -362,10 +363,10 @@ async fn get_network_by_cidr_not_found() {
     assert_eq!(error.error_code(), 404);
 }
 
-#[tokio::test]
-async fn get_srv_help_returns_default_help() {
+#[sqlx::test]
+async fn get_srv_help_returns_default_help(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_srv_help(&help_with_notice(), None)
         .await
@@ -382,10 +383,10 @@ async fn get_srv_help_returns_default_help() {
     );
 }
 
-#[tokio::test]
-async fn get_srv_help_returns_host_help() {
+#[sqlx::test]
+async fn get_srv_help_returns_host_help(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_srv_help(&help_with_notice(), Some("lookup-host.example"))
         .await
@@ -405,10 +406,10 @@ async fn get_srv_help_returns_host_help() {
     );
 }
 
-#[tokio::test]
-async fn get_srv_help_not_found() {
+#[sqlx::test]
+async fn get_srv_help_not_found(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store

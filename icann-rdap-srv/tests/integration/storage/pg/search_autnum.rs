@@ -1,12 +1,13 @@
 use icann_rdap_common::response::{Autnum, RdapResponse};
 use icann_rdap_srv::storage::StoreOps;
 
-use super::pg_store;
+use icann_rdap_srv::storage::pg::ops::Pg;
+use sqlx::{Pool, postgres::Postgres};
 
-#[tokio::test]
-async fn search_autnums_by_handle_finds_match() {
+#[sqlx::test]
+async fn search_autnums_by_handle_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_autnum(
         &Autnum::builder()
@@ -47,10 +48,10 @@ async fn search_autnums_by_handle_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_autnums_by_handle_no_match() {
+#[sqlx::test]
+async fn search_autnums_by_handle_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -65,10 +66,10 @@ async fn search_autnums_by_handle_no_match() {
     assert!(results.results().is_empty());
 }
 
-#[tokio::test]
-async fn search_autnums_by_name_finds_match() {
+#[sqlx::test]
+async fn search_autnums_by_name_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_autnum(
         &Autnum::builder()
@@ -105,10 +106,10 @@ async fn search_autnums_by_name_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_autnums_by_name_no_match() {
+#[sqlx::test]
+async fn search_autnums_by_name_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store

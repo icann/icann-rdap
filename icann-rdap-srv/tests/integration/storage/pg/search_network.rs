@@ -1,12 +1,13 @@
 use icann_rdap_common::response::{Network, RdapResponse};
 use icann_rdap_srv::storage::StoreOps;
 
-use super::pg_store;
+use icann_rdap_srv::storage::pg::ops::Pg;
+use sqlx::{Pool, postgres::Postgres};
 
-#[tokio::test]
-async fn search_networks_by_handle_finds_match() {
+#[sqlx::test]
+async fn search_networks_by_handle_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -49,10 +50,10 @@ async fn search_networks_by_handle_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_networks_by_handle_no_match() {
+#[sqlx::test]
+async fn search_networks_by_handle_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -67,10 +68,10 @@ async fn search_networks_by_handle_no_match() {
     assert!(results.results().is_empty());
 }
 
-#[tokio::test]
-async fn search_networks_by_name_finds_match() {
+#[sqlx::test]
+async fn search_networks_by_name_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -109,10 +110,10 @@ async fn search_networks_by_name_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_networks_by_name_no_match() {
+#[sqlx::test]
+async fn search_networks_by_name_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -127,10 +128,10 @@ async fn search_networks_by_name_no_match() {
     assert!(results.results().is_empty());
 }
 
-#[tokio::test]
-async fn search_ip_rdap_up_by_ipaddr_finds_supernet() {
+#[sqlx::test]
+async fn search_ip_rdap_up_by_ipaddr_finds_supernet(db: Pool<Postgres>) {
     // GIVEN — a /24 (the top for the queried IP) and its parent /23, both stored
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -168,10 +169,10 @@ async fn search_ip_rdap_up_by_ipaddr_finds_supernet() {
     );
 }
 
-#[tokio::test]
-async fn search_ip_rdap_up_by_ipaddr_supernet_not_stored() {
+#[sqlx::test]
+async fn search_ip_rdap_up_by_ipaddr_supernet_not_stored(db: Pool<Postgres>) {
     // GIVEN — a /24 whose parent /23 is NOT stored
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -194,10 +195,10 @@ async fn search_ip_rdap_up_by_ipaddr_supernet_not_stored() {
     assert!(!matches!(actual, RdapResponse::Network(_)));
 }
 
-#[tokio::test]
-async fn search_ip_rdap_up_by_cidr_finds_supernet() {
+#[sqlx::test]
+async fn search_ip_rdap_up_by_cidr_finds_supernet(db: Pool<Postgres>) {
     // GIVEN — a /24 and its parent /23, both stored
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -235,10 +236,10 @@ async fn search_ip_rdap_up_by_cidr_finds_supernet() {
     );
 }
 
-#[tokio::test]
-async fn search_ip_rdap_up_by_cidr_supernet_not_stored() {
+#[sqlx::test]
+async fn search_ip_rdap_up_by_cidr_supernet_not_stored(db: Pool<Postgres>) {
     // GIVEN — a /24 whose parent /23 is NOT stored
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -261,10 +262,10 @@ async fn search_ip_rdap_up_by_cidr_supernet_not_stored() {
     assert!(!matches!(actual, RdapResponse::Network(_)));
 }
 
-#[tokio::test]
-async fn search_ip_rdap_top_by_cidr_returns_widest_containing() {
+#[sqlx::test]
+async fn search_ip_rdap_top_by_cidr_returns_widest_containing(db: Pool<Postgres>) {
     // GIVEN — a /16 and a narrower /24 inside it, both stored
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -302,10 +303,10 @@ async fn search_ip_rdap_top_by_cidr_returns_widest_containing() {
     );
 }
 
-#[tokio::test]
-async fn search_ip_rdap_top_by_cidr_returns_self_when_only_match() {
+#[sqlx::test]
+async fn search_ip_rdap_top_by_cidr_returns_self_when_only_match(db: Pool<Postgres>) {
     // GIVEN — a /24 with no wider stored ancestor
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -334,10 +335,10 @@ async fn search_ip_rdap_top_by_cidr_returns_self_when_only_match() {
     );
 }
 
-#[tokio::test]
-async fn search_ip_rdap_top_by_cidr_not_found_when_no_containing() {
+#[sqlx::test]
+async fn search_ip_rdap_top_by_cidr_not_found_when_no_containing(db: Pool<Postgres>) {
     // GIVEN — a /24 that does not contain the queried block
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -360,10 +361,10 @@ async fn search_ip_rdap_top_by_cidr_not_found_when_no_containing() {
     assert!(!matches!(actual, RdapResponse::Network(_)));
 }
 
-#[tokio::test]
-async fn search_ip_rdap_top_by_ipaddr_returns_widest_containing() {
+#[sqlx::test]
+async fn search_ip_rdap_top_by_ipaddr_returns_widest_containing(db: Pool<Postgres>) {
     // GIVEN — a /16 and a narrower /24 inside it, both stored
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -401,10 +402,10 @@ async fn search_ip_rdap_top_by_ipaddr_returns_widest_containing() {
     );
 }
 
-#[tokio::test]
-async fn search_ip_rdap_top_by_ipaddr_returns_self_when_only_match() {
+#[sqlx::test]
+async fn search_ip_rdap_top_by_ipaddr_returns_self_when_only_match(db: Pool<Postgres>) {
     // GIVEN — a /24 with no wider stored ancestor
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
@@ -433,10 +434,10 @@ async fn search_ip_rdap_top_by_ipaddr_returns_self_when_only_match() {
     );
 }
 
-#[tokio::test]
-async fn search_ip_rdap_top_by_ipaddr_not_found_when_no_containing() {
+#[sqlx::test]
+async fn search_ip_rdap_top_by_ipaddr_not_found_when_no_containing(db: Pool<Postgres>) {
     // GIVEN — a /24 that does not contain the queried IP
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()

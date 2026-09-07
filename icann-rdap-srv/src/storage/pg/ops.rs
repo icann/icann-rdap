@@ -130,6 +130,10 @@ impl Pg {
         let pg_pool = PgPool::connect(&config.db_url).await?;
         Ok(Self { pg_pool })
     }
+
+    pub fn from_pool(pg_pool: PgPool) -> Self {
+        Self { pg_pool }
+    }
 }
 
 #[async_trait]

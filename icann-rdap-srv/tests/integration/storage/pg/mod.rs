@@ -18,29 +18,6 @@ mod search_nameserver;
 mod search_network;
 mod truncate;
 
-pub(crate) async fn pg_store() -> icann_rdap_srv::storage::pg::ops::Pg {
-    use icann_rdap_srv::{
-        config::CommonConfig,
-        storage::pg::{config::PgConfig, ops::Pg},
-    };
-    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
-    let pool: sqlx::PgPool = sqlx::Pool::connect(&db_url)
-        .await
-        .expect("connecting to postgres");
-    sqlx::migrate!()
-        .run(&pool)
-        .await
-        .expect("running migrations");
-    Pg::new(
-        PgConfig::builder()
-            .db_url(db_url)
-            .common_config(CommonConfig::default())
-            .build(),
-    )
-    .await
-    .expect("creating pg store")
-}
-
 pub(crate) async fn seed_all_tables(db: &sqlx::PgPool) {
     use icann_rdap_common::response::{Autnum, Domain, Entity, Help, Nameserver, Network};
     use icann_rdap_srv::storage::TxHandle;

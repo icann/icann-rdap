@@ -2,12 +2,13 @@ use icann_rdap_common::contact::Contact;
 use icann_rdap_common::response::{Entity, RdapResponse};
 use icann_rdap_srv::storage::StoreOps;
 
-use super::pg_store;
+use icann_rdap_srv::storage::pg::ops::Pg;
+use sqlx::{Pool, postgres::Postgres};
 
-#[tokio::test]
-async fn search_entities_by_full_name_finds_match() {
+#[sqlx::test]
+async fn search_entities_by_full_name_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_entity(
         &Entity::builder()
@@ -48,10 +49,10 @@ async fn search_entities_by_full_name_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_entities_by_full_name_no_match() {
+#[sqlx::test]
+async fn search_entities_by_full_name_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
@@ -66,10 +67,10 @@ async fn search_entities_by_full_name_no_match() {
     assert!(results.results().is_empty());
 }
 
-#[tokio::test]
-async fn search_entities_by_handle_finds_match() {
+#[sqlx::test]
+async fn search_entities_by_handle_finds_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_entity(&Entity::builder().handle("HANDLE-ENTITY-A").build())
         .await
@@ -100,10 +101,10 @@ async fn search_entities_by_handle_finds_match() {
     );
 }
 
-#[tokio::test]
-async fn search_entities_by_handle_no_match() {
+#[sqlx::test]
+async fn search_entities_by_handle_no_match(db: Pool<Postgres>) {
     // GIVEN
-    let store = pg_store().await;
+    let store = Pg::from_pool(db);
 
     // WHEN
     let actual = store
