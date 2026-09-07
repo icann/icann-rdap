@@ -489,51 +489,11 @@ impl StoreOps for Pg {
         ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
         let ip = ipaddr.parse::<IpAddr>()?;
-
-        // Step 1 — the top: the most-specific stored network whose range contains the IP.
-        let containing: Vec<(IpAddr, IpAddr)> = sqlx::query_as(
-            "SELECT start_address, end_address FROM network \
-             WHERE start_address <= $1::inet AND end_address >= $1::inet",
-        )
-        .bind(ip)
-        .fetch_all(&self.pg_pool)
-        .await?;
-
-        let Some((start, end)) = containing
-            .into_iter()
-            .min_by_key(|(s, e)| ip_block_size(*s, *e))
-        else {
-            return Ok(NOT_FOUND.clone());
+        let cidr = match ip {
+            IpAddr::V4(_) => format!("{}/32", ip),
+            IpAddr::V6(_) => format!("{}/128", ip),
         };
-
-        // Step 2 — the immediate supernet of that block, if it is itself a stored network.
-        let supernet = match start {
-            IpAddr::V4(s) => match end {
-                IpAddr::V4(e) => supernet_v4(s, e),
-                _ => None,
-            },
-            IpAddr::V6(s) => match end {
-                IpAddr::V6(e) => supernet_v6(s, e),
-                _ => None,
-            },
-        };
-        let Some((sup_start, sup_end)) = supernet else {
-            return Ok(NOT_FOUND.clone());
-        };
-
-        let row: Option<Json<RdapResponse>> = sqlx::query_scalar(
-            "SELECT content FROM network \
-             WHERE start_address = $1::inet AND end_address = $2::inet LIMIT 1",
-        )
-        .bind(sup_start)
-        .bind(sup_end)
-        .fetch_optional(&self.pg_pool)
-        .await?;
-
-        match row {
-            Some(Json(content)) => Ok(content),
-            None => Ok(NOT_FOUND.clone()),
-        }
+        self.search_ip_rdap_up_by_cidr(&cidr).await
     }
 
     async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {

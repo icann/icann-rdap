@@ -175,7 +175,7 @@ async fn search_ip_rdap_up_by_ipaddr_supernet_not_stored() {
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_network(
         &Network::builder()
-            .cidr("10.9.0.0/24")
+            .cidr("192.0.3.0/24")
             .handle("NSUP-LONELY")
             .build()
             .expect("building lonely /24"),
@@ -186,7 +186,7 @@ async fn search_ip_rdap_up_by_ipaddr_supernet_not_stored() {
 
     // WHEN — rdap-up for an IP inside the lonely /24
     let actual = store
-        .search_ip_rdap_up_by_ipaddr("10.9.0.5")
+        .search_ip_rdap_up_by_ipaddr("192.0.3.5")
         .await
         .expect("searching ip rdap up by ipaddr");
 
