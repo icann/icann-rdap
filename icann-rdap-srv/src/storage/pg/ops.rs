@@ -665,16 +665,65 @@ impl StoreOps for Pg {
 
     async fn search_ip_rdap_bottom_by_ipaddr(
         &self,
-        _ipaddr: &str,
+        ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let ip = ipaddr.parse::<IpAddr>()?;
+        let cidr = match ip {
+            IpAddr::V4(_) => format!("{}/32", ip),
+            IpAddr::V6(_) => format!("{}/128", ip),
+        };
+        self.search_ip_rdap_bottom_by_cidr(&cidr).await
     }
 
     async fn search_ip_rdap_bottom_by_cidr(
         &self,
-        _cidr: &str,
+        cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let net = IpNet::from_str(cidr)?;
+        let (first, last): (IpAddr, IpAddr) = match &net {
+            IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
+            IpNet::V6(v6) => (v6.network().into(), v6.broadcast().into()),
+        };
+
+        // All stored networks strictly contained within the queried block.
+        let candidates: Vec<(Json<RdapResponse>, IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT content, start_address, end_address FROM network \
+             WHERE start_address >= $1::inet AND end_address <= $2::inet \
+               AND NOT (start_address = $1::inet AND end_address = $2::inet)",
+        )
+        .bind(first)
+        .bind(last)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        // A leaf is one that does not strictly contain any other candidate.
+        let mask: Vec<bool> = (0..candidates.len())
+            .map(|i| {
+                let (_, s, e) = &candidates[i];
+                !(0..candidates.len())
+                    .any(|j| j != i && *s <= candidates[j].1 && *e >= candidates[j].2)
+            })
+            .collect();
+
+        let results: Vec<Network> = candidates
+            .into_iter()
+            .zip(mask)
+            .filter_map(|(cand, keep)| {
+                if !keep {
+                    return None;
+                }
+                let (Json(r), _, _) = cand;
+                match r {
+                    RdapResponse::Network(n) => Some(*n),
+                    _ => None,
+                }
+            })
+            .collect();
+
+        Ok(IpSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
     }
 
     async fn search_autnum_rdap_up_by_num(

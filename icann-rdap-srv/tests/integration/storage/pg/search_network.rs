@@ -607,3 +607,151 @@ async fn search_ip_rdap_down_by_ipaddr_returns_ip_search_results(db: Pool<Postgr
     };
     assert!(res.results().is_empty());
 }
+
+#[sqlx::test]
+async fn search_ip_rdap_bottom_by_cidr_returns_nested_leaves(db: Pool<Postgres>) {
+    // GIVEN — a nested chain of children; only the deepest is a leaf
+    let store = Pg::from_pool(db);
+    let mut tx = store.new_tx().await.expect("new tx");
+    for (cidr, handle) in [
+        ("10.0.0.0/8", "BOTTOM-PARENT"),
+        ("10.1.0.0/16", "BOTTOM-MID"),
+        ("10.1.2.0/24", "BOTTOM-INNER"),
+        ("10.1.2.128/25", "BOTTOM-LEAF"),
+    ] {
+        tx.add_network(
+            &Network::builder()
+                .cidr(cidr)
+                .handle(handle)
+                .build()
+                .expect("building network"),
+        )
+        .await
+        .expect("adding network");
+    }
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-bottom for the /8
+    let actual = store
+        .search_ip_rdap_bottom_by_cidr("10.0.0.0/8")
+        .await
+        .expect("searching ip rdap bottom by cidr");
+
+    // THEN — only the deepest leaf, not its ancestors
+    let RdapResponse::IpSearchResults(res) = actual else {
+        panic!("expected ip search results, got {actual:?}");
+    };
+    let networks = res.results();
+    assert_eq!(networks.len(), 1);
+    assert_eq!(
+        networks[0]
+            .object_common
+            .handle
+            .as_ref()
+            .map(|h| h.to_string()),
+        Some("BOTTOM-LEAF".to_string())
+    );
+}
+
+#[sqlx::test]
+async fn search_ip_rdap_bottom_by_cidr_returns_multiple_leaves(db: Pool<Postgres>) {
+    // GIVEN — a /12 with two sibling /24 leaves beneath it
+    let store = Pg::from_pool(db);
+    let mut tx = store.new_tx().await.expect("new tx");
+    for (cidr, handle) in [
+        ("172.16.0.0/12", "BOTTOM-PARENT"),
+        ("172.16.0.0/24", "BOTTOM-LEAF-A"),
+        ("172.17.0.0/24", "BOTTOM-LEAF-B"),
+    ] {
+        tx.add_network(
+            &Network::builder()
+                .cidr(cidr)
+                .handle(handle)
+                .build()
+                .expect("building network"),
+        )
+        .await
+        .expect("adding network");
+    }
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-bottom for the /12
+    let actual = store
+        .search_ip_rdap_bottom_by_cidr("172.16.0.0/12")
+        .await
+        .expect("searching ip rdap bottom by cidr");
+
+    // THEN — both sibling leaves are returned
+    let RdapResponse::IpSearchResults(res) = actual else {
+        panic!("expected ip search results, got {actual:?}");
+    };
+    let mut handles: Vec<String> = res
+        .results()
+        .iter()
+        .map(|n| n.object_common.handle.as_ref().unwrap().to_string())
+        .collect();
+    handles.sort();
+    assert_eq!(
+        handles,
+        vec!["BOTTOM-LEAF-A".to_string(), "BOTTOM-LEAF-B".to_string()]
+    );
+}
+
+#[sqlx::test]
+async fn search_ip_rdap_bottom_by_cidr_no_descendants_returns_empty(db: Pool<Postgres>) {
+    // GIVEN — a stored /24 with no children beneath it
+    let store = Pg::from_pool(db);
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("192.0.2.0/24")
+            .handle("BOTTOM-LONELY")
+            .build()
+            .expect("building /24 network"),
+    )
+    .await
+    .expect("adding /24 network");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-bottom for the stored /24 (itself excluded, nothing inside)
+    let actual = store
+        .search_ip_rdap_bottom_by_cidr("192.0.2.0/24")
+        .await
+        .expect("searching ip rdap bottom by cidr");
+
+    // THEN — no descendants → empty ip search results (not a 404)
+    let RdapResponse::IpSearchResults(res) = actual else {
+        panic!("expected ip search results, got {actual:?}");
+    };
+    assert!(res.results().is_empty());
+}
+
+#[sqlx::test]
+async fn search_ip_rdap_bottom_by_ipaddr_returns_ip_search_results(db: Pool<Postgres>) {
+    // GIVEN — networks stored around a bare IP
+    let store = Pg::from_pool(db);
+    let mut tx = store.new_tx().await.expect("new tx");
+    for cidr in ["10.1.2.0/24", "10.1.2.0/25"] {
+        tx.add_network(
+            &Network::builder()
+                .cidr(cidr)
+                .build()
+                .expect("building network"),
+        )
+        .await
+        .expect("adding network");
+    }
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN — rdap-bottom for a bare IP (normalized to /32, which has no sub-blocks)
+    let actual = store
+        .search_ip_rdap_bottom_by_ipaddr("10.1.2.3")
+        .await
+        .expect("searching ip rdap bottom by ipaddr");
+
+    // THEN — a single address yields an (empty) ip search results, not an error
+    let RdapResponse::IpSearchResults(res) = actual else {
+        panic!("expected ip search results, got {actual:?}");
+    };
+    assert!(res.results().is_empty());
+}
