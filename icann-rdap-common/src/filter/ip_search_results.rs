@@ -174,9 +174,9 @@ mod tests {
     fn make_test_network_1() -> Network {
         let registrant_contact = Contact::builder()
             .full_name("Network Registrant One")
-            .emails(vec![Email::builder()
-                .email("registrant1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrant1@example.com").build(),
+            ])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Network Abuse One")
@@ -188,9 +188,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Network Registrar One")
-            .emails(vec![Email::builder()
-                .email("registrar1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrar1@example.com").build(),
+            ])
             .build();
 
         Network::builder()
@@ -241,9 +241,9 @@ mod tests {
     fn make_test_network_2() -> Network {
         let registrant_contact = Contact::builder()
             .full_name("Network Registrant Two")
-            .emails(vec![Email::builder()
-                .email("registrant2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrant2@example.com").build(),
+            ])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Network Abuse Two")
@@ -255,9 +255,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Network Registrar Two")
-            .emails(vec![Email::builder()
-                .email("registrar2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrar2@example.com").build(),
+            ])
             .build();
 
         Network::builder()

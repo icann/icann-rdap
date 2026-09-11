@@ -227,27 +227,27 @@ mod tests {
 
         let child_registrant_contact = Contact::builder()
             .full_name("Child Registrant One")
-            .emails(vec![Email::builder()
-                .email("child-reg1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-reg1@example.com").build(),
+            ])
             .build();
         let child_abuse_contact = Contact::builder()
             .full_name("Child Abuse One")
-            .emails(vec![Email::builder()
-                .email("child-abuse1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-abuse1@example.com").build(),
+            ])
             .build();
         let child_tech_contact = Contact::builder()
             .full_name("Child Tech One")
-            .emails(vec![Email::builder()
-                .email("child-tech1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-tech1@example.com").build(),
+            ])
             .build();
         let child_registrar_contact = Contact::builder()
             .full_name("Child Registrar One")
-            .emails(vec![Email::builder()
-                .email("child-reg1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-reg1@example.com").build(),
+            ])
             .build();
 
         let child_registrant = EntityType::response_obj()
@@ -297,27 +297,27 @@ mod tests {
 
         let child_registrant_contact = Contact::builder()
             .full_name("Child Registrant Two")
-            .emails(vec![Email::builder()
-                .email("child-reg2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-reg2@example.com").build(),
+            ])
             .build();
         let child_abuse_contact = Contact::builder()
             .full_name("Child Abuse Two")
-            .emails(vec![Email::builder()
-                .email("child-abuse2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-abuse2@example.com").build(),
+            ])
             .build();
         let child_tech_contact = Contact::builder()
             .full_name("Child Tech Two")
-            .emails(vec![Email::builder()
-                .email("child-tech2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-tech2@example.com").build(),
+            ])
             .build();
         let child_registrar_contact = Contact::builder()
             .full_name("Child Registrar Two")
-            .emails(vec![Email::builder()
-                .email("child-reg2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("child-reg2@example.com").build(),
+            ])
             .build();
 
         let child_registrant = EntityType::response_obj()

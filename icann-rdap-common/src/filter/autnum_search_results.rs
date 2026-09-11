@@ -136,9 +136,9 @@ mod tests {
     fn make_test_autnum_1() -> Autnum {
         let registrant_contact = Contact::builder()
             .full_name("Autnum Registrant Owner")
-            .emails(vec![Email::builder()
-                .email("registrant1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrant1@example.com").build(),
+            ])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Autnum Abuse Contact")
@@ -150,9 +150,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Autnum Registrar Inc")
-            .emails(vec![Email::builder()
-                .email("registrar1@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrar1@example.com").build(),
+            ])
             .build();
 
         Autnum::builder()
@@ -202,9 +202,9 @@ mod tests {
     fn make_test_autnum_2() -> Autnum {
         let registrant_contact = Contact::builder()
             .full_name("Autnum Registrant Two")
-            .emails(vec![Email::builder()
-                .email("registrant2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrant2@example.com").build(),
+            ])
             .build();
         let abuse_contact = Contact::builder()
             .full_name("Autnum Abuse Two")
@@ -216,9 +216,9 @@ mod tests {
             .build();
         let registrar_contact = Contact::builder()
             .full_name("Autnum Registrar Two")
-            .emails(vec![Email::builder()
-                .email("registrar2@example.com")
-                .build()])
+            .emails(vec![
+                Email::builder().email("registrar2@example.com").build(),
+            ])
             .build();
 
         Autnum::builder()
