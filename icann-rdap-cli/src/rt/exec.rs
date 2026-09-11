@@ -13,15 +13,12 @@ use icann_rdap_common::{
 };
 
 use {
-    hickory_client::{
-        ClientError,
+    hickory_net::{
+        NetError,
         client::{Client, ClientHandle},
-        proto::{
-            ProtoError,
-            rr::{DNSClass, Name, RecordType},
-            runtime::TokioRuntimeProvider,
-            udp::UdpClientStream,
-        },
+        proto::rr::{DNSClass, Name, RData, RecordType},
+        runtime::TokioRuntimeProvider,
+        udp::UdpClientStream,
     },
     icann_rdap_client::{
         RdapClientError,
@@ -120,10 +117,8 @@ pub enum TestExecutionError {
     NoReferralToChase,
     #[error("Unregistered extension")]
     UnregisteredExtension,
-    #[error("Hickory Client Error: {0}")]
-    HickoryClient(#[from] ClientError),
-    #[error("Hickory Proto Error: {0}")]
-    HickoryProto(#[from] ProtoError),
+    #[error("DNS Error: {0}")]
+    HickoryNet(#[from] NetError),
 }
 
 pub async fn execute_tests<BS: BootstrapStore>(
@@ -350,9 +345,9 @@ async fn get_dns_records(
         .dns_resolver
         .as_ref()
         .unwrap_or(&def_dns_resolver);
-    let connect =
-        UdpClientStream::builder(dns_resolver.parse()?, TokioRuntimeProvider::new()).build();
-    let (mut client, bg) = Client::connect(connect).await?;
+    let conn =
+        UdpClientStream::builder(dns_resolver.parse()?, TokioRuntimeProvider::default()).build();
+    let (mut client, bg) = Client::<TokioRuntimeProvider>::from_sender(conn);
 
     // make sure to run the background task
     tokio::spawn(bg);
@@ -360,31 +355,24 @@ async fn get_dns_records(
     let mut dns_data = DnsData::default();
 
     // Create a query future
-    let query = client.query(Name::from_str(host)?, DNSClass::IN, RecordType::A);
+    let query = client.query(
+        Name::from_str(host).map_err(NetError::from)?,
+        DNSClass::IN,
+        RecordType::A,
+    );
 
     // wait for its response
     let response = query.await?;
 
-    for answer in response.answers() {
-        match answer.record_type() {
-            RecordType::CNAME => {
-                let cname = answer
-                    .data()
-                    .clone()
-                    .into_cname()
-                    .map_err(|_e| TestExecutionError::BadRdata)?
-                    .0
-                    .to_string();
+    for answer in &response.answers {
+        match &answer.data {
+            RData::CNAME(cname) => {
+                let cname = cname.0.to_string();
                 debug!("Found cname {cname}");
                 dns_data.v4_cname = Some(cname);
             }
-            RecordType::A => {
-                let addr = answer
-                    .data()
-                    .clone()
-                    .into_a()
-                    .map_err(|_e| TestExecutionError::BadRdata)?
-                    .0;
+            RData::A(addr) => {
+                let addr = addr.0;
                 debug!("Found IPv4 {addr}");
                 dns_data.v4_addrs.push(addr);
             }
@@ -393,31 +381,24 @@ async fn get_dns_records(
     }
 
     // Create a query future
-    let query = client.query(Name::from_str(host)?, DNSClass::IN, RecordType::AAAA);
+    let query = client.query(
+        Name::from_str(host).map_err(NetError::from)?,
+        DNSClass::IN,
+        RecordType::AAAA,
+    );
 
     // wait for its response
     let response = query.await?;
 
-    for answer in response.answers() {
-        match answer.record_type() {
-            RecordType::CNAME => {
-                let cname = answer
-                    .data()
-                    .clone()
-                    .into_cname()
-                    .map_err(|_e| TestExecutionError::BadRdata)?
-                    .0
-                    .to_string();
+    for answer in &response.answers {
+        match &answer.data {
+            RData::CNAME(cname) => {
+                let cname = cname.0.to_string();
                 debug!("Found cname {cname}");
                 dns_data.v6_cname = Some(cname);
             }
-            RecordType::AAAA => {
-                let addr = answer
-                    .data()
-                    .clone()
-                    .into_aaaa()
-                    .map_err(|_e| TestExecutionError::BadRdata)?
-                    .0;
+            RData::AAAA(addr) => {
+                let addr = addr.0;
                 debug!("Found IPv6 {addr}");
                 dns_data.v6_addrs.push(addr);
             }
