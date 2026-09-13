@@ -134,6 +134,60 @@ impl Pg {
     pub fn from_pool(pg_pool: PgPool) -> Self {
         Self { pg_pool }
     }
+
+    /// RFC 9910 "up"/"top": the single stored autnum record whose range fully contains
+    /// `[start, end]`. For a point query, pass `start == end`. Returns an
+    /// [`AutnumSearchResults`] wrapping that record, or `NOT_FOUND` when no single block
+    /// covers the whole range (or the row is not an autnum).
+    async fn autnum_covering(&self, start: i64, end: i64) -> Result<RdapResponse, RdapServerError> {
+        let row: Option<Json<RdapResponse>> = sqlx::query_scalar(
+            "SELECT content FROM autnum \
+             WHERE start_autnum <= $1 AND end_autnum >= $2 \
+             ORDER BY start_autnum, end_autnum LIMIT 1",
+        )
+        .bind(start)
+        .bind(end)
+        .fetch_optional(&self.pg_pool)
+        .await?;
+
+        match row {
+            Some(Json(RdapResponse::Autnum(a))) => Ok(AutnumSearchResults::response_obj()
+                .results(vec![*a])
+                .build()
+                .to_response()),
+            _ => Ok(NOT_FOUND.clone()),
+        }
+    }
+
+    /// RFC 9910 "down"/"bottom": all stored autnum records overlapping `[start, end]`
+    /// (inclusive), ordered by their range. For a point query, pass `start == end`.
+    async fn autnum_overlapping(
+        &self,
+        start: i64,
+        end: i64,
+    ) -> Result<RdapResponse, RdapServerError> {
+        let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(
+            "SELECT content FROM autnum WHERE start_autnum <= $2 AND end_autnum >= $1 \
+             ORDER BY start_autnum, end_autnum",
+        )
+        .bind(start)
+        .bind(end)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let results: Vec<Autnum> = rows
+            .into_iter()
+            .filter_map(|Json(r)| match r {
+                RdapResponse::Autnum(a) => Some(*a),
+                _ => None,
+            })
+            .collect();
+
+        Ok(AutnumSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
+    }
 }
 
 #[async_trait]
@@ -728,62 +782,66 @@ impl StoreOps for Pg {
 
     async fn search_autnum_rdap_up_by_num(
         &self,
-        _num: u32,
+        num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        self.autnum_covering(i64::from(num), i64::from(num)).await
     }
 
     async fn search_autnum_rdap_up_by_range(
         &self,
-        _start: u32,
-        _end: u32,
+        start: u32,
+        end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        self.autnum_covering(i64::from(start), i64::from(end)).await
     }
 
     async fn search_autnum_rdap_top_by_num(
         &self,
-        _num: u32,
+        num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        // RFC 9910 "top" is the topmost block covering the point; identical to "up".
+        self.search_autnum_rdap_up_by_num(num).await
     }
 
     async fn search_autnum_rdap_top_by_range(
         &self,
-        _start: u32,
-        _end: u32,
+        start: u32,
+        end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        self.search_autnum_rdap_up_by_range(start, end).await
     }
 
     async fn search_autnum_rdap_down_by_num(
         &self,
-        _num: u32,
+        num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        self.autnum_overlapping(i64::from(num), i64::from(num))
+            .await
     }
 
     async fn search_autnum_rdap_down_by_range(
         &self,
-        _start: u32,
-        _end: u32,
+        start: u32,
+        end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        self.autnum_overlapping(i64::from(start), i64::from(end))
+            .await
     }
 
     async fn search_autnum_rdap_bottom_by_num(
         &self,
-        _num: u32,
+        num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        // RFC 9910 "bottom" is the set of blocks overlapping the point; identical to "down".
+        self.search_autnum_rdap_down_by_num(num).await
     }
 
     async fn search_autnum_rdap_bottom_by_range(
         &self,
-        _start: u32,
-        _end: u32,
+        start: u32,
+        end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        self.search_autnum_rdap_down_by_range(start, end).await
     }
 
     async fn search_autnums_by_handle(
