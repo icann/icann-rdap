@@ -60,13 +60,15 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
 $$;
 
 CREATE TABLE domain (
-    ldh_name     TEXT PRIMARY KEY,
-    unicode_name TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
-    handle       TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
-    ns_v4        INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content)) STORED,
-    ns_v6        INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content)) STORED,
-    ns_ldh_name  TEXT[] GENERATED ALWAYS AS (extract_nested_ns_ldh_names(content)) STORED,
-    content      JSONB NOT NULL
+    ldh_name          TEXT PRIMARY KEY,
+    unicode_name      TEXT GENERATED ALWAYS AS (content->>'unicodeName') STORED,
+    handle            TEXT GENERATED ALWAYS AS (content->>'handle') STORED,
+    ns_v4             INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content)) STORED,
+    ns_v6             INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content)) STORED,
+    ns_ldh_name       TEXT[] GENERATED ALWAYS AS (extract_nested_ns_ldh_names(content)) STORED,
+    net_start_address INET GENERATED ALWAYS as ((content->'network'->>'start_address')::inet) STORED,
+    net_end_address   INET GENERATED ALWAYS as ((content->'network'->>'end_address')::inet) STORED,
+    content           JSONB NOT NULL
 );
 
 CREATE UNIQUE INDEX domain_ldh_name_lower_idx ON domain (LOWER(ldh_name));
@@ -74,6 +76,16 @@ CREATE UNIQUE INDEX domain_ldh_name_lower_idx ON domain (LOWER(ldh_name));
 CREATE INDEX domain_unicode_name_idx ON domain(unicode_name);
 
 CREATE INDEX domain_handle_idx ON domain(handle);
+
+CREATE INDEX domain_ns_v4_idx on domain(ns_v4);
+
+CREATE INDEX domain_ns_v6_idx on domain(ns_v6);
+
+CREATE INDEX domain_ns_ldh_name_idx on domain(ns_ldh_name);
+
+CREATE INDEX domain_net_start_address_idx on domain(net_start_address);
+
+CREATE INDEX domain_net_end_address_idx on domain(net_end_address);
 
 CREATE OR REPLACE FUNCTION set_domain_pk_from_json()
 RETURNS TRIGGER AS $$
