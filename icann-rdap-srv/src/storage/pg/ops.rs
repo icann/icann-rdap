@@ -21,8 +21,9 @@ use {
 };
 
 use crate::{
+    config::CommonConfig,
     error::RdapServerError,
-    rdap::response::NOT_FOUND,
+    rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
     storage::{StoreOps, TxHandle},
 };
 
@@ -132,16 +133,43 @@ fn empty_domain_search_results() -> RdapResponse {
 #[derive(Clone)]
 pub struct Pg {
     pg_pool: PgPool,
+    config: PgConfig,
 }
 
 impl Pg {
     pub async fn new(config: PgConfig) -> Result<Self, RdapServerError> {
         let pg_pool = PgPool::connect(&config.db_url).await?;
-        Ok(Self { pg_pool })
+        Ok(Self { pg_pool, config })
     }
 
+    /// Build a store from an already-connected pool together with the supplied config.
+    pub fn from_pool_with_config(pg_pool: PgPool, config: PgConfig) -> Self {
+        Self { pg_pool, config }
+    }
+
+    /// Test convenience: build from a live pool with every RFC 9910 relationship flag
+    /// enabled, so storage tests that expect results (not `NOT_IMPLEMENTED`) keep passing.
     pub fn from_pool(pg_pool: PgPool) -> Self {
-        Self { pg_pool }
+        let config = PgConfig::builder()
+            .db_url("postgresql://unused") // ignored; the pool is already connected
+            .common_config(
+                CommonConfig::builder()
+                    .autnum_rdap_up_enable(true)
+                    .autnum_rdap_top_enable(true)
+                    .autnum_rdap_down_enable(true)
+                    .autnum_rdap_bottom_enable(true)
+                    .ip_rdap_up_enable(true)
+                    .ip_rdap_top_enable(true)
+                    .ip_rdap_down_enable(true)
+                    .ip_rdap_bottom_enable(true)
+                    .domain_rdap_up_enable(true)
+                    .domain_rdap_top_enable(true)
+                    .domain_rdap_down_enable(true)
+                    .domain_rdap_bottom_enable(true)
+                    .build(),
+            )
+            .build();
+        Self { pg_pool, config }
     }
 
     /// The most-specific stored domain network range `[start, end]` whose range fully
@@ -575,6 +603,9 @@ impl StoreOps for Pg {
         &self,
         ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let ip = ipaddr.parse::<IpAddr>()?;
         let cidr = match ip {
             IpAddr::V4(_) => format!("{}/32", ip),
@@ -584,6 +615,9 @@ impl StoreOps for Pg {
     }
 
     async fn search_ip_rdap_up_by_cidr(&self, cidr: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let net = IpNet::from_str(cidr)?;
         let (first, last): (IpAddr, IpAddr) = match &net {
             IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
@@ -645,6 +679,9 @@ impl StoreOps for Pg {
         &self,
         ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let ip = ipaddr.parse::<IpAddr>()?;
         let cidr = match ip {
             IpAddr::V4(_) => format!("{}/32", ip),
@@ -657,6 +694,9 @@ impl StoreOps for Pg {
         &self,
         cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let net = IpNet::from_str(cidr)?;
         let (first, last): (IpAddr, IpAddr) = match &net {
             IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
@@ -687,6 +727,9 @@ impl StoreOps for Pg {
         &self,
         ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let ip = ipaddr.parse::<IpAddr>()?;
         let cidr = match ip {
             IpAddr::V4(_) => format!("{}/32", ip),
@@ -699,6 +742,9 @@ impl StoreOps for Pg {
         &self,
         cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let net = IpNet::from_str(cidr)?;
         let (first, last): (IpAddr, IpAddr) = match &net {
             IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
@@ -750,6 +796,9 @@ impl StoreOps for Pg {
         &self,
         ipaddr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let ip = ipaddr.parse::<IpAddr>()?;
         let cidr = match ip {
             IpAddr::V4(_) => format!("{}/32", ip),
@@ -762,6 +811,9 @@ impl StoreOps for Pg {
         &self,
         cidr: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.ip_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let net = IpNet::from_str(cidr)?;
         let (first, last): (IpAddr, IpAddr) = match &net {
             IpNet::V4(v4) => (v4.network().into(), v4.broadcast().into()),
@@ -813,6 +865,9 @@ impl StoreOps for Pg {
         &self,
         num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         self.autnum_covering(i64::from(num), i64::from(num)).await
     }
 
@@ -821,6 +876,9 @@ impl StoreOps for Pg {
         start: u32,
         end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         self.autnum_covering(i64::from(start), i64::from(end)).await
     }
 
@@ -829,7 +887,10 @@ impl StoreOps for Pg {
         num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
         // RFC 9910 "top" is the topmost block covering the point; identical to "up".
-        self.search_autnum_rdap_up_by_num(num).await
+        if !self.config.common_config.autnum_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        self.autnum_covering(i64::from(num), i64::from(num)).await
     }
 
     async fn search_autnum_rdap_top_by_range(
@@ -837,13 +898,19 @@ impl StoreOps for Pg {
         start: u32,
         end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        self.search_autnum_rdap_up_by_range(start, end).await
+        if !self.config.common_config.autnum_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        self.autnum_covering(i64::from(start), i64::from(end)).await
     }
 
     async fn search_autnum_rdap_down_by_num(
         &self,
         num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         self.autnum_overlapping(i64::from(num), i64::from(num))
             .await
     }
@@ -853,6 +920,9 @@ impl StoreOps for Pg {
         start: u32,
         end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         self.autnum_overlapping(i64::from(start), i64::from(end))
             .await
     }
@@ -862,7 +932,11 @@ impl StoreOps for Pg {
         num: u32,
     ) -> Result<RdapResponse, RdapServerError> {
         // RFC 9910 "bottom" is the set of blocks overlapping the point; identical to "down".
-        self.search_autnum_rdap_down_by_num(num).await
+        if !self.config.common_config.autnum_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        self.autnum_overlapping(i64::from(num), i64::from(num))
+            .await
     }
 
     async fn search_autnum_rdap_bottom_by_range(
@@ -870,7 +944,11 @@ impl StoreOps for Pg {
         start: u32,
         end: u32,
     ) -> Result<RdapResponse, RdapServerError> {
-        self.search_autnum_rdap_down_by_range(start, end).await
+        if !self.config.common_config.autnum_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
+        self.autnum_overlapping(i64::from(start), i64::from(end))
+            .await
     }
 
     async fn search_autnums_by_handle(
@@ -924,6 +1002,9 @@ impl StoreOps for Pg {
         &self,
         ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_top_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let Some(ip) = reverse_dns_to_ip(ldh) else {
             return Ok(NOT_FOUND.clone());
         };
@@ -958,6 +1039,9 @@ impl StoreOps for Pg {
         &self,
         ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_up_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let Some(ip) = reverse_dns_to_ip(ldh) else {
             return Ok(NOT_FOUND.clone());
         };
@@ -1013,6 +1097,9 @@ impl StoreOps for Pg {
         &self,
         ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_down_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let (first, last): (IpAddr, IpAddr) = match reverse_dns_to_ipnet(ldh) {
             Some(IpNet::V4(v4)) => (v4.network().into(), v4.broadcast().into()),
             Some(IpNet::V6(v6)) => (v6.network().into(), v6.broadcast().into()),
@@ -1062,6 +1149,9 @@ impl StoreOps for Pg {
         &self,
         ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_rdap_bottom_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let (first, last): (IpAddr, IpAddr) = match reverse_dns_to_ipnet(ldh) {
             Some(IpNet::V4(v4)) => (v4.network().into(), v4.broadcast().into()),
             Some(IpNet::V6(v6)) => (v6.network().into(), v6.broadcast().into()),

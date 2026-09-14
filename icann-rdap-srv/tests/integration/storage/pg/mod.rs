@@ -17,6 +17,7 @@ mod search_domain_rdap;
 mod search_entity;
 mod search_nameserver;
 mod search_network;
+mod search_rdap_flags;
 mod truncate;
 
 pub(crate) async fn seed_all_tables(db: &sqlx::PgPool) {
