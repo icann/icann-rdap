@@ -1,8 +1,13 @@
 use icann_rdap_common::response::{Network, RdapResponse};
+use icann_rdap_srv::config::CommonConfig;
+use icann_rdap_srv::rdap::response::NOT_IMPLEMENTED;
 use icann_rdap_srv::storage::StoreOps;
-
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, postgres::Postgres};
+
+use super::{assert_not_implemented, pg_store};
+
+const V4_IP: &str = "203.0.113.5";
 
 #[sqlx::test]
 async fn search_networks_by_handle_finds_match(db: Pool<Postgres>) {
@@ -754,4 +759,74 @@ async fn search_ip_rdap_bottom_by_ipaddr_returns_ip_search_results(db: Pool<Post
         panic!("expected ip search results, got {actual:?}");
     };
     assert!(res.results().is_empty());
+}
+
+#[sqlx::test]
+async fn ip_rdap_up_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_ip_rdap_up_by_ipaddr(V4_IP)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn ip_rdap_top_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_ip_rdap_top_by_ipaddr(V4_IP)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn ip_rdap_down_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_ip_rdap_down_by_ipaddr(V4_IP)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn ip_rdap_bottom_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_ip_rdap_bottom_by_ipaddr(V4_IP)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn ip_rdap_up_enabled(db: Pool<Postgres>) {
+    // GIVEN
+    let store = pg_store(db, CommonConfig::builder().ip_rdap_up_enable(true).build());
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_network(
+        &Network::builder()
+            .cidr("203.0.113.0/24")
+            .handle("NET-UP")
+            .build()
+            .expect("building network"),
+    )
+    .await
+    .expect("add network");
+    Box::new(tx).commit().await.expect("commit");
+
+    // WHEN — the flag is on, so the guard passes and a real query runs.
+    let actual = store
+        .search_ip_rdap_up_by_ipaddr(V4_IP)
+        .await
+        .expect("call");
+
+    // THEN
+    assert_ne!(actual, *NOT_IMPLEMENTED);
 }

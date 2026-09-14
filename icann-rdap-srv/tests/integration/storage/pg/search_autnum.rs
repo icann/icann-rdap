@@ -1,8 +1,11 @@
 use icann_rdap_common::response::{Autnum, RdapResponse};
+use icann_rdap_srv::config::CommonConfig;
+use icann_rdap_srv::rdap::response::NOT_IMPLEMENTED;
 use icann_rdap_srv::storage::StoreOps;
-
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, postgres::Postgres};
+
+use super::{assert_not_implemented, pg_store};
 
 #[sqlx::test]
 async fn search_autnums_by_handle_finds_match(db: Pool<Postgres>) {
@@ -376,4 +379,94 @@ async fn rdap_down_by_num_in_gap_returns_empty(db: Pool<Postgres>) {
         panic!("expected autnum search results, got {actual:?}");
     };
     assert!(results.results().is_empty());
+}
+
+#[sqlx::test]
+async fn autnum_rdap_up_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(&store.search_autnum_rdap_up_by_num(805).await.expect("call"));
+}
+
+#[sqlx::test]
+async fn autnum_rdap_top_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_autnum_rdap_top_by_num(805)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn autnum_rdap_down_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_autnum_rdap_down_by_num(805)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn autnum_rdap_bottom_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_autnum_rdap_bottom_by_num(805)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn autnum_rdap_up_enabled(db: Pool<Postgres>) {
+    // GIVEN
+    let store = pg_store(
+        db,
+        CommonConfig::builder().autnum_rdap_up_enable(true).build(),
+    );
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_autnum(&Autnum::builder().autnum_range(800..810).build())
+        .await
+        .expect("add autnum");
+    Box::new(tx).commit().await.expect("commit");
+
+    // WHEN — the flag is on, so the guard passes and a real query runs.
+    let actual = store.search_autnum_rdap_up_by_num(805).await.expect("call");
+
+    // THEN
+    assert_ne!(actual, *NOT_IMPLEMENTED);
+}
+
+#[sqlx::test]
+async fn autnum_rdap_down_enabled(db: Pool<Postgres>) {
+    // GIVEN — two stored autnums that both overlap the queried range [805, 825].
+    let store = pg_store(
+        db,
+        CommonConfig::builder()
+            .autnum_rdap_down_enable(true)
+            .build(),
+    );
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_autnum(&Autnum::builder().autnum_range(800..810).build())
+        .await
+        .expect("add autnum 800-810");
+    tx.add_autnum(&Autnum::builder().autnum_range(820..830).build())
+        .await
+        .expect("add autnum 820-830");
+    Box::new(tx).commit().await.expect("commit");
+
+    // WHEN — a range query spanning both blocks.
+    let actual = store
+        .search_autnum_rdap_down_by_range(805, 825)
+        .await
+        .expect("call");
+
+    // THEN — BOTH overlapping autnums are returned (not vacuous).
+    let RdapResponse::AutnumSearchResults(results) = actual else {
+        panic!("expected AutnumSearchResults, got {actual:?}");
+    };
+    assert_eq!(results.results().len(), 2);
 }

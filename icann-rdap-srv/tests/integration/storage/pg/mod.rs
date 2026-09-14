@@ -5,6 +5,12 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, ImageExt};
 use testcontainers_modules::postgres::Postgres as PostgresContainer;
 
+use icann_rdap_common::response::RdapResponse;
+use icann_rdap_srv::config::CommonConfig;
+use icann_rdap_srv::rdap::response::NOT_IMPLEMENTED;
+use icann_rdap_srv::storage::pg::{config::PgConfig, ops::Pg};
+use sqlx::{Pool, Postgres};
+
 mod autnum;
 mod domain;
 mod entity;
@@ -17,7 +23,6 @@ mod search_domain_rdap;
 mod search_entity;
 mod search_nameserver;
 mod search_network;
-mod search_rdap_flags;
 mod truncate;
 
 pub(crate) async fn seed_all_tables(db: &sqlx::PgPool) {
@@ -58,6 +63,19 @@ pub(crate) async fn seed_all_tables(db: &sqlx::PgPool) {
         .await
         .expect("adding srv help to tx");
     Box::new(tx).commit().await.expect("committing seed tx");
+}
+
+/// Build a PG store over an already-connected pool with the supplied common config.
+pub(crate) fn pg_store(db: Pool<Postgres>, common: CommonConfig) -> Pg {
+    let config = PgConfig::builder()
+        .db_url("postgresql://unused") // ignored; the pool is already connected
+        .common_config(common)
+        .build();
+    Pg::from_pool_with_config(db, config)
+}
+
+pub(crate) fn assert_not_implemented(actual: &RdapResponse) {
+    assert_eq!(*actual, *NOT_IMPLEMENTED);
 }
 
 static _CONTAINER: OnceLock<ContainerAsync<PostgresContainer>> = OnceLock::new();

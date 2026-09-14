@@ -2,10 +2,13 @@ use std::net::{IpAddr, Ipv4Addr};
 
 use icann_rdap_common::rdns::ip_to_reverse_dns;
 use icann_rdap_common::response::{Domain, Network, RdapResponse};
-use icann_rdap_srv::rdap::response::NOT_FOUND;
+use icann_rdap_srv::config::CommonConfig;
+use icann_rdap_srv::rdap::response::{NOT_FOUND, NOT_IMPLEMENTED};
 use icann_rdap_srv::storage::StoreOps;
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, Postgres};
+
+use super::{assert_not_implemented, pg_store};
 
 /// A domain whose network range is `cidr`.
 fn domain_with_network(name: &str, cidr: &str) -> Domain {
@@ -412,4 +415,81 @@ async fn domain_rdap_bottom_ipv6(db: Pool<Postgres>) {
 
     // THEN
     assert_domain_results(&actual, &["child6.example"]);
+}
+
+#[sqlx::test]
+async fn domain_rdap_up_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    let name = ip_to_reverse_dns(&"10.1.1.5".parse::<IpAddr>().unwrap());
+    assert_not_implemented(
+        &store
+            .search_domain_rdap_up_by_ldh(&name)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn domain_rdap_top_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    let name = ip_to_reverse_dns(&"10.1.1.5".parse::<IpAddr>().unwrap());
+    assert_not_implemented(
+        &store
+            .search_domain_rdap_top_by_ldh(&name)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn domain_rdap_down_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    let name = ip_to_reverse_dns(&"10.1.1.5".parse::<IpAddr>().unwrap());
+    assert_not_implemented(
+        &store
+            .search_domain_rdap_down_by_ldh(&name)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn domain_rdap_bottom_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    let name = ip_to_reverse_dns(&"10.1.1.5".parse::<IpAddr>().unwrap());
+    assert_not_implemented(
+        &store
+            .search_domain_rdap_bottom_by_ldh(&name)
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn domain_rdap_top_enabled(db: Pool<Postgres>) {
+    // GIVEN
+    let store = pg_store(
+        db,
+        CommonConfig::builder().domain_rdap_top_enable(true).build(),
+    );
+    let mut tx = store.new_tx().await.expect("new tx");
+    for (name, cidr) in [
+        ("root.example", "10.0.0.0/8"),
+        ("leaf.example", "10.1.1.0/24"),
+    ] {
+        tx.add_domain(&domain_with_network(name, cidr))
+            .await
+            .expect("add domain");
+    }
+    Box::new(tx).commit().await.expect("commit");
+
+    // WHEN — 10.1.1.5 lies in leaf.example (10.1.1.0/24), the most specific stored range.
+    let name = ip_to_reverse_dns(&"10.1.1.5".parse::<IpAddr>().unwrap());
+    let actual = store
+        .search_domain_rdap_top_by_ldh(&name)
+        .await
+        .expect("call");
+
+    // THEN
+    assert_ne!(actual, *NOT_IMPLEMENTED);
 }
