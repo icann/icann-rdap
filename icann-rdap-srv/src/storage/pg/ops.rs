@@ -8,6 +8,7 @@ use {
     async_trait::async_trait,
     icann_rdap_common::{
         prelude::ToResponse,
+        rdns::{reverse_dns_to_ip, reverse_dns_to_ipnet},
         response::{
             Autnum, AutnumSearchResults, Domain, DomainSearchResults, Entity, EntitySearchResults,
             IpSearchResults, Nameserver, NameserverSearchResults, Network, RdapResponse,
@@ -21,7 +22,7 @@ use {
 
 use crate::{
     error::RdapServerError,
-    rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
+    rdap::response::NOT_FOUND,
     storage::{StoreOps, TxHandle},
 };
 
@@ -120,6 +121,14 @@ fn ip_block_size(s: IpAddr, e: IpAddr) -> u128 {
     }
 }
 
+/// An empty [`DomainSearchResults`] response for relationship searches that match nothing.
+fn empty_domain_search_results() -> RdapResponse {
+    DomainSearchResults::response_obj()
+        .results(Vec::<Domain>::new())
+        .build()
+        .to_response()
+}
+
 #[derive(Clone)]
 pub struct Pg {
     pg_pool: PgPool,
@@ -135,6 +144,26 @@ impl Pg {
         Self { pg_pool }
     }
 
+    /// The most-specific stored domain network range `[start, end]` whose range fully
+    /// contains `[first, last]`, if any.
+    async fn domain_range_containing(
+        &self,
+        first: IpAddr,
+        last: IpAddr,
+    ) -> Result<Option<(IpAddr, IpAddr)>, RdapServerError> {
+        let rows: Vec<(IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT net_start_address, net_end_address FROM domain \
+             WHERE net_start_address <= $1::inet AND net_end_address >= $2::inet",
+        )
+        .bind(first)
+        .bind(last)
+        .fetch_all(&self.pg_pool)
+        .await?;
+        Ok(rows.into_iter().min_by_key(|(s, e)| ip_block_size(*s, *e)))
+    }
+}
+
+impl Pg {
     /// RFC 9910 "up"/"top": the single stored autnum record whose range fully contains
     /// `[start, end]`. For a point query, pass `start == end`. Returns an
     /// [`AutnumSearchResults`] wrapping that record, or `NOT_FOUND` when no single block
@@ -891,32 +920,191 @@ impl StoreOps for Pg {
         Ok(response)
     }
 
-    async fn search_domain_rdap_up_by_ldh(
-        &self,
-        _ldh: &str,
-    ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
-    }
-
     async fn search_domain_rdap_top_by_ldh(
         &self,
-        _ldh: &str,
+        ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let Some(ip) = reverse_dns_to_ip(ldh) else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        // The most-specific stored domain network whose range contains the IP.
+        let rows: Vec<(Json<RdapResponse>, IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT content, net_start_address, net_end_address FROM domain \
+             WHERE net_start_address <= $1::inet AND net_end_address >= $1::inet",
+        )
+        .bind(ip)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let best = rows
+            .into_iter()
+            .min_by_key(|(_, s, e)| ip_block_size(*s, *e));
+        let Some((Json(domain), _, _)) = best else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        let domain = match domain {
+            RdapResponse::Domain(d) => *d,
+            _ => return Ok(NOT_FOUND.clone()),
+        };
+        Ok(DomainSearchResults::response_obj()
+            .results(vec![domain])
+            .build()
+            .to_response())
+    }
+
+    async fn search_domain_rdap_up_by_ldh(
+        &self,
+        ldh: &str,
+    ) -> Result<RdapResponse, RdapServerError> {
+        let Some(ip) = reverse_dns_to_ip(ldh) else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        // Step 1 — the most-specific stored domain network whose range contains the IP.
+        let Some((start, end)) = self.domain_range_containing(ip, ip).await? else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        // Step 2 — the immediate supernet of that block; find the most-specific stored
+        // domain network whose range contains it.
+        let supernet = match start {
+            IpAddr::V4(s) => match end {
+                IpAddr::V4(e) => supernet_v4(s, e),
+                _ => None,
+            },
+            IpAddr::V6(s) => match end {
+                IpAddr::V6(e) => supernet_v6(s, e),
+                _ => None,
+            },
+        };
+        let Some((sup_start, sup_end)) = supernet else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        let rows: Vec<(Json<RdapResponse>, IpAddr, IpAddr)> = sqlx::query_as(
+            "SELECT content, net_start_address, net_end_address FROM domain \
+             WHERE net_start_address <= $1::inet AND net_end_address >= $2::inet",
+        )
+        .bind(sup_start)
+        .bind(sup_end)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let best = rows
+            .into_iter()
+            .min_by_key(|(_, s, e)| ip_block_size(*s, *e));
+        let Some((Json(domain), _, _)) = best else {
+            return Ok(NOT_FOUND.clone());
+        };
+
+        let domain = match domain {
+            RdapResponse::Domain(d) => *d,
+            _ => return Ok(NOT_FOUND.clone()),
+        };
+        Ok(DomainSearchResults::response_obj()
+            .results(vec![domain])
+            .build()
+            .to_response())
     }
 
     async fn search_domain_rdap_down_by_ldh(
         &self,
-        _ldh: &str,
+        ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(crate::rdap::response::NOT_IMPLEMENTED.clone())
+        let (first, last): (IpAddr, IpAddr) = match reverse_dns_to_ipnet(ldh) {
+            Some(IpNet::V4(v4)) => (v4.network().into(), v4.broadcast().into()),
+            Some(IpNet::V6(v6)) => (v6.network().into(), v6.broadcast().into()),
+            None => return Ok(empty_domain_search_results()),
+        };
+
+        // The most-specific stored domain network whose range contains the queried block.
+        let Some((c_start, c_end)) = self.domain_range_containing(first, last).await? else {
+            return Ok(empty_domain_search_results());
+        };
+
+        // Immediate children: the maximal proper sub-ranges of the container.
+        let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(
+            "SELECT d.content FROM domain d \
+             WHERE d.net_start_address >= $1::inet AND d.net_end_address <= $2::inet \
+               AND NOT (d.net_start_address = $1::inet AND d.net_end_address = $2::inet) \
+               AND NOT EXISTS ( \
+                     SELECT 1 FROM domain o \
+                     WHERE o.net_start_address >= $1::inet AND o.net_end_address <= $2::inet \
+                       AND NOT (o.net_start_address = $1::inet AND o.net_end_address = $2::inet) \
+                       AND o.net_start_address <= d.net_start_address \
+                       AND o.net_end_address >= d.net_end_address \
+                       AND NOT (o.net_start_address = d.net_start_address \
+                                AND o.net_end_address = d.net_end_address) \
+                   )",
+        )
+        .bind(c_start)
+        .bind(c_end)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let results: Vec<Domain> = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect();
+        Ok(DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
     }
 
     async fn search_domain_rdap_bottom_by_ldh(
         &self,
-        _ldh: &str,
+        ldh: &str,
     ) -> Result<RdapResponse, RdapServerError> {
-        Ok(NOT_IMPLEMENTED.clone())
+        let (first, last): (IpAddr, IpAddr) = match reverse_dns_to_ipnet(ldh) {
+            Some(IpNet::V4(v4)) => (v4.network().into(), v4.broadcast().into()),
+            Some(IpNet::V6(v6)) => (v6.network().into(), v6.broadcast().into()),
+            None => return Ok(empty_domain_search_results()),
+        };
+
+        // The most-specific stored domain network whose range contains the queried block.
+        let Some((c_start, c_end)) = self.domain_range_containing(first, last).await? else {
+            return Ok(empty_domain_search_results());
+        };
+
+        // Leaf descendants: sub-ranges of the container that contain no other stored range.
+        let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(
+            "SELECT d.content FROM domain d \
+             WHERE d.net_start_address >= $1::inet AND d.net_end_address <= $2::inet \
+               AND NOT (d.net_start_address = $1::inet AND d.net_end_address = $2::inet) \
+               AND NOT EXISTS ( \
+                     SELECT 1 FROM domain o \
+                     WHERE o.net_start_address >= $1::inet AND o.net_end_address <= $2::inet \
+                       AND NOT (o.net_start_address = $1::inet AND o.net_end_address = $2::inet) \
+                       AND o.net_start_address >= d.net_start_address \
+                       AND o.net_end_address <= d.net_end_address \
+                       AND NOT (o.net_start_address = d.net_start_address \
+                                AND o.net_end_address = d.net_end_address) \
+                   )",
+        )
+        .bind(c_start)
+        .bind(c_end)
+        .fetch_all(&self.pg_pool)
+        .await?;
+
+        let results: Vec<Domain> = rows
+            .into_iter()
+            .map(|Json(r)| r)
+            .filter_map(|r| match r {
+                RdapResponse::Domain(d) => Some(*d),
+                _ => None,
+            })
+            .collect();
+        Ok(DomainSearchResults::response_obj()
+            .results(results)
+            .build()
+            .to_response())
     }
 }
 

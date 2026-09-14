@@ -66,8 +66,8 @@ CREATE TABLE domain (
     ns_v4             INET[] GENERATED ALWAYS AS (extract_nested_v4_ips(content)) STORED,
     ns_v6             INET[] GENERATED ALWAYS AS (extract_nested_v6_ips(content)) STORED,
     ns_ldh_name       TEXT[] GENERATED ALWAYS AS (extract_nested_ns_ldh_names(content)) STORED,
-    net_start_address INET GENERATED ALWAYS as ((content->'network'->>'start_address')::inet) STORED,
-    net_end_address   INET GENERATED ALWAYS as ((content->'network'->>'end_address')::inet) STORED,
+    net_start_address INET GENERATED ALWAYS as ((content->'network'->>'startAddress')::inet) STORED,
+    net_end_address   INET GENERATED ALWAYS as ((content->'network'->>'endAddress')::inet) STORED,
     content           JSONB NOT NULL
 );
 
