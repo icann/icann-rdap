@@ -1,8 +1,11 @@
 use icann_rdap_common::response::{Domain, Nameserver, RdapResponse};
+use icann_rdap_srv::config::CommonConfig;
 use icann_rdap_srv::storage::StoreOps;
 
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, postgres::Postgres};
+
+use super::{assert_not_implemented, pg_store};
 
 #[sqlx::test]
 async fn search_domains_by_name_finds_match(db: Pool<Postgres>) {
@@ -280,4 +283,67 @@ async fn search_domains_by_ns_ldh_name_no_match(db: Pool<Postgres>) {
         panic!("expected domain search results, got {actual:?}");
     };
     assert!(results.results().is_empty());
+}
+
+#[sqlx::test]
+async fn search_domains_by_name_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_domains_by_name("example*")
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn search_domains_by_ns_ip_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_domains_by_ns_ip("198.51.100.30".parse().unwrap())
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn search_domains_by_ns_ldh_name_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_domains_by_ns_ldh_name("ns1.*")
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn domain_search_flags_are_independent(db: Pool<Postgres>) {
+    // GIVEN — only name search is enabled; ns-based searches stay disabled.
+    let store = pg_store(
+        db,
+        CommonConfig::builder()
+            .domain_search_by_name_enable(true)
+            .build(),
+    );
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_domain(&Domain::builder().ldh_name("sel.example").build())
+        .await
+        .expect("adding domain");
+    Box::new(tx).commit().await.expect("commit");
+
+    // WHEN
+    let by_name = store.search_domains_by_name("sel.*").await.expect("call");
+    let by_ns_ip = store
+        .search_domains_by_ns_ip("198.51.100.30".parse().unwrap())
+        .await
+        .expect("call");
+
+    // THEN — the enabled flag works, the disabled one does not.
+    let RdapResponse::DomainSearchResults(results) = by_name else {
+        panic!("expected domain search results, got {by_name:?}");
+    };
+    assert_eq!(results.results().len(), 1);
+    assert_not_implemented(&by_ns_ip);
 }

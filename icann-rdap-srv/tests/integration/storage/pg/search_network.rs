@@ -830,3 +830,25 @@ async fn ip_rdap_up_enabled(db: Pool<Postgres>) {
     // THEN
     assert_ne!(actual, *NOT_IMPLEMENTED);
 }
+
+#[sqlx::test]
+async fn search_networks_by_handle_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_networks_by_handle("NET-*")
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn search_networks_by_name_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_networks_by_name("Test Network*")
+            .await
+            .expect("call"),
+    );
+}

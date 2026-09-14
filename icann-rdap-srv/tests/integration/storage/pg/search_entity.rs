@@ -1,9 +1,12 @@
 use icann_rdap_common::contact::Contact;
 use icann_rdap_common::response::{Entity, RdapResponse};
+use icann_rdap_srv::config::CommonConfig;
 use icann_rdap_srv::storage::StoreOps;
 
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, postgres::Postgres};
+
+use super::{assert_not_implemented, pg_store};
 
 #[sqlx::test]
 async fn search_entities_by_full_name_finds_match(db: Pool<Postgres>) {
@@ -117,4 +120,26 @@ async fn search_entities_by_handle_no_match(db: Pool<Postgres>) {
         panic!("expected entity search results, got {actual:?}");
     };
     assert!(results.results().is_empty());
+}
+
+#[sqlx::test]
+async fn search_entities_by_handle_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_entities_by_handle("HANDLE-*")
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn search_entities_by_full_name_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_entities_by_full_name("John*")
+            .await
+            .expect("call"),
+    );
 }

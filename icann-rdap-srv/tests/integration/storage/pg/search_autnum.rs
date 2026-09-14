@@ -470,3 +470,20 @@ async fn autnum_rdap_down_enabled(db: Pool<Postgres>) {
     };
     assert_eq!(results.results().len(), 2);
 }
+
+#[sqlx::test]
+async fn search_autnums_by_handle_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(&store.search_autnums_by_handle("AS-*").await.expect("call"));
+}
+
+#[sqlx::test]
+async fn search_autnums_by_name_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_autnums_by_name("Example*")
+            .await
+            .expect("call"),
+    );
+}

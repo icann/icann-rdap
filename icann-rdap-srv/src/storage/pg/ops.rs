@@ -147,8 +147,8 @@ impl Pg {
         Self { pg_pool, config }
     }
 
-    /// Test convenience: build from a live pool with every RFC 9910 relationship flag
-    /// enabled, so storage tests that expect results (not `NOT_IMPLEMENTED`) keep passing.
+    /// Test convenience: build from a live pool with every search flag enabled, so
+    /// storage tests that expect results (not `NOT_IMPLEMENTED`) keep passing.
     pub fn from_pool(pg_pool: PgPool) -> Self {
         let config = PgConfig::builder()
             .db_url("postgresql://unused") // ignored; the pool is already connected
@@ -166,6 +166,17 @@ impl Pg {
                     .domain_rdap_top_enable(true)
                     .domain_rdap_down_enable(true)
                     .domain_rdap_bottom_enable(true)
+                    .domain_search_by_name_enable(true)
+                    .nameserver_search_by_name_enable(true)
+                    .nameserver_search_by_ip_enable(true)
+                    .domain_search_by_ns_ip_enable(true)
+                    .domain_search_by_ns_ldh_name_enable(true)
+                    .entity_search_by_handle_enable(true)
+                    .entity_search_by_full_name_enable(true)
+                    .network_search_by_handle_enable(true)
+                    .network_search_by_name_enable(true)
+                    .autnum_search_by_name_enable(true)
+                    .autnum_search_by_handle_enable(true)
                     .build(),
             )
             .build();
@@ -381,6 +392,9 @@ impl StoreOps for Pg {
     }
 
     async fn search_domains_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_domain_regex(name)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM domain WHERE ldh_name ~* $1")
@@ -406,6 +420,9 @@ impl StoreOps for Pg {
         &self,
         name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.nameserver_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_domain_regex(name)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM nameserver WHERE ldh_name ~* $1")
@@ -428,6 +445,9 @@ impl StoreOps for Pg {
     }
 
     async fn search_nameservers_by_ip(&self, ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.nameserver_search_by_ip_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let query = match ip {
             IpAddr::V4(_) => "SELECT content FROM nameserver WHERE $1::inet = ANY(v4)",
             IpAddr::V6(_) => "SELECT content FROM nameserver WHERE $1::inet = ANY(v6)",
@@ -452,6 +472,9 @@ impl StoreOps for Pg {
     }
 
     async fn search_domains_by_ns_ip(&self, ip: IpAddr) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.domain_search_by_ns_ip_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let query = match ip {
             IpAddr::V4(_) => "SELECT content FROM domain WHERE $1::inet = ANY(ns_v4)",
             IpAddr::V6(_) => "SELECT content FROM domain WHERE $1::inet = ANY(ns_v6)",
@@ -479,6 +502,13 @@ impl StoreOps for Pg {
         &self,
         name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self
+            .config
+            .common_config
+            .domain_search_by_ns_ldh_name_enable
+        {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_domain_regex(name)?;
         let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(
             "SELECT content FROM domain \
@@ -506,6 +536,9 @@ impl StoreOps for Pg {
         &self,
         handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.entity_search_by_handle_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_pattern(handle)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM entity WHERE handle ILIKE $1")
@@ -531,6 +564,9 @@ impl StoreOps for Pg {
         &self,
         full_name: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.entity_search_by_full_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_pattern(full_name)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM entity WHERE fn ILIKE $1")
@@ -556,6 +592,9 @@ impl StoreOps for Pg {
         &self,
         handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.network_search_by_handle_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_pattern(handle)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM network WHERE handle ILIKE $1")
@@ -578,6 +617,9 @@ impl StoreOps for Pg {
     }
 
     async fn search_networks_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.network_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_pattern(name)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM network WHERE name ILIKE $1")
@@ -955,6 +997,9 @@ impl StoreOps for Pg {
         &self,
         handle: &str,
     ) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_search_by_handle_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_pattern(handle)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM autnum WHERE handle ILIKE $1")
@@ -977,6 +1022,9 @@ impl StoreOps for Pg {
     }
 
     async fn search_autnums_by_name(&self, name: &str) -> Result<RdapResponse, RdapServerError> {
+        if !self.config.common_config.autnum_search_by_name_enable {
+            return Ok(NOT_IMPLEMENTED.clone());
+        }
         let pattern = wildcard_to_pattern(name)?;
         let rows: Vec<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM autnum WHERE name ILIKE $1")

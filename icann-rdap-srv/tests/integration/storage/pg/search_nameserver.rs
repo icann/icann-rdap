@@ -1,8 +1,11 @@
 use icann_rdap_common::response::{Nameserver, RdapResponse};
+use icann_rdap_srv::config::CommonConfig;
 use icann_rdap_srv::storage::StoreOps;
 
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, postgres::Postgres};
+
+use super::{assert_not_implemented, pg_store};
 
 #[sqlx::test]
 async fn search_nameservers_by_name_finds_match(db: Pool<Postgres>) {
@@ -221,4 +224,26 @@ async fn search_nameservers_by_ip_no_match(db: Pool<Postgres>) {
         panic!("expected nameserver search results, got {actual:?}");
     };
     assert!(results.results().is_empty());
+}
+
+#[sqlx::test]
+async fn search_nameservers_by_name_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_nameservers_by_name("ns-one*")
+            .await
+            .expect("call"),
+    );
+}
+
+#[sqlx::test]
+async fn search_nameservers_by_ip_disabled(db: Pool<Postgres>) {
+    let store = pg_store(db, CommonConfig::default());
+    assert_not_implemented(
+        &store
+            .search_nameservers_by_ip("198.51.100.10".parse().unwrap())
+            .await
+            .expect("call"),
+    );
 }
