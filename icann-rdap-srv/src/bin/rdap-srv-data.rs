@@ -31,7 +31,8 @@ use {
     },
     pct_str::{PctString, UriReserved},
     regex::Regex,
-    std::{fs, path::PathBuf, str::FromStr},
+    std::{fs, io::IsTerminal, path::PathBuf, str::FromStr},
+    tokio::io::AsyncReadExt,
     tracing::{error, info},
     tracing_subscriber::{
         EnvFilter, fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
@@ -213,6 +214,11 @@ enum Commands {
 
     /// Creates a Help response.
     SrvHelp(SrvHelpArgs),
+
+    /// Writes a raw RDAP JSON document to the data directory.
+    ///
+    /// An existing file with the same name is overwritten.
+    Json(JsonArgs),
 }
 
 #[derive(Debug, Args)]
@@ -497,9 +503,95 @@ struct SrvHelpArgs {
     notice: Vec<NoticeOrRemark>,
 }
 
+#[derive(Debug, Args)]
+struct JsonArgs {
+    /// Raw RDAP JSON document.
+    ///
+    /// If omitted, the document is read from stdin.
+    json: Option<String>,
+
+    /// Base name for the output file (e.g. "example.com").
+    ///
+    /// When omitted, it is derived from the content of the document.
+    #[arg(long)]
+    file_name: Option<String>,
+}
+
 fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
     let ip_inet = IpInet::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
     Ok(ip_inet.network())
+}
+
+/// Acquires the raw JSON document text. The positional argument takes precedence;
+/// otherwise the document is read from stdin when stdin is not a terminal.
+async fn acquire_json(arg: Option<String>) -> Result<String, RdapServerError> {
+    match arg {
+        Some(json) => Ok(json),
+        None if std::io::stdin().is_terminal() => Err(RdapServerError::InvalidArg(
+            "no JSON given: pass it as an argument or pipe it via stdin".to_string(),
+        )),
+        None => {
+            let mut buf = String::new();
+            tokio::io::stdin().read_to_string(&mut buf).await?;
+            if buf.trim().is_empty() {
+                return Err(RdapServerError::InvalidArg(
+                    "no JSON given on stdin".to_string(),
+                ));
+            }
+            Ok(buf)
+        }
+    }
+}
+
+/// Parses and validates a raw JSON text as an RDAP document.
+///
+/// This uses the same path the server takes when loading `.json` data files, so any
+/// document accepted here is guaranteed to be loadable by the server.
+fn parse_rdap_json(text: &str) -> Result<RdapResponse, RdapServerError> {
+    // Strip a UTF-8 byte order mark if present (e.g. files saved on Windows).
+    let text = text.trim_start_matches('\u{feff}');
+    let value: serde_json::Value = serde_json::from_str(text)?;
+    RdapResponse::try_from(value)
+        .map_err(|e| RdapServerError::InvalidArg(format!("not a valid RDAP document: {e}")))
+}
+
+/// Derives a deterministic output file base name from the content of an RDAP document.
+fn json_file_name(rdap: &RdapResponse) -> Result<String, RdapServerError> {
+    let missing = || {
+        RdapServerError::InvalidArg(
+            "cannot derive a file name from the document; specify --file-name".to_string(),
+        )
+    };
+    match rdap {
+        RdapResponse::Domain(domain) => domain.ldh_name.clone().ok_or_else(missing),
+        RdapResponse::Nameserver(nameserver) => nameserver.ldh_name.clone().ok_or_else(missing),
+        RdapResponse::Entity(entity) => entity
+            .object_common
+            .handle
+            .as_ref()
+            .map(|handle| handle.to_string())
+            .ok_or_else(missing),
+        RdapResponse::Autnum(autnum) => autnum
+            .object_common
+            .handle
+            .as_ref()
+            .map(|handle| handle.to_string())
+            .ok_or_else(missing),
+        RdapResponse::Network(network) => {
+            if let (Some(start), Some(end)) = (&network.start_address, &network.end_address)
+                && start == end
+            {
+                return Ok(start.clone());
+            }
+            network
+                .object_common
+                .handle
+                .as_ref()
+                .map(|handle| handle.to_string())
+                .ok_or_else(missing)
+        }
+        _ => Err(missing()),
+    }
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -539,6 +631,9 @@ async fn do_the_work(
     data_dir: &str,
 ) -> Result<(), RdapServerError> {
     let output = match cli.command {
+        Commands::Json(args) => {
+            return json_work(cli.check_args, cli.template, cli.redirect, args, data_dir).await;
+        }
         Commands::Entity(args) => make_entity(args, storage).await?,
         Commands::Nameserver(args) => make_nameserver(args, storage).await?,
         Commands::Domain(args) => {
@@ -579,6 +674,53 @@ async fn do_the_work(
         create_json_file(data_dir, &output.self_href, output.rdap)?;
     }
 
+    Ok(())
+}
+
+/// Handles the `json` subcommand: acquires a raw RDAP document (argument or stdin),
+/// validates it, and writes it as a `.json` data file for the server to load.
+async fn json_work(
+    check_args: CheckArgs,
+    template: bool,
+    redirect: Option<String>,
+    args: JsonArgs,
+    data_dir: &str,
+) -> Result<(), RdapServerError> {
+    if template || redirect.is_some() {
+        return Err(RdapServerError::InvalidArg(
+            "json input cannot be combined with --template or --redirect".to_string(),
+        ));
+    }
+
+    let text = acquire_json(args.json).await?;
+    let rdap = parse_rdap_json(&text)?;
+
+    // Only object class documents can be loaded by the server as `.json` data files.
+    match &rdap {
+        RdapResponse::Domain(_)
+        | RdapResponse::Entity(_)
+        | RdapResponse::Nameserver(_)
+        | RdapResponse::Autnum(_)
+        | RdapResponse::Network(_) => {}
+        _ => {
+            return Err(RdapServerError::InvalidArg(
+                "only domain, entity, nameserver, autnum and ip network documents can be stored as JSON data files".to_string(),
+            ));
+        }
+    }
+
+    let check_types = to_check_classes(&check_args);
+    if check_rdap(rdap.clone(), &check_types) {
+        return Err(RdapServerError::ErrorOnChecks);
+    } else {
+        info!("Checks conducted and no issues were found.");
+    }
+
+    let base = match args.file_name {
+        Some(name) => name,
+        None => json_file_name(&rdap)?,
+    };
+    create_json_file(data_dir, &base, rdap)?;
     Ok(())
 }
 
@@ -1145,9 +1287,9 @@ fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::response::DsDatum;
+    use icann_rdap_common::{prelude::RdapResponse, response::DsDatum};
 
-    use crate::{parse_ds_datum, parse_notice_or_remark};
+    use crate::{json_file_name, parse_ds_datum, parse_notice_or_remark, parse_rdap_json};
 
     #[test]
     fn cli_debug_assert_test() {
@@ -1229,6 +1371,149 @@ mod tests {
 
         // WHEN
         let actual = parse_ds_datum(data);
+
+        // THEN
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdap_json_domain() {
+        // GIVEN
+        let json = r#"{"objectClassName":"domain","ldhName":"example.com"}"#;
+
+        // WHEN
+        let actual = parse_rdap_json(json).expect("parsing rdap json");
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
+
+    #[test]
+    fn test_parse_rdap_json_invalid_json() {
+        // GIVEN
+        let json = r#"{"objectClassName":"domain","ldhName":""#;
+
+        // WHEN
+        let actual = parse_rdap_json(json);
+
+        // THEN
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdap_json_not_rdap() {
+        // GIVEN
+        let json = r#"{"foo":"bar"}"#;
+
+        // WHEN
+        let actual = parse_rdap_json(json);
+
+        // THEN
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdap_json_with_byte_order_mark() {
+        // GIVEN
+        let json = "\u{feff}{\"objectClassName\":\"domain\",\"ldhName\":\"example.com\"}";
+
+        // WHEN
+        let actual = parse_rdap_json(json).expect("parsing rdap json");
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
+
+    #[test]
+    fn test_json_file_name_domain() {
+        // GIVEN
+        let rdap = parse_rdap_json(r#"{"objectClassName":"domain","ldhName":"example.com"}"#)
+            .expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap).expect("deriving file name");
+
+        // THEN
+        assert_eq!(actual, "example.com");
+    }
+
+    #[test]
+    fn test_json_file_name_nameserver() {
+        // GIVEN
+        let rdap =
+            parse_rdap_json(r#"{"objectClassName":"nameserver","ldhName":"ns1.example.com"}"#)
+                .expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap).expect("deriving file name");
+
+        // THEN
+        assert_eq!(actual, "ns1.example.com");
+    }
+
+    #[test]
+    fn test_json_file_name_entity() {
+        // GIVEN
+        let rdap = parse_rdap_json(r#"{"objectClassName":"entity","handle":"foo1234"}"#)
+            .expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap).expect("deriving file name");
+
+        // THEN
+        assert_eq!(actual, "foo1234");
+    }
+
+    #[test]
+    fn test_json_file_name_autnum() {
+        // GIVEN
+        let rdap = parse_rdap_json(r#"{"objectClassName":"autnum","handle":"AS65537"}"#)
+            .expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap).expect("deriving file name");
+
+        // THEN
+        assert_eq!(actual, "AS65537");
+    }
+
+    #[test]
+    fn test_json_file_name_network_single_address() {
+        // GIVEN
+        let rdap = parse_rdap_json(
+            r#"{"objectClassName":"ip network","startAddress":"10.0.0.1","endAddress":"10.0.0.1"}"#,
+        )
+        .expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap).expect("deriving file name");
+
+        // THEN
+        assert_eq!(actual, "10.0.0.1");
+    }
+
+    #[test]
+    fn test_json_file_name_network_range_falls_back_to_handle() {
+        // GIVEN
+        let rdap = parse_rdap_json(
+            r#"{"objectClassName":"ip network","handle":"NET-10-0-0-0","startAddress":"10.0.0.0","endAddress":"10.0.0.255"}"#,
+        )
+        .expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap).expect("deriving file name");
+
+        // THEN
+        assert_eq!(actual, "NET-10-0-0-0");
+    }
+
+    #[test]
+    fn test_json_file_name_domain_without_ldh_name() {
+        // GIVEN
+        let rdap = parse_rdap_json(r#"{"objectClassName":"domain"}"#).expect("parsing rdap json");
+
+        // WHEN
+        let actual = json_file_name(&rdap);
 
         // THEN
         assert!(actual.is_err());
