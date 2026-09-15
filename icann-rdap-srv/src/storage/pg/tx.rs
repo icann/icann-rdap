@@ -45,7 +45,8 @@ impl TxHandle for PgTx<'_> {
             .contact()
             .and_then(|c| c.full_name().map(String::from));
         sqlx::query(
-            "INSERT INTO entity (fn, content) VALUES ($1, $2) ON CONFLICT (handle) DO NOTHING",
+            "INSERT INTO entity (fn, content) VALUES ($1, $2) \
+             ON CONFLICT (handle) DO UPDATE SET fn = EXCLUDED.fn, content = EXCLUDED.content",
         )
         .bind(full_name)
         .bind(content)
@@ -60,8 +61,11 @@ impl TxHandle for PgTx<'_> {
         error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         let content = serde_json::to_value(error.clone().to_response())?;
+        // On conflict only `content` is updated: error responses carry no contact, and
+        // `fn` is not in this statement's column list (EXCLUDED.fn would be NULL).
         sqlx::query(
-            "INSERT INTO entity (handle, content) VALUES ($1, $2) ON CONFLICT (handle) DO NOTHING",
+            "INSERT INTO entity (handle, content) VALUES ($1, $2) \
+             ON CONFLICT (handle) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(&entity_id.handle)
         .bind(content)
@@ -72,10 +76,13 @@ impl TxHandle for PgTx<'_> {
 
     async fn add_domain(&mut self, domain: &Domain) -> Result<(), RdapServerError> {
         let content = serde_json::to_value(domain)?;
-        sqlx::query("INSERT INTO domain (content) VALUES ($1) ON CONFLICT (ldh_name) DO NOTHING")
-            .bind(content)
-            .execute(&mut *self.db_tx)
-            .await?;
+        sqlx::query(
+            "INSERT INTO domain (content) VALUES ($1) \
+             ON CONFLICT (ldh_name) DO UPDATE SET content = EXCLUDED.content",
+        )
+        .bind(content)
+        .execute(&mut *self.db_tx)
+        .await?;
         Ok(())
     }
 
@@ -87,7 +94,7 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(error.clone().to_response())?;
         sqlx::query(
             "INSERT INTO domain (ldh_name, content) VALUES ($1, $2) \
-             ON CONFLICT (ldh_name) DO NOTHING",
+             ON CONFLICT (ldh_name) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(&domain_id.ldh_name)
         .bind(content)
@@ -99,7 +106,8 @@ impl TxHandle for PgTx<'_> {
     async fn add_nameserver(&mut self, nameserver: &Nameserver) -> Result<(), RdapServerError> {
         let content = serde_json::to_value(nameserver)?;
         sqlx::query(
-            "INSERT INTO nameserver (content) VALUES ($1) ON CONFLICT (ldh_name) DO NOTHING",
+            "INSERT INTO nameserver (content) VALUES ($1) \
+             ON CONFLICT (ldh_name) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(content)
         .execute(&mut *self.db_tx)
@@ -115,7 +123,7 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(error.clone().to_response())?;
         sqlx::query(
             "INSERT INTO nameserver (ldh_name, content) VALUES ($1, $2) \
-             ON CONFLICT (ldh_name) DO NOTHING",
+             ON CONFLICT (ldh_name) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(&nameserver_id.ldh_name)
         .bind(content)
@@ -128,7 +136,7 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(autnum)?;
         sqlx::query(
             "INSERT INTO autnum (content) VALUES ($1) \
-             ON CONFLICT (start_autnum, end_autnum) DO NOTHING",
+             ON CONFLICT (start_autnum, end_autnum) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(content)
         .execute(&mut *self.db_tx)
@@ -144,7 +152,7 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(error.clone().to_response())?;
         sqlx::query(
             "INSERT INTO autnum (start_autnum, end_autnum, content) VALUES ($1, $2, $3) \
-             ON CONFLICT (start_autnum, end_autnum) DO NOTHING",
+             ON CONFLICT (start_autnum, end_autnum) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(autnum_id.start_autnum as i64)
         .bind(autnum_id.end_autnum as i64)
@@ -158,7 +166,7 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(network)?;
         sqlx::query(
             "INSERT INTO network (content) VALUES ($1) \
-             ON CONFLICT (start_address, end_address) DO NOTHING",
+             ON CONFLICT (start_address, end_address) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(content)
         .execute(&mut *self.db_tx)
@@ -190,7 +198,7 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(error.clone().to_response())?;
         sqlx::query(
             "INSERT INTO network (start_address, end_address, content) VALUES ($1, $2, $3) \
-             ON CONFLICT (start_address, end_address) DO NOTHING",
+             ON CONFLICT (start_address, end_address) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(start_address)
         .bind(end_address)
@@ -208,7 +216,8 @@ impl TxHandle for PgTx<'_> {
         let content = serde_json::to_value(help)?;
         let host = host.unwrap_or("default");
         sqlx::query(
-            "INSERT INTO srv_help (host, content) VALUES ($1, $2) ON CONFLICT (host) DO NOTHING",
+            "INSERT INTO srv_help (host, content) VALUES ($1, $2) \
+             ON CONFLICT (host) DO UPDATE SET content = EXCLUDED.content",
         )
         .bind(host)
         .bind(content)

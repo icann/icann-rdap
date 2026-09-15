@@ -25,6 +25,7 @@ mod search_entity;
 mod search_nameserver;
 mod search_network;
 mod truncate;
+mod upsert;
 
 pub(crate) async fn seed_all_tables(db: &sqlx::PgPool) {
     use icann_rdap_common::response::{Autnum, Domain, Entity, Help, Nameserver, Network};
