@@ -23,8 +23,8 @@ use {
         media_types::RDAP_MEDIA_TYPE,
         prelude::{RdapResponse, ToNotices, ToRemarks, ToResponse, VectorStringish},
         response::{
-            Autnum, Domain, DsDatum, Entity, Event, Events, Help, Link, Links, Nameserver, Network,
-            NoticeOrRemark, SecureDns, ToChild,
+            Autnum, Domain, DsDatum, Entity, Event, EventActionValue, Events, Help, Link, Links,
+            Nameserver, Network, NoticeOrRemark, SecureDns, ToChild,
         },
     },
     regex::Regex,
@@ -57,6 +57,25 @@ struct ObjectArgs {
     /// If not specified, the current date and time will be used.
     #[arg(long, value_parser = parse_datetime)]
     updated: Option<DateTime<FixedOffset>>,
+
+    /// Expiration date and time.
+    ///
+    /// This argument should be in RFC3339 format. Only emitted as an event when specified.
+    #[arg(long, value_parser = parse_datetime)]
+    expiration: Option<DateTime<FixedOffset>>,
+
+    /// Registrar expiration date and time.
+    ///
+    /// This argument should be in RFC3339 format. Only emitted as an event when specified.
+    #[arg(long, value_parser = parse_datetime)]
+    registrar_expiration: Option<DateTime<FixedOffset>>,
+
+    /// Last update of RDAP database date and time.
+    ///
+    /// This argument should be in RFC3339 format.
+    /// If not specified, the current date and time will be used.
+    #[arg(long, value_parser = parse_datetime)]
+    last_update_of_rdap_database: Option<DateTime<FixedOffset>>,
 
     /// Adds a server notice.
     ///
@@ -594,7 +613,7 @@ fn events(args: &ObjectArgs) -> Option<Events> {
     };
     let created = Event::builder()
         .event_date(created_at.to_rfc3339())
-        .event_action("registration".to_string())
+        .event_action(EventActionValue::Registration.to_string())
         .build();
     events.push(created);
     let updated_at = if let Some(dt) = args.updated {
@@ -604,9 +623,33 @@ fn events(args: &ObjectArgs) -> Option<Events> {
     };
     let updated = Event::builder()
         .event_date(updated_at.to_rfc3339())
-        .event_action("last changed".to_string())
+        .event_action(EventActionValue::LastChanged.to_string())
         .build();
     events.push(updated);
+    if let Some(expiration) = args.expiration {
+        let expiration = Event::builder()
+            .event_date(expiration.to_rfc3339())
+            .event_action(EventActionValue::Expiration.to_string())
+            .build();
+        events.push(expiration);
+    }
+    if let Some(registrar_expiration) = args.registrar_expiration {
+        let registrar_expiration = Event::builder()
+            .event_date(registrar_expiration.to_rfc3339())
+            .event_action(EventActionValue::RegistrarExpiration.to_string())
+            .build();
+        events.push(registrar_expiration);
+    }
+    let last_update_at = if let Some(dt) = args.last_update_of_rdap_database {
+        dt
+    } else {
+        Utc::now().into()
+    };
+    let last_update = Event::builder()
+        .event_date(last_update_at.to_rfc3339())
+        .event_action(EventActionValue::LastUpdateOfRDAPDatabase.to_string())
+        .build();
+    events.push(last_update);
     (!events.is_empty()).then_some(events)
 }
 
@@ -942,9 +985,91 @@ pub async fn build_object(
 
 #[cfg(test)]
 mod tests {
+    use chrono::{DateTime, FixedOffset};
     use icann_rdap_common::{prelude::RdapResponse, response::DsDatum};
 
-    use super::{SrvHelpArgs, make_help, parse_ds_datum, parse_notice_or_remark, parse_rdap_json};
+    use super::{
+        ObjectArgs, SrvHelpArgs, events, make_help, parse_ds_datum, parse_notice_or_remark,
+        parse_rdap_json,
+    };
+
+    fn object_args() -> ObjectArgs {
+        ObjectArgs {
+            base_url: "https://rdap.example.com".to_string(),
+            status: vec![],
+            created: None,
+            updated: None,
+            expiration: None,
+            registrar_expiration: None,
+            last_update_of_rdap_database: None,
+            notice: vec![],
+            remark: vec![],
+            registrant: None,
+            administrative: None,
+            technical: None,
+            abuse: None,
+            billing: None,
+            registrar: None,
+            noc: None,
+        }
+    }
+
+    fn rfc3339(s: &str) -> DateTime<FixedOffset> {
+        DateTime::parse_from_rfc3339(s).expect("valid RFC3339 datetime")
+    }
+
+    #[test]
+    fn test_events_default_last_update_and_omit_expirations_when_unspecified() {
+        // GIVEN
+        let args = object_args();
+
+        // WHEN
+        let evts = events(&args).expect("events should be present");
+
+        // THEN — registration, last changed, and a defaulted last-update are present;
+        // the two expiration events are omitted.
+        let actions: Vec<String> = evts
+            .iter()
+            .filter_map(|e| e.event_action().map(String::from))
+            .collect();
+        assert_eq!(actions.len(), 3);
+        assert!(actions.contains(&"registration".to_string()));
+        assert!(actions.contains(&"last changed".to_string()));
+        assert!(actions.contains(&"last update of RDAP database".to_string()));
+        assert!(!actions.contains(&"expiration".to_string()));
+        assert!(!actions.contains(&"registrar expiration".to_string()));
+    }
+
+    #[test]
+    fn test_events_include_new_events_when_specified() {
+        // GIVEN
+        let mut args = object_args();
+        let expiration = rfc3339("2026-12-31T23:59:59Z");
+        let registrar_expiration = rfc3339("2027-06-15T00:00:00Z");
+        let last_update = rfc3339("2026-01-01T00:00:00Z");
+        args.expiration = Some(expiration);
+        args.registrar_expiration = Some(registrar_expiration);
+        args.last_update_of_rdap_database = Some(last_update);
+
+        // WHEN
+        let evts = events(&args).expect("events should be present");
+
+        // THEN
+        let date_for = |action: &str| -> Option<String> {
+            evts.iter()
+                .find(|e| e.event_action().is_some_and(|a| a == action))
+                .and_then(|e| e.event_date().map(String::from))
+        };
+        assert_eq!(date_for("expiration"), Some(expiration.to_rfc3339()));
+        assert_eq!(
+            date_for("registrar expiration"),
+            Some(registrar_expiration.to_rfc3339())
+        );
+        assert_eq!(
+            date_for("last update of RDAP database"),
+            Some(last_update.to_rfc3339())
+        );
+    }
 
     #[test]
     fn test_parse_notice_arg() {
