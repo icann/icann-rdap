@@ -61,11 +61,11 @@ impl TxHandle for PgTx<'_> {
         error: &Rfc9083Error,
     ) -> Result<(), RdapServerError> {
         let content = serde_json::to_value(error.clone().to_response())?;
-        // On conflict only `content` is updated: error responses carry no contact, and
-        // `fn` is not in this statement's column list (EXCLUDED.fn would be NULL).
+        // On conflict `fn` is NULLed alongside `content`: error responses carry no contact,
+        // and a stale full name would let fn-based searches return this row.
         sqlx::query(
             "INSERT INTO entity (handle, content) VALUES ($1, $2) \
-             ON CONFLICT (handle) DO UPDATE SET content = EXCLUDED.content",
+             ON CONFLICT (handle) DO UPDATE SET fn = NULL, content = EXCLUDED.content",
         )
         .bind(&entity_id.handle)
         .bind(content)

@@ -184,14 +184,14 @@ async fn upsert_entity_updates_fn_and_content(db: Pool<Postgres>) {
 }
 
 #[sqlx::test]
-async fn upsert_entity_err_replaces_content_but_preserves_fn(db: Pool<Postgres>) {
+async fn upsert_entity_err_replaces_content_and_nulls_fn(db: Pool<Postgres>) {
     // GIVEN — an entity whose contact has a full name.
     let store = Pg::from_pool(db.clone());
     let mut tx = store.new_tx().await.expect("new tx");
     tx.add_entity(
         &Entity::builder()
             .handle("UPS-ERR-ENTITY")
-            .contact(Contact::builder().full_name("Keep Me").build())
+            .contact(Contact::builder().full_name("Old Name").build())
             .build(),
     )
     .await
@@ -213,7 +213,7 @@ async fn upsert_entity_err_replaces_content_but_preserves_fn(db: Pool<Postgres>)
     .expect("adding entity error");
     Box::new(tx).commit().await.expect("committing tx");
 
-    // THEN — the content is the error response, but fn (not part of the upsert) survives.
+    // THEN — the content is the error response and fn is NULLed, so fn-based searches skip it.
     let actual = store
         .get_entity_by_handle("UPS-ERR-ENTITY")
         .await
@@ -228,7 +228,7 @@ async fn upsert_entity_err_replaces_content_but_preserves_fn(db: Pool<Postgres>)
         .fetch_one(&db)
         .await
         .expect("reading fn column");
-    assert_eq!(fn_, Some("Keep Me".to_string()));
+    assert_eq!(fn_, None);
 }
 
 #[sqlx::test]
