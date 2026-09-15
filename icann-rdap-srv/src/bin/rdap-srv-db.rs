@@ -12,7 +12,7 @@ use {
             check::{CheckArgs, check_rdap, to_check_classes},
             data::{
                 AutnumArgs, DomainArgs, EntityArgs, GenCommand, NameserverArgs, NetworkArgs,
-                SrvHelpArgs, build_object,
+                SrvHelpArgs, acquire_json, build_object, parse_rdap_json,
             },
         },
     },
@@ -59,6 +59,8 @@ enum Command {
     AddNetwork(NetworkArgs),
     /// Adds or updates the server help response.
     AddSrvHelp(SrvHelpArgs),
+    /// Imports a raw RDAP JSON document (argument or stdin) into the database.
+    AddJson(AddJsonArgs),
     /// Deletes an entity by handle.
     DeleteEntity(DeleteEntityArgs),
     /// Deletes a domain by LDH name.
@@ -81,6 +83,14 @@ enum DeleteOp {
     Autnum(DeleteAutnumArgs),
     Network(DeleteNetworkArgs),
     SrvHelp(DeleteSrvHelpArgs),
+}
+
+#[derive(Debug, Args)]
+struct AddJsonArgs {
+    /// Raw RDAP JSON document.
+    ///
+    /// If omitted, the document is read from stdin.
+    json: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -180,6 +190,7 @@ async fn main() -> Result<(), RdapServerError> {
         Command::AddSrvHelp(args) => {
             add_object(&store, GenCommand::SrvHelp(args), &cli.check_args).await
         }
+        Command::AddJson(args) => add_json(&store, args.json, &cli.check_args).await,
         Command::DeleteEntity(args) => delete_object(&store, DeleteOp::Entity(args)).await,
         Command::DeleteDomain(args) => delete_object(&store, DeleteOp::Domain(args)).await,
         Command::DeleteNameserver(args) => delete_object(&store, DeleteOp::Nameserver(args)).await,
@@ -226,6 +237,40 @@ async fn add_object(
         RdapResponse::Autnum(autnum) => tx.add_autnum(autnum).await?,
         RdapResponse::Network(network) => tx.add_network(network).await?,
         RdapResponse::Help(help) => tx.add_srv_help(help, help_host.as_deref()).await?,
+        other => {
+            return Err(RdapServerError::InvalidArg(format!(
+                "unsupported object class: {other:?}"
+            )));
+        }
+    }
+    Box::new(tx).commit().await?;
+
+    info!("Object stored in database.");
+    Ok(())
+}
+
+/// Imports a raw RDAP JSON document (positional argument or stdin), runs spec
+/// checks, and upserts it into the database.
+async fn add_json(
+    store: &Pg,
+    json: Option<String>,
+    check_args: &CheckArgs,
+) -> Result<(), RdapServerError> {
+    let rdap = parse_rdap_json(&acquire_json(json).await?)?;
+
+    let check_types = to_check_classes(check_args);
+    if check_rdap(rdap.clone(), &check_types) {
+        return Err(RdapServerError::ErrorOnChecks);
+    }
+
+    let mut tx = store.new_tx().await?;
+    match rdap {
+        RdapResponse::Entity(entity) => tx.add_entity(&entity).await?,
+        RdapResponse::Domain(domain) => tx.add_domain(&domain).await?,
+        RdapResponse::Nameserver(nameserver) => tx.add_nameserver(&nameserver).await?,
+        RdapResponse::Autnum(autnum) => tx.add_autnum(&autnum).await?,
+        RdapResponse::Network(network) => tx.add_network(&network).await?,
+        RdapResponse::Help(help) => tx.add_srv_help(&help, None).await?,
         other => {
             return Err(RdapServerError::InvalidArg(format!(
                 "unsupported object class: {other:?}"

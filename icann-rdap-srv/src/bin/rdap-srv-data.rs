@@ -21,13 +21,12 @@ use {
             check::{CheckArgs, check_rdap, to_check_classes},
             data::{
                 AutnumArgs, DomainArgs, EntityArgs, GenCommand, NameserverArgs, NetworkArgs,
-                RdapId, SrvHelpArgs, build_object,
+                RdapId, SrvHelpArgs, acquire_json, build_object, parse_rdap_json,
             },
         },
     },
     pct_str::{PctString, UriReserved},
-    std::{fs, io::IsTerminal, path::PathBuf},
-    tokio::io::AsyncReadExt,
+    std::{fs, path::PathBuf},
     tracing::{error, info},
     tracing_subscriber::{
         EnvFilter, fmt, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt,
@@ -101,39 +100,6 @@ struct JsonArgs {
     /// When omitted, it is derived from the content of the document.
     #[arg(long)]
     file_name: Option<String>,
-}
-
-/// Acquires the raw JSON document text. The positional argument takes precedence;
-/// otherwise the document is read from stdin when stdin is not a terminal.
-async fn acquire_json(arg: Option<String>) -> Result<String, RdapServerError> {
-    match arg {
-        Some(json) => Ok(json),
-        None if std::io::stdin().is_terminal() => Err(RdapServerError::InvalidArg(
-            "no JSON given: pass it as an argument or pipe it via stdin".to_string(),
-        )),
-        None => {
-            let mut buf = String::new();
-            tokio::io::stdin().read_to_string(&mut buf).await?;
-            if buf.trim().is_empty() {
-                return Err(RdapServerError::InvalidArg(
-                    "no JSON given on stdin".to_string(),
-                ));
-            }
-            Ok(buf)
-        }
-    }
-}
-
-/// Parses and validates a raw JSON text as an RDAP document.
-///
-/// This uses the same path the server takes when loading `.json` data files, so any
-/// document accepted here is guaranteed to be loadable by the server.
-fn parse_rdap_json(text: &str) -> Result<RdapResponse, RdapServerError> {
-    // Strip a UTF-8 byte order mark if present (e.g. files saved on Windows).
-    let text = text.trim_start_matches('\u{feff}');
-    let value: serde_json::Value = serde_json::from_str(text)?;
-    RdapResponse::try_from(value)
-        .map_err(|e| RdapServerError::InvalidArg(format!("not a valid RDAP document: {e}")))
 }
 
 /// Derives a deterministic output file base name from the content of an RDAP document.
@@ -458,62 +424,14 @@ fn create_template_file(
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::prelude::RdapResponse;
+    use icann_rdap_srv::util::bin::data::parse_rdap_json;
 
-    use crate::{json_file_name, parse_rdap_json};
+    use crate::json_file_name;
 
     #[test]
     fn cli_debug_assert_test() {
         use clap::CommandFactory;
         crate::Cli::command().debug_assert()
-    }
-
-    #[test]
-    fn test_parse_rdap_json_domain() {
-        // GIVEN
-        let json = r#"{"objectClassName":"domain","ldhName":"example.com"}"#;
-
-        // WHEN
-        let actual = parse_rdap_json(json).expect("parsing rdap json");
-
-        // THEN
-        assert!(matches!(actual, RdapResponse::Domain(_)));
-    }
-
-    #[test]
-    fn test_parse_rdap_json_invalid_json() {
-        // GIVEN
-        let json = r#"{"objectClassName":"domain","ldhName":""#;
-
-        // WHEN
-        let actual = parse_rdap_json(json);
-
-        // THEN
-        assert!(actual.is_err());
-    }
-
-    #[test]
-    fn test_parse_rdap_json_not_rdap() {
-        // GIVEN
-        let json = r#"{"foo":"bar"}"#;
-
-        // WHEN
-        let actual = parse_rdap_json(json);
-
-        // THEN
-        assert!(actual.is_err());
-    }
-
-    #[test]
-    fn test_parse_rdap_json_with_byte_order_mark() {
-        // GIVEN
-        let json = "\u{feff}{\"objectClassName\":\"domain\",\"ldhName\":\"example.com\"}";
-
-        // WHEN
-        let actual = parse_rdap_json(json).expect("parsing rdap json");
-
-        // THEN
-        assert!(matches!(actual, RdapResponse::Domain(_)));
     }
 
     #[test]

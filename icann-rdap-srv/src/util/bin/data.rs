@@ -28,7 +28,8 @@ use {
         },
     },
     regex::Regex,
-    std::str::FromStr,
+    std::{io::IsTerminal, str::FromStr},
+    tokio::io::AsyncReadExt,
 };
 
 #[derive(Debug, Args)]
@@ -450,6 +451,39 @@ impl SrvHelpArgs {
 pub fn parse_cidr(arg: &str) -> Result<IpCidr, RdapServerError> {
     let ip_inet = IpInet::from_str(arg).map_err(|e| RdapServerError::InvalidArg(e.to_string()))?;
     Ok(ip_inet.network())
+}
+
+/// Acquires the raw JSON document text. The positional argument takes precedence;
+/// otherwise the document is read from stdin when stdin is not a terminal.
+pub async fn acquire_json(arg: Option<String>) -> Result<String, RdapServerError> {
+    match arg {
+        Some(json) => Ok(json),
+        None if std::io::stdin().is_terminal() => Err(RdapServerError::InvalidArg(
+            "no JSON given: pass it as an argument or pipe it via stdin".to_string(),
+        )),
+        None => {
+            let mut buf = String::new();
+            tokio::io::stdin().read_to_string(&mut buf).await?;
+            if buf.trim().is_empty() {
+                return Err(RdapServerError::InvalidArg(
+                    "no JSON given on stdin".to_string(),
+                ));
+            }
+            Ok(buf)
+        }
+    }
+}
+
+/// Parses and validates a raw JSON text as an RDAP document.
+///
+/// This uses the same path the server takes when loading `.json` data files, so any
+/// document accepted here is guaranteed to be loadable by the server.
+pub fn parse_rdap_json(text: &str) -> Result<RdapResponse, RdapServerError> {
+    // Strip a UTF-8 byte order mark if present (e.g. files saved on Windows).
+    let text = text.trim_start_matches('\u{feff}');
+    let value: serde_json::Value = serde_json::from_str(text)?;
+    RdapResponse::try_from(value)
+        .map_err(|e| RdapServerError::InvalidArg(format!("not a valid RDAP document: {e}")))
 }
 
 pub enum RdapId {
@@ -898,9 +932,9 @@ pub async fn build_object(
 
 #[cfg(test)]
 mod tests {
-    use icann_rdap_common::response::DsDatum;
+    use icann_rdap_common::{prelude::RdapResponse, response::DsDatum};
 
-    use super::{parse_ds_datum, parse_notice_or_remark};
+    use super::{parse_ds_datum, parse_notice_or_remark, parse_rdap_json};
 
     #[test]
     fn test_parse_notice_arg() {
@@ -979,5 +1013,53 @@ mod tests {
 
         // THEN
         assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdap_json_domain() {
+        // GIVEN
+        let json = r#"{"objectClassName":"domain","ldhName":"example.com"}"#;
+
+        // WHEN
+        let actual = parse_rdap_json(json).expect("parsing rdap json");
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
+
+    #[test]
+    fn test_parse_rdap_json_invalid_json() {
+        // GIVEN
+        let json = r#"{"objectClassName":"domain","ldhName":""#;
+
+        // WHEN
+        let actual = parse_rdap_json(json);
+
+        // THEN
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdap_json_not_rdap() {
+        // GIVEN
+        let json = r#"{"foo":"bar"}"#;
+
+        // WHEN
+        let actual = parse_rdap_json(json);
+
+        // THEN
+        assert!(actual.is_err());
+    }
+
+    #[test]
+    fn test_parse_rdap_json_with_byte_order_mark() {
+        // GIVEN
+        let json = "\u{feff}{\"objectClassName\":\"domain\",\"ldhName\":\"example.com\"}";
+
+        // WHEN
+        let actual = parse_rdap_json(json).expect("parsing rdap json");
+
+        // THEN
+        assert!(matches!(actual, RdapResponse::Domain(_)));
     }
 }

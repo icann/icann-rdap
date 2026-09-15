@@ -325,3 +325,46 @@ async fn delete_missing_warns(db: Pool<Postgres>) {
         "stdout was: {stdout}"
     );
 }
+
+#[sqlx::test]
+async fn add_json_stores_row(db: Pool<Postgres>) {
+    // GIVEN
+    let store = Pg::from_pool(db.clone());
+    let mut jig = RdapSrvDbTestJig::new(&test_db_url(&db).await);
+
+    // WHEN — a raw domain document is passed as a positional argument.
+    jig.cmd
+        .arg("add-json")
+                .arg(
+            r#"{
+                "objectClassName": "domain",
+                "ldhName": "db-json.example",
+                "handle": "DB-JSON-1",
+                "rdapConformance": ["rdap_conformance_0", "rdap_domain_object_0", "rdap_event_based_0"],
+                "status": ["active"],
+                "events": [{"eventAction": "registration", "eventDate": "2024-01-15T00:00:00Z"}]
+            }"#,
+        )
+        .assert()
+        .success();
+
+    // THEN
+    let actual = store
+        .get_domain_by_ldh("db-json.example")
+        .await
+        .expect("getting domain");
+    assert!(matches!(actual, RdapResponse::Domain(_)));
+}
+
+#[sqlx::test]
+async fn add_json_invalid_fails(db: Pool<Postgres>) {
+    // GIVEN
+    let mut jig = RdapSrvDbTestJig::new(&test_db_url(&db).await);
+
+    // WHEN — invalid JSON is piped via stdin.
+    jig.cmd
+        .arg("add-json")
+        .write_stdin("not a json document")
+        .assert()
+        .failure();
+}
