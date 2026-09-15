@@ -227,16 +227,16 @@ fn GIVEN_network_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_srvhelp_with_no_options_WHEN_create_srvhelp_THEN_success() {
+fn GIVEN_srvhelp_with_no_options_WHEN_create_srvhelp_THEN_error() {
     // GIVEN
     let mut test_jig = RdapSrvDataTestJig::new();
 
     // WHEN
     test_jig.cmd.arg("srv-help");
 
-    // THEN
+    // THEN — an empty help document cannot be stored, so the command fails.
     let assert = test_jig.cmd.assert();
-    assert.success();
+    assert.failure();
 }
 #[test]
 fn GIVEN_srvhelp_with_notice_WHEN_create_srvhelp_THEN_success() {
@@ -265,7 +265,9 @@ fn GIVEN_srvhelp_with_host_WHEN_create_srvhelp_THEN_success() {
         .cmd
         .arg("srv-help")
         .arg("--host")
-        .arg("foo.example.com");
+        .arg("foo.example.com")
+        .arg("--notice")
+        .arg("\"A host help notice\"");
 
     // THEN
     let assert = test_jig.cmd.assert();

@@ -368,3 +368,22 @@ async fn add_json_invalid_fails(db: Pool<Postgres>) {
         .assert()
         .failure();
 }
+
+#[sqlx::test]
+async fn add_srv_help_without_notice_fails(db: Pool<Postgres>) {
+    // GIVEN
+    let mut jig = RdapSrvDbTestJig::new(&test_db_url(&db).await);
+
+    // WHEN — no notice is given.
+    let assert = jig
+        .cmd
+        .arg("add-srv-help")
+        .arg("--host")
+        .arg("db-host.example")
+        .assert()
+        .failure();
+
+    // THEN — the error explains what is missing.
+    let out = assert.get_output();
+    assert!(String::from_utf8_lossy(&out.stderr).contains("help requires at least one --notice"));
+}

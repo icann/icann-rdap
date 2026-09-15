@@ -435,6 +435,8 @@ pub struct SrvHelpArgs {
 
     /// Adds a server notice.
     ///
+    /// At least one notice is required: it is the only content that makes the help
+    /// document identifiable when read back from storage.
     /// Takes the form of "\[LINK\] description" where the optional \[LINK\] takes
     /// the form of "(REL;TYPE)\[HREF\]". This argument maybe specified multiple times.
     #[arg(long, value_parser = parse_notice_or_remark)]
@@ -882,6 +884,14 @@ async fn make_network(
 }
 
 fn make_help(args: SrvHelpArgs) -> Result<Output, RdapServerError> {
+    // An empty help document serializes without a "notices" array, which is the
+    // field RdapResponse::try_from dispatches on — such a row could never be read
+    // back. Reject it up front instead of storing an unreadable document.
+    if args.notice.is_empty() {
+        return Err(RdapServerError::InvalidArg(
+            "help requires at least one --notice argument".to_string(),
+        ));
+    }
     let help = Help::response().notices(args.notice.to_notices()).build();
     let output = Output {
         rdap: help.to_response(),
@@ -934,7 +944,7 @@ pub async fn build_object(
 mod tests {
     use icann_rdap_common::{prelude::RdapResponse, response::DsDatum};
 
-    use super::{parse_ds_datum, parse_notice_or_remark, parse_rdap_json};
+    use super::{SrvHelpArgs, make_help, parse_ds_datum, parse_notice_or_remark, parse_rdap_json};
 
     #[test]
     fn test_parse_notice_arg() {
@@ -1061,5 +1071,20 @@ mod tests {
 
         // THEN
         assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
+
+    #[test]
+    fn make_help_without_notice_errors() {
+        // GIVEN
+        let args = SrvHelpArgs {
+            host: None,
+            notice: vec![],
+        };
+
+        // WHEN
+        let actual = make_help(args);
+
+        // THEN
+        assert!(actual.is_err());
     }
 }
