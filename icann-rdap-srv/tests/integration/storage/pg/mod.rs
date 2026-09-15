@@ -12,6 +12,7 @@ use icann_rdap_srv::storage::pg::{config::PgConfig, ops::Pg};
 use sqlx::{Pool, Postgres};
 
 mod autnum;
+mod del;
 mod domain;
 mod entity;
 mod lookups;

@@ -2,6 +2,7 @@
 
 pub mod config;
 pub mod db_url;
+pub mod del;
 pub mod migration;
 pub mod ops;
 pub mod tx;

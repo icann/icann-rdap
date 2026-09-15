@@ -1,3 +1,5 @@
+use std::net::IpAddr;
+
 use {
     async_trait::async_trait,
     icann_rdap_common::response::{
@@ -292,4 +294,32 @@ pub trait TxHandle: Send {
 
     /// Rollback the transaction.
     async fn rollback(self: Box<Self>) -> Result<(), RdapServerError>;
+}
+
+/// Deletion of RDAP entities from a storage backend.
+///
+/// Each method deletes at most one record, keyed by the entity's primary key.
+/// Returns `Ok(true)` if a record was deleted, `Ok(false)` if nothing matched.
+///
+/// Currently supported by the PostgreSQL backend; the in-memory backend
+/// panics via [`unimplemented!`] (see `crate::storage::mem::del`).
+#[async_trait]
+pub trait DeleteOps: Send + Sync {
+    /// Delete an entity using its 'handle' as the key.
+    async fn delete_entity(&self, handle: &str) -> Result<bool, RdapServerError>;
+
+    /// Delete a domain using its 'ldhName' as the key.
+    async fn delete_domain(&self, ldh_name: &str) -> Result<bool, RdapServerError>;
+
+    /// Delete a nameserver using its 'ldhName' as the key.
+    async fn delete_nameserver(&self, ldh_name: &str) -> Result<bool, RdapServerError>;
+
+    /// Delete an autnum using its `(startAutnum, endAutnum)` range as the key.
+    async fn delete_autnum(&self, start: u32, end: u32) -> Result<bool, RdapServerError>;
+
+    /// Delete a network using its `(startAddress, endAddress)` range as the key.
+    async fn delete_network(&self, start: IpAddr, end: IpAddr) -> Result<bool, RdapServerError>;
+
+    /// Delete a server help record using its 'host' as the key.
+    async fn delete_srv_help(&self, host: &str) -> Result<bool, RdapServerError>;
 }

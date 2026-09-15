@@ -142,6 +142,11 @@ impl Pg {
         Ok(Self { pg_pool, config })
     }
 
+    /// The underlying connection pool.
+    pub(crate) fn pool(&self) -> &PgPool {
+        &self.pg_pool
+    }
+
     /// Build a store from an already-connected pool together with the supplied config.
     pub fn from_pool_with_config(pg_pool: PgPool, config: PgConfig) -> Self {
         Self { pg_pool, config }
