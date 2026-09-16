@@ -855,7 +855,7 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "downstream_compat"
-version = "0.1.2"
+version = "1.0.0"
 dependencies = [
  "icann-rdap-common",
  "strum",
@@ -1519,7 +1519,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-cli"
-version = "0.0.31"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -1556,7 +1556,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-client"
-version = "0.0.31"
+version = "1.0.0"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1582,7 +1582,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-common"
-version = "0.0.31"
+version = "1.0.0"
 dependencies = [
  "buildstructor",
  "chrono",
@@ -1602,7 +1602,7 @@ dependencies = [
 
 [[package]]
 name = "icann-rdap-srv"
-version = "0.0.31"
+version = "1.0.0"
 dependencies = [
  "ab-radix-trie",
  "assert_cmd",
