@@ -5,11 +5,14 @@ use icann_rdap_common::prelude::{
 
 use crate::rpsl::{RpslParams, ToRpsl};
 
-use super::push_notices;
+use super::{push_extensions, push_notices};
 
 impl ToRpsl for DomainSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
@@ -29,6 +32,9 @@ impl ToRpsl for NameserverSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
 
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
+
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
 
@@ -46,6 +52,9 @@ impl ToRpsl for NameserverSearchResults {
 impl ToRpsl for EntitySearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
@@ -65,6 +74,9 @@ impl ToRpsl for IpSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
 
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
+
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());
 
@@ -82,6 +94,9 @@ impl ToRpsl for IpSearchResults {
 impl ToRpsl for AutnumSearchResults {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());

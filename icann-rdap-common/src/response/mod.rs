@@ -35,6 +35,8 @@ pub use obj_common::*;
 #[doc(inline)]
 pub use rir_search::*;
 #[doc(inline)]
+pub use rpki::*;
+#[doc(inline)]
 pub use search::*;
 #[doc(inline)]
 pub use types::*;
@@ -54,6 +56,7 @@ pub(crate) mod network;
 pub(crate) mod obj_common;
 pub mod redacted; // RFC 9537 is not a mainstream extension.
 pub(crate) mod rir_search; // RFC 9910 RIR Search
+pub(crate) mod rpki; // RPKI extension (draft-ietf-regext-rdap-rpki)
 pub(crate) mod search;
 pub mod ttl; // ttl0 extension
 pub(crate) mod types;
@@ -146,6 +149,14 @@ pub enum RdapResponse {
     IpSearchResults(Box<IpSearchResults>),
     AutnumSearchResults(Box<AutnumSearchResults>),
 
+    // RPKI (draft-ietf-regext-rdap-rpki)
+    Rpki1Roa(Box<Rpk1Roa>),
+    Rpki1Aspa(Box<Rpk1Aspa>),
+    Rpki1X509ResourceCert(Box<Rpk1X509ResourceCert>),
+    Rpki1RoaSearchResults(Box<Rpk1RoaSearchResults>),
+    Rpki1AspaSearchResults(Box<Rpk1AspaSearchResults>),
+    Rpki1X509ResourceCertSearchResults(Box<Rpk1X509ResourceCertSearchResults>),
+
     // Error
     ErrorResponse(Box<Rfc9083Error>),
 
@@ -178,6 +189,11 @@ impl TryFrom<Value> for RdapResponse {
                     "nameserver" => Ok(serde_json::from_value::<Nameserver>(value)?.to_response()),
                     "autnum" => Ok(serde_json::from_value::<Autnum>(value)?.to_response()),
                     "ip network" => Ok(serde_json::from_value::<Network>(value)?.to_response()),
+                    "rpki1_roa" => Ok(serde_json::from_value::<Rpk1Roa>(value)?.to_response()),
+                    "rpki1_aspa" => Ok(serde_json::from_value::<Rpk1Aspa>(value)?.to_response()),
+                    "rpki1_x509ResourceCert" => {
+                        Ok(serde_json::from_value::<Rpk1X509ResourceCert>(value)?.to_response())
+                    }
                     _ => Err(RdapResponseError::UnknownRdapResponse),
                 };
             } else {
@@ -237,6 +253,39 @@ impl TryFrom<Value> for RdapResponse {
                 ));
             }
         }
+        // else if it is an rpki1_roa search result
+        if let Some(result) = response.get("rpki1_roaSearchResults") {
+            if result.is_array() {
+                return Ok(serde_json::from_value::<Rpk1RoaSearchResults>(value)?.to_response());
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'rpki1_roaSearchResults' is not an array".to_string(),
+                ));
+            }
+        }
+        // else if it is an rpki1_aspa search result
+        if let Some(result) = response.get("rpki1_aspaSearchResults") {
+            if result.is_array() {
+                return Ok(serde_json::from_value::<Rpk1AspaSearchResults>(value)?.to_response());
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'rpki1_aspaSearchResults' is not an array".to_string(),
+                ));
+            }
+        }
+        // else if it is an rpki1_x509ResourceCert search result
+        if let Some(result) = response.get("rpki1_x509ResourceCertSearchResults") {
+            if result.is_array() {
+                return Ok(
+                    serde_json::from_value::<Rpk1X509ResourceCertSearchResults>(value)?
+                        .to_response(),
+                );
+            } else {
+                return Err(RdapResponseError::WrongJsonType(
+                    "'rpki1_x509ResourceCertSearchResults' is not an array".to_string(),
+                ));
+            }
+        }
 
         // else if it has an errorCode
         if let Some(result) = response.get("errorCode") {
@@ -276,6 +325,14 @@ impl RdapResponse {
             Self::NameserverSearchResults(_) => TypeId::of::<NameserverSearchResults>(),
             Self::IpSearchResults(_) => TypeId::of::<IpSearchResults>(),
             Self::AutnumSearchResults(_) => TypeId::of::<AutnumSearchResults>(),
+            Self::Rpki1Roa(_) => TypeId::of::<Rpk1Roa>(),
+            Self::Rpki1Aspa(_) => TypeId::of::<Rpk1Aspa>(),
+            Self::Rpki1X509ResourceCert(_) => TypeId::of::<Rpk1X509ResourceCert>(),
+            Self::Rpki1RoaSearchResults(_) => TypeId::of::<Rpk1RoaSearchResults>(),
+            Self::Rpki1AspaSearchResults(_) => TypeId::of::<Rpk1AspaSearchResults>(),
+            Self::Rpki1X509ResourceCertSearchResults(_) => {
+                TypeId::of::<Rpk1X509ResourceCertSearchResults>()
+            }
             Self::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             Self::Help(_) => TypeId::of::<Help>(),
         }
@@ -288,11 +345,17 @@ impl RdapResponse {
             Self::Nameserver(n) => n.object_common.links.as_ref(),
             Self::Autnum(a) => a.object_common.links.as_ref(),
             Self::Network(n) => n.object_common.links.as_ref(),
+            Self::Rpki1Roa(r) => r.object_common.links.as_ref(),
+            Self::Rpki1Aspa(r) => r.object_common.links.as_ref(),
+            Self::Rpki1X509ResourceCert(r) => r.object_common.links.as_ref(),
             Self::DomainSearchResults(_)
             | Self::EntitySearchResults(_)
             | Self::NameserverSearchResults(_)
             | Self::IpSearchResults(_)
             | Self::AutnumSearchResults(_)
+            | Self::Rpki1RoaSearchResults(_)
+            | Self::Rpki1AspaSearchResults(_)
+            | Self::Rpki1X509ResourceCertSearchResults(_)
             | Self::ErrorResponse(_)
             | Self::Help(_) => None,
         }
@@ -310,6 +373,12 @@ impl RdapResponse {
             Self::NameserverSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::IpSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::AutnumSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::Rpki1Roa(r) => r.common.rdap_conformance.as_ref(),
+            Self::Rpki1Aspa(r) => r.common.rdap_conformance.as_ref(),
+            Self::Rpki1X509ResourceCert(r) => r.common.rdap_conformance.as_ref(),
+            Self::Rpki1RoaSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::Rpki1AspaSearchResults(s) => s.common.rdap_conformance.as_ref(),
+            Self::Rpki1X509ResourceCertSearchResults(s) => s.common.rdap_conformance.as_ref(),
             Self::ErrorResponse(e) => e.common.rdap_conformance.as_ref(),
             Self::Help(h) => h.common.rdap_conformance.as_ref(),
         }
@@ -476,6 +545,12 @@ impl ContentExtensions for RdapResponse {
             Self::NameserverSearchResults(r) => r.content_extensions(),
             Self::IpSearchResults(r) => r.content_extensions(),
             Self::AutnumSearchResults(r) => r.content_extensions(),
+            Self::Rpki1Roa(r) => r.content_extensions(),
+            Self::Rpki1Aspa(r) => r.content_extensions(),
+            Self::Rpki1X509ResourceCert(r) => r.content_extensions(),
+            Self::Rpki1RoaSearchResults(r) => r.content_extensions(),
+            Self::Rpki1AspaSearchResults(r) => r.content_extensions(),
+            Self::Rpki1X509ResourceCertSearchResults(r) => r.content_extensions(),
             Self::ErrorResponse(e) => e.content_extensions(),
             Self::Help(h) => h.content_extensions(),
         }
@@ -573,6 +648,54 @@ pub fn normalize_extensions_with(
         }
         .to_response(),
         RdapResponse::AutnumSearchResults(r) => AutnumSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::Rpki1Roa(r) => Rpk1Roa {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::Rpki1Aspa(r) => Rpk1Aspa {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::Rpki1X509ResourceCert(r) => Rpk1X509ResourceCert {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::Rpki1RoaSearchResults(r) => Rpk1RoaSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::Rpki1AspaSearchResults(r) => Rpk1AspaSearchResults {
+            common: Common {
+                rdap_conformance: Some(rdap_conformance),
+                ..r.common
+            },
+            ..*r
+        }
+        .to_response(),
+        RdapResponse::Rpki1X509ResourceCertSearchResults(r) => Rpk1X509ResourceCertSearchResults {
             common: Common {
                 rdap_conformance: Some(rdap_conformance),
                 ..r.common

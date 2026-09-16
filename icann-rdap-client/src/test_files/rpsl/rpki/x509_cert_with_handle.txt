@@ -1,0 +1,18 @@
+aut-num:           rpki1_x509ResourceCert/CERT-1
+serial-number:     1234
+issuer:            CN=RIR-CA
+subject:           CN=ISP-CA
+signature-alg:     ecdsa-with-SHA256
+subject-key-id:    hOcGgxqXDa7mYv78fR+sGBKMtWJqItSLfaIYJDKYi8A=
+public-key-alg:    id-ecPublicKey
+public-key:        04...
+roa-ips:           192.0.2.0/24
+roa-ips:           2001:db8::/48
+autnums:           AS65536
+autnums:           AS65537
+not-valid-before:  2024-03-01T00:00:00Z
+not-valid-after:   2025-03-01T00:00:00Z
+rpki-type:         Hybrid
+nic-hdl:           CERT-1
+source:            example.com
+

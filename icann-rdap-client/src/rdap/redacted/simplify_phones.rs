@@ -7,16 +7,16 @@ use regex::Regex;
 
 use crate::rdap::redacted::add_remark;
 
-static REDACTED_PHONE: &str = "////REDACTED_PHONE////";
+static REDACTED_PHONE: &str = "----REDACTED_PHONE----";
 static REDACTED_PHONE_DESC: &str = "Phone redacted.";
 
-static REDACTED_PHONE_EXT: &str = "////REDACTED_PHONE_EXT////";
+static REDACTED_PHONE_EXT: &str = "----REDACTED_PHONE_EXT----";
 static REDACTED_PHONE_EXT_DESC: &str = "Phone extension redacted.";
 
-static REDACTED_FAX: &str = "////REDACTED_FAX////";
+static REDACTED_FAX: &str = "----REDACTED_FAX----";
 static REDACTED_FAX_DESC: &str = "Fax redacted.";
 
-static REDACTED_FAX_EXT: &str = "////REDACTED_FAX_EXT////";
+static REDACTED_FAX_EXT: &str = "----REDACTED_FAX_EXT----";
 static REDACTED_FAX_EXT_DESC: &str = "Fax extension redacted.";
 
 pub(crate) fn simplify_registrant_phone(domain: Box<Domain>, redaction: &Redacted) -> Box<Domain> {
@@ -685,7 +685,7 @@ mod tests {
 
         assert_eq!(
             phones[0].phone(),
-            "+1-555-123-4567;ext=////REDACTED_PHONE_EXT////"
+            "+1-555-123-4567;ext=----REDACTED_PHONE_EXT----"
         );
         assert!(phones[0].features().contains(&"voice".to_string()));
     }
@@ -708,7 +708,7 @@ mod tests {
 
         assert_eq!(
             phones[0].phone(),
-            "+1-555-123-4568;ext=////REDACTED_FAX_EXT////"
+            "+1-555-123-4568;ext=----REDACTED_FAX_EXT----"
         );
         assert!(phones[0].features().contains(&"fax".to_string()));
     }
@@ -731,7 +731,7 @@ mod tests {
 
         assert_eq!(
             phones[0].phone(),
-            "+1-555-987-6543;ext=////REDACTED_PHONE_EXT////"
+            "+1-555-987-6543;ext=----REDACTED_PHONE_EXT----"
         );
         assert!(phones[0].features().contains(&"voice".to_string()));
     }
@@ -753,7 +753,7 @@ mod tests {
 
         assert_eq!(
             phones[0].phone(),
-            "+1-555-123-4567 ////REDACTED_PHONE_EXT////"
+            "+1-555-123-4567 ----REDACTED_PHONE_EXT----"
         );
         assert!(phones[0].features().contains(&"voice".to_string()));
     }
@@ -816,11 +816,11 @@ mod tests {
         // Both phones should be modified since they both have voice feature
         assert_eq!(
             phones[0].phone(),
-            "+1-555-111-1111;ext=////REDACTED_PHONE_EXT////"
+            "+1-555-111-1111;ext=----REDACTED_PHONE_EXT----"
         );
         assert_eq!(
             phones[1].phone(),
-            "+1-555-222-2222 ////REDACTED_PHONE_EXT////"
+            "+1-555-222-2222 ----REDACTED_PHONE_EXT----"
         );
     }
 
@@ -840,7 +840,7 @@ mod tests {
 
         assert_eq!(
             phones[0].phone(),
-            "+1-555-111-1111;ext=////REDACTED_PHONE_EXT////;param=value"
+            "+1-555-111-1111;ext=----REDACTED_PHONE_EXT----;param=value"
         );
         assert!(phones[0].features().contains(&"voice".to_string()));
     }
@@ -981,7 +981,7 @@ mod tests {
         let registrant_phones = registrant_contact.phones();
         assert_eq!(
             registrant_phones[0].phone(),
-            "+1-555-111-1111;ext=////REDACTED_PHONE_EXT////"
+            "+1-555-111-1111;ext=----REDACTED_PHONE_EXT----"
         );
 
         // AND the administrative entity's phone extension should not be redacted

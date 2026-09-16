@@ -4,11 +4,11 @@ ICANN RDAP Server
 This is an RDAP server that stores information in-memory and is
 subsequently very fast.
 
-Installation and Usage
-----------------------
+About, Usage, and Installation
+------------------------------
 
-See the [project wiki](https://github.com/icann/icann-rdap/wiki) for information on installation
-and usage of this software.
+Please see the [online user's manual](https://icann.github.io/icann-rdap/) for general information,
+installation, and usage of this software.
 
 License
 -------

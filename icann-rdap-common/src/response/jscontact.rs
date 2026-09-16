@@ -42,6 +42,12 @@ impl JsContactConvert for RdapResponse {
             RdapResponse::AutnumSearchResults(autnum_search_results) => {
                 autnum_search_results.to_jscontact().to_response()
             }
+            RdapResponse::Rpki1Roa(r) => r.to_response(),
+            RdapResponse::Rpki1Aspa(r) => r.to_response(),
+            RdapResponse::Rpki1X509ResourceCert(r) => r.to_response(),
+            RdapResponse::Rpki1RoaSearchResults(r) => r.to_response(),
+            RdapResponse::Rpki1AspaSearchResults(r) => r.to_response(),
+            RdapResponse::Rpki1X509ResourceCertSearchResults(r) => r.to_response(),
             RdapResponse::ErrorResponse(rfc9083_error) => rfc9083_error.to_response(),
             RdapResponse::Help(help) => help.to_response(),
         }
@@ -69,6 +75,12 @@ impl JsContactConvert for RdapResponse {
             RdapResponse::AutnumSearchResults(autnum_search_results) => {
                 autnum_search_results.only_jscontact().to_response()
             }
+            RdapResponse::Rpki1Roa(r) => r.to_response(),
+            RdapResponse::Rpki1Aspa(r) => r.to_response(),
+            RdapResponse::Rpki1X509ResourceCert(r) => r.to_response(),
+            RdapResponse::Rpki1RoaSearchResults(r) => r.to_response(),
+            RdapResponse::Rpki1AspaSearchResults(r) => r.to_response(),
+            RdapResponse::Rpki1X509ResourceCertSearchResults(r) => r.to_response(),
             RdapResponse::ErrorResponse(rfc9083_error) => rfc9083_error.to_response(),
             RdapResponse::Help(help) => help.to_response(),
         }

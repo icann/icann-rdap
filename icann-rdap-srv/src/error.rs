@@ -29,6 +29,7 @@ pub enum RdapServerError {
     IntEnvVar(#[from] ParseIntError),
     #[error["configuration error: {0}"]]
     Config(String),
+    #[cfg(feature = "postgres")]
     #[error(transparent)]
     SqlDb(#[from] sqlx::Error),
     #[error("index data for {0} is missing or empty")]

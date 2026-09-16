@@ -1,0 +1,11 @@
+aut-num:           rpki1_roa/ROA-1
+netname:           ROA-1 Example
+roa-ips:           2001:db8::/48/64
+roa-ips:           192.0.2.0/24/28
+origin-autnum:     AS65536
+not-valid-before:  2024-01-01T00:00:00Z
+not-valid-after:   2025-01-01T00:00:00Z
+rpki-type:         Hosted
+nic-hdl:           ROA-1
+source:            example.com
+

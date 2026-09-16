@@ -4,13 +4,13 @@ use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
-static REDACTED_STREET: &str = "////REDACTED_STREET////";
+static REDACTED_STREET: &str = "----REDACTED_STREET----";
 static REDACTED_STREET_DESC: &str = "Street redacted.";
 
-static REDACTED_CITY: &str = "////REDACTED_CITY////";
+static REDACTED_CITY: &str = "----REDACTED_CITY----";
 static REDACTED_CITY_DESC: &str = "City redacted.";
 
-static REDACTED_POSTAL_CODE: &str = "////REDACTED_POSTAL_CODE////";
+static REDACTED_POSTAL_CODE: &str = "----REDACTED_POSTAL_CODE----";
 static REDACTED_POSTAL_CODE_DESC: &str = "Postal code redacted.";
 
 pub(crate) fn simplify_registrant_street(

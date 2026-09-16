@@ -1,3 +1,26 @@
+//! Domain search results filter implementation.
+//!
+//! Extracts fields from [`crate::response::DomainSearchResults`] RDAP objects.
+//! Values are aggregated across all search results into arrays.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringArray` | Handles from all results |
+//! | `Status` | `StringArray` | Statuses from all results |
+//! | `ObjectClassName` | `StringArray` | Object class names from all results |
+//! | `Event` | `HashMapVal` | Events aggregated from all results |
+//! | `RdapConformance` | `StringArray` | Conformance URIs from all results |
+//! | `LdhName` | `StringArray` | Domain names from all results |
+//! | `UnicodeName` | `StringArray` | Unicode domain names from all results |
+//! | `Nameserver` | `StringArray` | Nameservers from all results |
+//! | `NameserverIpAddress` | `HashMapVal` | Nameserver ldh_name → IP address list aggregated across results |
+//! | `PublicId` | `HashMapVal` | Public IDs aggregated from all results |
+//! | Entity roles | `StringArray` | Role-based fields aggregated from all results |
+
+use std::collections::HashMap;
+
 use super::*;
 use crate::response::{CommonFields, DomainSearchResults, ObjectCommonFields};
 
@@ -91,6 +114,31 @@ impl Filterable for DomainSearchResults {
                             .collect(),
                     ),
                 },
+                Filter::NameserverIpAddress => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::HashMapVal(
+                        self.results()
+                            .iter()
+                            .flat_map(|d| d.nameservers())
+                            .filter_map(|n| n.ldh_name().map(|name| (name.to_string(), n)))
+                            .fold(
+                                HashMap::<String, Vec<String>>::new(),
+                                |mut acc, (name, ns)| {
+                                    acc.entry(name).or_insert_with(Vec::new).extend(
+                                        ns.ip_addresses()
+                                            .iter()
+                                            .flat_map(|ip| ip.v4s())
+                                            .chain(ns.ip_addresses().iter().flat_map(|ip| ip.v6s()))
+                                            .map(|ip| ip.to_string()),
+                                    );
+                                    acc
+                                },
+                            )
+                            .into_iter()
+                            .map(|(k, v)| (k, FilterValue::StringArray(v)))
+                            .collect(),
+                    ),
+                },
                 Filter::PublicId => FilterOutput {
                     filter: *f,
                     value: FilterValue::HashMapVal(
@@ -171,12 +219,15 @@ mod tests {
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns1.example1.com")
+                    .address("192.0.2.1".to_string())
+                    .address("2001:db8::1".to_string())
                     .build()
                     .unwrap(),
             )
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns2.example1.com")
+                    .address("198.51.100.1".to_string())
                     .build()
                     .unwrap(),
             )
@@ -257,6 +308,7 @@ mod tests {
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns1.example2.com")
+                    .address("192.0.2.2".to_string())
                     .build()
                     .unwrap(),
             )
@@ -480,6 +532,46 @@ mod tests {
                 assert!(s.contains(&"ns1.example2.com".to_string()));
             }
             _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_nameserver_ip_address() {
+        // GIVEN
+        let search_results = make_test_domain_search_results();
+        let filters = vec![Filter::NameserverIpAddress];
+
+        // WHEN
+        let results = extract(&search_results, &filters);
+
+        // THEN
+        match &results[0].value {
+            FilterValue::HashMapVal(hm) => {
+                assert_eq!(hm.len(), 3);
+                match hm.get("ns1.example1.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 2);
+                        assert!(ips.contains(&"192.0.2.1".to_string()));
+                        assert!(ips.contains(&"2001:db8::1".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns1.example1.com"),
+                }
+                match hm.get("ns2.example1.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 1);
+                        assert!(ips.contains(&"198.51.100.1".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns2.example1.com"),
+                }
+                match hm.get("ns1.example2.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 1);
+                        assert!(ips.contains(&"192.0.2.2".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns1.example2.com"),
+                }
+            }
+            _ => panic!("Expected HashMapVal"),
         }
     }
 

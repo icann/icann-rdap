@@ -3,13 +3,16 @@ use icann_rdap_common::prelude::{Autnum, CommonFields, ObjectCommonFields};
 use crate::rpsl::{RpslParams, ToRpsl};
 
 use super::{
-    AttrName, KeyRef, push_entities, push_mandatory_attribute, push_notices, push_obj_common,
-    push_optional_attribute,
+    AttrName, KeyRef, push_entities, push_extensions, push_mandatory_attribute, push_notices,
+    push_obj_common, push_optional_attribute,
 };
 
 impl ToRpsl for Autnum {
     fn to_rpsl(&self, params: RpslParams) -> String {
         let mut rpsl = String::new();
+
+        // extensions are comments before the objects
+        rpsl = push_extensions(rpsl, self.extensions());
 
         // notices are comments before the objects
         rpsl = push_notices(rpsl, self.notices());

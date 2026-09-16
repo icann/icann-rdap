@@ -4,7 +4,7 @@ use icann_rdap_common::prelude::{Domain, EntityRole, redacted::Redacted};
 
 use crate::rdap::redacted::add_remark;
 
-static REDACTED_NAME: &str = "////REDACTED_NAME////";
+static REDACTED_NAME: &str = "----REDACTED_NAME----";
 static REDACTED_NAME_DESC: &str = "Name redacted.";
 
 pub(crate) fn simplify_registrant_name(

@@ -11,8 +11,8 @@ rust-version.workspace = true
 
 [dependencies]
 
-icann-rdap-client = { version = "0.0.31", path = "../icann-rdap-client" }
-icann-rdap-common = { version = "0.0.31", path = "../icann-rdap-common" }
+icann-rdap-client = { version = "1.0.0", path = "../icann-rdap-client" }
+icann-rdap-common = { version = "1.0.0", path = "../icann-rdap-common" }
 
 ab-radix-trie.workspace = true
 async-trait.workspace = true
@@ -39,13 +39,19 @@ reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
-sqlx.workspace = true
+sqlx = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 tower.workspace = true
 tower-http.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+[features]
+default = ["memory"]
+memory = []
+postgres = ["sqlx/postgres"]
+sqlx = ["dep:sqlx"]
 
 [dev-dependencies]
 

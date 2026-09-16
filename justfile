@@ -28,7 +28,7 @@ pr_check:
     cargo fmt --check \
     && cargo clean \
     && cargo check --target wasm32-unknown-unknown -p icann-rdap-client \
-    && cargo test \
+    && cargo test --all-features \
     && cargo doc --no-deps
 
 [doc('Do an RDAP lookup on a given value.')]

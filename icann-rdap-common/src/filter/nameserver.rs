@@ -1,3 +1,19 @@
+//! Nameserver filter implementation.
+//!
+//! Extracts fields from [`crate::response::Nameserver`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Nameserver handle |
+//! | `Status` | `StringArray` | Status list |
+//! | `ObjectClassName` | `StringVal` | Always `"nameserver"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `IpAddress` | `StringArray` | All IPv4 and IPv6 addresses combined |
+//! | Entity roles | Various | Extract from nested entities |
+
 use super::*;
 use crate::response::{CommonFields, Nameserver, ObjectCommonFields};
 
@@ -8,10 +24,7 @@ impl Filterable for Nameserver {
             .map(|f| match f {
                 Filter::Handle => FilterOutput {
                     filter: *f,
-                    value: self
-                        .handle()
-                        .map(|h| FilterValue::StringVal(h.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.handle()),
                 },
                 Filter::Status => FilterOutput {
                     filter: *f,

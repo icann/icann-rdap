@@ -10,10 +10,11 @@ use {
 
 use strum::Display as EnumDisplay;
 
-use crate::{
-    error::RdapServerError,
-    storage::{mem::config::MemConfig, pg::config::PgConfig},
-};
+use crate::error::RdapServerError;
+
+use crate::storage::mem::config::MemConfig;
+#[cfg(feature = "postgres")]
+use crate::storage::pg::config::PgConfig;
 
 pub const LOG: &str = "RDAP_SRV_LOG";
 pub const LISTEN_ADDR: &str = "RDAP_SRV_LISTEN_ADDR";
@@ -115,6 +116,7 @@ pub enum StorageType {
     Memory(MemConfig),
 
     /// Uses a PostgreSQL database.
+    #[cfg(feature = "postgres")]
     Postgres(PgConfig),
 }
 
@@ -170,23 +172,35 @@ impl StorageType {
             .autnum_search_by_handle_enable(autnum_search_by_handle)
             .build();
         let storage = get_or(STORAGE, "memory");
-        if storage == "memory" {
-            Ok(Self::Memory(
+        let result = match storage.as_str() {
+            "memory" => Ok(Self::Memory(
                 MemConfig::builder().common_config(common_config).build(),
-            ))
-        } else if storage == "postgres" {
-            let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
-            Ok(Self::Postgres(
-                PgConfig::builder()
-                    .db_url(db_url)
-                    .common_config(common_config)
-                    .build(),
-            ))
-        } else {
-            Err(RdapServerError::Config(format!(
+            )),
+            _ => Err(RdapServerError::Config(format!(
                 "storage type of '{storage}' is invalid"
-            )))
+            ))),
+        };
+        #[cfg(feature = "postgres")]
+        {
+            if storage == "postgres" {
+                let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
+                return Ok(Self::Postgres(
+                    PgConfig::builder()
+                        .db_url(db_url)
+                        .common_config(common_config)
+                        .build(),
+                ));
+            }
         }
+        #[cfg(not(feature = "postgres"))]
+        {
+            if storage == "postgres" {
+                return Err(RdapServerError::Config(
+                    "postgres storage not enabled. Enable the 'postgres' feature.".to_string(),
+                ));
+            }
+        }
+        result
     }
 }
 

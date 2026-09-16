@@ -1,0 +1,8 @@
+aut-num:           rpki1_roa/ROA-2
+roa-ips:           10.0.0.0/8/16
+origin-autnum:     AS65537
+digests:           7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+digest-alg:        SHA-256
+nic-hdl:           ROA-2
+source:            example.com
+

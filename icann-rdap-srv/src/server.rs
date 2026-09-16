@@ -22,9 +22,11 @@ use crate::{
         StoreOps,
         data::{load_data, reload_data},
         mem::{config::MemConfig, ops::Mem},
-        pg::{config::PgConfig, ops::Pg},
     },
 };
+
+#[cfg(feature = "postgres")]
+use crate::storage::pg::{config::PgConfig, ops::Pg};
 
 /// Holds information on the server listening.
 pub struct Listener {
@@ -77,15 +79,17 @@ impl Listener {
     /// call [Listener::start_with_state], which initiates the HTTP service.
     pub async fn start_server(self, service_config: &ServiceConfig) -> Result<(), RdapServerError> {
         init_bootstrap(service_config).await?;
-        if let StorageType::Memory(config) = &service_config.storage_type {
-            let app_state = AppState::new_mem(config.clone(), service_config).await?;
-            self.start_with_state(app_state).await?;
-        } else if let StorageType::Postgres(config) = &service_config.storage_type {
-            let app_state = AppState::new_pg(config.clone(), service_config).await?;
-            self.start_with_state(app_state).await?;
-        } else {
-            return Err(RdapServerError::Config("Invalid storage type.".to_string()));
-        };
+        match &service_config.storage_type {
+            StorageType::Memory(config) => {
+                let app_state = AppState::new_mem(config.clone(), service_config).await?;
+                self.start_with_state(app_state).await?;
+            }
+            #[cfg(feature = "postgres")]
+            StorageType::Postgres(config) => {
+                let app_state = AppState::new_pg(config.clone(), service_config).await?;
+                self.start_with_state(app_state).await?;
+            }
+        }
         Ok(())
     }
 
@@ -195,6 +199,7 @@ impl std::fmt::Debug for AppState<Mem> {
     }
 }
 
+#[cfg(feature = "postgres")]
 impl AppState<Pg> {
     pub async fn new_pg(
         config: PgConfig,
@@ -213,12 +218,14 @@ impl AppState<Pg> {
     }
 }
 
+#[cfg(feature = "postgres")]
 impl std::fmt::Debug for AppState<Pg> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AppState<Pg>").finish()
     }
 }
 
+#[cfg(feature = "postgres")]
 #[async_trait]
 impl ServiceState for AppState<Pg> {
     async fn get_storage(&self) -> Result<&dyn StoreOps, RdapServerError> {

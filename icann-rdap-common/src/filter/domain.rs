@@ -1,3 +1,23 @@
+//! Domain filter implementation.
+//!
+//! Extracts fields from [`crate::response::Domain`] RDAP objects.
+//!
+//! # Supported Filters
+//!
+//! | Filter | Value Type | Description |
+//! |---|---|---|
+//! | `Handle` | `StringVal` | Domain handle |
+//! | `Status` | `StringArray` | Status list (e.g., `"active"`, `"clientTransferProhibited"`) |
+//! | `ObjectClassName` | `StringVal` | Always `"domain"` |
+//! | `Event` | `HashMapVal` | Event actions mapped to dates |
+//! | `RdapConformance` | `StringArray` | RDAP conformance URIs |
+//! | `LdhName` | `StringVal` | ASCII domain name |
+//! | `UnicodeName` | `StringVal` | Internationalized domain name |
+//! | `Nameserver` | `StringArray` | Nameserver domain names |
+//! | `NameserverIpAddress` | `HashMapVal` | Nameserver ldh_name → IP address list |
+//! | `PublicId` | `HashMapVal` | Public identifiers (e.g., IANA Registrar ID) |
+//! | Entity roles | Various | Extract from nested entities |
+
 use super::*;
 use crate::response::{CommonFields, Domain, ObjectCommonFields};
 
@@ -8,10 +28,7 @@ impl Filterable for Domain {
             .map(|f| match f {
                 Filter::Handle => FilterOutput {
                     filter: *f,
-                    value: self
-                        .handle()
-                        .map(|h| FilterValue::StringVal(h.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.handle()),
                 },
                 Filter::Status => FilterOutput {
                     filter: *f,
@@ -50,17 +67,11 @@ impl Filterable for Domain {
                 },
                 Filter::LdhName => FilterOutput {
                     filter: *f,
-                    value: self
-                        .ldh_name()
-                        .map(|n| FilterValue::StringVal(n.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.ldh_name()),
                 },
                 Filter::UnicodeName => FilterOutput {
                     filter: *f,
-                    value: self
-                        .unicode_name()
-                        .map(|n| FilterValue::StringVal(n.to_string()))
-                        .unwrap_or(FilterValue::Null),
+                    value: opt_to_string(self.unicode_name()),
                 },
                 Filter::Nameserver => FilterOutput {
                     filter: *f,
@@ -69,6 +80,25 @@ impl Filterable for Domain {
                             .iter()
                             .filter_map(|n| n.ldh_name())
                             .map(|n| n.to_string())
+                            .collect(),
+                    ),
+                },
+                Filter::NameserverIpAddress => FilterOutput {
+                    filter: *f,
+                    value: FilterValue::HashMapVal(
+                        self.nameservers()
+                            .iter()
+                            .filter_map(|n| n.ldh_name().map(|name| (name.to_string(), n)))
+                            .map(|(name, ns)| {
+                                let ips: Vec<String> = ns
+                                    .ip_addresses()
+                                    .iter()
+                                    .flat_map(|ip| ip.v4s())
+                                    .chain(ns.ip_addresses().iter().flat_map(|ip| ip.v6s()))
+                                    .map(|ip| ip.to_string())
+                                    .collect();
+                                (name, FilterValue::StringArray(ips))
+                            })
                             .collect(),
                     ),
                 },
@@ -104,8 +134,8 @@ mod tests {
     use super::*;
     use crate::contact::Contact;
     use crate::prelude::Email;
-    use crate::prelude::{ExtensionId, Nameserver, PublicId};
-    use crate::response::{Event, Notice};
+    use crate::prelude::{Entity, Event, ExtensionId, Nameserver, PublicId};
+    use crate::response::Notice;
 
     fn make_test_domain() -> Domain {
         let registrant_email = Email::builder().email("registrant@example.com").build();
@@ -157,12 +187,15 @@ mod tests {
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns1.example.com")
+                    .address("192.0.2.1".to_string())
+                    .address("2001:db8::1".to_string())
                     .build()
                     .unwrap(),
             )
             .nameserver(
                 Nameserver::builder()
                     .ldh_name("ns2.example.com")
+                    .address("198.51.100.1".to_string())
                     .build()
                     .unwrap(),
             )
@@ -336,6 +369,39 @@ mod tests {
                 assert!(s.contains(&"ns2.example.com".to_string()));
             }
             _ => panic!("Expected StringArray"),
+        }
+    }
+
+    #[test]
+    fn filter_nameserver_ip_address() {
+        // GIVEN
+        let domain = make_test_domain();
+        let filters = vec![Filter::NameserverIpAddress];
+
+        // WHEN
+        let results = extract(&domain, &filters);
+
+        // THEN
+        match &results[0].value {
+            FilterValue::HashMapVal(hm) => {
+                assert_eq!(hm.len(), 2);
+                match hm.get("ns1.example.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 2);
+                        assert!(ips.contains(&"192.0.2.1".to_string()));
+                        assert!(ips.contains(&"2001:db8::1".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns1.example.com"),
+                }
+                match hm.get("ns2.example.com") {
+                    Some(FilterValue::StringArray(ips)) => {
+                        assert_eq!(ips.len(), 1);
+                        assert!(ips.contains(&"198.51.100.1".to_string()));
+                    }
+                    _ => panic!("Expected StringArray for ns2.example.com"),
+                }
+            }
+            _ => panic!("Expected HashMapVal"),
         }
     }
 

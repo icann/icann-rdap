@@ -23,6 +23,7 @@ mod httpdata;
 mod nameserver;
 mod network;
 pub mod process;
+mod rpki;
 mod search;
 mod string;
 mod types;
@@ -90,6 +91,12 @@ pub enum CheckClass {
     /// This class represents errors with respect to the gTLD RDAP profile.
     #[strum(serialize = "GtldProfileErr")]
     GtldProfileError,
+
+    /// Rpki1 Errors
+    ///
+    /// This class represents errors with respect to the RPKI extension.
+    #[strum(serialize = "Rpki1Err")]
+    Rpki1Error,
 }
 
 /// All check classes
@@ -160,6 +167,12 @@ pub enum RdapStructure {
     Redacted,
     Remark,
     Remarks,
+    Rpk1Roa,
+    Rpk1Aspa,
+    Rpk1X509ResourceCert,
+    Rpk1RoaSearchResults,
+    Rpk1AspaSearchResults,
+    Rpk1X509ResourceCertSearchResults,
     SecureDns,
     Status,
 }
@@ -275,6 +288,12 @@ impl GetChecks for RdapResponse {
             Self::NameserverSearchResults(r) => r.get_checks(index, params),
             Self::IpSearchResults(r) => r.get_checks(index, params),
             Self::AutnumSearchResults(r) => r.get_checks(index, params),
+            Self::Rpki1Roa(r) => r.get_checks(index, params),
+            Self::Rpki1Aspa(r) => r.get_checks(index, params),
+            Self::Rpki1X509ResourceCert(r) => r.get_checks(index, params),
+            Self::Rpki1RoaSearchResults(r) => r.get_checks(index, params),
+            Self::Rpki1AspaSearchResults(r) => r.get_checks(index, params),
+            Self::Rpki1X509ResourceCertSearchResults(r) => r.get_checks(index, params),
             Self::ErrorResponse(e) => e.get_checks(index, params),
             Self::Help(h) => h.get_checks(index, params),
         }
@@ -629,6 +648,22 @@ pub enum Check {
     TitleIsNotString = 2501,
     #[strum(message = "description is a string not an array")]
     DescriptionIsString = 2502,
+
+    // RPKI 2600 - 2699
+    #[strum(message = "rpkiType is not a valid value")]
+    Rpk1RpkiTypeInvalid = 2600,
+    #[strum(message = "originAutnum is missing in ROA")]
+    Rpk1RoaOriginAutnumMissing = 2601,
+    #[strum(message = "roaIps is empty in ROA")]
+    Rpk1RoaIpsIsEmpty = 2602,
+    #[strum(message = "customerAutnum is missing in ASPA")]
+    Rpk1AspaCustomerAutnumMissing = 2603,
+    #[strum(message = "providerAutnums is empty in ASPA")]
+    Rpk1AspaProviderAutnumsIsEmpty = 2604,
+    #[strum(message = "serialNumber is missing in X.509 certificate")]
+    Rpk1X509SerialNumberMissing = 2605,
+    #[strum(message = "issuer is missing in X.509 certificate")]
+    Rpk1X509IssuerMissing = 2606,
 }
 
 impl Check {
@@ -751,6 +786,14 @@ impl Check {
             Self::ErrorCodeIsString | Self::TitleIsNotString | Self::DescriptionIsString => {
                 CheckClass::Std95Error
             }
+
+            Self::Rpk1RpkiTypeInvalid
+            | Self::Rpk1RoaOriginAutnumMissing
+            | Self::Rpk1RoaIpsIsEmpty
+            | Self::Rpk1AspaCustomerAutnumMissing
+            | Self::Rpk1AspaProviderAutnumsIsEmpty
+            | Self::Rpk1X509SerialNumberMissing
+            | Self::Rpk1X509IssuerMissing => CheckClass::Rpki1Error,
         };
         CheckItem {
             check_class,
