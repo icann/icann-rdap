@@ -20,11 +20,13 @@ use {
     tracing::{debug, info},
 };
 
+use chrono::{DateTime, Utc};
+
 use crate::{
     config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{StoreOps, TxHandle},
+    storage::{StoreOps, TxHandle, timestamp::DbTimestamp},
 };
 
 use super::{config::PgConfig, tx::PgTx};
@@ -134,12 +136,17 @@ fn empty_domain_search_results() -> RdapResponse {
 pub struct Pg {
     pg_pool: PgPool,
     config: PgConfig,
+    db_timestamp: DbTimestamp,
 }
 
 impl Pg {
     pub async fn new(config: PgConfig) -> Result<Self, RdapServerError> {
         let pg_pool = PgPool::connect(&config.db_url).await?;
-        Ok(Self { pg_pool, config })
+        Ok(Self {
+            pg_pool,
+            config,
+            db_timestamp: <_>::default(),
+        })
     }
 
     /// The underlying connection pool.
@@ -149,7 +156,11 @@ impl Pg {
 
     /// Build a store from an already-connected pool together with the supplied config.
     pub fn from_pool_with_config(pg_pool: PgPool, config: PgConfig) -> Self {
-        Self { pg_pool, config }
+        Self {
+            pg_pool,
+            config,
+            db_timestamp: <_>::default(),
+        }
     }
 
     /// Test convenience: build from a live pool with every search flag enabled, so
@@ -185,7 +196,11 @@ impl Pg {
                     .build(),
             )
             .build();
-        Self { pg_pool, config }
+        Self {
+            pg_pool,
+            config,
+            db_timestamp: <_>::default(),
+        }
     }
 
     /// The most-specific stored domain network range `[start, end]` whose range fully
@@ -273,12 +288,24 @@ impl StoreOps for Pg {
         Ok(())
     }
 
+    fn last_data_update(&self) -> Option<DateTime<Utc>> {
+        self.db_timestamp.get()
+    }
+
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
-        Ok(Box::new(PgTx::new(&self.pg_pool).await?))
+        Ok(Box::new(
+            PgTx::new(&self.pg_pool)
+                .await?
+                .with_timestamp(self.db_timestamp.clone()),
+        ))
     }
 
     async fn new_truncate_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
-        Ok(Box::new(PgTx::new_truncate(&self.pg_pool).await?))
+        Ok(Box::new(
+            PgTx::new_truncate(&self.pg_pool)
+                .await?
+                .with_timestamp(self.db_timestamp.clone()),
+        ))
     }
 
     async fn get_domain_by_ldh(&self, ldh: &str) -> Result<RdapResponse, RdapServerError> {

@@ -16,11 +16,13 @@ use {
     tokio::sync::RwLock,
 };
 
+use chrono::{DateTime, Utc};
+
 use crate::{
     config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{StoreOps, TxHandle, mem::DEFAULT_HELPFILE_NAME},
+    storage::{StoreOps, TxHandle, mem::DEFAULT_HELPFILE_NAME, timestamp::DbTimestamp},
 };
 
 use super::{config::MemConfig, label_search::SearchLabels, rir_search::U32OrRange, tx::MemTx};
@@ -49,6 +51,7 @@ pub struct Mem {
     pub(crate) autnums_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
+    pub(crate) db_timestamp: DbTimestamp,
 }
 
 impl Mem {
@@ -76,6 +79,7 @@ impl Mem {
             autnums_by_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
             srvhelps: <_>::default(),
             config,
+            db_timestamp: <_>::default(),
         }
     }
 }
@@ -94,6 +98,10 @@ impl Default for Mem {
 impl StoreOps for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
         Ok(())
+    }
+
+    fn last_data_update(&self) -> Option<DateTime<Utc>> {
+        self.db_timestamp.get()
     }
 
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {

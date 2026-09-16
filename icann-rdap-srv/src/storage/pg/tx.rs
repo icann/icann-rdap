@@ -15,17 +15,22 @@ use crate::{
     storage::{
         TxHandle,
         data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
+        timestamp::DbTimestamp,
     },
 };
 
 pub struct PgTx<'a> {
     db_tx: sqlx::Transaction<'a, Postgres>,
+    db_timestamp: DbTimestamp,
 }
 
 impl PgTx<'_> {
     pub async fn new(pg_pool: &PgPool) -> Result<Self, RdapServerError> {
         let db_tx = pg_pool.begin().await?;
-        Ok(Self { db_tx })
+        Ok(Self {
+            db_tx,
+            db_timestamp: DbTimestamp::new(),
+        })
     }
 
     pub async fn new_truncate(pg_pool: &PgPool) -> Result<Self, RdapServerError> {
@@ -33,7 +38,18 @@ impl PgTx<'_> {
         sqlx::query("TRUNCATE entity, domain, nameserver, autnum, network, srv_help")
             .execute(&mut *db_tx)
             .await?;
-        Ok(Self { db_tx })
+        Ok(Self {
+            db_tx,
+            db_timestamp: DbTimestamp::new(),
+        })
+    }
+
+    /// Attach the store's shared last-update timestamp so that committing this
+    /// transaction records it. The store calls this; standalone transactions (e.g. in
+    /// tests) keep a private default that is never read.
+    pub fn with_timestamp(mut self, db_timestamp: DbTimestamp) -> Self {
+        self.db_timestamp = db_timestamp;
+        self
     }
 }
 
@@ -228,6 +244,9 @@ impl TxHandle for PgTx<'_> {
 
     async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
         self.db_tx.commit().await?;
+        // Record the shared, server-wide "last data update" time now that the
+        // transaction has committed.
+        self.db_timestamp.mark_now();
         Ok(())
     }
 

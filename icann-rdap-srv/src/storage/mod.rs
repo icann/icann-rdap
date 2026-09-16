@@ -1,5 +1,7 @@
 use std::net::IpAddr;
 
+use chrono::{DateTime, Utc};
+
 use {
     async_trait::async_trait,
     icann_rdap_common::response::{
@@ -15,6 +17,7 @@ pub mod data;
 pub mod mem;
 #[cfg(feature = "postgres")]
 pub mod pg;
+pub mod timestamp;
 
 pub type DynStoreOps = dyn StoreOps + Send + Sync;
 
@@ -23,6 +26,10 @@ pub type DynStoreOps = dyn StoreOps + Send + Sync;
 pub trait StoreOps: Send + Sync {
     /// Initializes the backend storage
     async fn init(&self) -> Result<(), RdapServerError>;
+
+    /// The time this store's data was last written, or `None` if no data has been
+    /// committed yet. A single live, server-wide value updated on every commit.
+    fn last_data_update(&self) -> Option<DateTime<Utc>>;
 
     /// Gets a new transaction.
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError>;
