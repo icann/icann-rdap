@@ -76,7 +76,8 @@ pub(crate) async fn autnums(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
     Ok(results.response())
 }
 
@@ -112,7 +113,8 @@ pub(crate) async fn autnum_rdap_up(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = add_rfc9910_extensions(results);
+        let mut results = add_rfc9910_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
         Ok(results.response())
     }
 }
@@ -149,7 +151,8 @@ pub(crate) async fn autnum_rdap_top(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = add_rfc9910_extensions(results);
+        let mut results = add_rfc9910_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
         Ok(results.response())
     }
 }
@@ -183,7 +186,8 @@ pub(crate) async fn autnum_rdap_down(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
     Ok(results.response())
 }
 
@@ -217,6 +221,7 @@ pub(crate) async fn autnum_rdap_bottom(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
     Ok(results.response())
 }

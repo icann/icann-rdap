@@ -71,6 +71,7 @@ pub(crate) async fn domain_by_name(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let domain = normalize_extensions(domain);
+    let mut domain = normalize_extensions(domain);
+    super::inject_db_last_update(&mut domain, storage, state.get_common_config());
     Ok(domain.response())
 }

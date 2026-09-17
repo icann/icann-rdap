@@ -312,6 +312,20 @@ impl TryFrom<Value> for RdapResponse {
     }
 }
 
+/// Insert or replace the "last update of RDAP database" event (identified by `action`) on a
+/// single object's common fields, so at most one such event is present.
+fn upsert_last_update(common: &mut ObjectCommon, action: &str, date_rfc3339: &str) {
+    let event = Event::builder()
+        .event_action(action.to_string())
+        .event_date(date_rfc3339.to_string())
+        .build();
+    let events = common.events.get_or_insert_with(Vec::new);
+    match events.iter().position(|e| e.event_action() == Some(action)) {
+        Some(i) => events[i] = event,
+        None => events.push(event),
+    }
+}
+
 impl RdapResponse {
     pub fn get_type(&self) -> TypeId {
         match self {
@@ -335,6 +349,44 @@ impl RdapResponse {
             }
             Self::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             Self::Help(_) => TypeId::of::<Help>(),
+        }
+    }
+
+    /// Set (or replace) the "last update of RDAP database" event carrying `date_rfc3339` so that
+    /// at most one such event is present on each affected object. For single-object responses the
+    /// event is set on that object; for search results it is applied to every contained object so
+    /// each returned object reflects the same database snapshot time. Any existing event with that
+    /// action is overwritten in place; otherwise it is appended. No-op for help, error, and RPKI.
+    pub fn inject_last_update_event(&mut self, date_rfc3339: &str) {
+        let action = EventActionValue::LastUpdateOfRDAPDatabase.to_string();
+        match self {
+            Self::Domain(d) => upsert_last_update(&mut d.object_common, &action, date_rfc3339),
+            Self::Entity(e) => upsert_last_update(&mut e.object_common, &action, date_rfc3339),
+            Self::Nameserver(n) => upsert_last_update(&mut n.object_common, &action, date_rfc3339),
+            Self::Autnum(a) => upsert_last_update(&mut a.object_common, &action, date_rfc3339),
+            Self::Network(n) => upsert_last_update(&mut n.object_common, &action, date_rfc3339),
+            // Search results carry no top-level events; apply to every contained object.
+            Self::DomainSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|d| upsert_last_update(&mut d.object_common, &action, date_rfc3339)),
+            Self::EntitySearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|e| upsert_last_update(&mut e.object_common, &action, date_rfc3339)),
+            Self::NameserverSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| upsert_last_update(&mut n.object_common, &action, date_rfc3339)),
+            Self::IpSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| upsert_last_update(&mut n.object_common, &action, date_rfc3339)),
+            Self::AutnumSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|a| upsert_last_update(&mut a.object_common, &action, date_rfc3339)),
+            _ => {}
         }
     }
 
@@ -730,7 +782,111 @@ mod tests {
         prelude::{ExtensionId, get_relationship_links},
     };
 
-    use super::{Domain, Link, RdapResponse, ToResponse, get_related_links};
+    use super::{
+        Common, Domain, Event, Help, IpSearchResults, Link, Network, RdapResponse, ToResponse,
+        get_related_links,
+    };
+
+    #[test]
+    fn inject_last_update_event_replaces_existing_and_preserves_others() {
+        // GIVEN a domain carrying an existing "last update of RDAP database" event and another
+        let mut domain = Domain::builder().ldh_name("foo.example").build();
+        domain.object_common.events = Some(vec![
+            Event::builder()
+                .event_action("last update of RDAP database".to_string())
+                .event_date("2020-01-01T00:00:00Z".to_string())
+                .build(),
+            Event::builder()
+                .event_action("registration".to_string())
+                .event_date("2019-01-01T00:00:00Z".to_string())
+                .build(),
+        ]);
+        let mut resp = RdapResponse::Domain(Box::new(domain));
+
+        // WHEN we inject a newer last-update value
+        resp.inject_last_update_event("2026-09-15T00:00:00Z");
+
+        // THEN exactly one "last update of RDAP database" event remains, with the new date,
+        // and the other event is preserved
+        let RdapResponse::Domain(d) = &resp else {
+            panic!("expected a domain")
+        };
+        let events = d.object_common.events.as_ref().expect("events present");
+        let last_updates: Vec<_> = events
+            .iter()
+            .filter(|e| e.event_action() == Some("last update of RDAP database"))
+            .collect();
+        assert_eq!(
+            last_updates.len(),
+            1,
+            "expected exactly one last-update event"
+        );
+        assert_eq!(last_updates[0].event_date(), Some("2026-09-15T00:00:00Z"));
+        assert!(
+            events
+                .iter()
+                .any(|e| e.event_action() == Some("registration"))
+        );
+    }
+
+    #[test]
+    fn inject_last_update_event_is_noop_for_non_object_variants() {
+        // GIVEN a help response, which carries no object events
+        let mut resp = RdapResponse::Help(Box::new(Help::response().build()));
+
+        // WHEN we attempt to inject
+        resp.inject_last_update_event("2026-09-15T00:00:00Z");
+
+        // THEN the variant is unchanged and holds no last-update event
+        assert!(matches!(resp, RdapResponse::Help(_)));
+    }
+
+    #[test]
+    fn inject_last_update_event_applies_to_each_search_result_object() {
+        // GIVEN an IP search result with two networks; the second already has a last-update event
+        let mut net2 = Network::builder()
+            .cidr("10.1.0.0/24")
+            .build()
+            .expect("network");
+        net2.object_common.events = Some(vec![
+            Event::builder()
+                .event_action("last update of RDAP database".to_string())
+                .event_date("2020-01-01T00:00:00Z".to_string())
+                .build(),
+        ]);
+        let results = IpSearchResults {
+            common: Common::level0().build(),
+            results: vec![
+                Network::builder()
+                    .cidr("10.0.0.0/24")
+                    .build()
+                    .expect("network"),
+                net2,
+            ],
+        };
+        let mut resp = RdapResponse::IpSearchResults(Box::new(results));
+
+        // WHEN we inject a newer last-update value
+        resp.inject_last_update_event("2026-09-15T00:00:00Z");
+
+        // THEN every contained object has exactly one last-update event with the new date
+        let RdapResponse::IpSearchResults(r) = &resp else {
+            panic!("expected ip search results")
+        };
+        for net in &r.results {
+            let evts = net.object_common.events.as_ref().expect("events present");
+            let lus: Vec<_> = evts
+                .iter()
+                .filter(|e| e.event_action() == Some("last update of RDAP database"))
+                .collect();
+            assert_eq!(
+                lus.len(),
+                1,
+                "expected exactly one last-update event per object"
+            );
+            assert_eq!(lus[0].event_date(), Some("2026-09-15T00:00:00Z"));
+        }
+    }
 
     #[test]
     fn test_redaction_response_gets_object() {

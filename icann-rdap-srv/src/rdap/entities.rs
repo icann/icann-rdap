@@ -38,7 +38,8 @@ pub(crate) async fn entities(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
         results.response()
     } else if let Some(full_name) = params.fn_ {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -50,7 +51,8 @@ pub(crate) async fn entities(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
         results.response()
     } else {
         super::response::NOT_IMPLEMENTED.response()

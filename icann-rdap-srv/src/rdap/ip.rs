@@ -44,7 +44,8 @@ pub(crate) async fn network_by_netid(
                     state.get_common_config().jscontact_conversion,
                     &exts_list,
                 );
-                let network = normalize_extensions(network);
+                let mut network = normalize_extensions(network);
+                super::inject_db_last_update(&mut network, storage, state.get_common_config());
                 Ok(network.response())
             }
         } else {
@@ -66,7 +67,8 @@ pub(crate) async fn network_by_netid(
                     state.get_common_config().jscontact_conversion,
                     &exts_list,
                 );
-                let network = normalize_extensions(network);
+                let mut network = normalize_extensions(network);
+                super::inject_db_last_update(&mut network, storage, state.get_common_config());
                 Ok(network.response())
             }
         }

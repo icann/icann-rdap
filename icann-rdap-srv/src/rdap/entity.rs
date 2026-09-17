@@ -48,6 +48,7 @@ pub(crate) async fn entity_by_handle(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let entity = normalize_extensions(entity);
+    let mut entity = normalize_extensions(entity);
+    super::inject_db_last_update(&mut entity, storage, state.get_common_config());
     Ok(entity.response())
 }

@@ -33,7 +33,8 @@ pub(crate) async fn autnum_by_num(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let autnum = normalize_extensions(autnum);
+        let mut autnum = normalize_extensions(autnum);
+        super::inject_db_last_update(&mut autnum, storage, state.get_common_config());
         autnum.response()
     })
 }

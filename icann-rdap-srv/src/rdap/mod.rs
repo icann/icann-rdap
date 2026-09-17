@@ -6,7 +6,7 @@ use icann_rdap_common::{
 };
 use tracing::debug;
 
-use crate::config::JsContactConversion;
+use crate::{config::CommonConfig, config::JsContactConversion, storage::StoreOps};
 
 pub mod autnum;
 pub mod autnums;
@@ -21,6 +21,21 @@ pub mod nameservers;
 pub mod response;
 pub mod router;
 pub mod srvhelp;
+
+/// When enabled in config, set a live "last update of RDAP database" event on the response
+/// from the store's most recent commit. No-op when disabled or when no data has been loaded.
+pub(crate) fn inject_db_last_update(
+    response: &mut RdapResponse,
+    storage: &dyn StoreOps,
+    cfg: CommonConfig,
+) {
+    if !cfg.rdap_db_last_update_enable {
+        return;
+    }
+    if let Some(ts) = storage.last_data_update() {
+        response.inject_last_update_event(&ts.to_rfc3339());
+    }
+}
 
 trait ToBootStrap {
     fn to_ip_bootstrap(self, ip_id: &str) -> RdapResponse;
@@ -137,6 +152,66 @@ fn jscontact_conversion(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::mem::ops::Mem;
+    use icann_rdap_common::{prelude::ToResponse, response::Domain};
+
+    fn has_last_update_event(resp: &RdapResponse) -> bool {
+        matches!(resp, RdapResponse::Domain(d)
+        if d.object_common.events.as_ref().is_some_and(|e| e.iter().any(
+            |ev| ev.event_action() == Some("last update of RDAP database")
+        )))
+    }
+
+    #[tokio::test]
+    async fn inject_db_last_update_disabled_is_noop_after_commit() {
+        // GIVEN a store that has committed data (so a live value exists)
+        let mem = Mem::default();
+        let tx = mem.new_tx().await.expect("new tx");
+        tx.commit().await.expect("commit");
+        assert!(mem.last_data_update().is_some());
+
+        // WHEN the feature flag is off
+        let mut resp = Domain::builder()
+            .ldh_name("foo.example")
+            .build()
+            .to_response();
+        inject_db_last_update(
+            &mut resp,
+            &mem,
+            CommonConfig {
+                rdap_db_last_update_enable: false,
+                ..Default::default()
+            },
+        );
+
+        // THEN no last-update event is added
+        assert!(!has_last_update_event(&resp));
+    }
+
+    #[tokio::test]
+    async fn inject_db_last_update_enabled_adds_live_value_after_commit() {
+        // GIVEN a store that has committed data (so a live value exists)
+        let mem = Mem::default();
+        let tx = mem.new_tx().await.expect("new tx");
+        tx.commit().await.expect("commit");
+
+        // WHEN the feature flag is on
+        let mut resp = Domain::builder()
+            .ldh_name("foo.example")
+            .build()
+            .to_response();
+        inject_db_last_update(
+            &mut resp,
+            &mem,
+            CommonConfig {
+                rdap_db_last_update_enable: true,
+                ..Default::default()
+            },
+        );
+
+        // THEN the live last-update event is present
+        assert!(has_last_update_event(&resp));
+    }
 
     #[test]
     fn test_accept_header_with_multiple_extensions() {

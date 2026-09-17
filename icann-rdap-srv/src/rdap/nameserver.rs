@@ -57,6 +57,7 @@ pub(crate) async fn nameserver_by_name(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let nameserver = normalize_extensions(nameserver);
+    let mut nameserver = normalize_extensions(nameserver);
+    super::inject_db_last_update(&mut nameserver, storage, state.get_common_config());
     Ok(nameserver.response())
 }

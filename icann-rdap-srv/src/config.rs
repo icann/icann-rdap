@@ -48,6 +48,7 @@ pub const NETWORK_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_HA
 pub const NETWORK_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
+pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -80,6 +81,7 @@ pub fn debug_config_vars() {
         NETWORK_SEARCH_BY_NAME_ENABLE,
         AUTNUM_SEARCH_BY_NAME_ENABLE,
         AUTNUM_SEARCH_BY_HANDLE_ENABLE,
+        RDAP_DB_LAST_UPDATE_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -146,6 +148,7 @@ impl StorageType {
         let network_search_by_name = get_parse_or(NETWORK_SEARCH_BY_NAME_ENABLE, false)?;
         let autnum_search_by_name = get_parse_or(AUTNUM_SEARCH_BY_NAME_ENABLE, false)?;
         let autnum_search_by_handle = get_parse_or(AUTNUM_SEARCH_BY_HANDLE_ENABLE, false)?;
+        let rdap_db_last_update = get_parse_or(RDAP_DB_LAST_UPDATE_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -170,6 +173,7 @@ impl StorageType {
             .network_search_by_name_enable(network_search_by_name)
             .autnum_search_by_name_enable(autnum_search_by_name)
             .autnum_search_by_handle_enable(autnum_search_by_handle)
+            .rdap_db_last_update_enable(rdap_db_last_update)
             .build();
         let storage = get_or(STORAGE, "memory");
         let result = match storage.as_str() {
@@ -246,6 +250,9 @@ pub struct CommonConfig {
     pub autnum_search_by_handle_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
+    /// When enabled, every object response carries a live "last update of RDAP database"
+    /// event reflecting the store's most recent data commit.
+    pub rdap_db_last_update_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -276,6 +283,7 @@ impl Default for CommonConfig {
             autnum_search_by_handle_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
+            rdap_db_last_update_enable: false,
         }
     }
 }
@@ -309,6 +317,7 @@ impl CommonConfig {
         autnum_search_by_handle_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
+        rdap_db_last_update_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -338,6 +347,7 @@ impl CommonConfig {
             autnum_search_by_handle_enable: autnum_search_by_handle_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
+            rdap_db_last_update_enable: rdap_db_last_update_enable.unwrap_or(false),
         }
     }
 }
