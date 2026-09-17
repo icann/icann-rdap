@@ -1,9 +1,6 @@
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicU64, Ordering},
-    },
-    time::{SystemTime, UNIX_EPOCH},
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
 use chrono::{DateTime, TimeZone, Utc};
@@ -23,13 +20,17 @@ impl DbTimestamp {
         Self::default()
     }
 
+    /// Record an explicit time as the last data update.
+    pub fn mark(&self, value: DateTime<Utc>) {
+        // Pre-epoch instants yield negative nanos; `.max(0)` collapses those — and any
+        // out-of-range `None` from `timestamp_nanos_opt()` — to 0 = "never updated".
+        let nanos = value.timestamp_nanos_opt().unwrap_or(0).max(0) as u64;
+        self.0.store(nanos, Ordering::Relaxed);
+    }
+
     /// Record the current time as the last data update.
     pub fn mark_now(&self) {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_nanos() as u64)
-            .unwrap_or(0);
-        self.0.store(nanos, Ordering::Relaxed);
+        self.mark(Utc::now());
     }
 
     /// The last recorded data update time, or `None` if nothing has been committed yet.
@@ -71,5 +72,76 @@ mod tests {
         // THEN both handles observe the set value (shared, not copied)
         assert!(ts.get().is_some());
         assert!(clone.get().is_some());
+    }
+
+    #[test]
+    fn mark_stores_an_explicit_value() {
+        // GIVEN a fresh timestamp
+        let ts = DbTimestamp::new();
+
+        // WHEN marked with a specific instant
+        let value = Utc.with_ymd_and_hms(2026, 9, 15, 12, 30, 45).unwrap();
+        ts.mark(value);
+
+        // THEN that exact instant is read back
+        assert_eq!(ts.get(), Some(value));
+    }
+
+    #[test]
+    fn mark_is_visible_to_clones() {
+        // GIVEN a timestamp and a clone sharing the same underlying value
+        let ts = DbTimestamp::new();
+        let clone = ts.clone();
+
+        // WHEN one handle records an explicit time
+        let value = Utc.with_ymd_and_hms(2026, 9, 15, 0, 0, 0).unwrap();
+        ts.mark(value);
+
+        // THEN both handles observe the same value (shared, not copied)
+        assert_eq!(ts.get(), Some(value));
+        assert_eq!(clone.get(), Some(value));
+    }
+
+    #[test]
+    fn mark_pre_epoch_clamps_to_never() {
+        // GIVEN a fresh timestamp
+        let ts = DbTimestamp::new();
+
+        // WHEN marked with a pre-epoch instant (negative nanos since epoch)
+        let value = Utc.with_ymd_and_hms(1969, 12, 31, 23, 59, 59).unwrap();
+        ts.mark(value);
+
+        // THEN it clamps to the "never updated" state
+        assert_eq!(ts.get(), None);
+    }
+
+    #[test]
+    fn mark_exact_epoch_clamps_to_never() {
+        // GIVEN a fresh timestamp
+        let ts = DbTimestamp::new();
+
+        // WHEN marked with the exact epoch (0 nanos, the "never updated" sentinel)
+        let value = Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap();
+        ts.mark(value);
+
+        // THEN it is indistinguishable from "never updated"
+        assert_eq!(ts.get(), None);
+    }
+
+    #[test]
+    fn mark_preserves_sub_second_precision() {
+        // GIVEN a fresh timestamp
+        let ts = DbTimestamp::new();
+
+        // WHEN marked with sub-second (nanosecond) precision
+        let value = Utc
+            .with_ymd_and_hms(2026, 9, 15, 12, 30, 45)
+            .unwrap()
+            .checked_add_signed(chrono::Duration::nanoseconds(123_456_789))
+            .unwrap();
+        ts.mark(value);
+
+        // THEN nanosecond precision is preserved on read-back
+        assert_eq!(ts.get(), Some(value));
     }
 }
