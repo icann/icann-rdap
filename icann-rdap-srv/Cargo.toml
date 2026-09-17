@@ -67,6 +67,7 @@ required-features = ["postgres"]
 
 assert_cmd.workspace = true
 ctor.workspace = true
+dtor.workspace = true
 rstest.workspace = true
 test_dir.workspace = true
 testcontainers.workspace = true

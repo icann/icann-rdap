@@ -1078,6 +1078,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dtor"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd3f6c362b2bbd7063090886afd78978f5dbf1f11da7efcc40f81d32c943fac1"
+dependencies = [
+ "linktime-proc-macro",
+]
+
+[[package]]
 name = "dunce"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1936,6 +1945,7 @@ dependencies = [
  "clap",
  "ctor",
  "dotenvy",
+ "dtor",
  "envmnt",
  "headers",
  "http",

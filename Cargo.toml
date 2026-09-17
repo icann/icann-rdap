@@ -59,6 +59,9 @@ const_format = "0.2"
 # run code before any test in a binary
 ctor = "1"
 
+# run code after all tests in a binary (teardown)
+dtor = "1"
+
 # cross-platform application directories
 directories = "6.0"
 

@@ -1,6 +1,7 @@
-use std::sync::OnceLock;
+use std::sync::Mutex;
 
 use ctor::ctor;
+use dtor::dtor;
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, ImageExt};
 use testcontainers_modules::postgres::Postgres as PostgresContainer;
@@ -81,7 +82,7 @@ pub(crate) fn assert_not_implemented(actual: &RdapResponse) {
     assert_eq!(*actual, *NOT_IMPLEMENTED);
 }
 
-static _CONTAINER: OnceLock<ContainerAsync<PostgresContainer>> = OnceLock::new();
+static _CONTAINER: Mutex<Option<ContainerAsync<PostgresContainer>>> = Mutex::new(None);
 
 #[ctor(unsafe)]
 fn init_pg_container() {
@@ -108,5 +109,50 @@ fn init_pg_container() {
             format!("postgresql://postgres:postgres@127.0.0.1:{port}/postgres"),
         );
     }
-    let _ = _CONTAINER.set(container);
+    *_CONTAINER
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(container);
+}
+
+/// Tear down the shared Postgres container when the test binary exits.
+///
+/// The docker container outlives any Rust object, so a leaked handle is what keeps piling up:
+/// `ContainerAsync` only removes its container inside its async `Drop`, and that drop calls
+/// `tokio::runtime::Handle::current()` — which requires a live runtime. There is no such
+/// runtime during an exit handler (and the drop fires when `block_on` tears down its future,
+/// i.e. *outside* any runtime context), so letting the handle drop here panics with "panic in a
+/// destructor during cleanup" and aborts the process. Instead we remove the container
+/// synchronously via the docker CLI using its id, then leak the handle (`mem::forget`) so its
+/// async `Drop` never runs. This reaps both green and red runs; only hard kills (SIGKILL / power
+/// loss) still need the `just test pg-prune` recipe. Assumes the `docker` CLI is on PATH.
+#[dtor(unsafe)]
+fn cleanup_pg_container() {
+    // Block-scoped guard so the mutex is released before we shell out (which can be slow).
+    let container = {
+        let mut guard = match _CONTAINER.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        guard.take()
+    };
+    let Some(container) = container else {
+        return;
+    };
+
+    // Synchronous removal — no tokio runtime is available during exit handlers.
+    let id = container.id().to_string();
+    match std::process::Command::new("docker")
+        .args(["rm", "-f", &id])
+        .output()
+    {
+        Ok(out) if out.status.success() => {}
+        Ok(out) => eprintln!(
+            "warning: failed to remove postgres test container {id}: {}",
+            String::from_utf8_lossy(&out.stderr),
+        ),
+        Err(err) => eprintln!("warning: failed to run `docker rm` for container {id}: {err}"),
+    }
+
+    // Leak the handle so ContainerAsync's async Drop (which requires a tokio runtime) never runs.
+    std::mem::forget(container);
 }
