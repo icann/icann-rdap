@@ -1,3 +1,26 @@
+-- last public DB update
+ 
+CREATE TABLE last_rdap_update (
+    id INT PRIMARY KEY CHECK (id = 1),
+    last_db_update TIMESTAMPTZ NOT NULL
+);
+
+CREATE OR REPLACE FUNCTION notify_db_update()
+RETURNS trigger AS $$
+BEGIN
+  PERFORM pg_notify(
+    'rdap_db_update', 
+    to_char(NEW.last_db_update AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER rdap_db_update_trigger
+AFTER UPDATE ON last_rdap_update
+FOR EACH ROW
+EXECUTE FUNCTION notify_db_update();
+
 -- entity (rdap)
 
 CREATE TABLE entity (
