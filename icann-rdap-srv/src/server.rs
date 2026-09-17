@@ -26,7 +26,7 @@ use crate::{
 };
 
 #[cfg(feature = "postgres")]
-use crate::storage::pg::{config::PgConfig, ops::Pg};
+use crate::storage::pg::{config::PgConfig, notify, ops::Pg};
 
 /// Holds information on the server listening.
 pub struct Listener {
@@ -208,9 +208,21 @@ impl AppState<Pg> {
         let mut common_config = config.common_config;
         common_config.bootstrap = service_config.bootstrap;
         common_config.jscontact_conversion = service_config.jscontact_conversion;
+
+        // Captured before `config` is moved into the store below.
+        let db_url = config.db_url.clone();
+        let notify_enabled = common_config.pg_notify_enable;
+
         let storage = Pg::new(config).await?;
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
+
+        // When the postgres NOTIFY listener is enabled (RDAP_SRV_PG_NOTIFY), watch for
+        // external database writes via LISTEN/NOTIFY so the last-update timestamp stays current.
+        if notify_enabled {
+            tokio::spawn(notify::run(db_url, storage.db_timestamp()));
+        }
+
         Ok(Self {
             storage,
             common_config,

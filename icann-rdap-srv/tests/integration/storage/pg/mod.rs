@@ -18,6 +18,7 @@ mod entity;
 mod lookups;
 mod nameserver;
 mod network;
+mod notify;
 mod search_autnum;
 mod search_domain;
 mod search_domain_rdap;

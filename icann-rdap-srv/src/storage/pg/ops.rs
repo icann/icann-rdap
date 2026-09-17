@@ -154,6 +154,12 @@ impl Pg {
         &self.pg_pool
     }
 
+    /// A clone of the store's shared last-data-update timestamp, for background
+    /// tasks (e.g. the `rdap_db_update` LISTEN/NOTIFY listener) that keep it fresh.
+    pub fn db_timestamp(&self) -> DbTimestamp {
+        self.db_timestamp.clone()
+    }
+
     /// Build a store from an already-connected pool together with the supplied config.
     pub fn from_pool_with_config(pg_pool: PgPool, config: PgConfig) -> Self {
         Self {

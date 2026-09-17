@@ -49,6 +49,7 @@ pub const NETWORK_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_NAME
 pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
 pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
+pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -82,6 +83,7 @@ pub fn debug_config_vars() {
         AUTNUM_SEARCH_BY_NAME_ENABLE,
         AUTNUM_SEARCH_BY_HANDLE_ENABLE,
         RDAP_DB_LAST_UPDATE_ENABLE,
+        PG_NOTIFY_ENABLE,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -149,6 +151,7 @@ impl StorageType {
         let autnum_search_by_name = get_parse_or(AUTNUM_SEARCH_BY_NAME_ENABLE, false)?;
         let autnum_search_by_handle = get_parse_or(AUTNUM_SEARCH_BY_HANDLE_ENABLE, false)?;
         let rdap_db_last_update = get_parse_or(RDAP_DB_LAST_UPDATE_ENABLE, false)?;
+        let pg_notify = get_parse_or(PG_NOTIFY_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -174,6 +177,7 @@ impl StorageType {
             .autnum_search_by_name_enable(autnum_search_by_name)
             .autnum_search_by_handle_enable(autnum_search_by_handle)
             .rdap_db_last_update_enable(rdap_db_last_update)
+            .pg_notify_enable(pg_notify)
             .build();
         let storage = get_or(STORAGE, "memory");
         let result = match storage.as_str() {
@@ -253,6 +257,9 @@ pub struct CommonConfig {
     /// When enabled, every object response carries a live "last update of RDAP database"
     /// event reflecting the store's most recent data commit.
     pub rdap_db_last_update_enable: bool,
+    /// When enabled with postgres storage, a background task listens on the
+    /// `rdap_db_update` NOTIFY channel to keep the last-update timestamp fresh.
+    pub pg_notify_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -284,6 +291,7 @@ impl Default for CommonConfig {
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
             rdap_db_last_update_enable: false,
+            pg_notify_enable: false,
         }
     }
 }
@@ -318,6 +326,7 @@ impl CommonConfig {
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
         rdap_db_last_update_enable: Option<bool>,
+        pg_notify_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -348,6 +357,7 @@ impl CommonConfig {
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
             rdap_db_last_update_enable: rdap_db_last_update_enable.unwrap_or(false),
+            pg_notify_enable: pg_notify_enable.unwrap_or(false),
         }
     }
 }
