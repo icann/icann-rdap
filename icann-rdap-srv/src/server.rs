@@ -217,6 +217,11 @@ impl AppState<Pg> {
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
 
+        // Seed the last-update timestamp from the database before serving, so responses
+        // reflect the recorded last update immediately rather than waiting for the first
+        // live NOTIFY.
+        storage.load_last_update().await?;
+
         // When the postgres NOTIFY listener is enabled (RDAP_SRV_PG_NOTIFY), watch for
         // external database writes via LISTEN/NOTIFY so the last-update timestamp stays current.
         if notify_enabled {

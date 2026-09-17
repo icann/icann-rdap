@@ -1,10 +1,13 @@
 use std::time::Duration;
 
 use chrono::{TimeZone, Utc};
+use icann_rdap_srv::config::CommonConfig;
 use icann_rdap_srv::storage::pg::notify;
 use icann_rdap_srv::storage::timestamp::DbTimestamp;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
+
+use super::pg_store;
 
 /// Rebuild `base_url` so it points at the named database. Only the URL path (the
 /// database component) changes; scheme, credentials, host and port are preserved.
@@ -73,4 +76,28 @@ async fn notify_listener_stamps_shared_timestamp_on_db_update(db: Pool<Postgres>
 
     // THEN the shared handle (and every clone of it) reflects the received time.
     assert_eq!(ts.get(), Some(expected));
+}
+
+/// At startup the store seeds its shared last-update timestamp from the `last_rdap_update`
+/// table, so responses are accurate before any live NOTIFY arrives.
+#[sqlx::test]
+async fn load_last_update_seeds_timestamp_from_database(db: Pool<Postgres>) {
+    // GIVEN a recorded last-update time in the database
+    let stored = Utc.with_ymd_and_hms(2026, 3, 4, 5, 6, 7).unwrap();
+    sqlx::query("INSERT INTO last_rdap_update (id, last_db_update) VALUES (1, $1)")
+        .bind(stored)
+        .execute(&db)
+        .await
+        .expect("seeding last_rdap_update row");
+
+    // WHEN the store loads its last-update time at startup
+    let store = pg_store(db, CommonConfig::default());
+    assert!(
+        store.db_timestamp().get().is_none(),
+        "a fresh store has no timestamp yet"
+    );
+    store.load_last_update().await.expect("loading last update");
+
+    // THEN the shared timestamp reflects the database value (whole-second precision)
+    assert_eq!(store.db_timestamp().get(), Some(stored));
 }

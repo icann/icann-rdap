@@ -160,6 +160,25 @@ impl Pg {
         self.db_timestamp.clone()
     }
 
+    /// Read the RDAP database's recorded last-update time from the `last_rdap_update`
+    /// table and record it on this store's shared timestamp. Called at startup so that
+    /// responses reflect the real last-update time immediately, rather than waiting for
+    /// the first live `rdap_db_update` NOTIFY to arrive.
+    pub async fn load_last_update(&self) -> Result<(), RdapServerError> {
+        let last_db_update: Option<DateTime<Utc>> =
+            sqlx::query_scalar("SELECT last_db_update FROM last_rdap_update WHERE id = 1")
+                .fetch_optional(&self.pg_pool)
+                .await?;
+        match last_db_update {
+            Some(dt) => {
+                self.db_timestamp.mark(dt);
+                debug!("seeded last-update timestamp from database: {dt:?}");
+            }
+            None => debug!("no last_rdap_update row present; leaving timestamp unset"),
+        }
+        Ok(())
+    }
+
     /// Build a store from an already-connected pool together with the supplied config.
     pub fn from_pool_with_config(pg_pool: PgPool, config: PgConfig) -> Self {
         Self {
