@@ -63,15 +63,7 @@ struct DestroyArgs {
 }
 
 #[derive(clap::Args, Debug)]
-struct MigrateArgs {
-    /// The admin user.
-    #[arg(long)]
-    admin_user: String,
-
-    /// Password for the admin user.
-    #[arg(long)]
-    admin_password: Option<String>,
-}
+struct MigrateArgs {}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -85,7 +77,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         None => {
-            info!("No subcommand given.");
+            info!("No subcommand given, running migrate...");
+            run_migrate(&cli.db_url).await?;
         }
         Some(DbCommand::Create(args)) => {
             run_create(
@@ -103,13 +96,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
             .await?;
         }
-        Some(DbCommand::Migrate(args)) => {
-            run_migrate(
-                &cli.db_url,
-                &args.admin_user,
-                args.admin_password.as_deref(),
-            )
-            .await?;
+        Some(DbCommand::Migrate(_)) => {
+            run_migrate(&cli.db_url).await?;
         }
     }
 
@@ -214,16 +202,9 @@ async fn run_destroy(
     Ok(())
 }
 
-async fn run_migrate(
-    db_url: &str,
-    admin_user: &str,
-    admin_password: Option<&str>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let parts = DbUrlParts::from_url(db_url)?;
-    let superuser_url = parts.to_superuser_url(admin_user, admin_password);
-
+async fn run_migrate(db_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     info!("Connecting to database...");
-    let pool = PgPool::connect(&superuser_url).await?;
+    let pool = PgPool::connect(db_url).await?;
 
     info!("Running migrations...");
     run_migrations(&pool).await?;
