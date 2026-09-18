@@ -20,7 +20,7 @@ struct Cli {
     #[arg(
         long,
         env = "RDAP_SRV_DB_URL",
-        default_value = "postgresql://127.0.0.1/rdap"
+        default_value = "postgresql://rdap@127.0.0.1/rdap"
     )]
     db_url: String,
 
@@ -112,7 +112,7 @@ async fn run_create(
     let parts = DbUrlParts::from_url(db_url)?;
     let superuser_url = parts.to_superuser_url(admin_user, admin_password);
 
-    info!("Connecting to PostgreSQL as superuser...");
+    info!("Connecting to PostgreSQL as {admin_user}...");
     let superuser_pool = PgPool::connect(&superuser_url).await?;
 
     let password = if let Some(password) = parts.password {
@@ -170,7 +170,7 @@ async fn run_destroy(
     let parts = DbUrlParts::from_url(db_url)?;
     let superuser_url = parts.to_superuser_url(admin_user, admin_password);
 
-    info!("Connecting to PostgreSQL as superuser...");
+    info!("Connecting to PostgreSQL as {admin_user}...");
     let superuser_pool = PgPool::connect(&superuser_url).await?;
 
     info!("Terminating existing connections to {}...", parts.database);
