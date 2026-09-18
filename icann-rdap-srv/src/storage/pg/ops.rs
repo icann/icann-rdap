@@ -220,6 +220,7 @@ impl Pg {
                     .autnum_search_by_handle_enable(true)
                     .build(),
             )
+            .ignore_data_dir(false)
             .build();
         Self {
             pg_pool,

@@ -212,10 +212,18 @@ impl AppState<Pg> {
         // Captured before `config` is moved into the store below.
         let db_url = config.db_url.clone();
         let notify_enabled = common_config.pg_notify_enable;
+        let ignore_data_dir = config.ignore_data_dir;
 
         let storage = Pg::new(config).await?;
         storage.init().await?;
-        init_data(Box::new(storage.clone()), service_config).await?;
+        if ignore_data_dir {
+            tracing::info!(
+                "RDAP_SRV_PG_IGNORE_DATA_DIR set: skipping data directory load and the \
+                 update/reload watcher; serving from the database only"
+            );
+        } else {
+            init_data(Box::new(storage.clone()), service_config).await?;
+        }
 
         // Seed the last-update timestamp from the database before serving, so responses
         // reflect the recorded last update immediately rather than waiting for the first

@@ -168,6 +168,7 @@ async fn main() -> Result<(), RdapServerError> {
     let config = PgConfig::builder()
         .db_url(&cli.db_url)
         .common_config(CommonConfig::default())
+        .ignore_data_dir(false)
         .build();
     let store = Pg::new(config).await?;
 

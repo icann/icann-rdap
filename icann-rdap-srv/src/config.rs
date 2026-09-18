@@ -50,6 +50,7 @@ pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
 pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
 pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
+pub const PG_IGNORE_DATA_DIR: &str = "RDAP_SRV_PG_IGNORE_DATA_DIR";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -84,6 +85,7 @@ pub fn debug_config_vars() {
         AUTNUM_SEARCH_BY_HANDLE_ENABLE,
         RDAP_DB_LAST_UPDATE_ENABLE,
         PG_NOTIFY_ENABLE,
+        PG_IGNORE_DATA_DIR,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -96,6 +98,17 @@ pub fn data_dir() -> Result<String, std::io::Error> {
     let path_name = get_or(DATA_DIR, "srv/data");
     let path = path::absolute(path_name)?;
     Ok(path.display().to_string())
+}
+
+/// True when the configured storage backend is Postgres.
+pub fn postgres_storage() -> bool {
+    get_or(STORAGE, "memory").as_str() == "postgres"
+}
+
+/// True when a Postgres server should ignore `RDAP_SRV_DATA_DIR` operations (the startup
+/// load and update/reload markers) because the database is the source of truth.
+pub fn pg_ignore_data_dir() -> bool {
+    get_parse_or(PG_IGNORE_DATA_DIR, false).unwrap_or(false)
 }
 
 pub const DEFAULT_DATA_RDAP_BASE_URL: &str = "http://localhost:3000/rdap";
@@ -192,10 +205,12 @@ impl StorageType {
         {
             if storage == "postgres" {
                 let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
+                let ignore_data_dir = get_parse_or(PG_IGNORE_DATA_DIR, false)?;
                 return Ok(Self::Postgres(
                     PgConfig::builder()
                         .db_url(db_url)
                         .common_config(common_config)
+                        .ignore_data_dir(ignore_data_dir)
                         .build(),
                 ));
             }

@@ -16,6 +16,7 @@ mod autnum;
 mod del;
 mod domain;
 mod entity;
+mod ignore_data_dir;
 mod last_update;
 mod lookups;
 mod nameserver;
@@ -86,6 +87,7 @@ pub(crate) fn pg_store(db: Pool<Postgres>, common: CommonConfig) -> Pg {
     let config = PgConfig::builder()
         .db_url("postgresql://unused") // ignored; the pool is already connected
         .common_config(common)
+        .ignore_data_dir(false)
         .build();
     Pg::from_pool_with_config(db, config)
 }
