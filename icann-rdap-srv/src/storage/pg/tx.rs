@@ -3,6 +3,7 @@ use std::net::IpAddr;
 
 use {
     async_trait::async_trait,
+    chrono::Utc,
     icann_rdap_common::{
         prelude::ToResponse,
         response::{Autnum, Domain, Entity, Nameserver, Network, Rfc9083Error},
@@ -242,11 +243,24 @@ impl TxHandle for PgTx<'_> {
         Ok(())
     }
 
-    async fn commit(self: Box<Self>) -> Result<(), RdapServerError> {
+    async fn commit(mut self: Box<Self>) -> Result<(), RdapServerError> {
+        // Record this instant in `last_rdap_update` inside the same transaction as the
+        // data, so row and data commit (or roll back) atomically. The table trigger
+        // emits the `rdap_db_update` NOTIFY on commit for other instances.
+        let now = Utc::now();
+        let now = chrono::DateTime::from_timestamp_micros(now.timestamp_micros())
+            .expect("valid microsecond timestamp");
+        sqlx::query(
+            "INSERT INTO last_rdap_update (id, last_db_update) VALUES (1, $1) \
+             ON CONFLICT (id) DO UPDATE SET last_db_update = EXCLUDED.last_db_update",
+        )
+        .bind(now)
+        .execute(&mut *self.db_tx)
+        .await?;
         self.db_tx.commit().await?;
-        // Record the shared, server-wide "last data update" time now that the
-        // transaction has committed.
-        self.db_timestamp.mark_now();
+        // Stamp the shared, server-wide "last data update" timestamp with the same
+        // instant now that the transaction has committed.
+        self.db_timestamp.mark(now);
         Ok(())
     }
 

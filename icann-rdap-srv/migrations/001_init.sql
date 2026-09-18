@@ -17,7 +17,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER rdap_db_update_trigger
-AFTER UPDATE ON last_rdap_update
+AFTER INSERT OR UPDATE ON last_rdap_update
 FOR EACH ROW
 EXECUTE FUNCTION notify_db_update();
 

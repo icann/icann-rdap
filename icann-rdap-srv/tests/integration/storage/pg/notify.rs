@@ -7,25 +7,14 @@ use icann_rdap_srv::storage::timestamp::DbTimestamp;
 use sqlx::Pool;
 use sqlx::postgres::Postgres;
 
-use super::pg_store;
-
-/// Rebuild `base_url` so it points at the named database. Only the URL path (the
-/// database component) changes; scheme, credentials, host and port are preserved.
-fn url_for_database(base_url: &str, db_name: &str) -> String {
-    let scheme_end = base_url.find("://").expect("well-formed url has a scheme") + 3;
-    let authority_end = base_url[scheme_end..]
-        .find('/')
-        .map(|i| scheme_end + i)
-        .unwrap_or(base_url.len());
-    format!("{}/{}", &base_url[..authority_end], db_name)
-}
+use super::{pg_store, url_for_database};
 
 /// Live LISTEN/NOTIFY round-trip: a background [`notify::run`] task subscribes to the
 /// `rdap_db_update` channel, and updating `last_rdap_update` from another connection
 /// stamps the shared [`DbTimestamp`] with the new (whole-second) UTC time.
 #[sqlx::test]
 async fn notify_listener_stamps_shared_timestamp_on_db_update(db: Pool<Postgres>) {
-    // GIVEN a single seeded row (the trigger only fires on UPDATE, not INSERT).
+    // GIVEN a pre-existing row so each update below takes the trigger's UPDATE path.
     sqlx::query(
         "INSERT INTO last_rdap_update (id, last_db_update) VALUES (1, now()) \
          ON CONFLICT (id) DO NOTHING",

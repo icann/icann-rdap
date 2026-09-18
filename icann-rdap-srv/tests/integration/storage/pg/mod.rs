@@ -16,6 +16,7 @@ mod autnum;
 mod del;
 mod domain;
 mod entity;
+mod last_update;
 mod lookups;
 mod nameserver;
 mod network;
@@ -28,6 +29,17 @@ mod search_nameserver;
 mod search_network;
 mod truncate;
 mod upsert;
+
+/// Rebuild `base_url` so it points at the named database. Only the URL path (the
+/// database component) changes; scheme, credentials, host and port are preserved.
+pub(crate) fn url_for_database(base_url: &str, db_name: &str) -> String {
+    let scheme_end = base_url.find("://").expect("well-formed url has a scheme") + 3;
+    let authority_end = base_url[scheme_end..]
+        .find('/')
+        .map(|i| scheme_end + i)
+        .unwrap_or(base_url.len());
+    format!("{}/{}", &base_url[..authority_end], db_name)
+}
 
 pub(crate) async fn seed_all_tables(db: &sqlx::PgPool) {
     use icann_rdap_common::response::{Autnum, Domain, Entity, Help, Nameserver, Network};
