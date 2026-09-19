@@ -47,6 +47,7 @@ start:
     RDAP_SRV_DB_URL={{pg_url}} \
     RDAP_SRV_PG_NOTIFY=true \
     RDAP_SRV_STORAGE=postgres \
+    RDAP_SRV_RDAP_DB_LAST_UPDATE=true \
     RDAP_SRV_DATA_DIR={{srv_dir}} \
     RDAP_SRV_DOMAIN_SEARCH_BY_NAME=true \
     RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP=true \
