@@ -5,7 +5,7 @@ use {
         config::{CommonConfig, LOG},
         error::RdapServerError,
         storage::{
-            DeleteOps, StoreOps,
+            DEFAULT_HELPFILE_NAME, DeleteOps, StoreOps,
             pg::{config::PgConfig, ops::Pg},
         },
         util::bin::{
@@ -299,7 +299,9 @@ async fn delete_object(store: &Pg, op: DeleteOp) -> Result<(), RdapServerError> 
             ("network", store.delete_network(start, end).await?)
         }
         DeleteOp::SrvHelp(args) => {
-            let host = args.host.unwrap_or_else(|| "default".to_string());
+            let host = args
+                .host
+                .unwrap_or_else(|| DEFAULT_HELPFILE_NAME.to_string());
             ("server help", store.delete_srv_help(&host).await?)
         }
     };

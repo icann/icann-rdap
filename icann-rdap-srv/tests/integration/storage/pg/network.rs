@@ -168,7 +168,7 @@ async fn add_srv_help_inserts_default_host(db: Pool<Postgres>) {
 
     // THEN
     let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM srv_help WHERE host = $1")
-        .bind("default")
+        .bind("..default")
         .fetch_one(&db)
         .await
         .expect("srv help row exists");

@@ -26,7 +26,7 @@ use crate::{
     config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{StoreOps, TxHandle, timestamp::DbTimestamp},
+    storage::{DEFAULT_HELPFILE_NAME, StoreOps, TxHandle, timestamp::DbTimestamp},
 };
 
 use super::{config::PgConfig, tx::PgTx};
@@ -437,7 +437,7 @@ impl StoreOps for Pg {
     }
 
     async fn get_srv_help(&self, host: Option<&str>) -> Result<RdapResponse, RdapServerError> {
-        let host = host.unwrap_or("default");
+        let host = host.unwrap_or(DEFAULT_HELPFILE_NAME);
         let srv_help: Option<Json<RdapResponse>> =
             sqlx::query_scalar("SELECT content FROM srv_help WHERE host = $1")
                 .bind(host)

@@ -1,7 +1,7 @@
 use icann_rdap_common::response::{
     Autnum, Domain, Entity, Help, Nameserver, Network, Notice, NoticeOrRemark, RdapResponse,
 };
-use icann_rdap_srv::storage::StoreOps;
+use icann_rdap_srv::storage::{DEFAULT_HELPFILE_NAME, StoreOps};
 
 use icann_rdap_srv::storage::pg::ops::Pg;
 use sqlx::{Pool, postgres::Postgres};
@@ -400,6 +400,26 @@ async fn get_srv_help_returns_host_help(db: Pool<Postgres>) {
         .expect("looking up srv help");
 
     // THEN
+    assert!(
+        matches!(actual, RdapResponse::Help(_)),
+        "expected help, got {actual:?}"
+    );
+}
+
+#[sqlx::test]
+async fn get_srv_help_serves_default_helpfile_host(db: Pool<Postgres>) {
+    // GIVEN a help stored under the default help-file host (as `..default.help` loads)
+    let store = Pg::from_pool(db);
+    let mut tx = store.new_tx().await.expect("new tx");
+    tx.add_srv_help(&help_with_notice(), Some(DEFAULT_HELPFILE_NAME))
+        .await
+        .expect("adding srv help to tx");
+    Box::new(tx).commit().await.expect("committing tx");
+
+    // WHEN the default (no-host) lookup is performed
+    let actual = store.get_srv_help(None).await.expect("looking up srv help");
+
+    // THEN it resolves to the default help file's content
     assert!(
         matches!(actual, RdapResponse::Help(_)),
         "expected help, got {actual:?}"

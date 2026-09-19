@@ -19,6 +19,11 @@ pub mod mem;
 pub mod pg;
 pub mod timestamp;
 
+/// The canonical host key for the default server-help file (`..default.help`). Both storage
+/// backends store a no-host help under this key and resolve a `None` host lookup to it, so a
+/// shipped `..default.help` is served whenever no per-host help matches.
+pub const DEFAULT_HELPFILE_NAME: &str = "..default";
+
 pub type DynStoreOps = dyn StoreOps + Send + Sync;
 
 /// This trait defines the operations for a storage engine.

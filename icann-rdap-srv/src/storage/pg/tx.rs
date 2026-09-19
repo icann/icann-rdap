@@ -14,7 +14,7 @@ use {
 use crate::{
     error::RdapServerError,
     storage::{
-        TxHandle,
+        DEFAULT_HELPFILE_NAME, TxHandle,
         data::{AutnumId, DomainId, EntityId, NameserverId, NetworkId, NetworkIdType},
         timestamp::DbTimestamp,
     },
@@ -231,7 +231,7 @@ impl TxHandle for PgTx<'_> {
         host: Option<&str>,
     ) -> Result<(), RdapServerError> {
         let content = serde_json::to_value(help)?;
-        let host = host.unwrap_or("default");
+        let host = host.unwrap_or(DEFAULT_HELPFILE_NAME);
         sqlx::query(
             "INSERT INTO srv_help (host, content) VALUES ($1, $2) \
              ON CONFLICT (host) DO UPDATE SET content = EXCLUDED.content",
