@@ -72,9 +72,8 @@ struct ObjectArgs {
 
     /// Last update of RDAP database date and time.
     ///
-    /// This argument should be in RFC3339 format.
-    /// If not specified, the current date and time will be used.
-    #[arg(long, value_parser = parse_datetime)]
+    /// Accepts an RFC3339 date-time or the literal value "now". Only emitted as an event when specified.
+    #[arg(long, value_parser = parse_last_update)]
     last_update_of_rdap_database: Option<DateTime<FixedOffset>>,
 
     /// Adds a server notice.
@@ -123,6 +122,16 @@ struct ObjectArgs {
 fn parse_datetime(arg: &str) -> Result<DateTime<FixedOffset>, chrono::format::ParseError> {
     let dt = DateTime::parse_from_rfc3339(arg)?;
     Ok(dt)
+}
+
+/// Accepts an RFC3339 date-time or the literal string "now".
+fn parse_last_update(arg: &str) -> Result<DateTime<FixedOffset>, String> {
+    if arg == "now" {
+        Ok(Utc::now().into())
+    } else {
+        DateTime::parse_from_rfc3339(arg)
+            .map_err(|e| format!("expected RFC3339 date-time or \"now\": {e}"))
+    }
 }
 
 fn parse_notice_or_remark(arg: &str) -> Result<NoticeOrRemark, RdapServerError> {
@@ -640,16 +649,13 @@ fn events(args: &ObjectArgs) -> Option<Events> {
             .build();
         events.push(registrar_expiration);
     }
-    let last_update_at = if let Some(dt) = args.last_update_of_rdap_database {
-        dt
-    } else {
-        Utc::now().into()
-    };
-    let last_update = Event::builder()
-        .event_date(last_update_at.to_rfc3339())
-        .event_action(EventActionValue::LastUpdateOfRDAPDatabase.to_string())
-        .build();
-    events.push(last_update);
+    if let Some(last_update) = args.last_update_of_rdap_database {
+        let event = Event::builder()
+            .event_date(last_update.to_rfc3339())
+            .event_action(EventActionValue::LastUpdateOfRDAPDatabase.to_string())
+            .build();
+        events.push(event);
+    }
     (!events.is_empty()).then_some(events)
 }
 
@@ -985,12 +991,12 @@ pub async fn build_object(
 
 #[cfg(test)]
 mod tests {
-    use chrono::{DateTime, FixedOffset};
+    use chrono::{DateTime, FixedOffset, Utc};
     use icann_rdap_common::{prelude::RdapResponse, response::DsDatum};
 
     use super::{
-        ObjectArgs, SrvHelpArgs, events, make_help, parse_ds_datum, parse_notice_or_remark,
-        parse_rdap_json,
+        ObjectArgs, SrvHelpArgs, events, make_help, parse_ds_datum, parse_last_update,
+        parse_notice_or_remark, parse_rdap_json,
     };
 
     fn object_args() -> ObjectArgs {
@@ -1019,23 +1025,22 @@ mod tests {
     }
 
     #[test]
-    fn test_events_default_last_update_and_omit_expirations_when_unspecified() {
+    fn test_events_omit_last_update_and_expirations_when_unspecified() {
         // GIVEN
         let args = object_args();
 
         // WHEN
         let evts = events(&args).expect("events should be present");
 
-        // THEN — registration, last changed, and a defaulted last-update are present;
-        // the two expiration events are omitted.
+        // THEN
         let actions: Vec<String> = evts
             .iter()
             .filter_map(|e| e.event_action().map(String::from))
             .collect();
-        assert_eq!(actions.len(), 3);
+        assert_eq!(actions.len(), 2);
         assert!(actions.contains(&"registration".to_string()));
         assert!(actions.contains(&"last changed".to_string()));
-        assert!(actions.contains(&"last update of RDAP database".to_string()));
+        assert!(!actions.contains(&"last update of RDAP database".to_string()));
         assert!(!actions.contains(&"expiration".to_string()));
         assert!(!actions.contains(&"registrar expiration".to_string()));
     }
@@ -1069,6 +1074,43 @@ mod tests {
             date_for("last update of RDAP database"),
             Some(last_update.to_rfc3339())
         );
+    }
+
+    #[test]
+    fn test_parse_last_update_now() {
+        // GIVEN
+        let before = Utc::now();
+
+        // WHEN
+        let actual = parse_last_update("now").expect("parsing now");
+
+        // THEN
+        let diff = (actual.with_timezone(&Utc) - before).num_seconds().abs();
+        assert!(diff < 2);
+    }
+
+    #[test]
+    fn test_parse_last_update_rfc3339() {
+        // GIVEN
+        let arg = "2025-06-15T12:00:00Z";
+
+        // WHEN
+        let actual = parse_last_update(arg).expect("parsing rfc3339");
+
+        // THEN
+        assert_eq!(actual, rfc3339(arg));
+    }
+
+    #[test]
+    fn test_parse_last_update_invalid() {
+        // GIVEN
+        let arg = "garbage";
+
+        // WHEN
+        let actual = parse_last_update(arg);
+
+        // THEN
+        assert!(actual.is_err());
     }
 
     #[test]
