@@ -100,11 +100,11 @@ CREATE INDEX domain_unicode_name_idx ON domain(unicode_name);
 
 CREATE INDEX domain_handle_idx ON domain(handle);
 
-CREATE INDEX domain_ns_v4_idx on domain(ns_v4);
+CREATE INDEX domain_ns_v4_idx on domain USING GIN(ns_v4);
 
-CREATE INDEX domain_ns_v6_idx on domain(ns_v6);
+CREATE INDEX domain_ns_v6_idx on domain USING GIN(ns_v6);
 
-CREATE INDEX domain_ns_ldh_name_idx on domain(ns_ldh_name);
+CREATE INDEX domain_ns_ldh_name_idx on domain USING GIN(ns_ldh_name);
 
 CREATE INDEX domain_net_start_address_idx on domain(net_start_address);
 
@@ -153,9 +153,9 @@ CREATE INDEX nameserver_unicode_name_idx ON nameserver(unicode_name);
 
 CREATE INDEX nameserver_handle_idx ON nameserver(handle);
 
-CREATE INDEX nameserver_v4 ON nameserver(v4);
+CREATE INDEX nameserver_v4 ON nameserver USING GIN(v4);
 
-CREATE INDEX nameserver_v6 on nameserver(v6);
+CREATE INDEX nameserver_v6 on nameserver USING GIN(v6);
 
 CREATE OR REPLACE FUNCTION set_nameserver_pk_from_json()
 RETURNS TRIGGER AS $$

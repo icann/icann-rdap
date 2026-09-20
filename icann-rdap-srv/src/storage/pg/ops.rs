@@ -507,8 +507,8 @@ impl StoreOps for Pg {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let query = match ip {
-            IpAddr::V4(_) => "SELECT content FROM nameserver WHERE $1::inet = ANY(v4)",
-            IpAddr::V6(_) => "SELECT content FROM nameserver WHERE $1::inet = ANY(v6)",
+            IpAddr::V4(_) => "SELECT content FROM nameserver WHERE v4 && ARRAY[$1::inet]",
+            IpAddr::V6(_) => "SELECT content FROM nameserver WHERE v6 && ARRAY[$1::inet]",
         };
         let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(query)
             .bind(ip)
@@ -534,8 +534,8 @@ impl StoreOps for Pg {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let query = match ip {
-            IpAddr::V4(_) => "SELECT content FROM domain WHERE $1::inet = ANY(ns_v4)",
-            IpAddr::V6(_) => "SELECT content FROM domain WHERE $1::inet = ANY(ns_v6)",
+            IpAddr::V4(_) => "SELECT content FROM domain WHERE ns_v4 && ARRAY[$1::inet]",
+            IpAddr::V6(_) => "SELECT content FROM domain WHERE ns_v6 && ARRAY[$1::inet]",
         };
         let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(query)
             .bind(ip)
