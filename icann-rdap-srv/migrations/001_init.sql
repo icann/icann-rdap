@@ -1,3 +1,8 @@
+-- trgm trusted extension comes with pg
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+
 -- last public DB update
  
 CREATE TABLE last_rdap_update (
@@ -148,6 +153,8 @@ CREATE TABLE nameserver (
 );
 
 CREATE UNIQUE INDEX nameserver_ldh_name_lower_idx ON nameserver (LOWER(ldh_name));
+
+CREATE INDEX nameserver_ldh_name_trgm ON nameserver USING GIN(ldh_name gin_trgm_ops);
 
 CREATE INDEX nameserver_unicode_name_idx ON nameserver(unicode_name);
 

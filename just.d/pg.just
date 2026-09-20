@@ -79,3 +79,7 @@ start:
 [doc('Connect to database with psql')]
 psql:
     psql {{pg_url}}
+
+[doc('Connect to database with psql as admin')]
+psql-admin:
+    psql -U {{admin}} {{pg_url}}
