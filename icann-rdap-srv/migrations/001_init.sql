@@ -3,7 +3,9 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 
+------------------------
 -- last public DB update
+------------------------
  
 CREATE TABLE last_rdap_update (
     id INT PRIMARY KEY CHECK (id = 1),
@@ -26,7 +28,9 @@ AFTER INSERT OR UPDATE ON last_rdap_update
 FOR EACH ROW
 EXECUTE FUNCTION notify_db_update();
 
+----------------
 -- entity (rdap)
+----------------
 
 CREATE TABLE entity (
     handle  TEXT PRIMARY KEY,
@@ -34,7 +38,12 @@ CREATE TABLE entity (
     content JSONB NOT NULL
 );
 
-CREATE INDEX entity_fn_idx ON entity(fn);
+-- ILIKE wildcard search on handle (search_entities_by_handle) cannot use a B-tree, so it needs
+-- a trigram GIN index to avoid seq-scanning the whole table.
+CREATE INDEX entity_handle_trgm_idx ON entity USING GIN (handle gin_trgm_ops);
+
+-- Same for full-name search (search_entities_by_full_name): ILIKE on fn also needs a trigram index.
+CREATE INDEX entity_fn_trgm_idx ON entity USING GIN (fn gin_trgm_ops);
 
 CREATE OR REPLACE FUNCTION set_entity_pk_from_json()
 RETURNS TRIGGER AS $$
@@ -52,7 +61,9 @@ BEFORE INSERT ON entity
 FOR EACH ROW
 EXECUTE FUNCTION set_entity_pk_from_json();
 
+---------
 -- domain
+---------
 
 -- Helper function to get nameserver v4s to inet[]
 CREATE OR REPLACE FUNCTION extract_nested_v4_ips(data jsonb)
@@ -159,7 +170,9 @@ BEFORE INSERT ON domain
 FOR EACH ROW
 EXECUTE FUNCTION set_domain_pk_from_json();
 
+-------------
 -- nameserver
+-------------
 
 -- Helper function to convert a JSON array of IP strings to inet[]
 CREATE OR REPLACE FUNCTION jsonb_to_inet_array(arr jsonb)
@@ -208,7 +221,9 @@ BEFORE INSERT ON nameserver
 FOR EACH ROW
 EXECUTE FUNCTION set_nameserver_pk_from_json();
 
+---------
 -- autnum
+---------
 
 CREATE TABLE autnum (
     start_autnum BIGINT NOT NULL,
@@ -242,7 +257,9 @@ BEFORE INSERT ON autnum
 FOR EACH ROW
 EXECUTE FUNCTION set_autnum_pk_from_json();
 
+----------
 -- network
+----------
 
 CREATE TABLE network (
     start_address INET NOT NULL,
@@ -276,7 +293,9 @@ BEFORE INSERT ON network
 FOR EACH ROW
 EXECUTE FUNCTION set_network_pk_from_json();
 
+------
 -- srv
+------
 
 CREATE TABLE srv_help (
     host    TEXT PRIMARY KEY,
