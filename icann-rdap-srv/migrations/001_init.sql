@@ -2,6 +2,10 @@
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- btree_gist lets a single GiST index serve 2D orthogonal range queries (e.g.
+-- start_address <= $1 AND end_address >= $2) on the inet columns below.
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 
 ------------------------
 -- last public DB update
@@ -120,9 +124,11 @@ CREATE INDEX domain_ns_v4_idx on domain USING GIN(ns_v4);
 
 CREATE INDEX domain_ns_v6_idx on domain USING GIN(ns_v6);
 
-CREATE INDEX domain_net_start_address_idx on domain(net_start_address);
-
-CREATE INDEX domain_net_end_address_idx on domain(net_end_address);
+-- 2D range/containment searches over a domain's allocated network (search_domains_by_ipaddr and
+-- the ip_rdap_* lookups) use both net columns together; a btree_gist GiST serves them. The old
+-- separate B-trees on each column are dropped: they can't serve these 2D predicates, and left in
+-- place they mislead the planner into using one of them (slow) instead of the GiST.
+CREATE INDEX domain_net_range_idx ON domain USING GIST (net_start_address, net_end_address);
 
 -- Indexed support for wildcard/regex search over a domain's nameserver LDH names.
 -- `domain.ns_ldh_name` is a TEXT[] generated column; element-level pattern matching on it
@@ -273,6 +279,10 @@ CREATE TABLE network (
 CREATE INDEX network_handle_idx ON network(handle);
 
 CREATE INDEX network_name_idx ON network(name);
+
+-- 2D range/containment searches (search_ip_rdap_up/down/top/bottom_by_cidr) cannot use the
+-- composite B-tree PK; a btree_gist GiST over both inet columns serves them instead.
+CREATE INDEX network_range_idx ON network USING GIST (start_address, end_address);
 
 CREATE OR REPLACE FUNCTION set_network_pk_from_json()
 RETURNS TRIGGER AS $$
