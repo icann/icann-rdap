@@ -568,9 +568,12 @@ impl StoreOps for Pg {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let pattern = wildcard_to_domain_regex(name)?;
+        // Match through the indexed domain_ns junction table; a regex over the ns_ldh_name
+        // array column cannot use an index and would seq-scan the whole table.
         let rows: Vec<Json<RdapResponse>> = sqlx::query_scalar(
-            "SELECT content FROM domain \
-             WHERE EXISTS (SELECT 1 FROM unnest(ns_ldh_name) AS ns WHERE ns ~* $1)",
+            "SELECT d.content FROM domain AS d \
+             WHERE EXISTS (SELECT 1 FROM domain_ns AS ns \
+                           WHERE ns.domain_ldh_name = d.ldh_name AND ns.ns_name ~* $1)",
         )
         .bind(pattern)
         .fetch_all(&self.pg_pool)

@@ -36,7 +36,7 @@ impl PgTx<'_> {
 
     pub async fn new_truncate(pg_pool: &PgPool) -> Result<Self, RdapServerError> {
         let mut db_tx = pg_pool.begin().await?;
-        sqlx::query("TRUNCATE entity, domain, nameserver, autnum, network, srv_help")
+        sqlx::query("TRUNCATE entity, domain, nameserver, autnum, network, srv_help, domain_ns")
             .execute(&mut *db_tx)
             .await?;
         Ok(Self {

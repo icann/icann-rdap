@@ -109,11 +109,39 @@ CREATE INDEX domain_ns_v4_idx on domain USING GIN(ns_v4);
 
 CREATE INDEX domain_ns_v6_idx on domain USING GIN(ns_v6);
 
-CREATE INDEX domain_ns_ldh_name_idx on domain USING GIN(ns_ldh_name);
-
 CREATE INDEX domain_net_start_address_idx on domain(net_start_address);
 
 CREATE INDEX domain_net_end_address_idx on domain(net_end_address);
+
+-- Indexed support for wildcard/regex search over a domain's nameserver LDH names.
+-- `domain.ns_ldh_name` is a TEXT[] generated column; element-level pattern matching on it
+-- cannot be indexed (the default GIN array opclass only serves exact-element operators, and
+-- pg_trgm refuses to build on text[]). So we denormalize the names into a scalar column that
+-- CAN carry a trigram GIN index, kept in sync with `domain.content` via a trigger. The search
+-- then filters through this indexed junction table instead of seq-scanning the domain table.
+CREATE TABLE domain_ns (
+    domain_ldh_name TEXT NOT NULL REFERENCES domain (ldh_name) ON DELETE CASCADE,
+    ns_name         TEXT NOT NULL
+);
+
+CREATE INDEX domain_ns_name_trgm_idx ON domain_ns USING GIN (ns_name gin_trgm_ops);
+
+-- Keep domain_ns in sync with the generated column. The names are derived solely from
+-- `content`, so re-syncing whenever content changes is complete. Domain deletion is handled
+-- by the FK's ON DELETE CASCADE above.
+CREATE OR REPLACE FUNCTION fn_sync_domain_ns() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    DELETE FROM domain_ns WHERE domain_ldh_name = NEW.ldh_name;
+    INSERT INTO domain_ns (domain_ldh_name, ns_name)
+    SELECT NEW.ldh_name, unnest(NEW.ns_ldh_name);
+    RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER trg_sync_domain_ns
+AFTER INSERT OR UPDATE OF content ON domain
+FOR EACH ROW EXECUTE FUNCTION fn_sync_domain_ns();
 
 CREATE OR REPLACE FUNCTION set_domain_pk_from_json()
 RETURNS TRIGGER AS $$
