@@ -1,5 +1,6 @@
 -- trgm trusted extension comes with pg
 
+-- for the ILIKE searches and handles, names, etc...
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- btree_gist lets a single GiST index serve 2D orthogonal range queries (e.g.
@@ -115,6 +116,10 @@ CREATE TABLE domain (
 );
 
 CREATE UNIQUE INDEX domain_ldh_name_lower_idx ON domain (LOWER(ldh_name));
+
+-- Wildcard search on ldh_name (search_domains_by_name) uses regex, which a B-tree can't serve;
+-- a trigram GIN index is needed to avoid seq-scanning. Mirrors nameserver_ldh_name_trgm.
+CREATE INDEX domain_ldh_name_trgm ON domain USING GIN (ldh_name gin_trgm_ops);
 
 CREATE INDEX domain_unicode_name_idx ON domain(unicode_name);
 
@@ -244,6 +249,11 @@ CREATE INDEX autnum_handle_idx ON autnum(handle);
 
 CREATE INDEX autnum_name_idx ON autnum(name);
 
+-- Wildcard searches on handle/name (search_autnums_by_handle/name) use ILIKE, which a B-tree
+-- can't serve; trigram GIN indexes are needed to avoid seq-scanning.
+CREATE INDEX autnum_handle_trgm_idx ON autnum USING GIN (handle gin_trgm_ops);
+CREATE INDEX autnum_name_trgm_idx   ON autnum USING GIN (name gin_trgm_ops);
+
 CREATE OR REPLACE FUNCTION set_autnum_pk_from_json()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -279,6 +289,11 @@ CREATE TABLE network (
 CREATE INDEX network_handle_idx ON network(handle);
 
 CREATE INDEX network_name_idx ON network(name);
+
+-- Wildcard searches on handle/name (search_networks_by_handle/name) use ILIKE, which a B-tree
+-- can't serve; trigram GIN indexes are needed to avoid seq-scanning.
+CREATE INDEX network_handle_trgm_idx ON network USING GIN (handle gin_trgm_ops);
+CREATE INDEX network_name_trgm_idx   ON network USING GIN (name gin_trgm_ops);
 
 -- 2D range/containment searches (search_ip_rdap_up/down/top/bottom_by_cidr) cannot use the
 -- composite B-tree PK; a btree_gist GiST over both inet columns serves them instead.
