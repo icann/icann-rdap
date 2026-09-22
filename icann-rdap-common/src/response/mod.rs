@@ -326,13 +326,13 @@ fn upsert_last_update(common: &mut ObjectCommon, action: &str, date_rfc3339: &st
     }
 }
 
-/// Set the `value` of every top-level notice terms-of-service link in `common` to `uri`.
-fn set_tos_value_in_notices(common: &mut Common, uri: &str) {
+/// Set the `value` of every top-level notice link whose `rel` equals `rel` in `common` to `uri`.
+fn set_notice_links_value(common: &mut Common, rel: &str, uri: &str) {
     let Some(notices) = common.notices.as_mut() else {
         return;
     };
     for notice in notices.iter_mut() {
-        notice.0.replace_tos_link_value(uri);
+        notice.0.replace_link_value(rel, uri);
     }
 }
 
@@ -400,20 +400,20 @@ impl RdapResponse {
         }
     }
 
-    /// Set the `value` of every top-level notice terms-of-service link to `uri`, across all
-    /// object and search-result response variants.
-    pub fn replace_tos_link_value(&mut self, uri: &str) {
+    /// Set the `value` of every top-level notice link whose `rel` equals `rel` to `uri`, across
+    /// all object and search-result response variants.
+    pub fn replace_notice_link_value(&mut self, rel: &str, uri: &str) {
         match self {
-            Self::Domain(d) => set_tos_value_in_notices(&mut d.common, uri),
-            Self::Entity(e) => set_tos_value_in_notices(&mut e.common, uri),
-            Self::Nameserver(n) => set_tos_value_in_notices(&mut n.common, uri),
-            Self::Autnum(a) => set_tos_value_in_notices(&mut a.common, uri),
-            Self::Network(n) => set_tos_value_in_notices(&mut n.common, uri),
-            Self::DomainSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
-            Self::EntitySearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
-            Self::NameserverSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
-            Self::IpSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
-            Self::AutnumSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
+            Self::Domain(d) => set_notice_links_value(&mut d.common, rel, uri),
+            Self::Entity(e) => set_notice_links_value(&mut e.common, rel, uri),
+            Self::Nameserver(n) => set_notice_links_value(&mut n.common, rel, uri),
+            Self::Autnum(a) => set_notice_links_value(&mut a.common, rel, uri),
+            Self::Network(n) => set_notice_links_value(&mut n.common, rel, uri),
+            Self::DomainSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::EntitySearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::NameserverSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::IpSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::AutnumSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
             _ => {}
         }
     }
@@ -895,7 +895,10 @@ mod tests {
         let mut resp = RdapResponse::Domain(Box::new(domain));
 
         // WHEN the ToS link value is replaced with the request URI
-        resp.replace_tos_link_value("http://localhost:3000/rdap/domain/foo.example");
+        resp.replace_notice_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domain/foo.example",
+        );
 
         // THEN only the terms-of-service link changed; the self link is untouched
         let RdapResponse::Domain(d) = &resp else {
@@ -928,7 +931,10 @@ mod tests {
             RdapResponse::Domain(Box::new(Domain::builder().ldh_name("foo.example").build()));
 
         // WHEN we attempt the replacement
-        resp.replace_tos_link_value("http://localhost:3000/rdap/domain/foo.example");
+        resp.replace_notice_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domain/foo.example",
+        );
 
         // THEN it remains a domain with no notices
         assert!(matches!(&resp, RdapResponse::Domain(d) if d.common.notices.is_none()));
@@ -963,7 +969,10 @@ mod tests {
             .build();
 
         // WHEN we replace the ToS link value
-        nor.replace_tos_link_value("http://localhost:3000/rdap/domain/foo.example");
+        nor.replace_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domain/foo.example",
+        );
 
         // THEN both ToS links changed, self unchanged
         let links = nor.links.as_ref().expect("links");
@@ -976,6 +985,39 @@ mod tests {
             Some("http://localhost:3000/rdap/domain/foo.example")
         );
         assert_eq!(links[2].value.as_deref(), Some("c"));
+    }
+
+    #[test]
+    fn replace_notice_link_value_only_touches_matching_rel() {
+        // GIVEN a notice carrying both a help and a terms-of-service link
+        let mut nor = NoticeOrRemark::builder()
+            .description_entry("n")
+            .link(
+                Link::builder()
+                    .value("h")
+                    .rel("help")
+                    .href("https://x/h")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .value("t")
+                    .rel("terms-of-service")
+                    .href("https://x/t")
+                    .build(),
+            )
+            .build();
+
+        // WHEN we replace only the help link value
+        nor.replace_link_value("help", "http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN the help link changed and the terms-of-service link is untouched
+        let links = nor.links.as_ref().expect("links");
+        assert_eq!(
+            links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(links[1].value.as_deref(), Some("t"));
     }
 
     #[test]
@@ -1000,7 +1042,10 @@ mod tests {
         let mut resp = RdapResponse::DomainSearchResults(Box::new(results));
 
         // WHEN we replace the ToS link value
-        resp.replace_tos_link_value("http://localhost:3000/rdap/domains?name=a.*");
+        resp.replace_notice_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domains?name=a.*",
+        );
 
         // THEN the notice ToS link in the search result was updated
         let RdapResponse::DomainSearchResults(r) = &resp else {

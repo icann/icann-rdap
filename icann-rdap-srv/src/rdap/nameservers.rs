@@ -43,7 +43,7 @@ pub(crate) async fn nameservers(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -68,7 +68,7 @@ pub(crate) async fn nameservers(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),

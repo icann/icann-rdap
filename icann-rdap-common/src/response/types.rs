@@ -453,16 +453,13 @@ pub struct NoticeOrRemark {
 
 #[buildstructor::buildstructor]
 impl NoticeOrRemark {
-    /// The `rel` value identifying a terms-of-service link.
-    const TERMS_OF_SERVICE_REL: &str = "terms-of-service";
-
-    /// Set the `value` of every terms-of-service link to `uri`. No-op if none present.
-    pub fn replace_tos_link_value(&mut self, uri: &str) {
+    /// Set the `value` of every link whose `rel` equals `rel` to `uri`. No-op if none match.
+    pub fn replace_link_value(&mut self, rel: &str, uri: &str) {
         let Some(links) = self.links.as_mut() else {
             return;
         };
         for link in links.iter_mut() {
-            if link.rel.as_deref() == Some(Self::TERMS_OF_SERVICE_REL) {
+            if link.rel.as_deref() == Some(rel) {
                 link.value = Some(uri.to_string());
             }
         }

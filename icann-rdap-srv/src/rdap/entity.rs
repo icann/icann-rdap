@@ -51,7 +51,7 @@ pub(crate) async fn entity_by_handle(
     );
     let mut entity = normalize_extensions(entity);
     super::inject_db_last_update(&mut entity, storage, state.get_common_config());
-    super::replace_tos_link_value(
+    super::replace_notice_link_values(
         &mut entity,
         state.get_common_config(),
         state.get_base_origin(),

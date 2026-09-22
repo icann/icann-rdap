@@ -36,7 +36,7 @@ pub(crate) async fn autnum_by_num(
         );
         let mut autnum = normalize_extensions(autnum);
         super::inject_db_last_update(&mut autnum, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut autnum,
             state.get_common_config(),
             state.get_base_origin(),

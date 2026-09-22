@@ -40,20 +40,33 @@ pub(crate) fn inject_db_last_update(
     }
 }
 
-/// When enabled in config, set the `value` of every top-level notice terms-of-service link to
-/// the absolute request URI. No-op when disabled.
-pub(crate) fn replace_tos_link_value(
+/// The `rel` value identifying a terms-of-service link.
+const TERMS_OF_SERVICE_REL: &str = "terms-of-service";
+
+/// The `rel` value identifying a help link.
+const HELP_REL: &str = "help";
+
+/// When enabled in config, set the `value` of every matching top-level notice link (ToS and/or
+/// help) to the absolute request URI. No-op when neither flag is enabled.
+pub(crate) fn replace_notice_link_values(
     response: &mut RdapResponse,
     cfg: CommonConfig,
     base_origin: Option<BaseOrigin>,
     uri: &Uri,
     headers: &HeaderMap,
 ) {
-    if !cfg.notice_tos_link_enable {
+    let tos = cfg.notice_tos_link_enable;
+    let help = cfg.notice_help_link_enable;
+    if !tos && !help {
         return;
     }
     let request_uri = build_request_uri(uri, headers, &base_origin);
-    response.replace_tos_link_value(&request_uri);
+    if tos {
+        response.replace_notice_link_value(TERMS_OF_SERVICE_REL, &request_uri);
+    }
+    if help {
+        response.replace_notice_link_value(HELP_REL, &request_uri);
+    }
 }
 
 /// Parse the first (client-facing) `Forwarded` element into its `(proto, host)` pseudo-headers.

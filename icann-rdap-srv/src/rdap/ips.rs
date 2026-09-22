@@ -67,7 +67,7 @@ pub(crate) async fn ip_rdap_up(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
-            super::replace_tos_link_value(
+            super::replace_notice_link_values(
                 &mut network,
                 state.get_common_config(),
                 state.get_base_origin(),
@@ -93,7 +93,7 @@ pub(crate) async fn ip_rdap_up(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
-            super::replace_tos_link_value(
+            super::replace_notice_link_values(
                 &mut network,
                 state.get_common_config(),
                 state.get_base_origin(),
@@ -134,7 +134,7 @@ pub(crate) async fn ip_rdap_top(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
-            super::replace_tos_link_value(
+            super::replace_notice_link_values(
                 &mut network,
                 state.get_common_config(),
                 state.get_base_origin(),
@@ -160,7 +160,7 @@ pub(crate) async fn ip_rdap_top(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
-            super::replace_tos_link_value(
+            super::replace_notice_link_values(
                 &mut network,
                 state.get_common_config(),
                 state.get_base_origin(),
@@ -198,7 +198,7 @@ pub(crate) async fn ip_rdap_down(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -220,7 +220,7 @@ pub(crate) async fn ip_rdap_down(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -257,7 +257,7 @@ pub(crate) async fn ip_rdap_bottom(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -279,7 +279,7 @@ pub(crate) async fn ip_rdap_bottom(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_tos_link_value(
+        super::replace_notice_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -315,7 +315,7 @@ pub(crate) async fn networks(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
-    super::replace_tos_link_value(
+    super::replace_notice_link_values(
         &mut results,
         state.get_common_config(),
         state.get_base_origin(),
