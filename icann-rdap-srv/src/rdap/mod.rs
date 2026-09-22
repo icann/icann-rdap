@@ -52,6 +52,15 @@ const GLOSSARY_REL: &str = "glossary";
 /// The `rel` value identifying a related link.
 const RELATED_REL: &str = "related";
 
+/// Where a link to rewrite lives within an object.
+#[derive(Clone, Copy)]
+enum LinkScope {
+    /// Links inside a top-level notice.
+    Notice,
+    /// Links on the object itself (top-level links, including nested entities).
+    Object,
+}
+
 /// When enabled in config, set the `value` of matching top-level notice links (ToS/help/glossary)
 /// and object `related` links to the absolute request URI. No-op when no relevant flag is set.
 pub(crate) fn replace_link_values(
@@ -61,23 +70,31 @@ pub(crate) fn replace_link_values(
     uri: &Uri,
     headers: &HeaderMap,
 ) {
-    let notice_rels = [
-        (cfg.notice_tos_link_enable, TERMS_OF_SERVICE_REL),
-        (cfg.notice_help_link_enable, HELP_REL),
-        (cfg.notice_glossary_link_enable, GLOSSARY_REL),
+    let rules = [
+        (
+            cfg.notice_tos_link_enable,
+            TERMS_OF_SERVICE_REL,
+            LinkScope::Notice,
+        ),
+        (cfg.notice_help_link_enable, HELP_REL, LinkScope::Notice),
+        (
+            cfg.notice_glossary_link_enable,
+            GLOSSARY_REL,
+            LinkScope::Notice,
+        ),
+        (cfg.related_link_enable, RELATED_REL, LinkScope::Object),
     ];
-    let related = cfg.related_link_enable;
-    if !notice_rels.iter().any(|(enabled, _)| *enabled) && !related {
+    if !rules.iter().any(|(enabled, _, _)| *enabled) {
         return;
     }
     let request_uri = build_request_uri(uri, headers, &base_origin);
-    for (enabled, rel) in notice_rels {
+    for (enabled, rel, scope) in rules {
         if enabled {
-            response.replace_notice_link_value(rel, &request_uri);
+            match scope {
+                LinkScope::Notice => response.replace_notice_link_value(rel, &request_uri),
+                LinkScope::Object => response.replace_object_link_value(rel, &request_uri),
+            }
         }
-    }
-    if related {
-        response.replace_object_link_value(RELATED_REL, &request_uri);
     }
 }
 
