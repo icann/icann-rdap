@@ -46,6 +46,9 @@ const TERMS_OF_SERVICE_REL: &str = "terms-of-service";
 /// The `rel` value identifying a help link.
 const HELP_REL: &str = "help";
 
+/// The `rel` value identifying a glossary link.
+const GLOSSARY_REL: &str = "glossary";
+
 /// When enabled in config, set the `value` of every matching top-level notice link (ToS and/or
 /// help) to the absolute request URI. No-op when neither flag is enabled.
 pub(crate) fn replace_notice_link_values(
@@ -55,17 +58,19 @@ pub(crate) fn replace_notice_link_values(
     uri: &Uri,
     headers: &HeaderMap,
 ) {
-    let tos = cfg.notice_tos_link_enable;
-    let help = cfg.notice_help_link_enable;
-    if !tos && !help {
+    let rels = [
+        (cfg.notice_tos_link_enable, TERMS_OF_SERVICE_REL),
+        (cfg.notice_help_link_enable, HELP_REL),
+        (cfg.notice_glossary_link_enable, GLOSSARY_REL),
+    ];
+    if !rels.iter().any(|(enabled, _)| *enabled) {
         return;
     }
     let request_uri = build_request_uri(uri, headers, &base_origin);
-    if tos {
-        response.replace_notice_link_value(TERMS_OF_SERVICE_REL, &request_uri);
-    }
-    if help {
-        response.replace_notice_link_value(HELP_REL, &request_uri);
+    for (enabled, rel) in rels {
+        if enabled {
+            response.replace_notice_link_value(rel, &request_uri);
+        }
     }
 }
 

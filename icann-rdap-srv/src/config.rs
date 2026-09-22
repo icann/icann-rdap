@@ -51,6 +51,7 @@ pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HAND
 pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
 pub const NOTICE_TOS_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_TOS_LINK";
 pub const NOTICE_HELP_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_HELP_LINK";
+pub const NOTICE_GLOSSARY_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_GLOSSARY_LINK";
 pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
 pub const PG_IGNORE_DATA_DIR: &str = "RDAP_SRV_PG_IGNORE_DATA_DIR";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
@@ -88,6 +89,7 @@ pub fn debug_config_vars() {
         RDAP_DB_LAST_UPDATE_ENABLE,
         NOTICE_TOS_LINK_ENABLE,
         NOTICE_HELP_LINK_ENABLE,
+        NOTICE_GLOSSARY_LINK_ENABLE,
         PG_NOTIFY_ENABLE,
         PG_IGNORE_DATA_DIR,
         JSCONTACT_CONVERSION,
@@ -197,6 +199,7 @@ impl StorageType {
         let pg_notify = get_parse_or(PG_NOTIFY_ENABLE, false)?;
         let notice_tos_link = get_parse_or(NOTICE_TOS_LINK_ENABLE, false)?;
         let notice_help_link = get_parse_or(NOTICE_HELP_LINK_ENABLE, false)?;
+        let notice_glossary_link = get_parse_or(NOTICE_GLOSSARY_LINK_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -224,6 +227,7 @@ impl StorageType {
             .rdap_db_last_update_enable(rdap_db_last_update)
             .notice_tos_link_enable(notice_tos_link)
             .notice_help_link_enable(notice_help_link)
+            .notice_glossary_link_enable(notice_glossary_link)
             .pg_notify_enable(pg_notify)
             .build();
         let storage = get_or(STORAGE, "memory");
@@ -314,6 +318,8 @@ pub struct CommonConfig {
     pub notice_tos_link_enable: bool,
     /// When enabled, the `value` of every top-level notice help link is set to the request URI.
     pub notice_help_link_enable: bool,
+    /// When enabled, the `value` of every top-level notice glossary link is set to the request URI.
+    pub notice_glossary_link_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -348,6 +354,7 @@ impl Default for CommonConfig {
             pg_notify_enable: false,
             notice_tos_link_enable: false,
             notice_help_link_enable: false,
+            notice_glossary_link_enable: false,
         }
     }
 }
@@ -385,6 +392,7 @@ impl CommonConfig {
         pg_notify_enable: Option<bool>,
         notice_tos_link_enable: Option<bool>,
         notice_help_link_enable: Option<bool>,
+        notice_glossary_link_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -418,6 +426,7 @@ impl CommonConfig {
             pg_notify_enable: pg_notify_enable.unwrap_or(false),
             notice_tos_link_enable: notice_tos_link_enable.unwrap_or(false),
             notice_help_link_enable: notice_help_link_enable.unwrap_or(false),
+            notice_glossary_link_enable: notice_glossary_link_enable.unwrap_or(false),
         }
     }
 }

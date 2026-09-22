@@ -130,3 +130,38 @@ async fn help_link_value_replaced_with_request_uri_when_enabled() {
         Some("/domain/foo.example")
     );
 }
+
+#[tokio::test]
+async fn glossary_link_value_unchanged_when_flag_disabled() {
+    // GIVEN a glossary notice and the glossary flag disabled (default)
+    let test_srv = seeded_srv(CommonConfig::default(), "glossary").await;
+
+    // WHEN a domain query is served, THEN the glossary link value is unchanged
+    let response = query_domain(&test_srv).await;
+    assert_eq!(response.http_data.status_code, 200);
+    assert_eq!(
+        served_link_value(response, "glossary").as_deref(),
+        Some("https://old/glossary")
+    );
+}
+
+#[tokio::test]
+async fn glossary_link_value_replaced_with_request_uri_when_enabled() {
+    // GIVEN a glossary notice and the glossary flag enabled (other flags left off)
+    let test_srv = seeded_srv(
+        CommonConfig {
+            notice_glossary_link_enable: true,
+            ..Default::default()
+        },
+        "glossary",
+    )
+    .await;
+
+    // WHEN a domain query is served, THEN the glossary link value becomes the request URI
+    let response = query_domain(&test_srv).await;
+    assert_eq!(response.http_data.status_code, 200);
+    assert_eq!(
+        served_link_value(response, "glossary").as_deref(),
+        Some("/domain/foo.example")
+    );
+}
