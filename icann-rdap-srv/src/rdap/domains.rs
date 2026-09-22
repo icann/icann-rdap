@@ -59,7 +59,7 @@ pub(crate) async fn domains(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_notice_link_values(
+        super::replace_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -79,7 +79,7 @@ pub(crate) async fn domains(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_notice_link_values(
+        super::replace_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -104,7 +104,7 @@ pub(crate) async fn domains(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_notice_link_values(
+        super::replace_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -143,7 +143,7 @@ pub(crate) async fn domain_rdap_up(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_notice_link_values(
+        super::replace_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -180,7 +180,7 @@ pub(crate) async fn domain_rdap_top(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
-        super::replace_notice_link_values(
+        super::replace_link_values(
             &mut results,
             state.get_common_config(),
             state.get_base_origin(),
@@ -214,7 +214,7 @@ pub(crate) async fn domain_rdap_down(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
-    super::replace_notice_link_values(
+    super::replace_link_values(
         &mut results,
         state.get_common_config(),
         state.get_base_origin(),
@@ -247,7 +247,7 @@ pub(crate) async fn domain_rdap_bottom(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
-    super::replace_notice_link_values(
+    super::replace_link_values(
         &mut results,
         state.get_common_config(),
         state.get_base_origin(),

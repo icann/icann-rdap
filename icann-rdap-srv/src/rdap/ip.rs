@@ -47,7 +47,7 @@ pub(crate) async fn network_by_netid(
                 );
                 let mut network = normalize_extensions(network);
                 super::inject_db_last_update(&mut network, storage, state.get_common_config());
-                super::replace_notice_link_values(
+                super::replace_link_values(
                     &mut network,
                     state.get_common_config(),
                     state.get_base_origin(),
@@ -77,7 +77,7 @@ pub(crate) async fn network_by_netid(
                 );
                 let mut network = normalize_extensions(network);
                 super::inject_db_last_update(&mut network, storage, state.get_common_config());
-                super::replace_notice_link_values(
+                super::replace_link_values(
                     &mut network,
                     state.get_common_config(),
                     state.get_base_origin(),

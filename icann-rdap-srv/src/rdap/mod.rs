@@ -49,28 +49,35 @@ const HELP_REL: &str = "help";
 /// The `rel` value identifying a glossary link.
 const GLOSSARY_REL: &str = "glossary";
 
-/// When enabled in config, set the `value` of every matching top-level notice link (ToS and/or
-/// help) to the absolute request URI. No-op when neither flag is enabled.
-pub(crate) fn replace_notice_link_values(
+/// The `rel` value identifying a related link.
+const RELATED_REL: &str = "related";
+
+/// When enabled in config, set the `value` of matching top-level notice links (ToS/help/glossary)
+/// and object `related` links to the absolute request URI. No-op when no relevant flag is set.
+pub(crate) fn replace_link_values(
     response: &mut RdapResponse,
     cfg: CommonConfig,
     base_origin: Option<BaseOrigin>,
     uri: &Uri,
     headers: &HeaderMap,
 ) {
-    let rels = [
+    let notice_rels = [
         (cfg.notice_tos_link_enable, TERMS_OF_SERVICE_REL),
         (cfg.notice_help_link_enable, HELP_REL),
         (cfg.notice_glossary_link_enable, GLOSSARY_REL),
     ];
-    if !rels.iter().any(|(enabled, _)| *enabled) {
+    let related = cfg.related_link_enable;
+    if !notice_rels.iter().any(|(enabled, _)| *enabled) && !related {
         return;
     }
     let request_uri = build_request_uri(uri, headers, &base_origin);
-    for (enabled, rel) in rels {
+    for (enabled, rel) in notice_rels {
         if enabled {
             response.replace_notice_link_value(rel, &request_uri);
         }
+    }
+    if related {
+        response.replace_object_link_value(RELATED_REL, &request_uri);
     }
 }
 

@@ -165,3 +165,72 @@ async fn glossary_link_value_replaced_with_request_uri_when_enabled() {
         Some("/domain/foo.example")
     );
 }
+
+fn domain_with_related_link() -> Domain {
+    let mut domain = Domain::builder().ldh_name("foo.example").build();
+    domain.object_common.links = Some(vec![
+        Link::builder()
+            .value("https://old/related")
+            .rel("related")
+            .href("https://example.com/related")
+            .build(),
+    ]);
+    domain
+}
+
+async fn seeded_object_srv(common_config: CommonConfig) -> SrvTestJig {
+    let test_srv = SrvTestJig::new_common_config(common_config).await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_domain(&domain_with_related_link())
+        .await
+        .expect("add domain in tx");
+    tx.commit().await.expect("tx commit");
+    test_srv
+}
+
+fn served_object_link_value(response: ResponseData) -> Option<String> {
+    let RdapResponse::Domain(d) = response.rdap else {
+        panic!("expected a domain response")
+    };
+    d.object_common
+        .links
+        .as_ref()
+        .expect("links present")
+        .iter()
+        .find(|l| l.rel.as_deref() == Some("related"))
+        .expect("related link present")
+        .value
+        .clone()
+}
+
+#[tokio::test]
+async fn related_link_value_unchanged_when_flag_disabled() {
+    // GIVEN an object-level related link and the related flag disabled (default)
+    let test_srv = seeded_object_srv(CommonConfig::default()).await;
+
+    // WHEN a domain query is served, THEN the related link value is unchanged
+    let response = query_domain(&test_srv).await;
+    assert_eq!(response.http_data.status_code, 200);
+    assert_eq!(
+        served_object_link_value(response).as_deref(),
+        Some("https://old/related")
+    );
+}
+
+#[tokio::test]
+async fn related_link_value_replaced_with_request_uri_when_enabled() {
+    // GIVEN an object-level related link and the related flag enabled (other flags off)
+    let test_srv = seeded_object_srv(CommonConfig {
+        related_link_enable: true,
+        ..Default::default()
+    })
+    .await;
+
+    // WHEN a domain query is served, THEN the related link value becomes the request URI
+    let response = query_domain(&test_srv).await;
+    assert_eq!(response.http_data.status_code, 200);
+    assert_eq!(
+        served_object_link_value(response).as_deref(),
+        Some("/domain/foo.example")
+    );
+}

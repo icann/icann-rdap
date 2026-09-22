@@ -336,6 +336,23 @@ fn set_notice_links_value(common: &mut Common, rel: &str, uri: &str) {
     }
 }
 
+/// Set the `value` of every link whose `rel` equals `rel` in `object_common.links`, recursing into
+/// nested entities. No-op if none match.
+fn replace_links_in_object(object_common: &mut ObjectCommon, rel: &str, uri: &str) {
+    if let Some(links) = object_common.links.as_mut() {
+        for link in links.iter_mut() {
+            if link.rel.as_deref() == Some(rel) {
+                link.value = Some(uri.to_string());
+            }
+        }
+    }
+    if let Some(entities) = object_common.entities.as_mut() {
+        for entity in entities.iter_mut() {
+            replace_links_in_object(&mut entity.object_common, rel, uri);
+        }
+    }
+}
+
 impl RdapResponse {
     pub fn get_type(&self) -> TypeId {
         match self {
@@ -414,6 +431,40 @@ impl RdapResponse {
             Self::NameserverSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
             Self::IpSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
             Self::AutnumSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            _ => {}
+        }
+    }
+
+    /// Set the `value` of every link whose `rel` equals `rel` on any object in the response
+    /// (top-level, search-result members, and nested entities). Unlike
+    /// [`Self::replace_notice_link_value`], this targets object links, not notice links.
+    pub fn replace_object_link_value(&mut self, rel: &str, uri: &str) {
+        match self {
+            Self::Domain(d) => replace_links_in_object(&mut d.object_common, rel, uri),
+            Self::Entity(e) => replace_links_in_object(&mut e.object_common, rel, uri),
+            Self::Nameserver(n) => replace_links_in_object(&mut n.object_common, rel, uri),
+            Self::Autnum(a) => replace_links_in_object(&mut a.object_common, rel, uri),
+            Self::Network(n) => replace_links_in_object(&mut n.object_common, rel, uri),
+            Self::DomainSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|d| replace_links_in_object(&mut d.object_common, rel, uri)),
+            Self::EntitySearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|e| replace_links_in_object(&mut e.object_common, rel, uri)),
+            Self::NameserverSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| replace_links_in_object(&mut n.object_common, rel, uri)),
+            Self::IpSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| replace_links_in_object(&mut n.object_common, rel, uri)),
+            Self::AutnumSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|a| replace_links_in_object(&mut a.object_common, rel, uri)),
             _ => {}
         }
     }
@@ -811,8 +862,8 @@ mod tests {
     };
 
     use super::{
-        Common, Domain, DomainSearchResults, Event, Help, IpSearchResults, Link, Network, Notice,
-        NoticeOrRemark, RdapResponse, ToResponse, get_related_links,
+        Common, Domain, DomainSearchResults, Entity, Event, Help, IpSearchResults, Link, Network,
+        Notice, NoticeOrRemark, RdapResponse, ToResponse, get_related_links,
     };
 
     #[test]
@@ -1018,6 +1069,69 @@ mod tests {
             Some("http://localhost:3000/rdap/domain/foo.example")
         );
         assert_eq!(links[1].value.as_deref(), Some("t"));
+    }
+
+    #[test]
+    fn replace_object_link_value_replaces_related_in_object_and_nested_entities() {
+        // GIVEN a domain with a top-level related + self link and a nested entity that also has a
+        // related link
+        let mut nested = Entity::builder().handle("NE-1").build();
+        nested.object_common.links = Some(vec![
+            Link::builder()
+                .value("https://old/related-nested")
+                .rel("related")
+                .href("https://x/n")
+                .build(),
+        ]);
+        let mut domain = Domain::builder().ldh_name("foo.example").build();
+        domain.object_common.links = Some(vec![
+            Link::builder()
+                .value("https://old/self")
+                .rel("self")
+                .href("https://x/self")
+                .build(),
+            Link::builder()
+                .value("https://old/related")
+                .rel("related")
+                .href("https://x/rel")
+                .build(),
+        ]);
+        domain.object_common.entities = Some(vec![nested]);
+        let mut resp = RdapResponse::Domain(Box::new(domain));
+
+        // WHEN we replace the related link value on every object
+        resp.replace_object_link_value("related", "http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN both top-level and nested related links changed; the self link is untouched
+        let RdapResponse::Domain(d) = &resp else {
+            panic!("expected a domain")
+        };
+        let top = d.object_common.links.as_ref().expect("links");
+        assert_eq!(
+            top.iter()
+                .find(|l| l.rel.as_deref() == Some("related"))
+                .unwrap()
+                .value
+                .as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(
+            top.iter()
+                .find(|l| l.rel.as_deref() == Some("self"))
+                .unwrap()
+                .value
+                .as_deref(),
+            Some("https://old/self")
+        );
+        let nested_links = d.object_common.entities.as_ref().expect("entities")[0]
+            .object_common
+            .links
+            .as_ref()
+            .expect("nested links");
+        assert_eq!(
+            nested_links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
     }
 
     #[test]

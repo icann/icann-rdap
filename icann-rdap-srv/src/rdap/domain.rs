@@ -74,7 +74,7 @@ pub(crate) async fn domain_by_name(
     );
     let mut domain = normalize_extensions(domain);
     super::inject_db_last_update(&mut domain, storage, state.get_common_config());
-    super::replace_notice_link_values(
+    super::replace_link_values(
         &mut domain,
         state.get_common_config(),
         state.get_base_origin(),

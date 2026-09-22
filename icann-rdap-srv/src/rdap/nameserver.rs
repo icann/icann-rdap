@@ -60,7 +60,7 @@ pub(crate) async fn nameserver_by_name(
     );
     let mut nameserver = normalize_extensions(nameserver);
     super::inject_db_last_update(&mut nameserver, storage, state.get_common_config());
-    super::replace_notice_link_values(
+    super::replace_link_values(
         &mut nameserver,
         state.get_common_config(),
         state.get_base_origin(),

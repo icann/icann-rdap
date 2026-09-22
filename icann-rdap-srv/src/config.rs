@@ -52,6 +52,7 @@ pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
 pub const NOTICE_TOS_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_TOS_LINK";
 pub const NOTICE_HELP_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_HELP_LINK";
 pub const NOTICE_GLOSSARY_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_GLOSSARY_LINK";
+pub const RELATED_LINK_ENABLE: &str = "RDAP_SRV_RELATED_LINK";
 pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
 pub const PG_IGNORE_DATA_DIR: &str = "RDAP_SRV_PG_IGNORE_DATA_DIR";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
@@ -90,6 +91,7 @@ pub fn debug_config_vars() {
         NOTICE_TOS_LINK_ENABLE,
         NOTICE_HELP_LINK_ENABLE,
         NOTICE_GLOSSARY_LINK_ENABLE,
+        RELATED_LINK_ENABLE,
         PG_NOTIFY_ENABLE,
         PG_IGNORE_DATA_DIR,
         JSCONTACT_CONVERSION,
@@ -200,6 +202,7 @@ impl StorageType {
         let notice_tos_link = get_parse_or(NOTICE_TOS_LINK_ENABLE, false)?;
         let notice_help_link = get_parse_or(NOTICE_HELP_LINK_ENABLE, false)?;
         let notice_glossary_link = get_parse_or(NOTICE_GLOSSARY_LINK_ENABLE, false)?;
+        let related_link = get_parse_or(RELATED_LINK_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -228,6 +231,7 @@ impl StorageType {
             .notice_tos_link_enable(notice_tos_link)
             .notice_help_link_enable(notice_help_link)
             .notice_glossary_link_enable(notice_glossary_link)
+            .related_link_enable(related_link)
             .pg_notify_enable(pg_notify)
             .build();
         let storage = get_or(STORAGE, "memory");
@@ -320,6 +324,8 @@ pub struct CommonConfig {
     pub notice_help_link_enable: bool,
     /// When enabled, the `value` of every top-level notice glossary link is set to the request URI.
     pub notice_glossary_link_enable: bool,
+    /// When enabled, the `value` of every object `related` link is set to the request URI.
+    pub related_link_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -355,6 +361,7 @@ impl Default for CommonConfig {
             notice_tos_link_enable: false,
             notice_help_link_enable: false,
             notice_glossary_link_enable: false,
+            related_link_enable: false,
         }
     }
 }
@@ -393,6 +400,7 @@ impl CommonConfig {
         notice_tos_link_enable: Option<bool>,
         notice_help_link_enable: Option<bool>,
         notice_glossary_link_enable: Option<bool>,
+        related_link_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -427,6 +435,7 @@ impl CommonConfig {
             notice_tos_link_enable: notice_tos_link_enable.unwrap_or(false),
             notice_help_link_enable: notice_help_link_enable.unwrap_or(false),
             notice_glossary_link_enable: notice_glossary_link_enable.unwrap_or(false),
+            related_link_enable: related_link_enable.unwrap_or(false),
         }
     }
 }
