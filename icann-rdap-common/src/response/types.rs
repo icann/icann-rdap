@@ -453,6 +453,20 @@ pub struct NoticeOrRemark {
 
 #[buildstructor::buildstructor]
 impl NoticeOrRemark {
+    /// The `rel` value identifying a terms-of-service link.
+    const TERMS_OF_SERVICE_REL: &str = "terms-of-service";
+
+    /// Set the `value` of every terms-of-service link to `uri`. No-op if none present.
+    pub fn replace_tos_link_value(&mut self, uri: &str) {
+        let Some(links) = self.links.as_mut() else {
+            return;
+        };
+        for link in links.iter_mut() {
+            if link.rel.as_deref() == Some(Self::TERMS_OF_SERVICE_REL) {
+                link.value = Some(uri.to_string());
+            }
+        }
+    }
     /// Builds an RDAP notice/remark.
     #[builder(visibility = "pub")]
     fn new(

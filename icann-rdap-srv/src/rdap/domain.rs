@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ipnet};
 
 use {
@@ -25,6 +25,7 @@ pub(crate) async fn domain_by_name(
     Path(domain_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -73,5 +74,12 @@ pub(crate) async fn domain_by_name(
     );
     let mut domain = normalize_extensions(domain);
     super::inject_db_last_update(&mut domain, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut domain,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(domain.response())
 }

@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 
 use {
@@ -24,6 +24,7 @@ pub(crate) async fn entity_by_handle(
     Path(handle): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -50,5 +51,12 @@ pub(crate) async fn entity_by_handle(
     );
     let mut entity = normalize_extensions(entity);
     super::inject_db_last_update(&mut entity, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut entity,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(entity.response())
 }

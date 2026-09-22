@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, Query, State},
     response::Response,
 };
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{
     prelude::{ExtensionId, normalize_extensions, normalize_extensions_with},
     response::RdapResponse,
@@ -58,6 +58,7 @@ pub(crate) async fn autnums(
     Query(params): Query<AutnumsParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = '{}'", exts_list.join(" "));
@@ -78,6 +79,13 @@ pub(crate) async fn autnums(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
 
@@ -87,6 +95,7 @@ pub(crate) async fn autnum_rdap_up(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
@@ -115,6 +124,13 @@ pub(crate) async fn autnum_rdap_up(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -125,6 +141,7 @@ pub(crate) async fn autnum_rdap_top(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
@@ -153,6 +170,13 @@ pub(crate) async fn autnum_rdap_top(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -163,6 +187,7 @@ pub(crate) async fn autnum_rdap_down(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
@@ -188,6 +213,13 @@ pub(crate) async fn autnum_rdap_down(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
 
@@ -197,6 +229,7 @@ pub(crate) async fn autnum_rdap_bottom(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -223,5 +256,12 @@ pub(crate) async fn autnum_rdap_bottom(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }

@@ -6,7 +6,7 @@ use axum::{
     extract::{Path, Query, State},
     response::Response,
 };
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{
     prelude::{ExtensionId, normalize_extensions, normalize_extensions_with},
     response::RdapResponse,
@@ -44,6 +44,7 @@ pub(crate) async fn ip_rdap_up(
     Path(ip_or_cidr): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -66,6 +67,13 @@ pub(crate) async fn ip_rdap_up(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
+            super::replace_tos_link_value(
+                &mut network,
+                state.get_common_config(),
+                state.get_base_origin(),
+                &uri,
+                &headers,
+            );
             Ok(network.response())
         }
     } else {
@@ -85,6 +93,13 @@ pub(crate) async fn ip_rdap_up(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
+            super::replace_tos_link_value(
+                &mut network,
+                state.get_common_config(),
+                state.get_base_origin(),
+                &uri,
+                &headers,
+            );
             Ok(network.response())
         }
     }
@@ -96,6 +111,7 @@ pub(crate) async fn ip_rdap_top(
     Path(ip_or_cidr): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -118,6 +134,13 @@ pub(crate) async fn ip_rdap_top(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
+            super::replace_tos_link_value(
+                &mut network,
+                state.get_common_config(),
+                state.get_base_origin(),
+                &uri,
+                &headers,
+            );
             Ok(network.response())
         }
     } else {
@@ -137,6 +160,13 @@ pub(crate) async fn ip_rdap_top(
             );
             let mut network = add_rfc9910_extensions(network);
             super::inject_db_last_update(&mut network, storage, state.get_common_config());
+            super::replace_tos_link_value(
+                &mut network,
+                state.get_common_config(),
+                state.get_base_origin(),
+                &uri,
+                &headers,
+            );
             Ok(network.response())
         }
     }
@@ -148,6 +178,7 @@ pub(crate) async fn ip_rdap_down(
     Path(ip_or_cidr): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -167,6 +198,13 @@ pub(crate) async fn ip_rdap_down(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     } else {
         debug!("getting rdap-down for ip address {ip_or_cidr}");
@@ -182,6 +220,13 @@ pub(crate) async fn ip_rdap_down(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -192,6 +237,7 @@ pub(crate) async fn ip_rdap_bottom(
     Path(ip_or_cidr): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -211,6 +257,13 @@ pub(crate) async fn ip_rdap_bottom(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     } else {
         debug!("getting rdap-bottom for ip address {ip_or_cidr}");
@@ -226,6 +279,13 @@ pub(crate) async fn ip_rdap_bottom(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -236,6 +296,7 @@ pub(crate) async fn networks(
     Query(params): Query<IpsParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -254,5 +315,12 @@ pub(crate) async fn networks(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }

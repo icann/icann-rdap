@@ -3,7 +3,7 @@ use axum::{
     response::Response,
 };
 
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{
     prelude::{ExtensionId, normalize_extensions, normalize_extensions_with},
     response::RdapResponse,
@@ -45,6 +45,7 @@ pub(crate) async fn domains(
     Query(params): Query<DomainsParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     Ok(if let Some(name) = params.name {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -58,6 +59,13 @@ pub(crate) async fn domains(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else if let Some(ns_ldh_name) = params.ns_ldh_name {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -71,6 +79,13 @@ pub(crate) async fn domains(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else if let Some(ip_str) = params.ns_ip {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -89,6 +104,13 @@ pub(crate) async fn domains(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else {
         NOT_IMPLEMENTED.response()
@@ -101,6 +123,7 @@ pub(crate) async fn domain_rdap_up(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -120,6 +143,13 @@ pub(crate) async fn domain_rdap_up(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -130,6 +160,7 @@ pub(crate) async fn domain_rdap_top(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -149,6 +180,13 @@ pub(crate) async fn domain_rdap_top(
         );
         let mut results = add_rfc9910_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -159,6 +197,7 @@ pub(crate) async fn domain_rdap_down(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -175,6 +214,13 @@ pub(crate) async fn domain_rdap_down(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
 
@@ -184,6 +230,7 @@ pub(crate) async fn domain_rdap_bottom(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -200,5 +247,12 @@ pub(crate) async fn domain_rdap_bottom(
     );
     let mut results = add_rfc9910_extensions(results);
     super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }

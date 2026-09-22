@@ -83,6 +83,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config: CommonConfig::default(),
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -104,6 +105,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -128,6 +130,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -152,6 +155,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())

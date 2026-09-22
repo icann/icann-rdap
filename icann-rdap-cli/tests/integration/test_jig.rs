@@ -72,6 +72,7 @@ impl TestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -103,6 +104,7 @@ impl TestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().try_init();
         let listener = Listener::listen(&ListenConfig::default())

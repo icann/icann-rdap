@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 
 use {
@@ -24,6 +24,7 @@ pub(crate) async fn nameserver_by_name(
     Path(ns_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -59,5 +60,12 @@ pub(crate) async fn nameserver_by_name(
     );
     let mut nameserver = normalize_extensions(nameserver);
     super::inject_db_last_update(&mut nameserver, storage, state.get_common_config());
+    super::replace_tos_link_value(
+        &mut nameserver,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(nameserver.response())
 }

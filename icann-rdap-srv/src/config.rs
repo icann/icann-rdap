@@ -49,6 +49,7 @@ pub const NETWORK_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_NAME
 pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
 pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
+pub const NOTICE_TOS_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_TOS_LINK";
 pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
 pub const PG_IGNORE_DATA_DIR: &str = "RDAP_SRV_PG_IGNORE_DATA_DIR";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
@@ -84,6 +85,7 @@ pub fn debug_config_vars() {
         AUTNUM_SEARCH_BY_NAME_ENABLE,
         AUTNUM_SEARCH_BY_HANDLE_ENABLE,
         RDAP_DB_LAST_UPDATE_ENABLE,
+        NOTICE_TOS_LINK_ENABLE,
         PG_NOTIFY_ENABLE,
         PG_IGNORE_DATA_DIR,
         JSCONTACT_CONVERSION,
@@ -112,6 +114,32 @@ pub fn pg_ignore_data_dir() -> bool {
 }
 
 pub const DEFAULT_DATA_RDAP_BASE_URL: &str = "http://localhost:3000/rdap";
+
+/// Env var holding the base URL used to build absolute request URIs for notice links.
+pub const RDAP_BASE_URL: &str = "RDAP_BASE_URL";
+
+/// Parsed origin (scheme + authority, no path) of `RDAP_BASE_URL`, used as a fallback when
+/// building absolute request URIs for notice terms-of-service links.
+#[derive(Debug, Clone)]
+pub struct BaseOrigin {
+    pub scheme: String,
+    pub authority: String,
+}
+
+impl BaseOrigin {
+    /// Parse an absolute URL into its origin. Returns `None` if it lacks a scheme or authority.
+    pub fn parse(url: &str) -> Option<Self> {
+        let uri = url.parse::<http::Uri>().ok()?;
+        let scheme = uri.scheme()?.to_string();
+        let authority = uri.authority()?.to_string();
+        Some(Self { scheme, authority })
+    }
+}
+
+/// Read and parse `RDAP_BASE_URL` (falling back to the default) into a [`BaseOrigin`].
+pub fn base_origin_from_env() -> Option<BaseOrigin> {
+    BaseOrigin::parse(&get_or(RDAP_BASE_URL, DEFAULT_DATA_RDAP_BASE_URL))
+}
 
 /// RDAP server listening configuration.
 #[derive(Debug, Builder, Default)]
@@ -165,6 +193,7 @@ impl StorageType {
         let autnum_search_by_handle = get_parse_or(AUTNUM_SEARCH_BY_HANDLE_ENABLE, false)?;
         let rdap_db_last_update = get_parse_or(RDAP_DB_LAST_UPDATE_ENABLE, false)?;
         let pg_notify = get_parse_or(PG_NOTIFY_ENABLE, false)?;
+        let notice_tos_link = get_parse_or(NOTICE_TOS_LINK_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -190,6 +219,7 @@ impl StorageType {
             .autnum_search_by_name_enable(autnum_search_by_name)
             .autnum_search_by_handle_enable(autnum_search_by_handle)
             .rdap_db_last_update_enable(rdap_db_last_update)
+            .notice_tos_link_enable(notice_tos_link)
             .pg_notify_enable(pg_notify)
             .build();
         let storage = get_or(STORAGE, "memory");
@@ -275,6 +305,9 @@ pub struct CommonConfig {
     /// When enabled with postgres storage, a background task listens on the
     /// `rdap_db_update` NOTIFY channel to keep the last-update timestamp fresh.
     pub pg_notify_enable: bool,
+    /// When enabled, the `value` of every top-level notice terms-of-service link is set to
+    /// the request URI.
+    pub notice_tos_link_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -307,6 +340,7 @@ impl Default for CommonConfig {
             bootstrap: false,
             rdap_db_last_update_enable: false,
             pg_notify_enable: false,
+            notice_tos_link_enable: false,
         }
     }
 }
@@ -342,6 +376,7 @@ impl CommonConfig {
         bootstrap: Option<bool>,
         rdap_db_last_update_enable: Option<bool>,
         pg_notify_enable: Option<bool>,
+        notice_tos_link_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -373,6 +408,7 @@ impl CommonConfig {
             bootstrap: bootstrap.unwrap_or(false),
             rdap_db_last_update_enable: rdap_db_last_update_enable.unwrap_or(false),
             pg_notify_enable: pg_notify_enable.unwrap_or(false),
+            notice_tos_link_enable: notice_tos_link_enable.unwrap_or(false),
         }
     }
 }

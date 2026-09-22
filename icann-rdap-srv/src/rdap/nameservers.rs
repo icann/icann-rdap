@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 use serde::Deserialize;
 use std::net::IpAddr;
@@ -29,6 +29,7 @@ pub(crate) async fn nameservers(
     Query(params): Query<NameserversParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     Ok(if let Some(name) = params.name {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -42,6 +43,13 @@ pub(crate) async fn nameservers(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else if let Some(ip_str) = params.ip {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -60,6 +68,13 @@ pub(crate) async fn nameservers(
         );
         let mut results = normalize_extensions(results);
         super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_tos_link_value(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else {
         super::response::NOT_IMPLEMENTED.response()

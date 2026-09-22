@@ -1,4 +1,4 @@
-use http::{HeaderMap, HeaderValue};
+use http::{HeaderMap, HeaderValue, Uri};
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
     prelude::{ExtensionId, ToResponse},
@@ -6,7 +6,10 @@ use icann_rdap_common::{
 };
 use tracing::debug;
 
-use crate::{config::CommonConfig, config::JsContactConversion, storage::StoreOps};
+use crate::{
+    config::{BaseOrigin, CommonConfig, JsContactConversion},
+    storage::StoreOps,
+};
 
 pub mod autnum;
 pub mod autnums;
@@ -34,6 +37,90 @@ pub(crate) fn inject_db_last_update(
     }
     if let Some(ts) = storage.last_data_update() {
         response.inject_last_update_event(&ts.to_rfc3339());
+    }
+}
+
+/// When enabled in config, set the `value` of every top-level notice terms-of-service link to
+/// the absolute request URI. No-op when disabled.
+pub(crate) fn replace_tos_link_value(
+    response: &mut RdapResponse,
+    cfg: CommonConfig,
+    base_origin: Option<BaseOrigin>,
+    uri: &Uri,
+    headers: &HeaderMap,
+) {
+    if !cfg.notice_tos_link_enable {
+        return;
+    }
+    let request_uri = build_request_uri(uri, headers, &base_origin);
+    response.replace_tos_link_value(&request_uri);
+}
+
+/// Parse the first (client-facing) `Forwarded` element into its `(proto, host)` pseudo-headers.
+fn parse_forwarded(headers: &HeaderMap) -> (Option<String>, Option<String>) {
+    let joined = headers
+        .get_all("forwarded")
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .collect::<Vec<_>>()
+        .join(", ");
+    if joined.is_empty() {
+        return (None, None);
+    }
+    let first = joined.split(',').next().unwrap_or("");
+    let (mut proto, mut host) = (None, None);
+    for pair in first.split(';') {
+        let mut it = pair.trim().splitn(2, '=');
+        let key = it.next().map(|k| k.trim().to_ascii_lowercase());
+        let val = it
+            .next()
+            .map(|v| v.trim().trim_matches('"').to_string())
+            .filter(|s| !s.is_empty());
+        match key.as_deref() {
+            Some("proto") => proto = val,
+            Some("host") => host = val,
+            _ => {}
+        }
+    }
+    (proto, host)
+}
+
+/// Build an absolute request URI: `scheme://authority/path?query`. The scheme and authority come
+/// from headers first (`Forwarded`, then `X-Forwarded-*`), falling back to the cached
+/// `RDAP_BASE_URL` origin; path+query always come from the request target.
+pub(crate) fn build_request_uri(
+    uri: &Uri,
+    headers: &HeaderMap,
+    base: &Option<BaseOrigin>,
+) -> String {
+    let path = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
+
+    let (fwd_proto, fwd_host) = parse_forwarded(headers);
+    let xfp = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let xfhost = headers
+        .get("x-forwarded-host")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    let scheme = fwd_proto
+        .or_else(|| xfp.map(str::to_owned))
+        .or_else(|| base.as_ref().map(|b| b.scheme.clone()))
+        .unwrap_or_else(|| "https".to_string());
+
+    let authority = fwd_host
+        .or_else(|| xfhost.map(str::to_owned))
+        .or_else(|| base.as_ref().map(|b| b.authority.clone()));
+
+    match authority {
+        Some(a) => format!("{scheme}://{a}{path}"),
+        None => path.to_string(),
     }
 }
 
@@ -308,5 +395,96 @@ mod tests {
 
         // THEN the function should return an empty vector
         assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn build_request_uri_prefers_forwarded_header() {
+        // GIVEN headers carrying a Forwarded element plus conflicting X-Forwarded-* values
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "forwarded",
+            "for=1.2.3.4;proto=https;host=rdap.example.com"
+                .parse()
+                .unwrap(),
+        );
+        headers.insert("x-forwarded-proto", "http".parse().unwrap());
+        headers.insert("x-forwarded-host", "other.example".parse().unwrap());
+        let uri = "/rdap/domain/foo.example".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the Forwarded proto+host win over X-Forwarded-*
+        assert_eq!(result, "https://rdap.example.com/rdap/domain/foo.example");
+    }
+
+    #[test]
+    fn build_request_uri_falls_back_to_x_forwarded() {
+        // GIVEN only X-Forwarded-* headers (no Forwarded)
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-proto", "http, https".parse().unwrap());
+        headers.insert("x-forwarded-host", "a.b.example".parse().unwrap());
+        let uri = "/rdap/domain/foo.example?x=1".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the first X-Forwarded-Proto value is used and the query is preserved
+        assert_eq!(result, "http://a.b.example/rdap/domain/foo.example?x=1");
+    }
+
+    #[test]
+    fn build_request_uri_falls_back_to_base_origin() {
+        // GIVEN no forwarded headers but a parsed base origin (scheme+authority, port kept)
+        let base = BaseOrigin::parse("http://localhost:3000/rdap").unwrap();
+        let uri = "/rdap/domain/foo.example".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI with empty headers
+        let result = build_request_uri(&uri, &HeaderMap::new(), &Some(base));
+
+        // THEN the base origin is used and its /rdap path is NOT appended
+        assert_eq!(result, "http://localhost:3000/rdap/domain/foo.example");
+    }
+
+    #[test]
+    fn build_request_uri_degrades_to_relative_without_authority() {
+        // GIVEN a scheme source but no authority source and no base origin
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-proto", "https".parse().unwrap());
+        let uri = "/rdap/domain/foo.example".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN it degrades to the relative path when no authority is available
+        assert_eq!(result, "/rdap/domain/foo.example");
+    }
+
+    #[test]
+    fn build_request_uri_parses_quoted_forwarded_values() {
+        // GIVEN a Forwarded element with quoted pseudo-header values
+        let mut headers = HeaderMap::new();
+        headers.insert("forwarded", "proto=\"https\";host=\"a.b\"".parse().unwrap());
+        let uri = "/rdap/x".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the quotes are stripped and the values used
+        assert_eq!(result, "https://a.b/rdap/x");
+    }
+
+    #[test]
+    fn build_request_uri_ignores_empty_forwarded_values() {
+        // GIVEN a Forwarded element whose proto/host values are empty (malformed)
+        let mut headers = HeaderMap::new();
+        headers.insert("forwarded", "proto=;host=".parse().unwrap());
+
+        // WHEN building the absolute request URI with no other source
+        let uri = "/rdap/x".parse::<Uri>().unwrap();
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the empty values are ignored and it degrades to the relative path
+        assert_eq!(result, "/rdap/x");
     }
 }

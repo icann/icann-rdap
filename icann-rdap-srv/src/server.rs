@@ -15,7 +15,9 @@ use {
 
 use crate::{
     bootstrap::init_bootstrap,
-    config::{CommonConfig, ListenConfig, ServiceConfig, StorageType},
+    config::{
+        BaseOrigin, CommonConfig, ListenConfig, ServiceConfig, StorageType, base_origin_from_env,
+    },
     error::RdapServerError,
     rdap::router::rdap_router,
     storage::{
@@ -165,6 +167,9 @@ pub trait ServiceState: std::fmt::Debug {
 
     /// Get the CommonConfig for search feature flags.
     fn get_common_config(&self) -> CommonConfig;
+
+    /// Get the parsed `RDAP_BASE_URL` origin used to build absolute request URIs.
+    fn get_base_origin(&self) -> Option<BaseOrigin>;
 }
 
 /// State that is passed to the HTTP service router and used by functions
@@ -173,6 +178,7 @@ pub trait ServiceState: std::fmt::Debug {
 pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
     pub common_config: CommonConfig,
+    pub base_origin: Option<BaseOrigin>,
 }
 
 impl AppState<Mem> {
@@ -189,6 +195,7 @@ impl AppState<Mem> {
         Ok(Self {
             storage,
             common_config,
+            base_origin: base_origin_from_env(),
         })
     }
 }
@@ -239,6 +246,7 @@ impl AppState<Pg> {
         Ok(Self {
             storage,
             common_config,
+            base_origin: base_origin_from_env(),
         })
     }
 }
@@ -260,6 +268,10 @@ impl ServiceState for AppState<Pg> {
     fn get_common_config(&self) -> CommonConfig {
         self.common_config
     }
+
+    fn get_base_origin(&self) -> Option<BaseOrigin> {
+        self.base_origin.clone()
+    }
 }
 
 #[async_trait]
@@ -270,5 +282,9 @@ impl ServiceState for AppState<Mem> {
 
     fn get_common_config(&self) -> CommonConfig {
         self.common_config
+    }
+
+    fn get_base_origin(&self) -> Option<BaseOrigin> {
+        self.base_origin.clone()
     }
 }

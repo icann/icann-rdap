@@ -326,6 +326,16 @@ fn upsert_last_update(common: &mut ObjectCommon, action: &str, date_rfc3339: &st
     }
 }
 
+/// Set the `value` of every top-level notice terms-of-service link in `common` to `uri`.
+fn set_tos_value_in_notices(common: &mut Common, uri: &str) {
+    let Some(notices) = common.notices.as_mut() else {
+        return;
+    };
+    for notice in notices.iter_mut() {
+        notice.0.replace_tos_link_value(uri);
+    }
+}
+
 impl RdapResponse {
     pub fn get_type(&self) -> TypeId {
         match self {
@@ -386,6 +396,24 @@ impl RdapResponse {
                 .results
                 .iter_mut()
                 .for_each(|a| upsert_last_update(&mut a.object_common, &action, date_rfc3339)),
+            _ => {}
+        }
+    }
+
+    /// Set the `value` of every top-level notice terms-of-service link to `uri`, across all
+    /// object and search-result response variants.
+    pub fn replace_tos_link_value(&mut self, uri: &str) {
+        match self {
+            Self::Domain(d) => set_tos_value_in_notices(&mut d.common, uri),
+            Self::Entity(e) => set_tos_value_in_notices(&mut e.common, uri),
+            Self::Nameserver(n) => set_tos_value_in_notices(&mut n.common, uri),
+            Self::Autnum(a) => set_tos_value_in_notices(&mut a.common, uri),
+            Self::Network(n) => set_tos_value_in_notices(&mut n.common, uri),
+            Self::DomainSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
+            Self::EntitySearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
+            Self::NameserverSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
+            Self::IpSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
+            Self::AutnumSearchResults(r) => set_tos_value_in_notices(&mut r.common, uri),
             _ => {}
         }
     }
@@ -783,8 +811,8 @@ mod tests {
     };
 
     use super::{
-        Common, Domain, Event, Help, IpSearchResults, Link, Network, RdapResponse, ToResponse,
-        get_related_links,
+        Common, Domain, DomainSearchResults, Event, Help, IpSearchResults, Link, Network, Notice,
+        NoticeOrRemark, RdapResponse, ToResponse, get_related_links,
     };
 
     #[test]
@@ -839,6 +867,154 @@ mod tests {
 
         // THEN the variant is unchanged and holds no last-update event
         assert!(matches!(resp, RdapResponse::Help(_)));
+    }
+
+    #[test]
+    fn replace_tos_link_value_replaces_only_terms_of_service() {
+        // GIVEN a domain whose top-level notice has a ToS link and a self link
+        let mut domain = Domain::builder().ldh_name("foo.example").build();
+        domain.common.notices = Some(vec![Notice(
+            NoticeOrRemark::builder()
+                .description_entry("terms of service")
+                .link(
+                    Link::builder()
+                        .value("https://old/tos")
+                        .rel("terms-of-service")
+                        .href("https://tos.example/tos")
+                        .build(),
+                )
+                .link(
+                    Link::builder()
+                        .value("https://old/self")
+                        .rel("self")
+                        .href("https://rdap.example/domain/foo.example")
+                        .build(),
+                )
+                .build(),
+        )]);
+        let mut resp = RdapResponse::Domain(Box::new(domain));
+
+        // WHEN the ToS link value is replaced with the request URI
+        resp.replace_tos_link_value("http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN only the terms-of-service link changed; the self link is untouched
+        let RdapResponse::Domain(d) = &resp else {
+            panic!("expected a domain")
+        };
+        let links = d.common.notices.as_ref().expect("notices")[0]
+            .0
+            .links
+            .as_ref()
+            .expect("links");
+        let tos = links
+            .iter()
+            .find(|l| l.rel.as_deref() == Some("terms-of-service"))
+            .unwrap();
+        assert_eq!(
+            tos.value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        let self_link = links
+            .iter()
+            .find(|l| l.rel.as_deref() == Some("self"))
+            .unwrap();
+        assert_eq!(self_link.value.as_deref(), Some("https://old/self"));
+    }
+
+    #[test]
+    fn replace_tos_link_value_is_noop_without_notices() {
+        // GIVEN a domain with no notices
+        let mut resp =
+            RdapResponse::Domain(Box::new(Domain::builder().ldh_name("foo.example").build()));
+
+        // WHEN we attempt the replacement
+        resp.replace_tos_link_value("http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN it remains a domain with no notices
+        assert!(matches!(&resp, RdapResponse::Domain(d) if d.common.notices.is_none()));
+    }
+
+    #[test]
+    fn notice_replace_tos_link_value_only_touches_tos_links() {
+        // GIVEN a notice/remark carrying two ToS links and one other link
+        let mut nor = NoticeOrRemark::builder()
+            .description_entry("tos")
+            .link(
+                Link::builder()
+                    .value("a")
+                    .rel("terms-of-service")
+                    .href("https://x/a")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .value("b")
+                    .rel("terms-of-service")
+                    .href("https://x/b")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .value("c")
+                    .rel("self")
+                    .href("https://x/c")
+                    .build(),
+            )
+            .build();
+
+        // WHEN we replace the ToS link value
+        nor.replace_tos_link_value("http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN both ToS links changed, self unchanged
+        let links = nor.links.as_ref().expect("links");
+        assert_eq!(
+            links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(
+            links[1].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(links[2].value.as_deref(), Some("c"));
+    }
+
+    #[test]
+    fn replace_tos_link_value_applies_to_search_results() {
+        // GIVEN a domain search result whose top-level notice has a ToS link
+        let mut results = DomainSearchResults {
+            common: Common::builder().build(),
+            results: vec![Domain::builder().ldh_name("a.example").build()],
+        };
+        results.common.notices = Some(vec![Notice(
+            NoticeOrRemark::builder()
+                .description_entry("tos")
+                .link(
+                    Link::builder()
+                        .value("old")
+                        .rel("terms-of-service")
+                        .href("https://x")
+                        .build(),
+                )
+                .build(),
+        )]);
+        let mut resp = RdapResponse::DomainSearchResults(Box::new(results));
+
+        // WHEN we replace the ToS link value
+        resp.replace_tos_link_value("http://localhost:3000/rdap/domains?name=a.*");
+
+        // THEN the notice ToS link in the search result was updated
+        let RdapResponse::DomainSearchResults(r) = &resp else {
+            panic!("expected domain search results")
+        };
+        let links = r.common.notices.as_ref().expect("notices")[0]
+            .0
+            .links
+            .as_ref()
+            .expect("links");
+        assert_eq!(
+            links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domains?name=a.*")
+        );
     }
 
     #[test]

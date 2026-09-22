@@ -1,6 +1,6 @@
 use std::{net::IpAddr, str::FromStr};
 
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 
 use {
@@ -28,6 +28,7 @@ pub(crate) async fn network_by_netid(
     Path(netid): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -46,6 +47,13 @@ pub(crate) async fn network_by_netid(
                 );
                 let mut network = normalize_extensions(network);
                 super::inject_db_last_update(&mut network, storage, state.get_common_config());
+                super::replace_tos_link_value(
+                    &mut network,
+                    state.get_common_config(),
+                    state.get_base_origin(),
+                    &uri,
+                    &headers,
+                );
                 Ok(network.response())
             }
         } else {
@@ -69,6 +77,13 @@ pub(crate) async fn network_by_netid(
                 );
                 let mut network = normalize_extensions(network);
                 super::inject_db_last_update(&mut network, storage, state.get_common_config());
+                super::replace_tos_link_value(
+                    &mut network,
+                    state.get_common_config(),
+                    state.get_base_origin(),
+                    &uri,
+                    &headers,
+                );
                 Ok(network.response())
             }
         }
