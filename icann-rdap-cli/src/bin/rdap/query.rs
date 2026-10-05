@@ -381,7 +381,11 @@ fn output_immediately<W: std::io::Write>(
                 });
                 let mut rendered = Vec::new();
                 skin.write_text_on(&mut rendered, &normalize_output(&md))?;
-                write_clean(write, &String::from_utf8_lossy(&rendered), req_data.req_number == 1)?;
+                write_clean(
+                    write,
+                    &String::from_utf8_lossy(&rendered),
+                    req_data.req_number == 1,
+                )?;
             }
             OutputType::Markdown => {
                 let md = response.rdap.to_md(MdParams {
@@ -407,13 +411,21 @@ fn output_immediately<W: std::io::Write>(
                 let mut params = GtldParams {
                     label: "".to_string(),
                 };
-                write_clean(write, &response.rdap.to_gtld_whois(&mut params), req_data.req_number == 1)?;
+                write_clean(
+                    write,
+                    &response.rdap.to_gtld_whois(&mut params),
+                    req_data.req_number == 1,
+                )?;
             }
             OutputType::Rpsl => {
                 let params = RpslParams {
                     http_data: &response.http_data,
                 };
-                write_clean(write, &response.rdap.to_rpsl(params), req_data.req_number == 1)?;
+                write_clean(
+                    write,
+                    &response.rdap.to_rpsl(params),
+                    req_data.req_number == 1,
+                )?;
             }
             OutputType::Url => {
                 if let Some(url) = response.http_data.request_uri() {
