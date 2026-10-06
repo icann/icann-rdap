@@ -366,57 +366,66 @@ fn output_immediately<W: std::io::Write>(
                     indent_simulate_bullet: true,
                     ..MdOptions::default()
                 };
-                skin.write_text_on(
+                let md = response.rdap.to_md(MdParams {
+                    heading_level: 1,
+                    root: &response.rdap,
+                    http_data: &response.http_data,
+                    options: &options,
+                    req_data,
+                    show_rfc9537_redactions: processing_params
+                        .redaction_flags
+                        .contains(RedactionFlag::ShowRfc9537),
+                    highlight_simple_redactions: processing_params
+                        .redaction_flags
+                        .contains(RedactionFlag::HighlightSimpleRedactions),
+                });
+                let mut rendered = Vec::new();
+                skin.write_text_on(&mut rendered, &normalize_output(&md))?;
+                write_clean(
                     write,
-                    &response.rdap.to_md(MdParams {
-                        heading_level: 1,
-                        root: &response.rdap,
-                        http_data: &response.http_data,
-                        options: &options,
-                        req_data,
-                        show_rfc9537_redactions: processing_params
-                            .redaction_flags
-                            .contains(RedactionFlag::ShowRfc9537),
-                        highlight_simple_redactions: processing_params
-                            .redaction_flags
-                            .contains(RedactionFlag::HighlightSimpleRedactions),
-                    }),
+                    &String::from_utf8_lossy(&rendered),
+                    req_data.req_number == 1,
                 )?;
             }
             OutputType::Markdown => {
-                writeln!(
-                    write,
-                    "{}",
-                    response.rdap.to_md(MdParams {
-                        heading_level: 1,
-                        root: &response.rdap,
-                        http_data: &response.http_data,
-                        options: &MdOptions {
-                            text_style_char: '_',
-                            style_in_justify: true,
-                            ..MdOptions::default()
-                        },
-                        req_data,
-                        show_rfc9537_redactions: processing_params
-                            .redaction_flags
-                            .contains(RedactionFlag::ShowRfc9537),
-                        highlight_simple_redactions: processing_params
-                            .redaction_flags
-                            .contains(RedactionFlag::HighlightSimpleRedactions),
-                    })
-                )?;
+                let md = response.rdap.to_md(MdParams {
+                    heading_level: 1,
+                    root: &response.rdap,
+                    http_data: &response.http_data,
+                    options: &MdOptions {
+                        text_style_char: '_',
+                        style_in_justify: true,
+                        ..MdOptions::default()
+                    },
+                    req_data,
+                    show_rfc9537_redactions: processing_params
+                        .redaction_flags
+                        .contains(RedactionFlag::ShowRfc9537),
+                    highlight_simple_redactions: processing_params
+                        .redaction_flags
+                        .contains(RedactionFlag::HighlightSimpleRedactions),
+                });
+                write_clean(write, &md, req_data.req_number == 1)?;
             }
             OutputType::GtldWhois => {
                 let mut params = GtldParams {
                     label: "".to_string(),
                 };
-                writeln!(write, "{}", response.rdap.to_gtld_whois(&mut params))?;
+                write_clean(
+                    write,
+                    &response.rdap.to_gtld_whois(&mut params),
+                    req_data.req_number == 1,
+                )?;
             }
             OutputType::Rpsl => {
                 let params = RpslParams {
                     http_data: &response.http_data,
                 };
-                writeln!(write, "{}", response.rdap.to_rpsl(params))?;
+                write_clean(
+                    write,
+                    &response.rdap.to_rpsl(params),
+                    req_data.req_number == 1,
+                )?;
             }
             OutputType::Url => {
                 if let Some(url) = response.http_data.request_uri() {
@@ -459,6 +468,48 @@ fn output_immediately<W: std::io::Write>(
     }
 
     Ok(())
+}
+
+/// Writes output with no leading blank lines, no runs of multiple blank lines,
+/// and exactly one trailing newline, so that the amount of whitespace around
+/// the output is consistent across all output types. When `first` is false, a
+/// blank line is inserted before the content to separate multiple responses.
+fn write_clean<W: std::io::Write>(
+    write: &mut W,
+    content: &str,
+    first: bool,
+) -> Result<(), RdapCliError> {
+    let content = normalize_output(content);
+    if !first && !content.is_empty() {
+        write.write_all(b"\n")?;
+    }
+    write.write_all(content.as_bytes())?;
+    writeln!(write)?;
+    Ok(())
+}
+
+/// Removes leading and trailing whitespace and collapses runs of consecutive
+/// blank lines into a single blank line.
+fn normalize_output(content: &str) -> String {
+    let mut out = String::new();
+    let mut prev_blank = true;
+    for line in content.lines() {
+        let is_blank = line.trim().is_empty();
+        if is_blank {
+            if prev_blank {
+                continue;
+            }
+            prev_blank = true;
+        } else {
+            prev_blank = false;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    while out.ends_with('\n') {
+        out.pop();
+    }
+    out
 }
 
 fn final_output<W: std::io::Write>(
@@ -549,8 +600,9 @@ fn write_json<W: std::io::Write, T: Serialize>(
         }
         OutputType::PrettyCompactJson => {
             let formatter = PrettyCompactFormatter::new();
-            let mut serializer = Serializer::with_formatter(write, formatter);
+            let mut serializer = Serializer::with_formatter(&mut *write, formatter);
             data.serialize(&mut serializer)?;
+            writeln!(write)?;
         }
         _ => {
             writeln!(write, "{}", serde_json::to_string(&data).unwrap())?;
