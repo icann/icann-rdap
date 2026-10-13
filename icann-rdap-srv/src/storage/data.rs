@@ -17,7 +17,7 @@ use {
     serde::{Deserialize, Serialize},
     serde_json::Value,
     tokio::time::sleep,
-    tracing::{debug, info, warn},
+    tracing::{debug, error, info, warn},
 };
 
 use strum::Display as EnumDisplay;
@@ -371,31 +371,59 @@ pub(crate) async fn reload_data(
     store: Box<dyn StoreOps>,
     config: ServiceConfig,
 ) -> Result<(), RdapServerError> {
-    let update_path = PathBuf::from(&config.data_dir);
-    let update_path = update_path.join(UPDATE);
-    let reload_path = PathBuf::from(&config.data_dir);
-    let reload_path = reload_path.join(RELOAD);
+    let update_path = PathBuf::from(&config.data_dir).join(UPDATE);
+    let reload_path = PathBuf::from(&config.data_dir).join(RELOAD);
     let mut last_time = SystemTime::now();
     loop {
         sleep(Duration::from_millis(1000)).await;
-        let update_meta = tokio::fs::metadata(&update_path).await;
-        if let Ok(update_meta) = update_meta {
-            let modified = update_meta.modified()?;
-            if modified > last_time {
-                last_time = modified;
-                info!("Data being updated.");
-                load_data(&config, &*store, false).await?;
-            }
-        };
-        let reload_meta = tokio::fs::metadata(&reload_path).await;
-        if let Ok(reload_meta) = reload_meta {
-            let modified = reload_meta.modified()?;
-            if modified > last_time {
-                last_time = modified;
-                info!("Data being reloaded.");
-                load_data(&config, &*store, true).await?;
-            }
-        };
+        load_on_change(
+            &update_path,
+            &mut last_time,
+            &*store,
+            &config,
+            false,
+            "updated",
+        )
+        .await;
+        load_on_change(
+            &reload_path,
+            &mut last_time,
+            &*store,
+            &config,
+            true,
+            "reloaded",
+        )
+        .await;
+    }
+}
+
+/// Loads data when the given trigger file has been modified since `last_time`.
+///
+/// A failure to load data (for example an invalid JSON file in the data
+/// directory) is logged but never propagated. This keeps the reload/update
+/// watcher running so that, once the offending file is fixed and the trigger
+/// is touched again, the data will be loaded. See issue #6.
+async fn load_on_change(
+    trigger_path: &PathBuf,
+    last_time: &mut SystemTime,
+    store: &dyn StoreOps,
+    config: &ServiceConfig,
+    truncate: bool,
+    action: &str,
+) {
+    let Ok(meta) = tokio::fs::metadata(trigger_path).await else {
+        return;
+    };
+    let Ok(modified) = meta.modified() else {
+        return;
+    };
+    if modified <= *last_time {
+        return;
+    }
+    *last_time = modified;
+    info!("Data being {action}.");
+    if let Err(e) = load_data(config, store, truncate).await {
+        error!("Unable to {action} data. Continuing to watch for changes. Error: {e}");
     }
 }
 
@@ -551,6 +579,60 @@ mod tests {
     };
 
     use super::*;
+
+    #[tokio::test]
+    async fn load_on_change_survives_invalid_file_then_recovers() {
+        use std::time::SystemTime;
+
+        use icann_rdap_common::response::RdapResponse;
+        use test_dir::{DirBuilder, TestDir};
+
+        use crate::{
+            config::{CommonConfig, ServiceConfig, StorageType},
+            storage::mem::{config::MemConfig, ops::Mem},
+        };
+
+        // GIVEN a data directory containing an invalid JSON file
+        let temp = TestDir::temp();
+        let data_file = temp.path("foo.json");
+        std::fs::write(&data_file, "{ this is not valid json").expect("writing invalid file");
+        let mem_config = MemConfig::builder()
+            .common_config(CommonConfig::default())
+            .build();
+        let mem = Mem::new(mem_config.clone());
+        mem.init().await.expect("initializing memory");
+        let config = ServiceConfig::non_server()
+            .data_dir(temp.root().to_string_lossy().to_string())
+            .storage_type(StorageType::Memory(mem_config))
+            .build()
+            .expect("building service config");
+        let trigger = temp.path("update");
+        std::fs::write(&trigger, "").expect("writing trigger file");
+
+        // WHEN a change is processed while the data is invalid
+        let mut last_time = SystemTime::UNIX_EPOCH;
+        load_on_change(&trigger, &mut last_time, &mem, &config, false, "updated").await;
+
+        // THEN the watcher did not bail out and advanced to the trigger's time
+        assert!(last_time > SystemTime::UNIX_EPOCH);
+
+        // WHEN the invalid file is fixed and the trigger is touched again
+        std::fs::write(
+            &data_file,
+            serde_json::to_string(&Domain::builder().ldh_name("foo.example").build())
+                .expect("serializing domain"),
+        )
+        .expect("writing valid file");
+        let mut last_time = SystemTime::UNIX_EPOCH;
+        load_on_change(&trigger, &mut last_time, &mem, &config, false, "updated").await;
+
+        // THEN the data has been loaded
+        let actual = mem
+            .get_domain_by_ldh("foo.example")
+            .await
+            .expect("getting domain by ldh");
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
 
     #[test]
     fn test_template_domain_serialize() {
