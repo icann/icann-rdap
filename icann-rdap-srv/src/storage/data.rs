@@ -634,6 +634,62 @@ mod tests {
         assert!(matches!(actual, RdapResponse::Domain(_)));
     }
 
+    #[tokio::test]
+    async fn reload_on_change_survives_invalid_file_and_keeps_existing_data() {
+        use std::time::SystemTime;
+
+        use icann_rdap_common::response::RdapResponse;
+        use test_dir::{DirBuilder, TestDir};
+
+        use crate::{
+            config::{CommonConfig, ServiceConfig, StorageType},
+            storage::mem::{config::MemConfig, ops::Mem},
+        };
+
+        // GIVEN a data directory with a valid domain and a store reloaded from it
+        let temp = TestDir::temp();
+        let data_file = temp.path("foo.json");
+        std::fs::write(
+            &data_file,
+            serde_json::to_string(&Domain::builder().ldh_name("foo.example").build())
+                .expect("serializing domain"),
+        )
+        .expect("writing valid file");
+        let mem_config = MemConfig::builder()
+            .common_config(CommonConfig::default())
+            .build();
+        let mem = Mem::new(mem_config.clone());
+        mem.init().await.expect("initializing memory");
+        let config = ServiceConfig::non_server()
+            .data_dir(temp.root().to_string_lossy().to_string())
+            .storage_type(StorageType::Memory(mem_config))
+            .build()
+            .expect("building service config");
+        let trigger = temp.path("reload");
+        std::fs::write(&trigger, "").expect("writing trigger file");
+
+        let mut last_time = SystemTime::UNIX_EPOCH;
+        load_on_change(&trigger, &mut last_time, &mem, &config, true, "reloaded").await;
+        let actual = mem
+            .get_domain_by_ldh("foo.example")
+            .await
+            .expect("getting domain by ldh");
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+
+        // WHEN the file becomes invalid and a reload is triggered
+        std::fs::write(&data_file, "{ this is not valid json").expect("writing invalid file");
+        let mut last_time = SystemTime::UNIX_EPOCH;
+        load_on_change(&trigger, &mut last_time, &mem, &config, true, "reloaded").await;
+
+        // THEN the watcher survived and the existing data was not truncated
+        assert!(last_time > SystemTime::UNIX_EPOCH);
+        let actual = mem
+            .get_domain_by_ldh("foo.example")
+            .await
+            .expect("getting domain by ldh");
+        assert!(matches!(actual, RdapResponse::Domain(_)));
+    }
+
     #[test]
     fn test_template_domain_serialize() {
         // GIVEN
