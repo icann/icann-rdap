@@ -572,26 +572,22 @@ fn make_network_from_template(
 
 #[cfg(test)]
 mod tests {
+    use std::time::SystemTime;
+    use test_dir::{DirBuilder, TestDir};
 
+    use crate::{
+        config::{CommonConfig, ServiceConfig, StorageType},
+        storage::mem::{config::MemConfig, ops::Mem},
+    };
     use icann_rdap_common::{
         prelude::Stringish,
-        response::{Domain, Link},
+        response::{Domain, Link, RdapResponse},
     };
 
     use super::*;
 
     #[tokio::test]
     async fn load_on_change_survives_invalid_file_then_recovers() {
-        use std::time::SystemTime;
-
-        use icann_rdap_common::response::RdapResponse;
-        use test_dir::{DirBuilder, TestDir};
-
-        use crate::{
-            config::{CommonConfig, ServiceConfig, StorageType},
-            storage::mem::{config::MemConfig, ops::Mem},
-        };
-
         // GIVEN a data directory containing an invalid JSON file
         let temp = TestDir::temp();
         let data_file = temp.path("foo.json");
@@ -636,16 +632,6 @@ mod tests {
 
     #[tokio::test]
     async fn reload_on_change_survives_invalid_file_and_keeps_existing_data() {
-        use std::time::SystemTime;
-
-        use icann_rdap_common::response::RdapResponse;
-        use test_dir::{DirBuilder, TestDir};
-
-        use crate::{
-            config::{CommonConfig, ServiceConfig, StorageType},
-            storage::mem::{config::MemConfig, ops::Mem},
-        };
-
         // GIVEN a data directory with a valid domain and a store reloaded from it
         let temp = TestDir::temp();
         let data_file = temp.path("foo.json");
