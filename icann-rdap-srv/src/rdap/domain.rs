@@ -6,7 +6,7 @@ use {
         extract::{Path, State},
         response::Response,
     },
-    icann_rdap_common::response::RdapResponse,
+    icann_rdap_common::response::{RdapResponse, Rfc9083Error},
 };
 
 use crate::{
@@ -45,6 +45,21 @@ pub(crate) async fn domain_by_name(
     // if not found in domain names, check if it is an IDN
     if !matches!(domain, RdapResponse::Domain(_)) && !domain.is_redirect() {
         domain = storage.get_domain_by_unicode(&domain_name).await?;
+    }
+
+    // Bare TLD bootstrap: a single-label query that isn't served locally but has an IANA
+    // DNS bootstrap redirect stub (i.e. it is a known TLD) is redirected to the configured
+    // TLD bootstrap server (default IANA) rather than to the registry operator.
+    let cfg = state.get_common_config();
+    if cfg.bootstrap
+        && cfg.tld_bootstrap
+        && !matches!(domain, RdapResponse::Domain(_))
+        && domain.is_redirect()
+        && !domain_name.contains('.')
+    {
+        let url = format!("{}domain/{}", cfg.tld_bootstrap_url, domain_name);
+        let redirect = Rfc9083Error::redirect().url(url).build();
+        return Ok(RdapResponse::ErrorResponse(Box::new(redirect)).response());
     }
 
     if state.get_common_config().bootstrap

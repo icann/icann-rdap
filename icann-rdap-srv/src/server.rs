@@ -186,8 +186,10 @@ impl AppState<Mem> {
         config: MemConfig,
         service_config: &ServiceConfig,
     ) -> Result<Self, RdapServerError> {
-        let mut common_config = config.common_config;
+        let mut common_config = config.common_config.clone();
         common_config.bootstrap = service_config.bootstrap;
+        common_config.tld_bootstrap = service_config.tld_bootstrap;
+        common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
         let storage = Mem::new(config);
         storage.init().await?;
@@ -212,8 +214,10 @@ impl AppState<Pg> {
         config: PgConfig,
         service_config: &ServiceConfig,
     ) -> Result<Self, RdapServerError> {
-        let mut common_config = config.common_config;
+        let mut common_config = config.common_config.clone();
         common_config.bootstrap = service_config.bootstrap;
+        common_config.tld_bootstrap = service_config.tld_bootstrap;
+        common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
 
         // Captured before `config` is moved into the store below.
@@ -266,7 +270,7 @@ impl ServiceState for AppState<Pg> {
     }
 
     fn get_common_config(&self) -> CommonConfig {
-        self.common_config
+        self.common_config.clone()
     }
 
     fn get_base_origin(&self) -> Option<BaseOrigin> {
@@ -281,7 +285,7 @@ impl ServiceState for AppState<Mem> {
     }
 
     fn get_common_config(&self) -> CommonConfig {
-        self.common_config
+        self.common_config.clone()
     }
 
     fn get_base_origin(&self) -> Option<BaseOrigin> {

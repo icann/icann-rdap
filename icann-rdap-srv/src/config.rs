@@ -25,6 +25,8 @@ pub const DATA_DIR: &str = "RDAP_SRV_DATA_DIR";
 pub const AUTO_RELOAD: &str = "RDAP_SRV_AUTO_RELOAD";
 pub const BOOTSTRAP: &str = "RDAP_SRV_BOOTSTRAP";
 pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
+pub const TLD_BOOTSTRAP: &str = "RDAP_SRV_TLD_BOOTSTRAP";
+pub const TLD_BOOTSTRAP_URL: &str = "RDAP_SRV_TLD_BOOTSTRAP_URL";
 pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
 pub const DOMAIN_SEARCH_BY_NS_IP_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP";
 pub const DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_LDH_NAME";
@@ -68,6 +70,8 @@ pub fn debug_config_vars() {
         AUTO_RELOAD,
         BOOTSTRAP,
         UPDATE_ON_BOOTSTRAP,
+        TLD_BOOTSTRAP,
+        TLD_BOOTSTRAP_URL,
         DOMAIN_SEARCH_BY_NAME_ENABLE,
         DOMAIN_SEARCH_BY_NS_IP_ENABLE,
         DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE,
@@ -237,7 +241,9 @@ impl StorageType {
         let storage = get_or(STORAGE, "memory");
         let result = match storage.as_str() {
             "memory" => Ok(Self::Memory(
-                MemConfig::builder().common_config(common_config).build(),
+                MemConfig::builder()
+                    .common_config(common_config.clone())
+                    .build(),
             )),
             _ => Err(RdapServerError::Config(format!(
                 "storage type of '{storage}' is invalid"
@@ -284,7 +290,7 @@ pub enum JsContactConversion {
 }
 
 /// Common configuration for storage back ends.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct CommonConfig {
     pub domain_search_by_name_enable: bool,
     pub nameserver_search_by_name_enable: bool,
@@ -311,6 +317,12 @@ pub struct CommonConfig {
     pub autnum_search_by_handle_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
+    /// When true (and `bootstrap` is also true), a bare top-level-domain query such as
+    /// `domain/com` that is not served locally but has an IANA DNS bootstrap redirect stub
+    /// is redirected to `tld_bootstrap_url` instead of the registry operator.
+    pub tld_bootstrap: bool,
+    /// Base URL of the RDAP server that serves TLD objects themselves (default IANA).
+    pub tld_bootstrap_url: String,
     /// When enabled, every object response carries a live "last update of RDAP database"
     /// event reflecting the store's most recent data commit.
     pub rdap_db_last_update_enable: bool,
@@ -356,6 +368,8 @@ impl Default for CommonConfig {
             autnum_search_by_handle_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
+            tld_bootstrap: true,
+            tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
             rdap_db_last_update_enable: false,
             pg_notify_enable: false,
             notice_tos_link_enable: false,
@@ -395,6 +409,8 @@ impl CommonConfig {
         autnum_search_by_handle_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
+        tld_bootstrap: Option<bool>,
+        tld_bootstrap_url: Option<String>,
         rdap_db_last_update_enable: Option<bool>,
         pg_notify_enable: Option<bool>,
         notice_tos_link_enable: Option<bool>,
@@ -430,6 +446,9 @@ impl CommonConfig {
             autnum_search_by_handle_enable: autnum_search_by_handle_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
+            tld_bootstrap: tld_bootstrap.unwrap_or(true),
+            tld_bootstrap_url: tld_bootstrap_url
+                .unwrap_or_else(|| "https://rdap.iana.org/".to_string()),
             rdap_db_last_update_enable: rdap_db_last_update_enable.unwrap_or(false),
             pg_notify_enable: pg_notify_enable.unwrap_or(false),
             notice_tos_link_enable: notice_tos_link_enable.unwrap_or(false),
@@ -448,6 +467,8 @@ pub struct ServiceConfig {
     pub auto_reload: bool,
     pub bootstrap: bool,
     pub update_on_bootstrap: bool,
+    pub tld_bootstrap: bool,
+    pub tld_bootstrap_url: String,
     pub jscontact_conversion: JsContactConversion,
 }
 
@@ -469,6 +490,8 @@ impl ServiceConfig {
             auto_reload: false,
             bootstrap: false,
             update_on_bootstrap: false,
+            tld_bootstrap: true,
+            tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
             jscontact_conversion: JsContactConversion::None,
         })
     }

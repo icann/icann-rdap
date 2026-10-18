@@ -100,7 +100,9 @@ impl SrvTestJig {
     }
 
     pub async fn new_common_config(common_config: CommonConfig) -> Self {
-        let mem_config = MemConfig::builder().common_config(common_config).build();
+        let mem_config = MemConfig::builder()
+            .common_config(common_config.clone())
+            .build();
         let mem = Mem::new(mem_config);
         let app_state = AppState {
             storage: mem.clone(),

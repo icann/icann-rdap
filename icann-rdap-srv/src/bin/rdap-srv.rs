@@ -3,8 +3,8 @@ use {
     icann_rdap_srv::{
         config::{
             AUTO_RELOAD, BOOTSTRAP, JSCONTACT_CONVERSION, JsContactConversion, LISTEN_ADDR,
-            LISTEN_PORT, LOG, ListenConfig, ServiceConfig, StorageType, UPDATE_ON_BOOTSTRAP,
-            data_dir, debug_config_vars,
+            LISTEN_PORT, LOG, ListenConfig, ServiceConfig, StorageType, TLD_BOOTSTRAP,
+            TLD_BOOTSTRAP_URL, UPDATE_ON_BOOTSTRAP, data_dir, debug_config_vars,
         },
         error::RdapServerError,
         server::Listener,
@@ -40,6 +40,8 @@ async fn main() -> Result<(), RdapServerError> {
     let auto_reload: bool = get_parse_or(AUTO_RELOAD, true)?;
     let bootstrap: bool = get_parse_or(BOOTSTRAP, false)?;
     let update_on_bootstrap: bool = get_parse_or(UPDATE_ON_BOOTSTRAP, false)?;
+    let tld_bootstrap: bool = get_parse_or(TLD_BOOTSTRAP, true)?;
+    let tld_bootstrap_url: String = get_or(TLD_BOOTSTRAP_URL, "https://rdap.iana.org/");
     let jscontact_conversion =
         JsContactConversion::from_str(&get_or(JSCONTACT_CONVERSION, "none"))?;
 
@@ -58,6 +60,8 @@ async fn main() -> Result<(), RdapServerError> {
                 .auto_reload(auto_reload)
                 .bootstrap(bootstrap)
                 .update_on_bootstrap(update_on_bootstrap)
+                .tld_bootstrap(tld_bootstrap)
+                .tld_bootstrap_url(tld_bootstrap_url)
                 .jscontact_conversion(jscontact_conversion)
                 .build(),
         )

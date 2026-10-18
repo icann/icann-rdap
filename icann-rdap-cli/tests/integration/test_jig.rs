@@ -68,7 +68,11 @@ impl TestJig {
         common_config: CommonConfig,
         cmd_type: CommandType,
     ) -> Self {
-        let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
+        let mem = Mem::new(
+            MemConfig::builder()
+                .common_config(common_config.clone())
+                .build(),
+        );
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
@@ -100,7 +104,11 @@ impl TestJig {
     }
 
     pub async fn new_common_config(common_config: CommonConfig, cmd_type: CommandType) -> Self {
-        let mem = Mem::new(MemConfig::builder().common_config(common_config).build());
+        let mem = Mem::new(
+            MemConfig::builder()
+                .common_config(common_config.clone())
+                .build(),
+        );
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
