@@ -25,6 +25,10 @@ pub const DATA_DIR: &str = "RDAP_SRV_DATA_DIR";
 pub const AUTO_RELOAD: &str = "RDAP_SRV_AUTO_RELOAD";
 pub const BOOTSTRAP: &str = "RDAP_SRV_BOOTSTRAP";
 pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
+pub const TLD_BOOTSTRAP: &str = "RDAP_SRV_TLD_BOOTSTRAP";
+pub const TLD_BOOTSTRAP_URL: &str = "RDAP_SRV_TLD_BOOTSTRAP_URL";
+pub const INR_BACKUP_BOOTSTRAP: &str = "RDAP_SRV_INR_BACKUP_BOOTSTRAP";
+pub const INR_BACKUP_BOOTSTRAP_URL: &str = "RDAP_SRV_INR_BACKUP_BOOTSTRAP_URL";
 pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
 pub const DOMAIN_SEARCH_BY_NS_IP_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP";
 pub const DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_LDH_NAME";
@@ -48,6 +52,13 @@ pub const NETWORK_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_HA
 pub const NETWORK_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_NETWORK_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_NAME";
 pub const AUTNUM_SEARCH_BY_HANDLE_ENABLE: &str = "RDAP_SRV_AUTNUM_SEARCH_BY_HANDLE";
+pub const RDAP_DB_LAST_UPDATE_ENABLE: &str = "RDAP_SRV_RDAP_DB_LAST_UPDATE";
+pub const NOTICE_TOS_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_TOS_LINK";
+pub const NOTICE_HELP_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_HELP_LINK";
+pub const NOTICE_GLOSSARY_LINK_ENABLE: &str = "RDAP_SRV_NOTICE_GLOSSARY_LINK";
+pub const RELATED_LINK_ENABLE: &str = "RDAP_SRV_RELATED_LINK";
+pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
+pub const PG_IGNORE_DATA_DIR: &str = "RDAP_SRV_PG_IGNORE_DATA_DIR";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
 
 pub fn debug_config_vars() {
@@ -61,6 +72,10 @@ pub fn debug_config_vars() {
         AUTO_RELOAD,
         BOOTSTRAP,
         UPDATE_ON_BOOTSTRAP,
+        TLD_BOOTSTRAP,
+        TLD_BOOTSTRAP_URL,
+        INR_BACKUP_BOOTSTRAP,
+        INR_BACKUP_BOOTSTRAP_URL,
         DOMAIN_SEARCH_BY_NAME_ENABLE,
         DOMAIN_SEARCH_BY_NS_IP_ENABLE,
         DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE,
@@ -80,6 +95,13 @@ pub fn debug_config_vars() {
         NETWORK_SEARCH_BY_NAME_ENABLE,
         AUTNUM_SEARCH_BY_NAME_ENABLE,
         AUTNUM_SEARCH_BY_HANDLE_ENABLE,
+        RDAP_DB_LAST_UPDATE_ENABLE,
+        NOTICE_TOS_LINK_ENABLE,
+        NOTICE_HELP_LINK_ENABLE,
+        NOTICE_GLOSSARY_LINK_ENABLE,
+        RELATED_LINK_ENABLE,
+        PG_NOTIFY_ENABLE,
+        PG_IGNORE_DATA_DIR,
         JSCONTACT_CONVERSION,
     ];
     envmnt::vars()
@@ -94,7 +116,44 @@ pub fn data_dir() -> Result<String, std::io::Error> {
     Ok(path.display().to_string())
 }
 
+/// True when the configured storage backend is Postgres.
+pub fn postgres_storage() -> bool {
+    get_or(STORAGE, "memory").as_str() == "postgres"
+}
+
+/// True when a Postgres server should ignore `RDAP_SRV_DATA_DIR` operations (the startup
+/// load and update/reload markers) because the database is the source of truth.
+pub fn pg_ignore_data_dir() -> bool {
+    get_parse_or(PG_IGNORE_DATA_DIR, false).unwrap_or(false)
+}
+
 pub const DEFAULT_DATA_RDAP_BASE_URL: &str = "http://localhost:3000/rdap";
+
+/// Env var holding the base URL used to build absolute request URIs for notice links.
+pub const RDAP_BASE_URL: &str = "RDAP_BASE_URL";
+
+/// Parsed origin (scheme + authority, no path) of `RDAP_BASE_URL`, used as a fallback when
+/// building absolute request URIs for notice terms-of-service links.
+#[derive(Debug, Clone)]
+pub struct BaseOrigin {
+    pub scheme: String,
+    pub authority: String,
+}
+
+impl BaseOrigin {
+    /// Parse an absolute URL into its origin. Returns `None` if it lacks a scheme or authority.
+    pub fn parse(url: &str) -> Option<Self> {
+        let uri = url.parse::<http::Uri>().ok()?;
+        let scheme = uri.scheme()?.to_string();
+        let authority = uri.authority()?.to_string();
+        Some(Self { scheme, authority })
+    }
+}
+
+/// Read and parse `RDAP_BASE_URL` (falling back to the default) into a [`BaseOrigin`].
+pub fn base_origin_from_env() -> Option<BaseOrigin> {
+    BaseOrigin::parse(&get_or(RDAP_BASE_URL, DEFAULT_DATA_RDAP_BASE_URL))
+}
 
 /// RDAP server listening configuration.
 #[derive(Debug, Builder, Default)]
@@ -146,6 +205,12 @@ impl StorageType {
         let network_search_by_name = get_parse_or(NETWORK_SEARCH_BY_NAME_ENABLE, false)?;
         let autnum_search_by_name = get_parse_or(AUTNUM_SEARCH_BY_NAME_ENABLE, false)?;
         let autnum_search_by_handle = get_parse_or(AUTNUM_SEARCH_BY_HANDLE_ENABLE, false)?;
+        let rdap_db_last_update = get_parse_or(RDAP_DB_LAST_UPDATE_ENABLE, false)?;
+        let pg_notify = get_parse_or(PG_NOTIFY_ENABLE, false)?;
+        let notice_tos_link = get_parse_or(NOTICE_TOS_LINK_ENABLE, false)?;
+        let notice_help_link = get_parse_or(NOTICE_HELP_LINK_ENABLE, false)?;
+        let notice_glossary_link = get_parse_or(NOTICE_GLOSSARY_LINK_ENABLE, false)?;
+        let related_link = get_parse_or(RELATED_LINK_ENABLE, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -170,11 +235,19 @@ impl StorageType {
             .network_search_by_name_enable(network_search_by_name)
             .autnum_search_by_name_enable(autnum_search_by_name)
             .autnum_search_by_handle_enable(autnum_search_by_handle)
+            .rdap_db_last_update_enable(rdap_db_last_update)
+            .notice_tos_link_enable(notice_tos_link)
+            .notice_help_link_enable(notice_help_link)
+            .notice_glossary_link_enable(notice_glossary_link)
+            .related_link_enable(related_link)
+            .pg_notify_enable(pg_notify)
             .build();
         let storage = get_or(STORAGE, "memory");
         let result = match storage.as_str() {
             "memory" => Ok(Self::Memory(
-                MemConfig::builder().common_config(common_config).build(),
+                MemConfig::builder()
+                    .common_config(common_config.clone())
+                    .build(),
             )),
             _ => Err(RdapServerError::Config(format!(
                 "storage type of '{storage}' is invalid"
@@ -184,10 +257,12 @@ impl StorageType {
         {
             if storage == "postgres" {
                 let db_url = get_or(DB_URL, "postgresql://127.0.0.1/rdap");
+                let ignore_data_dir = get_parse_or(PG_IGNORE_DATA_DIR, false)?;
                 return Ok(Self::Postgres(
                     PgConfig::builder()
                         .db_url(db_url)
                         .common_config(common_config)
+                        .ignore_data_dir(ignore_data_dir)
                         .build(),
                 ));
             }
@@ -219,7 +294,7 @@ pub enum JsContactConversion {
 }
 
 /// Common configuration for storage back ends.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct CommonConfig {
     pub domain_search_by_name_enable: bool,
     pub nameserver_search_by_name_enable: bool,
@@ -246,6 +321,34 @@ pub struct CommonConfig {
     pub autnum_search_by_handle_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
+    /// When true (and `bootstrap` is also true), a bare top-level-domain query such as
+    /// `domain/com` that is not served locally but has an IANA DNS bootstrap redirect stub
+    /// is redirected to `tld_bootstrap_url` instead of the registry operator.
+    pub tld_bootstrap: bool,
+    /// Base URL of the RDAP server that serves TLD objects themselves (default IANA).
+    pub tld_bootstrap_url: String,
+    /// When true (and `bootstrap` is also true), an INR (IP address or Autonomous System
+    /// Number) query that cannot be resolved by the local bootstrap stubs is redirected to
+    /// `inr_backup_bootstrap_url` instead of returning a not-found. Reverse-DNS queries are
+    /// included. Mirrors the CLI's `--inr-backup-bootstrap`.
+    pub inr_backup_bootstrap: bool,
+    /// Base URL of the backup INR bootstrap server (default ARIN).
+    pub inr_backup_bootstrap_url: String,
+    /// When enabled, every object response carries a live "last update of RDAP database"
+    /// event reflecting the store's most recent data commit.
+    pub rdap_db_last_update_enable: bool,
+    /// When enabled with postgres storage, a background task listens on the
+    /// `rdap_db_update` NOTIFY channel to keep the last-update timestamp fresh.
+    pub pg_notify_enable: bool,
+    /// When enabled, the `value` of every top-level notice terms-of-service link is set to
+    /// the request URI.
+    pub notice_tos_link_enable: bool,
+    /// When enabled, the `value` of every top-level notice help link is set to the request URI.
+    pub notice_help_link_enable: bool,
+    /// When enabled, the `value` of every top-level notice glossary link is set to the request URI.
+    pub notice_glossary_link_enable: bool,
+    /// When enabled, the `value` of every object `related` link is set to the request URI.
+    pub related_link_enable: bool,
 }
 
 impl Default for CommonConfig {
@@ -276,6 +379,16 @@ impl Default for CommonConfig {
             autnum_search_by_handle_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
+            tld_bootstrap: true,
+            tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
+            inr_backup_bootstrap: true,
+            inr_backup_bootstrap_url: "https://rdap.arin.net/registry".to_string(),
+            rdap_db_last_update_enable: false,
+            pg_notify_enable: false,
+            notice_tos_link_enable: false,
+            notice_help_link_enable: false,
+            notice_glossary_link_enable: false,
+            related_link_enable: false,
         }
     }
 }
@@ -309,6 +422,16 @@ impl CommonConfig {
         autnum_search_by_handle_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
+        tld_bootstrap: Option<bool>,
+        tld_bootstrap_url: Option<String>,
+        inr_backup_bootstrap: Option<bool>,
+        inr_backup_bootstrap_url: Option<String>,
+        rdap_db_last_update_enable: Option<bool>,
+        pg_notify_enable: Option<bool>,
+        notice_tos_link_enable: Option<bool>,
+        notice_help_link_enable: Option<bool>,
+        notice_glossary_link_enable: Option<bool>,
+        related_link_enable: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -338,6 +461,18 @@ impl CommonConfig {
             autnum_search_by_handle_enable: autnum_search_by_handle_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
+            tld_bootstrap: tld_bootstrap.unwrap_or(true),
+            tld_bootstrap_url: tld_bootstrap_url
+                .unwrap_or_else(|| "https://rdap.iana.org/".to_string()),
+            inr_backup_bootstrap: inr_backup_bootstrap.unwrap_or(true),
+            inr_backup_bootstrap_url: inr_backup_bootstrap_url
+                .unwrap_or_else(|| "https://rdap.arin.net/registry".to_string()),
+            rdap_db_last_update_enable: rdap_db_last_update_enable.unwrap_or(false),
+            pg_notify_enable: pg_notify_enable.unwrap_or(false),
+            notice_tos_link_enable: notice_tos_link_enable.unwrap_or(false),
+            notice_help_link_enable: notice_help_link_enable.unwrap_or(false),
+            notice_glossary_link_enable: notice_glossary_link_enable.unwrap_or(false),
+            related_link_enable: related_link_enable.unwrap_or(false),
         }
     }
 }
@@ -350,6 +485,10 @@ pub struct ServiceConfig {
     pub auto_reload: bool,
     pub bootstrap: bool,
     pub update_on_bootstrap: bool,
+    pub tld_bootstrap: bool,
+    pub tld_bootstrap_url: String,
+    pub inr_backup_bootstrap: bool,
+    pub inr_backup_bootstrap_url: String,
     pub jscontact_conversion: JsContactConversion,
 }
 
@@ -371,6 +510,10 @@ impl ServiceConfig {
             auto_reload: false,
             bootstrap: false,
             update_on_bootstrap: false,
+            tld_bootstrap: true,
+            tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
+            inr_backup_bootstrap: true,
+            inr_backup_bootstrap_url: "https://rdap.arin.net/registry".to_string(),
             jscontact_conversion: JsContactConversion::None,
         })
     }

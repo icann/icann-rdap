@@ -689,6 +689,10 @@ impl TxHandle for MemTx {
         let mut srvhelps_g = self.mem.srvhelps.write().await;
         std::mem::swap(&mut self.srvhelps, &mut srvhelps_g);
 
+        // Record the shared, server-wide "last data update" time now that all the
+        // above swaps have landed in the parent store.
+        self.mem.db_timestamp.mark_now();
+
         Ok(())
     }
 
@@ -703,6 +707,20 @@ mod tests {
     use super::*;
     use crate::storage::StoreOps;
     use std::net::{Ipv4Addr, Ipv6Addr};
+
+    #[tokio::test]
+    async fn last_data_update_is_set_after_commit() {
+        // GIVEN an in-memory store with no committed data yet
+        let mem = Mem::default();
+        assert!(mem.last_data_update().is_none());
+
+        // WHEN a transaction is committed
+        let tx = mem.new_tx().await.expect("new transaction");
+        tx.commit().await.expect("commit");
+
+        // THEN the shared, server-wide last-update time has been recorded
+        assert!(mem.last_data_update().is_some());
+    }
 
     #[test]
     fn ipv4_subnets_min_prefix_len_0_produces_larger_networks() {

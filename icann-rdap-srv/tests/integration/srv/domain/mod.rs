@@ -13,6 +13,7 @@ use {
 use crate::test_jig::SrvTestJig;
 
 pub mod lookup;
+pub mod notice_links;
 pub mod rdap_bottom;
 pub mod rdap_down;
 pub mod rdap_top;

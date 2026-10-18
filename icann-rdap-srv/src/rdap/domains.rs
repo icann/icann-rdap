@@ -3,7 +3,7 @@ use axum::{
     response::Response,
 };
 
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{
     prelude::{ExtensionId, normalize_extensions, normalize_extensions_with},
     response::RdapResponse,
@@ -14,7 +14,10 @@ use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    rdap::{ToBootStrap, jscontact_conversion, response::ResponseUtil},
+    rdap::{
+        ToBootStrap, follow_stub_redirect, inr_backup_redirect, is_empty_search_results,
+        is_not_found, jscontact_conversion, response::ResponseUtil,
+    },
     server::DynServiceState,
 };
 
@@ -45,6 +48,7 @@ pub(crate) async fn domains(
     Query(params): Query<DomainsParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     Ok(if let Some(name) = params.name {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -56,7 +60,15 @@ pub(crate) async fn domains(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else if let Some(ns_ldh_name) = params.ns_ldh_name {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -68,7 +80,15 @@ pub(crate) async fn domains(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else if let Some(ip_str) = params.ns_ip {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -85,7 +105,15 @@ pub(crate) async fn domains(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else {
         NOT_IMPLEMENTED.response()
@@ -98,6 +126,7 @@ pub(crate) async fn domain_rdap_up(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -108,14 +137,31 @@ pub(crate) async fn domain_rdap_up(
     let results = storage.search_domain_rdap_up_by_ldh(&ldh_name).await?;
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_domain_bootstrap(&ldh_name).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_domain_bootstrap(&ldh_name);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-up/{ldh_name}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = add_rfc9910_extensions(results);
+        let mut results = add_rfc9910_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -126,6 +172,7 @@ pub(crate) async fn domain_rdap_top(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -136,14 +183,31 @@ pub(crate) async fn domain_rdap_top(
     let results = storage.search_domain_rdap_top_by_ldh(&ldh_name).await?;
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_domain_bootstrap(&ldh_name).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_domain_bootstrap(&ldh_name);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-top/{ldh_name}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = add_rfc9910_extensions(results);
+        let mut results = add_rfc9910_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -154,6 +218,7 @@ pub(crate) async fn domain_rdap_down(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -163,12 +228,36 @@ pub(crate) async fn domain_rdap_down(
 
     let results = storage.search_domain_rdap_down_by_ldh(&ldh_name).await?;
 
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "domains/rirSearch1/rdap-down", &ldh_name)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-down/{ldh_name}"),
+            )
+            .response());
+        }
+    }
+
     let results = jscontact_conversion(
         results,
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_link_values(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
 
@@ -178,6 +267,7 @@ pub(crate) async fn domain_rdap_bottom(
     Path(ldh_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -187,11 +277,35 @@ pub(crate) async fn domain_rdap_bottom(
 
     let results = storage.search_domain_rdap_bottom_by_ldh(&ldh_name).await?;
 
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "domains/rirSearch1/rdap-bottom", &ldh_name)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-bottom/{ldh_name}"),
+            )
+            .response());
+        }
+    }
+
     let results = jscontact_conversion(
         results,
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_link_values(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }

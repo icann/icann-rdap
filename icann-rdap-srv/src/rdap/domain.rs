@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{prelude::normalize_extensions, rdns::reverse_dns_to_ipnet};
 
 use {
@@ -6,12 +6,12 @@ use {
         extract::{Path, State},
         response::Response,
     },
-    icann_rdap_common::response::RdapResponse,
+    icann_rdap_common::response::{RdapResponse, Rfc9083Error},
 };
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, response::ResponseUtil},
+    rdap::{inr_backup_redirect, is_not_found, jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -25,6 +25,7 @@ pub(crate) async fn domain_by_name(
     Path(domain_name): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -46,13 +47,36 @@ pub(crate) async fn domain_by_name(
         domain = storage.get_domain_by_unicode(&domain_name).await?;
     }
 
+    // Bare TLD bootstrap: a single-label query that isn't served locally but has an IANA
+    // DNS bootstrap redirect stub (i.e. it is a known TLD) is redirected to the configured
+    // TLD bootstrap server (default IANA) rather than to the registry operator.
+    let cfg = state.get_common_config();
+    if cfg.bootstrap
+        && cfg.tld_bootstrap
+        && !matches!(domain, RdapResponse::Domain(_))
+        && domain.is_redirect()
+        && !domain_name.contains('.')
+    {
+        let url = format!("{}domain/{}", cfg.tld_bootstrap_url, domain_name);
+        let redirect = Rfc9083Error::redirect().url(url).build();
+        return Ok(RdapResponse::ErrorResponse(Box::new(redirect)).response());
+    }
+
     if state.get_common_config().bootstrap
         && !matches!(domain, RdapResponse::Domain(_))
         && !domain.is_redirect()
     {
         if let Some(ipnet) = reverse_dns_to_ipnet(domain_name.as_str()) {
             let network = storage.get_network_by_cidr(&ipnet.to_string()).await?;
-            return Ok(network.to_domain_bootstrap(&domain_name).response());
+            let resp = network.to_domain_bootstrap(&domain_name);
+            if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("domain/{domain_name}"),
+                )
+                .response());
+            }
+            return Ok(resp.response());
         } else {
             let mut dn_slice = domain_name.as_str();
             while let Some(less_specific) = dn_slice.split_once('.') {
@@ -71,6 +95,14 @@ pub(crate) async fn domain_by_name(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let domain = normalize_extensions(domain);
+    let mut domain = normalize_extensions(domain);
+    super::inject_db_last_update(&mut domain, storage, state.get_common_config());
+    super::replace_link_values(
+        &mut domain,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(domain.response())
 }

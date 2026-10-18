@@ -11,6 +11,7 @@ use {
         prelude::VectorStringish,
         response::{
             Autnum, Domain, Entity, Link, Nameserver, Network, Notice, NoticeOrRemark, Remark,
+            ToChild,
         },
     },
     icann_rdap_srv::{
@@ -144,9 +145,9 @@ fn make_domain_template(
     base_url: &str,
     num_domains: u32,
 ) -> Result<(), RdapServerError> {
-    let mut entity = make_test_entity(base_url, Some("domain"));
+    let mut entity = make_test_entity(base_url, Some("domain")).to_child();
     entity.roles = Some(VectorStringish::from("registrant"));
-    let nameserver = make_test_nameserver(base_url, None)?;
+    let nameserver = make_test_nameserver(base_url, None)?.to_child();
     let domain = Domain::response_obj()
         .ldh_name("example.net")
         .entity(entity)
@@ -194,7 +195,7 @@ fn make_autnum_template(
     base_url: &str,
     num_autnums: u32,
 ) -> Result<(), RdapServerError> {
-    let mut entity = make_test_entity(base_url, Some("autnum"));
+    let mut entity = make_test_entity(base_url, Some("autnum")).to_child();
     entity.roles = Some(VectorStringish::from("registrant"));
     let autnum = Autnum::response_obj()
         .autnum_range(1..1)
@@ -359,7 +360,7 @@ fn make_test_nameserver(
     } else {
         vec![]
     };
-    let mut entity = make_test_entity(base_url, Some("nameserver"));
+    let mut entity = make_test_entity(base_url, Some("nameserver")).to_child();
     entity.roles = Some(VectorStringish::from("tech"));
     Ok(Nameserver::response_obj()
         .ldh_name("ns.template.example")
@@ -391,7 +392,7 @@ fn make_test_nameserver(
 }
 
 fn make_test_network(base_url: &str) -> Result<Network, RdapServerError> {
-    let mut entity = make_test_entity(base_url, Some("network"));
+    let mut entity = make_test_entity(base_url, Some("network")).to_child();
     entity.roles = Some(VectorStringish::from("registrant"));
     let network = Network::response_obj()
         .cidr("0.0.0.0/0")
@@ -449,4 +450,191 @@ fn save_template(
     fs::write(&path, content)?;
     info!("JSON data template written to {}.", path.to_string_lossy());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use icann_rdap_common::response::ToChild;
+    use test_dir::{DirBuilder, TestDir};
+
+    use super::*;
+
+    fn has_rdap_conformance(value: &serde_json::Value) -> bool {
+        value.get("rdapConformance").is_some()
+    }
+
+    #[test]
+    fn entity_response_obj_has_rdap_conformance() {
+        // GIVEN
+        let entity = make_test_entity("example.com", None);
+
+        // WHEN
+        let json = serde_json::to_value(&entity).expect("serializing entity");
+
+        // THEN
+        assert!(
+            has_rdap_conformance(&json),
+            "top-level entity should have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn entity_to_child_has_no_rdap_conformance() {
+        // GIVEN
+        let entity = make_test_entity("example.com", Some("domain")).to_child();
+
+        // WHEN
+        let json = serde_json::to_value(&entity).expect("serializing entity");
+
+        // THEN
+        assert!(
+            !has_rdap_conformance(&json),
+            "nested entity should not have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn nameserver_response_obj_has_rdap_conformance() {
+        // GIVEN
+        let nameserver = make_test_nameserver("example.com", None).expect("making nameserver");
+
+        // WHEN
+        let json = serde_json::to_value(&nameserver).expect("serializing nameserver");
+
+        // THEN
+        assert!(
+            has_rdap_conformance(&json),
+            "top-level nameserver should have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn domain_template_nested_objects_have_no_rdap_conformance() {
+        // GIVEN
+        let temp = TestDir::temp();
+        let data_dir = temp.root().to_string_lossy().to_string();
+
+        // WHEN
+        make_domain_template(&data_dir, "example.com", 1).expect("making domain template");
+        let file_path = temp.root().join("example_com_test_data_Domain.template");
+        let content = fs::read_to_string(&file_path).expect("reading domain template");
+        let json: serde_json::Value = serde_json::from_str(&content).expect("parsing JSON");
+
+        // THEN
+        let domain = &json["domain"]["object"];
+        assert!(
+            has_rdap_conformance(domain),
+            "domain should have rdapConformance"
+        );
+
+        let entity = &domain["entities"][0];
+        assert!(
+            !has_rdap_conformance(entity),
+            "entity nested in domain should not have rdapConformance"
+        );
+
+        let nameserver = &domain["nameservers"][0];
+        assert!(
+            !has_rdap_conformance(nameserver),
+            "nameserver nested in domain should not have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn autnum_template_nested_entity_has_no_rdap_conformance() {
+        // GIVEN
+        let temp = TestDir::temp();
+        let data_dir = temp.root().to_string_lossy().to_string();
+
+        // WHEN
+        make_autnum_template(&data_dir, "example.com", 1).expect("making autnum template");
+        let file_path = temp.root().join("example_com_test_data_Autnum.template");
+        let content = fs::read_to_string(&file_path).expect("reading autnum template");
+        let json: serde_json::Value = serde_json::from_str(&content).expect("parsing JSON");
+
+        // THEN
+        let autnum = &json["autnum"]["object"];
+        assert!(
+            has_rdap_conformance(autnum),
+            "autnum should have rdapConformance"
+        );
+
+        let entity = &autnum["entities"][0];
+        assert!(
+            !has_rdap_conformance(entity),
+            "entity nested in autnum should not have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn network_template_nested_entity_has_no_rdap_conformance() {
+        // GIVEN
+        let temp = TestDir::temp();
+        let data_dir = temp.root().to_string_lossy().to_string();
+
+        // WHEN
+        make_netv4_template(&data_dir, "example.com", 1).expect("making network template");
+        let file_path = temp
+            .root()
+            .join("example_com_test_data_Network_v4.template");
+        let content = fs::read_to_string(&file_path).expect("reading network template");
+        let json: serde_json::Value = serde_json::from_str(&content).expect("parsing JSON");
+
+        // THEN
+        let network = &json["network"]["object"];
+        assert!(
+            has_rdap_conformance(network),
+            "network should have rdapConformance"
+        );
+
+        let entity = &network["entities"][0];
+        assert!(
+            !has_rdap_conformance(entity),
+            "entity nested in network should not have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn entity_template_has_rdap_conformance() {
+        // GIVEN
+        let temp = TestDir::temp();
+        let data_dir = temp.root().to_string_lossy().to_string();
+
+        // WHEN
+        make_entity_template(&data_dir, "example.com", 1).expect("making entity template");
+        let file_path = temp.root().join("example_com_test_data_Entity.template");
+        let content = fs::read_to_string(&file_path).expect("reading entity template");
+        let json: serde_json::Value = serde_json::from_str(&content).expect("parsing JSON");
+
+        // THEN
+        let entity = &json["entity"]["object"];
+        assert!(
+            has_rdap_conformance(entity),
+            "top-level entity template should have rdapConformance"
+        );
+    }
+
+    #[test]
+    fn nameserver_template_has_rdap_conformance() {
+        // GIVEN
+        let temp = TestDir::temp();
+        let data_dir = temp.root().to_string_lossy().to_string();
+
+        // WHEN
+        make_nameserver_template(&data_dir, "example.com", 1).expect("making nameserver template");
+        let file_path = temp
+            .root()
+            .join("example_com_test_data_Nameserver.template");
+        let content = fs::read_to_string(&file_path).expect("reading nameserver template");
+        let json: serde_json::Value = serde_json::from_str(&content).expect("parsing JSON");
+
+        // THEN
+        let nameserver = &json["nameserver"]["object"];
+        assert!(
+            has_rdap_conformance(nameserver),
+            "top-level nameserver template should have rdapConformance"
+        );
+    }
 }

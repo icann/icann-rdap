@@ -1,4 +1,4 @@
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 use serde::Deserialize;
 
@@ -27,6 +27,7 @@ pub(crate) async fn entities(
     Query(params): Query<EntitiesParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     Ok(if let Some(handle) = params.handle {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -38,7 +39,15 @@ pub(crate) async fn entities(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else if let Some(full_name) = params.fn_ {
         let exts_list = super::parse_exts_list_from_headers(&headers);
@@ -50,7 +59,15 @@ pub(crate) async fn entities(
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = normalize_extensions(results);
+        let mut results = normalize_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         results.response()
     } else {
         super::response::NOT_IMPLEMENTED.response()

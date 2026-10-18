@@ -1,4 +1,4 @@
-use http::{HeaderMap, HeaderValue};
+use http::{HeaderMap, HeaderValue, Uri};
 use icann_rdap_common::{
     media_types::RDAP_MEDIA_TYPE,
     prelude::{ExtensionId, ToResponse},
@@ -6,7 +6,11 @@ use icann_rdap_common::{
 };
 use tracing::debug;
 
-use crate::config::JsContactConversion;
+use crate::{
+    config::{BaseOrigin, CommonConfig, JsContactConversion},
+    rdap::response::ResponseUtil,
+    storage::StoreOps,
+};
 
 pub mod autnum;
 pub mod autnums;
@@ -21,6 +25,147 @@ pub mod nameservers;
 pub mod response;
 pub mod router;
 pub mod srvhelp;
+
+/// When enabled in config, set a live "last update of RDAP database" event on the response
+/// from the store's most recent commit. No-op when disabled or when no data has been loaded.
+pub(crate) fn inject_db_last_update(
+    response: &mut RdapResponse,
+    storage: &dyn StoreOps,
+    cfg: CommonConfig,
+) {
+    if !cfg.rdap_db_last_update_enable {
+        return;
+    }
+    if let Some(ts) = storage.last_data_update() {
+        response.inject_last_update_event(&ts.to_rfc3339());
+    }
+}
+
+/// The `rel` value identifying a terms-of-service link.
+const TERMS_OF_SERVICE_REL: &str = "terms-of-service";
+
+/// The `rel` value identifying a help link.
+const HELP_REL: &str = "help";
+
+/// The `rel` value identifying a glossary link.
+const GLOSSARY_REL: &str = "glossary";
+
+/// The `rel` value identifying a related link.
+const RELATED_REL: &str = "related";
+
+/// Where a link to rewrite lives within an object.
+#[derive(Clone, Copy)]
+enum LinkScope {
+    /// Links inside a top-level notice.
+    Notice,
+    /// Links on the object itself (top-level links, including nested entities).
+    Object,
+}
+
+/// When enabled in config, set the `value` of matching top-level notice links (ToS/help/glossary)
+/// and object `related` links to the absolute request URI. No-op when no relevant flag is set.
+pub(crate) fn replace_link_values(
+    response: &mut RdapResponse,
+    cfg: CommonConfig,
+    base_origin: Option<BaseOrigin>,
+    uri: &Uri,
+    headers: &HeaderMap,
+) {
+    let rules = [
+        (
+            cfg.notice_tos_link_enable,
+            TERMS_OF_SERVICE_REL,
+            LinkScope::Notice,
+        ),
+        (cfg.notice_help_link_enable, HELP_REL, LinkScope::Notice),
+        (
+            cfg.notice_glossary_link_enable,
+            GLOSSARY_REL,
+            LinkScope::Notice,
+        ),
+        (cfg.related_link_enable, RELATED_REL, LinkScope::Object),
+    ];
+    if !rules.iter().any(|(enabled, _, _)| *enabled) {
+        return;
+    }
+    let request_uri = build_request_uri(uri, headers, &base_origin);
+    for (enabled, rel, scope) in rules {
+        if enabled {
+            match scope {
+                LinkScope::Notice => response.replace_notice_link_value(rel, &request_uri),
+                LinkScope::Object => response.replace_object_link_value(rel, &request_uri),
+            }
+        }
+    }
+}
+
+/// Parse the first (client-facing) `Forwarded` element into its `(proto, host)` pseudo-headers.
+fn parse_forwarded(headers: &HeaderMap) -> (Option<String>, Option<String>) {
+    let joined = headers
+        .get_all("forwarded")
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .collect::<Vec<_>>()
+        .join(", ");
+    if joined.is_empty() {
+        return (None, None);
+    }
+    let first = joined.split(',').next().unwrap_or("");
+    let (mut proto, mut host) = (None, None);
+    for pair in first.split(';') {
+        let mut it = pair.trim().splitn(2, '=');
+        let key = it.next().map(|k| k.trim().to_ascii_lowercase());
+        let val = it
+            .next()
+            .map(|v| v.trim().trim_matches('"').to_string())
+            .filter(|s| !s.is_empty());
+        match key.as_deref() {
+            Some("proto") => proto = val,
+            Some("host") => host = val,
+            _ => {}
+        }
+    }
+    (proto, host)
+}
+
+/// Build an absolute request URI: `scheme://authority/path?query`. The scheme and authority come
+/// from headers first (`Forwarded`, then `X-Forwarded-*`), falling back to the cached
+/// `RDAP_BASE_URL` origin; path+query always come from the request target.
+pub(crate) fn build_request_uri(
+    uri: &Uri,
+    headers: &HeaderMap,
+    base: &Option<BaseOrigin>,
+) -> String {
+    let path = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
+
+    let (fwd_proto, fwd_host) = parse_forwarded(headers);
+    let xfp = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let xfhost = headers
+        .get("x-forwarded-host")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    let scheme = fwd_proto
+        .or_else(|| xfp.map(str::to_owned))
+        .or_else(|| base.as_ref().map(|b| b.scheme.clone()))
+        .unwrap_or_else(|| "https".to_string());
+
+    let authority = fwd_host
+        .or_else(|| xfhost.map(str::to_owned))
+        .or_else(|| base.as_ref().map(|b| b.authority.clone()));
+
+    match authority {
+        Some(a) => format!("{scheme}://{a}{path}"),
+        None => path.to_string(),
+    }
+}
 
 trait ToBootStrap {
     fn to_ip_bootstrap(self, ip_id: &str) -> RdapResponse;
@@ -88,6 +233,55 @@ fn bootstrap_redirect(error: Rfc9083Error, path: &str, id: &str) -> RdapResponse
     redirect.to_response()
 }
 
+/// True when the response is an RFC 9083 error carrying HTTP status 404 (not found).
+///
+/// Used to decide whether an INR lookup that the local bootstrap stubs could not resolve
+/// should fall back to the backup bootstrap server. A 501 (feature not implemented) is
+/// deliberately *not* treated as "not found".
+pub(crate) fn is_not_found(rdap: &RdapResponse) -> bool {
+    matches!(rdap, RdapResponse::ErrorResponse(e) if e.error_code() == 404)
+}
+
+/// True when the response is an RIR search result set (IP, autnum, or domain) that
+/// contains zero results.
+///
+/// `rdap-down` and `rdap-bottom` searches return an empty result set (HTTP 200) rather
+/// than a 404 when nothing matches, so the INR backup bootstrap keys off this instead.
+pub(crate) fn is_empty_search_results(rdap: &RdapResponse) -> bool {
+    match rdap {
+        RdapResponse::IpSearchResults(r) => r.results().is_empty(),
+        RdapResponse::AutnumSearchResults(r) => r.results().is_empty(),
+        RdapResponse::DomainSearchResults(r) => r.results().is_empty(),
+        _ => false,
+    }
+}
+
+/// Build a redirect to the equivalent path on the INR backup bootstrap server.
+///
+/// The backup base URL has any trailing slash trimmed and `rel_path` appended with a
+/// single separating slash, e.g. `https://rdap.arin.net/registry` + `ip/199.1.1.1`.
+pub(crate) fn inr_backup_redirect(backup_url: &str, rel_path: &str) -> RdapResponse {
+    let base = backup_url.trim_end_matches('/');
+    let url = format!("{base}/{rel_path}");
+    Rfc9083Error::redirect().url(url).build().to_response()
+}
+
+/// If `rdap` is a bootstrap redirect stub, rebuild it as a redirect to
+/// `{stub_href}{path}/{id}` on the stub's authoritative base. Returns `None` when
+/// `rdap` is not a redirect.
+///
+/// Used by `rdap-down`/`rdap-bottom` to honour a delegation stub surfaced by the store
+/// (rather than dropping it), mirroring how single-object lookups use `to_*_bootstrap`.
+pub(crate) fn follow_stub_redirect(
+    rdap: &RdapResponse,
+    path: &str,
+    id: &str,
+) -> Option<RdapResponse> {
+    let href = rdap.first_notice_link_href()?;
+    let url = format!("{href}{path}/{id}");
+    Some(Rfc9083Error::redirect().url(url).build().to_response())
+}
+
 fn parse_extensions(accept_header: &str) -> Vec<String> {
     accept_header
         .split(',')
@@ -137,6 +331,66 @@ fn jscontact_conversion(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::storage::mem::ops::Mem;
+    use icann_rdap_common::{prelude::ToResponse, response::Domain};
+
+    fn has_last_update_event(resp: &RdapResponse) -> bool {
+        matches!(resp, RdapResponse::Domain(d)
+        if d.object_common.events.as_ref().is_some_and(|e| e.iter().any(
+            |ev| ev.event_action() == Some("last update of RDAP database")
+        )))
+    }
+
+    #[tokio::test]
+    async fn inject_db_last_update_disabled_is_noop_after_commit() {
+        // GIVEN a store that has committed data (so a live value exists)
+        let mem = Mem::default();
+        let tx = mem.new_tx().await.expect("new tx");
+        tx.commit().await.expect("commit");
+        assert!(mem.last_data_update().is_some());
+
+        // WHEN the feature flag is off
+        let mut resp = Domain::builder()
+            .ldh_name("foo.example")
+            .build()
+            .to_response();
+        inject_db_last_update(
+            &mut resp,
+            &mem,
+            CommonConfig {
+                rdap_db_last_update_enable: false,
+                ..Default::default()
+            },
+        );
+
+        // THEN no last-update event is added
+        assert!(!has_last_update_event(&resp));
+    }
+
+    #[tokio::test]
+    async fn inject_db_last_update_enabled_adds_live_value_after_commit() {
+        // GIVEN a store that has committed data (so a live value exists)
+        let mem = Mem::default();
+        let tx = mem.new_tx().await.expect("new tx");
+        tx.commit().await.expect("commit");
+
+        // WHEN the feature flag is on
+        let mut resp = Domain::builder()
+            .ldh_name("foo.example")
+            .build()
+            .to_response();
+        inject_db_last_update(
+            &mut resp,
+            &mem,
+            CommonConfig {
+                rdap_db_last_update_enable: true,
+                ..Default::default()
+            },
+        );
+
+        // THEN the live last-update event is present
+        assert!(has_last_update_event(&resp));
+    }
 
     #[test]
     fn test_accept_header_with_multiple_extensions() {
@@ -233,5 +487,209 @@ mod tests {
 
         // THEN the function should return an empty vector
         assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn build_request_uri_prefers_forwarded_header() {
+        // GIVEN headers carrying a Forwarded element plus conflicting X-Forwarded-* values
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "forwarded",
+            "for=1.2.3.4;proto=https;host=rdap.example.com"
+                .parse()
+                .unwrap(),
+        );
+        headers.insert("x-forwarded-proto", "http".parse().unwrap());
+        headers.insert("x-forwarded-host", "other.example".parse().unwrap());
+        let uri = "/rdap/domain/foo.example".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the Forwarded proto+host win over X-Forwarded-*
+        assert_eq!(result, "https://rdap.example.com/rdap/domain/foo.example");
+    }
+
+    #[test]
+    fn build_request_uri_falls_back_to_x_forwarded() {
+        // GIVEN only X-Forwarded-* headers (no Forwarded)
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-proto", "http, https".parse().unwrap());
+        headers.insert("x-forwarded-host", "a.b.example".parse().unwrap());
+        let uri = "/rdap/domain/foo.example?x=1".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the first X-Forwarded-Proto value is used and the query is preserved
+        assert_eq!(result, "http://a.b.example/rdap/domain/foo.example?x=1");
+    }
+
+    #[test]
+    fn build_request_uri_falls_back_to_base_origin() {
+        // GIVEN no forwarded headers but a parsed base origin (scheme+authority, port kept)
+        let base = BaseOrigin::parse("http://localhost:3000/rdap").unwrap();
+        let uri = "/rdap/domain/foo.example".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI with empty headers
+        let result = build_request_uri(&uri, &HeaderMap::new(), &Some(base));
+
+        // THEN the base origin is used and its /rdap path is NOT appended
+        assert_eq!(result, "http://localhost:3000/rdap/domain/foo.example");
+    }
+
+    #[test]
+    fn build_request_uri_degrades_to_relative_without_authority() {
+        // GIVEN a scheme source but no authority source and no base origin
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-proto", "https".parse().unwrap());
+        let uri = "/rdap/domain/foo.example".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN it degrades to the relative path when no authority is available
+        assert_eq!(result, "/rdap/domain/foo.example");
+    }
+
+    #[test]
+    fn build_request_uri_parses_quoted_forwarded_values() {
+        // GIVEN a Forwarded element with quoted pseudo-header values
+        let mut headers = HeaderMap::new();
+        headers.insert("forwarded", "proto=\"https\";host=\"a.b\"".parse().unwrap());
+        let uri = "/rdap/x".parse::<Uri>().unwrap();
+
+        // WHEN building the absolute request URI
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the quotes are stripped and the values used
+        assert_eq!(result, "https://a.b/rdap/x");
+    }
+
+    #[test]
+    fn build_request_uri_ignores_empty_forwarded_values() {
+        // GIVEN a Forwarded element whose proto/host values are empty (malformed)
+        let mut headers = HeaderMap::new();
+        headers.insert("forwarded", "proto=;host=".parse().unwrap());
+
+        // WHEN building the absolute request URI with no other source
+        let uri = "/rdap/x".parse::<Uri>().unwrap();
+        let result = build_request_uri(&uri, &headers, &None::<BaseOrigin>);
+
+        // THEN the empty values are ignored and it degrades to the relative path
+        assert_eq!(result, "/rdap/x");
+    }
+
+    use crate::rdap::response::ResponseUtil;
+    use icann_rdap_common::response::{
+        Autnum, AutnumSearchResults, DomainSearchResults, IpSearchResults, Network,
+    };
+
+    fn err(code: u16) -> RdapResponse {
+        Rfc9083Error::response_obj()
+            .error_code(code)
+            .build()
+            .to_response()
+    }
+
+    #[test]
+    fn is_not_found_true_only_for_404() {
+        // GIVEN error responses of various codes and a non-error response
+        // WHEN checked with is_not_found
+        // THEN only the 404 is considered "not found"
+        assert!(is_not_found(&err(404)));
+        assert!(!is_not_found(&err(501)));
+        assert!(!is_not_found(&err(307)));
+        assert!(!is_not_found(
+            &Domain::builder()
+                .ldh_name("foo.example")
+                .build()
+                .to_response()
+        ));
+    }
+
+    #[test]
+    fn is_empty_search_results_true_for_empty_ip_autnum_domain_sets() {
+        // GIVEN empty RIR search result sets of each type
+        let empty_ip = IpSearchResults::response_obj()
+            .results(vec![])
+            .build()
+            .to_response();
+        let empty_autnum = AutnumSearchResults::response_obj()
+            .results(vec![])
+            .build()
+            .to_response();
+        let empty_domain = DomainSearchResults::response_obj()
+            .results(vec![])
+            .build()
+            .to_response();
+
+        // WHEN checked with is_empty_search_results
+        // THEN each empty set reports true
+        assert!(is_empty_search_results(&empty_ip));
+        assert!(is_empty_search_results(&empty_autnum));
+        assert!(is_empty_search_results(&empty_domain));
+    }
+
+    #[test]
+    fn is_empty_search_results_false_for_non_empty_and_non_search() {
+        // GIVEN non-empty search sets and a non-search response
+        let one_ip = IpSearchResults::response_obj()
+            .results(vec![
+                Network::builder().cidr("192.0.2.0/24").build().unwrap(),
+            ])
+            .build()
+            .to_response();
+        let one_autnum = AutnumSearchResults::response_obj()
+            .results(vec![Autnum::builder().autnum_range(700..710).build()])
+            .build()
+            .to_response();
+
+        // WHEN checked with is_empty_search_results
+        // THEN non-empty sets and non-search responses report false
+        assert!(!is_empty_search_results(&one_ip));
+        assert!(!is_empty_search_results(&one_autnum));
+        assert!(!is_empty_search_results(&err(404)));
+    }
+
+    #[test]
+    fn inr_backup_redirect_builds_absolute_url_and_trims_trailing_slash() {
+        // GIVEN a backup base URL with and without a trailing slash
+        // WHEN building a backup redirect
+        let no_slash = inr_backup_redirect("https://backup.example/rdap", "ip/192.0.2.1");
+        let with_slash = inr_backup_redirect("https://backup.example/rdap/", "ip/192.0.2.1");
+
+        // THEN both produce a 307 with a single-slash joined location href
+        assert_eq!(
+            no_slash.first_notice_link_href(),
+            Some("https://backup.example/rdap/ip/192.0.2.1")
+        );
+        assert_eq!(
+            with_slash.first_notice_link_href(),
+            Some("https://backup.example/rdap/ip/192.0.2.1")
+        );
+        assert!(matches!(no_slash, RdapResponse::ErrorResponse(e) if e.error_code() == 307));
+    }
+
+    #[test]
+    fn follow_stub_redirect_rebuilds_url_from_stub_href() {
+        // GIVEN a bootstrap redirect stub pointing at an authoritative base
+        let stub = Rfc9083Error::redirect()
+            .url("https://auth.example/")
+            .build()
+            .to_response();
+
+        // WHEN following it with a down path and id
+        let followed = follow_stub_redirect(&stub, "ips/rirSearch1/rdap-down", "10.0.0.0/8")
+            .expect("stub should be followed");
+
+        // THEN the new href is stub_href + path + id
+        assert_eq!(
+            followed.first_notice_link_href(),
+            Some("https://auth.example/ips/rirSearch1/rdap-down/10.0.0.0/8")
+        );
+
+        // AND a non-redirect response yields None
+        assert!(follow_stub_redirect(&err(404), "x", "y").is_none());
     }
 }

@@ -83,6 +83,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config: CommonConfig::default(),
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -99,11 +100,14 @@ impl SrvTestJig {
     }
 
     pub async fn new_common_config(common_config: CommonConfig) -> Self {
-        let mem_config = MemConfig::builder().common_config(common_config).build();
+        let mem_config = MemConfig::builder()
+            .common_config(common_config.clone())
+            .build();
         let mem = Mem::new(mem_config);
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -122,12 +126,18 @@ impl SrvTestJig {
     pub async fn new_bootstrap() -> Self {
         let common_config = CommonConfig {
             bootstrap: true,
+            // Stub-only bootstrap: the INR backup is disabled here so these tests exercise
+            // the bootstrap-redirect-stub path in isolation (a miss yields 404/empty rather
+            // than a backup redirect). INR backup behavior is covered by
+            // `inr_backup_bootstrap.rs` via `new_common_config`.
+            inr_backup_bootstrap: false,
             ..Default::default()
         };
         let mem = Mem::default();
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())
@@ -152,6 +162,7 @@ impl SrvTestJig {
         let app_state = AppState {
             storage: mem.clone(),
             common_config,
+            base_origin: None,
         };
         let _ = tracing_subscriber::fmt().with_test_writer().try_init();
         let listener = Listener::listen(&ListenConfig::default())

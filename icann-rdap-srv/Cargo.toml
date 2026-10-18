@@ -50,11 +50,25 @@ tracing-subscriber.workspace = true
 [features]
 default = ["memory"]
 memory = []
-postgres = ["sqlx/postgres"]
+postgres = ["sqlx/postgres", "sqlx/migrate"]
 sqlx = ["dep:sqlx"]
+
+[[bin]]
+name = "rdap-srv-pg"
+path = "src/bin/rdap-srv-pg.rs"
+required-features = ["postgres"]
+
+[[bin]]
+name = "rdap-srv-db"
+path = "src/bin/rdap-srv-db.rs"
+required-features = ["postgres"]
 
 [dev-dependencies]
 
 assert_cmd.workspace = true
+ctor.workspace = true
+dtor.workspace = true
 rstest.workspace = true
 test_dir.workspace = true
+testcontainers.workspace = true
+testcontainers-modules.workspace = true

@@ -15,7 +15,9 @@ use {
 
 use crate::{
     bootstrap::init_bootstrap,
-    config::{CommonConfig, ListenConfig, ServiceConfig, StorageType},
+    config::{
+        BaseOrigin, CommonConfig, ListenConfig, ServiceConfig, StorageType, base_origin_from_env,
+    },
     error::RdapServerError,
     rdap::router::rdap_router,
     storage::{
@@ -26,7 +28,7 @@ use crate::{
 };
 
 #[cfg(feature = "postgres")]
-use crate::storage::pg::{config::PgConfig, ops::Pg};
+use crate::storage::pg::{config::PgConfig, notify, ops::Pg};
 
 /// Holds information on the server listening.
 pub struct Listener {
@@ -165,6 +167,9 @@ pub trait ServiceState: std::fmt::Debug {
 
     /// Get the CommonConfig for search feature flags.
     fn get_common_config(&self) -> CommonConfig;
+
+    /// Get the parsed `RDAP_BASE_URL` origin used to build absolute request URIs.
+    fn get_base_origin(&self) -> Option<BaseOrigin>;
 }
 
 /// State that is passed to the HTTP service router and used by functions
@@ -173,6 +178,7 @@ pub trait ServiceState: std::fmt::Debug {
 pub struct AppState<T: StoreOps + Clone + Send + Sync + 'static> {
     pub storage: T,
     pub common_config: CommonConfig,
+    pub base_origin: Option<BaseOrigin>,
 }
 
 impl AppState<Mem> {
@@ -180,15 +186,24 @@ impl AppState<Mem> {
         config: MemConfig,
         service_config: &ServiceConfig,
     ) -> Result<Self, RdapServerError> {
-        let mut common_config = config.common_config;
+        let mut common_config = config.common_config.clone();
         common_config.bootstrap = service_config.bootstrap;
+        common_config.tld_bootstrap = service_config.tld_bootstrap;
+        common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
+        common_config.inr_backup_bootstrap = service_config.inr_backup_bootstrap;
+        common_config.inr_backup_bootstrap_url = service_config.inr_backup_bootstrap_url.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
+        // Make the store bootstrap-aware so `rdap-down`/`rdap-bottom` can surface
+        // delegation redirect stubs instead of dropping them.
+        let mut config = config;
+        config.common_config.bootstrap = service_config.bootstrap;
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
         Ok(Self {
             storage,
             common_config,
+            base_origin: base_origin_from_env(),
         })
     }
 }
@@ -205,15 +220,49 @@ impl AppState<Pg> {
         config: PgConfig,
         service_config: &ServiceConfig,
     ) -> Result<Self, RdapServerError> {
-        let mut common_config = config.common_config;
+        let mut common_config = config.common_config.clone();
         common_config.bootstrap = service_config.bootstrap;
+        common_config.tld_bootstrap = service_config.tld_bootstrap;
+        common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
+        common_config.inr_backup_bootstrap = service_config.inr_backup_bootstrap;
+        common_config.inr_backup_bootstrap_url = service_config.inr_backup_bootstrap_url.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
+
+        // Captured before `config` is moved into the store below.
+        let db_url = config.db_url.clone();
+        let notify_enabled = common_config.pg_notify_enable;
+        let ignore_data_dir = config.ignore_data_dir;
+
+        // Make the store bootstrap-aware so `rdap-down`/`rdap-bottom` can surface
+        // delegation redirect stubs instead of dropping them.
+        let mut config = config;
+        config.common_config.bootstrap = service_config.bootstrap;
         let storage = Pg::new(config).await?;
         storage.init().await?;
-        init_data(Box::new(storage.clone()), service_config).await?;
+        if ignore_data_dir {
+            tracing::info!(
+                "RDAP_SRV_PG_IGNORE_DATA_DIR set: skipping data directory load and the \
+                 update/reload watcher; serving from the database only"
+            );
+        } else {
+            init_data(Box::new(storage.clone()), service_config).await?;
+        }
+
+        // Seed the last-update timestamp from the database before serving, so responses
+        // reflect the recorded last update immediately rather than waiting for the first
+        // live NOTIFY.
+        storage.load_last_update().await?;
+
+        // When the postgres NOTIFY listener is enabled (RDAP_SRV_PG_NOTIFY), watch for
+        // external database writes via LISTEN/NOTIFY so the last-update timestamp stays current.
+        if notify_enabled {
+            tokio::spawn(notify::run(db_url, storage.db_timestamp()));
+        }
+
         Ok(Self {
             storage,
             common_config,
+            base_origin: base_origin_from_env(),
         })
     }
 }
@@ -233,7 +282,11 @@ impl ServiceState for AppState<Pg> {
     }
 
     fn get_common_config(&self) -> CommonConfig {
-        self.common_config
+        self.common_config.clone()
+    }
+
+    fn get_base_origin(&self) -> Option<BaseOrigin> {
+        self.base_origin.clone()
     }
 }
 
@@ -244,6 +297,10 @@ impl ServiceState for AppState<Mem> {
     }
 
     fn get_common_config(&self) -> CommonConfig {
-        self.common_config
+        self.common_config.clone()
+    }
+
+    fn get_base_origin(&self) -> Option<BaseOrigin> {
+        self.base_origin.clone()
     }
 }

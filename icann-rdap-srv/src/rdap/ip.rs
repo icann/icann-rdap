@@ -1,6 +1,6 @@
 use std::{net::IpAddr, str::FromStr};
 
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 
 use {
@@ -15,7 +15,7 @@ use {
 use crate::{
     error::RdapServerError,
     rdap::{
-        ToBootStrap, jscontact_conversion,
+        ToBootStrap, inr_backup_redirect, is_not_found, jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -28,6 +28,7 @@ pub(crate) async fn network_by_netid(
     Path(netid): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -37,14 +38,31 @@ pub(crate) async fn network_by_netid(
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
             if state.get_common_config().bootstrap {
-                Ok(network.to_ip_bootstrap(&netid).response())
+                let cfg = state.get_common_config();
+                let resp = network.to_ip_bootstrap(&netid);
+                if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                    return Ok(inr_backup_redirect(
+                        &cfg.inr_backup_bootstrap_url,
+                        &format!("ip/{netid}"),
+                    )
+                    .response());
+                }
+                Ok(resp.response())
             } else {
                 let network = jscontact_conversion(
                     network,
                     state.get_common_config().jscontact_conversion,
                     &exts_list,
                 );
-                let network = normalize_extensions(network);
+                let mut network = normalize_extensions(network);
+                super::inject_db_last_update(&mut network, storage, state.get_common_config());
+                super::replace_link_values(
+                    &mut network,
+                    state.get_common_config(),
+                    state.get_base_origin(),
+                    &uri,
+                    &headers,
+                );
                 Ok(network.response())
             }
         } else {
@@ -59,14 +77,31 @@ pub(crate) async fn network_by_netid(
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_ipaddr(&netid).await?;
             if state.get_common_config().bootstrap {
-                Ok(network.to_ip_bootstrap(&netid).response())
+                let cfg = state.get_common_config();
+                let resp = network.to_ip_bootstrap(&netid);
+                if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                    return Ok(inr_backup_redirect(
+                        &cfg.inr_backup_bootstrap_url,
+                        &format!("ip/{netid}"),
+                    )
+                    .response());
+                }
+                Ok(resp.response())
             } else {
                 let network = jscontact_conversion(
                     network,
                     state.get_common_config().jscontact_conversion,
                     &exts_list,
                 );
-                let network = normalize_extensions(network);
+                let mut network = normalize_extensions(network);
+                super::inject_db_last_update(&mut network, storage, state.get_common_config());
+                super::replace_link_values(
+                    &mut network,
+                    state.get_common_config(),
+                    state.get_base_origin(),
+                    &uri,
+                    &headers,
+                );
                 Ok(network.response())
             }
         }

@@ -453,6 +453,17 @@ pub struct NoticeOrRemark {
 
 #[buildstructor::buildstructor]
 impl NoticeOrRemark {
+    /// Set the `value` of every link whose `rel` equals `rel` to `uri`. No-op if none match.
+    pub fn replace_link_value(&mut self, rel: &str, uri: &str) {
+        let Some(links) = self.links.as_mut() else {
+            return;
+        };
+        for link in links.iter_mut() {
+            if link.rel.as_deref() == Some(rel) {
+                link.value = Some(uri.to_string());
+            }
+        }
+    }
     /// Builds an RDAP notice/remark.
     #[builder(visibility = "pub")]
     fn new(

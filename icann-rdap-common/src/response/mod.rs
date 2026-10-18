@@ -312,6 +312,47 @@ impl TryFrom<Value> for RdapResponse {
     }
 }
 
+/// Insert or replace the "last update of RDAP database" event (identified by `action`) on a
+/// single object's common fields, so at most one such event is present.
+fn upsert_last_update(common: &mut ObjectCommon, action: &str, date_rfc3339: &str) {
+    let event = Event::builder()
+        .event_action(action.to_string())
+        .event_date(date_rfc3339.to_string())
+        .build();
+    let events = common.events.get_or_insert_with(Vec::new);
+    match events.iter().position(|e| e.event_action() == Some(action)) {
+        Some(i) => events[i] = event,
+        None => events.push(event),
+    }
+}
+
+/// Set the `value` of every top-level notice link whose `rel` equals `rel` in `common` to `uri`.
+fn set_notice_links_value(common: &mut Common, rel: &str, uri: &str) {
+    let Some(notices) = common.notices.as_mut() else {
+        return;
+    };
+    for notice in notices.iter_mut() {
+        notice.0.replace_link_value(rel, uri);
+    }
+}
+
+/// Set the `value` of every link whose `rel` equals `rel` in `object_common.links`, recursing into
+/// nested entities. No-op if none match.
+fn replace_links_in_object(object_common: &mut ObjectCommon, rel: &str, uri: &str) {
+    if let Some(links) = object_common.links.as_mut() {
+        for link in links.iter_mut() {
+            if link.rel.as_deref() == Some(rel) {
+                link.value = Some(uri.to_string());
+            }
+        }
+    }
+    if let Some(entities) = object_common.entities.as_mut() {
+        for entity in entities.iter_mut() {
+            replace_links_in_object(&mut entity.object_common, rel, uri);
+        }
+    }
+}
+
 impl RdapResponse {
     pub fn get_type(&self) -> TypeId {
         match self {
@@ -335,6 +376,96 @@ impl RdapResponse {
             }
             Self::ErrorResponse(_) => TypeId::of::<crate::response::Rfc9083Error>(),
             Self::Help(_) => TypeId::of::<Help>(),
+        }
+    }
+
+    /// Set (or replace) the "last update of RDAP database" event carrying `date_rfc3339` so that
+    /// at most one such event is present on each affected object. For single-object responses the
+    /// event is set on that object; for search results it is applied to every contained object so
+    /// each returned object reflects the same database snapshot time. Any existing event with that
+    /// action is overwritten in place; otherwise it is appended. No-op for help, error, and RPKI.
+    pub fn inject_last_update_event(&mut self, date_rfc3339: &str) {
+        let action = EventActionValue::LastUpdateOfRDAPDatabase.to_string();
+        match self {
+            Self::Domain(d) => upsert_last_update(&mut d.object_common, &action, date_rfc3339),
+            Self::Entity(e) => upsert_last_update(&mut e.object_common, &action, date_rfc3339),
+            Self::Nameserver(n) => upsert_last_update(&mut n.object_common, &action, date_rfc3339),
+            Self::Autnum(a) => upsert_last_update(&mut a.object_common, &action, date_rfc3339),
+            Self::Network(n) => upsert_last_update(&mut n.object_common, &action, date_rfc3339),
+            // Search results carry no top-level events; apply to every contained object.
+            Self::DomainSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|d| upsert_last_update(&mut d.object_common, &action, date_rfc3339)),
+            Self::EntitySearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|e| upsert_last_update(&mut e.object_common, &action, date_rfc3339)),
+            Self::NameserverSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| upsert_last_update(&mut n.object_common, &action, date_rfc3339)),
+            Self::IpSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| upsert_last_update(&mut n.object_common, &action, date_rfc3339)),
+            Self::AutnumSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|a| upsert_last_update(&mut a.object_common, &action, date_rfc3339)),
+            _ => {}
+        }
+    }
+
+    /// Set the `value` of every top-level notice link whose `rel` equals `rel` to `uri`, across
+    /// all object and search-result response variants.
+    pub fn replace_notice_link_value(&mut self, rel: &str, uri: &str) {
+        match self {
+            Self::Domain(d) => set_notice_links_value(&mut d.common, rel, uri),
+            Self::Entity(e) => set_notice_links_value(&mut e.common, rel, uri),
+            Self::Nameserver(n) => set_notice_links_value(&mut n.common, rel, uri),
+            Self::Autnum(a) => set_notice_links_value(&mut a.common, rel, uri),
+            Self::Network(n) => set_notice_links_value(&mut n.common, rel, uri),
+            Self::DomainSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::EntitySearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::NameserverSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::IpSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            Self::AutnumSearchResults(r) => set_notice_links_value(&mut r.common, rel, uri),
+            _ => {}
+        }
+    }
+
+    /// Set the `value` of every link whose `rel` equals `rel` on any object in the response
+    /// (top-level, search-result members, and nested entities). Unlike
+    /// [`Self::replace_notice_link_value`], this targets object links, not notice links.
+    pub fn replace_object_link_value(&mut self, rel: &str, uri: &str) {
+        match self {
+            Self::Domain(d) => replace_links_in_object(&mut d.object_common, rel, uri),
+            Self::Entity(e) => replace_links_in_object(&mut e.object_common, rel, uri),
+            Self::Nameserver(n) => replace_links_in_object(&mut n.object_common, rel, uri),
+            Self::Autnum(a) => replace_links_in_object(&mut a.object_common, rel, uri),
+            Self::Network(n) => replace_links_in_object(&mut n.object_common, rel, uri),
+            Self::DomainSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|d| replace_links_in_object(&mut d.object_common, rel, uri)),
+            Self::EntitySearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|e| replace_links_in_object(&mut e.object_common, rel, uri)),
+            Self::NameserverSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| replace_links_in_object(&mut n.object_common, rel, uri)),
+            Self::IpSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|n| replace_links_in_object(&mut n.object_common, rel, uri)),
+            Self::AutnumSearchResults(r) => r
+                .results
+                .iter_mut()
+                .for_each(|a| replace_links_in_object(&mut a.object_common, rel, uri)),
+            _ => {}
         }
     }
 
@@ -730,7 +861,367 @@ mod tests {
         prelude::{ExtensionId, get_relationship_links},
     };
 
-    use super::{Domain, Link, RdapResponse, ToResponse, get_related_links};
+    use super::{
+        Common, Domain, DomainSearchResults, Entity, Event, Help, IpSearchResults, Link, Network,
+        Notice, NoticeOrRemark, RdapResponse, ToResponse, get_related_links,
+    };
+
+    #[test]
+    fn inject_last_update_event_replaces_existing_and_preserves_others() {
+        // GIVEN a domain carrying an existing "last update of RDAP database" event and another
+        let mut domain = Domain::builder().ldh_name("foo.example").build();
+        domain.object_common.events = Some(vec![
+            Event::builder()
+                .event_action("last update of RDAP database".to_string())
+                .event_date("2020-01-01T00:00:00Z".to_string())
+                .build(),
+            Event::builder()
+                .event_action("registration".to_string())
+                .event_date("2019-01-01T00:00:00Z".to_string())
+                .build(),
+        ]);
+        let mut resp = RdapResponse::Domain(Box::new(domain));
+
+        // WHEN we inject a newer last-update value
+        resp.inject_last_update_event("2026-09-15T00:00:00Z");
+
+        // THEN exactly one "last update of RDAP database" event remains, with the new date,
+        // and the other event is preserved
+        let RdapResponse::Domain(d) = &resp else {
+            panic!("expected a domain")
+        };
+        let events = d.object_common.events.as_ref().expect("events present");
+        let last_updates: Vec<_> = events
+            .iter()
+            .filter(|e| e.event_action() == Some("last update of RDAP database"))
+            .collect();
+        assert_eq!(
+            last_updates.len(),
+            1,
+            "expected exactly one last-update event"
+        );
+        assert_eq!(last_updates[0].event_date(), Some("2026-09-15T00:00:00Z"));
+        assert!(
+            events
+                .iter()
+                .any(|e| e.event_action() == Some("registration"))
+        );
+    }
+
+    #[test]
+    fn inject_last_update_event_is_noop_for_non_object_variants() {
+        // GIVEN a help response, which carries no object events
+        let mut resp = RdapResponse::Help(Box::new(Help::response().build()));
+
+        // WHEN we attempt to inject
+        resp.inject_last_update_event("2026-09-15T00:00:00Z");
+
+        // THEN the variant is unchanged and holds no last-update event
+        assert!(matches!(resp, RdapResponse::Help(_)));
+    }
+
+    #[test]
+    fn replace_tos_link_value_replaces_only_terms_of_service() {
+        // GIVEN a domain whose top-level notice has a ToS link and a self link
+        let mut domain = Domain::builder().ldh_name("foo.example").build();
+        domain.common.notices = Some(vec![Notice(
+            NoticeOrRemark::builder()
+                .description_entry("terms of service")
+                .link(
+                    Link::builder()
+                        .value("https://old/tos")
+                        .rel("terms-of-service")
+                        .href("https://tos.example/tos")
+                        .build(),
+                )
+                .link(
+                    Link::builder()
+                        .value("https://old/self")
+                        .rel("self")
+                        .href("https://rdap.example/domain/foo.example")
+                        .build(),
+                )
+                .build(),
+        )]);
+        let mut resp = RdapResponse::Domain(Box::new(domain));
+
+        // WHEN the ToS link value is replaced with the request URI
+        resp.replace_notice_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domain/foo.example",
+        );
+
+        // THEN only the terms-of-service link changed; the self link is untouched
+        let RdapResponse::Domain(d) = &resp else {
+            panic!("expected a domain")
+        };
+        let links = d.common.notices.as_ref().expect("notices")[0]
+            .0
+            .links
+            .as_ref()
+            .expect("links");
+        let tos = links
+            .iter()
+            .find(|l| l.rel.as_deref() == Some("terms-of-service"))
+            .unwrap();
+        assert_eq!(
+            tos.value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        let self_link = links
+            .iter()
+            .find(|l| l.rel.as_deref() == Some("self"))
+            .unwrap();
+        assert_eq!(self_link.value.as_deref(), Some("https://old/self"));
+    }
+
+    #[test]
+    fn replace_tos_link_value_is_noop_without_notices() {
+        // GIVEN a domain with no notices
+        let mut resp =
+            RdapResponse::Domain(Box::new(Domain::builder().ldh_name("foo.example").build()));
+
+        // WHEN we attempt the replacement
+        resp.replace_notice_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domain/foo.example",
+        );
+
+        // THEN it remains a domain with no notices
+        assert!(matches!(&resp, RdapResponse::Domain(d) if d.common.notices.is_none()));
+    }
+
+    #[test]
+    fn notice_replace_tos_link_value_only_touches_tos_links() {
+        // GIVEN a notice/remark carrying two ToS links and one other link
+        let mut nor = NoticeOrRemark::builder()
+            .description_entry("tos")
+            .link(
+                Link::builder()
+                    .value("a")
+                    .rel("terms-of-service")
+                    .href("https://x/a")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .value("b")
+                    .rel("terms-of-service")
+                    .href("https://x/b")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .value("c")
+                    .rel("self")
+                    .href("https://x/c")
+                    .build(),
+            )
+            .build();
+
+        // WHEN we replace the ToS link value
+        nor.replace_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domain/foo.example",
+        );
+
+        // THEN both ToS links changed, self unchanged
+        let links = nor.links.as_ref().expect("links");
+        assert_eq!(
+            links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(
+            links[1].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(links[2].value.as_deref(), Some("c"));
+    }
+
+    #[test]
+    fn replace_notice_link_value_only_touches_matching_rel() {
+        // GIVEN a notice carrying both a help and a terms-of-service link
+        let mut nor = NoticeOrRemark::builder()
+            .description_entry("n")
+            .link(
+                Link::builder()
+                    .value("h")
+                    .rel("help")
+                    .href("https://x/h")
+                    .build(),
+            )
+            .link(
+                Link::builder()
+                    .value("t")
+                    .rel("terms-of-service")
+                    .href("https://x/t")
+                    .build(),
+            )
+            .build();
+
+        // WHEN we replace only the help link value
+        nor.replace_link_value("help", "http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN the help link changed and the terms-of-service link is untouched
+        let links = nor.links.as_ref().expect("links");
+        assert_eq!(
+            links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(links[1].value.as_deref(), Some("t"));
+    }
+
+    #[test]
+    fn replace_object_link_value_replaces_related_in_object_and_nested_entities() {
+        // GIVEN a domain with a top-level related + self link and a nested entity that also has a
+        // related link
+        let mut nested = Entity::builder().handle("NE-1").build();
+        nested.object_common.links = Some(vec![
+            Link::builder()
+                .value("https://old/related-nested")
+                .rel("related")
+                .href("https://x/n")
+                .build(),
+        ]);
+        let mut domain = Domain::builder().ldh_name("foo.example").build();
+        domain.object_common.links = Some(vec![
+            Link::builder()
+                .value("https://old/self")
+                .rel("self")
+                .href("https://x/self")
+                .build(),
+            Link::builder()
+                .value("https://old/related")
+                .rel("related")
+                .href("https://x/rel")
+                .build(),
+        ]);
+        domain.object_common.entities = Some(vec![nested]);
+        let mut resp = RdapResponse::Domain(Box::new(domain));
+
+        // WHEN we replace the related link value on every object
+        resp.replace_object_link_value("related", "http://localhost:3000/rdap/domain/foo.example");
+
+        // THEN both top-level and nested related links changed; the self link is untouched
+        let RdapResponse::Domain(d) = &resp else {
+            panic!("expected a domain")
+        };
+        let top = d.object_common.links.as_ref().expect("links");
+        assert_eq!(
+            top.iter()
+                .find(|l| l.rel.as_deref() == Some("related"))
+                .unwrap()
+                .value
+                .as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+        assert_eq!(
+            top.iter()
+                .find(|l| l.rel.as_deref() == Some("self"))
+                .unwrap()
+                .value
+                .as_deref(),
+            Some("https://old/self")
+        );
+        let nested_links = d.object_common.entities.as_ref().expect("entities")[0]
+            .object_common
+            .links
+            .as_ref()
+            .expect("nested links");
+        assert_eq!(
+            nested_links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domain/foo.example")
+        );
+    }
+
+    #[test]
+    fn replace_tos_link_value_applies_to_search_results() {
+        // GIVEN a domain search result whose top-level notice has a ToS link
+        let mut results = DomainSearchResults {
+            common: Common::builder().build(),
+            results: vec![Domain::builder().ldh_name("a.example").build()],
+        };
+        results.common.notices = Some(vec![Notice(
+            NoticeOrRemark::builder()
+                .description_entry("tos")
+                .link(
+                    Link::builder()
+                        .value("old")
+                        .rel("terms-of-service")
+                        .href("https://x")
+                        .build(),
+                )
+                .build(),
+        )]);
+        let mut resp = RdapResponse::DomainSearchResults(Box::new(results));
+
+        // WHEN we replace the ToS link value
+        resp.replace_notice_link_value(
+            "terms-of-service",
+            "http://localhost:3000/rdap/domains?name=a.*",
+        );
+
+        // THEN the notice ToS link in the search result was updated
+        let RdapResponse::DomainSearchResults(r) = &resp else {
+            panic!("expected domain search results")
+        };
+        let links = r.common.notices.as_ref().expect("notices")[0]
+            .0
+            .links
+            .as_ref()
+            .expect("links");
+        assert_eq!(
+            links[0].value.as_deref(),
+            Some("http://localhost:3000/rdap/domains?name=a.*")
+        );
+    }
+
+    #[test]
+    fn inject_last_update_event_applies_to_each_search_result_object() {
+        // GIVEN an IP search result with two networks; the second already has a last-update event
+        let mut net2 = Network::builder()
+            .cidr("10.1.0.0/24")
+            .build()
+            .expect("network");
+        net2.object_common.events = Some(vec![
+            Event::builder()
+                .event_action("last update of RDAP database".to_string())
+                .event_date("2020-01-01T00:00:00Z".to_string())
+                .build(),
+        ]);
+        let results = IpSearchResults {
+            common: Common::level0().build(),
+            results: vec![
+                Network::builder()
+                    .cidr("10.0.0.0/24")
+                    .build()
+                    .expect("network"),
+                net2,
+            ],
+        };
+        let mut resp = RdapResponse::IpSearchResults(Box::new(results));
+
+        // WHEN we inject a newer last-update value
+        resp.inject_last_update_event("2026-09-15T00:00:00Z");
+
+        // THEN every contained object has exactly one last-update event with the new date
+        let RdapResponse::IpSearchResults(r) = &resp else {
+            panic!("expected ip search results")
+        };
+        for net in &r.results {
+            let evts = net.object_common.events.as_ref().expect("events present");
+            let lus: Vec<_> = evts
+                .iter()
+                .filter(|e| e.event_action() == Some("last update of RDAP database"))
+                .collect();
+            assert_eq!(
+                lus.len(),
+                1,
+                "expected exactly one last-update event per object"
+            );
+            assert_eq!(lus[0].event_date(), Some("2026-09-15T00:00:00Z"));
+        }
+    }
 
     #[test]
     fn test_redaction_response_gets_object() {

@@ -2,6 +2,7 @@ mod autnum;
 mod bootstrap;
 mod domain;
 mod entity;
+mod inr_backup_bootstrap;
 mod ip;
 mod jscontact;
 mod nameserver;

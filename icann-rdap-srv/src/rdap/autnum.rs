@@ -2,12 +2,12 @@ use axum::{
     extract::{Path, State},
     response::Response,
 };
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::prelude::normalize_extensions;
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, response::ResponseUtil},
+    rdap::{inr_backup_redirect, is_not_found, jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -20,20 +20,36 @@ pub(crate) async fn autnum_by_num(
     Path(as_num): Path<u32>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
     let storage = state.get_storage().await?;
     let autnum = storage.get_autnum_by_num(as_num).await?;
     Ok(if state.get_common_config().bootstrap {
-        autnum.to_autnum_bootstrap(as_num).response()
+        let cfg = state.get_common_config();
+        let resp = autnum.to_autnum_bootstrap(as_num);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            inr_backup_redirect(&cfg.inr_backup_bootstrap_url, &format!("autnum/{as_num}"))
+                .response()
+        } else {
+            resp.response()
+        }
     } else {
         let autnum = jscontact_conversion(
             autnum,
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let autnum = normalize_extensions(autnum);
+        let mut autnum = normalize_extensions(autnum);
+        super::inject_db_last_update(&mut autnum, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut autnum,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         autnum.response()
     })
 }

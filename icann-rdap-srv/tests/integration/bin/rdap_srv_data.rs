@@ -1,11 +1,9 @@
-#![allow(non_snake_case)]
-
-use test_dir::DirBuilder;
+use {icann_rdap_common::prelude::RdapResponse, test_dir::DirBuilder};
 
 use crate::test_jig::RdapSrvDataTestJig;
 
 #[test]
-fn GIVEN_data_dir_WHEN_invoked_THEN_data_stored_in_data_dir() {
+fn explicit_data_dir_stores_data_there() {
     // GIVEN
     let mut test_jig = RdapSrvDataTestJig::new();
 
@@ -46,7 +44,7 @@ fn GIVEN_data_dir_WHEN_invoked_THEN_data_stored_in_data_dir() {
 }
 
 #[test]
-fn GIVEN_no_data_dir_WHEN_invoked_THEN_data_stored_in_data_dir() {
+fn default_data_dir_stores_data() {
     // GIVEN
     let mut test_jig = RdapSrvDataTestJig::new();
 
@@ -85,7 +83,7 @@ fn GIVEN_no_data_dir_WHEN_invoked_THEN_data_stored_in_data_dir() {
 }
 
 #[test]
-fn GIVEN_entity_options_WHEN_create_data_THEN_success() {
+fn entity_options_succeed() {
     // GIVEN
     let _test_jig = make_foo1234();
 
@@ -97,7 +95,7 @@ fn GIVEN_entity_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_nameserver_options_WHEN_create_data_THEN_success() {
+fn nameserver_options_succeed() {
     // GIVEN
     let mut test_jig = make_foo1234();
 
@@ -116,7 +114,7 @@ fn GIVEN_nameserver_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_domain_options_WHEN_create_data_THEN_success() {
+fn domain_options_succeed() {
     // GIVEN
     let mut test_jig = make_foo1234();
     test_jig
@@ -147,7 +145,7 @@ fn GIVEN_domain_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_domain_with_idn_WHEN_create_data_THEN_success() {
+fn domain_with_idn_succeeds() {
     // GIVEN
     let mut test_jig = make_foo1234();
 
@@ -168,7 +166,7 @@ fn GIVEN_domain_with_idn_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_idn_WHEN_create_data_THEN_success() {
+fn domain_idn_only_succeeds() {
     // GIVEN
     let mut test_jig = make_foo1234();
 
@@ -187,7 +185,7 @@ fn GIVEN_idn_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_autnum_options_WHEN_create_data_THEN_success() {
+fn autnum_options_succeed() {
     // GIVEN
     let mut test_jig = make_foo1234();
 
@@ -208,7 +206,7 @@ fn GIVEN_autnum_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_network_options_WHEN_create_data_THEN_success() {
+fn network_options_succeed() {
     // GIVEN
     let mut test_jig = make_foo1234();
 
@@ -227,19 +225,19 @@ fn GIVEN_network_options_WHEN_create_data_THEN_success() {
 }
 
 #[test]
-fn GIVEN_srvhelp_with_no_options_WHEN_create_srvhelp_THEN_success() {
+fn srvhelp_without_notice_fails() {
     // GIVEN
     let mut test_jig = RdapSrvDataTestJig::new();
 
     // WHEN
     test_jig.cmd.arg("srv-help");
 
-    // THEN
+    // THEN — an empty help document cannot be stored, so the command fails.
     let assert = test_jig.cmd.assert();
-    assert.success();
+    assert.failure();
 }
 #[test]
-fn GIVEN_srvhelp_with_notice_WHEN_create_srvhelp_THEN_success() {
+fn srvhelp_with_notice_succeeds() {
     // GIVEN
     let mut test_jig = RdapSrvDataTestJig::new();
 
@@ -256,7 +254,7 @@ fn GIVEN_srvhelp_with_notice_WHEN_create_srvhelp_THEN_success() {
 }
 
 #[test]
-fn GIVEN_srvhelp_with_host_WHEN_create_srvhelp_THEN_success() {
+fn srvhelp_with_host_succeeds() {
     // GIVEN
     let mut test_jig = RdapSrvDataTestJig::new();
 
@@ -265,7 +263,9 @@ fn GIVEN_srvhelp_with_host_WHEN_create_srvhelp_THEN_success() {
         .cmd
         .arg("srv-help")
         .arg("--host")
-        .arg("foo.example.com");
+        .arg("foo.example.com")
+        .arg("--notice")
+        .arg("\"A host help notice\"");
 
     // THEN
     let assert = test_jig.cmd.assert();
@@ -286,4 +286,184 @@ fn make_foo1234() -> RdapSrvDataTestJig {
     let assert = test_jig.cmd.assert();
     assert.success();
     test_jig.new_cmd()
+}
+
+/// Returns the names of all files in the data directory.
+fn data_dir_file_names(test_jig: &RdapSrvDataTestJig) -> Vec<String> {
+    std::fs::read_dir(test_jig.data_dir.root())
+        .expect("data directory does not exist")
+        .filter_map(|entry| {
+            entry
+                .ok()
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+        })
+        .collect()
+}
+
+#[test]
+fn json_argument_stores_data() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"example.com"}"#;
+
+    // WHEN
+    test_jig.cmd.arg("json").arg(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+    let file_names = data_dir_file_names(&test_jig);
+    assert_eq!(file_names.len(), 1);
+    assert!(file_names[0].ends_with(".json"));
+
+    // The written file must be loadable by the server as an RDAP domain document.
+    let path = test_jig.data_dir.root().join(&file_names[0]);
+    let content = std::fs::read_to_string(&path).expect("reading data file");
+    let rdap: RdapResponse = serde_json::from_str(&content).expect("parsing written json");
+    let domain = match rdap {
+        RdapResponse::Domain(domain) => domain,
+        other => panic!("expected domain document, got {other:?}"),
+    };
+    assert_eq!(domain.ldh_name.as_deref(), Some("example.com"));
+}
+
+#[test]
+fn json_stdin_stores_data() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"example.com"}"#;
+
+    // WHEN
+    test_jig.cmd.arg("json").write_stdin(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+    let file_names = data_dir_file_names(&test_jig);
+    assert_eq!(file_names.len(), 1);
+    assert!(file_names[0].ends_with(".json"));
+}
+
+#[test]
+fn json_file_name_stores_data() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"example.com"}"#;
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("json")
+        .arg("--file-name")
+        .arg("foo")
+        .arg(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+    let file_names = data_dir_file_names(&test_jig);
+    assert_eq!(file_names, vec!["foo.json".to_string()]);
+}
+
+#[test]
+fn json_template_flag_fails() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"example.com"}"#;
+
+    // WHEN
+    test_jig.cmd.arg("--template").arg("json").arg(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.failure();
+}
+
+#[test]
+fn invalid_json_fails() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+
+    // WHEN
+    test_jig
+        .cmd
+        .arg("json")
+        .arg(r#"{"objectClassName":"domain","ldhName":""#);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.failure();
+}
+
+#[test]
+fn json_without_derivable_name_fails() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain"}"#;
+
+    // WHEN
+    test_jig.cmd.arg("json").arg(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.failure();
+}
+
+#[test]
+fn json_argument_beats_stdin() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"example.com"}"#;
+    let stdin_json =
+        r#"{"rdapConformance":["rdap_level_0"],"objectClassName":"domain","ldhName":"other.com"}"#;
+
+    // WHEN
+    test_jig.cmd.arg("json").arg(json).write_stdin(stdin_json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.success();
+    let file_names = data_dir_file_names(&test_jig);
+    assert_eq!(file_names, vec!["example_com.json".to_string()]);
+}
+
+#[test]
+fn empty_stdin_fails() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+
+    // WHEN
+    test_jig.cmd.arg("json").write_stdin("");
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.failure();
+}
+
+#[test]
+fn help_json_fails() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"notices":[{"title":"Help"}]}"#;
+
+    // WHEN
+    test_jig.cmd.arg("json").arg(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.failure();
+}
+
+#[test]
+fn error_response_json_fails() {
+    // GIVEN
+    let mut test_jig = RdapSrvDataTestJig::new();
+    let json = r#"{"rdapConformance":["rdap_level_0"],"errorCode":404,"title":"Not Found"}"#;
+
+    // WHEN
+    test_jig.cmd.arg("json").arg(json);
+
+    // THEN
+    let assert = test_jig.cmd.assert();
+    assert.failure();
 }

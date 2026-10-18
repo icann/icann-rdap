@@ -9,7 +9,7 @@ use {
         response::RdapResponse,
     },
     icann_rdap_srv::{
-        config::{LOG, data_dir, debug_config_vars},
+        config::{LOG, data_dir, debug_config_vars, pg_ignore_data_dir, postgres_storage},
         error::RdapServerError,
         storage::data::{
             AutnumOrError, DomainOrError, EntityOrError, NameserverOrError, NetworkIdType,
@@ -75,6 +75,12 @@ async fn main() -> Result<(), RdapServerError> {
     }
 
     // signal update or reload
+    if (cli.reload || cli.update) && postgres_storage() && pg_ignore_data_dir() {
+        warn!(
+            "RDAP_SRV_PG_IGNORE_DATA_DIR is set with postgres storage: a server will ignore \
+             this update/reload marker. Load data directly into the database instead."
+        );
+    }
     if cli.reload {
         trigger_reload(&data_dir).await?;
     } else if cli.update {

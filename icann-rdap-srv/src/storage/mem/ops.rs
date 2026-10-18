@@ -16,11 +16,13 @@ use {
     tokio::sync::RwLock,
 };
 
+use chrono::{DateTime, Utc};
+
 use crate::{
     config::CommonConfig,
     error::RdapServerError,
     rdap::response::{NOT_FOUND, NOT_IMPLEMENTED},
-    storage::{StoreOps, TxHandle, mem::DEFAULT_HELPFILE_NAME},
+    storage::{StoreOps, TxHandle, mem::DEFAULT_HELPFILE_NAME, timestamp::DbTimestamp},
 };
 
 use super::{config::MemConfig, label_search::SearchLabels, rir_search::U32OrRange, tx::MemTx};
@@ -49,6 +51,7 @@ pub struct Mem {
     pub(crate) autnums_by_name: Arc<RwLock<SearchLabels<Arc<RdapResponse>>>>,
     pub(crate) srvhelps: Arc<RwLock<HashMap<String, Arc<RdapResponse>>>>,
     pub(crate) config: MemConfig,
+    pub(crate) db_timestamp: DbTimestamp,
 }
 
 impl Mem {
@@ -76,6 +79,7 @@ impl Mem {
             autnums_by_name: Arc::new(RwLock::new(SearchLabels::name_labels().build())),
             srvhelps: <_>::default(),
             config,
+            db_timestamp: <_>::default(),
         }
     }
 }
@@ -94,6 +98,10 @@ impl Default for Mem {
 impl StoreOps for Mem {
     async fn init(&self) -> Result<(), RdapServerError> {
         Ok(())
+    }
+
+    fn last_data_update(&self) -> Option<DateTime<Utc>> {
+        self.db_timestamp.get()
     }
 
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError> {
@@ -503,6 +511,11 @@ impl StoreOps for Mem {
             IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
         };
         let results = self.ip_rdap_down(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -526,6 +539,11 @@ impl StoreOps for Mem {
         }
         let net = IpNet::from_str(cidr)?;
         let results = self.ip_rdap_down(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -553,6 +571,11 @@ impl StoreOps for Mem {
             IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
         };
         let results = self.ip_rdap_bottom(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -576,6 +599,11 @@ impl StoreOps for Mem {
         }
         let net = IpNet::from_str(cidr)?;
         let results = self.ip_rdap_bottom(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -692,6 +720,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.autnum_rdap_down(&U32OrRange::Single(num)).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -715,6 +748,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.autnum_rdap_down(&U32OrRange::Range(start..end)).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -737,6 +775,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.autnum_rdap_bottom(&U32OrRange::Single(num)).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -762,6 +805,11 @@ impl StoreOps for Mem {
         let results = self
             .autnum_rdap_bottom(&U32OrRange::Range(start..end))
             .await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -877,6 +925,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.domain_rdap_down(ldh).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Domain> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -899,6 +952,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.domain_rdap_bottom(ldh).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Domain> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)

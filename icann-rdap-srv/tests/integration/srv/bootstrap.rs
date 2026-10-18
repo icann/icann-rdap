@@ -4,9 +4,12 @@ use {
         rdap::{QueryType, rdap_request},
     },
     icann_rdap_common::response::Rfc9083Error,
-    icann_rdap_srv::storage::{
-        StoreOps,
-        data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
+    icann_rdap_srv::{
+        config::CommonConfig,
+        storage::{
+            StoreOps,
+            data::{AutnumId, DomainId, EntityId, NetworkId, NetworkIdType},
+        },
     },
 };
 
@@ -380,4 +383,154 @@ async fn test_bootstrap_with_no_specific_tag() {
 
     // THEN
     assert_eq!(response.http_data.status_code(), 404);
+}
+
+#[tokio::test]
+async fn test_tld_bootstrap_known_tld_redirects_to_iana() {
+    // GIVEN a bootstrap server (tld_bootstrap on by default) with a DNS bootstrap redirect
+    // stub for the TLD "com" pointing at the registry operator.
+    let test_srv = SrvTestJig::new_bootstrap().await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_domain_err(
+        &DomainId::builder().ldh_name("com").build(),
+        &Rfc9083Error::redirect()
+            .url("https://registry.example/")
+            .build(),
+    )
+    .await
+    .expect("add domain redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN a bare TLD query is made
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::domain("com").expect("invalid domain name");
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN it is redirected to the configured IANA TLD bootstrap server, not the registry.
+    assert!(response.rdap.is_redirect());
+    assert_eq!(
+        response
+            .http_data
+            .location
+            .as_ref()
+            .expect("no location header information"),
+        "https://rdap.iana.org/domain/com"
+    );
+}
+
+#[tokio::test]
+async fn test_tld_bootstrap_disabled_returns_registry_stub() {
+    // GIVEN a bootstrap server with tld_bootstrap explicitly disabled and a stub for "com".
+    let test_srv = SrvTestJig::new_common_config(CommonConfig {
+        bootstrap: true,
+        tld_bootstrap: false,
+        ..Default::default()
+    })
+    .await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_domain_err(
+        &DomainId::builder().ldh_name("com").build(),
+        &Rfc9083Error::redirect()
+            .url("https://registry.example/")
+            .build(),
+    )
+    .await
+    .expect("add domain redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN a bare TLD query is made
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::domain("com").expect("invalid domain name");
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN the original registry-operator stub is returned unchanged.
+    assert!(response.rdap.is_redirect());
+    assert_eq!(
+        response
+            .http_data
+            .location
+            .as_ref()
+            .expect("no location header information"),
+        "https://registry.example/"
+    );
+}
+
+#[tokio::test]
+async fn test_tld_bootstrap_unknown_single_label_is_not_found() {
+    // GIVEN a bootstrap server with a stub only for "com".
+    let test_srv = SrvTestJig::new_bootstrap().await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_domain_err(
+        &DomainId::builder().ldh_name("com").build(),
+        &Rfc9083Error::redirect()
+            .url("https://registry.example/")
+            .build(),
+    )
+    .await
+    .expect("add domain redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN a single-label query that is not a known TLD is made
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::domain("notatld").expect("invalid domain name");
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN it is a plain not-found (no IANA redirect for unknown single labels).
+    assert_eq!(response.http_data.status_code(), 404);
+}
+
+#[tokio::test]
+async fn test_tld_bootstrap_subdomain_still_goes_to_registry() {
+    // GIVEN a bootstrap server with a stub for the TLD "com".
+    let test_srv = SrvTestJig::new_bootstrap().await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_domain_err(
+        &DomainId::builder().ldh_name("com").build(),
+        &Rfc9083Error::redirect()
+            .url("https://registry.example/")
+            .build(),
+    )
+    .await
+    .expect("add domain redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN a subdomain within the TLD is queried
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::domain("foo.com").expect("invalid domain name");
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN it still walks up to the registry operator (regression guard).
+    assert!(response.rdap.is_redirect());
+    assert_eq!(
+        response
+            .http_data
+            .location
+            .as_ref()
+            .expect("no location header information"),
+        "https://registry.example/domain/foo.com"
+    );
 }

@@ -1,3 +1,7 @@
+use std::net::IpAddr;
+
+use chrono::{DateTime, Utc};
+
 use {
     async_trait::async_trait,
     icann_rdap_common::response::{
@@ -13,6 +17,12 @@ pub mod data;
 pub mod mem;
 #[cfg(feature = "postgres")]
 pub mod pg;
+pub mod timestamp;
+
+/// The canonical host key for the default server-help file (`..default.help`). Both storage
+/// backends store a no-host help under this key and resolve a `None` host lookup to it, so a
+/// shipped `..default.help` is served whenever no per-host help matches.
+pub const DEFAULT_HELPFILE_NAME: &str = "..default";
 
 pub type DynStoreOps = dyn StoreOps + Send + Sync;
 
@@ -21,6 +31,10 @@ pub type DynStoreOps = dyn StoreOps + Send + Sync;
 pub trait StoreOps: Send + Sync {
     /// Initializes the backend storage
     async fn init(&self) -> Result<(), RdapServerError>;
+
+    /// The time this store's data was last written, or `None` if no data has been
+    /// committed yet. A single live, server-wide value updated on every commit.
+    fn last_data_update(&self) -> Option<DateTime<Utc>>;
 
     /// Gets a new transaction.
     async fn new_tx(&self) -> Result<Box<dyn TxHandle>, RdapServerError>;
@@ -292,4 +306,32 @@ pub trait TxHandle: Send {
 
     /// Rollback the transaction.
     async fn rollback(self: Box<Self>) -> Result<(), RdapServerError>;
+}
+
+/// Deletion of RDAP entities from a storage backend.
+///
+/// Each method deletes at most one record, keyed by the entity's primary key.
+/// Returns `Ok(true)` if a record was deleted, `Ok(false)` if nothing matched.
+///
+/// Currently supported by the PostgreSQL backend; the in-memory backend
+/// panics via [`unimplemented!`] (see `crate::storage::mem::del`).
+#[async_trait]
+pub trait DeleteOps: Send + Sync {
+    /// Delete an entity using its 'handle' as the key.
+    async fn delete_entity(&self, handle: &str) -> Result<bool, RdapServerError>;
+
+    /// Delete a domain using its 'ldhName' as the key.
+    async fn delete_domain(&self, ldh_name: &str) -> Result<bool, RdapServerError>;
+
+    /// Delete a nameserver using its 'ldhName' as the key.
+    async fn delete_nameserver(&self, ldh_name: &str) -> Result<bool, RdapServerError>;
+
+    /// Delete an autnum using its `(startAutnum, endAutnum)` range as the key.
+    async fn delete_autnum(&self, start: u32, end: u32) -> Result<bool, RdapServerError>;
+
+    /// Delete a network using its `(startAddress, endAddress)` range as the key.
+    async fn delete_network(&self, start: IpAddr, end: IpAddr) -> Result<bool, RdapServerError>;
+
+    /// Delete a server help record using its 'host' as the key.
+    async fn delete_srv_help(&self, host: &str) -> Result<bool, RdapServerError>;
 }

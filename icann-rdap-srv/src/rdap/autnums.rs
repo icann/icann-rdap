@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, Query, State},
     response::Response,
 };
-use http::HeaderMap;
+use http::{HeaderMap, Uri};
 use icann_rdap_common::{
     prelude::{ExtensionId, normalize_extensions, normalize_extensions_with},
     response::RdapResponse,
@@ -15,7 +15,8 @@ use tracing::debug;
 use crate::{
     error::RdapServerError,
     rdap::{
-        ToBootStrap, jscontact_conversion,
+        ToBootStrap, follow_stub_redirect, inr_backup_redirect, is_empty_search_results,
+        is_not_found, jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -58,6 +59,7 @@ pub(crate) async fn autnums(
     Query(params): Query<AutnumsParams>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = '{}'", exts_list.join(" "));
@@ -76,7 +78,15 @@ pub(crate) async fn autnums(
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_link_values(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
 
@@ -86,6 +96,7 @@ pub(crate) async fn autnum_rdap_up(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
@@ -105,14 +116,31 @@ pub(crate) async fn autnum_rdap_up(
     };
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_autnum_bootstrap(start).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_autnum_bootstrap(start);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-up/{as_path}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = add_rfc9910_extensions(results);
+        let mut results = add_rfc9910_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -123,6 +151,7 @@ pub(crate) async fn autnum_rdap_top(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
@@ -142,14 +171,31 @@ pub(crate) async fn autnum_rdap_top(
     };
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_autnum_bootstrap(start).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_autnum_bootstrap(start);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-top/{as_path}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
             &exts_list,
         );
-        let results = add_rfc9910_extensions(results);
+        let mut results = add_rfc9910_extensions(results);
+        super::inject_db_last_update(&mut results, storage, state.get_common_config());
+        super::replace_link_values(
+            &mut results,
+            state.get_common_config(),
+            state.get_base_origin(),
+            &uri,
+            &headers,
+        );
         Ok(results.response())
     }
 }
@@ -160,6 +206,7 @@ pub(crate) async fn autnum_rdap_down(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
     debug!("exts_list = \'{}\'", exts_list.join(" "));
@@ -178,12 +225,36 @@ pub(crate) async fn autnum_rdap_down(
         storage.search_autnum_rdap_down_by_num(start).await?
     };
 
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "autnums/rirSearch1/rdap-down", &as_path)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-down/{as_path}"),
+            )
+            .response());
+        }
+    }
+
     let results = jscontact_conversion(
         results,
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_link_values(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
 
@@ -193,6 +264,7 @@ pub(crate) async fn autnum_rdap_bottom(
     Path(as_path): Path<String>,
     headers: HeaderMap,
     state: State<DynServiceState>,
+    uri: Uri,
 ) -> Result<Response, RdapServerError> {
     let exts_list = super::parse_exts_list_from_headers(&headers);
 
@@ -212,11 +284,35 @@ pub(crate) async fn autnum_rdap_bottom(
         storage.search_autnum_rdap_bottom_by_num(start).await?
     };
 
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "autnums/rirSearch1/rdap-bottom", &as_path)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-bottom/{as_path}"),
+            )
+            .response());
+        }
+    }
+
     let results = jscontact_conversion(
         results,
         state.get_common_config().jscontact_conversion,
         &exts_list,
     );
-    let results = add_rfc9910_extensions(results);
+    let mut results = add_rfc9910_extensions(results);
+    super::inject_db_last_update(&mut results, storage, state.get_common_config());
+    super::replace_link_values(
+        &mut results,
+        state.get_common_config(),
+        state.get_base_origin(),
+        &uri,
+        &headers,
+    );
     Ok(results.response())
 }
