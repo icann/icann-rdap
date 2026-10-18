@@ -26,6 +26,8 @@ fn service_config(data_dir: &str, storage_type: StorageType) -> ServiceConfig {
         .update_on_bootstrap(false)
         .tld_bootstrap(true)
         .tld_bootstrap_url("https://rdap.iana.org/".to_string())
+        .inr_backup_bootstrap(true)
+        .inr_backup_bootstrap_url("https://rdap.arin.net/registry".to_string())
         .jscontact_conversion(JsContactConversion::None)
         .build()
 }

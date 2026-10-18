@@ -8,6 +8,7 @@ use tracing::debug;
 
 use crate::{
     config::{BaseOrigin, CommonConfig, JsContactConversion},
+    rdap::response::ResponseUtil,
     storage::StoreOps,
 };
 
@@ -230,6 +231,55 @@ fn bootstrap_redirect(error: Rfc9083Error, path: &str, id: &str) -> RdapResponse
     let href = format!("{}{path}/{id}", href);
     let redirect = Rfc9083Error::redirect().url(href).build();
     redirect.to_response()
+}
+
+/// True when the response is an RFC 9083 error carrying HTTP status 404 (not found).
+///
+/// Used to decide whether an INR lookup that the local bootstrap stubs could not resolve
+/// should fall back to the backup bootstrap server. A 501 (feature not implemented) is
+/// deliberately *not* treated as "not found".
+pub(crate) fn is_not_found(rdap: &RdapResponse) -> bool {
+    matches!(rdap, RdapResponse::ErrorResponse(e) if e.error_code() == 404)
+}
+
+/// True when the response is an RIR search result set (IP, autnum, or domain) that
+/// contains zero results.
+///
+/// `rdap-down` and `rdap-bottom` searches return an empty result set (HTTP 200) rather
+/// than a 404 when nothing matches, so the INR backup bootstrap keys off this instead.
+pub(crate) fn is_empty_search_results(rdap: &RdapResponse) -> bool {
+    match rdap {
+        RdapResponse::IpSearchResults(r) => r.results().is_empty(),
+        RdapResponse::AutnumSearchResults(r) => r.results().is_empty(),
+        RdapResponse::DomainSearchResults(r) => r.results().is_empty(),
+        _ => false,
+    }
+}
+
+/// Build a redirect to the equivalent path on the INR backup bootstrap server.
+///
+/// The backup base URL has any trailing slash trimmed and `rel_path` appended with a
+/// single separating slash, e.g. `https://rdap.arin.net/registry` + `ip/199.1.1.1`.
+pub(crate) fn inr_backup_redirect(backup_url: &str, rel_path: &str) -> RdapResponse {
+    let base = backup_url.trim_end_matches('/');
+    let url = format!("{base}/{rel_path}");
+    Rfc9083Error::redirect().url(url).build().to_response()
+}
+
+/// If `rdap` is a bootstrap redirect stub, rebuild it as a redirect to
+/// `{stub_href}{path}/{id}` on the stub's authoritative base. Returns `None` when
+/// `rdap` is not a redirect.
+///
+/// Used by `rdap-down`/`rdap-bottom` to honour a delegation stub surfaced by the store
+/// (rather than dropping it), mirroring how single-object lookups use `to_*_bootstrap`.
+pub(crate) fn follow_stub_redirect(
+    rdap: &RdapResponse,
+    path: &str,
+    id: &str,
+) -> Option<RdapResponse> {
+    let href = rdap.first_notice_link_href()?;
+    let url = format!("{href}{path}/{id}");
+    Some(Rfc9083Error::redirect().url(url).build().to_response())
 }
 
 fn parse_extensions(accept_header: &str) -> Vec<String> {
@@ -528,5 +578,118 @@ mod tests {
 
         // THEN the empty values are ignored and it degrades to the relative path
         assert_eq!(result, "/rdap/x");
+    }
+
+    use crate::rdap::response::ResponseUtil;
+    use icann_rdap_common::response::{
+        Autnum, AutnumSearchResults, DomainSearchResults, IpSearchResults, Network,
+    };
+
+    fn err(code: u16) -> RdapResponse {
+        Rfc9083Error::response_obj()
+            .error_code(code)
+            .build()
+            .to_response()
+    }
+
+    #[test]
+    fn is_not_found_true_only_for_404() {
+        // GIVEN error responses of various codes and a non-error response
+        // WHEN checked with is_not_found
+        // THEN only the 404 is considered "not found"
+        assert!(is_not_found(&err(404)));
+        assert!(!is_not_found(&err(501)));
+        assert!(!is_not_found(&err(307)));
+        assert!(!is_not_found(
+            &Domain::builder()
+                .ldh_name("foo.example")
+                .build()
+                .to_response()
+        ));
+    }
+
+    #[test]
+    fn is_empty_search_results_true_for_empty_ip_autnum_domain_sets() {
+        // GIVEN empty RIR search result sets of each type
+        let empty_ip = IpSearchResults::response_obj()
+            .results(vec![])
+            .build()
+            .to_response();
+        let empty_autnum = AutnumSearchResults::response_obj()
+            .results(vec![])
+            .build()
+            .to_response();
+        let empty_domain = DomainSearchResults::response_obj()
+            .results(vec![])
+            .build()
+            .to_response();
+
+        // WHEN checked with is_empty_search_results
+        // THEN each empty set reports true
+        assert!(is_empty_search_results(&empty_ip));
+        assert!(is_empty_search_results(&empty_autnum));
+        assert!(is_empty_search_results(&empty_domain));
+    }
+
+    #[test]
+    fn is_empty_search_results_false_for_non_empty_and_non_search() {
+        // GIVEN non-empty search sets and a non-search response
+        let one_ip = IpSearchResults::response_obj()
+            .results(vec![
+                Network::builder().cidr("192.0.2.0/24").build().unwrap(),
+            ])
+            .build()
+            .to_response();
+        let one_autnum = AutnumSearchResults::response_obj()
+            .results(vec![Autnum::builder().autnum_range(700..710).build()])
+            .build()
+            .to_response();
+
+        // WHEN checked with is_empty_search_results
+        // THEN non-empty sets and non-search responses report false
+        assert!(!is_empty_search_results(&one_ip));
+        assert!(!is_empty_search_results(&one_autnum));
+        assert!(!is_empty_search_results(&err(404)));
+    }
+
+    #[test]
+    fn inr_backup_redirect_builds_absolute_url_and_trims_trailing_slash() {
+        // GIVEN a backup base URL with and without a trailing slash
+        // WHEN building a backup redirect
+        let no_slash = inr_backup_redirect("https://backup.example/rdap", "ip/192.0.2.1");
+        let with_slash = inr_backup_redirect("https://backup.example/rdap/", "ip/192.0.2.1");
+
+        // THEN both produce a 307 with a single-slash joined location href
+        assert_eq!(
+            no_slash.first_notice_link_href(),
+            Some("https://backup.example/rdap/ip/192.0.2.1")
+        );
+        assert_eq!(
+            with_slash.first_notice_link_href(),
+            Some("https://backup.example/rdap/ip/192.0.2.1")
+        );
+        assert!(matches!(no_slash, RdapResponse::ErrorResponse(e) if e.error_code() == 307));
+    }
+
+    #[test]
+    fn follow_stub_redirect_rebuilds_url_from_stub_href() {
+        // GIVEN a bootstrap redirect stub pointing at an authoritative base
+        let stub = Rfc9083Error::redirect()
+            .url("https://auth.example/")
+            .build()
+            .to_response();
+
+        // WHEN following it with a down path and id
+        let followed = follow_stub_redirect(&stub, "ips/rirSearch1/rdap-down", "10.0.0.0/8")
+            .expect("stub should be followed");
+
+        // THEN the new href is stub_href + path + id
+        assert_eq!(
+            followed.first_notice_link_href(),
+            Some("https://auth.example/ips/rirSearch1/rdap-down/10.0.0.0/8")
+        );
+
+        // AND a non-redirect response yields None
+        assert!(follow_stub_redirect(&err(404), "x", "y").is_none());
     }
 }

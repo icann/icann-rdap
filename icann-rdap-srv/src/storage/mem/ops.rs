@@ -511,6 +511,11 @@ impl StoreOps for Mem {
             IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
         };
         let results = self.ip_rdap_down(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -534,6 +539,11 @@ impl StoreOps for Mem {
         }
         let net = IpNet::from_str(cidr)?;
         let results = self.ip_rdap_down(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -561,6 +571,11 @@ impl StoreOps for Mem {
             IpAddr::V6(v6) => IpNet::V6(Ipv6Net::new(v6, 128)?),
         };
         let results = self.ip_rdap_bottom(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -584,6 +599,11 @@ impl StoreOps for Mem {
         }
         let net = IpNet::from_str(cidr)?;
         let results = self.ip_rdap_bottom(&net).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Network> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -700,6 +720,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.autnum_rdap_down(&U32OrRange::Single(num)).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -723,6 +748,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.autnum_rdap_down(&U32OrRange::Range(start..end)).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -745,6 +775,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.autnum_rdap_bottom(&U32OrRange::Single(num)).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -770,6 +805,11 @@ impl StoreOps for Mem {
         let results = self
             .autnum_rdap_bottom(&U32OrRange::Range(start..end))
             .await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Autnum> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -885,6 +925,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.domain_rdap_down(ldh).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Domain> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)
@@ -907,6 +952,11 @@ impl StoreOps for Mem {
             return Ok(NOT_IMPLEMENTED.clone());
         }
         let results = self.domain_rdap_bottom(ldh).await;
+        if self.config.common_config.bootstrap
+            && let Some(r) = results.iter().find(|r| r.is_redirect())
+        {
+            return Ok((**r).clone());
+        }
         let results: Vec<Domain> = results
             .into_iter()
             .map(Arc::unwrap_or_clone)

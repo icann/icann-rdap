@@ -289,6 +289,12 @@ impl Pg {
         .fetch_all(&self.pg_pool)
         .await?;
 
+        if self.config.common_config.bootstrap
+            && let Some(Json(r)) = rows.iter().find(|Json(r)| r.is_redirect())
+        {
+            return Ok(r.clone());
+        }
+
         let results: Vec<Autnum> = rows
             .into_iter()
             .filter_map(|Json(r)| match r {
@@ -874,18 +880,24 @@ impl StoreOps for Pg {
             })
             .collect();
 
-        let results: Vec<Network> = candidates
+        let kept: Vec<RdapResponse> = candidates
             .into_iter()
             .zip(mask)
-            .filter_map(|(cand, keep)| {
-                if !keep {
-                    return None;
-                }
-                let (Json(r), _, _) = cand;
-                match r {
-                    RdapResponse::Network(n) => Some(*n),
-                    _ => None,
-                }
+            .filter(|(_, keep)| *keep)
+            .map(|(cand, _)| cand.0.0)
+            .collect();
+
+        if self.config.common_config.bootstrap
+            && let Some(r) = kept.iter().find(|r| r.is_redirect())
+        {
+            return Ok(r.clone());
+        }
+
+        let results: Vec<Network> = kept
+            .into_iter()
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
             })
             .collect();
 
@@ -943,18 +955,24 @@ impl StoreOps for Pg {
             })
             .collect();
 
-        let results: Vec<Network> = candidates
+        let kept: Vec<RdapResponse> = candidates
             .into_iter()
             .zip(mask)
-            .filter_map(|(cand, keep)| {
-                if !keep {
-                    return None;
-                }
-                let (Json(r), _, _) = cand;
-                match r {
-                    RdapResponse::Network(n) => Some(*n),
-                    _ => None,
-                }
+            .filter(|(_, keep)| *keep)
+            .map(|(cand, _)| cand.0.0)
+            .collect();
+
+        if self.config.common_config.bootstrap
+            && let Some(r) = kept.iter().find(|r| r.is_redirect())
+        {
+            return Ok(r.clone());
+        }
+
+        let results: Vec<Network> = kept
+            .into_iter()
+            .filter_map(|r| match r {
+                RdapResponse::Network(n) => Some(*n),
+                _ => None,
             })
             .collect();
 
@@ -1240,6 +1258,11 @@ impl StoreOps for Pg {
         .fetch_all(&self.pg_pool)
         .await?;
 
+        if self.config.common_config.bootstrap
+            && let Some(Json(r)) = rows.iter().find(|Json(r)| r.is_redirect())
+        {
+            return Ok(r.clone());
+        }
         let results: Vec<Domain> = rows
             .into_iter()
             .map(|Json(r)| r)
@@ -1292,6 +1315,11 @@ impl StoreOps for Pg {
         .fetch_all(&self.pg_pool)
         .await?;
 
+        if self.config.common_config.bootstrap
+            && let Some(Json(r)) = rows.iter().find(|Json(r)| r.is_redirect())
+        {
+            return Ok(r.clone());
+        }
         let results: Vec<Domain> = rows
             .into_iter()
             .map(|Json(r)| r)

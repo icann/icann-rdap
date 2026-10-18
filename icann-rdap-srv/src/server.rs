@@ -190,7 +190,13 @@ impl AppState<Mem> {
         common_config.bootstrap = service_config.bootstrap;
         common_config.tld_bootstrap = service_config.tld_bootstrap;
         common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
+        common_config.inr_backup_bootstrap = service_config.inr_backup_bootstrap;
+        common_config.inr_backup_bootstrap_url = service_config.inr_backup_bootstrap_url.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
+        // Make the store bootstrap-aware so `rdap-down`/`rdap-bottom` can surface
+        // delegation redirect stubs instead of dropping them.
+        let mut config = config;
+        config.common_config.bootstrap = service_config.bootstrap;
         let storage = Mem::new(config);
         storage.init().await?;
         init_data(Box::new(storage.clone()), service_config).await?;
@@ -218,6 +224,8 @@ impl AppState<Pg> {
         common_config.bootstrap = service_config.bootstrap;
         common_config.tld_bootstrap = service_config.tld_bootstrap;
         common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
+        common_config.inr_backup_bootstrap = service_config.inr_backup_bootstrap;
+        common_config.inr_backup_bootstrap_url = service_config.inr_backup_bootstrap_url.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
 
         // Captured before `config` is moved into the store below.
@@ -225,6 +233,10 @@ impl AppState<Pg> {
         let notify_enabled = common_config.pg_notify_enable;
         let ignore_data_dir = config.ignore_data_dir;
 
+        // Make the store bootstrap-aware so `rdap-down`/`rdap-bottom` can surface
+        // delegation redirect stubs instead of dropping them.
+        let mut config = config;
+        config.common_config.bootstrap = service_config.bootstrap;
         let storage = Pg::new(config).await?;
         storage.init().await?;
         if ignore_data_dir {

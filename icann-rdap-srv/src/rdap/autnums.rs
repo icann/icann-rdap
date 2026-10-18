@@ -15,7 +15,8 @@ use tracing::debug;
 use crate::{
     error::RdapServerError,
     rdap::{
-        ToBootStrap, jscontact_conversion,
+        ToBootStrap, follow_stub_redirect, inr_backup_redirect, is_empty_search_results,
+        is_not_found, jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -115,7 +116,16 @@ pub(crate) async fn autnum_rdap_up(
     };
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_autnum_bootstrap(start).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_autnum_bootstrap(start);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-up/{as_path}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
@@ -161,7 +171,16 @@ pub(crate) async fn autnum_rdap_top(
     };
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_autnum_bootstrap(start).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_autnum_bootstrap(start);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-top/{as_path}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
@@ -206,6 +225,22 @@ pub(crate) async fn autnum_rdap_down(
         storage.search_autnum_rdap_down_by_num(start).await?
     };
 
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "autnums/rirSearch1/rdap-down", &as_path)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-down/{as_path}"),
+            )
+            .response());
+        }
+    }
+
     let results = jscontact_conversion(
         results,
         state.get_common_config().jscontact_conversion,
@@ -248,6 +283,22 @@ pub(crate) async fn autnum_rdap_bottom(
     } else {
         storage.search_autnum_rdap_bottom_by_num(start).await?
     };
+
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "autnums/rirSearch1/rdap-bottom", &as_path)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("autnums/rirSearch1/rdap-bottom/{as_path}"),
+            )
+            .response());
+        }
+    }
 
     let results = jscontact_conversion(
         results,

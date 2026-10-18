@@ -17,7 +17,8 @@ use tracing::debug;
 use crate::{
     error::RdapServerError,
     rdap::{
-        ToBootStrap, jscontact_conversion,
+        ToBootStrap, follow_stub_redirect, inr_backup_redirect, is_empty_search_results,
+        is_not_found, jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -58,7 +59,16 @@ pub(crate) async fn ip_rdap_up(
         }
         let network = storage.search_ip_rdap_up_by_cidr(&ip_or_cidr).await?;
         if state.get_common_config().bootstrap {
-            Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
+            let cfg = state.get_common_config();
+            let resp = network.to_ip_bootstrap(&ip_or_cidr);
+            if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-up/{ip_or_cidr}"),
+                )
+                .response());
+            }
+            Ok(resp.response())
         } else {
             let network = jscontact_conversion(
                 network,
@@ -84,7 +94,16 @@ pub(crate) async fn ip_rdap_up(
         }
         let network = storage.search_ip_rdap_up_by_ipaddr(&ip_or_cidr).await?;
         if state.get_common_config().bootstrap {
-            Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
+            let cfg = state.get_common_config();
+            let resp = network.to_ip_bootstrap(&ip_or_cidr);
+            if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-up/{ip_or_cidr}"),
+                )
+                .response());
+            }
+            Ok(resp.response())
         } else {
             let network = jscontact_conversion(
                 network,
@@ -125,7 +144,16 @@ pub(crate) async fn ip_rdap_top(
         }
         let network = storage.search_ip_rdap_top_by_cidr(&ip_or_cidr).await?;
         if state.get_common_config().bootstrap {
-            Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
+            let cfg = state.get_common_config();
+            let resp = network.to_ip_bootstrap(&ip_or_cidr);
+            if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-top/{ip_or_cidr}"),
+                )
+                .response());
+            }
+            Ok(resp.response())
         } else {
             let network = jscontact_conversion(
                 network,
@@ -151,7 +179,16 @@ pub(crate) async fn ip_rdap_top(
         }
         let network = storage.search_ip_rdap_top_by_ipaddr(&ip_or_cidr).await?;
         if state.get_common_config().bootstrap {
-            Ok(network.to_ip_bootstrap(&ip_or_cidr).response())
+            let cfg = state.get_common_config();
+            let resp = network.to_ip_bootstrap(&ip_or_cidr);
+            if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-top/{ip_or_cidr}"),
+                )
+                .response());
+            }
+            Ok(resp.response())
         } else {
             let network = jscontact_conversion(
                 network,
@@ -191,6 +228,21 @@ pub(crate) async fn ip_rdap_down(
             return Ok(BAD_REQUEST.response());
         }
         let results = storage.search_ip_rdap_down_by_cidr(&ip_or_cidr).await?;
+        let cfg = state.get_common_config();
+        if cfg.bootstrap {
+            if let Some(redirect) =
+                follow_stub_redirect(&results, "ips/rirSearch1/rdap-down", &ip_or_cidr)
+            {
+                return Ok(redirect.response());
+            }
+            if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-down/{ip_or_cidr}"),
+                )
+                .response());
+            }
+        }
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
@@ -213,6 +265,21 @@ pub(crate) async fn ip_rdap_down(
             return Ok(BAD_REQUEST.response());
         }
         let results = storage.search_ip_rdap_down_by_ipaddr(&ip_or_cidr).await?;
+        let cfg = state.get_common_config();
+        if cfg.bootstrap {
+            if let Some(redirect) =
+                follow_stub_redirect(&results, "ips/rirSearch1/rdap-down", &ip_or_cidr)
+            {
+                return Ok(redirect.response());
+            }
+            if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-down/{ip_or_cidr}"),
+                )
+                .response());
+            }
+        }
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
@@ -250,6 +317,21 @@ pub(crate) async fn ip_rdap_bottom(
             return Ok(BAD_REQUEST.response());
         }
         let results = storage.search_ip_rdap_bottom_by_cidr(&ip_or_cidr).await?;
+        let cfg = state.get_common_config();
+        if cfg.bootstrap {
+            if let Some(redirect) =
+                follow_stub_redirect(&results, "ips/rirSearch1/rdap-bottom", &ip_or_cidr)
+            {
+                return Ok(redirect.response());
+            }
+            if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-bottom/{ip_or_cidr}"),
+                )
+                .response());
+            }
+        }
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,
@@ -272,6 +354,21 @@ pub(crate) async fn ip_rdap_bottom(
             return Ok(BAD_REQUEST.response());
         }
         let results = storage.search_ip_rdap_bottom_by_ipaddr(&ip_or_cidr).await?;
+        let cfg = state.get_common_config();
+        if cfg.bootstrap {
+            if let Some(redirect) =
+                follow_stub_redirect(&results, "ips/rirSearch1/rdap-bottom", &ip_or_cidr)
+            {
+                return Ok(redirect.response());
+            }
+            if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("ips/rirSearch1/rdap-bottom/{ip_or_cidr}"),
+                )
+                .response());
+            }
+        }
         let results = jscontact_conversion(
             results,
             state.get_common_config().jscontact_conversion,

@@ -15,7 +15,7 @@ use {
 use crate::{
     error::RdapServerError,
     rdap::{
-        ToBootStrap, jscontact_conversion,
+        ToBootStrap, inr_backup_redirect, is_not_found, jscontact_conversion,
         response::{BAD_REQUEST, ResponseUtil},
     },
     server::DynServiceState,
@@ -38,7 +38,16 @@ pub(crate) async fn network_by_netid(
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_cidr(&cidr.to_string()).await?;
             if state.get_common_config().bootstrap {
-                Ok(network.to_ip_bootstrap(&netid).response())
+                let cfg = state.get_common_config();
+                let resp = network.to_ip_bootstrap(&netid);
+                if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                    return Ok(inr_backup_redirect(
+                        &cfg.inr_backup_bootstrap_url,
+                        &format!("ip/{netid}"),
+                    )
+                    .response());
+                }
+                Ok(resp.response())
             } else {
                 let network = jscontact_conversion(
                     network,
@@ -68,7 +77,16 @@ pub(crate) async fn network_by_netid(
             let storage = state.get_storage().await?;
             let network = storage.get_network_by_ipaddr(&netid).await?;
             if state.get_common_config().bootstrap {
-                Ok(network.to_ip_bootstrap(&netid).response())
+                let cfg = state.get_common_config();
+                let resp = network.to_ip_bootstrap(&netid);
+                if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                    return Ok(inr_backup_redirect(
+                        &cfg.inr_backup_bootstrap_url,
+                        &format!("ip/{netid}"),
+                    )
+                    .response());
+                }
+                Ok(resp.response())
             } else {
                 let network = jscontact_conversion(
                     network,

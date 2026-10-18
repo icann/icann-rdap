@@ -27,6 +27,8 @@ pub const BOOTSTRAP: &str = "RDAP_SRV_BOOTSTRAP";
 pub const UPDATE_ON_BOOTSTRAP: &str = "RDAP_SRV_UPDATE_ON_BOOTSTRAP";
 pub const TLD_BOOTSTRAP: &str = "RDAP_SRV_TLD_BOOTSTRAP";
 pub const TLD_BOOTSTRAP_URL: &str = "RDAP_SRV_TLD_BOOTSTRAP_URL";
+pub const INR_BACKUP_BOOTSTRAP: &str = "RDAP_SRV_INR_BACKUP_BOOTSTRAP";
+pub const INR_BACKUP_BOOTSTRAP_URL: &str = "RDAP_SRV_INR_BACKUP_BOOTSTRAP_URL";
 pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
 pub const DOMAIN_SEARCH_BY_NS_IP_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP";
 pub const DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_LDH_NAME";
@@ -72,6 +74,8 @@ pub fn debug_config_vars() {
         UPDATE_ON_BOOTSTRAP,
         TLD_BOOTSTRAP,
         TLD_BOOTSTRAP_URL,
+        INR_BACKUP_BOOTSTRAP,
+        INR_BACKUP_BOOTSTRAP_URL,
         DOMAIN_SEARCH_BY_NAME_ENABLE,
         DOMAIN_SEARCH_BY_NS_IP_ENABLE,
         DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE,
@@ -323,6 +327,13 @@ pub struct CommonConfig {
     pub tld_bootstrap: bool,
     /// Base URL of the RDAP server that serves TLD objects themselves (default IANA).
     pub tld_bootstrap_url: String,
+    /// When true (and `bootstrap` is also true), an INR (IP address or Autonomous System
+    /// Number) query that cannot be resolved by the local bootstrap stubs is redirected to
+    /// `inr_backup_bootstrap_url` instead of returning a not-found. Reverse-DNS queries are
+    /// included. Mirrors the CLI's `--inr-backup-bootstrap`.
+    pub inr_backup_bootstrap: bool,
+    /// Base URL of the backup INR bootstrap server (default ARIN).
+    pub inr_backup_bootstrap_url: String,
     /// When enabled, every object response carries a live "last update of RDAP database"
     /// event reflecting the store's most recent data commit.
     pub rdap_db_last_update_enable: bool,
@@ -370,6 +381,8 @@ impl Default for CommonConfig {
             bootstrap: false,
             tld_bootstrap: true,
             tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
+            inr_backup_bootstrap: true,
+            inr_backup_bootstrap_url: "https://rdap.arin.net/registry".to_string(),
             rdap_db_last_update_enable: false,
             pg_notify_enable: false,
             notice_tos_link_enable: false,
@@ -411,6 +424,8 @@ impl CommonConfig {
         bootstrap: Option<bool>,
         tld_bootstrap: Option<bool>,
         tld_bootstrap_url: Option<String>,
+        inr_backup_bootstrap: Option<bool>,
+        inr_backup_bootstrap_url: Option<String>,
         rdap_db_last_update_enable: Option<bool>,
         pg_notify_enable: Option<bool>,
         notice_tos_link_enable: Option<bool>,
@@ -449,6 +464,9 @@ impl CommonConfig {
             tld_bootstrap: tld_bootstrap.unwrap_or(true),
             tld_bootstrap_url: tld_bootstrap_url
                 .unwrap_or_else(|| "https://rdap.iana.org/".to_string()),
+            inr_backup_bootstrap: inr_backup_bootstrap.unwrap_or(true),
+            inr_backup_bootstrap_url: inr_backup_bootstrap_url
+                .unwrap_or_else(|| "https://rdap.arin.net/registry".to_string()),
             rdap_db_last_update_enable: rdap_db_last_update_enable.unwrap_or(false),
             pg_notify_enable: pg_notify_enable.unwrap_or(false),
             notice_tos_link_enable: notice_tos_link_enable.unwrap_or(false),
@@ -469,6 +487,8 @@ pub struct ServiceConfig {
     pub update_on_bootstrap: bool,
     pub tld_bootstrap: bool,
     pub tld_bootstrap_url: String,
+    pub inr_backup_bootstrap: bool,
+    pub inr_backup_bootstrap_url: String,
     pub jscontact_conversion: JsContactConversion,
 }
 
@@ -492,6 +512,8 @@ impl ServiceConfig {
             update_on_bootstrap: false,
             tld_bootstrap: true,
             tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
+            inr_backup_bootstrap: true,
+            inr_backup_bootstrap_url: "https://rdap.arin.net/registry".to_string(),
             jscontact_conversion: JsContactConversion::None,
         })
     }

@@ -11,7 +11,7 @@ use {
 
 use crate::{
     error::RdapServerError,
-    rdap::{jscontact_conversion, response::ResponseUtil},
+    rdap::{inr_backup_redirect, is_not_found, jscontact_conversion, response::ResponseUtil},
     server::DynServiceState,
 };
 
@@ -68,7 +68,15 @@ pub(crate) async fn domain_by_name(
     {
         if let Some(ipnet) = reverse_dns_to_ipnet(domain_name.as_str()) {
             let network = storage.get_network_by_cidr(&ipnet.to_string()).await?;
-            return Ok(network.to_domain_bootstrap(&domain_name).response());
+            let resp = network.to_domain_bootstrap(&domain_name);
+            if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+                return Ok(inr_backup_redirect(
+                    &cfg.inr_backup_bootstrap_url,
+                    &format!("domain/{domain_name}"),
+                )
+                .response());
+            }
+            return Ok(resp.response());
         } else {
             let mut dn_slice = domain_name.as_str();
             while let Some(less_specific) = dn_slice.split_once('.') {

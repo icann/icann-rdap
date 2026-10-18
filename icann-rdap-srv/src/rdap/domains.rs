@@ -14,7 +14,10 @@ use tracing::debug;
 
 use crate::{
     error::RdapServerError,
-    rdap::{ToBootStrap, jscontact_conversion, response::ResponseUtil},
+    rdap::{
+        ToBootStrap, follow_stub_redirect, inr_backup_redirect, is_empty_search_results,
+        is_not_found, jscontact_conversion, response::ResponseUtil,
+    },
     server::DynServiceState,
 };
 
@@ -134,7 +137,16 @@ pub(crate) async fn domain_rdap_up(
     let results = storage.search_domain_rdap_up_by_ldh(&ldh_name).await?;
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_domain_bootstrap(&ldh_name).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_domain_bootstrap(&ldh_name);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-up/{ldh_name}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
@@ -171,7 +183,16 @@ pub(crate) async fn domain_rdap_top(
     let results = storage.search_domain_rdap_top_by_ldh(&ldh_name).await?;
 
     if state.get_common_config().bootstrap {
-        Ok(results.to_domain_bootstrap(&ldh_name).response())
+        let cfg = state.get_common_config();
+        let resp = results.to_domain_bootstrap(&ldh_name);
+        if cfg.inr_backup_bootstrap && is_not_found(&resp) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-top/{ldh_name}"),
+            )
+            .response());
+        }
+        Ok(resp.response())
     } else {
         let results = jscontact_conversion(
             results,
@@ -207,6 +228,22 @@ pub(crate) async fn domain_rdap_down(
 
     let results = storage.search_domain_rdap_down_by_ldh(&ldh_name).await?;
 
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "domains/rirSearch1/rdap-down", &ldh_name)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-down/{ldh_name}"),
+            )
+            .response());
+        }
+    }
+
     let results = jscontact_conversion(
         results,
         state.get_common_config().jscontact_conversion,
@@ -239,6 +276,22 @@ pub(crate) async fn domain_rdap_bottom(
     debug!("getting rdap-bottom for domain {ldh_name}");
 
     let results = storage.search_domain_rdap_bottom_by_ldh(&ldh_name).await?;
+
+    let cfg = state.get_common_config();
+    if cfg.bootstrap {
+        if let Some(redirect) =
+            follow_stub_redirect(&results, "domains/rirSearch1/rdap-bottom", &ldh_name)
+        {
+            return Ok(redirect.response());
+        }
+        if cfg.inr_backup_bootstrap && is_empty_search_results(&results) {
+            return Ok(inr_backup_redirect(
+                &cfg.inr_backup_bootstrap_url,
+                &format!("domains/rirSearch1/rdap-bottom/{ldh_name}"),
+            )
+            .response());
+        }
+    }
 
     let results = jscontact_conversion(
         results,

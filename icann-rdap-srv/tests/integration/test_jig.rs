@@ -126,6 +126,11 @@ impl SrvTestJig {
     pub async fn new_bootstrap() -> Self {
         let common_config = CommonConfig {
             bootstrap: true,
+            // Stub-only bootstrap: the INR backup is disabled here so these tests exercise
+            // the bootstrap-redirect-stub path in isolation (a miss yields 404/empty rather
+            // than a backup redirect). INR backup behavior is covered by
+            // `inr_backup_bootstrap.rs` via `new_common_config`.
+            inr_backup_bootstrap: false,
             ..Default::default()
         };
         let mem = Mem::default();
