@@ -1,6 +1,6 @@
 //! Outputs RDAP to RPSL.
 
-use std::{str::FromStr, sync::LazyLock};
+use std::sync::LazyLock;
 
 use chrono::DateTime;
 use icann_rdap_common::{
@@ -38,7 +38,7 @@ pub trait ToRpsl {
 
 impl ToRpsl for RdapResponse {
     fn to_rpsl(&self, params: RpslParams) -> String {
-        let mut rpsl = String::from_str("\n").unwrap();
+        let mut rpsl = String::new();
         if let Some(query_uri) = params.http_data.request_uri() {
             let received = params.http_data.received().to_rfc2822();
             let host = params.http_data.host();

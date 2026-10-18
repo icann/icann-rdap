@@ -8,7 +8,6 @@ impl ToGtldWhois for Domain {
     fn to_gtld_whois(&self, params: &mut GtldParams) -> String {
         let mut gtld = String::new();
 
-        gtld.push_str("\n\n");
         // Domain Name
         let domain_name = format_domain_name(self);
         gtld.push_str(&domain_name);
