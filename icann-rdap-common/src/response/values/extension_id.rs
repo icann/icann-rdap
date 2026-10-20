@@ -107,6 +107,8 @@ pub enum ExtensionId {
     RedirectWithContent,
     #[strum(serialize = "regType")]
     RegType,
+    #[strum(serialize = "reliabilityAssessment")]
+    ReliabilityAssessment,
     #[strum(serialize = "reverse_search")]
     ReverseSearch,
     #[strum(serialize = "rirSearch1")]
