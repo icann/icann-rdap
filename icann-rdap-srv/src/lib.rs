@@ -1,3 +1,4 @@
+pub(crate) mod access_log;
 pub mod bootstrap;
 pub mod config;
 pub mod error;

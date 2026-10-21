@@ -60,6 +60,7 @@ pub const RELATED_LINK_ENABLE: &str = "RDAP_SRV_RELATED_LINK";
 pub const PG_NOTIFY_ENABLE: &str = "RDAP_SRV_PG_NOTIFY";
 pub const PG_IGNORE_DATA_DIR: &str = "RDAP_SRV_PG_IGNORE_DATA_DIR";
 pub const JSCONTACT_CONVERSION: &str = "RDAP_SRV_JSCONTACT_CONVERSION";
+pub const ACCESS_LOG: &str = "RDAP_SRV_ACCESS_LOG";
 
 pub fn debug_config_vars() {
     let var_list = [
@@ -103,6 +104,7 @@ pub fn debug_config_vars() {
         PG_NOTIFY_ENABLE,
         PG_IGNORE_DATA_DIR,
         JSCONTACT_CONVERSION,
+        ACCESS_LOG,
     ];
     envmnt::vars()
         .iter()
@@ -211,6 +213,7 @@ impl StorageType {
         let notice_help_link = get_parse_or(NOTICE_HELP_LINK_ENABLE, false)?;
         let notice_glossary_link = get_parse_or(NOTICE_GLOSSARY_LINK_ENABLE, false)?;
         let related_link = get_parse_or(RELATED_LINK_ENABLE, false)?;
+        let access_log = get_parse_or(ACCESS_LOG, false)?;
         let common_config = CommonConfig::builder()
             .domain_search_by_name_enable(domain_search_by_name)
             .domain_search_by_ns_ip_enable(domain_search_by_ns_ip)
@@ -241,6 +244,7 @@ impl StorageType {
             .notice_glossary_link_enable(notice_glossary_link)
             .related_link_enable(related_link)
             .pg_notify_enable(pg_notify)
+            .access_log(access_log)
             .build();
         let storage = get_or(STORAGE, "memory");
         let result = match storage.as_str() {
@@ -349,6 +353,10 @@ pub struct CommonConfig {
     pub notice_glossary_link_enable: bool,
     /// When enabled, the `value` of every object `related` link is set to the request URI.
     pub related_link_enable: bool,
+    /// When enabled, every HTTP request is logged at the `info` level with the request path,
+    /// the returned status code, the source IP, and the `Forwarded`, `X-Forwarded-For`, and
+    /// `X-Forwarded-Proto` header values when present.
+    pub access_log: bool,
 }
 
 impl Default for CommonConfig {
@@ -389,6 +397,7 @@ impl Default for CommonConfig {
             notice_help_link_enable: false,
             notice_glossary_link_enable: false,
             related_link_enable: false,
+            access_log: false,
         }
     }
 }
@@ -432,6 +441,7 @@ impl CommonConfig {
         notice_help_link_enable: Option<bool>,
         notice_glossary_link_enable: Option<bool>,
         related_link_enable: Option<bool>,
+        access_log: Option<bool>,
     ) -> Self {
         Self {
             domain_search_by_name_enable: domain_search_by_name_enable.unwrap_or_default(),
@@ -473,6 +483,7 @@ impl CommonConfig {
             notice_help_link_enable: notice_help_link_enable.unwrap_or(false),
             notice_glossary_link_enable: notice_glossary_link_enable.unwrap_or(false),
             related_link_enable: related_link_enable.unwrap_or(false),
+            access_log: access_log.unwrap_or(false),
         }
     }
 }

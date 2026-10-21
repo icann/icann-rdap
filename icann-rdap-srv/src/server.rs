@@ -14,6 +14,7 @@ use {
 };
 
 use crate::{
+    access_log::access_log_middleware,
     bootstrap::init_bootstrap,
     config::{
         BaseOrigin, CommonConfig, ListenConfig, ServiceConfig, StorageType, base_origin_from_env,
@@ -131,6 +132,8 @@ where
     AppState<T>: ServiceState,
 {
     let state = Arc::new(state) as DynServiceState;
+    // Read the flag once so the middleware closure doesn't clone `CommonConfig` per request.
+    let access_log = state.get_common_config().access_log;
     Router::new()
         .nest("/rdap", rdap_router())
         .layer(
@@ -153,6 +156,11 @@ where
                         .allow_methods(vec![Method::GET])
                         .allow_headers(Any),
                 )
+                // Outermost layer: logs the final status returned to the client, including
+                // responses converted by the timeout and error-handling layers.
+                .layer(axum::middleware::from_fn(move |req, next| {
+                    access_log_middleware(access_log, req, next)
+                }))
                 .into_inner(),
         )
         .with_state(state)
