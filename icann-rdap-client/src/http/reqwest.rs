@@ -233,8 +233,8 @@ fn default_headers(config: &ReqwestClientConfig) -> header::HeaderMap {
     } else {
         let mut exts_list: Vec<String> = config.exts_list.iter().map(|e| e.to_string()).collect();
         exts_list.sort();
-        let exts_list_param = exts_list.join(" ");
-        format!("{RDAP_MEDIA_TYPE};exts_list=\"{exts_list_param}\", {JSON_MEDIA_TYPE}")
+        let exts_list_param = exts_list.join("+");
+        format!("{RDAP_MEDIA_TYPE};exts_list={exts_list_param}, {JSON_MEDIA_TYPE}")
     };
     // We are unwrapping this value because this should never happen as the construction of
     // the header value is under our control. Unwrapping will cause a fail fast whereas propagating
@@ -288,9 +288,9 @@ mod tests {
         let headers = default_headers(&config);
         let accept_header = headers.get(header::ACCEPT).unwrap();
 
-        // THEN the accept header should include exts_list parameter with sorted space-separated extension IDs
-        let expected =
-            format!("{RDAP_MEDIA_TYPE};exts_list=\"cidr0 jscontact\", {JSON_MEDIA_TYPE}");
+        // THEN the accept header should include an unquoted, '+' separated exts_list parameter
+        // with the extension IDs in sorted order
+        let expected = format!("{RDAP_MEDIA_TYPE};exts_list=cidr0+jscontact, {JSON_MEDIA_TYPE}");
         assert_eq!(accept_header.to_str().unwrap(), expected);
     }
 
@@ -308,8 +308,8 @@ mod tests {
         let headers = default_headers(&config);
         let accept_header = headers.get(header::ACCEPT).unwrap();
 
-        // THEN the accept header should include exts_list parameter with the single extension name
-        let expected = format!("{RDAP_MEDIA_TYPE};exts_list=\"redacted\", {JSON_MEDIA_TYPE}");
+        // THEN the accept header should include the single extension name unquoted
+        let expected = format!("{RDAP_MEDIA_TYPE};exts_list=redacted, {JSON_MEDIA_TYPE}");
         assert_eq!(accept_header.to_str().unwrap(), expected);
     }
 
@@ -331,7 +331,7 @@ mod tests {
         // THEN all headers should be properly set
         // Check Accept header with exts_list parameter
         let accept_header = headers.get(header::ACCEPT).unwrap();
-        let expected = format!("{RDAP_MEDIA_TYPE};exts_list=\"sorting\", {JSON_MEDIA_TYPE}");
+        let expected = format!("{RDAP_MEDIA_TYPE};exts_list=sorting, {JSON_MEDIA_TYPE}");
         assert_eq!(accept_header.to_str().unwrap(), expected);
 
         // Check Host header
@@ -341,5 +341,50 @@ mod tests {
         // Check Origin header
         let origin_header = headers.get(header::ORIGIN).unwrap();
         assert_eq!(origin_header, "https://example.com");
+    }
+
+    #[test]
+    fn test_default_exts_list_includes_rdap_level_0() {
+        // GIVEN the library default extension list
+        let exts_list = crate::http::default_exts_list();
+
+        // THEN it advertises the base RDAP version identifier along with the
+        // extensions this client understands
+        assert!(exts_list.contains(&ExtensionId::RdapLevel0));
+        assert!(exts_list.contains(&ExtensionId::Exts));
+
+        // AND it renders as an unquoted, '+' separated parameter on the wire
+        let config = ReqwestClientConfig {
+            exts_list,
+            ..Default::default()
+        };
+        let headers = default_headers(&config);
+        let accept_header = headers.get(header::ACCEPT).unwrap();
+        let expected = format!(
+            "{RDAP_MEDIA_TYPE};exts_list=cidr0+exts+jscontact+rdap_level_0+redacted+simpleRedaction+ttl0, {JSON_MEDIA_TYPE}"
+        );
+        assert_eq!(accept_header.to_str().unwrap(), expected);
+    }
+
+    #[test]
+    fn test_extension_ids_are_usable_in_an_unquoted_exts_list() {
+        use strum::IntoEnumIterator;
+
+        // GIVEN every known extension identifier
+        // WHEN rendered as an exts_list parameter value
+        // THEN no identifier contains a character that would break the
+        // unquoted `exts_list= name *("+" name)` wire syntax
+        for id in ExtensionId::iter() {
+            let rendered = id.to_string();
+            assert!(
+                !rendered.is_empty()
+                    && !rendered.contains('+')
+                    && !rendered.contains('"')
+                    && !rendered.contains(',')
+                    && !rendered.contains(';')
+                    && !rendered.chars().any(char::is_whitespace),
+                "extension identifier {rendered:?} cannot be used in an exts_list parameter"
+            );
+        }
     }
 }

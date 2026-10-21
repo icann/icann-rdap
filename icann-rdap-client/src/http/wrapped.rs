@@ -46,6 +46,7 @@ impl Default for RequestOptions {
 /// media type "exts_list" parameter.
 pub fn default_exts_list() -> HashSet<ExtensionId> {
     let mut exts_list = HashSet::new();
+    exts_list.insert(ExtensionId::RdapLevel0);
     exts_list.insert(ExtensionId::Cidr0);
     exts_list.insert(ExtensionId::Exts);
     exts_list.insert(ExtensionId::JsContact);

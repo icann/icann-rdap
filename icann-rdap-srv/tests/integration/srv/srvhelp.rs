@@ -5,7 +5,7 @@ use {
         http::{ClientConfig, create_client},
         rdap::{QueryType, rdap_request},
     },
-    icann_rdap_common::response::{Help, Notice, NoticeOrRemark},
+    icann_rdap_common::response::{Help, Notice, NoticeOrRemark, RdapResponse},
     icann_rdap_srv::storage::StoreOps,
 };
 
@@ -41,6 +41,51 @@ async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_status_code_200() {
 
     // THEN
     assert_eq!(response.http_data.status_code, 200);
+}
+
+#[tokio::test]
+async fn GIVEN_server_with_default_help_WHEN_query_help_THEN_advertises_exts_extension() {
+    // GIVEN
+    let test_srv = SrvTestJig::new().await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    let srvhelp = Help::response()
+        .notice(Notice(
+            NoticeOrRemark::builder()
+                .description_entry("foo".to_string())
+                .build(),
+        ))
+        .build();
+    tx.add_srv_help(&srvhelp, None)
+        .await
+        .expect("adding srv help");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let response = rdap_request(&test_srv.rdap_base, &QueryType::Help, &client)
+        .await
+        .expect("querying server");
+
+    // THEN the rdapConformance array advertises "exts", signalling support for
+    // the exts_list media type parameter
+    let RdapResponse::Help(help) = &response.rdap else {
+        panic!("expected a help response");
+    };
+    let conformance: Vec<&str> = help
+        .common
+        .rdap_conformance
+        .iter()
+        .flatten()
+        .map(|e| e.as_str())
+        .collect();
+    assert!(
+        conformance.contains(&"exts"),
+        "expected 'exts' in rdapConformance: {conformance:?}"
+    );
 }
 
 #[tokio::test]
