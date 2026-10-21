@@ -1,4 +1,4 @@
-use icann_rdap_common::prelude::{ExtensionId, normalize_extensions, normalize_extensions_with};
+use icann_rdap_common::prelude::{ExtensionId, normalize_extensions_with};
 
 use {
     axum::{extract::State, response::Response},
@@ -26,7 +26,12 @@ pub(crate) async fn srvhelp(
     }
 
     let config = state.get_common_config();
-    let srv_help = if config.ip_rdap_up_enable
+
+    // The "exts" extension signals support for the "exts_list" media type
+    // parameter (draft-ietf-regext-rdap-x-media-type), so it is always advertised
+    // on service discovery.
+    let mut extra_extensions = vec![ExtensionId::Exts];
+    if config.ip_rdap_up_enable
         || config.ip_rdap_top_enable
         || config.ip_rdap_down_enable
         || config.ip_rdap_bottom_enable
@@ -35,17 +40,13 @@ pub(crate) async fn srvhelp(
         || config.autnum_rdap_down_enable
         || config.autnum_rdap_bottom_enable
     {
-        normalize_extensions_with(
-            srv_help,
-            [
-                ExtensionId::Ips,
-                ExtensionId::RirSearch1,
-                ExtensionId::IpSearchResults,
-                ExtensionId::AutnumSearchResults,
-            ],
-        )
-    } else {
-        normalize_extensions(srv_help)
-    };
+        extra_extensions.extend([
+            ExtensionId::Ips,
+            ExtensionId::RirSearch1,
+            ExtensionId::IpSearchResults,
+            ExtensionId::AutnumSearchResults,
+        ]);
+    }
+    let srv_help = normalize_extensions_with(srv_help, extra_extensions);
     Ok(srv_help.response())
 }

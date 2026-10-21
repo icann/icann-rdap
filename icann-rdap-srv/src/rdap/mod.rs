@@ -282,22 +282,50 @@ pub(crate) fn follow_stub_redirect(
     Some(Rfc9083Error::redirect().url(url).build().to_response())
 }
 
+/// Is `id` a valid RDAP extension identifier?
+///
+/// This is the `name` rule of [RFC7480]: `name = ALPHA *( ALPHA / DIGIT / "_" )`.
+fn is_extension_name(id: &str) -> bool {
+    let mut chars = id.chars();
+    chars.next().is_some_and(|c| c.is_ascii_alphabetic())
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+/// Parse the `exts_list` media type parameter from an `Accept` header value.
+///
+/// Implements the ABNF of draft-ietf-regext-rdap-x-media-type:
+/// `exts_list_param = "exts_list=" name *("+" name)`.
+///
+/// The parameter is only defined for the RDAP media type, so the first
+/// `application/rdap+json` entry of the header is inspected.  The value is
+/// unquoted and `+` separated, and sibling parameters (such as a trailing `q`)
+/// are ignored.  Identifiers that are not a valid RFC 7480 `name` are dropped,
+/// which makes a value written in the pre-draft-07 quoted, space-separated
+/// syntax resolve to no extensions at all.
+///
+/// Note that identifier matching by callers is case sensitive, as it is against
+/// the IANA RDAP extension registry, so an identifier with unexpected casing is
+/// parsed but matches nothing.  Quoted-string parameters in the RDAP media type
+/// entry (e.g. `title="a,b"`) are not supported.
 fn parse_extensions(accept_header: &str) -> Vec<String> {
-    accept_header
-        .split(',')
-        .map(|media_type| media_type.trim())
-        .find(|media_type| media_type.starts_with(RDAP_MEDIA_TYPE))
-        .unwrap_or_default()
+    let Some(rdap_media_type) = accept_header.split(',').map(str::trim).find(|media_type| {
+        media_type
+            .strip_prefix(RDAP_MEDIA_TYPE)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with(';'))
+    }) else {
+        return Vec::new();
+    };
+
+    rdap_media_type
         .split(';')
-        .map(|s| s.trim())
-        .find(|parameter| parameter.starts_with("exts_list"))
-        .unwrap_or_default()
-        .trim_start_matches("exts_list")
-        .trim_start_matches([' ', '=', '"'])
-        .trim_end_matches('"')
-        .split_terminator(' ')
+        .skip(1)
+        .filter_map(|parameter| parameter.split_once('='))
+        .filter(|(name, _)| name.trim().eq_ignore_ascii_case("exts_list"))
+        .flat_map(|(_, value)| value.split('+'))
+        .map(str::trim)
+        .filter(|id| is_extension_name(id))
         .map(String::from)
-        .collect::<Vec<String>>()
+        .collect()
 }
 
 pub(crate) fn parse_exts_list_from_headers(headers: &HeaderMap) -> Vec<String> {
@@ -395,7 +423,7 @@ mod tests {
     #[test]
     fn test_accept_header_with_multiple_extensions() {
         // GIVEN an Accept header with application/rdap+json containing multiple extensions
-        let accept_header = "application/rdap+json;exts_list=\"cidr0 redacted\", application/json";
+        let accept_header = "application/rdap+json;exts_list=cidr0+redacted, application/json";
 
         // WHEN parsing extensions from the header
         let result = parse_extensions(accept_header);
@@ -407,7 +435,7 @@ mod tests {
     #[test]
     fn test_accept_header_with_single_extension() {
         // GIVEN an Accept header with application/rdap+json containing a single extension
-        let accept_header = "application/rdap+json;exts_list=\"jscontact\"";
+        let accept_header = "application/rdap+json;exts_list=jscontact";
 
         // WHEN parsing extensions from the header
         let result = parse_extensions(accept_header);
@@ -431,7 +459,7 @@ mod tests {
     #[test]
     fn test_accept_header_with_empty_exts_list() {
         // GIVEN an Accept header with application/rdap+json containing an empty exts_list
-        let accept_header = "application/rdap+json;exts_list=\"\", application/json";
+        let accept_header = "application/rdap+json;exts_list=, application/json";
 
         // WHEN parsing extensions from the header
         let result = parse_extensions(accept_header);
@@ -455,7 +483,7 @@ mod tests {
     #[test]
     fn test_accept_header_with_multiple_media_types_and_extensions() {
         // GIVEN an Accept header with multiple media types and extensions in the RDAP media type
-        let accept_header = "text/html, application/rdap+json;exts_list=\"sorting paging\", application/json; charset=utf-8";
+        let accept_header = "text/html, application/rdap+json;exts_list=sorting+paging, application/json; charset=utf-8";
 
         // WHEN parsing extensions from the header
         let result = parse_extensions(accept_header);
@@ -466,15 +494,125 @@ mod tests {
 
     #[test]
     fn test_accept_header_with_spaces_and_various_formatting() {
-        // GIVEN an Accept header with leading/trailing spaces but no spaces around semicolon
-        let accept_header =
-            " application/rdap+json; exts_list = \" nro_rdap_profile_0 jscontact \" ";
+        // GIVEN an Accept header with leading/trailing spaces and spaces around the equals sign
+        let accept_header = " application/rdap+json; exts_list = nro_rdap_profile_0+jscontact ";
 
         // WHEN parsing extensions from the header
         let result = parse_extensions(accept_header);
 
         // THEN the function should handle the formatting correctly and return extensions
         assert_eq!(result, vec!["nro_rdap_profile_0", "jscontact"]);
+    }
+
+    #[test]
+    fn test_accept_header_with_rdap_level_0_and_q_value() {
+        // GIVEN an Accept header as shown in draft-ietf-regext-rdap-x-media-type, with the
+        // version identifier first and a q value following the exts_list parameter
+        let accept_header =
+            "application/json;q=0.9, application/rdap+json;exts_list=rdap_level_0+exts+fred;q=1";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the q parameter is ignored and every identifier is returned in order
+        assert_eq!(result, vec!["rdap_level_0", "exts", "fred"]);
+    }
+
+    #[test]
+    fn test_accept_header_ignores_invalid_extension_names() {
+        // GIVEN an exts_list where one identifier is not a valid RFC 7480 name
+        let accept_header = "application/rdap+json;exts_list=1bad+good";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN only the well formed identifier is returned
+        assert_eq!(result, vec!["good"]);
+    }
+
+    #[test]
+    fn test_accept_header_ignores_similarly_named_parameter() {
+        // GIVEN an Accept header with a parameter whose name merely starts with exts_list
+        let accept_header = "application/rdap+json;exts_listfoo=bar";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the parameter is not mistaken for exts_list
+        assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn test_accept_header_ignores_similar_media_type_prefix() {
+        // GIVEN an Accept header with a media type that merely starts with the RDAP media type
+        let accept_header = "application/rdap+jsonx;exts_list=foo";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the parameter of that other media type is not read
+        assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn test_accept_header_with_no_equals_sign() {
+        // GIVEN an exts_list parameter with no value at all
+        let accept_header = "application/rdap+json;exts_list";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN nothing is returned
+        assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn test_accept_header_with_uppercase_parameter_name() {
+        // GIVEN the parameter name written in upper case (parameter names are
+        // case insensitive per RFC 9110)
+        let accept_header = "application/rdap+json;EXTS_LIST=cidr0";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the parameter is still found
+        assert_eq!(result, vec!["cidr0"]);
+    }
+
+    #[test]
+    fn test_accept_header_with_degenerate_plus_separators() {
+        // GIVEN repeated and trailing separators in the value
+        let accept_header = "application/rdap+json;exts_list=a++b+";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the empty identifiers are dropped
+        assert_eq!(result, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_accept_header_with_q_before_exts_list() {
+        // GIVEN a q parameter that precedes the exts_list parameter
+        let accept_header = "application/rdap+json;q=1;exts_list=foo";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the q parameter does not shadow the extension list
+        assert_eq!(result, vec!["foo"]);
+    }
+
+    #[test]
+    fn test_accept_header_with_duplicate_exts_list_parameters() {
+        // GIVEN the parameter repeated on the same media type entry
+        let accept_header = "application/rdap+json;exts_list=a;exts_list=b";
+
+        // WHEN parsing extensions from the header
+        let result = parse_extensions(accept_header);
+
+        // THEN the identifiers of both parameters are merged
+        assert_eq!(result, vec!["a", "b"]);
     }
 
     #[test]
