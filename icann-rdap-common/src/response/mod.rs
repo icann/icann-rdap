@@ -492,6 +492,20 @@ impl RdapResponse {
         }
     }
 
+    /// Returns links whose relationship matches `rel`.
+    pub fn links_by_relation(&self, rel: &str) -> Vec<&Link> {
+        self.get_links()
+            .into_iter()
+            .flatten()
+            .filter(|link| link.is_relation(rel))
+            .collect()
+    }
+
+    /// Returns links with a `rel` of `related`.
+    pub fn related(&self) -> Vec<&Link> {
+        self.links_by_relation("related")
+    }
+
     pub fn get_conformance(&self) -> Option<&RdapConformance> {
         match self {
             Self::Entity(e) => e.common.rdap_conformance.as_ref(),
@@ -863,7 +877,7 @@ mod tests {
 
     use super::{
         Common, Domain, DomainSearchResults, Entity, Event, Help, IpSearchResults, Link, Network,
-        Notice, NoticeOrRemark, RdapResponse, ToResponse, get_related_links,
+        Notice, NoticeOrRemark, ObjectCommonFields, RdapResponse, ToResponse, get_related_links,
     };
 
     #[test]
@@ -1516,6 +1530,37 @@ mod tests {
 
         // THEN
         assert!(links.is_empty());
+    }
+
+    #[test]
+    fn test_related_convenience_methods() {
+        // GIVEN a domain with related and unrelated links
+        let related = Link::builder()
+            .rel("related")
+            .href("http://example.com/related")
+            .value("http://example.com/related")
+            .build();
+        let domain = Domain::builder()
+            .ldh_name("example.com")
+            .link(related.clone())
+            .link(
+                Link::builder()
+                    .rel("alternate")
+                    .href("http://example.com/alternate")
+                    .value("http://example.com/alternate")
+                    .build(),
+            )
+            .build();
+
+        // WHEN convenience methods are called on the object and response
+        let response = domain.clone().to_response();
+        let response_links = response.related();
+
+        // THEN only the related link is returned
+        assert_eq!(domain.related(), vec![&related]);
+        assert!(domain.links_by_relation("missing").is_empty());
+        assert_eq!(response_links, vec![&related]);
+        assert_eq!(response.links_by_relation("alternate").len(), 1);
     }
 
     #[test]
