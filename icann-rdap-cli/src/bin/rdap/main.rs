@@ -105,7 +105,13 @@ struct Cli {
     /// registry, and "arin" will get the base URL for the RDAP tags registry,
     /// which points to the ARIN RIR. This option checks the bootstrap registries
     /// in the following order: object tags, TLDs, IPv4, IPv6, ASN.
-    #[arg(short = 'b', long, required = false, env = "RDAP_BASE")]
+    #[arg(
+        short = 'b',
+        long,
+        required = false,
+        env = "RDAP_BASE",
+        value_parser = parse_object_tag
+    )]
     base: Option<String>,
 
     /// An RDAP base URL for a specific RDAP server.
@@ -1244,12 +1250,28 @@ fn hostname_to_baseurl(s: &str) -> String {
     }
 }
 
+fn parse_object_tag(value: &str) -> Result<String, String> {
+    if !(1..=8).contains(&value.len()) {
+        return Err("object tag must be between 1 and 8 characters".to_string());
+    }
+
+    if !value
+        .chars()
+        .all(|character| character.is_ascii_alphanumeric())
+    {
+        return Err("object tag must contain only letters and digits".to_string());
+    }
+
+    Ok(value.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
     use std::collections::HashSet;
 
     use crate::{Cli, hostname_to_baseurl};
+    use clap::Parser;
 
     #[test]
     fn cli_debug_assert_test() {
@@ -1268,6 +1290,26 @@ mod tests {
 
         // THEN
         assert_eq!(&actual, expected);
+    }
+
+    #[rstest]
+    #[case("ARIN")]
+    #[case("1754")]
+    fn test_valid_object_tag(#[case] object_tag: &str) {
+        let cli = Cli::try_parse_from(["rdap", "-b", object_tag, "example.com"]).unwrap();
+
+        assert_eq!(cli.base.as_deref(), Some(object_tag));
+    }
+
+    #[rstest]
+    #[case("foo-bar")]
+    #[case("https://rdap.example")]
+    #[case("TOOLONG12")]
+    #[case("")]
+    fn test_invalid_object_tag(#[case] object_tag: &str) {
+        let result = Cli::try_parse_from(["rdap", "-b", object_tag, "example.com"]);
+
+        assert!(result.is_err());
     }
 
     #[test]
