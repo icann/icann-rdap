@@ -110,7 +110,8 @@ struct Cli {
         long,
         required = false,
         env = "RDAP_BASE",
-        value_parser = parse_object_tag
+        value_parser = parse_object_tag,
+        allow_hyphen_values = true
     )]
     base: Option<String>,
 
@@ -1251,6 +1252,8 @@ fn hostname_to_baseurl(s: &str) -> String {
 }
 
 fn parse_object_tag(value: &str) -> Result<String, String> {
+    let value = value.strip_prefix('-').unwrap_or(value);
+
     if !(1..=8).contains(&value.len()) {
         return Err("object tag must be between 1 and 8 characters".to_string());
     }
@@ -1293,18 +1296,20 @@ mod tests {
     }
 
     #[rstest]
-    #[case("ARIN")]
-    #[case("1754")]
-    fn test_valid_object_tag(#[case] object_tag: &str) {
-        let cli = Cli::try_parse_from(["rdap", "-b", object_tag, "example.com"]).unwrap();
+    #[case("ARIN", "ARIN")]
+    #[case("1754", "1754")]
+    #[case("-ARIN", "ARIN")]
+    fn test_valid_object_tag(#[case] input: &str, #[case] expected: &str) {
+        let cli = Cli::try_parse_from(["rdap", "-b", input, "example.com"]).unwrap();
 
-        assert_eq!(cli.base.as_deref(), Some(object_tag));
+        assert_eq!(cli.base.as_deref(), Some(expected));
     }
 
     #[rstest]
     #[case("foo-bar")]
     #[case("https://rdap.example")]
     #[case("TOOLONG12")]
+    #[case("--ARIN")]
     #[case("")]
     fn test_invalid_object_tag(#[case] object_tag: &str) {
         let result = Cli::try_parse_from(["rdap", "-b", object_tag, "example.com"]);
