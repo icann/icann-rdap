@@ -127,7 +127,7 @@ impl Link {
         let Some(link_rel) = &self.rel else {
             return false;
         };
-        link_rel == rel
+        link_rel.eq_ignore_ascii_case(rel)
     }
 
     /// Builds an RDAP link.
@@ -927,6 +927,23 @@ mod tests {
     };
 
     use super::{Event, Link, Links, NoticeOrRemark, PublicId};
+
+    #[test]
+    fn test_is_relation_is_case_insensitive() {
+        // GIVEN a link with an uppercase relationship
+        let link = Link::builder()
+            .value("https://example.com")
+            .href("https://example.com")
+            .rel("RELATED")
+            .build();
+
+        // WHEN checking the relationship
+
+        // THEN the match is case-insensitive
+        assert!(link.is_relation("related"));
+        assert!(link.is_relation("RELATED"));
+        assert!(!link.is_relation("self"));
+    }
 
     #[test]
     fn test_rdap_conformance_serialize() {
