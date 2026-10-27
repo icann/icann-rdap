@@ -20,6 +20,8 @@ pub enum RdapCliError {
     Minus(#[from] MinusError),
     #[error("Unknown output type")]
     UnknownOutputType,
+    #[error("Invalid RDAP object tag: {0}")]
+    InvalidObjectTag(String),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
     #[error(transparent)]
@@ -67,7 +69,7 @@ impl RdapCliError {
 
             // User Errors
             Self::UnknownOutputType => 200,
-            // 201 unused
+            Self::InvalidObjectTag(_) => 201,
             Self::GtldWhoisOutputNotImplemented => 205,
             Self::InvalidFilterOutputType => 207,
             Self::FiltersRequired => 208,
