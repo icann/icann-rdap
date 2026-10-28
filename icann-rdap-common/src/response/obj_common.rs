@@ -237,6 +237,19 @@ pub trait ObjectCommonFields {
         self.object_common().links.as_deref().unwrap_or_default()
     }
 
+    /// Returns links whose relationship matches `rel`.
+    fn links_by_relation(&self, rel: &str) -> Vec<&Link> {
+        self.links()
+            .iter()
+            .filter(|link| link.is_relation(rel))
+            .collect()
+    }
+
+    /// Returns links with a `rel` of `related`.
+    fn related(&self) -> Vec<&Link> {
+        self.links_by_relation("related")
+    }
+
     /// Getter for list of [Event]s.
     fn events(&self) -> &[Event] {
         self.object_common().events.as_deref().unwrap_or_default()
