@@ -105,7 +105,13 @@ struct Cli {
     /// registry, and "arin" will get the base URL for the RDAP tags registry,
     /// which points to the ARIN RIR. This option checks the bootstrap registries
     /// in the following order: object tags, TLDs, IPv4, IPv6, ASN.
-    #[arg(short = 'b', long, required = false, env = "RDAP_BASE")]
+    #[arg(
+        short = 'b',
+        long,
+        required = false,
+        env = "RDAP_BASE",
+        allow_hyphen_values = true
+    )]
     base: Option<String>,
 
     /// An RDAP base URL for a specific RDAP server.
@@ -917,7 +923,12 @@ pub async fn main() -> RdapCliError {
 pub async fn wrapped_main() -> Result<(), RdapCliError> {
     dirs::init()?;
     dotenvy::from_path(dirs::config_path()).ok();
-    let cli = Cli::parse();
+    let mut cli = Cli::parse();
+    cli.base = cli
+        .base
+        .take()
+        .map(|base| parse_object_tag(&base))
+        .transpose()?;
 
     if cli.reset {
         dirs::reset()?;
@@ -1244,12 +1255,34 @@ fn hostname_to_baseurl(s: &str) -> String {
     }
 }
 
+fn parse_object_tag(value: &str) -> Result<String, RdapCliError> {
+    let value = value.strip_prefix('-').unwrap_or(value);
+
+    if !(1..=8).contains(&value.len()) {
+        return Err(RdapCliError::InvalidObjectTag(
+            "must be between 1 and 8 characters".to_string(),
+        ));
+    }
+
+    if !value
+        .chars()
+        .all(|character| character.is_ascii_alphanumeric())
+    {
+        return Err(RdapCliError::InvalidObjectTag(
+            "must contain only letters and digits".to_string(),
+        ));
+    }
+
+    Ok(value.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
     use std::collections::HashSet;
 
-    use crate::{Cli, hostname_to_baseurl};
+    use crate::{Cli, error::RdapCliError, hostname_to_baseurl, parse_object_tag};
+    use clap::Parser;
 
     #[test]
     fn cli_debug_assert_test() {
@@ -1268,6 +1301,36 @@ mod tests {
 
         // THEN
         assert_eq!(&actual, expected);
+    }
+
+    #[rstest]
+    #[case("ARIN", "ARIN")]
+    #[case("1754", "1754")]
+    #[case("-ARIN", "ARIN")]
+    fn test_valid_object_tag(#[case] input: &str, #[case] expected: &str) {
+        // GIVEN suffixes
+        // WHEN parsed
+        let cli = Cli::try_parse_from(["rdap", "-b", input, "example.com"]).unwrap();
+        let actual = parse_object_tag(cli.base.as_deref().unwrap()).unwrap();
+
+        // THEN check actual vs expected
+        assert_eq!(actual, expected);
+    }
+
+    #[rstest]
+    #[case("foo-bar")]
+    #[case("https://rdap.example")]
+    #[case("TOOLONG12")]
+    #[case("--ARIN")]
+    #[case("")]
+    fn test_invalid_object_tag(#[case] object_tag: &str) {
+        // GIVEN suffixes
+        // WHEN parsed
+        let cli = Cli::try_parse_from(["rdap", "-b", object_tag, "example.com"]).unwrap();
+        let result = parse_object_tag(cli.base.as_deref().unwrap());
+
+        // THEN check invalid value
+        assert!(matches!(result, Err(RdapCliError::InvalidObjectTag(_))));
     }
 
     #[test]
