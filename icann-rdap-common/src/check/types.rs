@@ -73,13 +73,13 @@ impl GetChecks for Link {
             items.push(Check::LinkMissingHrefProperty.check_item())
         };
         if let Some(rel) = &self.rel {
-            if rel.eq("related") {
+            if rel.eq_ignore_ascii_case("related") {
                 if let Some(media_type) = &self.media_type {
-                    if !media_type.eq(RDAP_MEDIA_TYPE)
+                    if !media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
                         && RELATED_AND_SELF_LINK_PARENTS.contains(&params.parent_type)
                     {
                         items.push(Check::LinkRelatedIsNotRdap.check_item())
-                    } else if media_type.eq(RDAP_MEDIA_TYPE)
+                    } else if media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE)
                         && let Some(ref href) = self.href
                         && !has_rdap_path(href)
                     {
@@ -88,9 +88,9 @@ impl GetChecks for Link {
                 } else {
                     items.push(Check::LinkRelatedHasNoType.check_item())
                 }
-            } else if rel.eq("self") {
+            } else if rel.eq_ignore_ascii_case("self") {
                 if let Some(media_type) = &self.media_type {
-                    if !media_type.eq(RDAP_MEDIA_TYPE) {
+                    if !media_type.eq_ignore_ascii_case(RDAP_MEDIA_TYPE) {
                         items.push(Check::LinkSelfIsNotRdap.check_item())
                     }
                 } else {
@@ -559,6 +559,78 @@ mod tests {
 
         // THEN
         assert!(contains_check(Check::LinkRelatedNotToRdap, &checks));
+    }
+
+    #[test]
+    fn test_related_link_with_uppercase_rel_is_recognized() {
+        // GIVEN a related link with an uppercase relationship
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("RELATED")
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN checking the response
+
+        // THEN the link is treated as related (missing type), not as a missing self link
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+        assert!(contains_check(Check::LinkRelatedHasNoType, &checks));
+        assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
+    }
+
+    #[test]
+    fn test_related_link_with_uppercase_type_is_recognized_as_rdap() {
+        // GIVEN a related link with an uppercase media type
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("related")
+                    .media_type("Application/RDAP+JSON")
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN checking the response
+
+        // THEN the media type is treated as RDAP (only the non-rdap path is flagged)
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+        assert!(contains_check(Check::LinkRelatedNotToRdap, &checks));
+        assert!(!find_any_check(&checks, Check::LinkRelatedIsNotRdap));
+    }
+
+    #[test]
+    fn test_self_link_with_uppercase_rel_and_type() {
+        // GIVEN a self link with an uppercase relationship and media type
+        let rdap = Domain::builder()
+            .ldh_name("example.com")
+            .link(
+                Link::builder()
+                    .href("https://foo")
+                    .value("https://foo")
+                    .rel("SELF")
+                    .media_type("APPLICATION/RDAP+JSON")
+                    .build(),
+            )
+            .build()
+            .to_response();
+
+        // WHEN checking the response
+
+        // THEN the link is treated as a valid self link
+        let checks = rdap.get_checks(None, CheckParams::for_rdap(&rdap));
+        assert!(!find_any_check(&checks, Check::LinkSelfIsNotRdap));
+        assert!(!find_any_check(&checks, Check::LinkSelfHasNoType));
+        assert!(!find_any_check(&checks, Check::LinkObjectClassHasNoSelf));
     }
 
     #[test]
