@@ -31,10 +31,12 @@ pub(crate) async fn entity_by_handle(
     let storage = state.get_storage().await?;
     let entity = storage.get_entity_by_handle(&handle).await?;
 
-    if state.get_common_config().bootstrap
+    let cfg = state.get_common_config();
+    if cfg.bootstrap
         && !matches!(entity, RdapResponse::Entity(_))
         && !entity.is_redirect()
         && let Some(tag) = handle.rsplit_once('-')
+        && !cfg.is_bootstrap_exempt_object_tag(tag.1)
     {
         let found = storage
             .get_entity_by_handle(&format!("-{}", tag.1.to_ascii_uppercase()))

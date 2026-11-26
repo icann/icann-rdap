@@ -2,10 +2,10 @@ use {
     envmnt::{get_or, get_parse_or, get_u16},
     icann_rdap_srv::{
         config::{
-            AUTO_RELOAD, BOOTSTRAP, INR_BACKUP_BOOTSTRAP, INR_BACKUP_BOOTSTRAP_URL,
-            JSCONTACT_CONVERSION, JsContactConversion, LISTEN_ADDR, LISTEN_PORT, LOG, ListenConfig,
-            ServiceConfig, StorageType, TLD_BOOTSTRAP, TLD_BOOTSTRAP_URL, UPDATE_ON_BOOTSTRAP,
-            data_dir, debug_config_vars,
+            AUTO_RELOAD, BOOTSTRAP, BOOTSTRAP_EXEMPT_OBJECT_TAGS, INR_BACKUP_BOOTSTRAP,
+            INR_BACKUP_BOOTSTRAP_URL, JSCONTACT_CONVERSION, JsContactConversion, LISTEN_ADDR,
+            LISTEN_PORT, LOG, ListenConfig, ServiceConfig, StorageType, TLD_BOOTSTRAP,
+            TLD_BOOTSTRAP_URL, UPDATE_ON_BOOTSTRAP, data_dir, debug_config_vars,
         },
         error::RdapServerError,
         server::Listener,
@@ -46,6 +46,12 @@ async fn main() -> Result<(), RdapServerError> {
     let inr_backup_bootstrap: bool = get_parse_or(INR_BACKUP_BOOTSTRAP, true)?;
     let inr_backup_bootstrap_url: String =
         get_or(INR_BACKUP_BOOTSTRAP_URL, "https://rdap.arin.net/registry");
+    let bootstrap_exempt_object_tags: Vec<String> = get_or(BOOTSTRAP_EXEMPT_OBJECT_TAGS, "")
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_ascii_uppercase())
+        .collect();
     let jscontact_conversion =
         JsContactConversion::from_str(&get_or(JSCONTACT_CONVERSION, "none"))?;
 
@@ -68,6 +74,7 @@ async fn main() -> Result<(), RdapServerError> {
                 .tld_bootstrap_url(tld_bootstrap_url)
                 .inr_backup_bootstrap(inr_backup_bootstrap)
                 .inr_backup_bootstrap_url(inr_backup_bootstrap_url)
+                .bootstrap_exempt_object_tags(bootstrap_exempt_object_tags)
                 .jscontact_conversion(jscontact_conversion)
                 .build(),
         )

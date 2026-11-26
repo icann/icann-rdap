@@ -29,6 +29,7 @@ pub const TLD_BOOTSTRAP: &str = "RDAP_SRV_TLD_BOOTSTRAP";
 pub const TLD_BOOTSTRAP_URL: &str = "RDAP_SRV_TLD_BOOTSTRAP_URL";
 pub const INR_BACKUP_BOOTSTRAP: &str = "RDAP_SRV_INR_BACKUP_BOOTSTRAP";
 pub const INR_BACKUP_BOOTSTRAP_URL: &str = "RDAP_SRV_INR_BACKUP_BOOTSTRAP_URL";
+pub const BOOTSTRAP_EXEMPT_OBJECT_TAGS: &str = "RDAP_SRV_BOOTSTRAP_EXEMPT_OBJECT_TAGS";
 pub const DOMAIN_SEARCH_BY_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NAME";
 pub const DOMAIN_SEARCH_BY_NS_IP_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_IP";
 pub const DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE: &str = "RDAP_SRV_DOMAIN_SEARCH_BY_NS_LDH_NAME";
@@ -77,6 +78,7 @@ pub fn debug_config_vars() {
         TLD_BOOTSTRAP_URL,
         INR_BACKUP_BOOTSTRAP,
         INR_BACKUP_BOOTSTRAP_URL,
+        BOOTSTRAP_EXEMPT_OBJECT_TAGS,
         DOMAIN_SEARCH_BY_NAME_ENABLE,
         DOMAIN_SEARCH_BY_NS_IP_ENABLE,
         DOMAIN_SEARCH_BY_NS_LDH_NAME_ENABLE,
@@ -325,34 +327,50 @@ pub struct CommonConfig {
     pub autnum_search_by_handle_enable: bool,
     pub jscontact_conversion: JsContactConversion,
     pub bootstrap: bool,
+
+    /// Object tags (the registry portion of an entity handle, e.g. `ARIN` in `FOO-ARIN`)
+    /// that are exempt from entity bootstrap. A not-found entity query whose tag appears in
+    /// this list returns 404 instead of a bootstrap redirect. Matched case-insensitively.
+    pub bootstrap_exempt_object_tags: Vec<String>,
+
     /// When true (and `bootstrap` is also true), a bare top-level-domain query such as
     /// `domain/com` that is not served locally but has an IANA DNS bootstrap redirect stub
     /// is redirected to `tld_bootstrap_url` instead of the registry operator.
     pub tld_bootstrap: bool,
+
     /// Base URL of the RDAP server that serves TLD objects themselves (default IANA).
     pub tld_bootstrap_url: String,
+
     /// When true (and `bootstrap` is also true), an INR (IP address or Autonomous System
     /// Number) query that cannot be resolved by the local bootstrap stubs is redirected to
     /// `inr_backup_bootstrap_url` instead of returning a not-found. Reverse-DNS queries are
     /// included. Mirrors the CLI's `--inr-backup-bootstrap`.
     pub inr_backup_bootstrap: bool,
+
     /// Base URL of the backup INR bootstrap server (default ARIN).
     pub inr_backup_bootstrap_url: String,
+
     /// When enabled, every object response carries a live "last update of RDAP database"
     /// event reflecting the store's most recent data commit.
     pub rdap_db_last_update_enable: bool,
+
     /// When enabled with postgres storage, a background task listens on the
     /// `rdap_db_update` NOTIFY channel to keep the last-update timestamp fresh.
     pub pg_notify_enable: bool,
+
     /// When enabled, the `value` of every top-level notice terms-of-service link is set to
     /// the request URI.
     pub notice_tos_link_enable: bool,
+
     /// When enabled, the `value` of every top-level notice help link is set to the request URI.
     pub notice_help_link_enable: bool,
+
     /// When enabled, the `value` of every top-level notice glossary link is set to the request URI.
     pub notice_glossary_link_enable: bool,
+
     /// When enabled, the `value` of every object `related` link is set to the request URI.
     pub related_link_enable: bool,
+
     /// When enabled, every HTTP request is logged at the `info` level with the request path,
     /// the returned status code, the source IP, and the `Forwarded`, `X-Forwarded-For`, and
     /// `X-Forwarded-Proto` header values when present.
@@ -387,6 +405,7 @@ impl Default for CommonConfig {
             autnum_search_by_handle_enable: false,
             jscontact_conversion: JsContactConversion::None,
             bootstrap: false,
+            bootstrap_exempt_object_tags: Vec::new(),
             tld_bootstrap: true,
             tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
             inr_backup_bootstrap: true,
@@ -431,6 +450,7 @@ impl CommonConfig {
         autnum_search_by_handle_enable: Option<bool>,
         jscontact_conversion: Option<JsContactConversion>,
         bootstrap: Option<bool>,
+        bootstrap_exempt_object_tags: Option<Vec<String>>,
         tld_bootstrap: Option<bool>,
         tld_bootstrap_url: Option<String>,
         inr_backup_bootstrap: Option<bool>,
@@ -471,6 +491,7 @@ impl CommonConfig {
             autnum_search_by_handle_enable: autnum_search_by_handle_enable.unwrap_or_default(),
             jscontact_conversion: jscontact_conversion.unwrap_or(JsContactConversion::None),
             bootstrap: bootstrap.unwrap_or(false),
+            bootstrap_exempt_object_tags: bootstrap_exempt_object_tags.unwrap_or_default(),
             tld_bootstrap: tld_bootstrap.unwrap_or(true),
             tld_bootstrap_url: tld_bootstrap_url
                 .unwrap_or_else(|| "https://rdap.iana.org/".to_string()),
@@ -488,6 +509,16 @@ impl CommonConfig {
     }
 }
 
+impl CommonConfig {
+    /// Returns true when `tag` (the registry portion of an entity handle, e.g. `ARIN` in
+    /// `FOO-ARIN`) is exempt from entity bootstrap. Matching is case-insensitive.
+    pub fn is_bootstrap_exempt_object_tag(&self, tag: &str) -> bool {
+        self.bootstrap_exempt_object_tags
+            .iter()
+            .any(|exempt| exempt.eq_ignore_ascii_case(tag))
+    }
+}
+
 /// RDAP service configuration.
 #[derive(Debug, Builder, Clone)]
 pub struct ServiceConfig {
@@ -495,6 +526,7 @@ pub struct ServiceConfig {
     pub data_dir: String,
     pub auto_reload: bool,
     pub bootstrap: bool,
+    pub bootstrap_exempt_object_tags: Vec<String>,
     pub update_on_bootstrap: bool,
     pub tld_bootstrap: bool,
     pub tld_bootstrap_url: String,
@@ -520,6 +552,7 @@ impl ServiceConfig {
             data_dir,
             auto_reload: false,
             bootstrap: false,
+            bootstrap_exempt_object_tags: Vec::new(),
             update_on_bootstrap: false,
             tld_bootstrap: true,
             tld_bootstrap_url: "https://rdap.iana.org/".to_string(),
@@ -527,5 +560,48 @@ impl ServiceConfig {
             inr_backup_bootstrap_url: "https://rdap.arin.net/registry".to_string(),
             jscontact_conversion: JsContactConversion::None,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_bootstrap_exempt_matches_case_insensitively() {
+        // GIVEN a config exempting "ARIN"
+        let cfg = CommonConfig {
+            bootstrap_exempt_object_tags: vec!["ARIN".to_string()],
+            ..Default::default()
+        };
+
+        // WHEN checking various casings of the tag
+        // THEN all casings are treated as exempt
+        assert!(cfg.is_bootstrap_exempt_object_tag("ARIN"));
+        assert!(cfg.is_bootstrap_exempt_object_tag("arin"));
+        assert!(cfg.is_bootstrap_exempt_object_tag("ArIn"));
+    }
+
+    #[test]
+    fn is_bootstrap_exempt_non_matching_tag_is_false() {
+        // GIVEN a config exempting only "ARIN"
+        let cfg = CommonConfig {
+            bootstrap_exempt_object_tags: vec!["ARIN".to_string()],
+            ..Default::default()
+        };
+
+        // WHEN checking a different tag
+        // THEN it is not exempt
+        assert!(!cfg.is_bootstrap_exempt_object_tag("APNIC"));
+    }
+
+    #[test]
+    fn is_bootstrap_exempt_empty_list_is_false() {
+        // GIVEN the default config with no exempt tags
+        let cfg = CommonConfig::default();
+
+        // WHEN checking any tag
+        // THEN nothing is exempt
+        assert!(!cfg.is_bootstrap_exempt_object_tag("ARIN"));
     }
 }
