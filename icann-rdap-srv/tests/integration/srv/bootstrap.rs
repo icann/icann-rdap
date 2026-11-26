@@ -386,6 +386,119 @@ async fn test_bootstrap_with_no_specific_tag() {
 }
 
 #[tokio::test]
+async fn test_bootstrap_exempt_object_tag_returns_404() {
+    // GIVEN a bootstrap server with the object tag "ARIN" exempted, and a "-ARIN"
+    // redirect stub that would otherwise trigger a bootstrap redirect.
+    let test_srv = SrvTestJig::new_common_config(CommonConfig {
+        bootstrap: true,
+        bootstrap_exempt_object_tags: vec!["ARIN".to_string()],
+        inr_backup_bootstrap: false,
+        ..Default::default()
+    })
+    .await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_entity_err(
+        &EntityId::builder().handle("-ARIN").build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
+    )
+    .await
+    .expect("adding entity redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN querying an entity whose tag is exempted
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::Entity("foo-ARIN".to_string());
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN the request is not bootstrapped and returns 404
+    assert!(!response.rdap.is_redirect());
+    assert_eq!(response.http_data.status_code(), 404);
+}
+
+#[tokio::test]
+async fn test_bootstrap_exempt_object_tag_is_case_insensitive() {
+    // GIVEN the exempt tag configured in lowercase and a "-ARIN" redirect stub present.
+    let test_srv = SrvTestJig::new_common_config(CommonConfig {
+        bootstrap: true,
+        bootstrap_exempt_object_tags: vec!["arin".to_string()],
+        inr_backup_bootstrap: false,
+        ..Default::default()
+    })
+    .await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_entity_err(
+        &EntityId::builder().handle("-ARIN").build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
+    )
+    .await
+    .expect("adding entity redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN querying with an uppercase tag
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::Entity("foo-ARIN".to_string());
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN the exemption still applies and returns 404
+    assert!(!response.rdap.is_redirect());
+    assert_eq!(response.http_data.status_code(), 404);
+}
+
+#[tokio::test]
+async fn test_bootstrap_non_exempt_object_tag_still_redirects() {
+    // GIVEN a bootstrap server exempting only "APNIC", with a "-ARIN" redirect stub present.
+    let test_srv = SrvTestJig::new_common_config(CommonConfig {
+        bootstrap: true,
+        bootstrap_exempt_object_tags: vec!["APNIC".to_string()],
+        inr_backup_bootstrap: false,
+        ..Default::default()
+    })
+    .await;
+    let mut tx = test_srv.mem.new_tx().await.expect("new transaction");
+    tx.add_entity_err(
+        &EntityId::builder().handle("-ARIN").build(),
+        &Rfc9083Error::redirect().url("https://example.net/").build(),
+    )
+    .await
+    .expect("adding entity redirect");
+    tx.commit().await.expect("tx commit");
+
+    // WHEN querying an entity whose tag is not exempted
+    let client_config = ClientConfig::builder()
+        .https_only(false)
+        .follow_redirects(false)
+        .build();
+    let client = create_client(&client_config).expect("creating client");
+    let query = QueryType::Entity("foo-ARIN".to_string());
+    let response = rdap_request(&test_srv.rdap_base, &query, &client)
+        .await
+        .expect("querying server");
+
+    // THEN the request is bootstrapped as a redirect
+    assert!(response.rdap.is_redirect());
+    assert_eq!(
+        response
+            .http_data
+            .location
+            .as_ref()
+            .expect("no location header information"),
+        "https://example.net/entity/foo-ARIN"
+    );
+}
+
+#[tokio::test]
 async fn test_tld_bootstrap_known_tld_redirects_to_iana() {
     // GIVEN a bootstrap server (tld_bootstrap on by default) with a DNS bootstrap redirect
     // stub for the TLD "com" pointing at the registry operator.

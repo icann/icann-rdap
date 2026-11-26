@@ -200,6 +200,8 @@ impl AppState<Mem> {
         common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
         common_config.inr_backup_bootstrap = service_config.inr_backup_bootstrap;
         common_config.inr_backup_bootstrap_url = service_config.inr_backup_bootstrap_url.clone();
+        common_config.bootstrap_exempt_object_tags =
+            service_config.bootstrap_exempt_object_tags.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
         // Make the store bootstrap-aware so `rdap-down`/`rdap-bottom` can surface
         // delegation redirect stubs instead of dropping them.
@@ -234,6 +236,8 @@ impl AppState<Pg> {
         common_config.tld_bootstrap_url = service_config.tld_bootstrap_url.clone();
         common_config.inr_backup_bootstrap = service_config.inr_backup_bootstrap;
         common_config.inr_backup_bootstrap_url = service_config.inr_backup_bootstrap_url.clone();
+        common_config.bootstrap_exempt_object_tags =
+            service_config.bootstrap_exempt_object_tags.clone();
         common_config.jscontact_conversion = service_config.jscontact_conversion;
 
         // Captured before `config` is moved into the store below.
